@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FROZENSET;
 import static com.oracle.graal.python.nodes.BuiltinNames.INT;
 import static com.oracle.graal.python.nodes.BuiltinNames.LIST;
-import static com.oracle.graal.python.nodes.BuiltinNames.MEMORYVIEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
 import static com.oracle.graal.python.nodes.BuiltinNames.RANGE;
@@ -102,7 +101,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -1382,16 +1380,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object call() {
             throw new RuntimeException("cannot call constructor of cell type");
-        }
-    }
-
-    @Builtin(name = MEMORYVIEW, constructsClass = {PMemoryView.class}, isPublic = true, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class MemoryViewNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        Object memoryview(PythonClass cls, Object obj) {
-            throw raise(NotImplementedError, "memoryview objects");
         }
     }
 

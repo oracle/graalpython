@@ -176,6 +176,7 @@ public final class Python3Core implements PythonCore {
                     "python_cext",
                     "_sre",
                     "_collections",
+                    "memoryview",
                     "list",
                     "_codecs",
                     "bytes",

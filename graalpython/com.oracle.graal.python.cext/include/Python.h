@@ -103,6 +103,7 @@
 #include "pydebug.h"
 #include "code.h"
 #include "pyfpe.h"
+#include "memoryobject.h"
 
 // our impls
 #ifdef Py_True
