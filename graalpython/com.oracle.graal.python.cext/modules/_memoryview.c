@@ -796,9 +796,13 @@ PyMemoryView_FromObject(PyObject *v)
         return ret;
     }
 
-    PyErr_Format(PyExc_TypeError,
-        "memoryview: a bytes-like object is required, not '%.200s'",
-        Py_TYPE(v)->tp_name);
+    // TODO: remove me once PyErr_XXX functions are supported
+    printf("memoryview: a bytes-like object is required, not '%.200s'", Py_TYPE(v)->tp_name);
+    PyErr_SetString(PyExc_TypeError, Py_TYPE(v)->tp_name);
+
+//    PyErr_Format(PyExc_TypeError,
+//        "memoryview: a bytes-like object is required, not '%.200s'",
+//        Py_TYPE(v)->tp_name);
     return NULL;
 }
 
