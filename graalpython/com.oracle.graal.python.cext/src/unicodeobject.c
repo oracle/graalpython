@@ -38,6 +38,8 @@
  */
 #include "capi.h"
 
+PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS);
+
 PyObject* PyUnicode_FromString(const char* o) {
 	// TODO probably also use 'PyTruffle_Unicode_FromUTF8'
     return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromString", truffle_read_string(o)));

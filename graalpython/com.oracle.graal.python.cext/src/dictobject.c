@@ -39,6 +39,9 @@
 #include "capi.h"
 
 /* Dicts */
+
+PyTypeObject PyDict_Type = PY_TRUFFLE_TYPE("dict", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS);
+
 PyObject* PyDict_New(void) {
     return truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_New");
 }

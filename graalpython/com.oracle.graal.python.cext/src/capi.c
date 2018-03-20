@@ -47,8 +47,6 @@ GPOFFSET(ob_type_offset);
 GPOFFSET(ob_size_offset);
 GPOFFSET(tp_base_offset);
 
-// TODO: use this to setup the statically allocated C structures for builtin
-// types in a constructor
 static void connect_type_to_structure(PyTypeObject* structure, void* typ) {
     structure->tp_flags = structure->tp_flags | Py_TPFLAGS_READY;
     ((PyObject*)structure)->ob_refcnt = truffle_handle_for_managed(typ);
@@ -58,8 +56,10 @@ static void connect_type_to_structure(PyTypeObject* structure, void* typ) {
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    void* typ = truffle_read(PY_BUILTIN, typname);
-    connect_type_to_structure(structure, typ);
+    void* ptype = truffle_read(PY_BUILTIN, typname);
+    unsigned long original_flags = structure->tp_flags;
+    truffle_assign_managed(&PyType_Type, ptype);
+    structure->tp_flags = original_flags | Py_TPFLAGS_READY;
 }
 
 __attribute__((constructor))
@@ -77,6 +77,8 @@ static void initialize_capi() {
     initialize_type_structure(&PyBaseObject_Type, "object");
     initialize_type_structure(&PySuper_Type, "super");
     initialize_type_structure(&PyUnicode_Type, "str");
+    initialize_type_structure(&PyBytes_Type, "bytes");
+    initialize_type_structure(&PyDict_Type, "dict");
 
     initialize_exceptions();
 }

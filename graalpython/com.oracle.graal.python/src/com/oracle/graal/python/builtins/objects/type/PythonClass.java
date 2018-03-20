@@ -60,6 +60,7 @@ public class PythonClass extends PythonObject {
 
     private final Set<PythonClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonClass, Boolean>());
     private final Shape instanceShape;
+    private long flags;
 
     public final boolean isBuiltin() {
         return this instanceof PythonBuiltinClass;
@@ -261,5 +262,13 @@ public class PythonClass extends PythonObject {
 
     public PythonClass[] getBaseClasses() {
         return baseClasses;
+    }
+
+    public long getFlags() {
+        return flags;
+    }
+
+    public void setFlags(long flags) {
+        this.flags = flags;
     }
 }

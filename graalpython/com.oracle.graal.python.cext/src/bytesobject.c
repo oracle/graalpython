@@ -40,6 +40,8 @@
 
 #include <stdarg.h>
 
+PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS);
+
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
     setlocale(LC_ALL, NULL);
     const char* encoding = nl_langinfo(CODESET);
