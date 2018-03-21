@@ -231,3 +231,19 @@ class TestPyDict(CPyExtTestCase):
         argspec='OO',
         arguments=["PyObject* dict", "PyObject* key"],
     )
+
+    test_PyDict_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], dict),
+        lambda: (
+            ({},), 
+            ({'a': "hello"},), 
+            (dict(),),
+            ("not a dict",),
+            (3,),
+            (tuple(),),
+            ([],),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+    )
