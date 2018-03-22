@@ -344,17 +344,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class EvalNode extends PythonBuiltinNode {
         @Child private GetItemNode getNameNode = GetItemNode.create();
 
-        @SuppressWarnings("unused")
         @Specialization
-        public Object eval(VirtualFrame frame, String expression, PNone globals, PNone locals) {
+        public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
             PythonObject callerGlobals = PArguments.getGlobals(frame, true);
             PCell[] callerClosure = PArguments.getClosure(frame, true);
             return evalExpression(expression, callerGlobals, callerGlobals, callerClosure);
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        public Object eval(String expression, PythonObject globals, PNone locals) {
+        public Object eval(String expression, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
             return evalExpression(expression, globals, globals, null);
         }
 
@@ -363,30 +361,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return evalExpression(expression, globals, locals, null);
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        public Object eval(VirtualFrame frame, String expression, PNone globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
             PythonObject callerGlobals = PArguments.getGlobals(frame, true);
             PCell[] callerClosure = PArguments.getClosure(frame, true);
             return evalExpression(expression, callerGlobals, locals, callerClosure);
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, PNone globals, PNone locals) {
+        public Object eval(VirtualFrame frame, PythonParseResult code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
             PythonObject callerGlobals = PArguments.getGlobals(frame, true);
             PCell[] callerClosure = PArguments.getClosure(frame, true);
             return evalExpression(code, callerGlobals, callerGlobals, callerClosure);
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, PythonObject globals, PNone locals) {
+        public Object eval(VirtualFrame frame, PythonParseResult code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
             PCell[] callerClosure = PArguments.getClosure(frame, true);
             return evalExpression(code, globals, globals, callerClosure);
         }
 
-        @SuppressWarnings("unused")
         @Specialization
         public Object eval(VirtualFrame frame, PythonParseResult code, PythonObject globals, PythonObject locals) {
             PCell[] callerClosure = PArguments.getClosure(frame, true);
@@ -404,7 +398,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         /**
          * @param locals TODO: support the locals dictionary in execution
          */
-        private static Object evalExpression(PythonParseResult code, PythonObject globals, @SuppressWarnings("unused") PythonObject locals, PCell[] closure) {
+        private static Object evalExpression(PythonParseResult code, PythonObject globals, PythonObject locals, PCell[] closure) {
             RootNode root = code.getRootNode();
             Object[] args = PArguments.create();
             PArguments.setGlobals(args, globals);
