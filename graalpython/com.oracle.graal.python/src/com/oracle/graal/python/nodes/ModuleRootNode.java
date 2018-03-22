@@ -26,23 +26,43 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class ModuleNode extends PRootNode {
+public class ModuleRootNode extends PRootNode {
 
+    @CompilerDirectives.CompilationFinal(dimensions = 1) private final FrameSlot[] freeVarSlots;
     private final String name;
+
     @Child private PNode body;
 
-    public ModuleNode(PythonLanguage language, String name, PNode body, FrameDescriptor descriptor) {
+    public ModuleRootNode(PythonLanguage language, String name, PNode body, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
         super(language, descriptor);
         this.name = "<module '" + name + "'>";
         this.body = body;
+        this.freeVarSlots = freeVarSlots;
+    }
+
+    private void addClosureCellsToLocals(Frame frame) {
+        PCell[] closure = PArguments.getClosure(frame);
+        if (closure != null) {
+            assert freeVarSlots != null : "module root node: the free var slots cannot be null when the closure is not null";
+            assert closure.length == freeVarSlots.length : "module root node: the closure must have the same length as the free var slots array";
+            for (int i = 0; i < closure.length; i++) {
+                frame.setObject(freeVarSlots[i], closure[i]);
+            }
+        }
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
+        addClosureCellsToLocals(frame);
         return body.execute(frame);
     }
 

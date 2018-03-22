@@ -132,9 +132,13 @@ public class NodeFactory {
         return (T) NodeUtil.cloneNode(orig);
     }
 
-    public ModuleNode createModule(String name, PNode body, FrameDescriptor fd) {
+    public ModuleRootNode createModuleRoot(String name, PNode body, FrameDescriptor fd) {
+        return createModuleRoot(name, body, fd, null);
+    }
+
+    public ModuleRootNode createModuleRoot(String name, PNode body, FrameDescriptor fd, FrameSlot[] freeVarSlots) {
         body.markAsRoot();
-        return new ModuleNode(language, name, body, fd);
+        return new ModuleRootNode(language, name, body, fd, freeVarSlots);
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, PNode body, ExecutionCellSlots cellSlots) {

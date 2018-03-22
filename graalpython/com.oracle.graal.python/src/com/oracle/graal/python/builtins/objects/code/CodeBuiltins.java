@@ -32,7 +32,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.ModuleNode;
+import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonParseResult;
@@ -88,8 +88,8 @@ public class CodeBuiltins extends PythonBuiltins {
             SourceSection src = rootNode.getSourceSection();
             if (src != null) {
                 return src.getSource().getName();
-            } else if (rootNode instanceof ModuleNode) {
-                return ((ModuleNode) rootNode).getName();
+            } else if (rootNode instanceof ModuleRootNode) {
+                return ((ModuleRootNode) rootNode).getName();
             } else {
                 return PNone.NONE;
             }
@@ -115,7 +115,7 @@ public class CodeBuiltins extends PythonBuiltins {
         protected Object doIt(PythonParseResult self) {
             RootNode rootNode = self.getRootNode();
             String name;
-            if (rootNode instanceof ModuleNode) {
+            if (rootNode instanceof ModuleRootNode) {
                 name = "<module>";
             } else if (rootNode instanceof FunctionRootNode) {
                 name = ((FunctionRootNode) rootNode).getFunctionName();

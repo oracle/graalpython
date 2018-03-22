@@ -650,15 +650,15 @@ def test_list_comp_local_vars():
         pass
 
 
-# def test_eval_free_vars():
-#
-#     def f(x):
-#         def g():
-#             x
-#             eval("x + 1")
-#         return g
-#
-#     f(4)()
+def test_eval_free_vars():
+
+    def f(x):
+        def g():
+            x
+            eval("x + 1")
+        return g
+
+    f(4)()
 
 
 def test_nonLocal_function():

@@ -154,6 +154,14 @@ public final class PArguments {
         return (PCell[]) frame.getArguments()[INDEX_CLOSURE];
     }
 
+    public static PCell[] getClosure(Frame frame, boolean fromCaller) {
+        if (fromCaller) {
+            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            return PArguments.getClosure(callerFrame);
+        }
+        return getClosure(frame);
+    }
+
     public static PythonObject getGlobals(Frame frame, boolean fromCaller) {
         if (fromCaller) {
             Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);

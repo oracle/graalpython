@@ -37,4 +37,8 @@ public interface CellSupplier {
     default FrameSlot[] getCellVarSlots() {
         return getCellSlots().getCellVarSlots();
     }
+
+    default FrameSlot[] getFreeVarSlots() {
+        return getCellSlots().getFreeVarSlots();
+    }
 }

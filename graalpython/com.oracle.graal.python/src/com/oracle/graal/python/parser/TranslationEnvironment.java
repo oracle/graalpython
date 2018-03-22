@@ -272,13 +272,15 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
     }
 
     public void setFreeVarsInRootScope(Frame frame) {
-        ScopeInfo rootScope = getRootScope();
-        for (Object identifier : frame.getFrameDescriptor().getIdentifiers()) {
-            FrameSlot frameSlot = frame.getFrameDescriptor().findFrameSlot(identifier);
-            if (frameSlot != null && frame.isObject(frameSlot)) {
-                Object value = FrameUtil.getObjectSafe(frame, frameSlot);
-                if (value instanceof PCell) {
-                    rootScope.addFreeVar((String) frameSlot.getIdentifier(), false);
+        if (frame != null) {
+            ScopeInfo rootScope = getRootScope();
+            for (Object identifier : frame.getFrameDescriptor().getIdentifiers()) {
+                FrameSlot frameSlot = frame.getFrameDescriptor().findFrameSlot(identifier);
+                if (frameSlot != null && frame.isObject(frameSlot)) {
+                    Object value = FrameUtil.getObjectSafe(frame, frameSlot);
+                    if (value instanceof PCell) {
+                        rootScope.addFreeVar((String) frameSlot.getIdentifier(), false);
+                    }
                 }
             }
         }
@@ -330,6 +332,16 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
         return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, currentScope.isFreeVar(name));
     }
 
+    private ReadNode findVariableNodeModule(String name) {
+        if (currentScope.isFreeVar(name)) {
+            // this is covering the special eval case where free vars pass through to the eval
+            // module scope
+            FrameSlot cellSlot = findSlotInCurrentScope(name);
+            return (ReadNode) factory.createReadLocalCell(cellSlot, true);
+        }
+        return findVariableInGlobalOrBuiltinScope(name);
+    }
+
     private ReadNode findVariableInGlobalOrBuiltinScope(String name) {
         return (ReadNode) factory.createReadGlobalOrBuiltinScope(name);
     }
@@ -345,7 +357,7 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
 
         switch (getScopeKind()) {
             case Module:
-                return findVariableInGlobalOrBuiltinScope(name);
+                return findVariableNodeModule(name);
             case Generator:
             case ListComp:
             case Function:

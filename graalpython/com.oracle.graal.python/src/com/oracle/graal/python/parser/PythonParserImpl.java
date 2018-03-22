@@ -46,7 +46,9 @@ import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -170,7 +172,8 @@ public final class PythonParserImpl implements PythonParser {
             throw handleParserError(core, e);
         }
         Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
-        return translateParseResult(core, filename, input, source);
+        Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+        return translateParseResult(core, filename, input, source, callerFrame);
     }
 
     @Override
@@ -226,9 +229,14 @@ public final class PythonParserImpl implements PythonParser {
     }
 
     private static PythonParseResult translateParseResult(PythonCore core, String name, ParserRuleContext input, Source source) {
+        return translateParseResult(core, name, input, source, null);
+    }
+
+    private static PythonParseResult translateParseResult(PythonCore core, String name, ParserRuleContext input, Source source, Frame frame) {
         TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
         ScopeTranslator.accept(input, environment,
-                        (env, trackCells) -> new ScopeTranslator<>(core, env, source.isInteractive(), trackCells));
+                        (env, trackCells) -> new ScopeTranslator<>(core, env, source.isInteractive(), trackCells),
+                        (env) -> env.setFreeVarsInRootScope(frame));
 
         PythonTreeTranslator treeTranslator = new PythonTreeTranslator(core, name, input, environment, source);
         return treeTranslator.getTranslationResult();
