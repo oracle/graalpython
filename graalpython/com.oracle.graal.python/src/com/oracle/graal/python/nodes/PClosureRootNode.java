@@ -12,7 +12,6 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
@@ -22,7 +21,6 @@ public abstract class PClosureRootNode extends PRootNode {
         this.freeVarSlots = freeVarSlots;
     }
 
-    @ExplodeLoop
     protected void addClosureCellsToLocals(Frame frame) {
         PCell[] closure = PArguments.getClosure(frame);
         if (closure != null) {
