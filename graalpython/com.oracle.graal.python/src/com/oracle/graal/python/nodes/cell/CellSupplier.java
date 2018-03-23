@@ -26,15 +26,10 @@
 package com.oracle.graal.python.nodes.cell;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.parser.CellSlots;
 import com.oracle.truffle.api.frame.FrameSlot;
 
 public interface CellSupplier {
     PCell[] getCells();
 
-    CellSlots getCellSlots();
-
-    default FrameSlot[] getCellVarSlots() {
-        return getCellSlots().getCellVarSlots();
-    }
+    FrameSlot[] getCellVarSlots();
 }
