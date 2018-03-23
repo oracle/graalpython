@@ -29,9 +29,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -152,22 +150,6 @@ public final class PArguments {
 
     public static PCell[] getClosure(Frame frame) {
         return (PCell[]) frame.getArguments()[INDEX_CLOSURE];
-    }
-
-    public static PCell[] getClosure(Frame frame, boolean fromCaller) {
-        if (fromCaller) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
-            return PArguments.getClosure(callerFrame);
-        }
-        return getClosure(frame);
-    }
-
-    public static PythonObject getGlobals(Frame frame, boolean fromCaller) {
-        if (fromCaller) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
-            return PArguments.getGlobals(callerFrame);
-        }
-        return getGlobals(frame);
     }
 
     public static void setArgument(Object[] arguments, int index, Object value) {

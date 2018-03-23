@@ -126,7 +126,9 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -345,9 +347,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private GetItemNode getNameNode = GetItemNode.create();
 
         @Specialization
-        public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
-            PythonObject callerGlobals = PArguments.getGlobals(frame, true);
-            PCell[] callerClosure = PArguments.getClosure(frame, true);
+        public Object eval(@SuppressWarnings("unused") VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
+            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
+            PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(expression, callerGlobals, callerGlobals, callerClosure);
         }
 
@@ -362,36 +365,41 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
-            PythonObject callerGlobals = PArguments.getGlobals(frame, true);
-            PCell[] callerClosure = PArguments.getClosure(frame, true);
+        public Object eval(@SuppressWarnings("unused") VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
+            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
+            PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(expression, callerGlobals, locals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
-            PythonObject callerGlobals = PArguments.getGlobals(frame, true);
-            PCell[] callerClosure = PArguments.getClosure(frame, true);
+        public Object eval(@SuppressWarnings("unused") VirtualFrame frame, PythonParseResult code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
+            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
+            PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, callerGlobals, callerGlobals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
-            PCell[] callerClosure = PArguments.getClosure(frame, true);
+        public Object eval(@SuppressWarnings("unused") VirtualFrame frame, PythonParseResult code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
+            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, globals, globals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, PythonObject globals, PythonObject locals) {
-            PCell[] callerClosure = PArguments.getClosure(frame, true);
+        public Object eval(@SuppressWarnings("unused") VirtualFrame frame, PythonParseResult code, PythonObject globals, PythonObject locals) {
+            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, globals, locals, callerClosure);
         }
 
         @SuppressWarnings("unused")
         @Specialization
         public Object eval(VirtualFrame frame, PythonParseResult code, PNone globals, PythonObject locals) {
-            PythonObject callerGlobals = PArguments.getGlobals(frame, true);
-            PCell[] callerClosure = PArguments.getClosure(frame, true);
+            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
+            PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, callerGlobals, locals, callerClosure);
         }
 
