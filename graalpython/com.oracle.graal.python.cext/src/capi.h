@@ -135,6 +135,8 @@ void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker);
 }
 
 
+int Py_Truffle_Debug(void *arg);
+
 extern short ReadShortMember(PyObject* object, int offset);
 extern int ReadIntMember(PyObject* object, int offset);
 extern long ReadLongMember(PyObject* object, int offset);

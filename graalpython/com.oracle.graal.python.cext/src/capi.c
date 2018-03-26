@@ -56,9 +56,10 @@ static void connect_type_to_structure(PyTypeObject* structure, void* typ) {
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    void* ptype = truffle_read(PY_BUILTIN, typname);
+    PyTypeObject* ptype = truffle_read(PY_BUILTIN, typname);
     unsigned long original_flags = structure->tp_flags;
-    truffle_assign_managed(&PyType_Type, ptype);
+    structure = truffle_assign_managed(structure, ptype);
+    // write flags as specified in the dummy to the PythonClass object
     structure->tp_flags = original_flags | Py_TPFLAGS_READY;
 }
 
@@ -116,7 +117,7 @@ PyObject* PyNoneHandle() {
     return &_Py_NoneStruct;
 }
 
-PyObject* PyObjectHandle_ForJavaObject(void* jobject) {
+PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
     PyObject* obj = (PyObject*)PyObject_Malloc(sizeof(PyObjectHandle));
     marry_objects(obj, jobject);
     return obj;
@@ -313,3 +314,8 @@ PyObject marker_struct = {
 };
 
 #undef WriteMember
+
+int Py_Truffle_Debug(void *arg) {
+	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
+	return 0;
+}

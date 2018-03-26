@@ -43,6 +43,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -115,6 +116,21 @@ public class PyObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object run(PBytes object) {
             return object.getInternalByteArray();
+        }
+    }
+
+    @Builtin(name = "tp_flags", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    static abstract class TpFlagsGetNode extends PythonBuiltinNode {
+        @Specialization
+        long get(PythonClass object, long flags) {
+            object.setFlags(flags);
+            return flags;
+        }
+
+        @Specialization
+        long get(PythonClass object, @SuppressWarnings("unused") PNone flags) {
+            return object.getFlags();
         }
     }
 }

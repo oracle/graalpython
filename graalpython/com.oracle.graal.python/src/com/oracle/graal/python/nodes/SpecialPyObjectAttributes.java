@@ -50,6 +50,7 @@ public abstract class SpecialPyObjectAttributes {
     @CompilationFinal public static int ob_type;
     @CompilationFinal public static int ob_size;
     @CompilationFinal public static int tp_base;
+    @CompilationFinal public static int tp_flags;
 
     public static final HiddenKey pyobjectKey = new HiddenKey("native_handle");
 }
