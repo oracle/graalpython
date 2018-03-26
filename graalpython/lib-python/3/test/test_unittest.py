@@ -1,16 +1,24 @@
-import unittest.test
+# Copyright (c) 2018, Oracle and/or its affiliates.
+#
+# All rights reserved.
+import unittest
 
-from test import support
 
+class TestStringMethods(unittest.TestCase):
 
-def test_main():
-    # used by regrtest
-    support.run_unittest(unittest.test.suite())
-    support.reap_children()
+    def test_upper(self):
+        self.assertEqual('foo'.upper(), 'FOO')
 
-def load_tests(*_):
-    # used by unittest
-    return unittest.test.suite()
+    def test_isupper(self):
+        self.assertTrue('FOO'.isupper())
+        self.assertFalse('Foo'.isupper())
 
-if __name__ == "__main__":
-    test_main()
+    def test_split(self):
+        s = 'hello world'
+        self.assertEqual(s.split(), ['hello', 'world'])
+        # check that s.split fails when the separator is not a string
+        with self.assertRaises(TypeError):
+            s.split(2)
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,4 +1,4 @@
-import signal
+# import signal
 import weakref
 
 from functools import wraps

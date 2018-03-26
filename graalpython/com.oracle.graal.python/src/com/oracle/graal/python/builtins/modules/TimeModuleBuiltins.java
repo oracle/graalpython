@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -74,24 +75,29 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         8	tm_isdst	0, 1 or -1; see below
          */
         Object[] timeStruct = new Object[9];
-        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond((long) seconds, 0, ZoneOffset.UTC);
-        LocalDate localDate = localDateTime.toLocalDate();
-        LocalTime localTime = localDateTime.toLocalTime();
-        if (!local) {
-            ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.of("UTC"));
-            localDate = zonedDateTime.toLocalDate();
-            localTime = zonedDateTime.toLocalTime();
+        Instant instant = Instant.ofEpochSecond((long) seconds);
+        LocalDateTime localDateTime;
+        ZonedDateTime zonedDateTime;
+        if (local) {
+            ZoneId zone = ZoneId.systemDefault();
+            localDateTime = LocalDateTime.ofInstant(instant, zone);
+            zonedDateTime = localDateTime.atZone(zone);
+        } else {
+            ZoneId gmt = ZoneId.of("GMT");
+            localDateTime = LocalDateTime.ofInstant(instant, gmt);
+            zonedDateTime = localDateTime.atZone(gmt);
         }
 
-        timeStruct[0] = localDate.getYear();
-        timeStruct[1] = localDate.getMonth().getValue();
-        timeStruct[2] = localDate.getDayOfMonth();
-        timeStruct[3] = localTime.getHour();
-        timeStruct[4] = localTime.getMinute();
-        timeStruct[5] = localTime.getSecond();
-        timeStruct[6] = localDate.getDayOfWeek().getValue();
-        timeStruct[7] = localDate.getDayOfYear();
-        timeStruct[8] = -1; // not known, TODO: investigate how this can be done in java
+        timeStruct[0] = zonedDateTime.getYear();
+        timeStruct[1] = zonedDateTime.getMonth().getValue();
+        timeStruct[2] = zonedDateTime.getDayOfMonth();
+        timeStruct[3] = zonedDateTime.getHour();
+        timeStruct[4] = zonedDateTime.getMinute();
+        timeStruct[5] = zonedDateTime.getSecond();
+        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue();
+        timeStruct[7] = zonedDateTime.getDayOfYear();
+        timeStruct[8] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
+
         return timeStruct;
     }
 
@@ -101,8 +107,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
         @Specialization
         public PTuple gmtime(double seconds) {
-            Object[] components = new Object[9];
-            return factory().createTuple(getTimeStruct((long) seconds, false));
+            return factory().createTuple(getTimeStruct(seconds, false));
         }
     }
 
@@ -113,7 +118,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
         @Specialization
         public PTuple localtime(double seconds) {
-            return factory().createTuple(getTimeStruct((long) seconds, true));
+            return factory().createTuple(getTimeStruct(seconds, true));
         }
     }
 
