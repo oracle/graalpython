@@ -181,6 +181,7 @@ public final class Python3Core implements PythonCore {
                     "_codecs",
                     "bytes",
                     "float",
+                    "time",
     };
 
     private static final Map<String, Object> BUILTIN_CONSTANTS = new HashMap<>();
