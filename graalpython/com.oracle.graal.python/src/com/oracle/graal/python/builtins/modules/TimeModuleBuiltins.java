@@ -25,6 +25,12 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -54,27 +60,49 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         return System.currentTimeMillis() / 1000.0;
     }
 
+    @TruffleBoundary
+    private static Object[] getTimeStruct(double seconds, boolean local) {
+        /*
+        0	tm_year	(for example, 1993)
+        1	tm_mon	range [1, 12]
+        2	tm_mday	range [1, 31]
+        3	tm_hour	range [0, 23]
+        4	tm_min	range [0, 59]
+        5	tm_sec	range [0, 61]; see (2) in strftime() description
+        6	tm_wday	range [0, 6], Monday is 0
+        7	tm_yday	range [1, 366]
+        8	tm_isdst	0, 1 or -1; see below
+         */
+        Object[] timeStruct = new Object[9];
+        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond((long) seconds, 0, ZoneOffset.UTC);
+        LocalDate localDate = localDateTime.toLocalDate();
+        LocalTime localTime = localDateTime.toLocalTime();
+        if (!local) {
+            ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.of("UTC"));
+            localDate = zonedDateTime.toLocalDate();
+            localTime = zonedDateTime.toLocalTime();
+        }
+
+        timeStruct[0] = localDate.getYear();
+        timeStruct[1] = localDate.getMonth().getValue();
+        timeStruct[2] = localDate.getDayOfMonth();
+        timeStruct[3] = localTime.getHour();
+        timeStruct[4] = localTime.getMinute();
+        timeStruct[5] = localTime.getSecond();
+        timeStruct[6] = localDate.getDayOfWeek().getValue();
+        timeStruct[7] = localDate.getDayOfYear();
+        timeStruct[8] = -1; // not known, TODO: investigate how this can be done in java
+        return timeStruct;
+    }
+
     // time.gmtime([seconds])
     @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         public PTuple gmtime(double seconds) {
             Object[] components = new Object[9];
-            /*
-            0	tm_year	(for example, 1993)
-            1	tm_mon	range [1, 12]
-            2	tm_mday	range [1, 31]
-            3	tm_hour	range [0, 23]
-            4	tm_min	range [0, 59]
-            5	tm_sec	range [0, 61]; see (2) in strftime() description
-            6	tm_wday	range [0, 6], Monday is 0
-            7	tm_yday	range [1, 366]
-            8	tm_isdst	0, 1 or -1; see below
-             */
-            // TODO: set the components
-            return factory().createTuple(components);
+            return factory().createTuple(getTimeStruct((long) seconds, false));
         }
     }
 
@@ -84,22 +112,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         public PTuple localtime(double seconds) {
-            Object[] components = new Object[9];
-            /*
-            0	tm_year	(for example, 1993)
-            1	tm_mon	range [1, 12]
-            2	tm_mday	range [1, 31]
-            3	tm_hour	range [0, 23]
-            4	tm_min	range [0, 59]
-            5	tm_sec	range [0, 61]; see (2) in strftime() description
-            6	tm_wday	range [0, 6], Monday is 0
-            7	tm_yday	range [1, 366]
-            8	tm_isdst	0, 1 or -1; see below
-             */
-            // TODO: set the components
-            return factory().createTuple(components);
+            return factory().createTuple(getTimeStruct((long) seconds, true));
         }
     }
 
