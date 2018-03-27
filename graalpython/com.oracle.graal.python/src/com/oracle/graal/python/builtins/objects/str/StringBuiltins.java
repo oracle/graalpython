@@ -706,6 +706,11 @@ public final class StringBuiltins extends PythonBuiltins {
             return splitfields(self, maxsplit + 1);
         }
 
+        @Fallback
+        public Object doSplit(Object self, Object sep, Object maxsplit) {
+            throw raise(TypeError, " Can't convert %p object to str implicitly", sep);
+        }
+
         // See {@link PyString}
         private PList splitfields(String s, int maxsplit) {
             /*
