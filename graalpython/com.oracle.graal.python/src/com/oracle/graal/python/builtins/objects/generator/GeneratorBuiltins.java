@@ -168,6 +168,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
             PException pException = new PException(instance, this);
             instance.setException(pException);
             instance.setTraceback(tb);
+            PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);
         }
     }
