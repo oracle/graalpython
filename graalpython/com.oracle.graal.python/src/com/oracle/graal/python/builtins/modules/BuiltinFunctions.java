@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.PythonLanguage;
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.CALLABLE;
@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BREAKPOINT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -69,6 +70,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -181,7 +183,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object absObject(Object object,
                         @Cached("create(__ABS__)") LookupAndCallUnaryNode callAbsNode) {
             Object result = callAbsNode.executeObject(object);
-            if (result == PNone.NO_VALUE) {
+            if (result == NO_VALUE) {
                 throw raise(TypeError, "bad operand type for abs():  %p", object);
             }
             return result;
@@ -200,12 +202,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean callable(Object object) {
+        public boolean callable(Object object,
+                                @Cached("create()") LookupInheritedAttributeNode getAttributeNode) {
             /**
              * Added temporarily to skip translation/execution errors in unit testing
              */
 
             if (object.equals(GraalPythonTranslationErrorNode.MESSAGE)) {
+                return true;
+            }
+
+            Object callAttr = getAttributeNode.execute(object, __CALL__);
+            if (callAttr != NO_VALUE) {
                 return true;
             }
 
@@ -637,7 +645,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 writeId = insert(WriteAttributeToObjectNode.create());
             }
             Object id = readId.execute(obj, idKey);
-            if (id == PNone.NO_VALUE) {
+            if (id == NO_VALUE) {
                 id = GLOBAL_ID++;
                 writeId.execute(obj, idKey, id);
             }
@@ -1128,7 +1136,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object sum(Object arg1, Object start,
                         @Cached("createBinaryProfile()") ConditionProfile hasStart) {
             Object iterator = iter.executeWith(arg1);
-            return iterateGeneric(iterator, hasStart.profile(start != PNone.NO_VALUE) ? start : 0, errorProfile1);
+            return iterateGeneric(iterator, hasStart.profile(start != NO_VALUE) ? start : 0, errorProfile1);
         }
 
         private Object iterateGeneric(Object iterator, Object start, ConditionProfile errorProfile) {
