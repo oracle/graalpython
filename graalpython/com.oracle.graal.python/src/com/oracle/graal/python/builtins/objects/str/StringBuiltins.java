@@ -643,6 +643,17 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // str.capitalize()
+    @Builtin(name = "capitalize", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class CapitalizeNode extends PythonBuiltinNode {
+
+        @Specialization
+        public String lower(String self) {
+            return self.substring(0, 1).toUpperCase() + self.substring(1);
+        }
+    }
+
     // str.rpartition
     @Builtin(name = "rpartition", fixedNumOfArguments = 2)
     @GenerateNodeFactory
