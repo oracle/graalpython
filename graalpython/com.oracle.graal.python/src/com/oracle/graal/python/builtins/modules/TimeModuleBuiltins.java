@@ -26,11 +26,8 @@
 package com.oracle.graal.python.builtins.modules;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -76,18 +73,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
          */
         Object[] timeStruct = new Object[9];
         Instant instant = Instant.ofEpochSecond((long) seconds);
-        LocalDateTime localDateTime;
-        ZonedDateTime zonedDateTime;
-        if (local) {
-            ZoneId zone = ZoneId.systemDefault();
-            localDateTime = LocalDateTime.ofInstant(instant, zone);
-            zonedDateTime = localDateTime.atZone(zone);
-        } else {
-            ZoneId gmt = ZoneId.of("GMT");
-            localDateTime = LocalDateTime.ofInstant(instant, gmt);
-            zonedDateTime = localDateTime.atZone(gmt);
-        }
 
+        ZoneId zone = (local) ? ZoneId.systemDefault() : ZoneId.of("GMT");
+        ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
         timeStruct[0] = zonedDateTime.getYear();
         timeStruct[1] = zonedDateTime.getMonth().getValue();
         timeStruct[2] = zonedDateTime.getDayOfMonth();
