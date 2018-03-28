@@ -239,13 +239,19 @@ class TestPyDict(CPyExtTestCase):
         lambda args: isinstance(args[0], dict),
         lambda: (
             ({},), 
+            ({'a': "hello"},), 
+            (dict(),),
+            ("not a dict",),
+            (3,),
+            (tuple(),),
+            ([],),
+            (SubDict(),),
         ),
         resultspec="i",
         argspec='O',
         arguments=["PyObject* o"],
     )
 
-    # TODO enable once supported
 #     test_PyDict_CheckExact = CPyExtFunction(
 #         lambda args: type(args[0]) is dict,
 #         lambda: (
