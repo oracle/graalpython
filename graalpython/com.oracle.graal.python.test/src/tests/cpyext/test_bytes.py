@@ -35,7 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -160,4 +160,17 @@ class TestPyBytes(CPyExtTestCase):
         argumentnames="&arg0, arg1",
         resultvarnames="arg0",
         callfunction="wrap_PyBytes_ConcatAndDel"
+    )
+
+    test_PyBytes_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], bytes),
+        lambda: (
+            (b"hello",),
+            ("hello",),
+            ("hellö".encode(),),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
     )
