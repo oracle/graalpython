@@ -22,3 +22,8 @@ def gmtime(seconds):
 
 def localtime(seconds):
     return struct_time(*__truffle_localtime_tuple__(seconds))
+
+
+def monotonic():
+    #TODO: implement me, time() is not monotonic
+    return time()
