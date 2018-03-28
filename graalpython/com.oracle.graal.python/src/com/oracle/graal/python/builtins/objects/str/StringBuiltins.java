@@ -598,6 +598,22 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // str.isalnum()
+    @Builtin(name = "isalnum", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class IsAlnumNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public boolean isAlnum(String self) {
+            for (int i=0; i<self.length(); i++) {
+                if (!Character.isLetterOrDigit(self.charAt(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
 
     // static str.maketrans()
     @Builtin(name = "maketrans", fixedNumOfArguments = 2)
