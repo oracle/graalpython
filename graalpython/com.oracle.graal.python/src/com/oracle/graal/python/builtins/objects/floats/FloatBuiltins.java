@@ -25,8 +25,39 @@
  */
 package com.oracle.graal.python.builtins.objects.floats;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETFORMAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.ByteOrder;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -36,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -64,7 +94,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         return right ? 1.0 : 0.0;
     }
 
-    @Builtin(name = SpecialMethodNames.__STR__, fixedNumOfArguments = 1)
+    @Builtin(name = __STR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -78,7 +108,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfArguments = 1)
+    @Builtin(name = __ABS__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
 
@@ -94,12 +124,12 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -108,7 +138,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
+    @Builtin(name = __INT__, fixedNumOfArguments = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class IntNode extends PythonUnaryBuiltinNode {
@@ -137,7 +167,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOAT__, fixedNumOfArguments = 1)
+    @Builtin(name = __FLOAT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class FloatNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -151,7 +181,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -177,12 +207,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __RADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class RAddNode extends AddNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUB__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -208,7 +238,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RSUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __RSUB__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RSubNode extends PythonBinaryBuiltinNode {
@@ -234,7 +264,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -260,12 +290,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__POW__, fixedNumOfArguments = 2)
+    @Builtin(name = __POW__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class PowerNode extends PythonBinaryBuiltinNode {
@@ -291,7 +321,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOORDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = __FLOORDIV__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class FloorDivNode extends FloatBinaryBuiltinNode {
@@ -451,7 +481,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = __RFLOORDIV__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RFloorDivNode extends FloatBinaryBuiltinNode {
@@ -481,7 +511,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MOD__, fixedNumOfArguments = 2)
+    @Builtin(name = __MOD__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class ModNode extends FloatBinaryBuiltinNode {
@@ -510,7 +540,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMOD__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMOD__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RModNode extends FloatBinaryBuiltinNode {
@@ -539,7 +569,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__TRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = __TRUEDIV__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class DivNode extends FloatBinaryBuiltinNode {
@@ -565,7 +595,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = __RTRUEDIV__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RDivNode extends PythonBinaryBuiltinNode {
@@ -591,7 +621,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROUND__, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = __ROUND__, minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
         /**
@@ -636,7 +666,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
@@ -682,7 +712,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -717,7 +747,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -742,7 +772,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -767,7 +797,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -792,7 +822,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -817,7 +847,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__POS__, fixedNumOfArguments = 1)
+    @Builtin(name = __POS__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -831,7 +861,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NEG__, fixedNumOfArguments = 1)
+    @Builtin(name = __NEG__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -842,6 +872,36 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double neg(PFloat operand) {
             return -operand.getValue();
+        }
+    }
+
+    @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GetFormatNode extends PythonUnaryBuiltinNode {
+        private String getDetectedEndianess() {
+            try {
+                ByteOrder byteOrder = ByteOrder.nativeOrder();
+                if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
+                    return "IEEE, big-endian";
+                } else if(byteOrder.equals(ByteOrder.LITTLE_ENDIAN)) {
+                    return "IEEE, little-endian";
+                }
+            } catch (Error ignored) {}
+            return "unknown";
+        }
+
+        protected boolean isValidTypeStr(String typeStr) {
+            return typeStr.equals("float") || typeStr.equals("double");
+        }
+
+        @Specialization(guards = "isValidTypeStr(typeStr)")
+        String getFormat(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") String typeStr) {
+            return getDetectedEndianess();
+        }
+
+        @Fallback
+        String getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object typeStr) {
+            throw raise(PythonErrorType.ValueError, "__getformat__() argument 1 must be 'double' or 'float'");
         }
     }
 
