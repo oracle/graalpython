@@ -220,3 +220,21 @@ class TestPyLong(CPyExtTestCase):
         arguments=["Py_ssize_t n"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyLong_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], int),
+        lambda: (
+            (0,), 
+            (-1,), 
+            (0xffffffff,),
+            (0xfffffffffffffffffffffff,),
+            ("hello",),
+            (DummyNonInt(),),
+            (DummyIntable(),),
+            (DummyIntSubclass(),),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
