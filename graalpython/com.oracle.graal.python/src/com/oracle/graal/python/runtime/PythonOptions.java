@@ -81,6 +81,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> ForceLongType = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.DEBUG, help = "") //
+    public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.") //
     public static final OptionKey<String> SysPrefix = new OptionKey<>("");
 
