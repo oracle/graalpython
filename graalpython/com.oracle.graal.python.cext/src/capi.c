@@ -47,14 +47,6 @@ GPOFFSET(ob_type_offset);
 GPOFFSET(ob_size_offset);
 GPOFFSET(tp_base_offset);
 
-static void connect_type_to_structure(PyTypeObject* structure, void* typ) {
-    structure->tp_flags = structure->tp_flags | Py_TPFLAGS_READY;
-    ((PyObject*)structure)->ob_refcnt = truffle_handle_for_managed(typ);
-    /* truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", typ, structure); */
-    /* marry_objects(structure, typ); */
-    // TODO: initialize everything else
-}
-
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
     PyTypeObject* ptype = truffle_read(PY_BUILTIN, typname);
     unsigned long original_flags = structure->tp_flags;
@@ -124,9 +116,7 @@ PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
 }
 
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobject) {
-    PyTypeObject* obj = (PyTypeObject*)PyObject_Malloc(sizeof(PyTypeObject));
-    connect_type_to_structure(obj, jobject);
-    return obj;
+    return truffle_deref_handle_for_managed((PyTypeObject *)jobject);
 }
 
 const char* PyTruffle_StringToCstr(void* jlString) {

@@ -57,7 +57,7 @@ extern void* to_java_type(PyTypeObject* cls);
 #define marry_objects(obj, jobj) {                                      \
         ((PyObject*)obj)->ob_refcnt = truffle_handle_for_managed(jobj); \
         truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, obj);    \
-        ((PyObject*)obj)->ob_type = to_sulong(truffle_invoke(PY_BUILTIN, "type", jobj)); \
+        ((PyObject*)obj)->ob_type = truffle_deref_handle_for_managed((PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobj)); \
     }
 
 // defined in 'exceptions.c'
