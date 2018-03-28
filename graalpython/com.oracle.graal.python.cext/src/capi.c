@@ -70,8 +70,15 @@ static void initialize_capi() {
     initialize_type_structure(&PyBaseObject_Type, "object");
     initialize_type_structure(&PySuper_Type, "super");
     initialize_type_structure(&PyUnicode_Type, "str");
+    initialize_type_structure(&PyBool_Type, "bool");
+    initialize_type_structure(&PyFloat_Type, "float");
+    initialize_type_structure(&PyLong_Type, "int");
     initialize_type_structure(&PyBytes_Type, "bytes");
     initialize_type_structure(&PyDict_Type, "dict");
+    initialize_type_structure(&PyTuple_Type, "tuple");
+    initialize_type_structure(&PyList_Type, "list");
+    // TODO type 'mappingproxy' is not accessible in the standard way
+//    initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
 
     initialize_exceptions();
 }
