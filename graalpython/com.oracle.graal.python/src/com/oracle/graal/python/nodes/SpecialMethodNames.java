@@ -137,6 +137,14 @@ public abstract class SpecialMethodNames {
     public static final String __ANEXT__ = "__anext__";
     public static final String __AENTER__ = "__aenter__";
     public static final String __AEXIT__ = "__aexit__";
+    public static final String __REDUCE__ = "__reduce__";
+    public static final String __REDUCE_EX__ = "__reduce_ex__";
+    public static final String __GETINITARGS__ = "__getinitargs__";
+    public static final String __GETNEWARGS__ = "__getnewargs__";
+    public static final String __GETSTATE__ = "__getstate__";
+    public static final String __SETSTATE__ = "__setstate__";
+    public static final String __GETFORMAT__ = "__getformat__";
+    public static final String __SETFORMAT__ = "__setformat__";
     public static final String KEYS = "keys";
     public static final String ITEMS = "items";
     public static final String VALUES = "values";
