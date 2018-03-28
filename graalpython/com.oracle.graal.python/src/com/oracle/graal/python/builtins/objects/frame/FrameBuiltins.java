@@ -193,4 +193,15 @@ public final class FrameBuiltins extends PythonBuiltins {
             return traceback.getPFrame(factory());
         }
     }
+
+    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class FrameClearNode extends PythonBuiltinNode {
+        @Specialization
+        Object clear(PFrame self) {
+            // TODO: implement me
+            // see: https://github.com/python/cpython/blob/master/Objects/frameobject.c#L503
+            return PNone.NONE;
+        }
+    }
 }
