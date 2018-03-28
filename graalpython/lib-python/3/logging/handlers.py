@@ -26,11 +26,14 @@ To use, simply 'import logging.handlers' and log away!
 # import logging, socket, os, pickle, struct, time, re
 import logging, os, pickle, struct, time, re
 from stat import ST_DEV, ST_INO, ST_MTIME
-import queue
-try:
-    import threading
-except ImportError: #pragma: no cover
-    threading = None
+# TODO: reenable me once queue and threading is supported
+# import queue
+# TODO: reenable me once threading is supported
+# try:
+#     import threading
+# except ImportError: #pragma: no cover
+#     threading = None
+threading = None
 
 #
 # Some constants...
