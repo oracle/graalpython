@@ -22,8 +22,9 @@ Copyright (C) 2001-2016 Vinay Sajip. All Rights Reserved.
 
 To use, simply 'import logging.handlers' and log away!
 """
-
-import logging, socket, os, pickle, struct, time, re
+# TODO: reenable me once socket is supported
+# import logging, socket, os, pickle, struct, time, re
+import logging, os, pickle, struct, time, re
 from stat import ST_DEV, ST_INO, ST_MTIME
 import queue
 try:
