@@ -129,3 +129,22 @@ class TestPyFloat(CPyExtTestCase):
         arguments=["double d"],
         cmpfunc=_float_compare
     )
+
+    test_PyFloat_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], float),
+        lambda: (
+            #(0.0,),
+            (1.0,),
+            #(float('nan'),),
+            #(float(),),
+            #(DummyNonFloat(),),
+            #(DummyFloatable(),),
+            #(DummyFloatSubclass(),),
+            #(1,),
+            #(True,),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )

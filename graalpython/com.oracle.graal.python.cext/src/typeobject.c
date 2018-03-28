@@ -44,5 +44,5 @@ PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE("object", &PyType_Type, Py_TPFL
 PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE);
 
 int PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
-    return as_int(truffle_invoke("PyType_IsSubtype", to_java((PyObject*)a), to_java((PyObject*)b)));
+    return as_int(truffle_invoke(PY_TRUFFLE_CEXT, "PyType_IsSubtype", to_java((PyObject*)a), to_java((PyObject*)b)));
 }
