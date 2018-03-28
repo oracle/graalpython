@@ -246,6 +246,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = "getpid", fixedNumOfArguments = 0)
+    @GenerateNodeFactory
+    public abstract static class GetPidNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        int getPid() {
+            try {
+                return Integer.parseInt(new File("/proc/self").getCanonicalFile().getName());
+            } catch (IOException ignored) {}
+            return 0;
+        }
+    }
+
     @Builtin(name = "fstat", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class FstatNode extends PythonFileNode {
