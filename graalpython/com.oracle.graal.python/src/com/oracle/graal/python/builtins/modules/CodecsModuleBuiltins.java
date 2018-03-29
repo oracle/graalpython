@@ -39,7 +39,6 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -53,7 +52,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -294,16 +292,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 return PNone.NONE;
             }
-        }
-    }
-
-    // _codecs.register(search_function)
-    @Builtin(name = "register", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    abstract static class RegisterNode extends PythonBuiltinNode {
-        @Specialization
-        Object register(PythonCallable callable) {
-            throw raise(NotImplementedError, "not yet implemented");
         }
     }
 }
