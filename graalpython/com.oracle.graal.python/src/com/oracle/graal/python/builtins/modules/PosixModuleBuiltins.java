@@ -250,12 +250,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         int getPid() {
-            try {
-                return Integer.parseInt(new File("/proc/self").getCanonicalFile().getName());
-            } catch (IOException ignored) {}
-            return 0;
+            return getContext().hashCode();
         }
     }
 
