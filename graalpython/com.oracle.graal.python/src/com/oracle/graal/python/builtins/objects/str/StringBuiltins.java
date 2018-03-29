@@ -649,6 +649,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class CapitalizeNode extends PythonBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         public String lower(String self) {
             return self.substring(0, 1).toUpperCase() + self.substring(1);
         }
