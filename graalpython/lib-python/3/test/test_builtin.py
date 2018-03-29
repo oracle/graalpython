@@ -1842,8 +1842,9 @@ class TestType(unittest.TestCase):
 
 
 def load_tests(loader, tests, pattern):
-    from doctest import DocTestSuite
-    tests.addTest(DocTestSuite(builtins))
+    # TODO: revertme once doctest is supported (once io can read text files)
+    # from doctest import DocTestSuite
+    # tests.addTest(DocTestSuite(builtins))
     return tests
 
 if __name__ == "__main__":
