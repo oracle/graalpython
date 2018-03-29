@@ -76,7 +76,8 @@ import dis
 import code
 import glob
 import pprint
-import signal
+# TODO: reenable me when signal is suported
+# import signal
 import inspect
 import traceback
 import linecache
