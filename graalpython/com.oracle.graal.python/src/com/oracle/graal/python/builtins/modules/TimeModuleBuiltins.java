@@ -79,7 +79,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.gmtime([seconds])
-    @Builtin(name = "gmtime", fixedNumOfArguments = 1)
+    @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
         @Specialization
@@ -89,7 +89,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.localtime([seconds])
-    @Builtin(name = "localtime", fixedNumOfArguments = 1)
+    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
         @Specialization
