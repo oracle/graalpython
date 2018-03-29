@@ -113,7 +113,9 @@ __copyright__ = """
 __version__ = '1.0.8'
 
 import collections
-import sys, os, re, subprocess
+# TODO: reenable me once subprocess is supported
+# import sys, os, re, subprocess
+import sys, os, re
 
 import warnings
 
