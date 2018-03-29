@@ -54,11 +54,6 @@ extern void* to_java_type(PyTypeObject* cls);
 #define as_char(obj) ((char)as_long(obj))
 #define as_double(obj) truffle_invoke_d(PY_TRUFFLE_CEXT, "to_double", to_java(obj))
 #define as_float(obj) ((float)as_double(obj))
-#define marry_objects(obj, jobj) {                                      \
-        ((PyObject*)obj)->ob_refcnt = truffle_handle_for_managed(jobj); \
-        truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, obj);    \
-        ((PyObject*)obj)->ob_type = truffle_deref_handle_for_managed((PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobj)); \
-    }
 
 // defined in 'exceptions.c'
 void initialize_exceptions();
@@ -135,7 +130,8 @@ void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker);
 }
 
 
-int Py_Truffle_Debug(void *arg);
+int PyTruffle_Debug(void *arg);
+PyTypeObject* PyObjectHandle_ForJavaType(void* jobj);
 
 extern short ReadShortMember(PyObject* object, int offset);
 extern int ReadIntMember(PyObject* object, int offset);

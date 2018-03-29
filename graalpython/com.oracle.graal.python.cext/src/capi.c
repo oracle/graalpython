@@ -47,12 +47,19 @@ GPOFFSET(ob_type_offset);
 GPOFFSET(ob_size_offset);
 GPOFFSET(tp_base_offset);
 
+static void marry_objects(PyObject* obj, void* jobj) {
+    obj->ob_refcnt = truffle_handle_for_managed(jobj);
+    truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, obj);
+    void *type = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobj);
+    obj->ob_type = PyObjectHandle_ForJavaType(type);
+}
+
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
     PyTypeObject* ptype = truffle_read(PY_BUILTIN, typname);
     unsigned long original_flags = structure->tp_flags;
-    structure = truffle_assign_managed(structure, ptype);
+    PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
-    structure->tp_flags = original_flags | Py_TPFLAGS_READY;
+    type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
 }
 
 __attribute__((constructor))
@@ -122,8 +129,8 @@ PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
     return obj;
 }
 
-PyTypeObject* PyObjectHandle_ForJavaType(void* jobject) {
-    return truffle_deref_handle_for_managed((PyTypeObject *)jobject);
+PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
+    return truffle_deref_handle_for_managed(jobj);
 }
 
 const char* PyTruffle_StringToCstr(void* jlString) {
@@ -312,7 +319,7 @@ PyObject marker_struct = {
 
 #undef WriteMember
 
-int Py_Truffle_Debug(void *arg) {
+int PyTruffle_Debug(void *arg) {
 	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
 	return 0;
 }

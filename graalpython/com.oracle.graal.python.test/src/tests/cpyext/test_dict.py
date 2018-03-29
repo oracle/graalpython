@@ -252,19 +252,25 @@ class TestPyDict(CPyExtTestCase):
         arguments=["PyObject* o"],
     )
 
-#     test_PyDict_CheckExact = CPyExtFunction(
-#         lambda args: type(args[0]) is dict,
-#         lambda: (
-#             ({},), 
-#             ({'a': "hello"},), 
-#             (dict(),),
-#             ("not a dict",),
-#             (3,),
-#             (tuple(),),
-#             ([],),
-#             (SubDict(),),
-#         ),
-#         resultspec="i",
-#         argspec='O',
-#         arguments=["PyObject* o"],
-#     )
+    test_PyDict_CheckExact = CPyExtFunction(
+        lambda args: type(args[0]) is dict,
+        lambda: (
+            ({},), 
+            ({'a': "hello"},), 
+            (dict(),),
+            ("not a dict",),
+            (3,),
+            (tuple(),),
+            ([],),
+            (SubDict(),),
+        ),
+        code="""int blub(PyObject* o) {
+            PyTruffle_Debug(o);
+            return PyDict_CheckExact(o);
+        }
+        """,
+        resultspec="i",
+        argspec='O',
+        callfunction="blub",
+        arguments=["PyObject* o"],
+    )
