@@ -65,6 +65,15 @@ public class PyObjectBuiltins extends PythonBuiltins {
         return PyObjectBuiltinsFactory.getFactories();
     }
 
+    @Builtin(name = "ob_base", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true)
+    @GenerateNodeFactory
+    static abstract class ObBase extends PythonUnaryBuiltinNode {
+        @Specialization
+        PythonObject run(PythonObject o) {
+            return o;
+        }
+    }
+
     @Builtin(name = "ob_refcnt", fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     static abstract class ObRefcnt extends PythonUnaryBuiltinNode {
