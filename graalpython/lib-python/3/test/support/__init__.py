@@ -13,33 +13,32 @@ import gc
 import importlib
 import importlib.util
 import logging.handlers
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9138)
 # import nntplib
 import os
-# TODO: reenable me once supported
-#  import platform
+import platform
 import re
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9139)
 # import shutil
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9140)
 # import socket
 import stat
 import struct
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9141)
 # import subprocess
 import sys
 import sysconfig
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9142)
 # import tempfile
 import time
 import types
 import unittest
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9143)
 # import urllib.error
 import warnings
 
 
-# TODO: reenable me once supported
+# TODO: reenable me once supported  (GR-9144)
 # try:
 #     import _thread, threading
 # except ImportError:
@@ -48,21 +47,21 @@ import warnings
 _thread = None
 threading = None
 
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9145)
 # try:
 #     import multiprocessing.process
 # except ImportError:
 #     multiprocessing = None
 multiprocessing = None
 
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9146)
 # try:
 #     import zlib
 # except ImportError:
 #     zlib = None
 zlib = None
 
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9147)
 # try:
 #     import gzip
 # except ImportError:
@@ -70,14 +69,14 @@ zlib = None
 gzip = None
 
 
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9148)
 # try:
 #     import bz2
 # except ImportError:
 #     bz2 = None
 bz2 = None
 
-# TODO: reenable me once supported
+# TODO: reenable me once supported (GR-9149)
 # try:
 #     import lzma
 # except ImportError:
@@ -633,7 +632,7 @@ HOST = "127.0.0.1"
 HOSTv6 = "::1"
 
 
-# TODO: revert me once socket is implemented
+# TODO: revert me once socket is implemented (GR-9140)
 # def find_unused_port(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
 def find_unused_port(family, socktype):
     """Returns an unused port that should be suitable for binding.  This is
@@ -743,7 +742,7 @@ def bind_unix_socket(sock, addr):
         sock.close()
         raise unittest.SkipTest('cannot bind AF_UNIX sockets')
 
-# TODO: reenable me once socket is implemented
+# TODO: reenable me once socket is implemented (GR-9140)
 # def _is_ipv6_enabled():
 #     """Check whether IPv6 is enabled on this host."""
 #     if socket.has_ipv6:
@@ -804,7 +803,7 @@ requires_lzma = unittest.skipUnless(lzma, 'requires lzma')
 
 is_jython = sys.platform.startswith('java')
 
-# TODO: reenable me once sysconfig is properly implemented
+# TODO: reenable me once sysconfig is properly implemented (GR-9150)
 # _ANDROID_API_LEVEL = sysconfig.get_config_var('ANDROID_API_LEVEL')
 # is_android = (_ANDROID_API_LEVEL is not None and _ANDROID_API_LEVEL > 0)
 is_android = False

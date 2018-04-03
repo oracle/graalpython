@@ -76,7 +76,7 @@ import dis
 import code
 import glob
 import pprint
-# TODO: reenable me when signal is suported
+# TODO: reenable me when signal is suported (GR-9136)
 # import signal
 import inspect
 import traceback
