@@ -109,6 +109,16 @@ class TestPyBytes(CPyExtTestCase):
         arguments=["PyObject* arg"],
     )
 
+    # PyBytes_GET_SIZE
+    test_PyBytes_GET_SIZE = CPyExtFunction(
+        lambda b: len(b[0]),
+        lambda: ((b"hello", ), (b"hello world",), (b"",)),
+        resultspec="n",
+        argspec="O",
+        arguments=["PyObject* arg"],
+        cmpfunc=unhandled_error_compare
+    )
+
     # PyBytes_FromFormat
     test_PyBytes_FromFormat = CPyExtFunction(
         _reference_format,

@@ -264,13 +264,7 @@ class TestPyDict(CPyExtTestCase):
             ([],),
             (SubDict(),),
         ),
-        code="""int blub(PyObject* o) {
-            PyTruffle_Debug(o);
-            return PyDict_CheckExact(o);
-        }
-        """,
         resultspec="i",
         argspec='O',
-        callfunction="blub",
         arguments=["PyObject* o"],
     )
