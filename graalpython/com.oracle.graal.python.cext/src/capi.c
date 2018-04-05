@@ -46,7 +46,7 @@ void marry_objects(PyObject* obj, void* jobj) {
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    PyTypeObject* ptype = polyglot_as__typeobject(truffle_read(PY_BUILTIN, typname));
+    PyTypeObject* ptype = polyglot_as__typeobject(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
     unsigned long original_flags = structure->tp_flags;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
@@ -67,8 +67,7 @@ static void initialize_capi() {
     initialize_type_structure(&PyDict_Type, "dict");
     initialize_type_structure(&PyTuple_Type, "tuple");
     initialize_type_structure(&PyList_Type, "list");
-    // TODO type 'mappingproxy' is not accessible in the standard way
-//    initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
+    initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
 
     initialize_exceptions();
 }
