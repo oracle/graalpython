@@ -699,6 +699,62 @@ public class PythonMessageResolution {
         }
     }
 
+    @Resolve(message = "IS_POINTER")
+    abstract static class IsPointerNode extends Node {
+        @Child private PointerBaseNode pointerNode = PointerBaseNode.create();
+        private final ValueProfile profile = ValueProfile.createClassProfile();
+
+        Object access(Object obj) {
+            Object profiledObj = profile.profile(obj);
+            if (profiledObj instanceof PythonClass) {
+                return pointerNode.execute(obj) != PNone.NO_VALUE;
+            }
+            return false;
+        }
+    }
+
+    @Resolve(message = "AS_POINTER")
+    abstract static class AsPointerNode extends Node {
+        @Child private PointerBaseNode pointerNode = PointerBaseNode.create();
+        @Child private Node asPointerNode;
+
+        long access(Object obj) {
+            // XXX currently, only for PythonClass; subject to change
+            assert obj instanceof PythonClass;
+            Object ptr = pointerNode.execute(obj);
+            if (asPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asPointerNode = insert(Message.AS_POINTER.createNode());
+            }
+            try {
+                return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) ptr);
+            } catch (UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+    }
+
+    private static class PointerBaseNode extends Node {
+
+        @Child private ReadAttributeFromObjectNode readAttr;
+
+        private ReadAttributeFromObjectNode getReadAttr() {
+            if (readAttr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readAttr = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readAttr;
+        }
+
+        public static PointerBaseNode create() {
+            return new PointerBaseNode();
+        }
+
+        Object execute(Object obj) {
+            return getReadAttr().execute(obj, pyobjectKey);
+        }
+    }
+
     @CanResolve
     abstract static class CheckFunction extends Node {
         protected static boolean test(TruffleObject receiver) {

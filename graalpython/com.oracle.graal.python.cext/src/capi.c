@@ -130,7 +130,12 @@ PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
 }
 
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
-    return truffle_deref_handle_for_managed(jobj);
+	if (!truffle_is_handle_to_managed(jobj)) {
+		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jobj);
+		truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, deref_handle);
+		return deref_handle;
+	}
+	return jobj;
 }
 
 const char* PyTruffle_StringToCstr(void* jlString) {
