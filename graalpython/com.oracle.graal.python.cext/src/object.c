@@ -247,7 +247,7 @@ int PyType_Ready(PyTypeObject* cls) {
                                        truffle_read_string(cls->tp_name),
                                        truffle_read_string(cls->tp_doc));
     // store the back reference
-    marry_objects(cls, javacls);
+    marry_objects((PyObject*)cls, javacls);
 
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_name
     const char* lastDot = strrchr(cls->tp_name, '.');

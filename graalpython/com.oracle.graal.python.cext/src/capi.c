@@ -38,16 +38,7 @@
  */
 #include "capi.h"
 
-#define GPOFFSET(name)                          \
-    int name;                                   \
-    int get_ ## name () { return name; }
-
-GPOFFSET(ob_refcnt_offset);
-GPOFFSET(ob_type_offset);
-GPOFFSET(ob_size_offset);
-GPOFFSET(tp_base_offset);
-
-static void marry_objects(PyObject* obj, void* jobj) {
+void marry_objects(PyObject* obj, void* jobj) {
     obj->ob_refcnt = truffle_handle_for_managed(jobj);
     truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, obj);
     void *type = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobj);
@@ -55,7 +46,7 @@ static void marry_objects(PyObject* obj, void* jobj) {
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    PyTypeObject* ptype = truffle_read(PY_BUILTIN, typname);
+    PyTypeObject* ptype = polyglot_as__typeobject(truffle_read(PY_BUILTIN, typname));
     unsigned long original_flags = structure->tp_flags;
     PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
@@ -64,14 +55,6 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 
 __attribute__((constructor))
 static void initialize_capi() {
-    // TODO: this can go when the named struct access works Java<->C
-    ob_refcnt_offset = offsetof(PyObject, ob_refcnt);
-    ob_type_offset = offsetof(PyObject, ob_type);
-
-    ob_size_offset = offsetof(PyVarObject, ob_size);
-
-    tp_base_offset = offsetof(PyTypeObject, tp_base);
-
     // initialize base types
     initialize_type_structure(&PyType_Type, "type");
     initialize_type_structure(&PyBaseObject_Type, "object");
@@ -89,8 +72,6 @@ static void initialize_capi() {
 
     initialize_exceptions();
 }
-
-#undef GPOFFSET
 
 void* to_java(PyObject* obj) {
 	if (obj == &_Py_NoneStruct) {
@@ -130,9 +111,11 @@ PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
 }
 
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
+	// A handle is created at the first time we
 	if (!truffle_is_handle_to_managed(jobj)) {
-		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jobj);
-		truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, deref_handle);
+		PyTypeObject* jtypeobj = polyglot_as__typeobject(jobj);
+		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jtypeobj);
+		truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jtypeobj, deref_handle);
 		return deref_handle;
 	}
 	return jobj;

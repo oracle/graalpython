@@ -41,8 +41,10 @@
 
 #include "Python.h"
 
+POLYGLOT_DECLARE_STRUCT(_object);
+POLYGLOT_DECLARE_STRUCT(_typeobject);
 
-#define to_sulong(o) truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o)
+#define to_sulong(o) polyglot_as__object(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o))
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
@@ -132,6 +134,7 @@ void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker);
 
 int PyTruffle_Debug(void *arg);
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj);
+void marry_objects(PyObject* obj, void* jobj);
 
 extern short ReadShortMember(PyObject* object, int offset);
 extern int ReadIntMember(PyObject* object, int offset);
