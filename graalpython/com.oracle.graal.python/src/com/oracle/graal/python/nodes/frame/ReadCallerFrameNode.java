@@ -43,16 +43,15 @@ public abstract class ReadCallerFrameNode extends PNode {
         if (cachedCallerFrameProfile.profile(callerFrame != null)) {
             return callerFrame;
         } else {
-            return getCallerFrame(frame);
+            callerFrame = getCallerFrame();
+            PArguments.setCallerFrame(frame.getArguments(), callerFrame);
+            return callerFrame;
         }
     }
 
     @TruffleBoundary
-    private Frame getCallerFrame(VirtualFrame frame) {
-        Frame callerFrame;
-        callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(frameAccess).materialize();
-        PArguments.setCallerFrame(frame.getArguments(), callerFrame);
-        return callerFrame;
+    private Frame getCallerFrame() {
+        return Truffle.getRuntime().getCallerFrame().getFrame(frameAccess).materialize();
     }
 
     public Frame executeWith(VirtualFrame frame) {
