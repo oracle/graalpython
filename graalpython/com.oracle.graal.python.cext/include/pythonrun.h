@@ -196,6 +196,12 @@ PyAPI_DATA(PyThreadState*) _PyOS_ReadlineTState;
 PyAPI_FUNC(int) PyOS_CheckStack(void);
 #endif
 
+// taken from compile.h
+#define Py_single_input 256
+#define Py_file_input 257
+#define Py_eval_input 258
+
+
 #ifdef __cplusplus
 }
 #endif
