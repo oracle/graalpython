@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.cpyobject.PCallNativeNode;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
@@ -1112,6 +1113,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Fallback
         Object doUnicode(@SuppressWarnings("unused") Object o, Object errorMarker) {
             return errorMarker;
+        }
+    }
+
+    @Builtin(name = "PyHash_Imag", fixedNumOfArguments = 0)
+    @GenerateNodeFactory
+    abstract static class PyHashImagNode extends PythonBuiltinNode {
+        @Specialization
+        long getHash() {
+            return PComplex.IMAG_MULTIPLIER;
         }
     }
 }

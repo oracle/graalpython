@@ -59,6 +59,8 @@ extern PyObject* to_sulong(void *o);
 
 // defined in 'exceptions.c'
 void initialize_exceptions();
+// defined in 'pyhash.c'
+void initialize_hashes();
 
 #define write_struct_field(object, struct, fieldname, value)            \
     truffle_write(to_java(object),                                      \

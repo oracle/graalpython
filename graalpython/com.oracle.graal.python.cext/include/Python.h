@@ -96,6 +96,7 @@
 #include "warnings.h"
 #include "patchlevel.h"
 #include "pymath.h"
+#include "pyhash.h"
 
 // our impls
 #ifdef Py_True

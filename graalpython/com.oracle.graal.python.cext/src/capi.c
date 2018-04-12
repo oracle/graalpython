@@ -78,6 +78,7 @@ static void initialize_capi() {
     initialize_globals();
 
     initialize_exceptions();
+    initialize_hashes();
 }
 
 void* to_java(PyObject* obj) {
