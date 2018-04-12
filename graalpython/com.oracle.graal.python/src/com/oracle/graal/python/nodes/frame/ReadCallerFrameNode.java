@@ -7,6 +7,7 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -42,10 +43,16 @@ public abstract class ReadCallerFrameNode extends PNode {
         if (cachedCallerFrameProfile.profile(callerFrame != null)) {
             return callerFrame;
         } else {
-            callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(frameAccess).materialize();
-            PArguments.setCallerFrame(frame.getArguments(), callerFrame);
-            return callerFrame;
+            return getCallerFrame(frame);
         }
+    }
+
+    @TruffleBoundary
+    private Frame getCallerFrame(VirtualFrame frame) {
+        Frame callerFrame;
+        callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(frameAccess).materialize();
+        PArguments.setCallerFrame(frame.getArguments(), callerFrame);
+        return callerFrame;
     }
 
     public Frame executeWith(VirtualFrame frame) {
