@@ -81,6 +81,7 @@
 #include "objimpl.h"
 #include "bytesobject.h"
 #include "longobject.h"
+#include "longintrepr.h"
 #include "boolobject.h"
 #include "floatobject.h"
 #include "dictobject.h"
