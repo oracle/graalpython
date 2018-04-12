@@ -118,9 +118,14 @@ public class ListBuiltins extends PythonBuiltins {
                     e.expectStopIteration(getCore(), errorProfile);
                     return result.append(']').toString();
                 }
-                Object reprString = repr.executeObject(value);
-                if (reprString instanceof PString) {
-                    reprString = ((PString) reprString).getValue();
+                Object reprString;
+                if (self != value) {
+                    reprString = repr.executeObject(value);
+                    if (reprString instanceof PString) {
+                        reprString = ((PString) reprString).getValue();
+                    }
+                } else {
+                    reprString = "[...]";
                 }
                 if (reprString instanceof String) {
                     if (initial) {
@@ -333,56 +338,56 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class ListAppendNode extends PythonBuiltinNode {
 
         @Specialization(guards = "isEmptyStorage(list)")
-        public PList appendEmpty(PList list, Object arg) {
+        public PNone appendEmpty(PList list, Object arg) {
             list.append(arg);
-            return list;
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isIntStorage(list)")
-        public PList appendInt(PList list, int arg) {
+        public PNone appendInt(PList list, int arg) {
             IntSequenceStorage store = (IntSequenceStorage) list.getSequenceStorage();
             store.appendInt(arg);
-            return list;
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isLongStorage(list)")
-        public PList appendLong(PList list, long arg) {
+        public PNone appendLong(PList list, long arg) {
             LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
             store.appendLong(arg);
-            return list;
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isDoubleStorage(list)")
-        public PList appendDouble(PList list, double arg) {
+        public PNone appendDouble(PList list, double arg) {
             DoubleSequenceStorage store = (DoubleSequenceStorage) list.getSequenceStorage();
             store.appendDouble(arg);
-            return list;
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isListStorage(list)")
-        public PList appendList(PList list, PList arg) {
+        public PNone appendList(PList list, PList arg) {
             ListSequenceStorage store = (ListSequenceStorage) list.getSequenceStorage();
             store.appendList(arg);
-            return list;
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isTupleStorage(list)")
-        public PList appendTuple(PList list, PTuple arg) {
+        public PNone appendTuple(PList list, PTuple arg) {
             TupleSequenceStorage store = (TupleSequenceStorage) list.getSequenceStorage();
             store.appendPTuple(arg);
-            return list;
+            return PNone.NONE;
         }
 
         @Specialization(rewriteOn = {SequenceStoreException.class})
-        public PList appendObject(PList list, Object arg) throws SequenceStoreException {
+        public PNone appendObject(PList list, Object arg) throws SequenceStoreException {
             list.getSequenceStorage().append(arg);
-            return list;
+            return PNone.NONE;
         }
 
         @Specialization()
-        public PList appendObjectGeneric(PList list, Object arg) {
+        public PNone appendObjectGeneric(PList list, Object arg) {
             list.append(arg);
-            return list;
+            return PNone.NONE;
         }
     }
 
