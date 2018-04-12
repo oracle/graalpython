@@ -42,6 +42,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  *                            +-------------------+
  * INDEX_GENERATOR_FRAME   -> | MaterializedFrame |
  *                            +-------------------+
+ * INDEX_CALLER_FRAME      -> | MaterializedFrame |
+ *                            +-------------------+
  * SPECIAL_ARGUMENT        -> | Object            |
  *                            +-------------------+
  * INDEX_GLOBALS_ARGUMENT  -> | PythonObject      |
@@ -74,11 +76,12 @@ public final class PArguments {
 
     public static final int INDEX_KEYWORD_ARGUMENTS = 0;
     public static final int INDEX_GENERATOR_FRAME = 1;
-    public static final int INDEX_SPECIAL_ARGUMENT = 2;
-    public static final int INDEX_GLOBALS_ARGUMENT = 3;
-    public static final int INDEX_PFRAME_ARGUMENT = 4;
-    public static final int INDEX_CLOSURE = 5;
-    public static final int USER_ARGUMENTS_OFFSET = 6;
+    public static final int INDEX_CALLER_FRAME = 2;
+    public static final int INDEX_SPECIAL_ARGUMENT = 3;
+    public static final int INDEX_GLOBALS_ARGUMENT = 4;
+    public static final int INDEX_PFRAME_ARGUMENT = 5;
+    public static final int INDEX_CLOSURE = 6;
+    public static final int USER_ARGUMENTS_OFFSET = 7;
 
     private static PFrame[] getPFrameWrapper() {
         // this is needed to bypass the fact that PFrame instances get a READONLY frame which will
@@ -88,7 +91,7 @@ public final class PArguments {
     }
 
     private static Object[] iInitArguments() {
-        return new Object[]{PKeyword.EMPTY_KEYWORDS, null, null, null, getPFrameWrapper(), null};
+        return new Object[]{PKeyword.EMPTY_KEYWORDS, null, null, null, null, getPFrameWrapper(), null};
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -183,6 +186,14 @@ public final class PArguments {
 
     public static void setGeneratorFrame(Object[] arguments, Frame generatorFrame) {
         arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
+    }
+
+    public static Frame getCallerFrame(Frame frame) {
+        return (Frame) frame.getArguments()[INDEX_CALLER_FRAME];
+    }
+
+    public static void setCallerFrame(Object[] arguments, Frame callerFrame) {
+        arguments[INDEX_CALLER_FRAME] = callerFrame;
     }
 
     public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {

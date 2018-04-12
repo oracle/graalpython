@@ -105,6 +105,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -128,7 +129,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -345,10 +345,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
         @Child private GetItemNode getNameNode = GetItemNode.create();
+        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
 
         @Specialization
         public Object eval(@SuppressWarnings("unused") VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(expression, callerGlobals, callerGlobals, callerClosure);
@@ -366,7 +367,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object eval(@SuppressWarnings("unused") VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(expression, callerGlobals, locals, callerClosure);
@@ -374,7 +375,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object eval(@SuppressWarnings("unused") VirtualFrame frame, PythonParseResult code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, callerGlobals, callerGlobals, callerClosure);
@@ -382,14 +383,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object eval(@SuppressWarnings("unused") VirtualFrame frame, PythonParseResult code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, globals, globals, callerClosure);
         }
 
         @Specialization
         public Object eval(@SuppressWarnings("unused") VirtualFrame frame, PythonParseResult code, PythonObject globals, PythonObject locals) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, globals, locals, callerClosure);
         }
@@ -397,7 +398,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object eval(VirtualFrame frame, PythonParseResult code, PNone globals, PythonObject locals) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, callerGlobals, locals, callerClosure);
