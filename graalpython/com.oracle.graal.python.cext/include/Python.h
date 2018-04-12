@@ -94,6 +94,7 @@
 #include "pyctype.h"
 #include "bytearrayobject.h"
 #include "warnings.h"
+#include "patchlevel.h"
 
 // our impls
 #ifdef Py_True
