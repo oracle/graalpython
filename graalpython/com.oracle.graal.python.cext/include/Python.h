@@ -116,9 +116,9 @@
 
 // TODO: we must extend the refcounting behavior to support handles to managed objects
 #undef Py_DECREF
-#define Py_DECREF(o)
+#define Py_DECREF(o) 0
 #undef Py_INCREF
-#define Py_INCREF(o)
+#define Py_INCREF(o) 0
 
 
 /* 
