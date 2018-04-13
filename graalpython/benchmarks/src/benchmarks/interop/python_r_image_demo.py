@@ -53,7 +53,8 @@ load_jpeg = eval(compile("""function(file.name) {
 
 print("stage 1")
 
-raw_data = load_jpeg(os.sep.join(working_dir_parts.append("img.csv.gz")))
+working_dir_parts.append("img.csv.gz"))
+raw_data = load_jpeg(os.sep.join(working_dir_parts))
 
 # the dimensions are R attributes; define function to access them
 getDim = eval(compile("function(v, pos) dim(v)[[pos]]", "", MIME_R))
