@@ -33,13 +33,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -79,9 +81,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
+import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PList.class)
 public class ListBuiltins extends PythonBuiltins {
@@ -531,20 +536,149 @@ public class ListBuiltins extends PythonBuiltins {
     }
 
     // list.index(x)
-    @Builtin(name = "index", fixedNumOfArguments = 2)
+    @Builtin(name = "index", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class ListIndexNode extends PythonBuiltinNode {
+        private final static String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
+
+        public abstract int execute(Object arg1, Object arg2, Object arg3, Object arg4);
+
+        private static int correctIndex(PList list, long index) {
+            long resultIndex = index;
+            if (resultIndex < 0) {
+                resultIndex += list.len();
+                if (resultIndex < 0) {
+                    return 0;
+                }
+            }
+            return (int) Math.min(resultIndex, Integer.MAX_VALUE);
+        }
+
+        @TruffleBoundary
+        private static int correctIndex(PList list, PInt index) {
+            BigInteger value = index.getValue();
+            if (value.compareTo(BigInteger.ZERO) < 0) {
+                BigInteger resultAdd = value.add(BigInteger.valueOf(list.len()));
+                if (resultAdd.compareTo(BigInteger.ZERO) < 0) {
+                    return 0;
+                }
+                return resultAdd.intValue();
+            }
+            return value.min(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
+        }
+
+        private int findIndex(PList list, Object value, int start, int end, BinaryComparisonNode eqNode) {
+            int len = list.len();
+            for (int i = start; i < end && i < len; i++) {
+                Object object = list.getItem(i);
+                if (eqNode.executeBool(object, value)) {
+                    return i;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, "x not in list");
+        }
 
         @Specialization
-        public int index(PList list, Object arg,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            int index = list.index(arg);
-            if (profile.profile(index < 0)) {
-                throw raise(ValueError, "%r is not in list", arg);
-            } else {
-                return index;
-            }
+        int index(PList self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            return findIndex(self, value, 0, self.len(), eqNode);
         }
+
+        @Specialization
+        int index(PList self, Object value, long start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            return findIndex(self, value, correctIndex(self, start), self.len(), eqNode);
+        }
+
+        @Specialization
+        int index(PList self, Object value, long start, long end,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            return findIndex(self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        }
+
+        @Specialization
+        int indexPI(PList self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            return findIndex(self, value, correctIndex(self, start), self.len(), eqNode);
+        }
+
+        @Specialization
+        int indexPIPI(PList self, Object value, PInt start, PInt end,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            return findIndex(self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        }
+
+        @Specialization
+        int indexLPI(PList self, Object value, long start, PInt end,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            return findIndex(self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        }
+
+        @Specialization
+        int indexPIL(PList self, Object value, PInt start, Long end,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            return findIndex(self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        int indexDO(PTuple self, Object value, double start, Object end) {
+            throw raise(TypeError, ERROR_TYPE_MESSAGE);
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        int indexOD(PTuple self, Object value, Object start, double end) {
+            throw raise(TypeError, ERROR_TYPE_MESSAGE);
+        }
+
+        @Specialization(guards = "!isNumber(start)")
+        int indexO(PTuple self, Object value, Object start, PNone end,
+                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
+                        @Cached("createIndexNode()") ListIndexNode indexNode) {
+
+            Object startValue = startNode.executeObject(start);
+            if (PNone.NO_VALUE == startValue || !MathGuards.isNumber(startValue)) {
+                throw raise(TypeError, ERROR_TYPE_MESSAGE);
+            }
+            return indexNode.execute(self, value, startValue, end);
+        }
+
+        @Specialization(guards = {"!isNumber(end)",})
+        int indexLO(PTuple self, Object value, long start, Object end,
+                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
+                        @Cached("createIndexNode()") ListIndexNode indexNode) {
+
+            Object endValue = endNode.executeObject(end);
+            if (PNone.NO_VALUE == endValue || !MathGuards.isNumber(endValue)) {
+                throw raise(TypeError, ERROR_TYPE_MESSAGE);
+            }
+            return indexNode.execute(self, value, start, endValue);
+        }
+
+        @Specialization(guards = {"!isNumber(start) || !isNumber(end)",})
+        int indexOO(PTuple self, Object value, Object start, Object end,
+                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
+                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
+                        @Cached("createIndexNode()") ListIndexNode indexNode) {
+
+            Object startValue = startNode.executeObject(start);
+            if (PNone.NO_VALUE == startValue || !MathGuards.isNumber(startValue)) {
+                throw raise(TypeError, ERROR_TYPE_MESSAGE);
+            }
+            Object endValue = endNode.executeObject(end);
+            if (PNone.NO_VALUE == endValue || !MathGuards.isNumber(endValue)) {
+                throw raise(TypeError, ERROR_TYPE_MESSAGE);
+            }
+            return indexNode.execute(self, value, startValue, endValue);
+        }
+
+        protected ListIndexNode createIndexNode() {
+            return ListBuiltinsFactory.ListIndexNodeFactory.create(new PNode[0]);
+        }
+
     }
 
     // list.count(x)
@@ -553,9 +687,18 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class ListCountNode extends PythonBuiltinNode {
 
         @Specialization
-        public int count(PList list, Object arg) {
-            return list.count(arg);
+        long count(PList self, Object value,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            long count = 0;
+            for (int i = 0; i < self.len(); i++) {
+                Object object = self.getItem(i);
+                if (eqNode.executeBool(object, value)) {
+                    count++;
+                }
+            }
+            return count;
         }
+
     }
 
     // list.reverse()
