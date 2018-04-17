@@ -1,0 +1,10 @@
+# zsh support
+if [[ -n "$ZSH_VERSION" ]]; then
+    autoload bashcompinit
+    bashcompinit
+fi
+
+source $(dirname $(which mx))/bash_completion/mx
+
+# allow autocomplete for files
+complete -F _mx -o default mx

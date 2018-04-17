@@ -1,0 +1,451 @@
+/*
+ * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) -2016 Jython Developers
+ *
+ * Licensed under PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
+package com.oracle.graal.python.runtime.formatting;
+
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
+public class StringFormatter {
+    int index;
+    String format;
+    StringBuilder buffer;
+    int argIndex;
+    Object args;
+    private final PythonCore core;
+
+    final char pop() {
+        try {
+            return format.charAt(index++);
+        } catch (StringIndexOutOfBoundsException e) {
+            throw core.raise(ValueError, "incomplete format");
+        }
+    }
+
+    final char peek() {
+        return format.charAt(index);
+    }
+
+    final void push() {
+        index--;
+    }
+
+    public StringFormatter(PythonCore core, String format) {
+        this.core = core;
+        index = 0;
+        this.format = format;
+        buffer = new StringBuilder(format.length() + 100);
+    }
+
+    Object getarg() {
+        Object ret = null;
+        switch (argIndex) {
+            case -3: // special index indicating a mapping
+                return args;
+            case -2: // special index indicating a single item that has already been used
+                break;
+            case -1: // special index indicating a single item that has not yet been used
+                argIndex = -2;
+                return args;
+            default:
+                ret = ((PSequence) args).getItem(argIndex++);
+                break;
+        }
+        if (ret == null) {
+            throw core.raise(TypeError, "not enough arguments for format string");
+        }
+        return ret;
+    }
+
+    int getNumber() {
+        char c = pop();
+        if (c == '*') {
+            Object o = getarg();
+            if (o instanceof Long) {
+                return ((Long) o).intValue();
+            } else if (o instanceof Integer) {
+                return (int) o;
+            } else if (o instanceof Double) {
+                return ((Double) o).intValue();
+            }
+            throw core.raise(TypeError, "* wants int");
+        } else {
+            if (Character.isDigit(c)) {
+                int numStart = index - 1;
+                while (Character.isDigit(c = pop())) {
+                }
+                index -= 1;
+                Integer i = Integer.valueOf(format.substring(numStart, index));
+                return i.intValue();
+            }
+            index -= 1;
+            return 0;
+        }
+    }
+
+    private static Object asNumber(Object arg, CallDispatchNode callNode, LookupInheritedAttributeNode lookupAttrNode) {
+        if (arg instanceof Integer || arg instanceof Long) {
+            // arg is already acceptable
+            return arg;
+        } else if (arg instanceof Double) {
+            // A common case where it is safe to return arg.__int__()
+            return ((Double) arg).intValue();
+        } else if (arg instanceof PythonObject) {
+            // Try again with arg.__int__()
+            try {
+                // Result is the result of arg.__int__() if that works
+                Object attribute = lookupAttrNode.execute(arg, __INT__);
+                if (attribute instanceof PythonCallable) {
+                    return callNode.executeCall(attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                }
+            } catch (PException e) {
+                // No __int__ defined (at Python level)
+            }
+        }
+        return arg;
+    }
+
+    private static Object asFloat(Object arg, CallDispatchNode callNode, LookupInheritedAttributeNode lookupAttrNode) {
+        if (arg instanceof Double) {
+            // arg is already acceptable
+            return arg;
+        } else {
+            try {
+                Object attribute = lookupAttrNode.execute(arg, __FLOAT__);
+                if (attribute instanceof PythonCallable) {
+                    return callNode.executeCall(attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                }
+            } catch (PException e) {
+            }
+        }
+        return arg;
+    }
+
+    /**
+     * Main service of this class: format one or more arguments with the format string supplied at
+     * construction.
+     *
+     * @param args1 tuple or map containing objects, or a single object, to convert
+     * @return result of formatting
+     */
+    @TruffleBoundary
+    public Object format(Object args1, CallDispatchNode callNode, LookupInheritedAttributeNode lookupAttrNode) {
+        PDict dict = null;
+        this.args = args1;
+
+        if (args1 instanceof PTuple) {
+            // We will simply work through the tuple elements
+            argIndex = 0;
+        } else {
+            // Not a tuple, but possibly still some kind of container: use
+            // special argIndex values.
+            argIndex = -1;
+            /*
+             * TODO: support other mappables || (!(args instanceof PSequence) && (args instanceof
+             * PythonObject && ((PythonObject) args).getAttribute("__getitem__") != null))
+             */
+            if (args1 instanceof PDict) {
+                dict = (PDict) args1;
+                argIndex = -3;
+            }
+        }
+
+        while (index < format.length()) {
+            // Read one character from the format string
+            char c = pop();
+            if (c != '%') {
+                buffer.append(c);
+                continue;
+            }
+
+            // It's a %, so the beginning of a conversion specifier. Parse it.
+
+            // Attributes to be parsed from the next format specifier
+            boolean altFlag = false;
+            char sign = InternalFormat.Spec.NONE;
+            char fill = ' ';
+            char align = '>';
+            int width = InternalFormat.Spec.UNSPECIFIED;
+            int precision = InternalFormat.Spec.UNSPECIFIED;
+
+            // A conversion specifier contains the following components, in this order:
+            // + The '%' character, which marks the start of the specifier.
+            // + Mapping key (optional), consisting of a parenthesised sequence of characters.
+            // + Conversion flags (optional), which affect the result of some conversion types.
+            // + Minimum field width (optional), or an '*' (asterisk).
+            // + Precision (optional), given as a '.' (dot) followed by the precision or '*'.
+            // + Length modifier (optional).
+            // + Conversion type.
+
+            c = pop();
+            if (c == '(') {
+                // Mapping key, consisting of a parenthesised sequence of characters.
+                if (dict == null) {
+                    throw core.raise(TypeError, "format requires a mapping");
+                }
+                // Scan along until a matching close parenthesis is found
+                int parens = 1;
+                int keyStart = index;
+                while (parens > 0) {
+                    c = pop();
+                    if (c == ')') {
+                        parens--;
+                    } else if (c == '(') {
+                        parens++;
+                    }
+                }
+                // Last c=pop() is the closing ')' while indexKey is just after the opening '('
+                String tmp = format.substring(keyStart, index - 1);
+                // Look it up using this extent as the (right type of) key.
+                this.args = dict.getItem(tmp);
+            } else {
+                // Not a mapping key: next clause will re-read c.
+                push();
+            }
+
+            // Conversion flags (optional) that affect the result of some conversion types.
+            while (true) {
+                switch (c = pop()) {
+                    case '-':
+                        align = '<';
+                        continue;
+                    case '+':
+                        sign = '+';
+                        continue;
+                    case ' ':
+                        if (!InternalFormat.Spec.specified(sign)) {
+                            // Blank sign only wins if '+' not specified.
+                            sign = ' ';
+                        }
+                        continue;
+                    case '#':
+                        altFlag = true;
+                        continue;
+                    case '0':
+                        fill = '0';
+                        continue;
+                }
+                break;
+            }
+            // Push back c as next clause will re-read c.
+            push();
+
+            /*
+             * Minimum field width (optional). If specified as an '*' (asterisk), the actual width
+             * is read from the next element of the tuple in values, and the object to convert comes
+             * after the minimum field width and optional precision. A custom getNumber() takes care
+             * of the '*' case.
+             */
+            width = getNumber();
+            if (width < 0) {
+                width = -width;
+                align = '<';
+            }
+
+            /*
+             * Precision (optional), given as a '.' (dot) followed by the precision. If specified as
+             * '*' (an asterisk), the actual precision is read from the next element of the tuple in
+             * values, and the value to convert comes after the precision. A custom getNumber()
+             * takes care of the '*' case.
+             */
+            c = pop();
+            if (c == '.') {
+                precision = getNumber();
+                if (precision < -1) {
+                    precision = 0;
+                }
+                c = pop();
+            }
+
+            // Length modifier (optional). (Compatibility feature?) It has no effect.
+            if (c == 'h' || c == 'l' || c == 'L') {
+                c = pop();
+            }
+
+            /*
+             * As a function of the conversion type (currently in c) override some of the formatting
+             * flags we read from the format specification.
+             */
+            switch (c) {
+                case 's':
+                case 'r':
+                case 'c':
+                case '%':
+                    // These have string-like results: fill, if needed, is always blank.
+                    fill = ' ';
+                    break;
+
+                default:
+                    if (fill == '0' && align == '>') {
+                        // Zero-fill comes after the sign in right-justification.
+                        align = '=';
+                    } else {
+                        // If left-justifying, the fill is always blank.
+                        fill = ' ';
+                    }
+            }
+
+            /*
+             * Encode as an InternalFormat.Spec. The values in the constructor always have specified
+             * values, except for sign, width and precision.
+             */
+            InternalFormat.Spec spec = new InternalFormat.Spec(fill, align, sign, altFlag, width, false, precision, c);
+
+            /*
+             * Process argument according to format specification decoded from the string. It is
+             * important we don't read the argument from the list until this point because of the
+             * possibility that width and precision were specified via the argument list.
+             */
+
+            // Depending on the type of conversion, we use one of these formatters:
+            FloatFormatter ff;
+            IntegerFormatter fi;
+            TextFormatter ft;
+            InternalFormat.Formatter f; // = ff, fi or ft, whichever we actually use.
+
+            switch (spec.type) {
+                case 'b':
+                    Object arg = getarg();
+                    f = ft = new TextFormatter(core, buffer, spec);
+                    ft.setBytes(true);
+                    Object bytesAttribute;
+                    if (arg instanceof String) {
+                        ft.format((String) arg);
+                    } else if (arg instanceof PString) {
+                        ft.format(((PString) arg).toString());
+                    } else if (arg instanceof PBytes) {
+                        ft.format(((PBytes) arg).toString());
+                    } else if (arg instanceof PythonObject && ((bytesAttribute = lookupAttrNode.execute(arg, __BYTES__)) != PNone.NO_VALUE)) {
+                        Object result = callNode.executeCall(bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                        ft.format(result.toString());
+                    } else {
+                        throw core.raise(TypeError, " %%b requires bytes, or an object that implements %s, not '%p'", __BYTES__, arg);
+                    }
+                    break;
+                case 's': // String: converts any object using __str__(), __unicode__() ...
+                case 'r': // ... or repr().
+                    arg = getarg();
+                    // Get hold of the actual object to display (may set needUnicode)
+                    Object attribute = spec.type == 's' ? lookupAttrNode.execute(arg, __STR__) : lookupAttrNode.execute(arg, __REPR__);
+                    if (attribute != PNone.NO_VALUE) {
+                        Object result = callNode.executeCall(attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                        if (PGuards.isString(result)) {
+                            // Format the str/unicode form of the argument using this Spec.
+                            f = ft = new TextFormatter(core, buffer, spec);
+                            ft.format(result.toString());
+                            break;
+                        }
+                    }
+                    throw core.raise(TypeError, " %%r requires an object that implements %s", (spec.type == 's' ? __STR__ : __REPR__));
+
+                case 'd': // All integer formats (+case for X).
+                case 'o':
+                case 'x':
+                case 'X':
+                case 'c': // Single character (accepts integer or single character string).
+                case 'u': // Obsolete type identical to 'd'.
+                case 'i': // Compatibility with scanf().
+                    // Format the argument using this Spec.
+                    f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
+
+                    arg = getarg();
+
+                    // Note various types accepted here as long as they have an __int__ method.
+                    Object argAsNumber = asNumber(arg, callNode, lookupAttrNode);
+
+                    // We have to check what we got back.
+                    if (argAsNumber instanceof Integer) {
+                        fi.format((Integer) argAsNumber);
+                    } else if (argAsNumber instanceof Long) {
+                        fi.format(((Long) argAsNumber).intValue());
+                    } else {
+                        // It couldn't be converted, raise the error here
+                        throw core.raise(TypeError, "%%%c format: a number is required, not %p", spec.type, arg);
+                    }
+
+                    break;
+
+                case 'e': // All floating point formats (+case).
+                case 'E':
+                case 'f':
+                case 'F':
+                case 'g':
+                case 'G':
+
+                    // Format using this Spec the double form of the argument.
+                    f = ff = new FloatFormatter(core, buffer, spec);
+
+                    // Note various types accepted here as long as they have a __float__ method.
+                    arg = getarg();
+                    Object argAsFloat = asFloat(arg, callNode, lookupAttrNode);
+
+                    // We have to check what we got back..
+                    if (argAsFloat instanceof Double) {
+                        ff.format((Double) argAsFloat);
+                    } else {
+                        // It couldn't be converted, raise the error here
+                        throw core.raise(TypeError, "float argument required, not %p", arg);
+                    }
+
+                    break;
+                case '%': // Percent symbol, but surprisingly, padded.
+                    // We use an integer formatter.
+                    f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
+                    fi.format('%');
+                    break;
+
+                default:
+                    throw core.raise(ValueError, "unsupported format character '%c' (0x%x) at index %d", spec.type, spec.type, index - 1);
+            }
+
+            // Pad the result as specified (in-place, in the buffer).
+            f.pad();
+        }
+
+        /*
+         * All fields in the format string have been used to convert arguments (or used the argument
+         * as a width, etc.). This had better not leave any arguments unused. Note argIndex is an
+         * index into args or has a special value. If args is a 'proper' index, It should now be out
+         * of range; if a special value, it would be wrong if it were -1, indicating a single item
+         * that has not yet been used.
+         */
+        if (argIndex == -1 || (argIndex >= 0 && ((PSequence) args1).len() > argIndex + 1)) {
+            throw core.raise(TypeError, "not all arguments converted during string formatting");
+        }
+
+        // Return the final buffer contents as a str or unicode as appropriate.
+        return buffer.toString();
+    }
+
+    private static Object[] createArgs(Object self) {
+        Object[] args = PArguments.create();
+        args = PArguments.insertSelf(args, self);
+        return args;
+    }
+
+}

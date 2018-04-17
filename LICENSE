@@ -1,0 +1,300 @@
+Except when otherwise stated in this file, in LICENSE files in distribution
+directories, or in information at the beginning of each file, all software and
+documentation is:
+
+  Copyright (c) 2018, Oracle and/or its affiliates.
+
+  The Universal Permissive License (UPL), Version 1.0
+
+  Subject to the condition set forth below, permission is hereby granted to any
+  person obtaining a copy of this software, associated documentation and/or data
+  (collectively the "Software"), free of charge and under any and all copyright
+  rights in the Software, and any and all patent rights owned or freely
+  licensable by each licensor hereunder covering either (i) the unmodified
+  Software as contributed to or provided by such licensor, or (ii) the Larger
+  Works (as defined below), to deal in both
+
+   (a) the Software, and
+   (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+   one is included with the Software (each a “Larger Work” to which the Software
+   is contributed by such licensors),
+
+  without restriction, including without limitation the rights to copy, create
+  derivative works of, display, perform, and distribute the Software and make,
+  use, sell, offer for sale, import, export, have made, and have sold the
+  Software and the Larger Work(s), and to sublicense the foregoing rights on
+  either these or other terms.
+
+  This license is subject to the following condition:
+
+  The above copyright notice and either this complete permission notice or at a
+  minimum a reference to the UPL must be included in all copies or substantial
+  portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+
++-------------------------------------------------------------------------------+
+| This work includes code from the multiple other projects, under the following |
+| copyrights and licenses. Each file this applies to also includes the          |
+| appropriate license and copyright in its header, or else a parent folder      |
+| includes the license information in a LICENSE file                            |
++-------------------------------------------------------------------------------+
+
+
+The project is derived from ZipPy:
+
+  Copyright (c) Regents of the University of California and individual
+  contributors. All rights reserved.
+
+  The 2-Clause BSD License
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+Some Java code is derived from Jython 2.7 source code:
+
+  Copyright (c) Jython Developers; All Rights Reserved.
+  Copyright (c) Python Software Foundation; All Rights Reserved.
+
+  Python Software Foundation License Version 2
+
+  1. This LICENSE AGREEMENT is between the Python Software Foundation ("PSF"),
+  and the Individual or Organization ("Licensee") accessing and otherwise using
+  this software ("Jython") in source or binary form and its associated
+  documentation.
+
+  2. Subject to the terms and conditions of this License Agreement, PSF hereby
+  grants Licensee a nonexclusive, royalty-free, world-wide license to reproduce,
+  analyze, test, perform and/or display publicly, prepare derivative works,
+  distribute, and otherwise use Jython alone or in any derivative version,
+  provided, however, that PSF's License Agreement and PSF's notice of copyright,
+  i.e., "Copyright (c) 2007 Python Software Foundation; All Rights Reserved" are
+  retained in Jython alone or in any derivative version prepared by Licensee.
+
+  3. In the event Licensee prepares a derivative work that is based on or
+  incorporates Jython or any part thereof, and wants to make the derivative work
+  available to others as provided herein, then Licensee hereby agrees to include
+  in any such work a brief summary of the changes made to Jython.
+
+  4. PSF is making Jython available to Licensee on an "AS IS" basis. PSF MAKES
+  NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED. BY WAY OF EXAMPLE, BUT
+  NOT LIMITATION, PSF MAKES NO AND DISCLAIMS ANY REPRESENTATION OR WARRANTY OF
+  MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF
+  JYTHON WILL NOT INFRINGE ANY THIRD PARTY RIGHTS.
+
+  5. PSF SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF JYTHON FOR ANY
+  INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS A RESULT OF
+  MODIFYING, DISTRIBUTING, OR OTHERWISE USING JYTHON, OR ANY DERIVATIVE THEREOF,
+  EVEN IF ADVISED OF THE POSSIBILITY THEREOF.
+
+  6. This License Agreement will automatically terminate upon a material breach
+  of its terms and conditions.
+
+  7. Nothing in this License Agreement shall be deemed to create any
+  relationship of agency, partnership, or joint venture between PSF and
+  Licensee. This License Agreement does not grant permission to use PSF
+  trademarks or trade name in a trademark sense to endorse or promote products
+  or services of Licensee, or any third party.
+
+  8. By copying, installing or otherwise using Jython, Licensee agrees to be
+  bound by the terms and conditions of this License Agreement.
+
+
+The standard library, some unittests, C headers, and parts of the C API
+implementation are derived from the Python project:
+
+  Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
+  2011, 2012, 2013, 2014, 2015, 2016, 2017 Python Software Foundation; All
+  Rights Reserved
+
+  Python Software Foundation License Version 2
+
+  1. This LICENSE AGREEMENT is between the Python Software Foundation
+  ("PSF"), and the Individual or Organization ("Licensee") accessing and
+  otherwise using this software ("Python") in source or binary form and
+  its associated documentation.
+
+  2. Subject to the terms and conditions of this License Agreement, PSF hereby
+  grants Licensee a nonexclusive, royalty-free, world-wide license to reproduce,
+  analyze, test, perform and/or display publicly, prepare derivative works,
+  distribute, and otherwise use Python alone or in any derivative version,
+  provided, however, that PSF's License Agreement and PSF's notice of copyright,
+  i.e., "Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
+  2011, 2012, 2013, 2014, 2015, 2016, 2017 Python Software Foundation; All Rights
+  Reserved" are retained in Python alone or in any derivative version prepared by
+  Licensee.
+
+  3. In the event Licensee prepares a derivative work that is based on or
+  incorporates Python or any part thereof, and wants to make the derivative work
+  available to others as provided herein, then Licensee hereby agrees to include
+  in any such work a brief summary of the changes made to Python.
+
+  4. PSF is making Python available to Licensee on an "AS IS" basis.  PSF MAKES
+  NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED.  BY WAY OF EXAMPLE, BUT
+  NOT LIMITATION, PSF MAKES NO AND DISCLAIMS ANY REPRESENTATION OR WARRANTY OF
+  MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF
+  PYTHON WILL NOT INFRINGE ANY THIRD PARTY RIGHTS.
+
+  5. PSF SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF PYTHON FOR ANY
+  INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS A RESULT OF
+  MODIFYING, DISTRIBUTING, OR OTHERWISE USING PYTHON, OR ANY DERIVATIVE THEREOF,
+  EVEN IF ADVISED OF THE POSSIBILITY THEREOF.
+
+  6. This License Agreement will automatically terminate upon a material breach
+  of its terms and conditions.
+
+  7. Nothing in this License Agreement shall be deemed to create any
+  relationship of agency, partnership, or joint venture between PSF and
+  Licensee.  This License Agreement does not grant permission to use PSF
+  trademarks or trade name in a trademark sense to endorse or promote products
+  or services of Licensee, or any third party.
+
+  8. By copying, installing or otherwise using Python, Licensee agrees to be
+  bound by the terms and conditions of this License Agreement.
+
+
+The standard library and parts of the core library are derived from the PyPy
+project:
+
+  Copyright (c) PyPy Copyright holders
+
+  The MIT License
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+
+The grammar and generated parser for Python is derived from a Python3 parser
+included with the ANTLR4 grammars project:
+
+  Copyright (c) 2014 by Bart Kiers
+
+  The MIT License
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+
+The ANTLR4 runtime bundled with andd required to run this project is licensed as
+follows:
+
+  Copyright (c) 2012 Terence Parr and Sam Harwell. All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+  2. Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+  3. Neither the name of the copyright holder nor the names of its contributors
+  may be used to endorse or promote products derived from this software without
+  specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+A number of included benchmarks are adapted from The Computer Language
+Benchmarks Game:
+
+  Copyright 2008-2010 Isaac Gouy
+  All rights reserved.
+
+  Revised BSD license
+
+  This is a specific instance of the Open Source Initiative (OSI) BSD license
+  template http://www.opensource.org/licenses/bsd-license.php
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+
+    Redistributions of source code must retain the above copyright notice, this
+    list of conditions and the following disclaimer.
+
+    Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+    Neither the name of "The Computer Language Benchmarks Game" nor the name of
+    "The Computer Language Shootout Benchmarks" nor the name "nanobench" nor the
+    name "bencher" nor the names of its contributors may be used to endorse or
+    promote products derived from this software without specific prior written
+    permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
