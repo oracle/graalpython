@@ -1,0 +1,322 @@
+# Copyright (c) 2018, Oracle and/or its affiliates.
+#
+# The Universal Permissive License (UPL), Version 1.0
+#
+# Subject to the condition set forth below, permission is hereby granted to any
+# person obtaining a copy of this software, associated documentation and/or data
+# (collectively the "Software"), free of charge and under any and all copyright
+# rights in the Software, and any and all patent rights owned or freely
+# licensable by each licensor hereunder covering either (i) the unmodified
+# Software as contributed to or provided by such licensor, or (ii) the Larger
+# Works (as defined below), to deal in both
+#
+# (a) the Software, and
+# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+#     one is included with the Software (each a "Larger Work" to which the
+#     Software is contributed by such licensors),
+#
+# without restriction, including without limitation the rights to copy, create
+# derivative works of, display, perform, and distribute the Software and make,
+# use, sell, offer for sale, import, export, have made, and have sold the
+# Software and the Larger Work(s), and to sublicense the foregoing rights on
+# either these or other terms.
+#
+# This license is subject to the following condition:
+#
+# The above copyright notice and either this complete permission notice or at a
+# minimum a reference to the UPL must be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+#!/usr/bin/env mx python
+import _io
+import sys
+
+
+os = sys.modules.get("posix", sys.modules.get("nt", None))
+if os is None:
+    raise ImportError("posix or nt module is required in builtin modules")
+
+
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+BOLD = '\033[1m'
+
+verbose = False
+
+
+class SkipTest(BaseException):
+    pass
+
+
+class TestCase(object):
+    def __init__(self):
+        self.exceptions = []
+        self.passed = 0
+        self.failed = 0
+
+    def run_safely(self, func):
+        if verbose:
+            print(u"\n\t\u21B3 ", func.__name__, " ", end="")
+        try:
+            func()
+        except BaseException as e:
+            if isinstance(e, SkipTest):
+                print("Skipped: %s" % e)
+            else:
+                code = func.__code__
+                self.exceptions.append(
+                    ("%s:%d (%s)" % (code.co_filename, code.co_firstlineno, func), e)
+                )
+                return False
+        else:
+            return True
+
+    def run_test(self, func):
+        if "test_main" in str(func):
+            pass
+        elif not hasattr(func, "__call__"):
+            pass
+        elif self.run_safely(func):
+            self.success()
+        else:
+            self.failure()
+
+    def success(self):
+        self.passed += 1
+        print(".", end="", flush=True)
+
+    def failure(self):
+        self.failed += 1
+        fail_msg = FAIL+BOLD+"F"+ENDC if verbose else "F"
+        print(fail_msg, end="", flush=True)
+
+    def assertTrue(self, value, msg=""):
+        assert value, msg
+
+    def assertFalse(self, value, msg=""):
+        assert not value, msg
+
+    def assertIsNone(self, value, msg=""):
+        if not msg:
+            msg = "Expected '%r' to be None" % value
+        assert value is None, msg
+
+    def assertIs(self, actual, expected, msg=""):
+        if not msg:
+            msg = "Expected '%r' to be '%r'" % (actual, expected)
+        assert actual is expected, msg
+
+    def assertEqual(self, expected, actual, msg=None):
+        if not msg:
+            msg = "Expected '%r' to be equal to '%r'" % (actual, expected)
+        assert expected == actual, msg
+
+    def assertNotEqual(self, expected, actual, msg=None):
+        if not msg:
+            msg = "Expected '%r' to not be equal to '%r'" % (actual, expected)
+        assert expected != actual, msg
+
+    def assertAlmostEqual(self, expected, actual, msg=None):
+        self.assertEqual(round(expected, 2), round(actual, 2), msg)
+
+    def assertGreater(self, expected, actual, msg=None):
+        if not msg:
+            msg = "Expected '%r' to be greater than '%r'" % (actual, expected)
+        assert expected > actual, msg
+
+    def assertSequenceEqual(self, expected, actual, msg=None):
+        if not msg:
+            msg = "Expected '%r' to be equal to '%r'" % (actual, expected)
+        assert len(expected) == len(actual), msg
+        actual_iter = iter(actual)
+        for expected_value in expected:
+            assert expected_value == next(actual_iter), msg
+
+    class assertRaises():
+        def __init__(self, exc_type, function=None, *args, **kwargs):
+            if function is None:
+                self.exc_type = exc_type
+            else:
+                try:
+                    function(*args, **kwargs)
+                except exc_type:
+                    pass
+                else:
+                    assert False, "expected '%r' to raise '%r'" % (function, exc_type)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            if not exc_type:
+                assert False, "expected '%r' to raise '%r'" % (function, exc_type)
+            elif self.exc_type in exc_type.mro():
+                self.exception = exc
+                return True
+
+    def assertIn(self, expected, in_str, msg=""):
+        if not msg:
+            msg = "Expected '%r' to be in '%r'" % (expected, in_str)
+        assert expected in in_str, msg
+
+    @classmethod
+    def run(cls, items=None):
+        instance = cls()
+        if items is None:
+            items = []
+            for typ in cls.mro():
+                if typ is TestCase:
+                    break
+                items += typ.__dict__.items()
+        if hasattr(instance, "setUp"):
+            if not instance.run_safely(instance.setUp):
+                return instance
+        for k,v in items:
+            if k.startswith("test"):
+                if patterns:
+                    if not any(p in k for p in patterns):
+                        continue
+                instance.run_test(getattr(instance, k, v))
+        if hasattr(instance, "tearDown"):
+            instance.run_safely(instance.tearDown)
+        return instance
+
+    @staticmethod
+    def runClass(cls):
+        if TestCase in cls.mro():
+            return cls.run()
+        class ThisTestCase(cls, TestCase): pass
+        return ThisTestCase.run()
+
+
+class TestRunner(object):
+    def __init__(self, paths):
+        self.testfiles = TestRunner.find_testfiles(paths)
+        self.exceptions = []
+        self.passed = 0
+        self.failed = 0
+
+    @staticmethod
+    def find_testfiles(paths):
+        testfiles = []
+        while paths:
+            path = paths.pop()
+            if path.endswith(".py") and path.rpartition("/")[2].startswith("test_"):
+                testfiles.append(path)
+            else:
+                try:
+                    paths += [(path + f if path.endswith("/") else "%s/%s" % (path, f)) for f in os.listdir(path)]
+                except OSError:
+                    pass
+        return testfiles
+
+    def test_modules(self):
+        for testfile in self.testfiles:
+            name = testfile.rpartition("/")[2].partition(".")[0].replace('.py', '')
+            directory = testfile.rpartition("/")[0]
+            pkg = []
+            while any(f.endswith("__init__.py") for f in os.listdir(directory)):
+                directory, slash, postfix = directory.rpartition("/")
+                pkg.insert(0, postfix)
+            if pkg:
+                sys.path.insert(0, directory)
+                try:
+                    test_module = __import__(".".join(pkg + [name]))
+                    for p in pkg[1:]:
+                        test_module = getattr(test_module, p)
+                    test_module = getattr(test_module, name)
+                except BaseException as e:
+                    self.exceptions.append((testfile, e))
+                else:
+                    yield test_module
+                sys.path.pop(0)
+            else:
+                test_module = type(sys)(name, testfile)
+                try:
+                    with _io.FileIO(testfile, "r") as f:
+                        test_module.__file__ = testfile
+                        exec(compile(f.readall(), testfile, "exec"), test_module.__dict__)
+                except BaseException as e:
+                    self.exceptions.append((testfile, e))
+                else:
+                    yield test_module
+
+    def run(self):
+        for module in self.test_modules():
+            if verbose:
+                print(u"\n\u25B9 ", module.__name__, end="")
+            # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
+            module_dict = dict(module.__dict__)
+            for k,v in module_dict.items():
+                if (k.startswith("Test") or k.endswith("Test") or k.endswith("Tests")) and isinstance(v, type):
+                    testcase = TestCase.runClass(v)
+                else:
+                    testcase = TestCase.run(items=[(k, v)])
+                self.exceptions += testcase.exceptions
+                self.passed += testcase.passed
+                self.failed += testcase.failed
+            if verbose:
+                print()
+        print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
+        for e in self.exceptions:
+            print(e)
+        if self.exceptions or self.failed:
+            os._exit(1)
+
+
+def skipIf(boolean, *args, **kwargs):
+    return skipUnless(not boolean, *args, **kwargs)
+
+
+def skipUnless(boolean, msg=""):
+    if not boolean:
+        def decorator(f):
+            def wrapper(*args, **kwargs):
+                pass
+            return wrapper
+    else:
+        def decorator(f):
+            return f
+    return decorator
+
+
+if __name__ == "__main__":
+    sys.modules["unittest"] = sys.modules["__main__"]
+    patterns = []
+    argv = sys.argv[:]
+    idx = 0
+    while idx < len(argv):
+        if argv[idx] == "-k":
+            argv.pop(idx)
+            try:
+                patterns.append(argv.pop(idx))
+            except IndexError:
+                print("-k needs an argument")
+        idx += 1
+
+    if argv[1] == "-v":
+        verbose = True
+        paths = argv[2:]
+    else:
+        verbose = False
+        paths = argv[1:]
+
+    python_paths = set()
+    for pth in paths:
+        module_path = pth
+        if pth.endswith('.py'):
+            module_path = pth.rsplit('/', 1)[0]
+        python_paths.add(module_path)
+
+    for pth in python_paths:
+        sys.path.append(pth)
+
+    TestRunner(paths).run()

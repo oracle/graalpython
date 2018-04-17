@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2013, Regents of the University of California
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are
+ * permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ * conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list of
+ * conditions and the following disclaimer in the documentation and/or other materials provided
+ * with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
+ * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.oracle.graal.python.builtins.objects.module;
+
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PATH__;
+
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+
+public final class PythonModule extends PythonObject {
+
+    private final String name;
+    private final String file;
+
+    public PythonModule(PythonClass clazz, String name, String file) {
+        super(clazz);
+        this.name = name;
+        this.file = file;
+        addDefaultConstants(name);
+    }
+
+    private void addDefaultConstants(String moduleName) {
+        setAttribute(__NAME__, moduleName);
+        setAttribute(__DOC__, PNone.NONE);
+        setAttribute(__PACKAGE__, PNone.NONE);
+
+        if (file != null) {
+            setAttribute(__FILE__, file);
+            setAttribute(__PATH__, file);
+        }
+    }
+
+    public String getModuleName() {
+        return name;
+    }
+
+    public String getModulePath() {
+        return file;
+    }
+
+    @Override
+    public PythonObject getValidStorageFullLookup(String attributeId) {
+        if (isOwnAttribute(attributeId)) {
+            return this;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "<module '" + this.getAttribute(__NAME__) + "'>";
+    }
+
+}

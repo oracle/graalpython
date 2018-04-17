@@ -1,0 +1,125 @@
+/*
+ * Copyright (c) 2017, Oracle and/or its affiliates.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or data
+ * (collectively the "Software"), free of charge and under any and all copyright
+ * rights in the Software, and any and all patent rights owned or freely
+ * licensable by each licensor hereunder covering either (i) the unmodified
+ * Software as contributed to or provided by such licensor, or (ii) the Larger
+ * Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ *     one is included with the Software (each a "Larger Work" to which the
+ *     Software is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package com.oracle.graal.python.nodes.classes;
+
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalNode;
+import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeInfo;
+
+@NodeInfo(shortName = "read_class_member")
+public abstract class ReadClassAttributeNode extends PNode implements ReadLocalNode {
+    private final String identifier;
+    private final boolean isFreeVar;
+
+    @Child private PNode getNsItem;
+    @Child private PNode readGlobal;
+    @Child private PNode readCellLocal;
+
+    ReadClassAttributeNode(String identifier, FrameSlot cellSlot, boolean isFreeVar) {
+        this.identifier = identifier;
+        this.isFreeVar = isFreeVar;
+
+        NodeFactory factory = getNodeFactory();
+        ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
+
+        if (cellSlot != null) {
+            this.readCellLocal = factory.createReadLocalCell(cellSlot, isFreeVar);
+        }
+        this.getNsItem = factory.createGetItem(namespace, this.identifier);
+        this.readGlobal = factory.createReadGlobalOrBuiltinScope(this.identifier);
+    }
+
+    public static PNode create(String name, FrameSlot cellSlot, boolean isFreeVar) {
+        return ReadClassAttributeNodeGen.create(name, cellSlot, isFreeVar);
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    @Override
+    public PNode makeDeleteNode() {
+        return DeleteClassAttributeNode.create(identifier);
+    }
+
+    @Override
+    public PNode makeWriteNode(PNode rhs) {
+        PNode right = rhs;
+        // freevars pass through the special Class scope
+        if (readCellLocal != null && !isFreeVar) {
+            right = ((ReadNode) readCellLocal).makeWriteNode(rhs);
+        }
+        // assignments always got to the innermost scope
+        return ((ReadNode) getNsItem).makeWriteNode(right);
+    }
+
+    @Specialization
+    Object read(VirtualFrame frame) {
+        try {
+            return getNsItem.execute(frame);
+        } catch (PException pe) {
+            // class namespace overrides closure
+            PFrame pFrame = PArguments.getPFrame(frame);
+            if (pFrame != null) {
+                PDict localsDict = pFrame.getLocalsDict();
+                if (localsDict != null && localsDict.hasKey(identifier)) {
+                    return localsDict.getItem(identifier);
+                }
+            }
+
+            // read from closure
+            if (readCellLocal != null) {
+                return readCellLocal.execute(frame);
+            }
+
+            // read global or builtin
+            return readGlobal.execute(frame);
+        }
+    }
+}

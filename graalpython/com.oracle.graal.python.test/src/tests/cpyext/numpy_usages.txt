@@ -1,0 +1,354 @@
+#define INT_MAX 2147483647                                   // INT_MAX used 6 times in numpy-master
+#define LONG_MAX 9223372036854775807L                        // LONG_MAX used 3 times in numpy-master
+#define LONG_MIN (-9223372036854775807L -1L)                 // LONG_MIN used 1 times in numpy-master
+#define METH_KEYWORDS 0x0002                                 // METH_KEYWORDS used 100 times in numpy-master
+#define METH_NOARGS 0x0004                                   // METH_NOARGS used 9 times in numpy-master
+#define METH_VARARGS 0x0001                                  // METH_VARARGS used 150 times in numpy-master
+#define PYTHON_API_VERSION 1013                              // PYTHON_API_VERSION used 2 times in numpy-master
+#define PY_LONG_LONG long long                               // PY_LONG_LONG used 4 times in numpy-master
+#define PY_MAJOR_VERSION 3                                   // PY_MAJOR_VERSION used 8 times in numpy-master
+#define PY_VERSION_HEX ((3 << 24) | (6 << 16) | (4 << 8) | (0xF << 4) | (0 << 0)) // PY_VERSION_HEX used 32 times in numpy-master
+#define PyBUF_ANY_CONTIGUOUS (0x0080 | (0x0010 | 0x0008))    // PyBUF_ANY_CONTIGUOUS used 4 times in numpy-master
+#define PyBUF_C_CONTIGUOUS (0x0020 | (0x0010 | 0x0008))      // PyBUF_C_CONTIGUOUS used 2 times in numpy-master
+#define PyBUF_FORMAT 0x0004                                  // PyBUF_FORMAT used 4 times in numpy-master
+#define PyBUF_F_CONTIGUOUS (0x0040 | (0x0010 | 0x0008))      // PyBUF_F_CONTIGUOUS used 4 times in numpy-master
+#define PyBUF_ND 0x0008                                      // PyBUF_ND used 3 times in numpy-master
+#define PyBUF_SIMPLE 0                                       // PyBUF_SIMPLE used 2 times in numpy-master
+#define PyBUF_STRIDES (0x0010 | 0x0008)                      // PyBUF_STRIDES used 7 times in numpy-master
+#define PyBUF_WRITABLE 0x0001                                // PyBUF_WRITABLE used 1 times in numpy-master
+#define PyBUF_WRITEABLE 0x0001                               // PyBUF_WRITEABLE used 3 times in numpy-master
+#define PyBool_Check(x) ((((PyObject*)(x))->ob_type) == &PyBool_Type) // PyBool_Check used 10 times in numpy-master
+#define PyBytes_AS_STRING(op) ((__builtin_expect(!(((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 27))) != 0)), 0) ? __assert_rtn(__func__, \"/var/folders/c4/k9r2gpwn6mg8b6whdc85dcjm0000gn/T/preprocessor_test2078706399113555113.cpp\", 1241, \"PyBytes_Check(op)\") : (void)0), (((PyBytesObject *)(op))->ob_sval)) // PyBytes_AS_STRING used 17 times in numpy-master
+#define PyBytes_Check(op) ((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 27))) != 0) // PyBytes_Check used 35 times in numpy-master
+#define PyBytes_GET_SIZE(op) ((__builtin_expect(!(((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 27))) != 0)), 0) ? __assert_rtn(__func__, \"/var/folders/c4/k9r2gpwn6mg8b6whdc85dcjm0000gn/T/preprocessor_test2078706399113555113.cpp\", 1250, \"PyBytes_Check(op)\") : (void)0),(((PyVarObject*)(op))->ob_size)) // PyBytes_GET_SIZE used 10 times in numpy-master
+#define PyCapsule_CheckExact(op) ((((PyObject*)(op))->ob_type) == &PyCapsule_Type) // PyCapsule_CheckExact used 2 times in numpy-master
+#define PyComplex_Check(op) ((((PyObject*)(op))->ob_type) == (&PyComplex_Type) || PyType_IsSubtype((((PyObject*)(op))->ob_type), (&PyComplex_Type))) // PyComplex_Check used 6 times in numpy-master
+#define PyDict_Check(op) ((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 29))) != 0) // PyDict_Check used 11 times in numpy-master
+#define PyDict_CheckExact(op) ((((PyObject*)(op))->ob_type) == &PyDict_Type) // PyDict_CheckExact used 2 times in numpy-master
+#define PyErr_BadInternalCall() _PyErr_BadInternalCall(\"/var/folders/c4/k9r2gpwn6mg8b6whdc85dcjm0000gn/T/preprocessor_test2078706399113555113.cpp\", 1469) // PyErr_BadInternalCall used 2 times in numpy-master
+#define PyErr_Warn(category, msg) PyErr_WarnEx(category, msg, 1) // PyErr_Warn used 2 times in numpy-master
+#define PyEval_CallObject(func,arg) PyEval_CallObjectWithKeywords(func, arg, (PyObject *)__null) // PyEval_CallObject used 2 times in numpy-master
+#define PyFloat_AS_DOUBLE(op) (((PyFloatObject *)(op))->ob_fval) // PyFloat_AS_DOUBLE used 1 times in numpy-master
+#define PyFloat_Check(op) ((((PyObject*)(op))->ob_type) == (&PyFloat_Type) || PyType_IsSubtype((((PyObject*)(op))->ob_type), (&PyFloat_Type))) // PyFloat_Check used 6 times in numpy-master
+#define PyIndex_Check(obj) ((obj)->ob_type->tp_as_number != __null && (obj)->ob_type->tp_as_number->nb_index != __null) // PyIndex_Check used 4 times in numpy-master
+#define PyList_Check(op) ((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 25))) != 0) // PyList_Check used 19 times in numpy-master
+#define PyList_CheckExact(op) ((((PyObject*)(op))->ob_type) == &PyList_Type) // PyList_CheckExact used 1 times in numpy-master
+#define PyList_GET_ITEM(op, i) (((PyListObject *)(op))->ob_item[i]) // PyList_GET_ITEM used 11 times in numpy-master
+#define PyList_GET_SIZE(op) (((PyVarObject*)(op))->ob_size)  // PyList_GET_SIZE used 10 times in numpy-master
+#define PyList_SET_ITEM(op, i, v) (((PyListObject *)(op))->ob_item[i] = (v)) // PyList_SET_ITEM used 8 times in numpy-master
+#define PyLong_Check(op) ((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 24))) != 0) // PyLong_Check used 19 times in numpy-master
+#define PyLong_CheckExact(op) ((((PyObject*)(op))->ob_type) == &PyLong_Type) // PyLong_CheckExact used 3 times in numpy-master
+#define PyMODINIT_FUNC extern \"C\" PyObject*                // PyMODINIT_FUNC used 13 times in numpy-master
+#define PyMem_Del PyMem_Free                                 // PyMem_Del used 1 times in numpy-master
+#define PyMemoryView_Check(op) ((((PyObject*)(op))->ob_type) == &PyMemoryView_Type) // PyMemoryView_Check used 2 times in numpy-master
+#define PyMemoryView_GET_BASE(op) (((PyMemoryViewObject *)(op))->view.obj) // PyMemoryView_GET_BASE used 1 times in numpy-master
+#define PyMemoryView_GET_BUFFER(op) (&((PyMemoryViewObject *)(op))->view) // PyMemoryView_GET_BUFFER used 1 times in numpy-master
+#define PyModule_Create(module) PyModule_Create2(module, 1013) // PyModule_Create used 6 times in numpy-master
+#define PyOS_stricmp PyOS_mystricmp                          // PyOS_stricmp used 1 times in numpy-master
+#define PyObject_CheckBuffer(obj) (((obj)->ob_type->tp_as_buffer != __null) && ((obj)->ob_type->tp_as_buffer->bf_getbuffer != __null)) // PyObject_CheckBuffer used 2 times in numpy-master
+#define PyObject_Del PyObject_Free                           // PyObject_Del used 3 times in numpy-master
+#define PyObject_FREE PyObject_Free                          // PyObject_FREE used 2 times in numpy-master
+#define PyObject_HEAD PyObject ob_base;                      // PyObject_HEAD used 39 times in numpy-master
+#define PyObject_Length PyObject_Size                        // PyObject_Length used 8 times in numpy-master
+#define PyObject_MALLOC PyObject_Malloc                      // PyObject_MALLOC used 1 times in numpy-master
+#define PyObject_New(type, typeobj) ( (type *) _PyObject_New(typeobj) ) // PyObject_New used 4 times in numpy-master
+#define PyObject_REALLOC PyObject_Realloc                    // PyObject_REALLOC used 1 times in numpy-master
+#define PyObject_TypeCheck(ob, tp) ((((PyObject*)(ob))->ob_type) == (tp) || PyType_IsSubtype((((PyObject*)(ob))->ob_type), (tp))) // PyObject_TypeCheck used 4 times in numpy-master
+#define PyObject_VAR_HEAD PyVarObject ob_base;               // PyObject_VAR_HEAD used 1 times in numpy-master
+#define PySequence_Fast_GET_ITEM(o, i) (((((((PyObject*)(o))->ob_type))->tp_flags & ((1UL << 25))) != 0) ? (((PyListObject *)(o))->ob_item[i]) : (((PyTupleObject *)(o))->ob_item[i])) // PySequence_Fast_GET_ITEM used 4 times in numpy-master
+#define PySequence_Fast_GET_SIZE(o) (((((((PyObject*)(o))->ob_type))->tp_flags & ((1UL << 25))) != 0) ? (((PyVarObject*)(o))->ob_size) : (((PyVarObject*)(o))->ob_size)) // PySequence_Fast_GET_SIZE used 2 times in numpy-master
+#define PySequence_Fast_ITEMS(sf) (((((((PyObject*)(sf))->ob_type))->tp_flags & ((1UL << 25))) != 0) ? ((PyListObject *)(sf))->ob_item : ((PyTupleObject *)(sf))->ob_item) // PySequence_Fast_ITEMS used 1 times in numpy-master
+#define PySequence_Length PySequence_Size                    // PySequence_Length used 9 times in numpy-master
+#define PySlice_Check(op) ((((PyObject*)(op))->ob_type) == &PySlice_Type) // PySlice_Check used 10 times in numpy-master
+#define PyStructSequence_SET_ITEM(op, i, v) (((PyTupleObject *)(op))->ob_item[i] = v) // PyStructSequence_SET_ITEM used 14 times in numpy-master
+#define PyTuple_Check(op) ((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 26))) != 0) // PyTuple_Check used 53 times in numpy-master
+#define PyTuple_CheckExact(op) ((((PyObject*)(op))->ob_type) == &PyTuple_Type) // PyTuple_CheckExact used 5 times in numpy-master
+#define PyTuple_GET_ITEM(op, i) (((PyTupleObject *)(op))->ob_item[i]) // PyTuple_GET_ITEM used 131 times in numpy-master
+#define PyTuple_GET_SIZE(op) (((PyVarObject*)(op))->ob_size) // PyTuple_GET_SIZE used 77 times in numpy-master
+#define PyTuple_SET_ITEM(op, i, v) (((PyTupleObject *)(op))->ob_item[i] = v) // PyTuple_SET_ITEM used 87 times in numpy-master
+#define PyType_Check(op) ((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 31))) != 0) // PyType_Check used 3 times in numpy-master
+#define PyUnicode_AS_DATA(op) ((const char *)(((__builtin_expect(!(((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 28))) != 0)), 0) ? __assert_rtn(__func__, \"/var/folders/c4/k9r2gpwn6mg8b6whdc85dcjm0000gn/T/preprocessor_test2078706399113555113.cpp\", 2006, \"PyUnicode_Check(op)\") : (void)0), (((PyASCIIObject *)(op))->wstr) ? (((PyASCIIObject *)(op))->wstr) : PyUnicode_AsUnicode((PyObject *)(op))))) // PyUnicode_AS_DATA used 2 times in numpy-master
+#define PyUnicode_Check(op) ((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 28))) != 0) // PyUnicode_Check used 55 times in numpy-master
+#define PyUnicode_GET_DATA_SIZE(op) (((__builtin_expect(!(((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 28))) != 0)), 0) ? __assert_rtn(__func__, \"/var/folders/c4/k9r2gpwn6mg8b6whdc85dcjm0000gn/T/preprocessor_test2078706399113555113.cpp\", 2024, \"PyUnicode_Check(op)\") : (void)0), (((PyASCIIObject *)(op))->wstr) ? ((((PyASCIIObject*)op)->state.ascii && (((PyASCIIObject*)(op))->state.compact)) ? ((PyASCIIObject*)op)->length : ((PyCompactUnicodeObject*)op)->wstr_length) : ((void)PyUnicode_AsUnicode((PyObject *)(op)), (__builtin_expect(!(((PyASCIIObject *)(op))->wstr), 0) ? __assert_rtn(__func__, \"/var/folders/c4/k9r2gpwn6mg8b6whdc85dcjm0000gn/T/preprocessor_test2078706399113555113.cpp\", 2024, \"((PyASCIIObject *)(op))->wstr\") : (void)0), ((((PyASCIIObject*)op)->state.ascii && (((PyASCIIObject*)(op))->state.compact)) ? ((PyASCIIObject*)op)->length : ((PyCompactUnicodeObject*)op)->wstr_length))) * 4) // PyUnicode_GET_DATA_SIZE used 4 times in numpy-master
+#define PyUnicode_GET_SIZE(op) ((__builtin_expect(!(((((((PyObject*)(op))->ob_type))->tp_flags & ((1UL << 28))) != 0)), 0) ? __assert_rtn(__func__, \"/var/folders/c4/k9r2gpwn6mg8b6whdc85dcjm0000gn/T/preprocessor_test2078706399113555113.cpp\", 2030, \"PyUnicode_Check(op)\") : (void)0), (((PyASCIIObject *)(op))->wstr) ? ((((PyASCIIObject*)op)->state.ascii && (((PyASCIIObject*)(op))->state.compact)) ? ((PyASCIIObject*)op)->length : ((PyCompactUnicodeObject*)op)->wstr_length) : ((void)PyUnicode_AsUnicode((PyObject *)(op)), (__builtin_expect(!(((PyASCIIObject *)(op))->wstr), 0) ? __assert_rtn(__func__, \"/var/folders/c4/k9r2gpwn6mg8b6whdc85dcjm0000gn/T/preprocessor_test2078706399113555113.cpp\", 2030, \"((PyASCIIObject *)(op))->wstr\") : (void)0), ((((PyASCIIObject*)op)->state.ascii && (((PyASCIIObject*)(op))->state.compact)) ? ((PyASCIIObject*)op)->length : ((PyCompactUnicodeObject*)op)->wstr_length))) // PyUnicode_GET_SIZE used 4 times in numpy-master
+#define Py_BEGIN_ALLOW_THREADS {                             // Py_BEGIN_ALLOW_THREADS used 8 times in numpy-master
+#define Py_CHARMASK(c) ((unsigned char)((c) & 0xff))         // Py_CHARMASK used 4 times in numpy-master
+#define Py_DECREF(op) do { PyObject *_py_decref_tmp = (PyObject *)(op); if ( --(_py_decref_tmp)->ob_refcnt != 0) ; else ( (*(((PyObject*)(_py_decref_tmp))->ob_type)->tp_dealloc)((PyObject *)(_py_decref_tmp))); } while (0) // Py_DECREF used 1272 times in numpy-master
+#define Py_END_ALLOW_THREADS }                               // Py_END_ALLOW_THREADS used 8 times in numpy-master
+#define Py_EQ 2                                              // Py_EQ used 16 times in numpy-master
+#define Py_Ellipsis (&_Py_EllipsisObject)                    // Py_Ellipsis used 8 times in numpy-master
+#define Py_EnterRecursiveCall(where) ((++(PyThreadState_Get()->recursion_depth) > _Py_CheckRecursionLimit) && _Py_CheckRecursiveCall(where)) // Py_EnterRecursiveCall used 4 times in numpy-master
+#define Py_False ((PyObject *) &_Py_FalseStruct)             // Py_False used 29 times in numpy-master
+#define Py_GE 5                                              // Py_GE used 4 times in numpy-master
+#define Py_GT 4                                              // Py_GT used 5 times in numpy-master
+#define Py_INCREF(op) ( ((PyObject *)(op))->ob_refcnt++)     // Py_INCREF used 430 times in numpy-master
+#define Py_LE 1                                              // Py_LE used 4 times in numpy-master
+#define Py_LT 0                                              // Py_LT used 6 times in numpy-master
+#define Py_LeaveRecursiveCall() do{ if((--(PyThreadState_Get()->recursion_depth) < (((_Py_CheckRecursionLimit) > 200) ? ((_Py_CheckRecursionLimit) - 50) : (3 * ((_Py_CheckRecursionLimit) >> 2))))) PyThreadState_Get()->overflowed = 0; } while(0) // Py_LeaveRecursiveCall used 2 times in numpy-master
+#define Py_NE 3                                              // Py_NE used 7 times in numpy-master
+#define Py_None (&_Py_NoneStruct)                            // Py_None used 182 times in numpy-master
+#define Py_NotImplemented (&_Py_NotImplementedStruct)        // Py_NotImplemented used 50 times in numpy-master
+#define Py_REFCNT(ob) (((PyObject*)(ob))->ob_refcnt)         // Py_REFCNT used 2 times in numpy-master
+#define Py_SETREF(op, op2) do { PyObject *_py_tmp = (PyObject *)(op); (op) = (op2); do { PyObject *_py_decref_tmp = (PyObject *)(_py_tmp); if ( --(_py_decref_tmp)->ob_refcnt != 0) ; else ( (*(((PyObject*)(_py_decref_tmp))->ob_type)->tp_dealloc)((PyObject *)(_py_decref_tmp))); } while (0); } while (0) // Py_SETREF used 1 times in numpy-master
+#define Py_SIZE(ob) (((PyVarObject*)(ob))->ob_size)          // Py_SIZE used 1 times in numpy-master
+#define Py_TPFLAGS_BASETYPE (1UL << 10)                      // Py_TPFLAGS_BASETYPE used 1 times in numpy-master
+#define Py_TPFLAGS_DEFAULT ( 0 | (1UL << 18) | 0)            // Py_TPFLAGS_DEFAULT used 10 times in numpy-master
+#define Py_TYPE(ob) (((PyObject*)(ob))->ob_type)             // Py_TYPE used 103 times in numpy-master
+#define Py_True ((PyObject *) &_Py_TrueStruct)               // Py_True used 31 times in numpy-master
+#define Py_UNICODE_WIDE                                      // Py_UNICODE_WIDE used 8 times in numpy-master
+#define Py_USING_UNICODE                                     // Py_USING_UNICODE used 1 times in numpy-master
+#define Py_XDECREF(op) do { PyObject *_py_xdecref_tmp = (PyObject *)(op); if (_py_xdecref_tmp != __null) do { PyObject *_py_decref_tmp = (PyObject *)(_py_xdecref_tmp); if ( --(_py_decref_tmp)->ob_refcnt != 0) ; else ( (*(((PyObject*)(_py_decref_tmp))->ob_type)->tp_dealloc)((PyObject *)(_py_decref_tmp))); } while (0); } while (0) // Py_XDECREF used 514 times in numpy-master
+#define Py_XINCREF(op) do { PyObject *_py_xincref_tmp = (PyObject *)(op); if (_py_xincref_tmp != __null) ( ((PyObject *)(_py_xincref_tmp))->ob_refcnt++); } while (0) // Py_XINCREF used 46 times in numpy-master
+#define SSTATE_NOT_INTERNED 0                                // SSTATE_NOT_INTERNED used 1 times in numpy-master
+
+     PyObject * PyObject_Call(PyObject *callable_object,     // PyObject_Call used 8 times in numpy-master
+     PyObject * PyObject_CallObject(PyObject *callable_object, // PyObject_CallObject used 2 times in numpy-master
+     PyObject * PyObject_CallFunction(PyObject *callable_object, // PyObject_CallFunction used 21 times in numpy-master
+     PyObject * PyObject_CallMethod(PyObject *o,             // PyObject_CallMethod used 32 times in numpy-master
+     PyObject * PyObject_CallFunctionObjArgs(PyObject *callable, // PyObject_CallFunctionObjArgs used 9 times in numpy-master
+     PyObject * PyObject_Type(PyObject *o);                  // PyObject_Type used 3 times in numpy-master
+     Py_ssize_t PyObject_Size(PyObject *o);                  // PyObject_Size used 1 times in numpy-master
+                                                             // PyObject_Length used 8 times in numpy-master
+     Py_ssize_t PyObject_Length(PyObject *o);                // PyObject_Length used 8 times in numpy-master
+     PyObject * PyObject_GetItem(PyObject *o, PyObject *key); // PyObject_GetItem used 6 times in numpy-master
+     int PyObject_SetItem(PyObject *o, PyObject *key, PyObject *v); // PyObject_SetItem used 1 times in numpy-master
+     int PyObject_AsReadBuffer(PyObject *obj,                // PyObject_AsReadBuffer used 5 times in numpy-master
+     int PyObject_AsWriteBuffer(PyObject *obj,               // PyObject_AsWriteBuffer used 7 times in numpy-master
+     int PyObject_GetBuffer(PyObject *obj, Py_buffer *view,  // PyObject_GetBuffer used 9 times in numpy-master
+     void PyBuffer_Release(Py_buffer *view);                 // PyBuffer_Release used 5 times in numpy-master
+     PyObject * PyObject_Format(PyObject* obj,               // PyObject_Format used 1 times in numpy-master
+     PyObject * PyObject_GetIter(PyObject *);                // PyObject_GetIter used 1 times in numpy-master
+     PyObject * PyIter_Next(PyObject *);                     // PyIter_Next used 1 times in numpy-master
+     int PyNumber_Check(PyObject *o);                        // PyNumber_Check used 4 times in numpy-master
+     PyObject * PyNumber_Add(PyObject *o1, PyObject *o2);    // PyNumber_Add used 3 times in numpy-master
+     PyObject * PyNumber_Subtract(PyObject *o1, PyObject *o2); // PyNumber_Subtract used 3 times in numpy-master
+     PyObject * PyNumber_Multiply(PyObject *o1, PyObject *o2); // PyNumber_Multiply used 2 times in numpy-master
+     PyObject * PyNumber_TrueDivide(PyObject *o1, PyObject *o2); // PyNumber_TrueDivide used 2 times in numpy-master
+     PyObject * PyNumber_Negative(PyObject *o);              // PyNumber_Negative used 1 times in numpy-master
+     PyObject * PyNumber_Lshift(PyObject *o1, PyObject *o2); // PyNumber_Lshift used 1 times in numpy-master
+     PyObject * PyNumber_Or(PyObject *o1, PyObject *o2);     // PyNumber_Or used 2 times in numpy-master
+     PyObject * PyNumber_Index(PyObject *o);                 // PyNumber_Index used 4 times in numpy-master
+     Py_ssize_t PyNumber_AsSsize_t(PyObject *o, PyObject *exc); // PyNumber_AsSsize_t used 2 times in numpy-master
+     PyObject * PyNumber_Long(PyObject *o);                  // PyNumber_Long used 4 times in numpy-master
+     PyObject * PyNumber_Float(PyObject *o);                 // PyNumber_Float used 1 times in numpy-master
+     int PySequence_Check(PyObject *o);                      // PySequence_Check used 24 times in numpy-master
+     Py_ssize_t PySequence_Size(PyObject *o);                // PySequence_Size used 28 times in numpy-master
+                                                             // PySequence_Length used 9 times in numpy-master
+     Py_ssize_t PySequence_Length(PyObject *o);              // PySequence_Length used 9 times in numpy-master
+     PyObject * PySequence_GetItem(PyObject *o, Py_ssize_t i); // PySequence_GetItem used 39 times in numpy-master
+     int PySequence_SetItem(PyObject *o, Py_ssize_t i, PyObject *v); // PySequence_SetItem used 3 times in numpy-master
+     PyObject * PySequence_Tuple(PyObject *o);               // PySequence_Tuple used 4 times in numpy-master
+     PyObject * PySequence_Fast(PyObject *o, const char* m); // PySequence_Fast used 4 times in numpy-master
+     PyObject * PyMapping_GetItemString(PyObject *o,         // PyMapping_GetItemString used 3 times in numpy-master
+int PyObject_IsInstance(PyObject *object, PyObject *typeorclass); // PyObject_IsInstance used 6 times in numpy-master
+extern PyTypeObject PyBool_Type;                             // PyBool_Type used 4 times in numpy-master
+} PyBytesObject;                                             // PyBytesObject used 2 times in numpy-master
+extern PyTypeObject PyBytes_Type;                            // PyBytes_Type used 4 times in numpy-master
+PyObject * PyBytes_FromStringAndSize(const char *, Py_ssize_t); // PyBytes_FromStringAndSize used 5 times in numpy-master
+PyObject * PyBytes_FromString(const char *);                 // PyBytes_FromString used 6 times in numpy-master
+PyObject * PyBytes_FromFormat(const char*, ...)              // PyBytes_FromFormat used 3 times in numpy-master
+Py_ssize_t PyBytes_Size(PyObject *);                         // PyBytes_Size used 2 times in numpy-master
+char * PyBytes_AsString(PyObject *);                         // PyBytes_AsString used 11 times in numpy-master
+void PyBytes_Concat(PyObject **, PyObject *);                // PyBytes_Concat used 2 times in numpy-master
+void PyBytes_ConcatAndDel(PyObject **, PyObject *);          // PyBytes_ConcatAndDel used 3 times in numpy-master
+int PyBytes_AsStringAndSize(                                 // PyBytes_AsStringAndSize used 21 times in numpy-master
+PyObject * PyEval_GetBuiltins(void);                         // PyEval_GetBuiltins used 4 times in numpy-master
+PyObject * PyEval_EvalFrameEx(struct _frame *f, int exc);    // PyEval_EvalFrameEx used 1 times in numpy-master
+PyObject * _PyEval_EvalFrameDefault(struct _frame *f, int exc); // _PyEval_EvalFrameDefault used 1 times in numpy-master
+PyThreadState * PyEval_SaveThread(void);                     // PyEval_SaveThread used 3 times in numpy-master
+void PyEval_RestoreThread(PyThreadState *);                  // PyEval_RestoreThread used 2 times in numpy-master
+} Py_complex;                                                // Py_complex used 1 times in numpy-master
+extern PyTypeObject PyComplex_Type;                          // PyComplex_Type used 6 times in numpy-master
+PyObject * PyComplex_FromCComplex(Py_complex);               // PyComplex_FromCComplex used 1 times in numpy-master
+double PyComplex_RealAsDouble(PyObject *op);                 // PyComplex_RealAsDouble used 5 times in numpy-master
+double PyComplex_ImagAsDouble(PyObject *op);                 // PyComplex_ImagAsDouble used 5 times in numpy-master
+} PyGetSetDef;                                               // PyGetSetDef used 9 times in numpy-master
+extern PyTypeObject PyDictProxy_Type;                        // PyDictProxy_Type used 1 times in numpy-master
+PyObject * PyDictProxy_New(PyObject *);                      // PyDictProxy_New used 2 times in numpy-master
+extern PyTypeObject PyDict_Type;                             // PyDict_Type used 2 times in numpy-master
+PyObject * PyDict_New(void);                                 // PyDict_New used 19 times in numpy-master
+PyObject * PyDict_GetItem(PyObject *mp, PyObject *key);      // PyDict_GetItem used 52 times in numpy-master
+int PyDict_SetItem(PyObject *mp, PyObject *key, PyObject *item); // PyDict_SetItem used 16 times in numpy-master
+int PyDict_DelItem(PyObject *mp, PyObject *key);             // PyDict_DelItem used 2 times in numpy-master
+int PyDict_Next(                                             // PyDict_Next used 12 times in numpy-master
+Py_ssize_t PyDict_Size(PyObject *mp);                        // PyDict_Size used 2 times in numpy-master
+PyObject * PyDict_Copy(PyObject *mp);                        // PyDict_Copy used 3 times in numpy-master
+int PyDict_Contains(PyObject *mp, PyObject *key);            // PyDict_Contains used 2 times in numpy-master
+int PyDict_Merge(PyObject *mp,                               // PyDict_Merge used 3 times in numpy-master
+PyObject * PyDict_GetItemString(PyObject *dp, const char *key); // PyDict_GetItemString used 29 times in numpy-master
+int PyDict_SetItemString(PyObject *dp, const char *key, PyObject *item); // PyDict_SetItemString used 110 times in numpy-master
+int PyDict_DelItemString(PyObject *dp, const char *key);     // PyDict_DelItemString used 4 times in numpy-master
+int PyObject_AsFileDescriptor(PyObject *);                   // PyObject_AsFileDescriptor used 3 times in numpy-master
+extern PyTypeObject PyFloat_Type;                            // PyFloat_Type used 8 times in numpy-master
+PyObject * PyFloat_FromDouble(double);                       // PyFloat_FromDouble used 15 times in numpy-master
+double PyFloat_AsDouble(PyObject *);                         // PyFloat_AsDouble used 10 times in numpy-master
+PyObject * PyImport_ImportModule(                            // PyImport_ImportModule used 27 times in numpy-master
+int PyOS_InterruptOccurred(void);                            // PyOS_InterruptOccurred used 1 times in numpy-master
+PyObject * PySeqIter_New(PyObject *);                        // PySeqIter_New used 1 times in numpy-master
+} PyListObject;                                              // PyListObject used 1 times in numpy-master
+extern PyTypeObject PyList_Type;                             // PyList_Type used 1 times in numpy-master
+PyObject * PyList_New(Py_ssize_t size);                      // PyList_New used 8 times in numpy-master
+PyObject * PyList_GetItem(PyObject *, Py_ssize_t);           // PyList_GetItem used 1 times in numpy-master
+int PyList_Append(PyObject *, PyObject *);                   // PyList_Append used 7 times in numpy-master
+PyObject * PyList_AsTuple(PyObject *);                       // PyList_AsTuple used 1 times in numpy-master
+typedef uint32_t digit;                                      // digit used 83 times in numpy-master
+extern PyTypeObject PyLong_Type;                             // PyLong_Type used 4 times in numpy-master
+PyObject * PyLong_FromLong(long);                            // PyLong_FromLong used 11 times in numpy-master
+PyObject * PyLong_FromSsize_t(Py_ssize_t);                   // PyLong_FromSsize_t used 4 times in numpy-master
+PyObject * PyLong_FromDouble(double);                        // PyLong_FromDouble used 2 times in numpy-master
+long PyLong_AsLong(PyObject *);                              // PyLong_AsLong used 11 times in numpy-master
+long PyLong_AsLongAndOverflow(PyObject *, int *);            // PyLong_AsLongAndOverflow used 1 times in numpy-master
+Py_ssize_t PyLong_AsSsize_t(PyObject *);                     // PyLong_AsSsize_t used 3 times in numpy-master
+PyObject * PyLong_FromVoidPtr(void *);                       // PyLong_FromVoidPtr used 5 times in numpy-master
+void * PyLong_AsVoidPtr(PyObject *);                         // PyLong_AsVoidPtr used 4 times in numpy-master
+PyObject * PyLong_FromLongLong(long long);                   // PyLong_FromLongLong used 11 times in numpy-master
+PyObject * PyLong_FromUnsignedLongLong(unsigned long long);  // PyLong_FromUnsignedLongLong used 1 times in numpy-master
+extern PyTypeObject PyMemoryView_Type;                       // PyMemoryView_Type used 1 times in numpy-master
+PyObject * PyMemoryView_FromObject(PyObject *base);          // PyMemoryView_FromObject used 2 times in numpy-master
+int PyArg_ParseTuple(PyObject *, const char *, ...);         // PyArg_ParseTuple used 89 times in numpy-master
+int PyArg_ParseTupleAndKeywords(PyObject *, PyObject *,      // PyArg_ParseTupleAndKeywords used 83 times in numpy-master
+int PyArg_VaParseTupleAndKeywords(PyObject *, PyObject *,    // PyArg_VaParseTupleAndKeywords used 1 times in numpy-master
+int PyArg_UnpackTuple(PyObject *, const char *, Py_ssize_t, Py_ssize_t, ...); // PyArg_UnpackTuple used 1 times in numpy-master
+PyObject * Py_BuildValue(const char *, ...);                 // Py_BuildValue used 52 times in numpy-master
+int PyModule_AddObject(PyObject *, const char *, PyObject *); // PyModule_AddObject used 5 times in numpy-master
+int PyModule_AddIntConstant(PyObject *, const char *, long); // PyModule_AddIntConstant used 2 times in numpy-master
+int PyModule_AddStringConstant(PyObject *, const char *, const char *); // PyModule_AddStringConstant used 1 times in numpy-master
+PyObject * PyModule_GetDict(PyObject *);                     // PyModule_GetDict used 8 times in numpy-master
+} PyModuleDef;                                               // PyModuleDef used 6 times in numpy-master
+} PyObject;                                                  // PyObject used 3072 times in numpy-master
+} Py_buffer;                                                 // Py_buffer used 7 times in numpy-master
+} PyNumberMethods;                                           // PyNumberMethods used 3 times in numpy-master
+} PySequenceMethods;                                         // PySequenceMethods used 4 times in numpy-master
+} PyMappingMethods;                                          // PyMappingMethods used 6 times in numpy-master
+} PyBufferProcs;                                             // PyBufferProcs used 2 times in numpy-master
+} PyTypeObject;                                              // PyTypeObject used 76 times in numpy-master
+int PyType_IsSubtype(PyTypeObject *, PyTypeObject *);        // PyType_IsSubtype used 6 times in numpy-master
+extern PyTypeObject PyType_Type;                             // PyType_Type used 2 times in numpy-master
+extern PyTypeObject PyBaseObject_Type;                       // PyBaseObject_Type used 2 times in numpy-master
+int PyType_Ready(PyTypeObject *);                            // PyType_Ready used 26 times in numpy-master
+PyObject * PyType_GenericAlloc(PyTypeObject *, Py_ssize_t);  // PyType_GenericAlloc used 1 times in numpy-master
+PyObject * PyType_GenericNew(PyTypeObject *,                 // PyType_GenericNew used 2 times in numpy-master
+int PyObject_Print(PyObject *, FILE *, int);                 // PyObject_Print used 30 times in numpy-master
+PyObject * PyObject_Repr(PyObject *);                        // PyObject_Repr used 35 times in numpy-master
+PyObject * PyObject_Str(PyObject *);                         // PyObject_Str used 11 times in numpy-master
+PyObject * PyObject_RichCompare(PyObject *, PyObject *, int); // PyObject_RichCompare used 1 times in numpy-master
+int PyObject_RichCompareBool(PyObject *, PyObject *, int);   // PyObject_RichCompareBool used 10 times in numpy-master
+PyObject * PyObject_GetAttrString(PyObject *, const char *); // PyObject_GetAttrString used 38 times in numpy-master
+int PyObject_SetAttrString(PyObject *, const char *, PyObject *); // PyObject_SetAttrString used 4 times in numpy-master
+int PyObject_HasAttrString(PyObject *, const char *);        // PyObject_HasAttrString used 11 times in numpy-master
+PyObject * PyObject_GetAttr(PyObject *, PyObject *);         // PyObject_GetAttr used 10 times in numpy-master
+PyObject * PyObject_SelfIter(PyObject *);                    // PyObject_SelfIter used 3 times in numpy-master
+PyObject * PyObject_GenericGetAttr(PyObject *, PyObject *);  // PyObject_GenericGetAttr used 1 times in numpy-master
+Py_hash_t PyObject_Hash(PyObject *);                         // PyObject_Hash used 2 times in numpy-master
+Py_hash_t PyObject_HashNotImplemented(PyObject *);           // PyObject_HashNotImplemented used 2 times in numpy-master
+int PyObject_IsTrue(PyObject *);                             // PyObject_IsTrue used 13 times in numpy-master
+int PyObject_Not(PyObject *);                                // PyObject_Not used 1 times in numpy-master
+int PyCallable_Check(PyObject *);                            // PyCallable_Check used 10 times in numpy-master
+void PyObject_ClearWeakRefs(PyObject *);                     // PyObject_ClearWeakRefs used 1 times in numpy-master
+void * PyObject_Malloc(size_t size);                         // PyObject_Malloc used 3 times in numpy-master
+                                                             // PyObject_MALLOC used 1 times in numpy-master
+                                                             // PyObject_REALLOC used 1 times in numpy-master
+void PyObject_Free(void *ptr);                               // PyObject_Free used 3 times in numpy-master
+                                                             // PyObject_FREE used 2 times in numpy-master
+                                                             // PyObject_Del used 3 times in numpy-master
+PyObject * PyObject_Init(PyObject *, PyTypeObject *);        // PyObject_Init used 10 times in numpy-master
+PyObject * PyCapsule_New(                                    // PyCapsule_New used 2 times in numpy-master
+void * PyCapsule_GetPointer(PyObject *capsule, const char *name); // PyCapsule_GetPointer used 4 times in numpy-master
+void * PyCapsule_GetContext(PyObject *capsule);              // PyCapsule_GetContext used 1 times in numpy-master
+int PyCapsule_SetContext(PyObject *capsule, void *context);  // PyCapsule_SetContext used 1 times in numpy-master
+extern int Py_OptimizeFlag;                                  // Py_OptimizeFlag used 1 times in numpy-master
+void PyErr_SetNone(PyObject *);                              // PyErr_SetNone used 3 times in numpy-master
+void PyErr_SetObject(PyObject *, PyObject *);                // PyErr_SetObject used 33 times in numpy-master
+void PyErr_SetString(                                        // PyErr_SetString used 696 times in numpy-master
+PyObject * PyErr_Occurred(void);                             // PyErr_Occurred used 115 times in numpy-master
+void PyErr_Clear(void);                                      // PyErr_Clear used 112 times in numpy-master
+void PyErr_Fetch(PyObject **, PyObject **, PyObject **);     // PyErr_Fetch used 1 times in numpy-master
+void PyErr_Restore(PyObject *, PyObject *, PyObject *);      // PyErr_Restore used 1 times in numpy-master
+int PyErr_GivenExceptionMatches(PyObject *, PyObject *);     // PyErr_GivenExceptionMatches used 7 times in numpy-master
+int PyErr_ExceptionMatches(PyObject *);                      // PyErr_ExceptionMatches used 6 times in numpy-master
+extern PyObject * PyExc_Exception;                           // PyExc_Exception used 2 times in numpy-master
+extern PyObject * PyExc_AttributeError;                      // PyExc_AttributeError used 23 times in numpy-master
+extern PyObject * PyExc_FloatingPointError;                  // PyExc_FloatingPointError used 1 times in numpy-master
+extern PyObject * PyExc_OSError;                             // PyExc_OSError used 1 times in numpy-master
+extern PyObject * PyExc_ImportError;                         // PyExc_ImportError used 2 times in numpy-master
+extern PyObject * PyExc_IndexError;                          // PyExc_IndexError used 36 times in numpy-master
+extern PyObject * PyExc_KeyError;                            // PyExc_KeyError used 7 times in numpy-master
+extern PyObject * PyExc_MemoryError;                         // PyExc_MemoryError used 13 times in numpy-master
+extern PyObject * PyExc_NameError;                           // PyExc_NameError used 2 times in numpy-master
+extern PyObject * PyExc_OverflowError;                       // PyExc_OverflowError used 10 times in numpy-master
+extern PyObject * PyExc_RuntimeError;                        // PyExc_RuntimeError used 54 times in numpy-master
+extern PyObject * PyExc_SystemError;                         // PyExc_SystemError used 15 times in numpy-master
+extern PyObject * PyExc_TypeError;                           // PyExc_TypeError used 200 times in numpy-master
+extern PyObject * PyExc_ValueError;                          // PyExc_ValueError used 555 times in numpy-master
+extern PyObject * PyExc_IOError;                             // PyExc_IOError used 12 times in numpy-master
+extern PyObject * PyExc_Warning;                             // PyExc_Warning used 1 times in numpy-master
+extern PyObject * PyExc_UserWarning;                         // PyExc_UserWarning used 1 times in numpy-master
+extern PyObject * PyExc_DeprecationWarning;                  // PyExc_DeprecationWarning used 2 times in numpy-master
+extern PyObject * PyExc_RuntimeWarning;                      // PyExc_RuntimeWarning used 4 times in numpy-master
+extern PyObject * PyExc_FutureWarning;                       // PyExc_FutureWarning used 1 times in numpy-master
+PyObject * PyErr_NoMemory(void);                             // PyErr_NoMemory used 74 times in numpy-master
+PyObject * PyErr_Format(                                     // PyErr_Format used 197 times in numpy-master
+void PyErr_BadInternalCall(void);                            // PyErr_BadInternalCall used 2 times in numpy-master
+PyObject * PyErr_NewException(                               // PyErr_NewException used 3 times in numpy-master
+void PyErr_WriteUnraisable(PyObject *);                      // PyErr_WriteUnraisable used 1 times in numpy-master
+int PyOS_snprintf(char *str, size_t size, const char *format, ...) // PyOS_snprintf used 18 times in numpy-master
+PyOS_sighandler_t PyOS_setsig(int, PyOS_sighandler_t);       // PyOS_setsig used 5 times in numpy-master
+extern double round(double);                                 // round used 20 times in numpy-master
+void * PyMem_RawMalloc(size_t size);                         // PyMem_RawMalloc used 2 times in numpy-master
+void * PyMem_RawRealloc(void *ptr, size_t new_size);         // PyMem_RawRealloc used 1 times in numpy-master
+void PyMem_RawFree(void *ptr);                               // PyMem_RawFree used 1 times in numpy-master
+int _PyTraceMalloc_Track(                                    // _PyTraceMalloc_Track used 1 times in numpy-master
+int _PyTraceMalloc_Untrack(                                  // _PyTraceMalloc_Untrack used 1 times in numpy-master
+void * PyMem_Malloc(size_t size);                            // PyMem_Malloc used 4 times in numpy-master
+void * PyMem_Realloc(void *ptr, size_t new_size);            // PyMem_Realloc used 1 times in numpy-master
+void PyMem_Free(void *ptr);                                  // PyMem_Free used 3 times in numpy-master
+                                                             // PyMem_Del used 1 times in numpy-master
+typedef uintptr_t Py_uintptr_t;                              // Py_uintptr_t used 2 times in numpy-master
+typedef intptr_t Py_intptr_t;                                // Py_intptr_t used 2 times in numpy-master
+typedef Py_intptr_t Py_ssize_t;                              // Py_ssize_t used 167 times in numpy-master
+typedef Py_ssize_t Py_hash_t;                                // Py_hash_t used 2 times in numpy-master
+} PyThreadState;                                             // PyThreadState used 2 times in numpy-master
+PyObject * PyThreadState_GetDict(void);                      // PyThreadState_GetDict used 3 times in numpy-master
+                                                             // PyOS_stricmp used 1 times in numpy-master
+double PyOS_string_to_double(const char *str,                // PyOS_string_to_double used 1 times in numpy-master
+void PyErr_Print(void);                                      // PyErr_Print used 7 times in numpy-master
+extern PyTypeObject PySet_Type;                              // PySet_Type used 1 times in numpy-master
+extern PyTypeObject PyFrozenSet_Type;                        // PyFrozenSet_Type used 1 times in numpy-master
+} PySliceObject;                                             // PySliceObject used 1 times in numpy-master
+extern PyTypeObject PySlice_Type;                            // PySlice_Type used 1 times in numpy-master
+PyObject * PySlice_New(PyObject* start, PyObject* stop,      // PySlice_New used 4 times in numpy-master
+int PySlice_GetIndicesEx(PyObject *r, Py_ssize_t length,     // PySlice_GetIndicesEx used 3 times in numpy-master
+} PyStructSequence_Field;                                    // PyStructSequence_Field used 2 times in numpy-master
+} PyStructSequence_Desc;                                     // PyStructSequence_Desc used 2 times in numpy-master
+void PyStructSequence_InitType(PyTypeObject *type,           // PyStructSequence_InitType used 2 times in numpy-master
+PyObject * PyStructSequence_New(PyTypeObject* type);         // PyStructSequence_New used 2 times in numpy-master
+} PyTupleObject;                                             // PyTupleObject used 6 times in numpy-master
+extern PyTypeObject PyTuple_Type;                            // PyTuple_Type used 3 times in numpy-master
+PyObject * PyTuple_New(Py_ssize_t size);                     // PyTuple_New used 50 times in numpy-master
+Py_ssize_t PyTuple_Size(PyObject *);                         // PyTuple_Size used 19 times in numpy-master
+PyObject * PyTuple_GetItem(PyObject *, Py_ssize_t);          // PyTuple_GetItem used 4 times in numpy-master
+int PyTuple_SetItem(PyObject *, Py_ssize_t, PyObject *);     // PyTuple_SetItem used 4 times in numpy-master
+PyObject * PyTuple_GetSlice(PyObject *, Py_ssize_t, Py_ssize_t); // PyTuple_GetSlice used 12 times in numpy-master
+PyObject * PyTuple_Pack(Py_ssize_t, ...);                    // PyTuple_Pack used 3 times in numpy-master
+typedef wchar_t Py_UNICODE;                                  // Py_UNICODE used 17 times in numpy-master
+    } state;                                                 // state used 350 times in numpy-master
+    } data;                                                  // data used 1275 times in numpy-master
+} PyUnicodeObject;                                           // PyUnicodeObject used 11 times in numpy-master
+extern PyTypeObject PyUnicode_Type;                          // PyUnicode_Type used 8 times in numpy-master
+PyObject* PyUnicode_FromUnicode(                             // PyUnicode_FromUnicode used 2 times in numpy-master
+PyObject* PyUnicode_FromStringAndSize(                       // PyUnicode_FromStringAndSize used 3 times in numpy-master
+PyObject* PyUnicode_FromString(                              // PyUnicode_FromString used 4 times in numpy-master
+Py_ssize_t PyUnicode_GetLength(                              // PyUnicode_GetLength used 2 times in numpy-master
+PyObject* PyUnicode_FromEncodedObject(                       // PyUnicode_FromEncodedObject used 2 times in numpy-master
+PyObject* PyUnicode_FromObject(                              // PyUnicode_FromObject used 1 times in numpy-master
+PyObject * PyUnicode_FromFormat(                             // PyUnicode_FromFormat used 2 times in numpy-master
+PyObject * PyUnicode_InternFromString(                       // PyUnicode_InternFromString used 2 times in numpy-master
+char * PyUnicode_AsUTF8(PyObject *unicode);                  // PyUnicode_AsUTF8 used 1 times in numpy-master
+PyObject* PyUnicode_AsUTF8String(                            // PyUnicode_AsUTF8String used 3 times in numpy-master
+PyObject* PyUnicode_DecodeUTF32(                             // PyUnicode_DecodeUTF32 used 1 times in numpy-master
+PyObject* PyUnicode_AsUnicodeEscapeString(                   // PyUnicode_AsUnicodeEscapeString used 2 times in numpy-master
+PyObject* PyUnicode_AsLatin1String(                          // PyUnicode_AsLatin1String used 2 times in numpy-master
+PyObject* PyUnicode_AsASCIIString(                           // PyUnicode_AsASCIIString used 32 times in numpy-master
+PyObject* PyUnicode_Concat(                                  // PyUnicode_Concat used 3 times in numpy-master
+PyObject * PyUnicode_Format(                                 // PyUnicode_Format used 1 times in numpy-master
+int PyErr_WarnEx(                                            // PyErr_WarnEx used 9 times in numpy-master
