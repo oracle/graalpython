@@ -7,6 +7,7 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -14,6 +15,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "read_caller_fame")
@@ -43,14 +45,20 @@ public abstract class ReadCallerFrameNode extends PNode {
         if (cachedCallerFrameProfile.profile(callerFrame != null)) {
             return callerFrame;
         } else {
-            callerFrame = getCallerFrame();
-            PArguments.setCallerFrame(frame.getArguments(), callerFrame);
-            return callerFrame;
+            return getCallerFrame();
+        }
+    }
+
+    private void rootNodeStartSendingOwnFrame() {
+        RootNode rootNode = this.getRootNode();
+        if (rootNode instanceof PRootNode) {
+            ((PRootNode) rootNode).setWithCallerFrame();
         }
     }
 
     @TruffleBoundary
     private Frame getCallerFrame() {
+        rootNodeStartSendingOwnFrame();
         return Truffle.getRuntime().getCallerFrame().getFrame(frameAccess).materialize();
     }
 

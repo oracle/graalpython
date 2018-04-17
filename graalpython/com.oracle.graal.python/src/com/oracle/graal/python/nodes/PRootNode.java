@@ -38,17 +38,33 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public abstract class PRootNode extends RootNode {
+    @CompilationFinal private boolean withCallerFrame = false;
+
+
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
     }
 
     protected PRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor) {
         super(language, frameDescriptor);
+    }
+
+    public boolean isWithCallerFrame() {
+        return withCallerFrame;
+    }
+
+    public void setWithCallerFrame() {
+        if (!this.withCallerFrame) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            this.withCallerFrame = true;
+        }
     }
 
     @Override
