@@ -47,7 +47,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 public abstract class PRootNode extends RootNode {
     @CompilationFinal private boolean withCallerFrame = false;
 
-
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
     }
