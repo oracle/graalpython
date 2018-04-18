@@ -174,6 +174,8 @@
 
     setup +: [
       ["mx", "sforceimport"],
+      # TODO: remove the following
+      ["git", "-C", "$(dirname $(which mx))", "checkout", "modular_graalvm_builds"],
       ["mx", "-v", "--dynamicimports", self.dynamicImports, "build"],
     ]
   },
