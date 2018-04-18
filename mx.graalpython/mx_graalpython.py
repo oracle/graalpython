@@ -162,6 +162,14 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
         dists.append('SULONG')
 
+    if not any("-Dpython.home" in arg for arg in vm_args):
+        if not any("--python.SysPrefix" in arg for arg in graalpython_args):
+            graalpython_args.append("--python.SysPrefix=%s" % os.path.join(_suite.dir, "graalpython", "com.oracle.graal.python.cext"))
+        if not any("--python.CoreHome" in arg for arg in graalpython_args):
+            graalpython_args.append("--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"))
+        if not any("--python.StdLibHome" in arg for arg in graalpython_args):
+            graalpython_args.append("--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python", "3"))
+
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
         def _is_user(user, home=None):
@@ -192,10 +200,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
 
     if not jdk:
         jdk = get_jdk()
-
-    # default: assertion checking is enabled
-    if extra_vm_args is None or '-da' not in extra_vm_args:
-        vm_args += ['-ea', '-esa']
 
     if extra_vm_args:
         vm_args += extra_vm_args
