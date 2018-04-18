@@ -51,9 +51,9 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
@@ -146,25 +146,23 @@ public abstract class InvokeNode extends AbstractInvokeNode {
     private final PythonObject globals;
     private final PCell[] closure;
     protected final boolean isBuiltin;
-    private final Frame callerFrame;
 
-    protected InvokeNode(CallTarget callTarget, Arity calleeArity, PythonObject globals, PCell[] closure, Frame callerFrame, boolean isBuiltin) {
+    protected InvokeNode(CallTarget callTarget, Arity calleeArity, PythonObject globals, PCell[] closure, boolean isBuiltin) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
         this.arity = calleeArity;
         this.globals = globals;
         this.closure = closure;
-        this.callerFrame = callerFrame;
         this.isBuiltin = isBuiltin;
     }
 
-    protected abstract Object execute(Object[] arguments, PKeyword[] keywords);
+    protected abstract Object execute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords);
 
     public Object invoke(Object[] arguments, PKeyword[] keywords) {
-        return execute(arguments, keywords);
+        return execute(null, arguments, keywords);
     }
 
     public Object invoke(Object[] arguments) {
-        return execute(arguments, PKeyword.EMPTY_KEYWORDS);
+        return execute(null, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
     @TruffleBoundary
@@ -175,7 +173,7 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         if (builtin && shouldSplit(callee)) {
             callTarget = split(callTarget);
         }
-        return InvokeNodeGen.create(callTarget, getArity(callee), callee.getGlobals(), callee.getClosure(), getCallerFrame(callTarget), builtin);
+        return InvokeNodeGen.create(callTarget, getArity(callee), callee.getGlobals(), callee.getClosure(), builtin);
     }
 
     /**
@@ -194,30 +192,42 @@ public abstract class InvokeNode extends AbstractInvokeNode {
                         callee.getName().equals(__CALL__);
     }
 
+    private MaterializedFrame getCallerFrame(VirtualFrame frame) {
+        if (frame == null) {
+            return null;
+        }
+
+        RootNode rootNode = this.callNode.getRootNode();
+        if (rootNode instanceof PRootNode && ((PRootNode) rootNode).isWithCallerFrame()) {
+            return frame.materialize();
+        }
+        return null;
+    }
+
     @Specialization(guards = {"keywords.length == 0"})
-    protected Object doNoKeywords(Object[] arguments, PKeyword[] keywords) {
+    protected Object doNoKeywords(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
-        PArguments.setCallerFrame(arguments, callerFrame);
+        PArguments.setCallerFrame(arguments, getCallerFrame(frame));
         arityCheck.execute(arity, arguments, keywords);
         return callNode.call(arguments);
     }
 
     @Specialization(guards = {"!isBuiltin"})
-    protected Object doWithKeywords(Object[] arguments, PKeyword[] keywords,
+    protected Object doWithKeywords(VirtualFrame frame, Object[] arguments, PKeyword[] keywords,
                     @Cached("create()") ApplyKeywordsNode applyKeywords) {
         Object[] combined = applyKeywords.execute(arity, arguments, keywords);
         PArguments.setGlobals(combined, globals);
         PArguments.setClosure(combined, closure);
-        PArguments.setCallerFrame(arguments, callerFrame);
+        PArguments.setCallerFrame(arguments, getCallerFrame(frame));
         arityCheck.execute(arity, combined, PArguments.getKeywordArguments(combined));
         return callNode.call(combined);
     }
 
     @Specialization(guards = "isBuiltin")
-    protected Object doBuiltinWithKeywords(Object[] arguments, PKeyword[] keywords) {
+    protected Object doBuiltinWithKeywords(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) {
         PArguments.setKeywordArguments(arguments, keywords);
-        PArguments.setCallerFrame(arguments, callerFrame);
+        PArguments.setCallerFrame(arguments, getCallerFrame(frame));
         arityCheck.execute(arity, arguments, keywords);
         return callNode.call(arguments);
     }
