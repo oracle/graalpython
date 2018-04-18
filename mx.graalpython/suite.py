@@ -264,8 +264,8 @@ suite = {
                     "file:graalpython/com.oracle.graal.python.cext/include",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
-                    "file:mx.graalpython/GraalCE_Python_license_3rd_party_license.txt",
                 ],
+                "GraalCE_Python_license_3rd_party_license.txt": "file:LICENSE",
             }
         },
 
