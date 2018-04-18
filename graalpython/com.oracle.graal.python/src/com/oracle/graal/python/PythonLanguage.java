@@ -135,12 +135,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         TruffleFile home = null;
         if (languageHome != null) {
             home = env.getTruffleFile(languageHome);
-            try {
-                if (home.resolveSibling("graalpython-zip").exists()) {
-                    home = home.resolveSibling("graalpython-zip");
-                }
-            } catch (SecurityException | InvalidPathException t) {
-            }
         }
 
         if (home != null) {
