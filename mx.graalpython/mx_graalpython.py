@@ -30,8 +30,9 @@ import subprocess
 import sys
 import tempfile
 
-import mx
 import mx_sdk
+
+import mx
 import mx_benchmark
 import mx_gate
 import mx_subst
@@ -179,7 +180,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     internal_graalpython_args, graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
     dists += additional_dists
     if '--python.WithJavaStacktrace' not in graalpython_args:
-        graalpython_args = ['--python.WithJavaStacktrace'] + graalpython_args
+        graalpython_args.insert(0, '--python.WithJavaStacktrace')
 
     if _sulong:
         vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
@@ -187,11 +188,11 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
 
     if not any("-Dpython.home" in arg for arg in vm_args):
         if not any("--python.SysPrefix" in arg for arg in graalpython_args):
-            graalpython_args.append("--python.SysPrefix=%s" % os.path.join(_suite.dir, "graalpython", "com.oracle.graal.python.cext"))
+            graalpython_args.insert(0, "--python.SysPrefix=%s" % os.path.join(_suite.dir, "graalpython", "com.oracle.graal.python.cext"))
         if not any("--python.CoreHome" in arg for arg in graalpython_args):
-            graalpython_args.append("--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"))
+            graalpython_args.insert(0, "--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"))
         if not any("--python.StdLibHome" in arg for arg in graalpython_args):
-            graalpython_args.append("--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python", "3"))
+            graalpython_args.insert(0, "--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python", "3"))
 
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
