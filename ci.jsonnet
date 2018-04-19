@@ -203,7 +203,7 @@
     baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform},
 
   local styleGate = baseGraalGate + eclipseMixin + linuxMixin + {
-    tags:: "style,fullbuild,license",
+    tags:: "style,fullbuild,python-license",
     name: "python-style",
 
     timelimit: TIME_LIMIT["1h"],

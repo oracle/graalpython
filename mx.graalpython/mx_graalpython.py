@@ -1,3 +1,26 @@
+# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2013, Regents of the University of California
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification, are
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+# conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list of
+# conditions and the following disclaimer in the documentation and/or other materials provided
+# with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+# OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 import os
 import platform
@@ -5,6 +28,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 import mx
 import mx_sdk
@@ -14,7 +38,6 @@ import mx_subst
 from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
-from mx_graalpython_license import update_license_headers
 from mx_unittest import unittest
 from mx_urlrewrites import _urlrewrites
 
@@ -329,7 +352,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
-            python_license_headers_update([])
+            python_checkcopyrights([])
 
     with Task('GraalPython downstream svm binary tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.svmbinary]) as task:
         if task:
@@ -510,9 +533,24 @@ def update_import_cmd(args):
         update_import(name, callback=callback)
 
 
-def python_license_headers_update(args):
-    if update_license_headers(args[0] if args else None):
-        mx.abort("License headers were updated. Please review and commit changes")
+def python_checkcopyrights(args):
+    # we wan't to ignore lib-python/3, because that's just crazy
+    listfilename = tempfile.mktemp()
+    with open(listfilename, "w") as listfile:
+        mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
+    with open(listfilename, "r") as listfile:
+        content = listfile.read()
+    with open(listfilename, "w") as listfile:
+        for line in content.split("\n"):
+            if "lib-python/3" in line:
+                pass
+            elif os.path.splitext(line)[1] in [".py", ".java", ".c", ".h", ".sh"]:
+                listfile.write(line)
+                listfile.write("\n")
+    try:
+        mx.command_function("checkcopyrights")(["--primary", "--", "--file-list", listfilename])
+    finally:
+        os.unlink(listfilename)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -570,7 +608,7 @@ mx.update_commands(_suite, {
     'python-gate': [python_gate, ''],
     'python-update-import': [update_import_cmd, 'import name'],
     'delete-graalpython-if-testdownstream': [delete_self_if_testdownstream, ''],
-    'python-license-headers-update': [python_license_headers_update, 'Make sure code files have copyright notices'],
+    'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
     'punittest': [punittest, ''],
     'nativebuild': [nativebuild, '']
 })

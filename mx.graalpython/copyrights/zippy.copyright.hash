@@ -1,5 +1,5 @@
 # Copyright (c) 2018, Oracle and/or its affiliates.
-# Copyright (c) 2013-2016, Regents of the University of California
+# Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
 #
@@ -21,19 +21,3 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
-import sys, random
-
-if(len(sys.argv) == 1):
-    print('<N> <max randint> <var name>')
-
-N = int(sys.argv[1])
-
-X = [[random.randint(0,int(sys.argv[2])) for i in range(N)] for j in range(N)]
-
-f = open(sys.argv[3] + ".py", "w")
-f.write(sys.argv[3] + " = ")
-strX = str(X)
-f.write(strX.replace("], [","],\n ["))
-f.close()

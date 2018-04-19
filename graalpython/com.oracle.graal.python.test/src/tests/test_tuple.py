@@ -2,7 +2,6 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-
 import seq_tests
 import unittest
 import pickle

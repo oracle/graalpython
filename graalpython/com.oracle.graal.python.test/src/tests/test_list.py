@@ -84,7 +84,7 @@ class ListTest():
 
         l = list([1, 1.1, 'h', 'hello', [1, 2, 3]])
         self.pop_all_list(l)
-    
+
     def test_pop_boolean(self):
         l = [True, False, True, False]
         self.assertEqual(True, l.pop(False))
@@ -94,4 +94,3 @@ class ListTest():
     def test_pop_border(self):
         l = [1, 2, 5];
         self.assertRaises(IndexError, l.pop, LONG_NUMBER)
-    

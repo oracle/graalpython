@@ -1,10 +1,8 @@
-/*
- * Copyright (c) Python Software Foundation 2003-2017
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
  *
- * Licensed under the PSF LICENSE AGREEMENT that you can find here:
- * https://docs.python.org/3/license.html
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-
 /* POSIX module implementation */
 
 /* This file is also used for Windows NT/MS-Win.  In that case the

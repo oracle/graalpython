@@ -2,7 +2,6 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-
 from unittest import TestCase, skipUnless
 import operator
 import sys

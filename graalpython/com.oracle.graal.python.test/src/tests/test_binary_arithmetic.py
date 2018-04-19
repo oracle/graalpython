@@ -1,5 +1,5 @@
 # Copyright (c) 2018, Oracle and/or its affiliates.
-# Copyright (c) 2013-2016, Regents of the University of California
+# Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
 #
@@ -21,7 +21,6 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-
 def test_add_long_overflow():
     # max long value is written as long primitive
     val = 0x7fffffffffffffff
@@ -109,8 +108,8 @@ def test_bin_comparison_wo_eq_ne():
         pass
     else:
         assert False
-        
-        
+
+
 def test_floor_div():
     assert True // True == True
     assert True // 2 == 0
@@ -156,8 +155,8 @@ def test_subclass_ordered_binop():
 
     assert A(1) + C(3) == 0xb
     assert C(3) + A(1) == 0xb
-    
-    
+
+
 def assert_exception(op, ex_type):
     try:
         op()

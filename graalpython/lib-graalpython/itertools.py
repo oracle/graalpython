@@ -1,5 +1,6 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
-# Copyright (c) 2003-2017 PyPy Copyright holders
+# coding=utf-8
+# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
 # Permission is hereby granted, free of charge, to any person
@@ -20,8 +21,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
-
 class repeat():
     pass
 
