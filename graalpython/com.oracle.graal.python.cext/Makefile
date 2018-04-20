@@ -47,8 +47,10 @@ MODULE_SOURCES=$(wildcard ${VPATH}/modules/*.c)
 MODULE_OBJ_FILES=$(MODULE_SOURCES:%.c=%.o)
 MODULE_TARGETS=$(MODULE_SOURCES:${VPATH}/modules/%.c=${LIBDIR}/modules/%.bc)
 
+HEADER_TARGETS=$(INCLUDE_FILES:${VPATH}/include/%.h=${VPATH}/../include/%.h)
+
 .PHONY: default clean
-default: ${TARGET_LIB} ${MODULE_TARGETS}
+default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 
 CFLAGS=${LLVM_TARGET_FLAGS} -ggdb -emit-llvm
@@ -59,7 +61,7 @@ INCLUDES=-I${VPATH}/include
 
 rebuild:
 	$(MAKE) -C ${VPATH} clean
-	$(MAKE) -C ${VPATH} ${TARGET_LIB}
+	$(MAKE) -C ${VPATH} ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 ${LIBDIR}/modules/%.bc: ${VPATH}/modules/%.o
 	@mkdir -p ${LIBDIR}/modules
@@ -75,6 +77,10 @@ ${VPATH}/src/%.o: ${VPATH}/src/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLU
 ${VPATH}/modules/%.o: ${VPATH}/modules/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
 	clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
 	opt -o $@ $@ ${OPT_FLAGS}
+
+${VPATH}/../include/%.h: ${INCLUDE_FILES}
+	@mkdir -p ${VPATH}/../include/
+	@cp $+ ${VPATH}/../include/
 
 clean:
 	@rm -f ${TARGET_LIB}

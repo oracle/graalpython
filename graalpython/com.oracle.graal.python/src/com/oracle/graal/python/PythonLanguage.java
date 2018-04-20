@@ -137,6 +137,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             home = env.getTruffleFile(languageHome);
         }
 
+        try {
+            String envHome = System.getenv("GRAAL_PYTHONHOME");
+            if (envHome != null) {
+                TruffleFile envHomeFile = env.getTruffleFile(envHome);
+                if (envHomeFile.isDirectory()) {
+                    home = envHomeFile;
+                }
+            }
+        } catch (SecurityException e) {
+        }
+
         if (home != null) {
             if (sysPrefix.isEmpty()) {
                 env.getOptions().set(PythonOptions.SysPrefix, home.getAbsoluteFile().getPath());
