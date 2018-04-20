@@ -69,7 +69,7 @@ COPYRIGHT_HEADER = """\
  */
 // Checkstyle: stop
 //@formatter:off
-{0}\
+{0}
 """
 
 PTRN_SUPPRESS_WARNINGS = re.compile(r"@SuppressWarnings.*")
