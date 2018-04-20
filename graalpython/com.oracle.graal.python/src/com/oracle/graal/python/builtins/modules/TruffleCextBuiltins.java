@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.AsPythonObjectNodeFactory;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.PNativeToPTypeNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.ToSulongNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -141,6 +143,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Child GetClassNode getClassNode = GetClassNode.create();
         ConditionProfile branchCond = ConditionProfile.createBinaryProfile();
+
+        @Specialization
+        Object run(PythonObjectNativeWrapper object) {
+            return object.getPythonObject();
+        }
 
         @Specialization
         Object run(PythonAbstractObject object) {
@@ -266,9 +273,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return PNone.NATIVE_NONE;
         }
 
+        @Specialization(guards = "!isNativeClass(object)")
+        Object runNativeObject(PythonObject object) {
+            return new PythonObjectNativeWrapper(object);
+        }
+
         @Fallback
         Object run(Object obj) {
             return obj;
+        }
+
+        protected boolean isNativeClass(PythonObject o) {
+            return o instanceof PythonNativeClass;
         }
     }
 
@@ -571,7 +587,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child ToSulongNode toSulongNode = ToSulongNodeFactory.create(null);
         @Child AsPythonObjectNode asPythonObjectNode = AsPythonObjectNodeFactory.create(null);
         @Child private Node isNullNode = Message.IS_NULL.createNode();
-        @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
+        @Child private PNativeToPTypeNode fromForeign = PNativeToPTypeNode.create();
 
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
@@ -636,6 +652,23 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 throw getCore().raise(PythonErrorType.SystemError, this, "%s returned a result with an error set", name);
             }
             return result;
+        }
+    }
+
+    abstract static class PNativeToPTypeNode extends PForeignToPTypeNode {
+
+        @Specialization(guards = "isNativeNone(none)")
+        protected static PNone fromNativeNone(@SuppressWarnings("unused") PNone none) {
+            return PNone.NONE;
+        }
+
+        @Specialization
+        protected static PythonObject fromNativeNone(PythonObjectNativeWrapper nativeWrapper) {
+            return nativeWrapper.getPythonObject();
+        }
+
+        public static PNativeToPTypeNode create() {
+            return PNativeToPTypeNodeGen.create();
         }
     }
 

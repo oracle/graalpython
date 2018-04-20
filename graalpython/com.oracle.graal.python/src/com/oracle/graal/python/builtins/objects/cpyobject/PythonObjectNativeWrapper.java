@@ -1,7 +1,6 @@
 package com.oracle.graal.python.builtins.objects.cpyobject;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -15,8 +14,8 @@ public class PythonObjectNativeWrapper implements TruffleObject {
     private final PythonObject pythonObject;
     @CompilationFinal private Object nativePointer;
 
-    public PythonObjectNativeWrapper(PythonClass delegate) {
-        this.pythonObject = delegate;
+    public PythonObjectNativeWrapper(PythonObject object) {
+        this.pythonObject = object;
     }
 
     public boolean isNative() {
@@ -38,7 +37,7 @@ public class PythonObjectNativeWrapper implements TruffleObject {
         return pythonObject;
     }
 
-    public boolean isInstance(TruffleObject o) {
+    public static boolean isInstance(TruffleObject o) {
         return o instanceof PythonObjectNativeWrapper;
     }
 
