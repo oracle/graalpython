@@ -178,6 +178,7 @@ graalpython/com.oracle.graal.python.test/src/tests/cpyext/posixmodule.c,python.c
 graalpython/com.oracle.graal.python.test/src/tests/cpyext/posixmodule.h,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/mandelbrot3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/nbody3.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.test/src/tests/relative_import.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/richards3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/seq_tests.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/slice-test.py,zippy.copyright
