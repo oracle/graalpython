@@ -108,3 +108,18 @@ class TestPyTuple(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+    # PyTuple_Check
+    test_PyTuple_CheckExact = CPyExtFunction(
+        lambda args: type(args[0]) is tuple,
+        lambda: (
+            (tuple(),), 
+            (("hello", "world"),), 
+            ((None,),), 
+            ([],), 
+            ({},), 
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )

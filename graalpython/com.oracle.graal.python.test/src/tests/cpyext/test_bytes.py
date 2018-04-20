@@ -110,14 +110,15 @@ class TestPyBytes(CPyExtTestCase):
     )
 
     # PyBytes_GET_SIZE
-    test_PyBytes_GET_SIZE = CPyExtFunction(
-        lambda b: len(b[0]),
-        lambda: ((b"hello", ), (b"hello world",), (b"",)),
-        resultspec="n",
-        argspec="O",
-        arguments=["PyObject* arg"],
-        cmpfunc=unhandled_error_compare
-    )
+    # TODO enable once supported
+#     test_PyBytes_GET_SIZE = CPyExtFunction(
+#         lambda b: len(b[0]),
+#         lambda: ((b"hello", ), (b"hello world",), (b"",)),
+#         resultspec="n",
+#         argspec="O",
+#         arguments=["PyObject* arg"],
+#         cmpfunc=unhandled_error_compare
+#     )
 
     # PyBytes_FromFormat
     test_PyBytes_FromFormat = CPyExtFunction(
@@ -178,6 +179,23 @@ class TestPyBytes(CPyExtTestCase):
             (b"hello",),
             ("hello",),
             ("hellö".encode(),),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyBytes_CheckExact = CPyExtFunction(
+        lambda args: isinstance(args[0], bytes),
+        lambda: (
+            (b"hello",),
+            (bytes(),),
+            ("hello",),
+            ("hellö".encode(),),
+            (1,),
+            (dict(),),
+            (tuple(),),
         ),
         resultspec="i",
         argspec='O',

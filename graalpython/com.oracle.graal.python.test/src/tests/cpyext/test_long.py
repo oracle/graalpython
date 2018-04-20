@@ -238,3 +238,21 @@ class TestPyLong(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyLong_CheckExact = CPyExtFunction(
+        lambda args: type(args[0]) is int,
+        lambda: (
+            (0,), 
+            (-1,), 
+            (0xffffffff,),
+            (0xfffffffffffffffffffffff,),
+            ("hello",),
+            (DummyNonInt(),),
+            (DummyIntable(),),
+            (DummyIntSubclass(),),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )

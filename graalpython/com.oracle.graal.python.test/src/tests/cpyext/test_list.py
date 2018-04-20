@@ -93,6 +93,10 @@ class DummyClass:
         return isinstance(other, DummyClass)
 
 
+class DummyListSubclass(list):
+    pass
+
+
 class TestPyList(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
@@ -204,5 +208,45 @@ class TestPyList(CPyExtTestCase):
         resultspec="n",
         argspec='O',
         arguments=["PyObject* op"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], list),
+        lambda: (
+            ([1,2,3,4],), 
+            ([None],), 
+            ([],), 
+            (list(),), 
+            (dict(),), 
+            (tuple(),), 
+            (DummyListSubclass(),), 
+            (DummyClass(),), 
+            (1,), 
+            (1.0,), 
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_CheckExact = CPyExtFunction(
+        lambda args: type(args[0]) is list,
+        lambda: (
+            ([1,2,3,4],), 
+            ([None],), 
+            ([],), 
+            (list(),), 
+            (dict(),), 
+            (tuple(),), 
+            (DummyListSubclass(),), 
+            (DummyClass(),), 
+            (1,), 
+            (1.0,), 
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
