@@ -80,7 +80,7 @@ ${VPATH}/modules/%.o: ${VPATH}/modules/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h
 
 ${VPATH}/../include/%.h: ${INCLUDE_FILES}
 	@mkdir -p ${VPATH}/../include/
-	@cp -f $+ ${VPATH}/../include/
+	@cp $(@:${VPATH}/../include/%.h=${VPATH}/include/%.h) $@
 
 clean:
 	@rm -f ${TARGET_LIB}
