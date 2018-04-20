@@ -594,10 +594,23 @@ public class PythonMessageResolution {
         @Specialization
         Object runNone(PNone object) {
             try {
-                return ensureIsPointer(ForeignAccess.sendExecute(getExecuteNode(), getPyNoneHandle(), object));
+                ensureIsPointer(ForeignAccess.sendExecute(getExecuteNode(), getPyNoneHandle(), object));
+                return object;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw e.raise();
             }
+        }
+
+        @Specialization(guards = "isNonNative(object)")
+        Object runClass(PythonClass object) {
+            ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaType()));
+            return object;
+        }
+
+        @Fallback
+        Object runObject(Object object) {
+            ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
+            return object;
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {
@@ -666,21 +679,11 @@ public class PythonMessageResolution {
             return !(klass instanceof PythonNativeClass);
         }
 
-        @Specialization(guards = "isNonNative(object)")
-        Object runClass(PythonClass object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaType()));
-        }
-
-        @Fallback
-        Object runObject(Object object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
-        }
-
         private Object callIntoCapi(Object object, TruffleObject func) {
             Object pyobject = getReadAttr().execute(object, pyobjectKey);
             if (pyobject == PNone.NO_VALUE) {
                 try {
-                    pyobject = ForeignAccess.sendExecute(getExecuteNode(), func, object);
+                    pyobject = ensureIsPointer(ForeignAccess.sendExecute(getExecuteNode(), func, object));
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                     throw e.raise();
                 }
@@ -719,8 +722,6 @@ public class PythonMessageResolution {
         @Child private Node asPointerNode;
 
         long access(Object obj) {
-            // XXX currently, only for PythonClass; subject to change
-            assert obj instanceof PythonClass;
             Object ptr = pointerNode.execute(obj);
             if (asPointerNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
