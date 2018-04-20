@@ -200,7 +200,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
                 return os.environ.get("USER") == user and os.environ.get(home)
             return os.environ.get("USER") == user
 
-        if _is_user("tim", "MAGLEV_HOME") or _is_user("cbasca"):
+        if _is_user("tim", "MAGLEV_HOME") or _is_user("cbasca") or _is_user("fa"):
             suite_import = mx.SuiteImport("tools", version=None, urlinfos=None, dynamicImport=True, in_subdir=True)
             imported_suite, _ = mx._find_suite_import(_suite, suite_import, fatalIfMissing=False, load=False)
             if imported_suite:
@@ -241,7 +241,7 @@ def punittest(args):
 
 
 def nativebuild(args):
-    mx.build(["--only", "com.oracle.graal.python.cext"])
+    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON-ZIP"])
 
 # mx gate --tags pythonbenchmarktest
 # mx gate --tags pythontest
