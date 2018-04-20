@@ -305,7 +305,7 @@ PyObject* PyTruffle_BuildValue(const char *format, void *v1, void *v2, void *v3,
     } else if (valuen == 2) {
         // we're not using PyTuple_GetItem here because we definitely want a
         // java object and not call to_sulong on it
-        return truffle_invoke(tuple, "__getitem__", 0);
+        return to_java(to_sulong(truffle_invoke(tuple, "__getitem__", 0)));
     } else {
         PyObject* outputtuple = to_java(PyTuple_New(valuen - 1));
         for (valuen--; valuen > 0; valuen--) {

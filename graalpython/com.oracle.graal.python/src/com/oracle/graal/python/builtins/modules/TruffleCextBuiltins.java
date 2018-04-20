@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory.FromBytesNodeFactory;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -81,6 +82,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -155,6 +157,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             } else {
                 return obj;
             }
+        }
+    }
+
+    @Builtin(name = "is_python_object", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class IsPythonObjectNode extends PythonBuiltinNode {
+        public abstract boolean execute(Object value);
+
+        @Specialization
+        boolean run(Object value) {
+            return value instanceof PythonAbstractObject;
         }
     }
 
@@ -559,6 +572,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child ToSulongNode toSulongNode = ToSulongNodeFactory.create(null);
         @Child AsPythonObjectNode asPythonObjectNode = AsPythonObjectNodeFactory.create(null);
         @Child private Node isNullNode = Message.IS_NULL.createNode();
+        @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
@@ -588,9 +602,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
         }
 
-        private static Object fromNative(Object result) {
-            assert result != PNone.NATIVE_NONE;
-            return result;
+        private Object fromNative(Object result) {
+            return fromForeign.executeConvert(result);
         }
 
         public final PythonCore getCore() {

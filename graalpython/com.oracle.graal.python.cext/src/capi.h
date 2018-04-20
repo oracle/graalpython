@@ -44,10 +44,10 @@
 POLYGLOT_DECLARE_STRUCT(_object);
 POLYGLOT_DECLARE_STRUCT(_typeobject);
 
-#define to_sulong(o) polyglot_as__object(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o))
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
+extern PyObject* to_sulong(void *o);
 #define as_char_pointer(obj) truffle_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
 #define as_long(obj) truffle_invoke(PY_TRUFFLE_CEXT, "to_long", obj)
 #define as_int(obj) ((int)as_long(obj))
