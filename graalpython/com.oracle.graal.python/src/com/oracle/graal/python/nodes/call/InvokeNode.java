@@ -87,7 +87,7 @@ abstract class AbstractInvokeNode extends Node {
     protected static MaterializedFrame getCallerFrame(RootCallTarget callTarget) {
         RootNode rootNode = callTarget.getRootNode();
         MaterializedFrame callerFrame = null;
-        if (rootNode instanceof PRootNode && ((PRootNode) rootNode).isWithCallerFrame()) {
+        if (rootNode instanceof PRootNode && ((PRootNode) rootNode).needsCallerFrame()) {
             callerFrame = Truffle.getRuntime().getCurrentFrame().getFrame(FrameInstance.FrameAccess.MATERIALIZE).materialize();
         }
         return callerFrame;
@@ -198,7 +198,7 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         }
 
         RootNode rootNode = this.callNode.getRootNode();
-        if (rootNode instanceof PRootNode && ((PRootNode) rootNode).isWithCallerFrame()) {
+        if (rootNode instanceof PRootNode && ((PRootNode) rootNode).needsCallerFrame()) {
             return frame.materialize();
         }
         return null;

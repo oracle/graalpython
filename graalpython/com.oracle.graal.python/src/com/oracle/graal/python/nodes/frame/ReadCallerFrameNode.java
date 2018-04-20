@@ -85,7 +85,7 @@ public abstract class ReadCallerFrameNode extends PNode {
     private void rootNodeStartSendingOwnFrame() {
         RootNode rootNode = this.getRootNode();
         if (rootNode instanceof PRootNode) {
-            ((PRootNode) rootNode).setWithCallerFrame();
+            ((PRootNode) rootNode).setNeedsCallerFrame();
         }
     }
 

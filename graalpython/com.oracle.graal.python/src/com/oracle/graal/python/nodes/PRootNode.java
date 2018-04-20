@@ -45,7 +45,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public abstract class PRootNode extends RootNode {
-    @CompilationFinal private boolean withCallerFrame = false;
+    @CompilationFinal private boolean needsCallerFrame = false;
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -55,14 +55,14 @@ public abstract class PRootNode extends RootNode {
         super(language, frameDescriptor);
     }
 
-    public boolean isWithCallerFrame() {
-        return withCallerFrame;
+    public boolean needsCallerFrame() {
+        return needsCallerFrame;
     }
 
-    public void setWithCallerFrame() {
-        if (!this.withCallerFrame) {
+    public void setNeedsCallerFrame() {
+        if (!this.needsCallerFrame) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            this.withCallerFrame = true;
+            this.needsCallerFrame = true;
         }
     }
 
