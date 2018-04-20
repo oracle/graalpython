@@ -1,5 +1,5 @@
 {
-  overlay: "fe68531f163967a8bef53a3c5569dc675133ef96",
+  overlay: "bede2dce52030317337f1a5c8a93bff44898b981",
 
   // ======================================================================================================
   // 
@@ -201,7 +201,8 @@
     baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform},
 
   local styleGate = baseGraalGate + eclipseMixin + linuxMixin + {
-    tags:: "style,fullbuild,python-license",
+    // temporarily disabled - tags:: "style,fullbuild,python-license",
+    tags:: "python-license",
     name: "python-style",
 
     timelimit: TIME_LIMIT["1h"],
