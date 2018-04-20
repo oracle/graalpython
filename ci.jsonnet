@@ -207,9 +207,12 @@
     timelimit: TIME_LIMIT["1h"],
   },
 
-  local svmImportGate = function(source, platform="linux") 
-    local type = (if (source == true) then "source" else "binary");
-    baseGate + getPlatform(platform) + {name: "python-svm-"+ type + "-import", tags:: "python-svm-" + type},
+  local graalVmGate = baseGraalGate + linuxMixin {
+    tags:: "python-graalvm",
+    name: "python-graalvm",
+
+    timelimit: TIME_LIMIT["1h"],
+  },
 
   // ------------------------------------------------------------------------------------------------------
   //
@@ -246,10 +249,8 @@
     // style 
     styleGate,
 
-    // svm builder gates 
-    svmImportGate(source=true),
-    // TODO temporarily disabled
-    // svmImportGate(source=false),
+    // graalvm gates
+    graalVmGate,
 
     // deploy binaries 
     deployGate(platform="linux"),

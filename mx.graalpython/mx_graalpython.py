@@ -253,8 +253,7 @@ class GraalPythonTags(object):
     unittest = 'python-unittest'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
-    svmbinary = 'python-svm-binary'
-    svmsource = 'python-svm-source'
+    graalvm = 'python-graalvm'
     R = 'python-R'
     license = 'python-license'
 
@@ -354,19 +353,29 @@ def graalpython_gate_runner(args, tasks):
         if task:
             python_checkcopyrights([])
 
-    with Task('GraalPython downstream svm binary tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.svmbinary]) as task:
+    with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
         if task:
-            _run_downstream_svm(
-                [["--dynamicimports", "graalpython", "delete-graalpython-if-testdownstream"],
-                 ["gate", '-B--force-deprecation-as-warning', "--tags", "build,python"]],
-                binary=True
+            mx.run_mx(
+                ["--strict-compliance", "--dynamicimports", "/substratevm,/vm",
+                 "build", "--force-deprecation-as-warning", "--dependencies",
+                 "graalpython.image"],
+                nonZeroIsFatal=True
             )
-
-    with Task('GraalPython downstream svm source tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.svmsource]) as task:
-        if task:
-            _run_downstream_svm([[
-                "--dynamicimports", "graalpython", "--strict-compliance", "gate", '-B--force-deprecation-as-warning', "--strict-mode", "--tags", "build,python"
-            ]])
+            vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
+            svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+            benchmark = os.path.join("graalpython", "benchmarks", "src", "benchmarks", "image_magix.py")
+            out = mx.OutputCapture()
+            mx.run(
+                [svm_image, benchmark],
+                nonZeroIsFatal=True,
+                out=mx.TeeOutputCapture(out)
+            )
+            success = "\n".join([
+                "[0, 0, 0, 0, 0, 0, 20, 20, 20, 0, 0, 20, 20, 20, 0, 0, 20, 20, 20, 0, 0, 0, 0, 0, 0]",
+                "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 33, 34, 35, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55]",
+                "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 36, 36, 35, 41, 41, 40, 40, 45, 51, 52, 53, 54, 55]"])
+            if success not in out.data:
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
 
     for name, iterations in sorted(python_test_benchmarks.iteritems()):
         with Task('PythonBenchmarksTest:' + name, tasks, tags=[GraalPythonTags.benchmarks]) as task:
@@ -375,50 +384,6 @@ def graalpython_gate_runner(args, tasks):
 
 
 mx_gate.add_gate_runner(_suite, graalpython_gate_runner)
-
-
-def _run_downstream_svm(commands, binary=False):
-    new_rewrites = None
-    if binary:
-        localmvn = "/tmp/graalpythonsnapshots"
-        localmvnrepl = "file://%s" % localmvn
-        publicmvn = mx.repository("python-public-snapshots").url
-        publicmvnpattern = re.compile(publicmvn)
-        git = mx.GitConfig()
-
-        new_rewrites = [{publicmvnpattern.pattern: {"replacement": localmvnrepl}}]
-        for rewrite in _urlrewrites:
-            if rewrite.pattern.match(publicmvn):
-                # we replace rewrites of our public repo
-                pass
-            elif publicmvnpattern.match(rewrite.replacement):
-                # we rewrite to what we want
-                new_rewrites.append({rewrite.pattern.pattern: {"replacement": localmvnrepl}})
-            else:
-                new_rewrites.append({rewrite.pattern.pattern: {"replacement": rewrite.replacement}})
-        os.environ["TRUFFLE_PYTHON_VERSION"] = git.tip(_suite.dir).strip()
-        os.environ["TRUFFLE_SULONG_VERSION"] = git.tip(_sulong.dir).strip()
-        prev_urlrewrites = os.environ.get("MX_URLREWRITES")
-        os.environ["MX_URLREWRITES"] = json.dumps(new_rewrites)
-
-        mx.command_function("deploy-binary")(["--all-suites", "python-local-snapshots", localmvnrepl])
-
-    try:
-        mx.log(str(dict(os.environ)))
-        testdownstream(
-            _suite,
-            [mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
-            "substratevm",
-            commands)
-    finally:
-        if binary:
-            os.environ.pop("TRUFFLE_PYTHON_VERSION")
-            os.environ.pop("TRUFFLE_SULONG_VERSION")
-            if prev_urlrewrites:
-                os.environ["MX_URLREWRITES"] = prev_urlrewrites
-            else:
-                os.environ.pop("MX_URLREWRITES")
-            shutil.rmtree(localmvn, ignore_errors=True)
 
 
 class ArchiveProject(mx.ArchivableProject):
