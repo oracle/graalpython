@@ -513,7 +513,9 @@ def python_checkcopyrights(args):
                 listfile.write(line)
                 listfile.write("\n")
     try:
-        mx.command_function("checkcopyrights")(["--primary", "--", "--file-list", listfilename] + args)
+        r = mx.command_function("checkcopyrights")(["--primary", "--", "--file-list", listfilename] + args)
+        if r != 0:
+            mx.abort("copyrights check failed")
     finally:
         os.unlink(listfilename)
 
