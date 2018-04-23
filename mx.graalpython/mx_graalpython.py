@@ -241,7 +241,7 @@ def punittest(args):
 
 
 def nativebuild(args):
-    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON-ZIP"])
+    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON"])
 
 # mx gate --tags pythonbenchmarktest
 # mx gate --tags pythontest
