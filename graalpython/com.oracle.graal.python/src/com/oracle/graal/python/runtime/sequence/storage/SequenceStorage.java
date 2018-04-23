@@ -54,7 +54,7 @@ public abstract class SequenceStorage {
 
     public abstract void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException;
 
-    public abstract void delSlice(int start, int stop);
+    public abstract void delSlice(int start, int stop, int step);
 
     public abstract void delItemInBound(int idx);
 
@@ -77,7 +77,7 @@ public abstract class SequenceStorage {
     public abstract Object getIndicativeValue();
 
     public void clear() {
-        this.delSlice(0, length());
+        this.delSlice(0, length(), 1);
     }
 
     public int count(Object arg) {

@@ -35,13 +35,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import seq_tests
+
 LONG_NUMBER = 6227020800;
 
 
 
-class ListTest():
+class ListTest(seq_tests.CommonTest):
+
+    type2test = tuple
 
     # ======== Specific test for Graal Python ======
+    def test_getitem(self):
+        l = [1, 2, 3]
+        self.assertEqual(1, l[False])
+
     def pop_all_list(self, list):
         size = len(list)
         self.assertRaises(IndexError, list.pop, size)
@@ -94,3 +102,103 @@ class ListTest():
     def test_pop_border(self):
         l = [1, 2, 5];
         self.assertRaises(IndexError, l.pop, LONG_NUMBER)
+
+    def test_del_item(self):
+        l = [1, 2, 3]
+        l.__delitem__(0)
+        self.assertEqual([2, 3], l)
+        l.__delitem__(-1)
+        self.assertEqual([2], l)
+        l = [1, 2, 3]
+        del(l[1])
+        self.assertEqual([1, 3], l)
+        del(l[False])
+        self.assertEqual([3], l)
+        l = [1.1, 2.1, 3.1]
+        l.__delitem__(0)
+        self.assertEqual([2.1, 3.1], l)
+        l.__delitem__(-1)
+        self.assertEqual([2.1], l)
+        l = [1.1, 2.1, 3.1]
+        del(l[1])
+        self.assertEqual([1.1, 3.1], l)
+
+    def test_del_border(self):
+        l = [1, 2, 3]
+        self.assertRaises(IndexError, l.__delitem__, 3)
+        self.assertRaises(IndexError, l.__delitem__, -4)
+        self.assertRaises(IndexError, l.__delitem__, LONG_NUMBER)
+        self.assertRaises(TypeError, l.__delitem__, 'a')
+
+    def slice_test(self, l, s, expected):
+        result = l[s]
+        if (s.step == None):
+            result2 = l[s.start:s.stop]
+        else:
+            result2 = l[s.start:s.stop:s.step]
+        self.assertEqual(result, result2, "list[s] and list[s.start:s.stop:s.step] has to be same. Fails with [{}:{}:{}]".format(s.start, s.stop, s.step))
+        self.assertEqual(result, expected, "list[{}:{}:{}] should be {}, but is {}".format(s.start, s.stop, s.step, expected, result))
+    
+    def test_slice(self):
+        self.slice_test(list(range(0,20)), slice(1,5), [1, 2, 3, 4])
+        self.slice_test(list(range(0,20)), slice(0,5), [0,1, 2, 3, 4])
+        self.slice_test(list(range(0,20)), slice(-1,5), [])
+        self.slice_test(list(range(0,20)), slice(-15,5), [])
+        self.slice_test(list(range(0,20)), slice(-16,5), [4])
+        self.slice_test(list(range(0,20)), slice(-22,5), [0,1, 2, 3, 4])
+        #self.slice_test(list(range(0,20)), slice(-LONG_NUMBER,5), [0,1, 2, 3, 4])
+
+        self.slice_test(list(range(0,20)), slice(15,20), [15, 16, 17, 18, 19])
+        self.slice_test(list(range(0,20)), slice(15,20), [15, 16, 17, 18, 19])
+        self.slice_test(list(range(0,20)), slice(-15,7), [5, 6])
+        self.slice_test(list(range(0,20)), slice(18,70), [18, 19])
+
+        self.slice_test(list(range(0,20)), slice(2,70,5), [2, 7, 12, 17])
+        self.slice_test(list(range(0,20)), slice(2,70,-5), [])
+        self.slice_test(list(range(0,20)), slice(15,6,-5), [15, 10])
+        self.slice_test(list(range(0,20)), slice(15,6,5), [])
+        self.slice_test(list(range(0,20)), slice(-15,6,5), [5])
+        self.slice_test(list(range(0,20)), slice(-15,6,-5), [])
+        self.slice_test(list(range(0,20)), slice(-2, -21, -4), [18, 14, 10, 6, 2])
+
+        
+    def del_slice(self, l, s, expected):
+        tmplist = list(l)
+        del(tmplist[s])
+        self.assertEqual(tmplist, expected, "del(list([{}:{}:{}])) expected: {}, get: {}".format(s.start, s.stop, s.step, expected, tmplist))
+        tmplist = list(l)
+        if (s.step == None):
+            del(tmplist[s.start:s.stop])
+        else:
+            del(tmplist[s.start:s.stop:s.step])
+        self.assertEqual(tmplist, expected, "del(list( slice({}, {}, {}))) expected: {}, get: {}".format(s.start, s.stop, s.step, expected, tmplist))
+
+        
+    def test_del_slice(self):
+        self.del_slice(list(range(0, 20)), slice(1, 19), [0, 19])
+        self.del_slice(list(range(0, 20)), slice(0, 19), [19])
+        self.del_slice(list(range(0, 20)), slice(1, 20), [0])
+        self.del_slice(list(range(0, 20)), slice(10, 100), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        self.del_slice(list(range(0, 20)), slice(-10, 100), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        self.del_slice(list(range(0, 20)), slice(-10, 5), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+        self.del_slice(list(range(0, 20)), slice(-5, -1), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19])
+        self.del_slice(list(range(0, 20)), slice(-30, -1), [19])
+        
+
+    def test_del_slice_step(self):
+        self.del_slice(list(range(0, 20)), slice(0, 20, 2), [1, 3, 5, 7, 9, 11, 13, 15, 17, 19])
+        self.del_slice(list(range(0, 20)), slice(0, 20, 5), [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19])
+        self.del_slice(list(range(0, 20)), slice(-1, -55, 2), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+        self.del_slice(list(range(0, 20)), slice(-1, -55, -2), [0, 2, 4, 6, 8, 10, 12, 14, 16, 18])
+        self.del_slice(list(range(0, 20)), slice(-1, -55, -3), [0, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18])
+        self.del_slice(list(range(0, 20)), slice(-3, -55, -1), [18, 19])
+        self.del_slice(list(range(0, 20)), slice(20, 2, -2), [0, 1, 2, 4, 6, 8, 10, 12, 14, 16, 18])
+        self.del_slice(list(range(0, 20)), slice(20, 2, -3), [0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18])
+        self.del_slice(list(range(0, 20)), slice(20, 1, -3), [0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18])
+        self.del_slice(list(range(0, 20)), slice(20, 0, -3), [0, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18])
+        self.del_slice(list(range(0, 20)), slice(-3, 55, -1), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+        self.del_slice(list(range(0, 20)), slice(-100, -5, 2), [1, 3, 5, 7, 9, 11, 13, 15, 16, 17, 18, 19])
+        self.del_slice(list(range(0, 20)), slice(-15, -55, -1), [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
+        self.del_slice(list(range(0, 20)), slice(-4, -18, -3), [0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18, 19])
+        self.del_slice(list(range(0, 20)), slice(-3, -55, -4), [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19])
+        self.del_slice(list(range(0, 20)), slice(-1, -55, -4), [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18])

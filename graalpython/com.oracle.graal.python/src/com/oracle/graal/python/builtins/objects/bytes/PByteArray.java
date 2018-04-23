@@ -205,7 +205,8 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     public final void delSlice(PSlice slice) {
         int start = SequenceUtil.normalizeSliceStart(slice, store.length(), "array index out of range");
         final int stop = SequenceUtil.normalizeSliceStop(slice, store.length(), "array index out of range");
-        store.delSlice(start, stop);
+        final int step = SequenceUtil.normalizeSliceStep(slice);
+        store.delSlice(start, stop, step);
     }
 
     public int count(Object arg) {
