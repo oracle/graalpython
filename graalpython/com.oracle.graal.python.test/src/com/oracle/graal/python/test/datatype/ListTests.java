@@ -82,6 +82,12 @@ public class ListTests {
         String source = "llist = [1,2,3]\n" + //
                         "print(llist.append(4))\n";
 
+        assertPrints("None\n", source);
+
+        source = "llist = [1,2,3]\n" + //
+                        "llist.append(4)\n" +
+                        "print(llist)\n";
+
         assertPrints("[1, 2, 3, 4]\n", source);
     }
 

@@ -234,7 +234,9 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         if (other.length() != length()) {
             return false;
         }
-
+        if (this == other) {
+            return true;
+        }
         int nominalLength = length() <= other.length() ? length() : other.length();
         Object[] otherArray = other.getInternalArray();
         for (int i = 0; i < nominalLength; i++) {

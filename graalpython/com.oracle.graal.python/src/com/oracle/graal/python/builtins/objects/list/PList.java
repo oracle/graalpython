@@ -233,7 +233,9 @@ public final class PList extends PSequence {
         if (!(other instanceof PList)) {
             return false;
         }
-
+        if (this == other) {
+            return true;
+        }
         PList otherList = (PList) other;
         SequenceStorage otherStore = otherList.getSequenceStorage();
         return store.equals(otherStore);
