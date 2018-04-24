@@ -52,5 +52,5 @@ public abstract class SpecialPyObjectAttributes {
     @CompilationFinal public static int tp_base;
     @CompilationFinal public static int tp_flags;
 
-    public static final HiddenKey pyobjectKey = new HiddenKey("native_handle");
+    public static final HiddenKey NATIVE_WRAPPER_KEY = new HiddenKey("native_wrapper");
 }

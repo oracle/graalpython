@@ -80,7 +80,7 @@ public class PythonObjectNativeWrapper implements TruffleObject {
     }
 
     public ForeignAccess getForeignAccess() {
-        return null;
+        return PythonObjectNativeWrapperMRForeign.ACCESS;
     }
 
 }

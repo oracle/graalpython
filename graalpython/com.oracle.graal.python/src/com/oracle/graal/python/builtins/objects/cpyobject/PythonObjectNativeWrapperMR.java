@@ -48,6 +48,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.SpecialPyObjectAttributes;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -279,6 +282,8 @@ public class PythonObjectNativeWrapperMR {
         @Child private Node executeNode;
         @Child private Node isPointerNode;
         @Child private Node toNativeNode;
+        @Child private ReadAttributeFromObjectNode readAttr;
+        @Child private WriteAttributeToObjectNode writeAttr;
 
         public abstract Object execute(PythonAbstractObject value);
 
@@ -312,7 +317,13 @@ public class PythonObjectNativeWrapperMR {
 
         @Fallback
         Object runObject(PythonAbstractObject object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
+            Object pyobject = getReadAttr().execute(object, SpecialPyObjectAttributes.NATIVE_WRAPPER_KEY);
+            if (pyobject == PNone.NO_VALUE) {
+                pyobject = ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
+                getWriteAttr().execute(object, SpecialPyObjectAttributes.NATIVE_WRAPPER_KEY, pyobject);
+            }
+
+            return pyobject;
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {
@@ -371,6 +382,22 @@ public class PythonObjectNativeWrapperMR {
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw e.raise();
             }
+        }
+
+        private ReadAttributeFromObjectNode getReadAttr() {
+            if (readAttr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readAttr = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readAttr;
+        }
+
+        private WriteAttributeToObjectNode getWriteAttr() {
+            if (writeAttr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeAttr = insert(WriteAttributeToObjectNode.create());
+            }
+            return writeAttr;
         }
     }
 
