@@ -175,7 +175,7 @@ PyObject * PyUnicode_FromEncodedObject(PyObject *obj, const char *encoding, cons
 
 void PyUnicode_InternInPlace(PyObject **s) {
      PyObject *interned = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_InternInPlace", to_java(*s));
-     *s = interned;
+     *s = to_sulong(interned);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
