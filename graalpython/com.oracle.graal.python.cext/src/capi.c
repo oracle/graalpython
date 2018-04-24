@@ -107,10 +107,10 @@ void* to_java_type(PyTypeObject* cls) {
 
 PyObject* to_sulong(void *o) {
 	PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
-	if (truffle_is_handle_to_managed(cobj)) {
-		return cobj;
+	if(polyglot_is_value(cobj)) {
+		return polyglot_as__object(cobj);
 	}
-	return polyglot_as__object(cobj);
+	return cobj;
 }
 
 void* get_ob_type(PyObject* obj) {
