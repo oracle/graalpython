@@ -1098,8 +1098,10 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         loops.beginLoop(ctx);
         PNode test = (PNode) ctx.test().accept(this);
         PNode body = asBlockOrPNode(ctx.suite(0).accept(this));
+        LoopInfo info = loops.endLoop();
+        // the else node is outside of the loop info structure
         PNode orelse = ctx.suite().size() == 2 ? asBlockOrPNode(ctx.suite(1).accept(this)) : EmptyNode.create();
-        return createWhileNode(test, body, orelse, loops.endLoop());
+        return createWhileNode(test, body, orelse, info);
     }
 
     private PNode createWhileNode(PNode test, PNode body, PNode orelse, LoopInfo info) {
@@ -1130,8 +1132,10 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         PNode target = assigns.translate(ctx.exprlist());
         PNode iter = asBlockOrPNode(ctx.testlist().accept(this));
         PNode body = asBlockOrPNode(ctx.suite(0).accept(this));
+        LoopInfo info = loops.endLoop();
+        // the else node is outside of the loop info structure
         PNode orelse = ctx.suite().size() == 2 ? asBlockOrPNode(ctx.suite(1).accept(this)) : EmptyNode.create();
-        return createForNode(target, iter, body, orelse, loops.endLoop());
+        return createForNode(target, iter, body, orelse, info);
     }
 
     private PNode createForNode(PNode target, PNode iter, PNode body, PNode orelse, LoopInfo info) {

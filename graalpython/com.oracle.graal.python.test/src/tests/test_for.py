@@ -66,3 +66,21 @@ Current fruit : mango
 12 = 2 * 6
 13 prime number
 14 = 2 * 7"""
+
+
+def test_else_continue():
+    sequence = []
+    items = [1,2,3]
+    do_break = False
+    while True:
+        for _ in items:
+            pass # no break so we will execute the else
+        else:
+            if do_break:
+                sequence.append("break")
+                break
+            do_break = True
+            sequence.append("continue")
+            continue
+
+    assert ["continue", "break"] == sequence
