@@ -46,9 +46,9 @@ void marry_objects(PyObject* obj, void* jobj) {
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    PyTypeObject* ptype = polyglot_as__typeobject(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
+    PyTypeObject* ptype = (PyTypeObject *)to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
     unsigned long original_flags = structure->tp_flags;
-    PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
+    PyTypeObject* type_handle = truffle_assign_managed(structure, polyglot_as__typeobject(ptype));
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
 }
@@ -96,13 +96,7 @@ void* to_java(PyObject* obj) {
 }
 
 void* to_java_type(PyTypeObject* cls) {
-	if (truffle_is_handle_to_managed(cls)) {
-		return truffle_managed_from_handle(cls);
-    } else if (truffle_is_handle_to_managed(((PyObject*)cls)->ob_refcnt)) {
-		PyType_Ready(cls); // make sure we have an associated Java class
-		return truffle_managed_from_handle(((PyObject*)cls)->ob_refcnt);
-	}
-	return cls;
+	return to_java((PyObject*)cls);
 }
 
 PyObject* to_sulong(void *o) {
@@ -127,14 +121,16 @@ PyObject* PyNoneHandle() {
 
 PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
     PyObject* obj = (PyObject*)PyObject_Malloc(sizeof(PyObjectHandle));
-    marry_objects(obj, jobject);
+    obj->ob_refcnt = truffle_handle_for_managed(jobject);
+    void *type = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobject);
+    obj->ob_type = PyObjectHandle_ForJavaType(type);
     return obj;
 }
 
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
 	// A handle is created at the first time we
 	if (!truffle_is_handle_to_managed(jobj)) {
-		PyTypeObject* jtypeobj = polyglot_as__typeobject(jobj);
+		PyTypeObject* jtypeobj = polyglot_as__typeobject(to_sulong(jobj));
 		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jtypeobj);
 		truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jtypeobj, deref_handle);
 		return deref_handle;

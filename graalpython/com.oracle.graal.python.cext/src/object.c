@@ -237,16 +237,19 @@ int PyType_Ready(PyTypeObject* cls) {
         cls->tp_doc = "";
     }
 
-    PyObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
-                                       "PyType_Ready",
-                                       // no conversion of cls here, because we
-                                       // store this into the PyTypeObject
-                                       cls,
-                                       to_java_type(metaclass),
-                                       to_java_type(base),
-                                       truffle_read_string(cls->tp_name),
-                                       truffle_read_string(cls->tp_doc));
+    PyTypeObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
+                                                      "PyType_Ready",
+                                                      // no conversion of cls here, because we
+                                                      // store this into the PyTypeObject
+                                                      cls,
+                                                      to_java_type(metaclass),
+                                                      to_java_type(base),
+                                                      truffle_read_string(cls->tp_name),
+                                                      truffle_read_string(cls->tp_doc));
     // store the back reference
+    if (truffle_is_truffle_object(javacls)) {
+    	javacls = polyglot_as__typeobject(javacls);
+    }
     marry_objects((PyObject*)cls, javacls);
 
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_name

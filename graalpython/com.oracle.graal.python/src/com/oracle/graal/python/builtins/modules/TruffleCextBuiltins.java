@@ -38,8 +38,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialPyObjectAttributes.pyobjectKey;
-
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -124,11 +122,31 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "marry_objects", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class MarryObjectsNode extends PythonBuiltinNode {
-        @Child WriteAttributeToObjectNode writeNode = WriteAttributeToObjectNode.create();
+        @Specialization
+        boolean run(PythonObjectNativeWrapper object, Object nativeObject) {
+            object.setNativePointer(nativeObject);
+            return true;
+        }
 
         @Specialization
-        Object run(PythonObject object, Object nativeObject) {
-            return writeNode.execute(object, pyobjectKey, nativeObject);
+        @SuppressWarnings("unused")
+        boolean doNativeClass(PythonNativeClass object, Object nativeObject) {
+            // nothing to do
+            assert object.object != null;
+            return true;
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        boolean doNativeObject(PythonNativeObject object, Object nativeObject) {
+            // nothing to do
+            assert object.object != null;
+            return true;
+        }
+
+        @Fallback
+        boolean run(Object object, @SuppressWarnings("unused") Object nativeObject) {
+            throw new AssertionError("try to marry with object " + object);
         }
     }
 
@@ -234,28 +252,28 @@ public class TruffleCextBuiltins extends PythonBuiltins {
          * passed from Python into C code need to wrap Strings into PStrings.
          */
         @Specialization
-        PString run(String str) {
-            return factory().createString(str);
+        Object run(String str) {
+            return wrap(factory().createString(str));
         }
 
         @Specialization
-        PInt run(boolean b) {
-            return factory().createInt(b);
+        Object run(boolean b) {
+            return wrap(factory().createInt(b));
         }
 
         @Specialization
-        PInt run(int integer) {
-            return factory().createInt(integer);
+        Object run(int integer) {
+            return wrap(factory().createInt(integer));
         }
 
         @Specialization
-        PInt run(long integer) {
-            return factory().createInt(integer);
+        Object run(long integer) {
+            return wrap(factory().createInt(integer));
         }
 
         @Specialization
-        PFloat run(double number) {
-            return factory().createFloat(number);
+        Object run(double number) {
+            return wrap(factory().createFloat(number));
         }
 
         @Specialization
@@ -275,7 +293,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeClass(object)")
         Object runNativeObject(PythonObject object) {
-            return new PythonObjectNativeWrapper(object);
+            return wrap(object);
         }
 
         @Fallback
@@ -286,12 +304,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         protected boolean isNativeClass(PythonObject o) {
             return o instanceof PythonNativeClass;
         }
+
+        private static PythonObjectNativeWrapper wrap(PythonObject obj) {
+            return new PythonObjectNativeWrapper(obj);
+        }
     }
 
     @Builtin(name = "to_long", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class AsLong extends PythonBuiltinNode {
         @Child private BuiltinConstructors.IntNode intNode;
+
+        abstract Object executeWith(Object value);
 
         @Specialization
         int run(boolean value) {
@@ -324,6 +348,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return (long) value.getValue();
         }
 
+        @Specialization
+        Object run(PythonObjectNativeWrapper value,
+                        @Cached("create()") AsLong recursive) {
+            return recursive.executeWith(value.getPythonObject());
+        }
+
         private BuiltinConstructors.IntNode getIntNode() {
             if (intNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -335,6 +365,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Fallback
         Object runGeneric(Object value) {
             return getIntNode().executeWith(getCore().lookupType(Integer.class), value, PNone.NONE);
+        }
+
+        static AsLong create() {
+            return TruffleCextBuiltinsFactory.AsLongFactory.create(null);
         }
     }
 
@@ -567,14 +601,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child WriteAttributeToObjectNode writeNode = WriteAttributeToObjectNode.create();
 
         @Specialization
-        Object run(TruffleObject typestruct, PythonClass metaClass, PythonClass baseClass, String name, String doc) {
+        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PythonClass baseClass, String name, String doc) {
             PythonClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, new PythonClass[]{baseClass});
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
             return cclass;
         }
 
         @Specialization
-        Object run(TruffleObject typestruct, PythonClass metaClass, PythonClass baseClass, PString name, PString doc) {
+        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PythonClass baseClass, PString name, PString doc) {
             return run(typestruct, metaClass, baseClass, name.getValue(), doc.getValue());
         }
     }
