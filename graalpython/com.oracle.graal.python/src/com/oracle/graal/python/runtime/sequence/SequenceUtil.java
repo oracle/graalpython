@@ -197,10 +197,6 @@ public class SequenceUtil {
         return step;
     }
 
-    public static void deleteSlice(Object[] values, int start, int stop, int step) {
-
-    }
-
     /**
      * Make step a long in case adding the start, stop and step together overflows an int.
      */
