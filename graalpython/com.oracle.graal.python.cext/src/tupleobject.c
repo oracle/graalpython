@@ -42,19 +42,23 @@ PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE("tuple", &PyType_Type, Py_TPFLAGS_DE
 
 /* Tuples */
 PyObject* PyTuple_New(Py_ssize_t size) {
-    return (PyObject*)truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_New", size);
+    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_New", size));
 }
 
 int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyTuple_SetItem", to_java(tuple), position, to_java(item));
 }
 
-PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-	PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetItem", to_java(tuple), position, ERROR_MARKER);
+void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position) {
+	void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetItem", jtuple, position, ERROR_MARKER);
 	if (result == ERROR_MARKER) {
 		return NULL;
 	}
-    return to_sulong(result);
+    return result;
+}
+
+PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
+	return to_sulong(PyTruffle_Tuple_GetItem(to_java(tuple), position));
 }
 
 Py_ssize_t PyTuple_Size(PyObject *op) {

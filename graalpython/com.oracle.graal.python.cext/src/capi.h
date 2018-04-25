@@ -60,8 +60,6 @@ extern PyObject* to_sulong(void *o);
 // defined in 'exceptions.c'
 void initialize_exceptions();
 
-void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker);
-
 #define write_struct_field(object, struct, fieldname, value)            \
     truffle_write(to_java(object),                                      \
                   #fieldname ,                                          \
@@ -176,5 +174,15 @@ extern void WritePySSizeT(PyObject* object, int offset, Py_ssize_t value);
 
 extern PyObject marker_struct;
 #define ERROR_MARKER &marker_struct
+
+/* internal functions to avoid unnecessary managed <-> native conversions */
+
+/* UNICODE */
+
+void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker);
+
+/* DICT */
+
+void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
 
 #endif
