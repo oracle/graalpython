@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
  */
 public class PythonNativeClass extends PythonClass {
     public final Object object;
+
     public PythonNativeClass(Object obj, PythonClass type, String name, PythonClass... bases) {
         super(type, name, bases);
         object = obj;
