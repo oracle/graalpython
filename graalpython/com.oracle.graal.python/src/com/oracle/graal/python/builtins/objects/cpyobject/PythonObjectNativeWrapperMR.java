@@ -48,9 +48,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.SpecialPyObjectAttributes;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -177,7 +174,7 @@ public class PythonObjectNativeWrapperMR {
         abstract Object execute(Object receiver, Object key, Object value);
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, PythonClass value) {
+        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonClass value) {
             // At this point, we do not support changing the type of an object.
             return object;
         }
@@ -189,7 +186,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Fallback
-        Object doGeneric(Object object, Object key, Object value) {
+        Object doGeneric(Object object, Object key, @SuppressWarnings("unused") Object value) {
             CompilerDirectives.transferToInterpreter();
             throw new AssertionError("Cannot modify member '" + key + "' of " + object);
         }
@@ -228,18 +225,18 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "KEYS")
     abstract static class PForeignKeysNode extends Node {
-        public Object access(Object object) {
+        public Object access(@SuppressWarnings("unused") Object object) {
             return null;
         }
     }
 
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
-        @Child private ToPyObjectNode toPyTypeNode = ToPyObjectNodeGen.create();
+        @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNodeGen.create();
 
         Object access(PythonObjectNativeWrapper obj) {
             assert !obj.isNative();
-            Object ptr = toPyTypeNode.execute(obj.getPythonObject());
+            Object ptr = toPyObjectNode.execute(obj.getPythonObject());
             obj.setNativePointer(ptr);
             return obj;
         }
@@ -257,13 +254,13 @@ public class PythonObjectNativeWrapperMR {
         @Child private Node asPointerNode;
 
         long access(PythonObjectNativeWrapper obj) {
-            if (asPointerNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPointerNode = insert(Message.AS_POINTER.createNode());
-            }
             // the native pointer object must either be a TruffleObject or a primitive
             Object nativePointer = obj.getNativePointer();
             if (nativePointer instanceof TruffleObject) {
+                if (asPointerNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    asPointerNode = insert(Message.AS_POINTER.createNode());
+                }
                 try {
                     return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) nativePointer);
                 } catch (UnsupportedMessageException e) {
@@ -282,8 +279,6 @@ public class PythonObjectNativeWrapperMR {
         @Child private Node executeNode;
         @Child private Node isPointerNode;
         @Child private Node toNativeNode;
-        @Child private ReadAttributeFromObjectNode readAttr;
-        @Child private WriteAttributeToObjectNode writeAttr;
 
         public abstract Object execute(PythonAbstractObject value);
 
@@ -317,13 +312,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Fallback
         Object runObject(PythonAbstractObject object) {
-            Object pyobject = getReadAttr().execute(object, SpecialPyObjectAttributes.NATIVE_WRAPPER_KEY);
-            if (pyobject == PNone.NO_VALUE) {
-                pyobject = ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
-                getWriteAttr().execute(object, SpecialPyObjectAttributes.NATIVE_WRAPPER_KEY, pyobject);
-            }
-
-            return pyobject;
+            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {
@@ -382,22 +371,6 @@ public class PythonObjectNativeWrapperMR {
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw e.raise();
             }
-        }
-
-        private ReadAttributeFromObjectNode getReadAttr() {
-            if (readAttr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttr = insert(ReadAttributeFromObjectNode.create());
-            }
-            return readAttr;
-        }
-
-        private WriteAttributeToObjectNode getWriteAttr() {
-            if (writeAttr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeAttr = insert(WriteAttributeToObjectNode.create());
-            }
-            return writeAttr;
         }
     }
 

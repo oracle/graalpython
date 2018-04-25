@@ -306,7 +306,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         private static PythonObjectNativeWrapper wrap(PythonObject obj) {
-            return new PythonObjectNativeWrapper(obj);
+            // important: native wrappers are cached
+            PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+            if (nativeWrapper == null) {
+                nativeWrapper = new PythonObjectNativeWrapper(obj);
+                obj.setNativeWrapper(nativeWrapper);
+            }
+            return nativeWrapper;
         }
     }
 
