@@ -563,4 +563,15 @@ class HexFloatTests(unittest.TestCase):
         self.assertEqual(f, 1.5)
         self.assertEqual(getattr(f, 'foo', 'none'), 'bar')
 
+    def test_GR8901(self):
+        class F(float):
+            def _new_(cls, value):
+                return float._new_(cls, value + 1)
+        
+            @classmethod 
+            def fromhex(cls, value1, value2):
+                return super(F, cls).fromhex(value1 + value2)
 
+        f = F.fromhex('1', '1')
+        self.assertEqual(17.0, f)
+        self.assertEqual(F, type(f))
