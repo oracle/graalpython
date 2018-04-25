@@ -114,6 +114,11 @@ tokens { INDENT, DEDENT }
     int count = 0;
     for (char ch : spaces.toCharArray()) {
       switch (ch) {
+        case '\r':
+        case '\n':
+        case '\f':
+          // ignore
+          break;
         case '\t':
           count += 8 - (count % 8);
           break;
@@ -344,12 +349,11 @@ ASYNC : 'async';
 AWAIT : 'await';
 
 NEWLINE
- : ( {atStartOfInput()}?   SPACES
-   | ( '\r'? '\n' | '\r' | '\f' ) SPACES?
+ : ( // removed to speed up parsing:
+     // {atStartOfInput()}?   SPACES |
+     ( '\r'? '\n' | '\r' | '\f' ) SPACES?
    )
    {
-     String newLine = getText().replaceAll("[^\r\n\f]+", "");
-     String spaces = getText().replaceAll("[\r\n\f]+", "");
      int next = _input.LA(1);
      if (opened > 0 || next == '\r' || next == '\n' || next == '\f' || next == '#') {
        // If we're inside a list or on a blank line, ignore all indents, 
@@ -357,20 +361,22 @@ NEWLINE
        skip();
      }
      else {
-       emit(commonToken(NEWLINE, newLine));
-       int indent = getIndentationCount(spaces);
-       int previous = indents.isEmpty() ? 0 : indents.peek();
+       emit(commonToken(NEWLINE, "\n"));
+       int indent;
        if (next == EOF) {
          // don't add indents if we're going to finish
          indent = 0;
+       } else {
+         indent = getIndentationCount(getText());
        }
+       int previous = indents.isEmpty() ? 0 : indents.peek();
        if (indent == previous) {
          // skip indents of the same size as the present indent-size
          skip();
        }
        else if (indent > previous) {
          indents.push(indent);
-         emit(commonToken(Python3Parser.INDENT, spaces));
+         emit(commonToken(Python3Parser.INDENT, getText()));
        }
        else {
          // Possibly emit more than 1 DEDENT token.
