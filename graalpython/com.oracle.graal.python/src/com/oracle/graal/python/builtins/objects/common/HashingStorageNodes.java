@@ -1253,12 +1253,8 @@ public abstract class HashingStorageNodes {
 
         public HashingStorage execute(HashingStorage left, HashingStorage right) {
             EconomicMapStorage newStorage = EconomicMapStorage.create(false);
-            if (left.length() != 0) {
-                newStorage.addAll(left);
-            }
-            if (right.length() != 0) {
-                newStorage.addAll(right);
-            }
+            newStorage.addAll(left);
+            newStorage.addAll(right);
             return newStorage;
         }
 
