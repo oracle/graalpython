@@ -59,6 +59,7 @@
 #include <langinfo.h>
 #include <assert.h>
 #include <unistd.h>
+#include <error.h>
 
 #include "pyport.h"
 #include "pymacro.h"
@@ -197,58 +198,6 @@ extern PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, 
 #define PyTruffle_Unicode_FromFormat_10(FORMAT, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10) PyTruffle_Unicode_FromFormat(FORMAT, 10, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, (void*)V10)
 #define ARG_PARSE_UNICODE_FORMAT_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
 #define PyUnicode_FromFormat(FORMAT, ...) ARG_PARSE_UNICODE_FORMAT_IMPL(__VA_ARGS__, PyTruffle_Unicode_FromFormat_10, PyTruffle_Unicode_FromFormat_9, PyTruffle_Unicode_FromFormat_8, PyTruffle_Unicode_FromFormat_7, PyTruffle_Unicode_FromFormat_6, PyTruffle_Unicode_FromFormat_5, PyTruffle_Unicode_FromFormat_4, PyTruffle_Unicode_FromFormat_3, PyTruffle_Unicode_FromFormat_2, PyTruffle_Unicode_FromFormat_1)(FORMAT, __VA_ARGS__)
-
-extern PyObject* PyTruffle_Object_CallFunction(PyObject* callable, const char* fmt, int c, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9);
-#define PyTruffle_Object_CallFunction_1(F, FMT, V1) PyTruffle_Object_CallFunction(F, FMT, 1, (void*)V1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunction_2(F, FMT, V1, V2) PyTruffle_Object_CallFunction(F, FMT, 2, (void*)V1, (void*)V2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunction_3(F, FMT, V1, V2, V3) PyTruffle_Object_CallFunction(F, FMT, 3, (void*)V1, (void*)V2, (void*)V3, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunction_4(F, FMT, V1, V2, V3, V4) PyTruffle_Object_CallFunction(F, FMT, 4, (void*)V1, (void*)V2, (void*)V3, (void*)V4, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunction_5(F, FMT, V1, V2, V3, V4, V5) PyTruffle_Object_CallFunction(F, FMT, 5, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunction_6(F, FMT, V1, V2, V3, V4, V5, V6) PyTruffle_Object_CallFunction(F, FMT, 6, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunction_7(F, FMT, V1, V2, V3, V4, V5, V6, V7) PyTruffle_Object_CallFunction(F, FMT, 7, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunction_8(F, FMT, V1, V2, V3, V4, V5, V6, V7, V8) PyTruffle_Object_CallFunction(F, FMT, 8, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, NULL, NULL)
-#define PyTruffle_Object_CallFunction_9(F, FMT, V1, V2, V3, V4, V5, V6, V7, V8, V9) PyTruffle_Object_CallFunction(F, FMT, 9, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, NULL)
-#define PyTruffle_Object_CallFunction_10(F, FMT, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10) PyTruffle_Object_CallFunction(F, FMT, 10, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, (void*)V10)
-#define CALL_FUNCTION_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
-#ifdef PyObject_CallFunction
-#undef PyObject_CallFunction
-#endif
-#define PyObject_CallFunction(F, FMT, ...) CALL_FUNCTION_IMPL(__VA_ARGS__, PyTruffle_Object_CallFunction_10, PyTruffle_Object_CallFunction_9, PyTruffle_Object_CallFunction_8, PyTruffle_Object_CallFunction_7, PyTruffle_Object_CallFunction_6, PyTruffle_Object_CallFunction_5, PyTruffle_Object_CallFunction_4, PyTruffle_Object_CallFunction_3, PyTruffle_Object_CallFunction_2, PyTruffle_Object_CallFunction_1)(F, FMT, __VA_ARGS__)
-
-#ifdef PyObject_CallFunctionObjArgs
-#undef PyObject_CallFunctionObjArgs
-#endif
-#define PyTruffle_Object_CallFunctionObjArgs_1(F, V1) PyTruffle_Object_CallFunction(F, "", 0, (void*)V1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_2(F, V1, V2) PyTruffle_Object_CallFunction(F, "O", 1, (void*)V1, (void*)V2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_3(F, V1, V2, V3) PyTruffle_Object_CallFunction(F, "OO", 2, (void*)V1, (void*)V2, (void*)V3, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_4(F, V1, V2, V3, V4) PyTruffle_Object_CallFunction(F, "OOO", 3, (void*)V1, (void*)V2, (void*)V3, (void*)V4, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_5(F, V1, V2, V3, V4, V5) PyTruffle_Object_CallFunction(F, "OOOO", 4, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_6(F, V1, V2, V3, V4, V5, V6) PyTruffle_Object_CallFunction(F, "OOOOO", 5, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_7(F, V1, V2, V3, V4, V5, V6, V7) PyTruffle_Object_CallFunction(F, "OOOOOO", 6, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, NULL, NULL, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_8(F, V1, V2, V3, V4, V5, V6, V7, V8) PyTruffle_Object_CallFunction(F, "OOOOOOO", 7, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, NULL, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_9(F, V1, V2, V3, V4, V5, V6, V7, V8, V9) PyTruffle_Object_CallFunction(F, "OOOOOOOO", 8, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, NULL)
-#define PyTruffle_Object_CallFunctionObjArgs_10(F, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10) PyTruffle_Object_CallFunction(F, "OOOOOOOOO", 9, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, (void*)V10)
-#define CALL_FUNCTION_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
-#define PyObject_CallFunctionObjArgs(F, ...) CALL_FUNCTION_IMPL(__VA_ARGS__, PyTruffle_Object_CallFunctionObjArgs_10, PyTruffle_Object_CallFunctionObjArgs_9, PyTruffle_Object_CallFunctionObjArgs_8, PyTruffle_Object_CallFunctionObjArgs_7, PyTruffle_Object_CallFunctionObjArgs_6, PyTruffle_Object_CallFunctionObjArgs_5, PyTruffle_Object_CallFunctionObjArgs_4, PyTruffle_Object_CallFunctionObjArgs_3, PyTruffle_Object_CallFunctionObjArgs_2, PyTruffle_Object_CallFunctionObjArgs_1)(F, __VA_ARGS__)
-
-
-extern PyObject* PyTruffle_Object_CallMethod(PyObject* object, const char* method, const char* fmt, int c, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9);
-#define PyTruffle_Object_CallMethod_1(O, M, FMT, V1) PyTruffle_Object_CallMethod(O, M, FMT, 1, (void*)V1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallMethod_2(O, M, FMT, V1, V2) PyTruffle_Object_CallMethod(O, M, FMT, 2, (void*)V1, (void*)V2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallMethod_3(O, M, FMT, V1, V2, V3) PyTruffle_Object_CallMethod(O, M, FMT, 3, (void*)V1, (void*)V2, (void*)V3, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallMethod_4(O, M, FMT, V1, V2, V3, V4) PyTruffle_Object_CallMethod(O, M, FMT, 4, (void*)V1, (void*)V2, (void*)V3, (void*)V4, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallMethod_5(O, M, FMT, V1, V2, V3, V4, V5) PyTruffle_Object_CallMethod(O, M, FMT, 5, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallMethod_6(O, M, FMT, V1, V2, V3, V4, V5, V6) PyTruffle_Object_CallMethod(O, M, FMT, 6, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, NULL, NULL, NULL, NULL)
-#define PyTruffle_Object_CallMethod_7(O, M, FMT, V1, V2, V3, V4, V5, V6, V7) PyTruffle_Object_CallMethod(O, M, FMT, 7, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, NULL, NULL, NULL)
-#define PyTruffle_Object_CallMethod_8(O, M, FMT, V1, V2, V3, V4, V5, V6, V7, V8) PyTruffle_Object_CallMethod(O, M, FMT, 8, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, NULL, NULL)
-#define PyTruffle_Object_CallMethod_9(O, M, FMT, V1, V2, V3, V4, V5, V6, V7, V8, V9) PyTruffle_Object_CallMethod(O, M, FMT, 9, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, NULL)
-#define PyTruffle_Object_CallMethod_10(O, M, FMT, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10) PyTruffle_Object_CallMethod(O, M, FMT, 10, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, (void*)V10)
-#define CALL_FUNCTION_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
-#ifdef PyObject_CallMethod
-#undef PyObject_CallMethod
-#endif
-#define PyObject_CallMethod(O, M, FMT, ...) CALL_FUNCTION_IMPL(__VA_ARGS__, PyTruffle_Object_CallMethod_10, PyTruffle_Object_CallMethod_9, PyTruffle_Object_CallMethod_8, PyTruffle_Object_CallMethod_7, PyTruffle_Object_CallMethod_6, PyTruffle_Object_CallMethod_5, PyTruffle_Object_CallMethod_4, PyTruffle_Object_CallMethod_3, PyTruffle_Object_CallMethod_2, PyTruffle_Object_CallMethod_1)(O, M, FMT, __VA_ARGS__)
-
 
 extern PyObject* PyTruffle_Err_Format(PyObject* exception, const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9);
 #define PyTruffle_Err_Format_0(EXC, FORMAT) PyTruffle_Err_Format(EXC, FORMAT, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
