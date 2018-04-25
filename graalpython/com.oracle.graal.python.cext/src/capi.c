@@ -38,50 +38,39 @@
  */
 #include "capi.h"
 
-#define GPOFFSET(name)                          \
-    int name;                                   \
-    int get_ ## name () { return name; }
-
-GPOFFSET(ob_refcnt_offset);
-GPOFFSET(ob_type_offset);
-GPOFFSET(ob_size_offset);
-GPOFFSET(tp_base_offset);
-
-// TODO: use this to setup the statically allocated C structures for builtin
-// types in a constructor
-static void connect_type_to_structure(PyTypeObject* structure, void* typ) {
-    structure->tp_flags = structure->tp_flags | Py_TPFLAGS_READY;
-    ((PyObject*)structure)->ob_refcnt = truffle_handle_for_managed(typ);
-    /* truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", typ, structure); */
-    /* marry_objects(structure, typ); */
-    // TODO: initialize everything else
+void marry_objects(PyObject* obj, void* jobj) {
+    obj->ob_refcnt = truffle_handle_for_managed(jobj);
+    truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, obj);
+    void *type = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobj);
+    obj->ob_type = PyObjectHandle_ForJavaType(type);
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    void* typ = truffle_read(PY_BUILTIN, typname);
-    connect_type_to_structure(structure, typ);
+    PyTypeObject* ptype = polyglot_as__typeobject(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
+    unsigned long original_flags = structure->tp_flags;
+    PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
+    // write flags as specified in the dummy to the PythonClass object
+    type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
 }
 
 __attribute__((constructor))
 static void initialize_capi() {
-    // TODO: this can go when the named struct access works Java<->C
-    ob_refcnt_offset = offsetof(PyObject, ob_refcnt);
-    ob_type_offset = offsetof(PyObject, ob_type);
-
-    ob_size_offset = offsetof(PyVarObject, ob_size);
-
-    tp_base_offset = offsetof(PyTypeObject, tp_base);
-
     // initialize base types
     initialize_type_structure(&PyType_Type, "type");
     initialize_type_structure(&PyBaseObject_Type, "object");
     initialize_type_structure(&PySuper_Type, "super");
     initialize_type_structure(&PyUnicode_Type, "str");
+    initialize_type_structure(&PyBool_Type, "bool");
+    initialize_type_structure(&PyFloat_Type, "float");
+    initialize_type_structure(&PyLong_Type, "int");
+    initialize_type_structure(&PyBytes_Type, "bytes");
+    initialize_type_structure(&PyDict_Type, "dict");
+    initialize_type_structure(&PyTuple_Type, "tuple");
+    initialize_type_structure(&PyList_Type, "list");
+    initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
 
     initialize_exceptions();
 }
-
-#undef GPOFFSET
 
 void* to_java(PyObject* obj) {
 	if (obj == &_Py_NoneStruct) {
@@ -89,17 +78,39 @@ void* to_java(PyObject* obj) {
     } else if (obj == NULL) {
     	return Py_NoValue;
     } else if (truffle_is_handle_to_managed(obj)) {
-        return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", truffle_managed_from_handle(obj));
+    	void *managed = truffle_managed_from_handle(obj);
+    	if (truffle_invoke(PY_TRUFFLE_CEXT, "is_python_object", managed)) {
+    		return managed;
+    	}
+        return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", managed);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {
         return truffle_managed_from_handle(obj->ob_refcnt);
-    } else {
-        return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", obj);
     }
+	// Since Python object respond to 'IS_POINTER' with true if there has already
+	// been a 'TO_NATIVE' before, we need to first check if it is directly a Python
+	// object to avoid conversion to a pointer.
+ 	if (truffle_invoke(PY_TRUFFLE_CEXT, "is_python_object", obj)) {
+   		return obj;
+   	}
+    return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", obj);
 }
 
 void* to_java_type(PyTypeObject* cls) {
-    PyType_Ready(cls); // make sure we have an associated Java class
-    return truffle_managed_from_handle(((PyObject*)cls)->ob_refcnt);
+	if (truffle_is_handle_to_managed(cls)) {
+		return truffle_managed_from_handle(cls);
+    } else if (truffle_is_handle_to_managed(((PyObject*)cls)->ob_refcnt)) {
+		PyType_Ready(cls); // make sure we have an associated Java class
+		return truffle_managed_from_handle(((PyObject*)cls)->ob_refcnt);
+	}
+	return cls;
+}
+
+PyObject* to_sulong(void *o) {
+	PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
+	if(polyglot_is_value(cobj)) {
+		return polyglot_as__object(cobj);
+	}
+	return cobj;
 }
 
 void* get_ob_type(PyObject* obj) {
@@ -114,16 +125,21 @@ PyObject* PyNoneHandle() {
     return &_Py_NoneStruct;
 }
 
-PyObject* PyObjectHandle_ForJavaObject(void* jobject) {
+PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
     PyObject* obj = (PyObject*)PyObject_Malloc(sizeof(PyObjectHandle));
     marry_objects(obj, jobject);
     return obj;
 }
 
-PyTypeObject* PyObjectHandle_ForJavaType(void* jobject) {
-    PyTypeObject* obj = (PyTypeObject*)PyObject_Malloc(sizeof(PyTypeObject));
-    connect_type_to_structure(obj, jobject);
-    return obj;
+PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
+	// A handle is created at the first time we
+	if (!truffle_is_handle_to_managed(jobj)) {
+		PyTypeObject* jtypeobj = polyglot_as__typeobject(jobj);
+		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jtypeobj);
+		truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jtypeobj, deref_handle);
+		return deref_handle;
+	}
+	return jobj;
 }
 
 const char* PyTruffle_StringToCstr(void* jlString) {
@@ -311,3 +327,8 @@ PyObject marker_struct = {
 };
 
 #undef WriteMember
+
+int PyTruffle_Debug(void *arg) {
+	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
+	return 0;
+}

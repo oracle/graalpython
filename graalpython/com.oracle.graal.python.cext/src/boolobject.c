@@ -38,61 +38,19 @@
  */
 #include "capi.h"
 
+#include <stdarg.h>
 
-PyTypeObject PyList_Type = PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS);
+PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT);
 
-PyObject* PyList_New(Py_ssize_t size) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_New", size, ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-        return NULL;
+// taken from CPython "Python/Objects/boolobject.c"
+PyObject *PyBool_FromLong(long ok) {
+    PyObject *result;
+
+    if (ok) {
+        result = Py_True;
     } else {
-        return to_sulong(result);
+        result = Py_False;
     }
-}
-
-PyObject* PyList_GetItem(PyObject *op, Py_ssize_t i) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_GetItem", to_java(op), i, ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
-}
-
-int PyList_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyList_SetItem", to_java(op), i, to_java(newitem));
-}
-
-int PyList_Append(PyObject *op, PyObject *newitem) {
-	if (newitem == NULL) {
-		PyErr_BadInternalCall();
-		return -1;
-	}
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyList_Append", to_java(op), to_java(newitem));
-}
-
-PyObject* PyList_AsTuple(PyObject *v) {
-    if (v == NULL) {
-        PyErr_BadInternalCall();
-        return NULL;
-    }
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_AsTuple", to_java(v), ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
-}
-
-PyObject* PyList_GetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_GetSlice", to_java(a), ilow, ihigh, ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
-}
-
-Py_ssize_t PyList_Size(PyObject *op) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyList_Size", to_java(op));
+    Py_INCREF(result);
+    return result;
 }

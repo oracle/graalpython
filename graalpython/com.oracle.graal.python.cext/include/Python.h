@@ -46,6 +46,7 @@
 #define HAVE_SYS_WAIT_H
 
 #include <truffle.h>
+#include <polyglot.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>

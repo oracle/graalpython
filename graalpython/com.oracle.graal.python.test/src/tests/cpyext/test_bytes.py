@@ -35,7 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -109,6 +109,17 @@ class TestPyBytes(CPyExtTestCase):
         arguments=["PyObject* arg"],
     )
 
+    # PyBytes_GET_SIZE
+    # TODO enable once supported
+#     test_PyBytes_GET_SIZE = CPyExtFunction(
+#         lambda b: len(b[0]),
+#         lambda: ((b"hello", ), (b"hello world",), (b"",)),
+#         resultspec="n",
+#         argspec="O",
+#         arguments=["PyObject* arg"],
+#         cmpfunc=unhandled_error_compare
+#     )
+
     # PyBytes_FromFormat
     test_PyBytes_FromFormat = CPyExtFunction(
         _reference_format,
@@ -160,4 +171,34 @@ class TestPyBytes(CPyExtTestCase):
         argumentnames="&arg0, arg1",
         resultvarnames="arg0",
         callfunction="wrap_PyBytes_ConcatAndDel"
+    )
+
+    test_PyBytes_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], bytes),
+        lambda: (
+            (b"hello",),
+            ("hello",),
+            ("hellö".encode(),),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyBytes_CheckExact = CPyExtFunction(
+        lambda args: isinstance(args[0], bytes),
+        lambda: (
+            (b"hello",),
+            (bytes(),),
+            ("hello",),
+            ("hellö".encode(),),
+            (1,),
+            (dict(),),
+            (tuple(),),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
     )

@@ -289,3 +289,18 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* format", "PyObject* fmt_args"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyUnicode_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], str),
+        lambda: (
+            ("hello",), 
+            ("hellö",), 
+            (b"hello",), 
+            ("hellö",), 
+            (['a', 'b', 'c'],), 
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )

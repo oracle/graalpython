@@ -35,7 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -91,4 +91,35 @@ class TestPyTuple(CPyExtTestCase):
         resultspec="O",
         argspec='nOOO',
         arguments=["Py_ssize_t n", "PyObject* arg0", "PyObject* arg1", "PyObject* arg2"],
+    )
+
+    # PyTuple_Check
+    test_PyTuple_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], tuple),
+        lambda: (
+            (tuple(),),
+            (("hello", "world"),),
+            ((None,),),
+            ([],),
+            ({},),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+    # PyTuple_Check
+    test_PyTuple_CheckExact = CPyExtFunction(
+        lambda args: type(args[0]) is tuple,
+        lambda: (
+            (tuple(),), 
+            (("hello", "world"),), 
+            ((None,),), 
+            ([],), 
+            ({},), 
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
     )

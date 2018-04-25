@@ -38,6 +38,8 @@
  */
 #include "capi.h"
 
+PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS);
+
 long PyLong_AsLong(PyObject *obj) {
     return truffle_invoke_l(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), Py_True, sizeof(long), truffle_read_string("long"));
 }

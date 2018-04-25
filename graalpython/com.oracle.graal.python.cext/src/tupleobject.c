@@ -38,6 +38,8 @@
  */
 #include "capi.h"
 
+PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS);
+
 /* Tuples */
 PyObject* PyTuple_New(Py_ssize_t size) {
     return (PyObject*)truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_New", size);

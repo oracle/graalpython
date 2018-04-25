@@ -967,9 +967,16 @@ def PyFile_WriteObject(obj, file, flags):
     PyErr_Restore(typ, val, tb)
     return -1
 
+##################### C EXT HELPERS
 
 def PyTruffle_Debug(*args):
     __tdebug__(*args)
+
+
+def PyTruffle_Type(type_name):
+    if type_name == "mappingproxy":
+        return type(dict().keys())
+    return getattr(sys.modules["builtins"], type_name)
 
 
 def check_argtype(idx, obj, typ):

@@ -43,6 +43,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -51,6 +52,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -62,6 +64,15 @@ public class PyObjectBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
         return PyObjectBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "ob_base", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true)
+    @GenerateNodeFactory
+    static abstract class ObBase extends PythonUnaryBuiltinNode {
+        @Specialization
+        PythonObject run(PythonObject o) {
+            return o;
+        }
     }
 
     @Builtin(name = "ob_refcnt", fixedNumOfArguments = 1, isGetter = true)
@@ -82,14 +93,20 @@ public class PyObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ob_type", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "ob_type", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    static abstract class ObType extends PythonUnaryBuiltinNode {
+    static abstract class ObType extends PythonBuiltinNode {
         @Child GetClassNode getClass = GetClassNode.create();
 
         @Specialization
-        PythonClass run(Object object) {
+        PythonClass get(Object object, @SuppressWarnings("unused") PNone none) {
             return getClass.execute(object);
+        }
+
+        @Specialization
+        Object set(PythonObject object, @SuppressWarnings("unused") Object type) {
+            // At this point, we do not support changing the type of an object.
+            return object;
         }
     }
 
@@ -115,6 +132,55 @@ public class PyObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object run(PBytes object) {
             return object.getInternalByteArray();
+        }
+    }
+
+    @Builtin(name = "tp_flags", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    static abstract class TpFlagsGetNode extends PythonBuiltinNode {
+        @Specialization
+        long set(PythonClass object, long flags) {
+            object.setFlags(flags);
+            return flags;
+        }
+
+        @Specialization
+        long get(PythonClass object, @SuppressWarnings("unused") PNone flags) {
+            return object.getFlags();
+        }
+    }
+
+    @Builtin(name = "tp_name", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @GenerateNodeFactory
+    static abstract class TpNameNode extends PythonBuiltinNode {
+        @Specialization
+        Object set(PythonClass object, @SuppressWarnings("unused") String typeName) {
+            CompilerDirectives.transferToInterpreter();
+            throw new AssertionError("Cannot modify name of PythonClass " + object.getName());
+        }
+
+        @Specialization
+        String get(PythonClass object, @SuppressWarnings("unused") PNone typeName) {
+            return object.getName();
+        }
+    }
+
+    @Builtin(name = "tp_base", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @GenerateNodeFactory
+    static abstract class TpBaseNode extends PythonBuiltinNode {
+        @Specialization
+        Object set(PythonClass object, @SuppressWarnings("unused") String typeName) {
+            CompilerDirectives.transferToInterpreter();
+            throw new AssertionError("Cannot modify base class of " + object.getName());
+        }
+
+        @Specialization
+        PythonClass get(PythonClass object, @SuppressWarnings("unused") PNone typeName) {
+            PythonClass superClass = object.getSuperClass();
+            if (superClass != null) {
+                return superClass;
+            }
+            return object;
         }
     }
 }

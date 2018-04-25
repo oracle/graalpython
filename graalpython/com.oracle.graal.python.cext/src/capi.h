@@ -41,11 +41,13 @@
 
 #include "Python.h"
 
+POLYGLOT_DECLARE_STRUCT(_object);
+POLYGLOT_DECLARE_STRUCT(_typeobject);
 
-#define to_sulong(o) truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o)
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
+extern PyObject* to_sulong(void *o);
 #define as_char_pointer(obj) truffle_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
 #define as_long(obj) truffle_invoke(PY_TRUFFLE_CEXT, "to_long", obj)
 #define as_int(obj) ((int)as_long(obj))
@@ -54,11 +56,6 @@ extern void* to_java_type(PyTypeObject* cls);
 #define as_char(obj) ((char)as_long(obj))
 #define as_double(obj) truffle_invoke_d(PY_TRUFFLE_CEXT, "to_double", to_java(obj))
 #define as_float(obj) ((float)as_double(obj))
-#define marry_objects(obj, jobj) {                                      \
-        ((PyObject*)obj)->ob_refcnt = truffle_handle_for_managed(jobj); \
-        truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, obj);    \
-        ((PyObject*)obj)->ob_type = to_sulong(truffle_invoke(PY_BUILTIN, "type", jobj)); \
-    }
 
 // defined in 'exceptions.c'
 void initialize_exceptions();
@@ -90,6 +87,54 @@ void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker);
           truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :              \
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
+
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__) {\
+    PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
+    __TYPE_NAME__,                              /* tp_name */\
+    0,                                          /* tp_basicsize */\
+    0,                                          /* tp_itemsize */\
+    0,                                          /* tp_dealloc */\
+    0,                                          /* tp_print */\
+    0,                                          /* tp_getattr */\
+    0,                                          /* tp_setattr */\
+    0,                                          /* tp_reserved */\
+    0,                                          /* tp_repr */\
+    0,                                          /* tp_as_number */\
+    0,                                          /* tp_as_sequence */\
+    0,                                          /* tp_as_mapping */\
+    0,                                          /* tp_hash */\
+    0,                                          /* tp_call */\
+    0,                                          /* tp_str */\
+    0,                                          /* tp_getattro */\
+    0,                                          /* tp_setattro */\
+    0,                                          /* tp_as_buffer */\
+    (__FLAGS__),                                /* tp_flags */\
+    0,                                          /* tp_doc */\
+    0,                                          /* tp_traverse */\
+    0,                                          /* tp_clear */\
+    0,                                          /* tp_richcompare */\
+    0,                                          /* tp_weaklistoffset */\
+    0,                                          /* tp_iter */\
+    0,                                          /* tp_iternext */\
+    0,                                          /* tp_methods */\
+    0,                                          /* tp_members */\
+    0,                                          /* tp_getset */\
+    0,                                          /* tp_base */\
+    0,                                          /* tp_dict */\
+    0,                                          /* tp_descr_get */\
+    0,                                          /* tp_descr_set */\
+    0,                                          /* tp_dictoffset */\
+    0,                                          /* tp_init */\
+    0,                                          /* tp_alloc */\
+    0,                                          /* tp_new */\
+    0,                                          /* tp_free */\
+    0,                                          /* tp_is_gc */\
+}
+
+
+int PyTruffle_Debug(void *arg);
+PyTypeObject* PyObjectHandle_ForJavaType(void* jobj);
+void marry_objects(PyObject* obj, void* jobj);
 
 extern short ReadShortMember(PyObject* object, int offset);
 extern int ReadIntMember(PyObject* object, int offset);

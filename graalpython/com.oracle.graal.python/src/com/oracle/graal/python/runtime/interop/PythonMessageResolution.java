@@ -594,10 +594,23 @@ public class PythonMessageResolution {
         @Specialization
         Object runNone(PNone object) {
             try {
-                return ensureIsPointer(ForeignAccess.sendExecute(getExecuteNode(), getPyNoneHandle(), object));
+                ensureIsPointer(ForeignAccess.sendExecute(getExecuteNode(), getPyNoneHandle(), object));
+                return object;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw e.raise();
             }
+        }
+
+        @Specialization(guards = "isNonNative(object)")
+        Object runClass(PythonClass object) {
+            ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaType()));
+            return object;
+        }
+
+        @Fallback
+        Object runObject(Object object) {
+            ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
+            return object;
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {
@@ -666,21 +679,11 @@ public class PythonMessageResolution {
             return !(klass instanceof PythonNativeClass);
         }
 
-        @Specialization(guards = "isNonNative(object)")
-        Object runClass(PythonClass object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaType()));
-        }
-
-        @Fallback
-        Object runObject(Object object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
-        }
-
         private Object callIntoCapi(Object object, TruffleObject func) {
             Object pyobject = getReadAttr().execute(object, pyobjectKey);
             if (pyobject == PNone.NO_VALUE) {
                 try {
-                    pyobject = ForeignAccess.sendExecute(getExecuteNode(), func, object);
+                    pyobject = ensureIsPointer(ForeignAccess.sendExecute(getExecuteNode(), func, object));
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                     throw e.raise();
                 }
@@ -696,6 +699,60 @@ public class PythonMessageResolution {
 
         Object access(Object obj) {
             return toPyTypeNode.execute(obj);
+        }
+    }
+
+    @Resolve(message = "IS_POINTER")
+    abstract static class IsPointerNode extends Node {
+        @Child private PointerBaseNode pointerNode = PointerBaseNode.create();
+        private final ValueProfile profile = ValueProfile.createClassProfile();
+
+        Object access(Object obj) {
+            Object profiledObj = profile.profile(obj);
+            if (profiledObj instanceof PythonClass) {
+                return pointerNode.execute(obj) != PNone.NO_VALUE;
+            }
+            return false;
+        }
+    }
+
+    @Resolve(message = "AS_POINTER")
+    abstract static class AsPointerNode extends Node {
+        @Child private PointerBaseNode pointerNode = PointerBaseNode.create();
+        @Child private Node asPointerNode;
+
+        long access(Object obj) {
+            Object ptr = pointerNode.execute(obj);
+            if (asPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asPointerNode = insert(Message.AS_POINTER.createNode());
+            }
+            try {
+                return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) ptr);
+            } catch (UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+    }
+
+    private static class PointerBaseNode extends Node {
+
+        @Child private ReadAttributeFromObjectNode readAttr;
+
+        private ReadAttributeFromObjectNode getReadAttr() {
+            if (readAttr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readAttr = insert(ReadAttributeFromObjectNode.create());
+            }
+            return readAttr;
+        }
+
+        public static PointerBaseNode create() {
+            return new PointerBaseNode();
+        }
+
+        Object execute(Object obj) {
+            return getReadAttr().execute(obj, pyobjectKey);
         }
     }
 

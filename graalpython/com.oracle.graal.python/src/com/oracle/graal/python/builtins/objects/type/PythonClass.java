@@ -60,6 +60,7 @@ public class PythonClass extends PythonObject {
 
     private final Set<PythonClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonClass, Boolean>());
     private final Shape instanceShape;
+    private final FlagsContainer flags;
 
     public final boolean isBuiltin() {
         return this instanceof PythonBuiltinClass;
@@ -77,6 +78,8 @@ public class PythonClass extends PythonObject {
         } else {
             unsafeSetSuperClass(baseClasses);
         }
+
+        this.flags = new FlagsContainer(getSuperClass());
 
         // Compute MRO
         computeMethodResolutionOrder();
@@ -261,5 +264,44 @@ public class PythonClass extends PythonObject {
 
     public PythonClass[] getBaseClasses() {
         return baseClasses;
+    }
+
+    public long getFlags() {
+        return flags.getValue();
+    }
+
+    public void setFlags(long flags) {
+        this.flags.setValue(flags);
+    }
+
+    /**
+     * Flags are copied from the initial dominant base class. However, classes may already be
+     * created before the C API was initialized, i.e., flags were not set.
+     */
+    private static final class FlagsContainer {
+        private PythonClass initialDominantBase;
+        private long flags;
+
+        public FlagsContainer(PythonClass superClass) {
+            this.initialDominantBase = superClass;
+        }
+
+        private long getValue() {
+            // This method is only called from C code, i.e., the flags of the initial super class
+            // must be available.
+            if (initialDominantBase != null) {
+                assert this != initialDominantBase.flags;
+                flags = initialDominantBase.flags.getValue();
+                initialDominantBase = null;
+            }
+            return flags;
+        }
+
+        private void setValue(long flags) {
+            if (initialDominantBase != null) {
+                initialDominantBase = null;
+            }
+            this.flags = flags;
+        }
     }
 }
