@@ -1249,6 +1249,24 @@ public abstract class HashingStorageNodes {
         }
     }
 
+    public static class UnionNode extends Node {
+
+        public HashingStorage execute(HashingStorage left, HashingStorage right) {
+            EconomicMapStorage newStorage = EconomicMapStorage.create(false);
+            if (left.length() != 0) {
+                newStorage.addAll(left);
+            }
+            if (right.length() != 0) {
+                newStorage.addAll(right);
+            }
+            return newStorage;
+        }
+
+        public static UnionNode create() {
+            return new UnionNode();
+        }
+    }
+
     public abstract static class DiffNode extends DictStorageBaseNode {
 
         public abstract HashingStorage execute(HashingStorage left, HashingStorage right);
