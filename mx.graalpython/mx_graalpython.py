@@ -224,6 +224,10 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     if not jdk:
         jdk = get_jdk()
 
+    # default: assertion checking is enabled
+    if extra_vm_args is None or '-da' not in extra_vm_args:
+        vm_args += ['-ea', '-esa']
+
     if extra_vm_args:
         vm_args += extra_vm_args
 
