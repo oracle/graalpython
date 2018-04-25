@@ -91,7 +91,7 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class SetOrNode extends PythonBuiltinNode {
         @Specialization
         Object doSet(PBaseSet self, PBaseSet other,
-                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
+                        @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             return factory().createSet(unionNode.execute(self.getDictStorage(), other.getDictStorage()));
         }
     }
