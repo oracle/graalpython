@@ -152,23 +152,6 @@
 #define _PyLong_FromTime_t(o) ((long)o)
 
 extern int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, int outc, void *v0, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9);
-extern PyObject* PyTruffle_BuildValue(const char *format, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9, void *v10);
-
-#define PyTruffle_BuildValue_1(FORMAT, V1) PyTruffle_BuildValue(FORMAT, (void*)V1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_BuildValue_2(FORMAT, V1, V2) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_BuildValue_3(FORMAT, V1, V2, V3) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, (void*)V3, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_BuildValue_4(FORMAT, V1, V2, V3, V4) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, (void*)V3, (void*)V4, NULL, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_BuildValue_5(FORMAT, V1, V2, V3, V4, V5) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, NULL, NULL, NULL, NULL, NULL)
-#define PyTruffle_BuildValue_6(FORMAT, V1, V2, V3, V4, V5, V6) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, NULL, NULL, NULL, NULL)
-#define PyTruffle_BuildValue_7(FORMAT, V1, V2, V3, V4, V5, V6, V7) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, NULL, NULL, NULL)
-#define PyTruffle_BuildValue_8(FORMAT, V1, V2, V3, V4, V5, V6, V7, V8) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, NULL, NULL)
-#define PyTruffle_BuildValue_9(FORMAT, V1, V2, V3, V4, V5, V6, V7, V8, V9) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, NULL)
-#define PyTruffle_BuildValue_10(FORMAT, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10) PyTruffle_BuildValue(FORMAT, (void*)V1, (void*)V2, (void*)V3, (void*)V4, (void*)V5, (void*)V6, (void*)V7, (void*)V8, (void*)V9, (void*)V10)
-#define BUILD_VALUE_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
-#ifdef Py_BuildValue
-#undef Py_BuildValue
-#endif
-#define Py_BuildValue(FORMAT, ...) BUILD_VALUE_IMPL(__VA_ARGS__, PyTruffle_BuildValue_10, PyTruffle_BuildValue_9, PyTruffle_BuildValue_8, PyTruffle_BuildValue_7, PyTruffle_BuildValue_6, PyTruffle_BuildValue_5, PyTruffle_BuildValue_4, PyTruffle_BuildValue_3, PyTruffle_BuildValue_2, PyTruffle_BuildValue_1)(FORMAT, __VA_ARGS__)
 
 #define PyTruffle_Arg_ParseTupleAndKeywords_1(ARGV, KWDS, FORMAT, KWDNAMES, V1) PyTruffle_Arg_ParseTupleAndKeywords(ARGV, KWDS, FORMAT, KWDNAMES, 1, (void*)V1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
 #define PyTruffle_Arg_ParseTupleAndKeywords_2(ARGV, KWDS, FORMAT, KWDNAMES, V1, V2) PyTruffle_Arg_ParseTupleAndKeywords(ARGV, KWDS, FORMAT, KWDNAMES, 2, (void*)V1, (void*)V2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)

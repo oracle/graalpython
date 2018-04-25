@@ -443,7 +443,7 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
 }
 
 PyObject* PyTruffle_Object_CallFunction(PyObject* callable, const char* fmt, int c, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
-    PyObject* args = PyTruffle_BuildValue(fmt, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
+    PyObject* args = Py_BuildValue(fmt, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
@@ -455,7 +455,7 @@ PyObject* PyTruffle_Object_CallFunction(PyObject* callable, const char* fmt, int
 }
 
 PyObject* PyTruffle_Object_CallMethod(PyObject* object, const char* method, const char* fmt, int c, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
-    PyObject* args = PyTruffle_BuildValue(fmt, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
+    PyObject* args = Py_BuildValue(fmt, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
     return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), to_java(args)));
 }
 
