@@ -108,6 +108,15 @@ public class JavaInteropTest extends PythonTests {
     }
 
     @Test
+    public void javaArraySet() throws Exception {
+        String source = "import java\n" +
+                        "array = java.type(\"int[]\")(4)\n" +
+                        "array[2] = 42\n" +
+                        "print(array[2])\n\n";
+        assertPrints("42\n", source);
+    }
+
+    @Test
     public void testPassingFloats() throws Exception {
         String source = "import polyglot\n" +
                         "@polyglot.export_value\n" +
