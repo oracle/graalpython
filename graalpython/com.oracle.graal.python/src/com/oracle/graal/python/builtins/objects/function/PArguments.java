@@ -29,9 +29,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -43,6 +41,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * INDEX_KEYWORD_ARGUMENTS -> | PKeyword[]        |
  *                            +-------------------+
  * INDEX_GENERATOR_FRAME   -> | MaterializedFrame |
+ *                            +-------------------+
+ * INDEX_CALLER_FRAME      -> | MaterializedFrame |
  *                            +-------------------+
  * SPECIAL_ARGUMENT        -> | Object            |
  *                            +-------------------+
@@ -76,11 +76,12 @@ public final class PArguments {
 
     public static final int INDEX_KEYWORD_ARGUMENTS = 0;
     public static final int INDEX_GENERATOR_FRAME = 1;
-    public static final int INDEX_SPECIAL_ARGUMENT = 2;
-    public static final int INDEX_GLOBALS_ARGUMENT = 3;
-    public static final int INDEX_PFRAME_ARGUMENT = 4;
-    public static final int INDEX_CLOSURE = 5;
-    public static final int USER_ARGUMENTS_OFFSET = 6;
+    public static final int INDEX_CALLER_FRAME = 2;
+    public static final int INDEX_SPECIAL_ARGUMENT = 3;
+    public static final int INDEX_GLOBALS_ARGUMENT = 4;
+    public static final int INDEX_PFRAME_ARGUMENT = 5;
+    public static final int INDEX_CLOSURE = 6;
+    public static final int USER_ARGUMENTS_OFFSET = 7;
 
     private static PFrame[] getPFrameWrapper() {
         // this is needed to bypass the fact that PFrame instances get a READONLY frame which will
@@ -90,7 +91,7 @@ public final class PArguments {
     }
 
     private static Object[] iInitArguments() {
-        return new Object[]{PKeyword.EMPTY_KEYWORDS, null, null, null, getPFrameWrapper(), null};
+        return new Object[]{PKeyword.EMPTY_KEYWORDS, null, null, null, null, getPFrameWrapper(), null};
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -154,14 +155,6 @@ public final class PArguments {
         return (PCell[]) frame.getArguments()[INDEX_CLOSURE];
     }
 
-    public static PythonObject getGlobals(Frame frame, boolean fromCaller) {
-        if (fromCaller) {
-            Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
-            return PArguments.getGlobals(callerFrame);
-        }
-        return getGlobals(frame);
-    }
-
     public static void setArgument(Object[] arguments, int index, Object value) {
         arguments[USER_ARGUMENTS_OFFSET + index] = value;
     }
@@ -193,6 +186,14 @@ public final class PArguments {
 
     public static void setGeneratorFrame(Object[] arguments, Frame generatorFrame) {
         arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
+    }
+
+    public static Frame getCallerFrame(Frame frame) {
+        return (Frame) frame.getArguments()[INDEX_CALLER_FRAME];
+    }
+
+    public static void setCallerFrame(Object[] arguments, Frame callerFrame) {
+        arguments[INDEX_CALLER_FRAME] = callerFrame;
     }
 
     public static void setControlData(Object[] arguments, GeneratorControlData generatorArguments) {

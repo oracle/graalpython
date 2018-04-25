@@ -27,22 +27,25 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class ModuleNode extends PRootNode {
+public class ModuleRootNode extends PClosureRootNode {
 
     private final String name;
+
     @Child private PNode body;
 
-    public ModuleNode(PythonLanguage language, String name, PNode body, FrameDescriptor descriptor) {
-        super(language, descriptor);
+    public ModuleRootNode(PythonLanguage language, String name, PNode body, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
+        super(language, descriptor, freeVarSlots);
         this.name = "<module '" + name + "'>";
         this.body = body;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
+        addClosureCellsToLocals(frame);
         return body.execute(frame);
     }
 

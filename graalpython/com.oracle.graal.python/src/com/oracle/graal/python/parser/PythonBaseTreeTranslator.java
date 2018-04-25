@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.ModuleNode;
+import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
@@ -100,6 +100,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -197,7 +198,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         deriveSourceSection(ctx, file);
         FrameDescriptor fd = environment.getCurrentFrame();
         environment.endScope(ctx);
-        ModuleNode newNode = factory.createModule(name, file, fd);
+        ModuleRootNode newNode = factory.createModuleRoot(name, file, fd);
         return newNode;
     }
 
@@ -207,8 +208,9 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         PNode node = (PNode) super.visitEval_input(ctx);
         deriveSourceSection(ctx, node);
         FrameDescriptor fd = environment.getCurrentFrame();
+        FrameSlot[] freeVarSlots = environment.getFreeVarSlots();
         environment.endScope(ctx);
-        return factory.createModule(name, node, fd);
+        return factory.createModuleRoot(name, node, fd, freeVarSlots);
     }
 
     @Override
@@ -218,7 +220,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         deriveSourceSection(ctx, body);
         FrameDescriptor fd = environment.getCurrentFrame();
         environment.endScope(ctx);
-        return factory.createModule("<expression>", body, fd);
+        return factory.createModuleRoot("<expression>", body, fd);
     }
 
     @Override
