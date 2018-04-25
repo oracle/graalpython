@@ -129,7 +129,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void delSlice(int start, int stop) {
+    public void delSlice(int start, int stop, int step) {
         // the slice is empty. Do nothing here
     }
 

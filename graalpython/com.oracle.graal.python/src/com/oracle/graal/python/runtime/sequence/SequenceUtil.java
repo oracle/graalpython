@@ -40,6 +40,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class SequenceUtil {
 
+    public static final String STEP_CANNOT_BE_ZERO = "slice step cannot be zero";
+
     public static final class NormalizeIndexNode extends Node {
         public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
         public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
@@ -179,6 +181,20 @@ public class SequenceUtil {
         }
 
         return normalizeIndex(stop, size, outOfBoundsMessage);
+    }
+
+    public static int normalizeSliceStep(PSlice slice) {
+        return normalizeSliceStep(slice.getStep());
+    }
+
+    public static int normalizeSliceStep(int step) {
+        if (step == MISSING_INDEX) {
+            return 1;
+        }
+        if (step == 0) {
+            throw PythonLanguage.getCore().raise(PythonErrorType.ValueError, STEP_CANNOT_BE_ZERO);
+        }
+        return step;
     }
 
     /**

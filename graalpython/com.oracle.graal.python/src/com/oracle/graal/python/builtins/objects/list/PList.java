@@ -99,9 +99,8 @@ public final class PList extends PSequence {
     }
 
     public final void delSlice(PSlice slice) {
-        int start = SequenceUtil.normalizeSliceStart(slice, store.length(), "list index out of range");
-        final int stop = SequenceUtil.normalizeSliceStop(slice, store.length(), "list index out of range");
-        store.delSlice(start, stop);
+        PSlice.SliceInfo sliceInfo = slice.computeActualIndices(this.len());
+        store.delSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step);
     }
 
     @Override

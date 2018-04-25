@@ -25,11 +25,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
-
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -182,13 +179,50 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void delSlice(int start, int stop) {
-        if (stop == SequenceUtil.MISSING_INDEX) {
+    public void delSlice(int start, int stop, int step) {
+        if ((stop == SequenceUtil.MISSING_INDEX || stop >= length) && step == 1) {
             length = start;
-        } else if (start == 0 && stop >= length) {
+        } else if ((start == 0 && stop >= length) && step == 1) {
             length = 0;
         } else {
-            throw PythonLanguage.getCore().raise(NotImplementedError, "delete slice not yet supported in this case: [%s: %s]", start, stop);
+            int decraseLen; // how much will be the result array shorter
+            int index;  // index of the "old" array
+            if (step < 0) {
+                // For the simplicity of algorithm, then start and stop are swapped.
+                // The start index has to recalculated according the step, because
+                // the algorithm bellow removes the start itema and then start + step ....
+                step = Math.abs(step);
+                stop++;
+                int tmpStart = stop + ((start - stop) % step);
+                stop = start + 1;
+                start = tmpStart;
+            }
+            int arrayIndex = start; // pointer to the "new" form of array
+            if (step == 1) {
+                // this is easy, just remove the part of array
+                decraseLen = stop - start;
+                index = start + decraseLen;
+            } else {
+                int nextStep = index = start; // nextStep is a pointer to the next removed item
+                decraseLen = (stop - start - 1) / step + 1;
+                for (; index < stop && nextStep < stop; index++) {
+                    if (nextStep == index) {
+                        nextStep += step;
+                    } else {
+                        values[arrayIndex++] = values[index];
+                    }
+                }
+            }
+            if (decraseLen > 0) {
+                // shift all other items in array behind the last change
+                for (; index < length; arrayIndex++, index++) {
+                    values[arrayIndex] = values[index];
+                }
+                // change the result length
+                // TODO Shouldn't we realocate the array, if the chane is big?
+                // Then unnecessary big array is kept in the memory.
+                length = length - decraseLen;
+            }
         }
     }
 

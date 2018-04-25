@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -141,41 +142,106 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @Builtin(name = __DELITEM__, fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
 
         @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
 
         @Specialization(guards = "isIntStorage(primary)")
-        protected int doPListInt(PList primary, int idx) {
+        protected PNone doPListInt(PList primary, long idx) {
             IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            return storage.getIntItemNormalized(normalize.forList(idx, storage.length()));
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isLongStorage(primary)")
-        protected long doPListLong(PList primary, int idx) {
+        protected PNone doPListLong(PList primary, long idx) {
             LongSequenceStorage storage = (LongSequenceStorage) primary.getSequenceStorage();
-            return storage.getLongItemNormalized(normalize.forList(idx, storage.length()));
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isDoubleStorage(primary)")
-        protected double doPListDouble(PList primary, int idx) {
+        protected PNone doPListDouble(PList primary, long idx) {
             DoubleSequenceStorage storage = (DoubleSequenceStorage) primary.getSequenceStorage();
-            return storage.getDoubleItemNormalized(normalize.forList(idx, storage.length()));
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
         }
 
         @Specialization(guards = "isObjectStorage(primary)")
-        protected Object doPListObject(PList primary, int idx) {
+        protected PNone doPListObject(PList primary, long idx) {
             ObjectSequenceStorage storage = (ObjectSequenceStorage) primary.getSequenceStorage();
-            return storage.getItemNormalized(normalize.forList(idx, storage.length()));
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
         }
 
         @Specialization
-        protected Object doPList(PList list, int idx) {
+        protected PNone doPList(PList list, long idx) {
             SequenceStorage storage = list.getSequenceStorage();
-            return storage.getItemNormalized(normalize.forList(idx, storage.length()));
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
         }
+
+        @Specialization(guards = "isIntStorage(primary)")
+        protected PNone doPListInt(PList primary, PInt idx) {
+            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isLongStorage(primary)")
+        protected PNone doPListLong(PList primary, PInt idx) {
+            LongSequenceStorage storage = (LongSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isDoubleStorage(primary)")
+        protected PNone doPListDouble(PList primary, PInt idx) {
+            DoubleSequenceStorage storage = (DoubleSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isObjectStorage(primary)")
+        protected PNone doPListObject(PList primary, PInt idx) {
+            ObjectSequenceStorage storage = (ObjectSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization
+        protected PNone doPList(PList list, PInt idx) {
+            SequenceStorage storage = list.getSequenceStorage();
+            storage.delItemInBound(normalize.forList(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization
+        protected PNone doPListSlice(PList self, PSlice slice) {
+            self.delSlice(slice);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isValidIndexType(idx)")
+        protected Object doGeneric(PList self, Object idx) {
+            throw raise(PythonErrorType.TypeError, "list indices must be integers or slices, not %p", idx);
+        }
+
+        protected boolean isValidIndexType(Object idx) {
+            return PGuards.isInteger(idx) || idx instanceof PSlice;
+        }
+    }
+
+    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+
+        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
 
         @Specialization(guards = "isIntStorage(primary)")
         protected int doPListInt(PList primary, long idx) {
