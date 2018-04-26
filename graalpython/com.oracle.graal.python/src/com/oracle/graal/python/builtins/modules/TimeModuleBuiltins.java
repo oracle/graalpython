@@ -60,17 +60,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static Object[] getTimeStruct(double seconds, boolean local) {
-        /*
-        0	tm_year	(for example, 1993)
-        1	tm_mon	range [1, 12]
-        2	tm_mday	range [1, 31]
-        3	tm_hour	range [0, 23]
-        4	tm_min	range [0, 59]
-        5	tm_sec	range [0, 61]; see (2) in strftime() description
-        6	tm_wday	range [0, 6], Monday is 0
-        7	tm_yday	range [1, 366]
-        8	tm_isdst	0, 1 or -1; see below
-         */
         Object[] timeStruct = new Object[9];
         Instant instant = Instant.ofEpochSecond((long) seconds);
 
@@ -99,7 +88,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-
     // time.localtime([seconds])
     @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
@@ -109,7 +97,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return factory().createTuple(getTimeStruct(seconds, true));
         }
     }
-
 
     // time.time()
     @Builtin(name = "time", fixedNumOfArguments = 0)
