@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime.object;
 
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.Optional;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -113,6 +114,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PythonObjectFactory extends Node {
 
@@ -166,8 +168,30 @@ public abstract class PythonObjectFactory extends Node {
      * Python objects
      */
 
+    @CompilationFinal private Optional<Shape> cachedInstanceShape = Optional.empty();
+
     public PythonObject createPythonObject(PythonClass cls) {
-        return trace(new PythonObject(cls));
+        if (cls == null) {
+            CompilerDirectives.transferToInterpreter();
+            // special case for base type class
+            return trace(new PythonObject(null));
+        } else {
+            Optional<Shape> cached = cachedInstanceShape;
+            if (cached != null) {
+                if (cached.isPresent()) {
+                    if (cached.get() == cls.getInstanceShape()) {
+                        return trace(new PythonObject(cls, cached.get()));
+                    } else {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        cachedInstanceShape = null;
+                    }
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cachedInstanceShape = Optional.of(cls.getInstanceShape());
+                }
+            }
+            return trace(new PythonObject(cls, cls.getInstanceShape()));
+        }
     }
 
     public PythonNativeObject createNativeObjectWrapper(Object obj) {
