@@ -53,6 +53,11 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
 }
 
+static void initialize_globals() {
+	void *jnone = polyglot_as__object(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None"));
+    truffle_assign_managed(&_Py_NoneStruct, jnone);
+}
+
 __attribute__((constructor))
 static void initialize_capi() {
     // initialize base types
@@ -69,11 +74,14 @@ static void initialize_capi() {
     initialize_type_structure(&PyList_Type, "list");
     initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
 
+    // initialize global variables like '_Py_NoneStruct', etc.
+    initialize_globals();
+
     initialize_exceptions();
 }
 
 void* to_java(PyObject* obj) {
-	if (obj == &_Py_NoneStruct) {
+	if (obj == Py_None) {
         return Py_None;
     } else if (obj == NULL) {
     	return Py_NoValue;
@@ -100,10 +108,6 @@ void* to_java_type(PyTypeObject* cls) {
 }
 
 PyObject* to_sulong(void *o) {
-	if (o == NULL) {
-		return NULL;
-	}
-
 	PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
 	if(polyglot_is_value(cobj)) {
 		return polyglot_as__object(cobj);
@@ -119,7 +123,7 @@ typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;
 
-PyObject* PyNoneHandle() {
+PyObject* PyNoneHandle(void* jobj) {
     return &_Py_NoneStruct;
 }
 
