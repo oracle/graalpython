@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 
 import org.graalvm.options.OptionDescriptors;

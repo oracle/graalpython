@@ -179,7 +179,10 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void delSlice(int start, int stop, int step) {
+    public void delSlice(int startParam, int stopParam, int stepParam) {
+        int start = startParam;
+        int stop = stopParam;
+        int step = stepParam;
         if ((stop == SequenceUtil.MISSING_INDEX || stop >= length) && step == 1) {
             length = start;
         } else if ((start == 0 && stop >= length) && step == 1) {
