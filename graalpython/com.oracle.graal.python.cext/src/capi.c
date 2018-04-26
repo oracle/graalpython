@@ -38,13 +38,6 @@
  */
 #include "capi.h"
 
-void marry_objects(PyObject* obj, void* jobj) {
-    obj->ob_refcnt = truffle_handle_for_managed(jobj);
-    truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jobj, obj);
-    void *type = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobj);
-    obj->ob_type = PyObjectHandle_ForJavaType(type);
-}
-
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
     PyTypeObject* ptype = (PyTypeObject *)to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
     unsigned long original_flags = structure->tp_flags;
@@ -138,12 +131,11 @@ PyObject* PyNoneHandle(void* jobj) {
     return &_Py_NoneStruct;
 }
 
-PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
-    PyObject* obj = (PyObject*)PyObject_Malloc(sizeof(PyObjectHandle));
-    obj->ob_refcnt = truffle_handle_for_managed(jobject);
-    void *jtype = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobject);
-    obj->ob_type = polyglot_as__typeobject(to_sulong(jtype));
-    return obj;
+PyObject* PyObjectHandle_ForJavaObject(PyObject* jobj) {
+	if (!truffle_is_handle_to_managed(jobj)) {
+		return truffle_deref_handle_for_managed(polyglot_as__object(to_sulong(jobj)));
+	}
+	return jobj;
 }
 
 /** to be used from Java code only; only creates the deref handle */

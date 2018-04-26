@@ -134,7 +134,6 @@ void initialize_hashes();
 
 int PyTruffle_Debug(void *arg);
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj);
-void marry_objects(PyObject* obj, void* jobj);
 
 extern short ReadShortMember(PyObject* object, int offset);
 extern int ReadIntMember(PyObject* object, int offset);

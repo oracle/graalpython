@@ -253,11 +253,12 @@ int PyType_Ready(PyTypeObject* cls) {
                                                       to_java_type(base),
                                                       truffle_read_string(cls->tp_name),
                                                       truffle_read_string(cls->tp_doc));
-    // store the back reference
-    if (truffle_is_truffle_object(javacls)) {
+    if (polyglot_is_value(javacls)) {
     	javacls = polyglot_as__typeobject(javacls);
     }
-    marry_objects((PyObject*)cls, javacls);
+
+    // remember the managed wrapper
+    ((PyObject*)cls)->ob_refcnt = truffle_handle_for_managed(javacls);
 
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_name
     const char* lastDot = strrchr(cls->tp_name, '.');

@@ -121,37 +121,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         return TruffleCextBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "marry_objects", fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class MarryObjectsNode extends PythonBuiltinNode {
-        @Specialization
-        boolean run(PythonObjectNativeWrapper object, Object nativeObject) {
-            object.setNativePointer(nativeObject);
-            return true;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        boolean doNativeClass(PythonNativeClass object, Object nativeObject) {
-            // nothing to do
-            assert object.object != null;
-            return true;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        boolean doNativeObject(PythonNativeObject object, Object nativeObject) {
-            // nothing to do
-            assert object.object != null;
-            return true;
-        }
-
-        @Fallback
-        boolean run(Object object, @SuppressWarnings("unused") Object nativeObject) {
-            throw new AssertionError("try to marry with object " + object);
-        }
-    }
-
     /**
      * Called mostly from our C code to convert arguments into a wrapped representation for
      * consumption in Java.
