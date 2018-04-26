@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -105,7 +106,12 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         public String repr(PCell self) {
-            return self.toString();
+            Object ref = self.getRef();
+            if (ref == null) {
+                return String.format("<cell at %s: empty>", this.hashCode());
+            }
+            PythonBuiltinClass refClass = getCore().lookupType(ref.getClass());
+            return String.format("<cell at %s: %s object at %s>", this.hashCode(), refClass, ref.hashCode());
         }
 
         @Fallback
