@@ -48,3 +48,9 @@ def test_sleep_sec():
     start = time.time()
     time.sleep(1)
     assert time.time() - start > 1
+
+
+def test_monotonic():
+    times = [time.monotonic() for _ in range(100)]
+    for t1, t2 in zip(times[:-1], times[1:]):
+        assert t1 <= t2
