@@ -56,7 +56,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
@@ -64,7 +63,6 @@ import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -93,8 +91,8 @@ public class PythonObjectNativeWrapperMR {
         abstract Object execute(Object receiver, Object key);
 
         @Specialization(guards = "eq(OB_BASE, key)")
-        PythonObject doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
-            return o;
+        PythonObjectNativeWrapper doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
+            return PythonObjectNativeWrapper.wrap(o);
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
@@ -103,8 +101,8 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        PythonClass doObType(PythonObject object, @SuppressWarnings("unused") String key) {
-            return getClass.execute(object);
+        PythonObjectNativeWrapper doObType(PythonObject object, @SuppressWarnings("unused") String key) {
+            return PythonObjectNativeWrapper.wrap(getClass.execute(object));
         }
 
         @Specialization(guards = "eq(OB_SIZE, key)")
@@ -137,12 +135,12 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")
-        PythonClass doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
+        PythonObjectNativeWrapper doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
             PythonClass superClass = object.getSuperClass();
             if (superClass != null) {
-                return superClass;
+                return PythonObjectNativeWrapper.wrap(superClass);
             }
-            return object;
+            return PythonObjectNativeWrapper.wrap(object);
         }
 
         protected boolean eq(String expected, String actual) {
@@ -176,7 +174,7 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(OB_TYPE, key)")
         Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonClass value) {
             // At this point, we do not support changing the type of an object.
-            return object;
+            return PythonObjectNativeWrapper.wrap(object);
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")
@@ -235,9 +233,10 @@ public class PythonObjectNativeWrapperMR {
         @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNodeGen.create();
 
         Object access(PythonObjectNativeWrapper obj) {
-            assert !obj.isNative();
-            Object ptr = toPyObjectNode.execute(obj.getPythonObject());
-            obj.setNativePointer(ptr);
+            if (!obj.isNative()) {
+                Object ptr = toPyObjectNode.execute(obj.getPythonObject());
+                obj.setNativePointer(ptr);
+            }
             return obj;
         }
     }
@@ -276,9 +275,9 @@ public class PythonObjectNativeWrapperMR {
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
         @CompilationFinal private TruffleObject PyNoneHandle;
-        @Child private Node executeNode;
         @Child private Node isPointerNode;
         @Child private Node toNativeNode;
+        @Child private PCallNativeNode callNative;
 
         public abstract Object execute(PythonAbstractObject value);
 
@@ -303,6 +302,14 @@ public class PythonObjectNativeWrapperMR {
         @Specialization
         Object runNone(PNone object) {
             return ensureIsPointer(callIntoCapi(object, getPyNoneHandle()));
+        }
+
+        private Object callIntoCapi(PythonAbstractObject arg, TruffleObject fun) {
+            if (callNative == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNative = insert(PCallNativeNode.create());
+            }
+            return callNative.execute(arg, fun);
         }
 
         @Specialization(guards = "isNonNative(object)")
@@ -331,14 +338,6 @@ public class PythonObjectNativeWrapperMR {
             return PyObjectHandle_FromJavaObject;
         }
 
-        private Node getExecuteNode() {
-            if (executeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(1).createNode());
-            }
-            return executeNode;
-        }
-
         private Object ensureIsPointer(Object value) {
             if (value instanceof TruffleObject) {
                 TruffleObject truffleObject = (TruffleObject) value;
@@ -364,14 +363,5 @@ public class PythonObjectNativeWrapperMR {
         protected boolean isNonNative(PythonClass klass) {
             return !(klass instanceof PythonNativeClass);
         }
-
-        private Object callIntoCapi(PythonAbstractObject object, TruffleObject func) {
-            try {
-                return ForeignAccess.sendExecute(getExecuteNode(), func, object);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw e.raise();
-            }
-        }
     }
-
 }

@@ -41,6 +41,7 @@
  */
 package com.oracle.graal.python.nodes.interop;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -73,6 +74,11 @@ public abstract class PForeignToPTypeNode extends Node {
     @Specialization
     protected static String fromChar(char value) {
         return String.valueOf(value);
+    }
+
+    @Specialization(guards = "isNativeNone(none)")
+    protected static PNone fromNativeNone(@SuppressWarnings("unused") PNone none) {
+        return PNone.NONE;
     }
 
     @Fallback

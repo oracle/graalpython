@@ -40,9 +40,12 @@
 
 PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS);
 
+void* PyTruffle_Unicode_FromString(const char* o) {
+    return truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromString", polyglot_from_string(o, "utf-8"));
+}
+
 PyObject* PyUnicode_FromString(const char* o) {
-	// TODO probably also use 'PyTruffle_Unicode_FromUTF8'
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromString", truffle_read_string(o)));
+    return to_sulong(PyTruffle_Unicode_FromString(o));
 }
 
 static PyObject* _PyUnicode_FromUTF8(const char* o) {

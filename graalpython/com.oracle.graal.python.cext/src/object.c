@@ -475,6 +475,7 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
+    args = to_sulong(args);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
@@ -496,7 +497,7 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), to_java(args)));
+    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), args));
 }
 
 PyObject* PyObject_Type(PyObject* obj) {

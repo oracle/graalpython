@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cpyobject.PCallNativeNode;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapper;
@@ -182,6 +183,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return obj;
             }
         }
+
+        @TruffleBoundary
+        public static Object doSlowPath(Object object) {
+            if (object instanceof PythonObjectNativeWrapper) {
+                return ((PythonObjectNativeWrapper) object).getPythonObject();
+            } else if (GetClassNode.getItSlowPath(object) == PythonLanguage.getCore().getForeignClass()) {
+                throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
+            }
+            return object;
+        }
     }
 
     @Builtin(name = "is_python_object", fixedNumOfArguments = 1)
@@ -244,6 +255,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "to_sulong", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class ToSulongNode extends PythonBuiltinNode {
+        @CompilationFinal private TruffleObject PyNoneHandle;
+        @Child private PCallNativeNode callNative;
+
         public abstract Object execute(Object value);
 
         /*
@@ -253,27 +267,27 @@ public class TruffleCextBuiltins extends PythonBuiltins {
          */
         @Specialization
         Object run(String str) {
-            return wrap(factory().createString(str));
+            return PythonObjectNativeWrapper.wrap(factory().createString(str));
         }
 
         @Specialization
         Object run(boolean b) {
-            return wrap(factory().createInt(b));
+            return PythonObjectNativeWrapper.wrap(factory().createInt(b));
         }
 
         @Specialization
         Object run(int integer) {
-            return wrap(factory().createInt(integer));
+            return PythonObjectNativeWrapper.wrap(factory().createInt(integer));
         }
 
         @Specialization
         Object run(long integer) {
-            return wrap(factory().createInt(integer));
+            return PythonObjectNativeWrapper.wrap(factory().createInt(integer));
         }
 
         @Specialization
         Object run(double number) {
-            return wrap(factory().createFloat(number));
+            return PythonObjectNativeWrapper.wrap(factory().createFloat(number));
         }
 
         @Specialization
@@ -287,13 +301,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNone(none)")
-        Object run(@SuppressWarnings("unused") PNone none) {
-            return PNone.NATIVE_NONE;
+        Object run(PNone none) {
+            return callIntoCapi(none, getPyNoneHandle());
         }
 
         @Specialization(guards = "!isNativeClass(object)")
         Object runNativeObject(PythonObject object) {
-            return wrap(object);
+            return PythonObjectNativeWrapper.wrap(object);
         }
 
         @Fallback
@@ -305,14 +319,20 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return o instanceof PythonNativeClass;
         }
 
-        private static PythonObjectNativeWrapper wrap(PythonObject obj) {
-            // important: native wrappers are cached
-            PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
-            if (nativeWrapper == null) {
-                nativeWrapper = new PythonObjectNativeWrapper(obj);
-                obj.setNativeWrapper(nativeWrapper);
+        private TruffleObject getPyNoneHandle() {
+            if (PyNoneHandle == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol("PyNoneHandle");
             }
-            return nativeWrapper;
+            return PyNoneHandle;
+        }
+
+        private Object callIntoCapi(PythonAbstractObject arg, TruffleObject function) {
+            if (callNative == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNative = insert(PCallNativeNode.create());
+            }
+            return callNative.execute(arg, function);
         }
     }
 
@@ -696,11 +716,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     abstract static class PNativeToPTypeNode extends PForeignToPTypeNode {
-
-        @Specialization(guards = "isNativeNone(none)")
-        protected static PNone fromNativeNone(@SuppressWarnings("unused") PNone none) {
-            return PNone.NONE;
-        }
 
         @Specialization
         protected static PythonObject fromNativeNone(PythonObjectNativeWrapper nativeWrapper) {

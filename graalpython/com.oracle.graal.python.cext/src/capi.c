@@ -100,6 +100,10 @@ void* to_java_type(PyTypeObject* cls) {
 }
 
 PyObject* to_sulong(void *o) {
+	if (o == NULL) {
+		return NULL;
+	}
+
 	PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
 	if(polyglot_is_value(cobj)) {
 		return polyglot_as__object(cobj);
@@ -122,17 +126,16 @@ PyObject* PyNoneHandle() {
 PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
     PyObject* obj = (PyObject*)PyObject_Malloc(sizeof(PyObjectHandle));
     obj->ob_refcnt = truffle_handle_for_managed(jobject);
-    void *type = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobject);
-    obj->ob_type = PyObjectHandle_ForJavaType(type);
+    void *jtype = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobject);
+    obj->ob_type = polyglot_as__typeobject(to_sulong(jtype));
     return obj;
 }
 
+/** to be used from Java code only; only creates the deref handle */
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
-	// A handle is created at the first time we
 	if (!truffle_is_handle_to_managed(jobj)) {
 		PyTypeObject* jtypeobj = polyglot_as__typeobject(to_sulong(jobj));
 		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jtypeobj);
-		truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jtypeobj, deref_handle);
 		return deref_handle;
 	}
 	return jobj;

@@ -77,12 +77,12 @@ void PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback) {
 
 PyObject* PyErr_NewException(const char *name, PyObject *base, PyObject *dict) {
     if (base == NULL) {
-        base = truffle_read(PY_BUILTIN, "Exception");
+        base = PyExc_Exception;
     }
     if (dict == NULL) {
         dict = PyDict_New();
     }
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_NewException", truffle_read_string(name), to_java(base), to_java(dict));
+    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_NewException", truffle_read_string(name), to_java(base), to_java(dict)));
 }
 
 int PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc) {

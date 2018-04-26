@@ -202,6 +202,7 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     public void setNativeWrapper(PythonObjectNativeWrapper nativeWrapper) {
+        assert this.nativeWrapper == null;
         this.nativeWrapper = nativeWrapper;
     }
 }

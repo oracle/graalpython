@@ -52,6 +52,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -180,7 +181,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
-                Object result = ForeignAccess.sendExecute(executeNode, pyinitFunc);
+                Object result = AsPythonObjectNode.doSlowPath(ForeignAccess.sendExecute(executeNode, pyinitFunc));
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);

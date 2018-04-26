@@ -40,7 +40,7 @@
 
 #include <pyerrors.h>
 
-#define PY_EXCEPTION(__EXC_NAME__) ((PyObject*)polyglot_as__object(truffle_import_cached("python_" __EXC_NAME__)))
+#define PY_EXCEPTION(__EXC_NAME__) ((PyObject*)polyglot_as__object(to_sulong(truffle_import_cached("python_" __EXC_NAME__))))
 
 PyObject * PyExc_BaseException = NULL;
 PyObject * PyExc_Exception = NULL;

@@ -39,8 +39,6 @@
 package com.oracle.graal.python.builtins.objects.cpyobject;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
@@ -50,7 +48,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public class PythonObjectNativeWrapper implements TruffleObject {
     private final PythonObject pythonObject;
-    @CompilationFinal private Object nativePointer;
+    private Object nativePointer;
 
     public PythonObjectNativeWrapper(PythonObject object) {
         this.pythonObject = object;
@@ -66,8 +64,7 @@ public class PythonObjectNativeWrapper implements TruffleObject {
 
     public void setNativePointer(Object nativePointer) {
         // we should set the pointer just once
-        assert this.nativePointer == null;
-        CompilerDirectives.transferToInterpreterAndInvalidate();
+        assert this.nativePointer == null || this.nativePointer.equals(nativePointer);
         this.nativePointer = nativePointer;
     }
 
@@ -81,6 +78,16 @@ public class PythonObjectNativeWrapper implements TruffleObject {
 
     public ForeignAccess getForeignAccess() {
         return PythonObjectNativeWrapperMRForeign.ACCESS;
+    }
+
+    public static PythonObjectNativeWrapper wrap(PythonObject obj) {
+        // important: native wrappers are cached
+        PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        if (nativeWrapper == null) {
+            nativeWrapper = new PythonObjectNativeWrapper(obj);
+            obj.setNativeWrapper(nativeWrapper);
+        }
+        return nativeWrapper;
     }
 
 }
