@@ -94,6 +94,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
+    protected void finalizeContext(PythonContext context) {
+        context.runShutdownHooks();
+        super.finalizeContext(context);
+    }
+
+    @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
         ensureHomeInOptions(newEnv);
         if (!optionsAllowPreInitializedContext(context, newEnv)) {
