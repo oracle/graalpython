@@ -232,25 +232,14 @@ int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, PyObject* kwnames
     return 1;
 }
 
-PyObject* PyTruffle_BuildValue(const char *format, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9, void *v10) {
+PyObject* Py_BuildValue(const char *format, ...) {
     void* arg;
     int valuen = 1;
-    int max = strlen(format) > 10 ? 10 : strlen(format);
+    int max = strlen(format);
     PyObject* tuple = to_java(PyTuple_New(max));
 
     while (valuen <= max) {
-        switch (valuen) {
-        case 1: arg = v1; break;
-        case 2: arg = v2; break;
-        case 3: arg = v3; break;
-        case 4: arg = v4; break;
-        case 5: arg = v5; break;
-        case 6: arg = v6; break;
-        case 7: arg = v7; break;
-        case 8: arg = v8; break;
-        case 9: arg = v9; break;
-        case 10: arg = v10; break;
-        }
+        arg = truffle_get_arg(valuen);
 
         switch(format[valuen - 1]) {
         case 'n':

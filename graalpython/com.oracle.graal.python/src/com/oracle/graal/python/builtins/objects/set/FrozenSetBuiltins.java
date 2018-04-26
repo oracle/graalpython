@@ -25,15 +25,22 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -43,14 +50,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 
 @CoreFunctions(extendClasses = {PFrozenSet.class, PSet.class})
 public final class FrozenSetBuiltins extends PythonBuiltins {
