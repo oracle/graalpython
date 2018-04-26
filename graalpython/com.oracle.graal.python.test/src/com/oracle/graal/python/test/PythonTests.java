@@ -81,7 +81,7 @@ public class PythonTests {
     final static ByteArrayOutputStream outArray = new ByteArrayOutputStream();
     final static PrintStream errStream = new PrintStream(errArray);
     final static PrintStream outStream = new PrintStream(outArray);
-    static Context context = null;
+    public static Context context = null;
 
     public static void assertBenchNoError(Path scriptName, String[] args) {
         final ByteArrayOutputStream byteArrayErr = new ByteArrayOutputStream();
@@ -328,6 +328,15 @@ public class PythonTests {
         try {
             PythonTests.getContext(args).eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
+            flush(out, err);
+        }
+    }
+
+    public static void runScript(String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
+        try {
+            PythonTests.getContext(args).eval(org.graalvm.polyglot.Source.create("python", source));
+        } finally {
+            cb.run();
             flush(out, err);
         }
     }
