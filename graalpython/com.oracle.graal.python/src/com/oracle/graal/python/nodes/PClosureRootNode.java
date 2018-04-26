@@ -45,6 +45,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
@@ -54,12 +55,13 @@ public abstract class PClosureRootNode extends PRootNode {
         this.freeVarSlots = freeVarSlots;
     }
 
+    @ExplodeLoop
     protected void addClosureCellsToLocals(Frame frame) {
         PCell[] closure = PArguments.getClosure(frame);
         if (closure != null) {
             assert freeVarSlots != null : "closure root node: the free var slots cannot be null when the closure is not null";
             assert closure.length == freeVarSlots.length : "closure root node: the closure must have the same length as the free var slots array";
-            for (int i = 0; i < closure.length; i++) {
+            for (int i = 0; i < freeVarSlots.length; i++) {
                 frame.setObject(freeVarSlots[i], closure[i]);
             }
         }
