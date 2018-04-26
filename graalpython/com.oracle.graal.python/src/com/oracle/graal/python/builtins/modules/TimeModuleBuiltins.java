@@ -25,12 +25,17 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -53,6 +58,46 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         return System.currentTimeMillis() / 1000.0;
     }
 
+    @TruffleBoundary
+    private static Object[] getTimeStruct(double seconds, boolean local) {
+        Object[] timeStruct = new Object[9];
+        Instant instant = Instant.ofEpochSecond((long) seconds);
+
+        ZoneId zone = (local) ? ZoneId.systemDefault() : ZoneId.of("GMT");
+        ZonedDateTime zonedDateTime = LocalDateTime.ofInstant(instant, zone).atZone(zone);
+        timeStruct[0] = zonedDateTime.getYear();
+        timeStruct[1] = zonedDateTime.getMonth().getValue();
+        timeStruct[2] = zonedDateTime.getDayOfMonth();
+        timeStruct[3] = zonedDateTime.getHour();
+        timeStruct[4] = zonedDateTime.getMinute();
+        timeStruct[5] = zonedDateTime.getSecond();
+        timeStruct[6] = zonedDateTime.getDayOfWeek().getValue();
+        timeStruct[7] = zonedDateTime.getDayOfYear();
+        timeStruct[8] = (zonedDateTime.getZone().getRules().isDaylightSavings(instant)) ? 1 : 0;
+
+        return timeStruct;
+    }
+
+    // time.gmtime([seconds])
+    @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
+        @Specialization
+        public PTuple gmtime(double seconds) {
+            return factory().createTuple(getTimeStruct(seconds, false));
+        }
+    }
+
+    // time.localtime([seconds])
+    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
+        @Specialization
+        public PTuple localtime(double seconds) {
+            return factory().createTuple(getTimeStruct(seconds, true));
+        }
+    }
+
     // time.time()
     @Builtin(name = "time", fixedNumOfArguments = 0)
     @GenerateNodeFactory
@@ -68,6 +113,18 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public double time() {
             return timeSeconds();
+        }
+    }
+
+    // time.monotonic()
+    @Builtin(name = "monotonic", fixedNumOfArguments = 0)
+    @GenerateNodeFactory
+    public abstract static class PythonMonotonicNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public double time() {
+            return System.nanoTime();
         }
     }
 

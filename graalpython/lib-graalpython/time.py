@@ -35,22 +35,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import time
+
+def struct_time(*args, **kwargs):
+    from collections import namedtuple
+
+    nt = namedtuple("struct_time", [
+        "tm_year",
+        "tm_mon",
+        "tm_mday",
+        "tm_hour",
+        "tm_min",
+        "tm_sec",
+        "tm_wday",
+        "tm_yday",
+        "tm_isdst",
+    ])
+
+    return nt(*args, **kwargs)
 
 
-def test_sleep():
-    start = time.time()
-    time.sleep(0.1)
-    assert time.time() - start > 0.1
+def gmtime(seconds):
+    return struct_time(*__truffle_gmtime_tuple__(seconds))
 
 
-def test_sleep_sec():
-    start = time.time()
-    time.sleep(1)
-    assert time.time() - start > 1
-
-
-def test_monotonic():
-    times = [time.monotonic() for _ in range(100)]
-    for t1, t2 in zip(times[:-1], times[1:]):
-        assert t1 <= t2
+def localtime(seconds):
+    return struct_time(*__truffle_localtime_tuple__(seconds))
