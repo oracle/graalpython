@@ -72,7 +72,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         return NULL;
     }
 
-    PyObject* mod = truffle_invoke(PY_TRUFFLE_CEXT, "_PyModule_CreateInitialized_PyModule_New", truffle_read_string(moduledef->m_name));
+    PyObject* mod = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "_PyModule_CreateInitialized_PyModule_New", truffle_read_string(moduledef->m_name)));
 
     if (moduledef->m_size > 0) {
         void* md_state = PyMem_MALLOC(moduledef->m_size);

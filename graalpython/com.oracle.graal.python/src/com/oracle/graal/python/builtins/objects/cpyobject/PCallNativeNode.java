@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
@@ -36,57 +36,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-/**
- *
- */
-package com.oracle.graal.python.nodes.interop;
+package com.oracle.graal.python.builtins.objects.cpyobject;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 
-@ImportStatic(PGuards.class)
-public abstract class PForeignToPTypeNode extends Node {
+public class PCallNativeNode extends PBaseNode {
+    private final int arity;
 
-    protected PForeignToPTypeNode() {
+    @Child private Node executeNode;
+
+    public PCallNativeNode(int arity) {
+        this.arity = arity;
     }
 
-    public abstract Object executeConvert(Object value);
-
-    @Specialization
-    protected static int fromByte(byte value) {
-        return value;
+    private Node getExecuteNode() {
+        if (executeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            executeNode = insert(Message.createExecute(arity).createNode());
+        }
+        return executeNode;
     }
 
-    @Specialization
-    protected static int fromShort(short value) {
-        return value;
+    public Object execute(PythonAbstractObject arg, TruffleObject func) {
+        try {
+            return ForeignAccess.sendExecute(getExecuteNode(), func, arg);
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            CompilerDirectives.transferToInterpreter();
+            throw e.raise();
+        }
     }
 
-    @Specialization
-    protected static double fromFloat(float value) {
-        return value;
-    }
-
-    @Specialization
-    protected static String fromChar(char value) {
-        return String.valueOf(value);
-    }
-
-    @Specialization(guards = "isNativeNone(none)")
-    protected static PNone fromNativeNone(@SuppressWarnings("unused") PNone none) {
-        return PNone.NONE;
-    }
-
-    @Fallback
-    protected static Object fromObjectGeneric(Object value) {
-        return value;
-    }
-
-    public static PForeignToPTypeNode create() {
-        return PForeignToPTypeNodeGen.create();
+    public static PCallNativeNode create() {
+        return new PCallNativeNode(1);
     }
 }

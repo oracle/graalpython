@@ -46,11 +46,16 @@ void marry_objects(PyObject* obj, void* jobj) {
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    PyTypeObject* ptype = polyglot_as__typeobject(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
+    PyTypeObject* ptype = (PyTypeObject *)to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
     unsigned long original_flags = structure->tp_flags;
-    PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
+    PyTypeObject* type_handle = truffle_assign_managed(structure, polyglot_as__typeobject(ptype));
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
+}
+
+static void initialize_globals() {
+	void *jnone = polyglot_as__object(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None"));
+    truffle_assign_managed(&_Py_NoneStruct, jnone);
 }
 
 __attribute__((constructor))
@@ -69,11 +74,14 @@ static void initialize_capi() {
     initialize_type_structure(&PyList_Type, "list");
     initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
 
+    // initialize global variables like '_Py_NoneStruct', etc.
+    initialize_globals();
+
     initialize_exceptions();
 }
 
 void* to_java(PyObject* obj) {
-	if (obj == &_Py_NoneStruct) {
+	if (obj == Py_None) {
         return Py_None;
     } else if (obj == NULL) {
     	return Py_NoValue;
@@ -96,13 +104,7 @@ void* to_java(PyObject* obj) {
 }
 
 void* to_java_type(PyTypeObject* cls) {
-	if (truffle_is_handle_to_managed(cls)) {
-		return truffle_managed_from_handle(cls);
-    } else if (truffle_is_handle_to_managed(((PyObject*)cls)->ob_refcnt)) {
-		PyType_Ready(cls); // make sure we have an associated Java class
-		return truffle_managed_from_handle(((PyObject*)cls)->ob_refcnt);
-	}
-	return cls;
+	return to_java((PyObject*)cls);
 }
 
 PyObject* to_sulong(void *o) {
@@ -121,22 +123,23 @@ typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;
 
-PyObject* PyNoneHandle() {
+PyObject* PyNoneHandle(void* jobj) {
     return &_Py_NoneStruct;
 }
 
 PyObject* PyObjectHandle_ForJavaObject(PyObject* jobject) {
     PyObject* obj = (PyObject*)PyObject_Malloc(sizeof(PyObjectHandle));
-    marry_objects(obj, jobject);
+    obj->ob_refcnt = truffle_handle_for_managed(jobject);
+    void *jtype = (PyTypeObject *)truffle_invoke(PY_BUILTIN, "type", jobject);
+    obj->ob_type = polyglot_as__typeobject(to_sulong(jtype));
     return obj;
 }
 
+/** to be used from Java code only; only creates the deref handle */
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
-	// A handle is created at the first time we
 	if (!truffle_is_handle_to_managed(jobj)) {
-		PyTypeObject* jtypeobj = polyglot_as__typeobject(jobj);
+		PyTypeObject* jtypeobj = polyglot_as__typeobject(to_sulong(jobj));
 		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jtypeobj);
-		truffle_invoke(PY_TRUFFLE_CEXT, "marry_objects", jtypeobj, deref_handle);
 		return deref_handle;
 	}
 	return jobj;

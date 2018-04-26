@@ -38,15 +38,12 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
-import static com.oracle.graal.python.nodes.SpecialPyObjectAttributes.pyobjectKey;
-
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -55,16 +52,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ArityCheckNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
@@ -76,16 +70,10 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.interop.PythonMessageResolutionFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.CanResolve;
-import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
@@ -558,201 +546,6 @@ public class PythonMessageResolution {
 
         public Object access(Object object) {
             return keysNode.execute(object);
-        }
-    }
-
-    public abstract static class ToPyObjectNode extends PBaseNode {
-        @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
-        @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
-        @CompilationFinal private TruffleObject PyNoneHandle;
-        @Child private Node executeNode;
-        @Child private Node isPointerNode;
-        @Child private Node toNativeNode;
-        @Child private ReadAttributeFromObjectNode readAttr;
-        @Child private WriteAttributeToObjectNode writeAttr;
-
-        public abstract Object execute(Object value);
-
-        @Specialization
-        Object runNativeClass(PythonNativeClass object) {
-            return ensureIsPointer(object.object);
-        }
-
-        @Specialization
-        Object runNativeObject(PythonNativeObject object) {
-            return ensureIsPointer(object.object);
-        }
-
-        private TruffleObject getPyNoneHandle() {
-            if (PyNoneHandle == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol("PyNoneHandle");
-            }
-            return PyNoneHandle;
-        }
-
-        @Specialization
-        Object runNone(PNone object) {
-            try {
-                ensureIsPointer(ForeignAccess.sendExecute(getExecuteNode(), getPyNoneHandle(), object));
-                return object;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw e.raise();
-            }
-        }
-
-        @Specialization(guards = "isNonNative(object)")
-        Object runClass(PythonClass object) {
-            ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaType()));
-            return object;
-        }
-
-        @Fallback
-        Object runObject(Object object) {
-            ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
-            return object;
-        }
-
-        private TruffleObject getPyObjectHandle_ForJavaType() {
-            if (PyObjectHandle_FromJavaType == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaType = (TruffleObject) getContext().getEnv().importSymbol("PyObjectHandle_ForJavaType");
-            }
-            return PyObjectHandle_FromJavaType;
-        }
-
-        private TruffleObject getPyObjectHandle_ForJavaObject() {
-            if (PyObjectHandle_FromJavaObject == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol("PyObjectHandle_ForJavaObject");
-            }
-            return PyObjectHandle_FromJavaObject;
-        }
-
-        private Node getExecuteNode() {
-            if (executeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(1).createNode());
-            }
-            return executeNode;
-        }
-
-        private Object ensureIsPointer(Object value) {
-            if (value instanceof TruffleObject) {
-                TruffleObject truffleObject = (TruffleObject) value;
-                if (isPointerNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    isPointerNode = insert(Message.IS_POINTER.createNode());
-                }
-                if (!ForeignAccess.sendIsPointer(isPointerNode, truffleObject)) {
-                    if (toNativeNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        toNativeNode = insert(Message.TO_NATIVE.createNode());
-                    }
-                    try {
-                        return ForeignAccess.sendToNative(toNativeNode, truffleObject);
-                    } catch (UnsupportedMessageException e) {
-                        throw e.raise();
-                    }
-                }
-            }
-            return value;
-        }
-
-        private ReadAttributeFromObjectNode getReadAttr() {
-            if (readAttr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttr = insert(ReadAttributeFromObjectNode.create());
-            }
-            return readAttr;
-        }
-
-        private WriteAttributeToObjectNode getWriteAttr() {
-            if (writeAttr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                writeAttr = insert(WriteAttributeToObjectNode.create());
-            }
-            return writeAttr;
-        }
-
-        protected boolean isNonNative(PythonClass klass) {
-            return !(klass instanceof PythonNativeClass);
-        }
-
-        private Object callIntoCapi(Object object, TruffleObject func) {
-            Object pyobject = getReadAttr().execute(object, pyobjectKey);
-            if (pyobject == PNone.NO_VALUE) {
-                try {
-                    pyobject = ensureIsPointer(ForeignAccess.sendExecute(getExecuteNode(), func, object));
-                } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                    throw e.raise();
-                }
-                getWriteAttr().execute(object, pyobjectKey, pyobject);
-            }
-            return pyobject;
-        }
-    }
-
-    @Resolve(message = "TO_NATIVE")
-    abstract static class ToNativeNode extends Node {
-        @Child private ToPyObjectNode toPyTypeNode = ToPyObjectNodeGen.create();
-
-        Object access(Object obj) {
-            return toPyTypeNode.execute(obj);
-        }
-    }
-
-    @Resolve(message = "IS_POINTER")
-    abstract static class IsPointerNode extends Node {
-        @Child private PointerBaseNode pointerNode = PointerBaseNode.create();
-        private final ValueProfile profile = ValueProfile.createClassProfile();
-
-        Object access(Object obj) {
-            Object profiledObj = profile.profile(obj);
-            if (profiledObj instanceof PythonClass) {
-                return pointerNode.execute(obj) != PNone.NO_VALUE;
-            }
-            return false;
-        }
-    }
-
-    @Resolve(message = "AS_POINTER")
-    abstract static class AsPointerNode extends Node {
-        @Child private PointerBaseNode pointerNode = PointerBaseNode.create();
-        @Child private Node asPointerNode;
-
-        long access(Object obj) {
-            Object ptr = pointerNode.execute(obj);
-            if (asPointerNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPointerNode = insert(Message.AS_POINTER.createNode());
-            }
-            try {
-                return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) ptr);
-            } catch (UnsupportedMessageException e) {
-                throw e.raise();
-            }
-        }
-    }
-
-    private static class PointerBaseNode extends Node {
-
-        @Child private ReadAttributeFromObjectNode readAttr;
-
-        private ReadAttributeFromObjectNode getReadAttr() {
-            if (readAttr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttr = insert(ReadAttributeFromObjectNode.create());
-            }
-            return readAttr;
-        }
-
-        public static PointerBaseNode create() {
-            return new PointerBaseNode();
-        }
-
-        Object execute(Object obj) {
-            return getReadAttr().execute(obj, pyobjectKey);
         }
     }
 

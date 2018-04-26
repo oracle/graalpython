@@ -41,11 +41,10 @@
 #include <stdio.h>
 
 PyObject* get_arg_or_kw(PyObject* argv, PyObject* kwds, char** kwdnames, int argnum, int is_optional, int is_keyword) {
-    void* argv_w = to_java(argv);
     if (!is_keyword) {
-        int l = truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_LEN", argv_w);
+        int l = truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_LEN", to_java(argv));
         if (argnum < l) {
-            return PyTuple_GetItem(argv_w, argnum);
+            return PyTuple_GetItem(argv, argnum);
         }
     }
     const char* kwdname = kwdnames[argnum];
@@ -113,7 +112,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
             }
         } else if (c == 'S') {
             PyObject* arg = POPARG;
-            truffle_invoke(PY_TRUFFLE_CEXT, "check_argtype", outputn, to_java(arg), to_java(truffle_read(PY_BUILTIN, "bytes")));
+            truffle_invoke(PY_TRUFFLE_CEXT, "check_argtype", outputn, to_java(arg), truffle_read(PY_BUILTIN, "bytes"));
             ASSIGN(PyObject*, arg);
         } else if (c == 'Y') {
             goto error;
@@ -236,39 +235,40 @@ PyObject* Py_BuildValue(const char *format, ...) {
     void* arg;
     int valuen = 1;
     int max = strlen(format);
-    PyObject* tuple = to_java(PyTuple_New(max));
+    PyObject* tuple = PyTuple_New(max);
+    void* jtuple = to_java(tuple);
 
     while (valuen <= max) {
         arg = truffle_get_arg(valuen);
 
         switch(format[valuen - 1]) {
         case 'n':
-            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, (Py_ssize_t)arg);
+            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, (Py_ssize_t)arg);
             break;
         case 'i':
-            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, (int)arg);
+            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, (int)arg);
         	break;
         case 's':
             if (arg == NULL) {
-                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, to_java(Py_None));
+                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, Py_None);
             } else {
-                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, PyTruffle_Unicode_FromUTF8((char*)arg, Py_None));
+                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, PyTruffle_Unicode_FromUTF8((char*)arg, Py_None));
             }
         	break;
         case 'd':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, PyFloat_FromDouble((double)(unsigned long long)arg));
+        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, to_java(PyFloat_FromDouble((double)(unsigned long long)arg)));
         	break;
         case 'l':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, as_long((long)arg));
+        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((long)arg));
         	break;
         case 'L':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, as_long((long long)arg));
+        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((long long)arg));
         	break;
         case 'k':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, as_long((unsigned long)arg));
+        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((unsigned long)arg));
         	break;
         case 'K':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, as_long((unsigned long long)arg));
+        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((unsigned long long)arg));
         	break;
         case 'N':
         case 'S':
@@ -278,7 +278,7 @@ PyObject* Py_BuildValue(const char *format, ...) {
                  * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
                 PyErr_SetString(PyExc_SystemError, "NULL object passed to Py_BuildValue");
         	} else {
-        		truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", tuple, valuen - 1, to_java(arg));
+        		truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, to_java(arg));
         	}
         	break;
         default:
@@ -294,7 +294,7 @@ PyObject* Py_BuildValue(const char *format, ...) {
     } else if (valuen == 2) {
         // we're not using PyTuple_GetItem here because we definitely want a
         // java object and not call to_sulong on it
-        return to_java(to_sulong(truffle_invoke(tuple, "__getitem__", 0)));
+        return to_java(to_sulong(truffle_invoke(jtuple, "__getitem__", 0)));
     } else {
         PyObject* outputtuple = to_java(PyTuple_New(valuen - 1));
         for (valuen--; valuen > 0; valuen--) {

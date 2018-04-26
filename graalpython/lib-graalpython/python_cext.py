@@ -101,16 +101,16 @@ def PyDict_Copy(dictObj):
     return None
 
 
-def PyDict_GetItem(dictObj, key):
+def PyDict_GetItem(dictObj, key, error_marker):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
     typ = val = tb = None
     try:
-        return dictObj.get(key)
+        return dictObj.get(key, error_marker)
     except BaseException as e:
         typ, val, tb = sys.exc_info()
     PyErr_Restore(typ, val, tb)
-    return None
+    return error_marker
 
 
 def PyDict_SetItem(dictObj, key, value):

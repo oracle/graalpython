@@ -36,21 +36,58 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes;
+package com.oracle.graal.python.builtins.objects.cpyobject;
 
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * Special attributes of C API structs. TODO: as soon as Sulong supports named struct accesses, we
- * can change these to be final String fields.
+ * Used to wrap {@link PythonObject} when used in native code. This wrapper mimics the correct shape
+ * of the corresponding native type {@code struct _object}.
  */
-public abstract class SpecialPyObjectAttributes {
-    @CompilationFinal public static int ob_refcnt;
-    @CompilationFinal public static int ob_type;
-    @CompilationFinal public static int ob_size;
-    @CompilationFinal public static int tp_base;
-    @CompilationFinal public static int tp_flags;
+public class PythonObjectNativeWrapper implements TruffleObject {
+    private final PythonObject pythonObject;
+    private Object nativePointer;
 
-    public static final HiddenKey pyobjectKey = new HiddenKey("native_handle");
+    public PythonObjectNativeWrapper(PythonObject object) {
+        this.pythonObject = object;
+    }
+
+    public boolean isNative() {
+        return nativePointer != null;
+    }
+
+    public Object getNativePointer() {
+        return nativePointer;
+    }
+
+    public void setNativePointer(Object nativePointer) {
+        // we should set the pointer just once
+        assert this.nativePointer == null || this.nativePointer.equals(nativePointer);
+        this.nativePointer = nativePointer;
+    }
+
+    public PythonObject getPythonObject() {
+        return pythonObject;
+    }
+
+    public static boolean isInstance(TruffleObject o) {
+        return o instanceof PythonObjectNativeWrapper;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return PythonObjectNativeWrapperMRForeign.ACCESS;
+    }
+
+    public static PythonObjectNativeWrapper wrap(PythonObject obj) {
+        // important: native wrappers are cached
+        PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        if (nativeWrapper == null) {
+            nativeWrapper = new PythonObjectNativeWrapper(obj);
+            obj.setNativeWrapper(nativeWrapper);
+        }
+        return nativeWrapper;
+    }
+
 }

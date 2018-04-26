@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
@@ -36,57 +36,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-/**
- *
- */
-package com.oracle.graal.python.nodes.interop;
+package com.oracle.graal.python.builtins.objects.cpyobject;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node;
+public abstract class NativeMemberNames {
+    public static final String OB_BASE = "ob_base";
+    public static final String OB_REFCNT = "ob_refcnt";
+    public static final String OB_TYPE = "ob_type";
+    public static final String OB_SIZE = "ob_size";
+    public static final String OB_SVAL = "ob_sval";
+    public static final String TP_FLAGS = "tp_flags";
+    public static final String TP_NAME = "tp_name";
+    public static final String TP_BASE = "tp_base";
 
-@ImportStatic(PGuards.class)
-public abstract class PForeignToPTypeNode extends Node {
-
-    protected PForeignToPTypeNode() {
-    }
-
-    public abstract Object executeConvert(Object value);
-
-    @Specialization
-    protected static int fromByte(byte value) {
-        return value;
-    }
-
-    @Specialization
-    protected static int fromShort(short value) {
-        return value;
-    }
-
-    @Specialization
-    protected static double fromFloat(float value) {
-        return value;
-    }
-
-    @Specialization
-    protected static String fromChar(char value) {
-        return String.valueOf(value);
-    }
-
-    @Specialization(guards = "isNativeNone(none)")
-    protected static PNone fromNativeNone(@SuppressWarnings("unused") PNone none) {
-        return PNone.NONE;
-    }
-
-    @Fallback
-    protected static Object fromObjectGeneric(Object value) {
-        return value;
-    }
-
-    public static PForeignToPTypeNode create() {
-        return PForeignToPTypeNodeGen.create();
+    public static boolean isValid(String key) {
+        switch (key) {
+            case OB_BASE:
+            case OB_REFCNT:
+            case OB_TYPE:
+            case OB_SIZE:
+            case OB_SVAL:
+            case TP_FLAGS:
+            case TP_NAME:
+            case TP_BASE:
+                return true;
+        }
+        return false;
     }
 }
