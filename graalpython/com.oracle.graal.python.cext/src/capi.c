@@ -73,6 +73,8 @@ static void initialize_capi() {
     initialize_type_structure(&PyTuple_Type, "tuple");
     initialize_type_structure(&PyList_Type, "list");
     initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
+    initialize_type_structure(&PyComplex_Type, "complex");
+    initialize_type_structure(&PySlice_Type, "slice");
 
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
