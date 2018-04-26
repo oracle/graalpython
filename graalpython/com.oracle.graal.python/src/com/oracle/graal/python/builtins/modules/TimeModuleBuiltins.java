@@ -129,6 +129,18 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    // time.monotonic()
+    @Builtin(name = "monotonic", fixedNumOfArguments = 0)
+    @GenerateNodeFactory
+    public abstract static class PythonMonotonicNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public double time() {
+            return System.nanoTime();
+        }
+    }
+
     // time.clock()
     @Builtin(name = "clock", fixedNumOfArguments = 0)
     @GenerateNodeFactory
