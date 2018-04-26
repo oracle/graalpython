@@ -200,7 +200,7 @@ public abstract class PythonBuiltins {
 
         // read splat args if any
         if (builtin.takesVariableArguments()) {
-            args.add(ReadVarArgsNode.create(args.size()));
+            args.add(ReadVarArgsNode.create(args.size(), true));
         }
 
         // read named keyword arguments

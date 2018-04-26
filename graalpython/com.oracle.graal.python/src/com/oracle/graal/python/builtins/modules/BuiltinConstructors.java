@@ -311,7 +311,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictionaryNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        public PDict dictEmpty(PythonClass cls, PTuple args, PKeyword[] keywordArgs) {
+        public PDict dictEmpty(PythonClass cls, Object[] args, PKeyword[] keywordArgs) {
             return factory().createDict(cls);
         }
     }
@@ -797,14 +797,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        Object doObjectDirect(@SuppressWarnings("unused") PythonClass self, PTuple varargs, PKeyword[] kwargs,
+        Object doObjectDirect(@SuppressWarnings("unused") PythonClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("self") PythonClass cachedSelf) {
             return doObjectIndirect(cachedSelf, varargs, kwargs);
         }
 
         @Specialization(replaces = "doObjectDirect")
-        Object doObjectIndirect(PythonClass self, PTuple varargs, PKeyword[] kwargs) {
-            if (varargs.len() > 0 || kwargs.length > 0) {
+        Object doObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs) {
+            if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
             return factory().createPythonObject(self);
@@ -1031,11 +1031,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ZipNode extends PythonBuiltinNode {
         @Specialization
-        public PZip zip(PythonClass cls, PTuple args,
+        public PZip zip(PythonClass cls, Object[] args,
                         @Cached("create()") GetIteratorNode getIterator) {
-            Object[] iterables = new Object[args.len()];
-            for (int i = 0; i < args.len(); i++) {
-                Object item = args.getItem(i);
+            Object[] iterables = new Object[args.length];
+            for (int i = 0; i < args.length; i++) {
+                Object item = args[i];
                 // TODO: check whether the argument supports iteration (has __next__ and __iter__)
                 iterables[i] = getIterator.executeWith(item);
             }
@@ -1400,8 +1400,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class BaseExceptionNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object call(PythonClass cls, PTuple varargs, PKeyword[] kwargs) {
-            return factory().createBaseException(cls, varargs);
+        Object call(PythonClass cls, Object[] varargs, PKeyword[] kwargs) {
+            return factory().createBaseException(cls, factory().createTuple(varargs));
         }
     }
 

@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -63,13 +62,13 @@ public class MethodBuiltins extends PythonBuiltins {
         @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
         @Specialization
-        protected Object doIt(PMethod self, PTuple arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.__func__(), createArgs.executeWithSelf(self.__self__(), arguments.getArray()), keywords);
+        protected Object doIt(PMethod self, Object[] arguments, PKeyword[] keywords) {
+            return dispatch.executeCall(self.__func__(), createArgs.executeWithSelf(self.__self__(), arguments), keywords);
         }
 
         @Specialization
-        protected Object doIt(PBuiltinMethod self, PTuple arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.__func__(), createArgs.executeWithSelf(self.__self__(), arguments.getArray()), keywords);
+        protected Object doIt(PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
+            return dispatch.executeCall(self.__func__(), createArgs.executeWithSelf(self.__self__(), arguments), keywords);
         }
     }
 

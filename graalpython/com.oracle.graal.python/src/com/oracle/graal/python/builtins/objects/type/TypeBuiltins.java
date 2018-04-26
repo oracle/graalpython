@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -147,14 +146,14 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        protected Object doIt(@SuppressWarnings("unused") PythonClass self, PTuple arguments, PKeyword[] keywords,
+        protected Object doIt(@SuppressWarnings("unused") PythonClass self, Object[] arguments, PKeyword[] keywords,
                         @Cached("self") PythonClass cachedSelf) {
-            return op(cachedSelf, arguments.getArray(), keywords, true);
+            return op(cachedSelf, arguments, keywords, true);
         }
 
         @Specialization(replaces = "doIt")
-        protected Object doItIndirect(PythonClass self, PTuple arguments, PKeyword[] keywords) {
-            return op(self, arguments.getArray(), keywords, true);
+        protected Object doItIndirect(PythonClass self, Object[] arguments, PKeyword[] keywords) {
+            return op(self, arguments, keywords, true);
         }
 
         private Object op(PythonClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {

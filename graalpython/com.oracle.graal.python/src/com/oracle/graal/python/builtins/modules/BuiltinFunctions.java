@@ -798,8 +798,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "args.isEmpty()")
-        public Object maxSequence(PythonObject arg1, PTuple args, @SuppressWarnings("unused") PNone keywordArg,
+        @Specialization(guards = "args.length == 0")
+        public Object maxSequence(PythonObject arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
@@ -808,8 +808,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return minmaxSequenceWithKey(arg1, args, null, getIterator, next, compare, null, errorProfile1, errorProfile2);
         }
 
-        @Specialization(guards = "args.isEmpty()")
-        public Object minmaxSequenceWithKey(PythonObject arg1, @SuppressWarnings("unused") PTuple args, PythonObject keywordArg,
+        @Specialization(guards = "args.length == 0")
+        public Object minmaxSequenceWithKey(PythonObject arg1, @SuppressWarnings("unused") Object[] args, PythonObject keywordArg,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
@@ -842,29 +842,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return currentValue;
         }
 
-        @Specialization(guards = "!args.isEmpty()")
-        public Object minmaxBinary(Object arg1, PTuple args, @SuppressWarnings("unused") PNone keywordArg,
+        @Specialization(guards = "args.length != 0")
+        public Object minmaxBinary(Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
             return minmaxBinaryWithKey(arg1, args, null, compare, null, moreThanTwo);
         }
 
-        @Specialization(guards = "!args.isEmpty()")
-        public Object minmaxBinaryWithKey(Object arg1, PTuple args, PythonObject keywordArg,
+        @Specialization(guards = "args.length != 0")
+        public Object minmaxBinaryWithKey(Object arg1, Object[] args, PythonObject keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("create()") CallNode keyCall,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
             Object currentValue = arg1;
             Object currentKey = applyKeyFunction(keywordArg, keyCall, currentValue);
-            Object nextValue = args.getItem(0);
+            Object nextValue = args[0];
             Object nextKey = applyKeyFunction(keywordArg, keyCall, nextValue);
             if (compare.executeBool(nextKey, currentKey)) {
                 currentKey = nextKey;
                 currentValue = nextValue;
             }
-            if (moreThanTwo.profile(args.len() > 1)) {
-                for (int i = 0; i < args.len(); i++) {
-                    nextValue = args.getItem(i);
+            if (moreThanTwo.profile(args.length > 1)) {
+                for (int i = 0; i < args.length; i++) {
+                    nextValue = args[i];
                     nextKey = applyKeyFunction(keywordArg, keyCall, nextValue);
                     if (compare.executeBool(nextKey, currentKey)) {
                         currentKey = nextKey;
@@ -1024,10 +1024,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class DebugNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object doIt(PTuple args) {
+        public Object doIt(Object[] args) {
             PrintWriter stdout = new PrintWriter(getContext().getStandardOut());
-            for (int i = 0; i < args.len(); i++) {
-                stdout.println(args.getItem(i));
+            for (int i = 0; i < args.length; i++) {
+                stdout.println(args[i]);
             }
             stdout.flush();
             return PNone.NONE;
