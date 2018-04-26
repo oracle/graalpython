@@ -95,11 +95,6 @@
 #include "warnings.h"
 
 // our impls
-#ifdef Py_None
-#undef Py_None
-#define Py_None truffle_invoke(PY_TRUFFLE_CEXT, "Py_None")
-#endif
-
 #ifdef Py_True
 #undef Py_True
 #define Py_True truffle_invoke(PY_TRUFFLE_CEXT, "Py_True")
