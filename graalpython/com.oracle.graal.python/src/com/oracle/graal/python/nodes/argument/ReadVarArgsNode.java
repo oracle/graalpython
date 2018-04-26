@@ -26,7 +26,6 @@
 package com.oracle.graal.python.nodes.argument;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
@@ -35,13 +34,22 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class ReadVarArgsNode extends ReadIndexedArgumentNode {
+    /**
+     * Controls if the varargs are wrapped in a tuple
+     */
+    private final boolean builtin;
 
-    ReadVarArgsNode(int paramIndex) {
+    ReadVarArgsNode(int paramIndex, boolean isBuiltin) {
         super(paramIndex);
+        builtin = isBuiltin;
     }
 
     public static ReadVarArgsNode create(int paramIndex) {
-        return ReadVarArgsNodeGen.create(paramIndex);
+        return create(paramIndex, false);
+    }
+
+    public static ReadVarArgsNode create(int paramIndex, boolean isBuiltin) {
+        return ReadVarArgsNodeGen.create(paramIndex, isBuiltin);
     }
 
     protected int getAndCheckUserArgsLen(VirtualFrame frame) {
@@ -58,30 +66,46 @@ public abstract class ReadVarArgsNode extends ReadIndexedArgumentNode {
 
     @Specialization(guards = {"getUserArgsLen(frame) == userArgumentLength"})
     @ExplodeLoop
-    PTuple extractVarargs(VirtualFrame frame,
+    Object extractVarargs(VirtualFrame frame,
                     @Cached("getAndCheckUserArgsLen(frame)") int userArgumentLength) {
         if (index >= userArgumentLength) {
-            return factory().createEmptyTuple();
+            return output();
         } else {
             Object[] varArgs = new Object[userArgumentLength - index];
             CompilerAsserts.compilationConstant(varArgs.length);
             for (int i = 0; i < varArgs.length; i++) {
                 varArgs[i] = PArguments.getArgument(frame, i + index);
             }
-            return factory().createTuple(varArgs);
+            return output(varArgs);
         }
     }
 
     @Specialization(replaces = "extractVarargs")
-    PTuple extractVariableVarargs(VirtualFrame frame) {
+    Object extractVariableVarargs(VirtualFrame frame) {
         int userArgumentLength = getUserArgsLen(frame);
         if (index >= userArgumentLength) {
-            return factory().createEmptyTuple();
+            return output();
         } else {
             Object[] varArgs = new Object[userArgumentLength - index];
             for (int i = 0; i < varArgs.length; i++) {
                 varArgs[i] = PArguments.getArgument(frame, i + index);
             }
+            return output(varArgs);
+        }
+    }
+
+    private Object output() {
+        if (builtin) {
+            return new Object[0];
+        } else {
+            return factory().createEmptyTuple();
+        }
+    }
+
+    private Object output(Object[] varArgs) {
+        if (builtin) {
+            return varArgs;
+        } else {
             return factory().createTuple(varArgs);
         }
     }

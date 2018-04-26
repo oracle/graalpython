@@ -61,8 +61,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
-        Object init(PBaseException self, PTuple args) {
-            self.setArgs(args);
+        Object init(PBaseException self, Object[] args) {
+            self.setArgs(factory().createTuple(args));
             return PNone.NONE;
         }
     }

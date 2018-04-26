@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -225,10 +224,10 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class executeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, PTuple arguments,
+        Object remove(TruffleObject receiver, Object[] arguments,
                         @Cached("createExecute(0).createNode()") Node executeNode) {
             try {
-                return ForeignAccess.sendExecute(executeNode, receiver, arguments.getArray());
+                return ForeignAccess.sendExecute(executeNode, receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 throw raise(PythonErrorType.AttributeError, e.getMessage());
             }
@@ -240,10 +239,10 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class newNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, PTuple arguments,
+        Object remove(TruffleObject receiver, Object[] arguments,
                         @Cached("createNew(0).createNode()") Node executeNode) {
             try {
-                return ForeignAccess.sendNew(executeNode, receiver, arguments.getArray());
+                return ForeignAccess.sendNew(executeNode, receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 throw raise(PythonErrorType.AttributeError, e.getMessage());
             }
@@ -255,10 +254,10 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class invokeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, String key, PTuple arguments,
+        Object remove(TruffleObject receiver, String key, Object[] arguments,
                         @Cached("createInvoke(0).createNode()") Node executeNode) {
             try {
-                return ForeignAccess.sendInvoke(executeNode, receiver, key, arguments.getArray());
+                return ForeignAccess.sendInvoke(executeNode, receiver, key, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
                 throw raise(PythonErrorType.AttributeError, e.getMessage());
             }

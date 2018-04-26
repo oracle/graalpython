@@ -1024,10 +1024,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class DebugNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object doIt(PTuple args) {
+        public Object doIt(Object[] args) {
             PrintWriter stdout = new PrintWriter(getContext().getStandardOut());
-            for (int i = 0; i < args.len(); i++) {
-                stdout.println(args.getItem(i));
+            for (int i = 0; i < args.length; i++) {
+                stdout.println(args[i]);
             }
             stdout.flush();
             return PNone.NONE;
