@@ -50,7 +50,7 @@ def _reference_setnone(args):
 
 
 def _reference_format(args):
-    raise args[0](args[1] % args[2:])
+    raise args[0](args[1].lower() % args[2:])
 
 
 def _is_exception_class(exc):
@@ -99,7 +99,7 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_SetObject = CPyExtFunctionVoid(
         _reference_setstring,
         lambda: (
@@ -113,7 +113,7 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_SetNone = CPyExtFunctionVoid(
         _reference_setnone,
         lambda: (
@@ -131,10 +131,10 @@ class TestPyNumber(CPyExtTestCase):
     test_PyErr_Format = CPyExtFunctionVoid(
         _reference_format,
         lambda: (
-            (ValueError, "hello %s %s", "", ""),
-            (TypeError, "world %s %s", "", ""),
-            (KeyError, "key %s %s", "", ""),
-            (KeyError, "unknown key: %s %s", "some_key", ""),
+            (ValueError, "hello %S %S", "beautiful", "world"),
+            (TypeError, "world %S %S", "", ""),
+            (KeyError, "key %S %S", "", ""),
+            (KeyError, "unknown key: %S %S", "some_key", ""),
         ),
         resultspec="O",
         argspec='OsOO',
@@ -160,7 +160,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_PrintEx",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_GivenExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
         lambda: (
@@ -179,7 +179,7 @@ class TestPyNumber(CPyExtTestCase):
         arguments=["PyObject* err", "PyObject* exc"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_Occurred = CPyExtFunction(
         lambda args: args[0] if _is_exception_class(args[0]) else SystemError,
         lambda: (
@@ -202,7 +202,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_Occurred",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_ExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
         lambda: (
@@ -227,7 +227,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_ExceptionMatches",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_WarnEx = CPyExtFunctionVoid(
         lambda args: warnings.warn(args[1], args[0], args[2]),
         lambda: (
@@ -238,7 +238,7 @@ class TestPyNumber(CPyExtTestCase):
         arguments=["PyObject* category", "char* msg", "Py_ssize_t level"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_NoMemory = CPyExtFunctionVoid(
         _reference_nomemory,
         lambda: (
@@ -251,7 +251,7 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_WriteUnraisable = CPyExtFunctionVoid(
         lambda args: None,
         lambda: (
