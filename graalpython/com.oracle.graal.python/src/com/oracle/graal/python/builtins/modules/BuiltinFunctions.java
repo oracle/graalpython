@@ -153,7 +153,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        boolean optimazeFlag = PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimazeFlag);
+        boolean optimazeFlag = PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimizeFlag);
         builtinConstants.put(BuiltinNames.__DEBUG__, !optimazeFlag);
     }
 

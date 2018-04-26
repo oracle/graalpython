@@ -54,7 +54,7 @@ public class AssertNode extends StatementNode {
     public Object execute(VirtualFrame frame) {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            assertionsEnabled = !PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimazeFlag);
+            assertionsEnabled = !PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimizeFlag);
         }
         if (assertionsEnabled) {
             try {
