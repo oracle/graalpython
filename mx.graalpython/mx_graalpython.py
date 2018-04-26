@@ -308,6 +308,19 @@ def find_eclipse():
                 return
 
 
+def python_svm(args):
+    mx.run_mx(
+        ["--strict-compliance", "--dynamicimports", "/substratevm,/vm", "build",
+         "--force-deprecation-as-warning", "--dependencies", "graalpython.image"],
+        nonZeroIsFatal=True
+    )
+    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
+    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+    shutil.copy(svm_image, os.path.join(_suite.dir, "graalpython-svm"))
+    mx.run([svm_image] + args)
+    return svm_image
+
+
 def graalpython_gate_runner(args, tasks):
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
@@ -352,14 +365,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
         if task:
-            mx.run_mx(
-                ["--strict-compliance", "--dynamicimports", "/substratevm,/vm",
-                 "build", "--force-deprecation-as-warning", "--dependencies",
-                 "graalpython.image"],
-                nonZeroIsFatal=True
-            )
-            vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
-            svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+            svm_image = python_svm(["--version"])
             benchmark = os.path.join("graalpython", "benchmarks", "src", "benchmarks", "image_magix.py")
             out = mx.OutputCapture()
             mx.run(
@@ -582,6 +588,7 @@ mx.update_commands(_suite, {
     'python-update-import': [update_import_cmd, 'import name'],
     'delete-graalpython-if-testdownstream': [delete_self_if_testdownstream, ''],
     'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
+    'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
     'nativebuild': [nativebuild, '']
 })
