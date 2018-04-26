@@ -90,7 +90,7 @@ public final class PList extends PSequence {
     }
 
     public final void clear() {
-        store.delSlice(0, store.length());
+        store.delSlice(0, store.length(), 1);
     }
 
     @Override
