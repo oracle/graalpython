@@ -133,7 +133,7 @@ PyObject* PyNoneHandle(void* jobj) {
 
 PyObject* PyObjectHandle_ForJavaObject(PyObject* jobj) {
 	if (!truffle_is_handle_to_managed(jobj)) {
-		return truffle_deref_handle_for_managed(polyglot_as__object(to_sulong(jobj)));
+		return truffle_deref_handle_for_managed(polyglot_as_PyVarObject(to_sulong(jobj)));
 	}
 	return jobj;
 }

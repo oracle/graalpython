@@ -42,6 +42,7 @@
 #include "Python.h"
 
 POLYGLOT_DECLARE_STRUCT(_object);
+POLYGLOT_DECLARE_TYPE(PyVarObject);
 POLYGLOT_DECLARE_STRUCT(_typeobject);
 
 
