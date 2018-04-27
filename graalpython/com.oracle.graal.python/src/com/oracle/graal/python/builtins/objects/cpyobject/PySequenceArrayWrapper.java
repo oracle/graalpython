@@ -41,6 +41,9 @@ package com.oracle.graal.python.builtins.objects.cpyobject;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
+/**
+ * Wraps a sequence object (like a list) such that it behaves like a bare C array.
+ */
 public class PySequenceArrayWrapper implements TruffleObject {
 
     private final Object delegate;

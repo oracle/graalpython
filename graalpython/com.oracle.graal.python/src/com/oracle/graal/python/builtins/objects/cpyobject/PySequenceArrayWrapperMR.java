@@ -38,9 +38,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cpyobject;
 
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
@@ -71,4 +73,28 @@ public class PySequenceArrayWrapperMR {
         }
     }
 
+    @Resolve(message = "WRITE")
+    abstract static class WriteNode extends Node {
+        @Child private LookupAndCallTernaryNode setItemNode;
+        @Child private AsPythonObjectNode toJavaNode;
+
+        public Object access(PySequenceArrayWrapper object, Object key, Object value) {
+            if (setItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setItemNode = insert(LookupAndCallTernaryNode.create(SpecialMethodNames.__SETITEM__));
+            }
+            setItemNode.execute(object.getDelegate(), key, getToJavaNode().execute(value));
+
+            // A C expression assigning to an array returns the assigned value.
+            return value;
+        }
+
+        private AsPythonObjectNode getToJavaNode() {
+            if (toJavaNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaNode = insert(AsPythonObjectNode.create());
+            }
+            return toJavaNode;
+        }
+    }
 }

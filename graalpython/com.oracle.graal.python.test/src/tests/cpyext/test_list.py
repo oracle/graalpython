@@ -65,6 +65,14 @@ def _reference_setitem(args):
     return 0
 
 
+def _reference_SET_ITEM(args):
+    listObj = args[0]
+    pos = args[1]
+    newitem = args[2]
+    listObj[pos] = newitem
+    return listObj
+
+
 def _reference_append(args):
     listObj = args[0]
     newitem = args[1]
@@ -154,6 +162,24 @@ class TestPyList(CPyExtTestCase):
         resultspec="i",
         argspec='OnO',
         arguments=["PyObject* op", "Py_ssize_t size", "PyObject* newitem"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_SET_ITEM = CPyExtFunction(
+        _wrap_list_fun(_reference_SET_ITEM),
+        lambda: (
+            ([1,2,3,4], 0, 0),
+            ([1,2,3,4], 3, 5),
+        ),
+        code='''PyObject* wrap_PyList_SET_ITEM(PyObject* op, Py_ssize_t idx, PyObject* newitem) {
+            PyList_SET_ITEM(op, idx, newitem);
+            return op;
+        }
+        ''',
+        resultspec="O",
+        argspec='OnO',
+        arguments=["PyObject* op", "Py_ssize_t idx", "PyObject* newitem"],
+        callfunction="wrap_PyList_SET_ITEM",
         cmpfunc=unhandled_error_compare
     )
 

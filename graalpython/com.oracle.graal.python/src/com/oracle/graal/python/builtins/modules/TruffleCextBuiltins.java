@@ -128,7 +128,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      */
     @Builtin(name = "to_java", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class AsPythonObjectNode extends PythonBuiltinNode {
+    public abstract static class AsPythonObjectNode extends PythonBuiltinNode {
         public abstract Object execute(Object value);
 
         @Child GetClassNode getClassNode = GetClassNode.create();
@@ -163,6 +163,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
             }
             return object;
+        }
+
+        public static AsPythonObjectNode create() {
+            return TruffleCextBuiltinsFactory.AsPythonObjectNodeFactory.create(null);
         }
     }
 
