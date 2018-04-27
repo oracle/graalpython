@@ -125,7 +125,6 @@ public class PythonObject extends PythonAbstractObject {
     @TruffleBoundary
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        assert value != PNone.NO_VALUE;
         getStorage().define(name, value);
     }
 
