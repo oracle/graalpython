@@ -982,6 +982,8 @@ def PyTruffle_Type(type_name):
         return type(dict().keys())
     elif type_name == "NotImplementedType":
         return type(NotImplemented)
+    elif type_name == "module":
+        return type(sys)
     else:
         return getattr(sys.modules["builtins"], type_name)
 

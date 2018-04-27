@@ -63,6 +63,7 @@ static void initialize_capi() {
     initialize_type_structure(&PyType_Type, "type");
     initialize_type_structure(&PyBaseObject_Type, "object");
     initialize_type_structure(&PySuper_Type, "super");
+    initialize_type_structure(&PyModule_Type, "module");
     initialize_type_structure(&PyUnicode_Type, "str");
     initialize_type_structure(&PyBool_Type, "bool");
     initialize_type_structure(&PyFloat_Type, "float");
@@ -111,10 +112,31 @@ void* to_java_type(PyTypeObject* cls) {
 	return to_java((PyObject*)cls);
 }
 
+
+#define PyTruffle_FastSubclass(__flags, __reference_flags) ((__flags) & (__reference_flags))
+
+__attribute__((always_inline))
+static inline PyObject* PyTruffle_Explicit_Cast(PyObject* cobj, unsigned long flags) {
+    if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_TUPLE_SUBCLASS)) {
+    	return (PyObject*)polyglot_as_PyTupleObject(cobj);
+    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_LIST_SUBCLASS)) {
+    	return (PyObject*)polyglot_as_PyListObject(cobj);
+    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_DICT_SUBCLASS)) {
+    	return (PyObject*)polyglot_as_PyDictObject(cobj);
+    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_UNICODE_SUBCLASS)) {
+    	return (PyObject*)polyglot_as_PyUnicodeObject(cobj);
+    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_BYTES_SUBCLASS)) {
+    	return (PyObject*)polyglot_as_PyBytesObject(cobj);
+    }
+    return (PyObject*)polyglot_as_PyVarObject(cobj);
+}
+
+
 PyObject* to_sulong(void *o) {
     PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
     if(polyglot_is_value(cobj)) {
-        return polyglot_as__object(cobj);
+        unsigned long flags = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetTpFlags", cobj));
+        return PyTruffle_Explicit_Cast(cobj, flags);
     }
     return cobj;
 }
@@ -131,9 +153,13 @@ PyObject* PyNoneHandle(void* jobj) {
     return &_Py_NoneStruct;
 }
 
-PyObject* PyObjectHandle_ForJavaObject(PyObject* jobj) {
+PyObject* PyObjectHandle_ForJavaObject(PyObject* jobj, unsigned long flags) {
 	if (!truffle_is_handle_to_managed(jobj)) {
-		return truffle_deref_handle_for_managed(polyglot_as_PyVarObject(to_sulong(jobj)));
+		PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", jobj);
+		if(polyglot_is_value(cobj)) {
+			cobj = PyTruffle_Explicit_Cast(cobj, flags);
+		}
+		return truffle_deref_handle_for_managed(cobj);
 	}
 	return jobj;
 }
@@ -154,8 +180,7 @@ const char* PyTruffle_StringToCstr(void* jlString) {
 
 /** like 'truffle_read_string' but uses UTF-8 encoding (also returns a String object) */
 void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker) {
-	void* jobj = truffle_read_bytes(o);
-	return truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_FromUTF8", jobj, error_marker);
+	return polyglot_from_string(o, "utf-8");
 }
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]

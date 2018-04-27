@@ -47,6 +47,7 @@ public abstract class NativeMemberNames {
     public static final String TP_FLAGS = "tp_flags";
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
+    public static final String _BASE = "_base";
 
     public static boolean isValid(String key) {
         switch (key) {
@@ -58,6 +59,7 @@ public abstract class NativeMemberNames {
             case TP_FLAGS:
             case TP_NAME:
             case TP_BASE:
+            case _BASE:
                 return true;
         }
         return false;

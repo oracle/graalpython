@@ -1093,4 +1093,31 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return PComplex.IMAG_MULTIPLIER;
         }
     }
+
+    @Builtin(name = "PyTruffle_GetTpFlags", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_GetTpFlags extends NativeBuiltin {
+
+        @Child private GetClassNode getClassNode;
+
+        @Specialization
+        long doPythonObject(PythonObjectNativeWrapper nativeWrapper) {
+            PythonClass pclass = getClassNode().execute(nativeWrapper.getPythonObject());
+            return pclass.getFlags();
+        }
+
+        @Specialization
+        long doPythonObject(PythonObject object) {
+            PythonClass pclass = getClassNode().execute(object);
+            return pclass.getFlags();
+        }
+
+        private GetClassNode getClassNode() {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode;
+        }
+    }
 }

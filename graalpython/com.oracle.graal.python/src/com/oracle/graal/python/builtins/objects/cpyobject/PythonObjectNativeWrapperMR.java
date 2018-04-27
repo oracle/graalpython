@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cpyobject;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -45,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrap
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -52,6 +55,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -64,6 +68,7 @@ import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
@@ -87,7 +92,7 @@ public class PythonObjectNativeWrapperMR {
     }
 
     @ImportStatic(NativeMemberNames.class)
-    abstract static class ReadNativeMemberNode extends Node {
+    abstract static class ReadNativeMemberNode extends PBaseNode {
         @Child GetClassNode getClass = GetClassNode.create();
         @Child LookupAndCallUnaryNode callLenNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__LEN__);
 
@@ -96,6 +101,17 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(OB_BASE, key)")
         PythonObjectNativeWrapper doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
             return PythonObjectNativeWrapper.wrap(o);
+        }
+
+        @Specialization(guards = "eq(_BASE, key)")
+        PythonObjectNativeWrapper doObBase(PString o, @SuppressWarnings("unused") String key) {
+            return PythonObjectNativeWrapper.wrap(o);
+        }
+
+        @Specialization(guards = "eq(_BASE, key)")
+        PythonObjectNativeWrapper doObBase(String o, @SuppressWarnings("unused") String key) {
+            // TODO wrap String directly once supported
+            return PythonObjectNativeWrapper.wrap(factory().createString(o));
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
@@ -122,7 +138,10 @@ public class PythonObjectNativeWrapperMR {
                         @Cached("createClassProfile()") ValueProfile profile) {
             Object profiled = profile.profile(object);
             if (profiled instanceof PBytes) {
-                return ((PBytes) profiled).getInternalByteArray();
+                PythonContext context = getContext();
+                byte[] internalByteArray = ((PBytes) profiled).getInternalByteArray();
+                // TODO create a custom wrapper that has length+1 shape
+                return context.getEnv().asGuestValue(Arrays.copyOf(internalByteArray, internalByteArray.length + 1));
             }
             throw UnsupportedMessageException.raise(Message.READ);
         }
@@ -144,6 +163,11 @@ public class PythonObjectNativeWrapperMR {
                 return PythonObjectNativeWrapper.wrap(superClass);
             }
             return PythonObjectNativeWrapper.wrap(object);
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object receiver, Object key) {
+            throw UnknownIdentifierException.raise(key.toString());
         }
 
         protected boolean eq(String expected, String actual) {
@@ -280,7 +304,9 @@ public class PythonObjectNativeWrapperMR {
         @CompilationFinal private TruffleObject PyNoneHandle;
         @Child private Node isPointerNode;
         @Child private Node toNativeNode;
-        @Child private PCallNativeNode callNative;
+        @Child private PCallNativeNode callNativeUnary;
+        @Child private PCallNativeNode callNativeBinary;
+        @Child private GetClassNode getClassNode;
 
         public abstract Object execute(PythonAbstractObject value);
 
@@ -294,35 +320,20 @@ public class PythonObjectNativeWrapperMR {
             return ensureIsPointer(object.object);
         }
 
-        private TruffleObject getPyNoneHandle() {
-            if (PyNoneHandle == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol("PyNoneHandle");
-            }
-            return PyNoneHandle;
-        }
-
         @Specialization
         Object runNone(PNone object) {
-            return ensureIsPointer(callIntoCapi(object, getPyNoneHandle()));
-        }
-
-        private Object callIntoCapi(PythonAbstractObject arg, TruffleObject fun) {
-            if (callNative == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNative = insert(PCallNativeNode.create());
-            }
-            return callNative.execute(arg, fun);
+            return ensureIsPointer(callUnaryIntoCapi(object, getPyNoneHandle()));
         }
 
         @Specialization(guards = "isNonNative(object)")
         Object runClass(PythonClass object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaType()));
+            return ensureIsPointer(callUnaryIntoCapi(object, getPyObjectHandle_ForJavaType()));
         }
 
         @Fallback
         Object runObject(PythonAbstractObject object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
+            PythonClass clazz = getClassNode().execute(object);
+            return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, clazz.getFlags()));
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {
@@ -365,6 +376,38 @@ public class PythonObjectNativeWrapperMR {
 
         protected boolean isNonNative(PythonClass klass) {
             return !(klass instanceof PythonNativeClass);
+        }
+
+        private TruffleObject getPyNoneHandle() {
+            if (PyNoneHandle == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol("PyNoneHandle");
+            }
+            return PyNoneHandle;
+        }
+
+        private Object callUnaryIntoCapi(PythonAbstractObject arg, TruffleObject fun) {
+            if (callNativeUnary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeUnary = insert(PCallNativeNode.create(1));
+            }
+            return callNativeUnary.execute(fun, new Object[]{arg});
+        }
+
+        private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, Object arg1) {
+            if (callNativeBinary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeBinary = insert(PCallNativeNode.create(1));
+            }
+            return callNativeBinary.execute(fun, new Object[]{arg0, arg1});
+        }
+
+        private GetClassNode getClassNode() {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode;
         }
     }
 
