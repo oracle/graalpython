@@ -99,16 +99,6 @@
 #include "pyhash.h"
 #include "import.h"
 
-// our impls
-#ifdef Py_True
-#undef Py_True
-#define Py_True truffle_invoke(PY_TRUFFLE_CEXT, "Py_True")
-#endif
-
-#ifdef Py_False
-#undef Py_False
-#define Py_False truffle_invoke(PY_TRUFFLE_CEXT, "Py_False")
-#endif
 
 #undef Py_NoValue
 #define Py_NoValue truffle_invoke(PY_TRUFFLE_CEXT, "Py_NoValue")

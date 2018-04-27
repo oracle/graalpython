@@ -58,6 +58,10 @@ static void initialize_globals() {
     truffle_assign_managed(&_Py_NoneStruct, jnone);
     void *jnotimpl = polyglot_as__object(polyglot_get_member(PY_BUILTIN, "NotImplemented"));
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
+    void *jtrue = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_True");
+    truffle_assign_managed(&_Py_TrueStruct, to_sulong(jtrue));
+    void *jfalse = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_False");
+    truffle_assign_managed(&_Py_FalseStruct, to_sulong(jfalse));
 }
 
 __attribute__((constructor))
@@ -88,7 +92,7 @@ static void initialize_capi() {
 }
 
 void* to_java(PyObject* obj) {
-	if (obj == Py_None) {
+    if (obj == Py_None) {
         return Py_None;
     } else if (obj == NULL) {
     	return Py_NoValue;
@@ -115,11 +119,11 @@ void* to_java_type(PyTypeObject* cls) {
 }
 
 PyObject* to_sulong(void *o) {
-	PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
-	if(polyglot_is_value(cobj)) {
-		return polyglot_as__object(cobj);
-	}
-	return cobj;
+    PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
+    if(polyglot_is_value(cobj)) {
+        return polyglot_as__object(cobj);
+    }
+    return cobj;
 }
 
 void* get_ob_type(PyObject* obj) {
