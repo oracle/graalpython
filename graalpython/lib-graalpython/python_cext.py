@@ -812,7 +812,11 @@ def _PyErr_BadInternalCall(filename, lineno, obj):
 def PyErr_NewException(name, base, dictionary):
     if "__module__" not in dictionary:
         dictionary["__module__"] = name.rpartition(".")[2]
-    return type(name, (base,), dictionary)
+    if not isinstance(base, tuple):
+        bases = (base,)
+    else:
+        bases = base
+    return type(name, bases, dictionary)
 
 
 def PyErr_Format(err_type, format_str, args):
