@@ -300,9 +300,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private Object callIntoCapi(PythonAbstractObject arg, TruffleObject function) {
             if (callNative == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNative = insert(PCallNativeNode.create());
+                callNative = insert(PCallNativeNode.create(1));
             }
-            return callNative.execute(arg, function);
+            return callNative.execute(function, new Object[]{arg});
         }
     }
 
@@ -1107,7 +1107,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        long doPythonObject(PythonObject object) {
+        long doPythonObject(PythonAbstractObject object) {
             PythonClass pclass = getClassNode().execute(object);
             return pclass.getFlags();
         }

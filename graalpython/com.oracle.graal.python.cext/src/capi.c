@@ -63,6 +63,7 @@ static void initialize_capi() {
     initialize_type_structure(&PyType_Type, "type");
     initialize_type_structure(&PyBaseObject_Type, "object");
     initialize_type_structure(&PySuper_Type, "super");
+    initialize_type_structure(&_PyNone_Type, "NoneType");
     initialize_type_structure(&PyModule_Type, "module");
     initialize_type_structure(&PyUnicode_Type, "str");
     initialize_type_structure(&PyBool_Type, "bool");
