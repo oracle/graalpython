@@ -1039,3 +1039,12 @@ def PyImport_ImportModule(name, error_marker):
         typ, val, tb = sys.exc_info()
     PyErr_Restore(typ, val, tb)
     return error_marker
+
+
+def PyRun_String(source, typ, globals, locals, error_marker):
+    try:
+        return exec(compile(source, typ, typ), globals, locals)
+    except Exception:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
