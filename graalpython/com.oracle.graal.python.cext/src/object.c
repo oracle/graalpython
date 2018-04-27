@@ -312,7 +312,7 @@ int PyType_Ready(PyTypeObject* cls) {
                            truffle_read_string(getset.name),
                            truffle_address_to_function(getset.get),
                            truffle_address_to_function(getset.set),
-                           truffle_read_string(getset.doc),
+                           getset.doc ? truffle_read_string(getset.doc) : truffle_read_string(""),
                            // do not convert the closure, it is handed to the
                            // getter and setter as-is
                            getset.closure);
