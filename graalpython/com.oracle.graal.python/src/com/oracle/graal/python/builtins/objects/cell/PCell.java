@@ -45,7 +45,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PCell extends PythonBuiltinObject {
@@ -87,7 +86,6 @@ public class PCell extends PythonBuiltinObject {
         if (ref == null) {
             return String.format("<cell at %s: empty>", this.hashCode());
         }
-        PythonBuiltinClass refClass = PythonLanguage.getCore().lookupType(ref.getClass());
-        return String.format("<cell at %s: %s object at %s>", this.hashCode(), refClass, ref.hashCode());
+        return String.format("<cell at %s: %s object at %s>", this.hashCode(), ref.getClass().getSimpleName(), ref.hashCode());
     }
 }

@@ -406,11 +406,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         /**
          * @param locals TODO: support the locals dictionary in execution
          */
+        @TruffleBoundary
         private static Object evalExpression(PythonParseResult code, PythonObject globals, PythonObject locals, PCell[] closure) {
             RootNode root = code.getRootNode();
             Object[] args = PArguments.create();
             PArguments.setGlobals(args, globals);
             PArguments.setClosure(args, closure);
+            // TODO: cache code and CallTargets and use Direct/IndirectCallNode
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(root);
             return callTarget.call(args);
         }

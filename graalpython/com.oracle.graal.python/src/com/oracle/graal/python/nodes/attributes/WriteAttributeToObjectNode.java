@@ -94,8 +94,7 @@ public abstract class WriteAttributeToObjectNode extends PNode {
                     @Cached("key") Object cachedKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("cachedShape.getProperty(key)") Property prop,
-                    @Cached("getLocationOrNull(prop)") Location loc) {
+                    @Cached("getLocationOrNull(cachedShape.getProperty(key))") Location loc) {
         try {
             loc.set(object.getStorage(), value);
         } catch (IncompatibleLocationException | FinalLocationException e) {
@@ -106,13 +105,13 @@ public abstract class WriteAttributeToObjectNode extends PNode {
         return true;
     }
 
-    // TODO: take a look
     @SuppressWarnings("unused")
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
                                     "cachedKey.equals(key)",
-                                    "loc == null || !loc.canSet(value)"
+                                    "loc == null || !loc.canSet(value)",
+                                    "newLoc.canSet(value)"
                     }, //
                     assumptions = {
                                     "layoutAssumption",
@@ -122,30 +121,16 @@ public abstract class WriteAttributeToObjectNode extends PNode {
                     @Cached("key") Object cachedKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("cachedShape.getProperty(key)") Property prop,
-                    @Cached("getLocationOrNull(prop)") Location loc,
+                    @Cached("getLocationOrNull(cachedShape.getProperty(key))") Location loc,
                     @Cached("cachedShape.defineProperty(key, value, 0)") Shape newShape,
                     @Cached("newShape.getValidAssumption()") Assumption newLayoutAssumption,
-                    @Cached("newShape.getProperty(key)") Property newProp,
-                    @Cached("getLocationOrNull(newProp)") Location newLoc) {
+                    @Cached("getLocationOrNull(newShape.getProperty(key))") Location newLoc) {
         try {
-            if (!layoutAssumption.isValid()) {
-                // invalidated after the assumption is checked
-                object.getStorage().updateShape();
-                newLoc.set(object.getStorage(), value, object.getStorage().getShape(), newShape);
-                return true;
-            }
             newLoc.set(object.getStorage(), value, cachedShape, newShape);
         } catch (IncompatibleLocationException e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            Shape generalizedNewShape = cachedShape.defineProperty(cachedKey, new Object(), 0);
-            try {
-                generalizedNewShape.getProperty(cachedKey).set(object.getStorage(), value, cachedShape, generalizedNewShape);
-            } catch (IncompatibleLocationException e1) {
-                CompilerDirectives.transferToInterpreter();
-                // cannot happen due to guard
-                throw new RuntimeException("Cannot set a property that was just generalized");
-            }
+            CompilerDirectives.transferToInterpreter();
+            // cannot happen due to guard
+            throw new RuntimeException("Location.canSet is inconsistent with Location.set");
         }
         return true;
     }
@@ -157,9 +142,9 @@ public abstract class WriteAttributeToObjectNode extends PNode {
         return true;
     }
 
+    @TruffleBoundary
     @Specialization(guards = "!object.getStorage().getShape().isValid()")
     protected boolean defineDirect(PythonObject object, Object key, Object value) {
-        CompilerDirectives.transferToInterpreter();
         object.getStorage().updateShape();
         return doIndirect(object, key, value);
     }
