@@ -132,6 +132,19 @@ class TestPyList(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyList_GET_ITEM = CPyExtFunction(
+        _wrap_list_fun(_reference_getitem),
+        lambda: (
+            ([1,2,3,4], 0),
+            ([1,2,3,4], 3),
+            ([None], 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* op", "Py_ssize_t size"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyList_SetItem = CPyExtFunction(
         _wrap_list_fun(_reference_setitem),
         lambda: (

@@ -83,6 +83,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -224,11 +225,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      */
     @Builtin(name = "to_sulong", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class ToSulongNode extends PythonBuiltinNode {
+    public abstract static class ToSulongNode extends PythonUnaryBuiltinNode {
         @CompilationFinal private TruffleObject PyNoneHandle;
         @Child private PCallNativeNode callNative;
-
-        public abstract Object execute(Object value);
 
         /*
          * This is very sad. Only for Sulong, we cannot hand out java.lang.Strings, because then it
@@ -303,6 +302,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 callNative = insert(PCallNativeNode.create(1));
             }
             return callNative.execute(function, new Object[]{arg});
+        }
+
+        public static ToSulongNode create() {
+            return TruffleCextBuiltinsFactory.ToSulongNodeFactory.create(null);
         }
     }
 

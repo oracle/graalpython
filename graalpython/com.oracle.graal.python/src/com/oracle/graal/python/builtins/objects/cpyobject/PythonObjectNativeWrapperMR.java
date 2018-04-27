@@ -40,12 +40,14 @@ package com.oracle.graal.python.builtins.objects.cpyobject;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -91,27 +93,26 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
+    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class})
     abstract static class ReadNativeMemberNode extends PBaseNode {
         @Child GetClassNode getClass = GetClassNode.create();
-        @Child LookupAndCallUnaryNode callLenNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__LEN__);
+        @Child private ToSulongNode toSulongNode;
 
         abstract Object execute(Object receiver, Object key);
 
         @Specialization(guards = "eq(OB_BASE, key)")
-        PythonObjectNativeWrapper doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
-            return PythonObjectNativeWrapper.wrap(o);
+        Object doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(o);
         }
 
         @Specialization(guards = "eq(_BASE, key)")
-        PythonObjectNativeWrapper doObBase(PString o, @SuppressWarnings("unused") String key) {
-            return PythonObjectNativeWrapper.wrap(o);
+        Object doObBase(PString o, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(o);
         }
 
         @Specialization(guards = "eq(_BASE, key)")
-        PythonObjectNativeWrapper doObBase(String o, @SuppressWarnings("unused") String key) {
-            // TODO wrap String directly once supported
-            return PythonObjectNativeWrapper.wrap(factory().createString(o));
+        Object doObBase(String o, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(o);
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
@@ -120,12 +121,13 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        PythonObjectNativeWrapper doObType(PythonObject object, @SuppressWarnings("unused") String key) {
-            return PythonObjectNativeWrapper.wrap(getClass.execute(object));
+        Object doObType(PythonObject object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(getClass.execute(object));
         }
 
         @Specialization(guards = "eq(OB_SIZE, key)")
-        int doObSize(PythonObject object, @SuppressWarnings("unused") String key) {
+        int doObSize(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
             try {
                 return callLenNode.executeInt(object);
             } catch (UnexpectedResultException e) {
@@ -157,12 +159,17 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")
-        PythonObjectNativeWrapper doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
             PythonClass superClass = object.getSuperClass();
             if (superClass != null) {
                 return PythonObjectNativeWrapper.wrap(superClass);
             }
-            return PythonObjectNativeWrapper.wrap(object);
+            return getToSulongNode().execute(object);
+        }
+
+        @Specialization(guards = "eq(OB_ITEM, key)")
+        Object doObItem(PList object, @SuppressWarnings("unused") String key) {
+            return new PySequenceArrayWrapper(object);
         }
 
         @Fallback
@@ -178,6 +185,13 @@ public class PythonObjectNativeWrapperMR {
             return ReadNativeMemberNodeGen.create();
         }
 
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
     }
 
     @Resolve(message = "WRITE")

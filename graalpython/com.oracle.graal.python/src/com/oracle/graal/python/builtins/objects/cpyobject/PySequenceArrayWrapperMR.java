@@ -38,32 +38,37 @@
  */
 package com.oracle.graal.python.builtins.objects.cpyobject;
 
-public abstract class NativeMemberNames {
-    public static final String OB_BASE = "ob_base";
-    public static final String OB_REFCNT = "ob_refcnt";
-    public static final String OB_TYPE = "ob_type";
-    public static final String OB_SIZE = "ob_size";
-    public static final String OB_SVAL = "ob_sval";
-    public static final String TP_FLAGS = "tp_flags";
-    public static final String TP_NAME = "tp_name";
-    public static final String TP_BASE = "tp_base";
-    public static final String _BASE = "_base";
-    public static final String OB_ITEM = "ob_item";
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.MessageResolution;
+import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.nodes.Node;
 
-    public static boolean isValid(String key) {
-        switch (key) {
-            case OB_BASE:
-            case OB_REFCNT:
-            case OB_TYPE:
-            case OB_SIZE:
-            case OB_SVAL:
-            case TP_FLAGS:
-            case TP_NAME:
-            case TP_BASE:
-            case _BASE:
-            case OB_ITEM:
-                return true;
+@MessageResolution(receiverType = PySequenceArrayWrapper.class)
+public class PySequenceArrayWrapperMR {
+
+    @Resolve(message = "READ")
+    abstract static class ReadNode extends Node {
+        @Child private LookupAndCallBinaryNode getItemNode;
+        @Child private ToSulongNode toSulongNode;
+
+        public Object access(PySequenceArrayWrapper object, Object key) {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETITEM__));
+            }
+            return getToSulongNode().execute(getItemNode.executeObject(object.getDelegate(), key));
         }
-        return false;
+
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
     }
+
 }
