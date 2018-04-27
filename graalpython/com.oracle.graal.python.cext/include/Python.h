@@ -98,6 +98,7 @@
 #include "pymath.h"
 #include "pyhash.h"
 #include "import.h"
+#include "pycapsule.h"
 
 
 #undef Py_NoValue
