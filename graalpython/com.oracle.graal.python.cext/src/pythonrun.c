@@ -43,9 +43,9 @@ PyAPI_FUNC(PyObject *) PyRun_StringFlags(const char* source, int type, PyObject*
     if (type == Py_single_input) {
         stype = "single";
     } else if (type == Py_file_input) {
-        stype == "file";
+        stype = "file";
     } else if (Py_eval_input) {
-        stype == "eval";
+        stype = "eval";
     } else {
         return NULL;
     }

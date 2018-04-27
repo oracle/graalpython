@@ -105,7 +105,7 @@ int PyModule_AddObject(PyObject* m, const char* k, PyObject* v) {
     return 0;
 }
 
-int PyModule_AddIntConstant(PyObject* m, const char* k, int constant) {
+int PyModule_AddIntConstant(PyObject* m, const char* k, long constant) {
     truffle_invoke(PY_TRUFFLE_CEXT, "PyModule_AddObject", to_java(m), truffle_read_string(k), constant);
     return 0;
 }
