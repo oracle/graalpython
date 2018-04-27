@@ -201,3 +201,18 @@ class TestPyBytes(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
+    # PyBytes_AS_STRING
+    test_PyBytes_AS_STRING = CPyExtFunction(
+        lambda b: b[0].decode("utf-8"),
+        lambda: (
+            (b"hello", ), 
+            ("hellö".encode("utf-8"), ), 
+            (b"hello world",), 
+            (b"",)
+        ),
+        resultspec="s",
+        argspec="O",
+        arguments=["PyObject* arg"],
+        cmpfunc=unhandled_error_compare
+    )
