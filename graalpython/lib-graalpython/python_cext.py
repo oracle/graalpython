@@ -1030,3 +1030,12 @@ def initialize_member_accessors():
                        "WriteULongLongMember", "WritePySSizeT"]:
         WriteMemberFunctions.append(import_c_func(memberFunc))
     WriteMemberFunctions.append(lambda x,v: None)
+
+
+def PyImport_ImportModule(name, error_marker):
+    try:
+        return __import__(name)
+    except Exception:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker

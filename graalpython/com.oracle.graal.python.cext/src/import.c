@@ -39,5 +39,10 @@
 #include "capi.h"
 
 PyObject* PyImport_ImportModule(const char *name) {
-    return to_sulong(truffle_invoke(PY_BUILTIN, "__import__", truffle_read_string(name)));
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyImport_ImportModule", truffle_read_string(name), ERROR_MARKER);
+    if (result == ERROR_MARKER) {
+        return NULL;
+    } else {
+        return to_sulong(result);
+    }
 }
