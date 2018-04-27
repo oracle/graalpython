@@ -71,6 +71,7 @@ PyObject * PyExc_BytesWarning = NULL;
 PyObject * PyExc_ResourceWarning = NULL;
 PyObject * PyExc_ZeroDivisionError = NULL;
 PyObject * PyExc_ArithmeticError = NULL;
+PyObject * PyExc_StopIteration = NULL;
 
 void initialize_exceptions() {
 	PyExc_AttributeError = PY_EXCEPTION("AttributeError");
@@ -101,5 +102,6 @@ void initialize_exceptions() {
 	PyExc_Warning = PY_EXCEPTION("Warning");
         PyExc_ZeroDivisionError = PY_EXCEPTION("ZeroDivisionError");
         PyExc_ArithmeticError = PY_EXCEPTION("ArithmeticError");
+        PyExc_StopIteration = PY_EXCEPTION("StopIteration");
 }
 

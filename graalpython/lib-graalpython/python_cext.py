@@ -976,7 +976,10 @@ def PyTruffle_Debug(*args):
 def PyTruffle_Type(type_name):
     if type_name == "mappingproxy":
         return type(dict().keys())
-    return getattr(sys.modules["builtins"], type_name)
+    elif type_name == "NotImplementedType":
+        return type(NotImplemented)
+    else:
+        return getattr(sys.modules["builtins"], type_name)
 
 
 def check_argtype(idx, obj, typ):

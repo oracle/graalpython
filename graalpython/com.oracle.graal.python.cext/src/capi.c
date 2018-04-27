@@ -76,6 +76,7 @@ static void initialize_capi() {
     initialize_type_structure(&PyComplex_Type, "complex");
     initialize_type_structure(&PySlice_Type, "slice");
     initialize_type_structure(&PyByteArray_Type, "bytearray");
+    initialize_type_structure(&_PyNotImplemented_Type, "NotImplementedType");
 
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();

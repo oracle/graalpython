@@ -168,6 +168,13 @@ PyObject _Py_NoneStruct = {
   1, &_PyNone_Type
 };
 
+PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT);
+
+PyObject _Py_NotImplementedStruct = {
+    _PyObject_EXTRA_INIT
+    1, &_PyNotImplemented_Type
+};
+
 PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
     PyObject* newObj = (PyObject*)PyObject_Malloc(cls->tp_basicsize + cls->tp_itemsize * nitems);
     newObj->ob_refcnt = 0;
