@@ -113,6 +113,10 @@
 #undef Py_INCREF
 #define Py_INCREF(o) 0
 
+// TODO: (tfel) Is this necessary?
+#ifndef Py_BuildValue
+#define Py_BuildValue _Py_BuildValue_SizeT
+#endif
 
 /* 
  * #define Py_INCREF(op) (                         \

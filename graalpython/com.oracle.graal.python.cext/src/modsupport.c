@@ -241,7 +241,7 @@ int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, PyObject* kwnames
     return 1;
 }
 
-PyObject* Py_BuildValue(const char *format, ...) {
+PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
     void* arg;
     int valuen = 1;
     int max = strlen(format);
