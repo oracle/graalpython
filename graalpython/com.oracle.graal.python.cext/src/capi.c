@@ -178,11 +178,6 @@ const char* PyTruffle_StringToCstr(void* jlString) {
     return truffle_string_to_cstr(jlString);
 }
 
-/** like 'truffle_read_string' but uses UTF-8 encoding (also returns a String object) */
-void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker) {
-	return polyglot_from_string(o, "utf-8");
-}
-
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
 
 short ReadShortMember(PyObject* object, int offset) {

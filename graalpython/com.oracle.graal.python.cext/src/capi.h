@@ -200,7 +200,6 @@ extern PyObject marker_struct;
 
 /* UNICODE */
 
-void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker);
 void* PyTruffle_Unicode_FromString(const char* o);
 
 /* DICT */

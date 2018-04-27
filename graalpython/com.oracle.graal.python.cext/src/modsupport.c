@@ -262,7 +262,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
             if (arg == NULL) {
                 truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, Py_None);
             } else {
-                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, PyTruffle_Unicode_FromUTF8((char*)arg, Py_None));
+                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, polyglot_from_string((char*)arg, "utf-8"));
             }
         	break;
         case 'd':
