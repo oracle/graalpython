@@ -80,7 +80,7 @@ PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
     }
     for (int i = 1; i < polyglot_get_arg_count(); i++) {
         PyObject *o = polyglot_get_arg(i);
-        PyTuple_SetItem(result, i, o);
+        PyTuple_SetItem(result, i - 1, o);
     }
     return result;
 }
