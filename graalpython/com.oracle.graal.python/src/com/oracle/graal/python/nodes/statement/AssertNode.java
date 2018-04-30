@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -32,6 +33,7 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -41,7 +43,8 @@ public class AssertNode extends StatementNode {
     @Child private CastToBooleanNode condition;
     @Child private PNode message;
     @Child private LookupAndCallUnaryNode callNode;
-
+    @CompilerDirectives.CompilationFinal private Boolean assertionsEnabled = null; 
+    
     public AssertNode(CastToBooleanNode condition, PNode message) {
         this.condition = condition;
         this.message = message;
@@ -49,8 +52,10 @@ public class AssertNode extends StatementNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        boolean assertionsEnabled = false;
-        assert (assertionsEnabled = true) == true;
+        if (assertionsEnabled == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            assertionsEnabled = !PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimizeFlag);
+        }
         if (assertionsEnabled) {
             try {
                 if (!condition.executeBoolean(frame)) {

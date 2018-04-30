@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
 import static com.oracle.graal.python.nodes.BuiltinNames.CALLABLE;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -113,6 +115,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -146,6 +150,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         return BuiltinFunctionsFactory.getFactories();
     }
 
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        boolean optimazeFlag = PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimizeFlag);
+        builtinConstants.put(BuiltinNames.__DEBUG__, !optimazeFlag);
+    }
+
+    
     // abs(x)
     @Builtin(name = ABS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
