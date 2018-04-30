@@ -48,13 +48,24 @@ class islice(object):
                 return element
 
 
-def count(start=0, step=1):
-    # count(10) --> 10 11 12 13 14 ...
-    # count(2.5, 0.5) -> 2.5 3.0 3.5 ...
-    n = start
-    while True:
-        yield n
-        n += step
+class count(object):
+    def __init__(self, start=0, step=1):
+        if not isinstance(start, (int, float)) or \
+                not isinstance(step, (int, float)):
+            raise TypeError('a number is required')
+        self._cnt = start
+        self._step = step
+
+    def __next__(self):
+        _cnt = self._cnt
+        self._cnt += self._step
+        return _cnt
+
+    def __repr__(self):
+        _repr = 'count({}'.format(self._cnt)
+        if not isinstance(self._step, int) or self._step != 1:
+            _repr += ', {}'.format(self._step)
+        return _repr + ')'
 
 
 class permutations():
