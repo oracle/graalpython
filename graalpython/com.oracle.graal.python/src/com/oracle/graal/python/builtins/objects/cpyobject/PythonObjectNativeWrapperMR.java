@@ -353,7 +353,7 @@ public class PythonObjectNativeWrapperMR {
         private TruffleObject getPyObjectHandle_ForJavaType() {
             if (PyObjectHandle_FromJavaType == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaType = (TruffleObject) getContext().getEnv().importSymbol("PyObjectHandle_ForJavaType");
+                PyObjectHandle_FromJavaType = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE);
             }
             return PyObjectHandle_FromJavaType;
         }
@@ -361,7 +361,7 @@ public class PythonObjectNativeWrapperMR {
         private TruffleObject getPyObjectHandle_ForJavaObject() {
             if (PyObjectHandle_FromJavaObject == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol("PyObjectHandle_ForJavaObject");
+                PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
             }
             return PyObjectHandle_FromJavaObject;
         }
@@ -395,7 +395,7 @@ public class PythonObjectNativeWrapperMR {
         private TruffleObject getPyNoneHandle() {
             if (PyNoneHandle == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol("PyNoneHandle");
+                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_NONE_HANDLE);
             }
             return PyNoneHandle;
         }

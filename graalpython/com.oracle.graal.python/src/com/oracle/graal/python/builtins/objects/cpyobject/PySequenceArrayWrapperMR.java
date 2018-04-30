@@ -40,12 +40,15 @@ package com.oracle.graal.python.builtins.objects.cpyobject;
 
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
+import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
@@ -76,7 +79,7 @@ public class PySequenceArrayWrapperMR {
     @Resolve(message = "WRITE")
     abstract static class WriteNode extends Node {
         @Child private LookupAndCallTernaryNode setItemNode;
-        @Child private AsPythonObjectNode toJavaNode;
+        @Child private ToJavaNode toJavaNode;
 
         public Object access(PySequenceArrayWrapper object, Object key, Object value) {
             if (setItemNode == null) {
@@ -89,12 +92,35 @@ public class PySequenceArrayWrapperMR {
             return value;
         }
 
-        private AsPythonObjectNode getToJavaNode() {
+        private ToJavaNode getToJavaNode() {
             if (toJavaNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(AsPythonObjectNode.create());
+                toJavaNode = insert(ToJavaNode.create());
             }
             return toJavaNode;
         }
+    }
+
+    /**
+     * Does the same conversion as the native function {@code to_java}.
+     */
+    static class ToJavaNode extends PBaseNode {
+        @Child private PCallNativeNode callNativeNode = PCallNativeNode.create(1);
+        @Child private AsPythonObjectNode toJavaNode = AsPythonObjectNode.create();
+
+        @CompilationFinal TruffleObject nativeToJavaFunction;
+
+        Object execute(Object value) {
+            if (nativeToJavaFunction == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nativeToJavaFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUNCTION_NATIVE_TO_JAVA);
+            }
+            return toJavaNode.execute(callNativeNode.execute(nativeToJavaFunction, new Object[]{value}));
+        }
+
+        public static ToJavaNode create() {
+            return new ToJavaNode();
+        }
+
     }
 }

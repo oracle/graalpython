@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.cpyobject.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cpyobject.PCallNativeNode;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
@@ -182,7 +183,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Called from C when they actually want a const char* for a Python string
+     * Called from C when they actually want a {@code const char*} for a Python string
      */
     @Builtin(name = "to_char_pointer", fixedNumOfArguments = 1)
     @GenerateNodeFactory
@@ -193,7 +194,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         TruffleObject getTruffleStringToCstr() {
             if (truffle_string_to_cstr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                truffle_string_to_cstr = (TruffleObject) getContext().getEnv().importSymbol("PyTruffle_StringToCstr");
+                truffle_string_to_cstr = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR);
             }
             return truffle_string_to_cstr;
         }
@@ -295,7 +296,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private TruffleObject getPyNoneHandle() {
             if (PyNoneHandle == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol("PyNoneHandle");
+                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_NONE_HANDLE);
             }
             return PyNoneHandle;
         }

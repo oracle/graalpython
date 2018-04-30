@@ -86,27 +86,29 @@ static void initialize_capi() {
     initialize_hashes();
 }
 
-void* to_java(PyObject* obj) {
-    if (obj == Py_None) {
+void* native_to_java(PyObject* obj) {
+	if (obj == Py_None) {
         return Py_None;
     } else if (obj == NULL) {
     	return Py_NoValue;
     } else if (truffle_is_handle_to_managed(obj)) {
-    	void *managed = truffle_managed_from_handle(obj);
-    	if (truffle_invoke(PY_TRUFFLE_CEXT, "is_python_object", managed)) {
-    		return managed;
-    	}
-        return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", managed);
+    	return truffle_managed_from_handle(obj);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {
         return truffle_managed_from_handle(obj->ob_refcnt);
     }
+    return obj;
+}
+
+void* to_java(PyObject* obj) {
+	PyObject* managed_obj = native_to_java(obj);
+
 	// Since Python object respond to 'IS_POINTER' with true if there has already
 	// been a 'TO_NATIVE' before, we need to first check if it is directly a Python
 	// object to avoid conversion to a pointer.
- 	if (truffle_invoke(PY_TRUFFLE_CEXT, "is_python_object", obj)) {
-   		return obj;
+ 	if (truffle_invoke(PY_TRUFFLE_CEXT, "is_python_object", managed_obj)) {
+   		return managed_obj;
    	}
-    return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", obj);
+    return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", managed_obj);
 }
 
 void* to_java_type(PyTypeObject* cls) {
