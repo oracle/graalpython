@@ -70,6 +70,22 @@ class TestPyTuple(CPyExtTestCase):
         arguments=["PyObject* tuple"],
     )
 
+    # PyTuple_GET_SIZE
+    test_PyTuple_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            (tuple(),),
+            ((1,2,3),),
+            (("a", "b"),),
+            # no type checking, also accepts different objects
+            ([1,2,3,4],),
+            ({"a": 1, "b":2},),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* tuple"],
+    )
+
     # PyTuple_GetSlice
     test_PyTuple_GetSlice = CPyExtFunctionOutVars(
         _reference_getslice,
@@ -108,6 +124,7 @@ class TestPyTuple(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
     # PyTuple_Check
     test_PyTuple_CheckExact = CPyExtFunction(
         lambda args: type(args[0]) is tuple,

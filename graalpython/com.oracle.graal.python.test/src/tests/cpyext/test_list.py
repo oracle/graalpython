@@ -250,6 +250,23 @@ class TestPyList(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyList_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            ([1,2,3,4],),
+            ([None],),
+            ([],),
+            ([1,2,3,4],),
+            # no type checking, also accepts different objects
+            ((1,2,3,4,5),),
+            ({"a": 1, "b":2},),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* op"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyList_Check = CPyExtFunction(
         lambda args: isinstance(args[0], list),
         lambda: (

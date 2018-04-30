@@ -419,3 +419,37 @@ class TestPyNumber(CPyExtTestCase):
         arguments=["PyObject* v"],
         cmpfunc=unhandled_error_compare
     )
+
+class TestPySequence(CPyExtTestCase):
+    def compile_module(self, name):
+        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
+        super(TestPySequence, self).compile_module(name)
+
+    test_PySequence_Fast_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            (tuple(),),
+            (list(),),
+            ((1,2,3),),
+            (("a", "b"),),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* tuple"],
+    )
+
+    test_PySequence_Fast_GET_ITEM = CPyExtFunction(
+        lambda args: args[0][args[1]],
+        lambda: (
+            ((1,2,3),0),
+            ((1,2,3),1),
+            ((1,2,3),2),
+            (['a','b','c'],0),
+            (['a','b','c'],1),
+            (['a','b','c'],2),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* tuple", "Py_ssize_t idx"],
+    )
+

@@ -1035,7 +1035,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_AsWideChar", fixedNumOfArguments = 4)
     @GenerateNodeFactory
-    abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
+    public abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
+
+        public abstract Object execute(Object obj, long elementSize, long elements, Object errorMarker);
 
         @Specialization
         Object doUnicode(PString s, long elementSize, long elements, Object errorMarker) {
@@ -1072,6 +1074,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 // TODO
                 return raiseNative(errorMarker, PythonErrorType.LookupError, e.getMessage());
             }
+        }
+
+        public static PyTruffle_Unicode_AsWideChar create() {
+            return TruffleCextBuiltinsFactory.PyTruffle_Unicode_AsWideCharFactory.create(null);
         }
     }
 

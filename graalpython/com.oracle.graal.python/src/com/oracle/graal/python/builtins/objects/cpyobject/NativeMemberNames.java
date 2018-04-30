@@ -49,6 +49,9 @@ public abstract class NativeMemberNames {
     public static final String TP_BASE = "tp_base";
     public static final String _BASE = "_base";
     public static final String OB_ITEM = "ob_item";
+    public static final String MA_USED = "ma_used";
+    public static final String UNICODE_WSTR = "wstr";
+    public static final String UNICODE_STATE = "state";
 
     public static boolean isValid(String key) {
         switch (key) {
@@ -62,6 +65,9 @@ public abstract class NativeMemberNames {
             case TP_BASE:
             case _BASE:
             case OB_ITEM:
+            case MA_USED:
+            case UNICODE_WSTR:
+            case UNICODE_STATE:
                 return true;
         }
         return false;

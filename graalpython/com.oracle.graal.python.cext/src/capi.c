@@ -156,6 +156,10 @@ PyObject* PyNoneHandle(void* jobj) {
     return &_Py_NoneStruct;
 }
 
+uint64_t PyTruffle_Wchar_Size() {
+    return SIZEOF_WCHAR_T;
+}
+
 PyObject* PyObjectHandle_ForJavaObject(PyObject* jobj, unsigned long flags) {
 	if (!truffle_is_handle_to_managed(jobj)) {
 		PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", jobj);

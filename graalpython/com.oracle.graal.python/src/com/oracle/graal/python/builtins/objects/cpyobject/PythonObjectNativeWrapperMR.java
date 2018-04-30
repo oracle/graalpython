@@ -40,6 +40,7 @@ package com.oracle.graal.python.builtins.objects.cpyobject;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.PyTruffle_Unicode_AsWideChar;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -47,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -57,14 +58,18 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
@@ -94,9 +99,12 @@ public class PythonObjectNativeWrapperMR {
     }
 
     @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class})
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNativeMemberNode extends PBaseNode {
         @Child GetClassNode getClass = GetClassNode.create();
         @Child private ToSulongNode toSulongNode;
+
+        @CompilationFinal long wcharSize = -1;
 
         abstract Object execute(Object receiver, Object key);
 
@@ -127,6 +135,16 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(OB_SIZE, key)")
         int doObSize(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
+            try {
+                return callLenNode.executeInt(object);
+            } catch (UnexpectedResultException e) {
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "eq(MA_USED, key)")
+        int doMaUsed(PDict object, @SuppressWarnings("unused") String key,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
             try {
                 return callLenNode.executeInt(object);
@@ -168,8 +186,19 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")
-        Object doObItem(PList object, @SuppressWarnings("unused") String key) {
+        Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object);
+        }
+
+        @Specialization(guards = "eq(UNICODE_WSTR, key)")
+        Object doWstr(String object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") PyTruffle_Unicode_AsWideChar asWideCharNode) {
+            return new PySequenceArrayWrapper(asWideCharNode.execute(object, getWcharSize(), object.length(), null));
+        }
+
+        @Specialization(guards = "eq(UNICODE_STATE, key)")
+        Object doState(String object, @SuppressWarnings("unused") String key) {
+            return factory().createBytes(new byte[]{(byte) 0xDE, (byte) 0xAD, (byte) 0xBE, (byte) 0xEF});
         }
 
         @Fallback
@@ -191,6 +220,20 @@ public class PythonObjectNativeWrapperMR {
                 toSulongNode = insert(ToSulongNode.create());
             }
             return toSulongNode;
+        }
+
+        private long getWcharSize() {
+            if (wcharSize < 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                TruffleObject boxed = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_WHCAR_SIZE);
+                try {
+                    wcharSize = (long) ForeignAccess.sendExecute(Message.createExecute(0).createNode(), boxed);
+                    assert wcharSize >= 0L;
+                } catch (InteropException e) {
+                    throw e.raise();
+                }
+            }
+            return wcharSize;
         }
     }
 
