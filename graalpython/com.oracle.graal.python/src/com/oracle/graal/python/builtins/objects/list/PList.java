@@ -67,29 +67,15 @@ public final class PList extends PSequence {
 
     @Override
     public final void setSlice(PSlice slice, PSequence value) {
-        setSlice(slice.getStart(), slice.getStop(), slice.getStep(), value);
+        // Should not be used. Replaces with ListNodes.SetSliceNode.
+        // When it will be replaced in other PSequence implementeations,
+        // then the setSlice from PSequence can be removed. 
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public final void setSlice(int start, int stop, int step, PSequence value) {
-        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length(), "list assignment index out of range");
-        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length(), "list assignment index out of range");
-
-        if (normalizedStop < normalizedStart) {
-            normalizedStop = normalizedStart;
-        }
-
-        try {
-            store.setSliceInBound(normalizedStart, normalizedStop, step, value.getSequenceStorage());
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value.getSequenceStorage().getIndicativeValue());
-
-            try {
-                store.setSliceInBound(start, stop, step, value.getSequenceStorage());
-            } catch (SequenceStoreException ex) {
-                throw new IllegalStateException();
-            }
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override

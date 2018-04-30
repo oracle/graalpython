@@ -75,6 +75,12 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
+    public void setNewLength(int length) {
+        CompilerDirectives.transferToInterpreter();
+        throw PythonLanguage.getCore().raise(ValueError, "list length out of range");
+    }
+
+    @Override
     public int index(Object value) {
         return -1;
     }
@@ -115,6 +121,10 @@ public final class EmptySequenceStorage extends SequenceStorage {
     public void insertItem(int idx, Object value) throws SequenceStoreException {
         assert idx == 0;
         throw SequenceStoreException.INSTANCE;
+    }
+
+    @Override
+    public void copyItem(int idxTo, int idxFrom) {
     }
 
     @Override
@@ -167,6 +177,11 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public boolean equals(SequenceStorage other) {
         return other == EmptySequenceStorage.INSTANCE;
+    }
+
+    @Override
+    public void ensureCapacity(int newCapacity) {
+
     }
 
 }

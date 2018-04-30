@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -326,9 +327,9 @@ public class ListBuiltins extends PythonBuiltins {
         @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
 
         @Specialization
-        public Object doPList(PList primary, PSlice slice, PSequence value) {
-            primary.setSlice(slice, value);
-            return PNone.NONE;
+        public PNone doPList(PList list, PSlice slice, Object value,
+                        @Cached("create()") ListNodes.SetSliceNode sliceNode) {
+            return sliceNode.execute(list, slice, value);
         }
 
         @Specialization(guards = "isIntStorage(primary)")
@@ -401,7 +402,7 @@ public class ListBuiltins extends PythonBuiltins {
     // list.append(x)
     @Builtin(name = "append", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class ListAppendNode extends PythonBuiltinNode {
+    public abstract static class ListAppendNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isEmptyStorage(list)")
         public PNone appendEmpty(PList list, Object arg) {
@@ -444,7 +445,7 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(rewriteOn = {SequenceStoreException.class})
+        @Specialization(guards = {"!isKnownStorage(list)"}, rewriteOn = {SequenceStoreException.class})
         public PNone appendObject(PList list, Object arg) throws SequenceStoreException {
             list.getSequenceStorage().append(arg);
             return PNone.NONE;
@@ -454,6 +455,11 @@ public class ListBuiltins extends PythonBuiltins {
         public PNone appendObjectGeneric(PList list, Object arg) {
             list.append(arg);
             return PNone.NONE;
+        }
+
+        protected boolean isKnownStorage(PList list) {
+            return PGuards.isEmptyStorage(list) || PGuards.isIntStorage(list) || PGuards.isLongStorage(list) || PGuards.isDoubleStorage(list) || PGuards.isListStorage(list) ||
+                            PGuards.isTupleStorage(list);
         }
     }
 

@@ -133,6 +133,11 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
+    public void copyItem(int idxTo, int idxFrom) {
+        values[idxTo] = values[idxFrom];
+    }
+
+    @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         double[] newArray = new double[sliceLength];
 

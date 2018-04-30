@@ -122,6 +122,11 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         }
     }
 
+    @Override
+    public void copyItem(int idxTo, int idxFrom) {
+        values[idxTo] = values[idxFrom];
+    }
+
     public void insertPTupleItem(int idx, PTuple value) {
         ensureCapacity(length + 1);
 

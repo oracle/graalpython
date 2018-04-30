@@ -134,6 +134,11 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
+    public void copyItem(int idxTo, int idxFrom) {
+        values[idxTo] = values[idxFrom];
+    }
+
+    @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         int[] newArray = new int[sliceLength];
 
