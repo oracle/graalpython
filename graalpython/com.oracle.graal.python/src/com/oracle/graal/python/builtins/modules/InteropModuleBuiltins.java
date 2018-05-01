@@ -134,13 +134,13 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         Object evalStringWithoutLang(PNone path, String string, PNone lang) {
-            throw raise(ValueError, "interop.eval with a string argument must pass a language or mime-type");
+            throw raise(ValueError, "polyglot.eval with a string argument must pass a language or mime-type");
         }
 
         @SuppressWarnings("unused")
         @Fallback
         Object evalWithoutContent(Object path, Object string, Object lang) {
-            throw raise(ValueError, "interop.eval must pass strings as either 'path' or a 'string' keyword");
+            throw raise(ValueError, "polyglot.eval must pass strings as either 'path' or a 'string' keyword");
         }
 
         private static <T extends Exception, T2 extends Exception> Builder<T, RuntimeException, RuntimeException> builderWithMimeType(String lang,
