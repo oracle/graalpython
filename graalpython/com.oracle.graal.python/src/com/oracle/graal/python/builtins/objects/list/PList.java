@@ -69,7 +69,7 @@ public final class PList extends PSequence {
     public final void setSlice(PSlice slice, PSequence value) {
         // Should not be used. Replaces with ListNodes.SetSliceNode.
         // When it will be replaced in other PSequence implementeations,
-        // then the setSlice from PSequence can be removed. 
+        // then the setSlice from PSequence can be removed.
         throw new UnsupportedOperationException();
     }
 
