@@ -36,6 +36,8 @@ public abstract class SequenceStorage {
 
     public abstract int length();
 
+    public abstract void setNewLength(int length);
+
     public abstract SequenceStorage copy();
 
     public abstract SequenceStorage createEmpty(int newCapacity);
@@ -75,6 +77,10 @@ public abstract class SequenceStorage {
     public abstract SequenceStorage generalizeFor(Object value);
 
     public abstract Object getIndicativeValue();
+
+    public abstract void ensureCapacity(int newCapacity);
+
+    public abstract void copyItem(int idxTo, int idxFrom);
 
     public void clear() {
         this.delSlice(0, length(), 1);

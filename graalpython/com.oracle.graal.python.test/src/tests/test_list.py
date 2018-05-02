@@ -39,13 +39,14 @@ import seq_tests
 
 LONG_NUMBER = 6227020800;
 
+import list_tests
 
 
-class ListTest(seq_tests.CommonTest):
-
-    type2test = tuple
-
+class ListTest(list_tests.CommonTest):
+    type2test = list
+    
     # ======== Specific test for Graal Python ======
+
     def test_getitem(self):
         l = [1, 2, 3]
         self.assertEqual(1, l[False])
@@ -161,7 +162,6 @@ class ListTest(seq_tests.CommonTest):
         self.slice_test(list(range(0,20)), slice(-15,6,-5), [])
         self.slice_test(list(range(0,20)), slice(-2, -21, -4), [18, 14, 10, 6, 2])
 
-        
     def del_slice(self, l, s, expected):
         tmplist = list(l)
         del(tmplist[s])
@@ -172,7 +172,6 @@ class ListTest(seq_tests.CommonTest):
         else:
             del(tmplist[s.start:s.stop:s.step])
         self.assertEqual(tmplist, expected, "del(list( slice({}, {}, {}))) expected: {}, get: {}".format(s.start, s.stop, s.step, expected, tmplist))
-
         
     def test_del_slice(self):
         self.del_slice(list(range(0, 20)), slice(1, 19), [0, 19])
@@ -202,3 +201,81 @@ class ListTest(seq_tests.CommonTest):
         self.del_slice(list(range(0, 20)), slice(-4, -18, -3), [0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18, 19])
         self.del_slice(list(range(0, 20)), slice(-3, -55, -4), [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15, 16, 18, 19])
         self.del_slice(list(range(0, 20)), slice(-1, -55, -4), [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18])
+
+    def test_ininicialization_with_slice(self):
+        r = []
+        l = [1,2,3,4]
+        r[:] = l
+        self.assertEqual(l, r)
+    
+    def test_set_slice(self):
+        a = [1,2]
+        a[1:2] = [7,6,5,4]
+        self.assertEqual([1, 7, 6, 5, 4], a)
+        a = [1, 2, 3, 4]
+        a[1:8] = [33]
+        self.assertEqual([1, 33], a)
+        a = [1,2,3,4]
+        a[1:8] = [33,34,35,36,37,38]
+        self.assertEqual([1, 33,34,35,36,37,38], a)
+        a = list(range(20))
+        a[1:19] = [55, 55]
+        self.assertEqual([0,55,55,19],a)
+        a = [1,2,3,4]
+        a[1:3] =[11] 
+        self.assertEqual([1, 11, 4], a)
+        a = [1,2,3,4]
+        a[1:3] =[11,12,13,14,15,16] 
+        self.assertEqual([1, 11,12,13,14,15,16, 4], a)
+        a = [1,2]
+        a[:] = (1, 2, 4, 5)
+        self.assertEqual([1,2,4,5], a)
+
+    def test_set_slice_class_iter(self):
+        class MyIter():
+            def __init__(self, base):
+                self.itera = iter(base)
+            def __next__(self):
+                return next(self.itera)
+            def __iter__(self):
+                return self
+
+        a = list(range(10))
+        a[::2] = MyIter(tuple(range(5)))
+        self.assertEqual([0, 1, 1, 3, 2, 5, 3, 7, 4, 9], a)
+
+    def test_set_slice_class_getitem(self):
+        class MyIter2():
+            def __init__(self, base):
+                self.base = base
+            def __getitem__(self, key):
+                return self.base[key]
+
+        a = [1,2,3,4]
+        a[2:] = MyIter2([33,44,55,66])
+        self.assertEqual([1,2,33,44,55,66], a)
+
+    def test_set_strange_slice(self):
+        a = list(range(20))
+        a[18:2] = [4,3,5]
+        self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 4, 3, 5, 18, 19], a)
+        a = list(range(20))
+        a[18:0:-2] = [11,22,33,44,55,66,77,88,99]
+        self.assertEqual([0, 1, 99, 3, 88, 5, 77, 7, 66, 9, 55, 11, 44, 13, 33, 15, 22, 17, 11, 19], a)
+        a = list(range(20))
+        a[18:-5] = [11,22,33,44,55,66,77,88,99]
+        self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 11, 22, 33, 44, 55, 66, 77, 88, 99, 18, 19], a)
+        a = list(range(20))
+        a[-2:-20:-2] = [11,22,33,44,55,66,77,88,99]
+        self.assertEqual([0, 1, 99, 3, 88, 5, 77, 7, 66, 9, 55, 11, 44, 13, 33, 15, 22, 17, 11, 19], a)
+        a = list(range(20))
+        a[20:-20] = [11,22,33,44,55,66,77,88,99]
+        self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 11, 22, 33, 44, 55, 66, 77, 88, 99], a)
+
+    def test_set_slice_generalize_storage(self):
+        a = [1,2]
+        a[:] = 'ahoj'
+        self.assertEqual(['a', 'h', 'o', 'j'], a)
+        a = [1,2]
+        a[1:5] = [1.1, 2.2, 3.3]
+        self.assertEqual([1,1.1, 2.2, 3.3], a)

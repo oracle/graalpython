@@ -154,6 +154,11 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
+    public void copyItem(int idxTo, int idxFrom) {
+        values[idxTo] = values[idxFrom];
+    }
+
+    @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         PList[] newArray = new PList[sliceLength];
 

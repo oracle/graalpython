@@ -70,6 +70,11 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
+    public void copyItem(int idxTo, int idxFrom) {
+        values[idxTo] = values[idxFrom];
+    }
+
+    @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         Object[] newArray = new Object[sliceLength];
 
