@@ -293,6 +293,8 @@ def python_gate(args):
         find_jdt()
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
+    if "--tags" not in args:
+        args += ["--tags", "fullbuild,style,python-junit,python-unittest,python-license,python-downstream"]
     return mx.command_function("gate")(args)
 
 
