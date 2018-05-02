@@ -540,10 +540,10 @@ for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites():
 #
 # ----------------------------------------------------------------------------------------------------------------------
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
+    suite=_suite,
     name='Graal.Python',
     short_name='pyn',
     dir_name='python',
-    documentation_files=['link:<support>/README_GRAALPYTHON.md'],
     license_files=['link:<support>/GraalCE_Python_license_3rd_party_license.txt'],
     third_party_license_files=[],
     truffle_jars=[
@@ -565,7 +565,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             ]
         )
     ],
-), _suite)
+))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
