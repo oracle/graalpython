@@ -279,4 +279,3 @@ class ListTest(list_tests.CommonTest):
         a = [1,2]
         a[1:5] = [1.1, 2.2, 3.3]
         self.assertEqual([1,1.1, 2.2, 3.3], a)
-    
