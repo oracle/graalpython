@@ -56,13 +56,14 @@ def _reference_getitem(args):
 
 
 def _reference_setitem(args):
-    listObj = args[0]
+    capacity = args[0]
     pos = args[1]
     newitem = args[2]
     if pos < 0:
         raise IndexError("list index out of range")
+    listObj = [None] * capacity
     listObj[pos] = newitem
-    return 0
+    return listObj
 
 
 def _reference_SET_ITEM(args):
@@ -154,14 +155,27 @@ class TestPyList(CPyExtTestCase):
     )
 
     test_PyList_SetItem = CPyExtFunction(
-        _wrap_list_fun(_reference_setitem),
+        _reference_setitem,
         lambda: (
-            ([1,2,3,4], 0, 0),
-            ([1,2,3,4], 3, 5),
+            (4, 0, 0),
+            (4, 3, 5),
         ),
-        resultspec="i",
-        argspec='OnO',
-        arguments=["PyObject* op", "Py_ssize_t size", "PyObject* newitem"],
+        code='''PyObject* wrap_PyList_SetItem(Py_ssize_t capacity, Py_ssize_t idx, PyObject* new_item) {
+            PyObject *newList = PyList_New(capacity);
+            for (Py_ssize_t i = 0; i < capacity; i++) {
+                if (i == idx) {
+                    PyList_SetItem(newList, i, new_item);
+                } else {
+                    PyList_SetItem(newList, i, Py_None);
+                }
+            }
+            return newList;
+        }
+        ''',
+        resultspec="O",
+        argspec='nnO',
+        arguments=["Py_ssize_t capacity", "Py_ssize_t size", "PyObject* new_item"],
+        callfunction="wrap_PyList_SetItem",
         cmpfunc=unhandled_error_compare
     )
 

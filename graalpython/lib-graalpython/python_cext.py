@@ -204,7 +204,7 @@ def PyList_New(size, errormarker):
     try:
         if size < 0:
             _PyErr_BadInternalCall(None, None, None)
-        return []
+        return [None] * size
     except BaseException:
         typ, val, tb = sys.exc_info()
     PyErr_Restore(typ, val, tb)

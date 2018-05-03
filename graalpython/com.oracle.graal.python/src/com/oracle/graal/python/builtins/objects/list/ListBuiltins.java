@@ -915,6 +915,16 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
+        PList doPListBigInt(PList left, long right,
+                        @Cached("createClassProfile()") ValueProfile profile) {
+            try {
+                return doPListInt(left, PInt.intValueExact(right), profile);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, "cannot fit 'int' into an index-sized integer");
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
         PList doPListBigInt(PList left, PInt right,
                         @Cached("createClassProfile()") ValueProfile profile) {
             try {
