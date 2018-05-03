@@ -32,7 +32,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class ByteSequenceStorage extends TypedSequenceStorage {
 
@@ -293,7 +292,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     }
 
-    @ExplodeLoop
     public int indexOfByte(byte value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -304,7 +302,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @ExplodeLoop
     public int indexOfInt(int value) {
         for (int i = 0; i < length; i++) {
             if ((values[i] & 0xFF) == value) {
@@ -347,7 +344,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    // @ExplodeLoop
     public void extendWithByteStorage(ByteSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);

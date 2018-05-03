@@ -36,31 +36,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+// This header is not taken from CPython, because we want to use and hand out
+// our own hashes. Right now it only exposes what we need.
+#ifndef Py_HASH_H
 
-#include <stdarg.h>
+#define Py_HASH_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT);
+PyAPI_FUNC(Py_hash_t) _Py_HashDouble(double);
 
-// taken from CPython "Python/Objects/boolobject.c"
-PyObject *PyBool_FromLong(long ok) {
-    PyObject *result;
+extern long _PyHASH_INF;
+extern long _PyHASH_NAN;
+extern long _PyHASH_IMAG;
+#define _PyHASH_MULTIPLIER _PyHASH_IMAG;
 
-    if (ok) {
-        result = Py_True;
-    } else {
-        result = Py_False;
-    }
-    Py_INCREF(result);
-    return result;
+#ifdef __cplusplus
 }
+#endif
 
-struct _longobject _Py_FalseStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 0)
-    { 0 }
-};
-
-struct _longobject _Py_TrueStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 1)
-    { 1 }
-};
+#endif /* !Py_HASH_H */

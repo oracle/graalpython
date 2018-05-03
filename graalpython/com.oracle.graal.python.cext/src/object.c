@@ -168,6 +168,13 @@ PyObject _Py_NoneStruct = {
   1, &_PyNone_Type
 };
 
+PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT);
+
+PyObject _Py_NotImplementedStruct = {
+    _PyObject_EXTRA_INIT
+    1, &_PyNotImplemented_Type
+};
+
 PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
     PyObject* newObj = (PyObject*)PyObject_Malloc(cls->tp_basicsize + cls->tp_itemsize * nitems);
     newObj->ob_refcnt = 0;
@@ -305,7 +312,7 @@ int PyType_Ready(PyTypeObject* cls) {
                            truffle_read_string(getset.name),
                            truffle_address_to_function(getset.get),
                            truffle_address_to_function(getset.set),
-                           truffle_read_string(getset.doc),
+                           getset.doc ? truffle_read_string(getset.doc) : truffle_read_string(""),
                            // do not convert the closure, it is handed to the
                            // getter and setter as-is
                            getset.closure);

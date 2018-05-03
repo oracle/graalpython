@@ -812,7 +812,11 @@ def _PyErr_BadInternalCall(filename, lineno, obj):
 def PyErr_NewException(name, base, dictionary):
     if "__module__" not in dictionary:
         dictionary["__module__"] = name.rpartition(".")[2]
-    return type(name, (base,), dictionary)
+    if not isinstance(base, tuple):
+        bases = (base,)
+    else:
+        bases = base
+    return type(name, bases, dictionary)
 
 
 def PyErr_Format(err_type, format_str, args):
@@ -976,7 +980,10 @@ def PyTruffle_Debug(*args):
 def PyTruffle_Type(type_name):
     if type_name == "mappingproxy":
         return type(dict().keys())
-    return getattr(sys.modules["builtins"], type_name)
+    elif type_name == "NotImplementedType":
+        return type(NotImplemented)
+    else:
+        return getattr(sys.modules["builtins"], type_name)
 
 
 def check_argtype(idx, obj, typ):
@@ -1023,3 +1030,21 @@ def initialize_member_accessors():
                        "WriteULongLongMember", "WritePySSizeT"]:
         WriteMemberFunctions.append(import_c_func(memberFunc))
     WriteMemberFunctions.append(lambda x,v: None)
+
+
+def PyImport_ImportModule(name, error_marker):
+    try:
+        return __import__(name)
+    except Exception:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PyRun_String(source, typ, globals, locals, error_marker):
+    try:
+        return exec(compile(source, typ, typ), globals, locals)
+    except Exception:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker

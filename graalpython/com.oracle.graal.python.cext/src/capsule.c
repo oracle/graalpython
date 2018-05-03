@@ -38,29 +38,7 @@
  */
 #include "capi.h"
 
-#include <stdarg.h>
-
-PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT);
-
-// taken from CPython "Python/Objects/boolobject.c"
-PyObject *PyBool_FromLong(long ok) {
-    PyObject *result;
-
-    if (ok) {
-        result = Py_True;
-    } else {
-        result = Py_False;
-    }
-    Py_INCREF(result);
-    return result;
+PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
+    // TODO: fail for now
+    return NULL;
 }
-
-struct _longobject _Py_FalseStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 0)
-    { 0 }
-};
-
-struct _longobject _Py_TrueStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 1)
-    { 1 }
-};

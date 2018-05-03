@@ -54,8 +54,14 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 }
 
 static void initialize_globals() {
-	void *jnone = polyglot_as__object(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None"));
+    void *jnone = polyglot_as__object(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None"));
     truffle_assign_managed(&_Py_NoneStruct, jnone);
+    void *jnotimpl = polyglot_as__object(polyglot_get_member(PY_BUILTIN, "NotImplemented"));
+    truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
+    void *jtrue = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_True");
+    truffle_assign_managed(&_Py_TrueStruct, to_sulong(jtrue));
+    void *jfalse = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_False");
+    truffle_assign_managed(&_Py_FalseStruct, to_sulong(jfalse));
 }
 
 __attribute__((constructor))
@@ -73,15 +79,20 @@ static void initialize_capi() {
     initialize_type_structure(&PyTuple_Type, "tuple");
     initialize_type_structure(&PyList_Type, "list");
     initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
+    initialize_type_structure(&PyComplex_Type, "complex");
+    initialize_type_structure(&PySlice_Type, "slice");
+    initialize_type_structure(&PyByteArray_Type, "bytearray");
+    initialize_type_structure(&_PyNotImplemented_Type, "NotImplementedType");
 
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
 
     initialize_exceptions();
+    initialize_hashes();
 }
 
 void* to_java(PyObject* obj) {
-	if (obj == Py_None) {
+    if (obj == Py_None) {
         return Py_None;
     } else if (obj == NULL) {
     	return Py_NoValue;
@@ -108,11 +119,11 @@ void* to_java_type(PyTypeObject* cls) {
 }
 
 PyObject* to_sulong(void *o) {
-	PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
-	if(polyglot_is_value(cobj)) {
-		return polyglot_as__object(cobj);
-	}
-	return cobj;
+    PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
+    if(polyglot_is_value(cobj)) {
+        return polyglot_as__object(cobj);
+    }
+    return cobj;
 }
 
 void* get_ob_type(PyObject* obj) {

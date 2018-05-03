@@ -74,18 +74,13 @@ PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
 }
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
-    va_list vargs;
-
-    va_start(vargs, n);
     PyObject *result = PyTuple_New(n);
     if (result == NULL) {
-        va_end(vargs);
         return NULL;
     }
-    for (Py_ssize_t i = 0; i < n; i++) {
-        PyObject *o = va_arg(vargs, PyObject *);
-        PyTuple_SetItem(result, i, o);
+    for (int i = 1; i < polyglot_get_arg_count(); i++) {
+        PyObject *o = polyglot_get_arg(i);
+        PyTuple_SetItem(result, i - 1, o);
     }
-    va_end(vargs);
     return result;
 }

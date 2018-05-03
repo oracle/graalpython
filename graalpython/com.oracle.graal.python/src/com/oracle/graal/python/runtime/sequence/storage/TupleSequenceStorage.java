@@ -29,7 +29,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class TupleSequenceStorage extends TypedSequenceStorage {
 
@@ -272,7 +271,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
 
     }
 
-    @ExplodeLoop
     public int indexOfPTuple(PTuple value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -307,7 +305,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    @ExplodeLoop
     public void extendWithPTupleStorage(TupleSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);
@@ -320,7 +317,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         length = extendedLength;
     }
 
-    @ExplodeLoop
     @Override
     public void reverse() {
         if (length > 0) {
@@ -336,7 +332,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    @ExplodeLoop
     @Override
     public void sort() {
         PTuple[] copy = Arrays.copyOf(values, length);
@@ -350,7 +345,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         return length > 0 ? values[0] : null;
     }
 
-    @ExplodeLoop
     @Override
     public boolean equals(SequenceStorage other) {
         if (other.length() != length() || !(other instanceof TupleSequenceStorage)) {

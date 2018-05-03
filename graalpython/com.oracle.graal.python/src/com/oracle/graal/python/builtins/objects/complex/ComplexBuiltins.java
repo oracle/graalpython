@@ -47,6 +47,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -475,6 +477,19 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         double get(PComplex self) {
             return self.getReal();
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfArguments = 1)
+    static abstract class HashNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        int hash(PComplex self) {
+            // just like CPython
+            int realHash = Double.hashCode(self.getReal());
+            int imagHash = Double.hashCode(self.getImag());
+            return realHash + PComplex.IMAG_MULTIPLIER * imagHash;
         }
     }
 }

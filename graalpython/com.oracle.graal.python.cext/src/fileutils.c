@@ -38,29 +38,15 @@
  */
 #include "capi.h"
 
-#include <stdarg.h>
+#include <fcntl.h>
 
-PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT);
+#ifdef O_CLOEXEC
+/* Does open() support the O_CLOEXEC flag? Possible values:
 
-// taken from CPython "Python/Objects/boolobject.c"
-PyObject *PyBool_FromLong(long ok) {
-    PyObject *result;
+   -1: unknown
+    0: open() ignores O_CLOEXEC flag, ex: Linux kernel older than 2.6.23
+    1: open() supports O_CLOEXEC flag, close-on-exec is set
 
-    if (ok) {
-        result = Py_True;
-    } else {
-        result = Py_False;
-    }
-    Py_INCREF(result);
-    return result;
-}
-
-struct _longobject _Py_FalseStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 0)
-    { 0 }
-};
-
-struct _longobject _Py_TrueStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 1)
-    { 1 }
-};
+   The flag is used by _Py_open(), io.FileIO and os.open() */
+int _Py_open_cloexec_works = -1;
+#endif

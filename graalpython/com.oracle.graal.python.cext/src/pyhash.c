@@ -38,29 +38,16 @@
  */
 #include "capi.h"
 
-#include <stdarg.h>
-
-PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT);
-
-// taken from CPython "Python/Objects/boolobject.c"
-PyObject *PyBool_FromLong(long ok) {
-    PyObject *result;
-
-    if (ok) {
-        result = Py_True;
-    } else {
-        result = Py_False;
-    }
-    Py_INCREF(result);
-    return result;
+Py_hash_t _Py_HashDouble(double value) {
+    return truffle_invoke_l(PY_BUILTIN, "hash", value);
 }
 
-struct _longobject _Py_FalseStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 0)
-    { 0 }
-};
+long _PyHASH_INF;
+long _PyHASH_NAN;
+long _PyHASH_IMAG;
 
-struct _longobject _Py_TrueStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 1)
-    { 1 }
-};
+void initialize_hashes() {
+    _PyHASH_INF = truffle_invoke_l(PY_BUILTIN, "hash", INFINITY);
+    _PyHASH_NAN = truffle_invoke_l(PY_BUILTIN, "hash", NAN);
+    _PyHASH_IMAG = truffle_invoke_l(PY_TRUFFLE_CEXT, "PyHash_Imag");
+}

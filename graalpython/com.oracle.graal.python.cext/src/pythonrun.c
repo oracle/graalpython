@@ -38,29 +38,24 @@
  */
 #include "capi.h"
 
-#include <stdarg.h>
-
-PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT);
-
-// taken from CPython "Python/Objects/boolobject.c"
-PyObject *PyBool_FromLong(long ok) {
-    PyObject *result;
-
-    if (ok) {
-        result = Py_True;
+PyAPI_FUNC(PyObject *) PyRun_StringFlags(const char* source, int type, PyObject* globals, PyObject* locals, PyCompilerFlags* ignored) {
+    const char* stype;
+    if (type == Py_single_input) {
+        stype = "single";
+    } else if (type == Py_file_input) {
+        stype = "exec";
+    } else if (Py_eval_input) {
+        stype = "eval";
     } else {
-        result = Py_False;
+        return NULL;
     }
-    Py_INCREF(result);
-    return result;
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyRun_String", truffle_read_string(source),
+                                      truffle_read_string(stype), to_java(globals), to_java(locals),
+                                      ERROR_MARKER);
+    if (result == ERROR_MARKER) {
+        return NULL;
+    } else {
+        return to_sulong(result);
+    }
 }
 
-struct _longobject _Py_FalseStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 0)
-    { 0 }
-};
-
-struct _longobject _Py_TrueStruct = {
-    PyVarObject_HEAD_INIT(&PyBool_Type, 1)
-    { 1 }
-};

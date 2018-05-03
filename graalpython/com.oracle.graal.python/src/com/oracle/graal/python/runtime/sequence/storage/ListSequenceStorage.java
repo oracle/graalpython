@@ -29,7 +29,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class ListSequenceStorage extends TypedSequenceStorage {
 
@@ -291,7 +290,6 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
 
     }
 
-    @ExplodeLoop
     public int indexOfList(PList value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -332,7 +330,6 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    @ExplodeLoop
     public void extendWithListStorage(ListSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);
@@ -345,7 +342,6 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         length = extendedLength;
     }
 
-    @ExplodeLoop
     @Override
     public void reverse() {
         if (length > 0) {
@@ -361,7 +357,6 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    @ExplodeLoop
     @Override
     public void sort() {
         // TODO: need to be tested
@@ -376,7 +371,6 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         return length > 0 ? values[0] : null;
     }
 
-    @ExplodeLoop
     @Override
     public boolean equals(SequenceStorage other) {
         // TODO: equal algorithm might need more tests

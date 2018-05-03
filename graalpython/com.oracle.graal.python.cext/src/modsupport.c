@@ -57,7 +57,7 @@ PyObject* get_arg_or_kw(PyObject* argv, PyObject* kwds, char** kwdnames, int arg
 }
 
 /* argparse */
-int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, int outc, void *v0, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9) {
+int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, int outc, void *v0, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9, void *v10, void *v11, void *v12, void *v13, void *v14, void *v15, void *v16, void *v17, void *v18, void *v19) {
     int outputn = 0;
     int formatn = 0;
     int valuen = 0;
@@ -77,10 +77,20 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
     case 7: __ASSIGN(T, 7, arg); break;         \
     case 8: __ASSIGN(T, 8, arg); break;         \
     case 9: __ASSIGN(T, 9, arg); break;         \
+    case 10: __ASSIGN(T, 10, arg); break;         \
+    case 11: __ASSIGN(T, 11, arg); break;         \
+    case 12: __ASSIGN(T, 12, arg); break;         \
+    case 13: __ASSIGN(T, 13, arg); break;         \
+    case 14: __ASSIGN(T, 14, arg); break;         \
+    case 15: __ASSIGN(T, 15, arg); break;         \
+    case 16: __ASSIGN(T, 16, arg); break;         \
+    case 17: __ASSIGN(T, 17, arg); break;         \
+    case 18: __ASSIGN(T, 18, arg); break;         \
+    case 19: __ASSIGN(T, 19, arg); break;         \
     }
 #   define __ASSIGN(T, num, arg) *((T*)_ARG(num)) = (T)arg
 #   define _ARG(num) v ## num
-#   define ARG(n) (((n) == 0) ? v0 : (((n) == 1) ? v1 : (((n) == 2) ? v2 : (((n) == 3) ? v3 : (((n) == 4) ? v4 : (((n) == 5) ? v5 : (((n) == 6) ? v6 : (((n) == 7) ? v7 : (((n) == 8) ? v8 : (((n) == 9) ? v9 : NULL))))))))))
+#   define ARG(n) (((n) == 0) ? v0 : (((n) == 1) ? v1 : (((n) == 2) ? v2 : (((n) == 3) ? v3 : (((n) == 4) ? v4 : (((n) == 5) ? v5 : (((n) == 6) ? v6 : (((n) == 7) ? v7 : (((n) == 8) ? v8 : (((n) == 9) ? v9 : (((n) == 10) ? v10 : (((n) == 11) ? v11 : (((n) == 12) ? v12 : (((n) == 13) ? v13 : (((n) == 14) ? v14 : (((n) == 15) ? v15 : (((n) == 16) ? v16 : (((n) == 17) ? v17 : (((n) == 18) ? v18 : (((n) == 19) ? v19 : NULL))))))))))))))))))))
 
 #   define PEEKFMT format[formatn]
 #   define POPFMT format[formatn++]
@@ -231,7 +241,7 @@ int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, PyObject* kwnames
     return 1;
 }
 
-PyObject* Py_BuildValue(const char *format, ...) {
+PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
     void* arg;
     int valuen = 1;
     int max = strlen(format);
