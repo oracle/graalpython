@@ -40,9 +40,11 @@ package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_issubclass")
@@ -58,7 +60,35 @@ public abstract class AbstractObjectIsSubclassNode extends PNode {
         return AbstractObjectIsSubclassNodeGen.create(derived, cls);
     }
 
-    private boolean isSubclassInternal(Object derived, Object cls) {
+    public abstract boolean execute(Object derived, Object cls);
+
+    @Specialization(guards = "derived == cls")
+    boolean isSameClass(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls) {
+        return true;
+    }
+
+    @Specialization(guards = {"derived != cls", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    boolean isSubclass(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
+                    @Cached("derived") Object cachedDerived,
+                    @Cached("cls") Object cachedCls,
+                    @Cached("create()") AbstractObjectIsSubclassNode isSubclassNode) {
+        // TODO: Investigate adding @ExplodeLoop when the bases is constant in length (guard)
+        PTuple bases = getBasesNode.execute(cachedDerived);
+        if (bases == null || bases.isEmpty()) {
+            return false;
+        }
+
+        for (Object baseCls : bases.getArray()) {
+            if (isSubclassNode.execute(baseCls, cachedCls)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Specialization(replaces = {"isSubclass", "isSameClass"})
+    boolean isSubclassGeneric(Object derived, Object cls,
+                    @Cached("create()") AbstractObjectIsSubclassNode isSubclassNode) {
         if (derived == cls) {
             return true;
         }
@@ -69,17 +99,10 @@ public abstract class AbstractObjectIsSubclassNode extends PNode {
         }
 
         for (Object baseCls : bases.getArray()) {
-            if (isSubclassInternal(baseCls, cls)) {
+            if (isSubclassNode.execute(baseCls, cls)) {
                 return true;
             }
         }
         return false;
-    }
-
-    public abstract boolean execute(Object derived, Object cls);
-
-    @Specialization
-    public boolean isSubclass(Object derived, Object cls) {
-        return isSubclassInternal(derived, cls);
     }
 }
