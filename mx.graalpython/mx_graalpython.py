@@ -293,6 +293,8 @@ def python_gate(args):
         find_jdt()
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
+    if "--tags" not in args:
+        args += ["--tags", "fullbuild,style,python-junit,python-unittest,python-license,python-downstream"]
     return mx.command_function("gate")(args)
 
 
@@ -361,9 +363,9 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
         if task:
             mx.run_mx(
-                ["--strict-compliance", "--dynamicimports", "/substratevm,/vm",
+                ["--dynamicimports", "/substratevm,/vm",
                  "build", "--force-deprecation-as-warning", "--dependencies",
-                 "graalpython.image"],
+                 "GRAAL_MANAGEMENT,graalpython.image"],
                 nonZeroIsFatal=True
             )
             vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
@@ -540,24 +542,23 @@ for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites():
 #
 # ----------------------------------------------------------------------------------------------------------------------
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
+    suite=_suite,
     name='Graal.Python',
     short_name='pyn',
     dir_name='python',
-    documentation_files=['link:<support>/README_GRAALPYTHON.md'],
-    license_files=['link:<support>/GraalCE_Python_license_3rd_party_license.txt'],
+    license_files=['link:GraalCE_Python_license_3rd_party_license.txt'],
     third_party_license_files=[],
     truffle_jars=[
-        'dependency:graalpython:GRAALPYTHON',
-        'dependency:graalpython:GRAALPYTHON-ENV',
+        'graalpython:GRAALPYTHON',
     ],
     support_distributions=[
-        'extracted-dependency:graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
-        'extracted-dependency:graalpython:GRAALPYTHON_GRAALVM_DOCS',
+        'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
+        'graalpython:GRAALPYTHON_GRAALVM_DOCS',
     ],
     launcher_configs=[
         mx_sdk.LanguageLauncherConfig(
             destination='bin/<exe:graalpython>',
-            jar_distributions=['dependency:graalpython:GRAALPYTHON-LAUNCHER'],
+            jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
             build_args=[
                 '--language:python',
@@ -565,7 +566,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             ]
         )
     ],
-), _suite)
+))
 
 
 # ----------------------------------------------------------------------------------------------------------------------

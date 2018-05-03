@@ -32,7 +32,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "5a45980a4cb8b32a3d964a99d6e356717fcdb678",
+                "version": "3535ccebc4c19ebe9be7da93aaab1bca37afea5a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -206,6 +206,9 @@ suite = {
         },
 
         "GRAALPYTHON-ENV": {
+        },
+
+        "GRAALPYTHON-ZIP": {
         },
 
         "GRAALPYTHON": {

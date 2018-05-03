@@ -157,7 +157,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         builtinConstants.put(BuiltinNames.__DEBUG__, !optimazeFlag);
     }
 
-    
     // abs(x)
     @Builtin(name = ABS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
