@@ -96,9 +96,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "") //
     public static final OptionKey<Boolean> PythonInspectFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.")
-    public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
-    
+    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.") public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(
+                    false);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }

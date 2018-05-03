@@ -43,8 +43,8 @@ public class AssertNode extends StatementNode {
     @Child private CastToBooleanNode condition;
     @Child private PNode message;
     @Child private LookupAndCallUnaryNode callNode;
-    @CompilerDirectives.CompilationFinal private Boolean assertionsEnabled = null; 
-    
+    @CompilerDirectives.CompilationFinal private Boolean assertionsEnabled = null;
+
     public AssertNode(CastToBooleanNode condition, PNode message) {
         this.condition = condition;
         this.message = message;
