@@ -227,9 +227,12 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isValidIndexType(idx)")
-        protected Object doGeneric(PList self, Object idx) {
-            throw raise(PythonErrorType.TypeError, "list indices must be integers or slices, not %p", idx);
+        @Fallback
+        protected Object doGeneric(Object self, Object idx) {
+            if (!isValidIndexType(idx)) {
+                throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
+            }
+            throw  raise(TypeError, "descriptor '__delitem__' requires a 'list' object but received a '%p'", idx);
         }
 
         protected boolean isValidIndexType(Object idx) {
@@ -310,9 +313,12 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isValidIndexType(idx)")
-        protected Object doGeneric(PList self, Object idx) {
-            throw raise(PythonErrorType.TypeError, "list indices must be integers or slices, not %p", idx);
+        @Fallback
+        protected Object doGeneric(Object self, Object idx) {
+            if (!isValidIndexType(idx)) {
+                throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
+            }
+            throw  raise(TypeError, "descriptor '__getitem__' requires a 'list' object but received a '%p'", idx);
         }
 
         protected boolean isValidIndexType(Object idx) {
@@ -389,9 +395,12 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "!isValidIndexType(idx)")
-        protected Object doGeneric(PList self, Object idx, Object value) {
-            throw raise(PythonErrorType.TypeError, "list indices must be integers or slices, not %p", idx);
+        @Fallback
+        protected Object doGeneric(Object self, Object idx, Object value) {
+            if (!isValidIndexType(idx)) {
+                throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
+            }
+            throw  raise(TypeError, "descriptor '__setitem__' requires a 'list' object but received a '%p'", idx);
         }
 
         protected boolean isValidIndexType(Object idx) {
