@@ -502,17 +502,92 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListInsertNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PList insert(PList list, int index, Object value) {
+        public abstract PNone execute(PList list, Object index, Object value);
+
+        @Specialization(guards = "isIntStorage(list)")
+        public PNone insertIntInt(PList list, int index, int value) {
+            IntSequenceStorage target = (IntSequenceStorage) list.getSequenceStorage();
+            index = normalizeIndex(index, list.len());
+            target.insertIntItem(index, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone insertLongLong(PList list, int index, int value) {
+            LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
+            index = normalizeIndex(index, list.len());
+            target.insertLongItem(index, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone insertLongLong(PList list, int index, long value) {
+            LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
+            index = normalizeIndex(index, list.len());
+            target.insertLongItem(index, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        public PNone insertDoubleDouble(PList list, int index, double value) {
+            DoubleSequenceStorage target = (DoubleSequenceStorage) list.getSequenceStorage();
+            index = normalizeIndex(index, list.len());
+            target.insertDoubleItem(index, value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNotSpecialCase(list, value)")
+        public PNone insert(PList list, int index, Object value) {
+            index = normalizeIndex(index, list.len());
             list.insert(index, value);
-            return list;
+            return PNone.NONE;
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        public PList insert(PList list, Object i, Object arg1) {
-            throw new RuntimeException("invalid arguments for insert()");
+        public PNone insert(PList list, PInt index, Object value) {
+            int where = normalizeIndex(index.intValue(), list.len());
+            list.insert(where, value);
+            return PNone.NONE;
         }
+
+        @Specialization(guards = {"!isIntegerOrPInt(i)"})
+        @SuppressWarnings("unused")
+        public PNone insert(PList list, Object i, Object value,
+                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode indexNode,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            Object indexValue = indexNode.executeObject(i);
+            if (PNone.NO_VALUE == indexValue) {
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", i);
+            }
+            return insertNode.execute(list, indexValue, value);
+        }
+
+        private int normalizeIndex(int index, int len) {
+            if (index < 0) {
+                index += len;
+                if (index < 0) {
+                    index = 0;
+                }
+            }
+            if (index > len) {
+                index = len;
+            }
+            return index;
+        }
+
+        protected boolean isNotSpecialCase(PList list, Object value) {
+            return !((PGuards.isIntStorage(list) && value instanceof Integer) || (PGuards.isLongStorage(list) && PGuards.isInteger(value)) ||
+                            (PGuards.isDoubleStorage(list) && value instanceof Double));
+        }
+
+        protected boolean isIntegerOrPInt(Object index) {
+            return index instanceof Integer || index instanceof PInt;
+        }
+
+        protected ListInsertNode createListInsertNode() {
+            return ListBuiltinsFactory.ListInsertNodeFactory.create(new PNode[0]);
+        }
+
     }
 
     // list.remove(x)
