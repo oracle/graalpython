@@ -40,7 +40,6 @@ package com.oracle.graal.python.builtins.objects.cpyobject;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.PyTruffle_Unicode_AsWideChar;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -48,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cpyobject.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -192,20 +192,16 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(UNICODE_WSTR, key)")
         Object doWstr(String object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") PyTruffle_Unicode_AsWideChar asWideCharNode) {
-            return new PySequenceArrayWrapper(asWideCharNode.execute(object, sizeofWchar(), object.length(), null));
+                        @Cached("create()") UnicodeAsWideCharNode asWideCharNode) {
+            return new PySequenceArrayWrapper(asWideCharNode.execute(object, sizeofWchar(), object.length()));
         }
 
         @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
         long doWstrLength(String object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") PyTruffle_Unicode_AsWideChar asWideCharNode) {
-            // TODO refactor 'PyTruffle_Unicode_AsWideChar'
+                        @Cached("create()") UnicodeAsWideCharNode asWideCharNode) {
             long sizeofWchar = sizeofWchar();
-            Object result = asWideCharNode.execute(object, sizeofWchar, object.length(), null);
-            if (result instanceof PBytes) {
-                return ((PBytes) result).len() / sizeofWchar;
-            }
-            return -1;
+            PBytes result = asWideCharNode.execute(object, sizeofWchar, object.length());
+            return result.len() / sizeofWchar;
         }
 
         @Specialization(guards = "eq(UNICODE_STATE, key)")

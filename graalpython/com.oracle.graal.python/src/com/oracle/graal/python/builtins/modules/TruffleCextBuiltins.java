@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cpyobject.PCallNativeNode;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cpyobject.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -1035,9 +1036,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_AsWideChar", fixedNumOfArguments = 4)
     @GenerateNodeFactory
-    public abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
-
-        public abstract Object execute(Object obj, long elementSize, long elements, Object errorMarker);
+    abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
+        @Child private UnicodeAsWideCharNode asWideCharNode;
 
         @Specialization
         Object doUnicode(PString s, long elementSize, long elements, Object errorMarker) {
@@ -1048,25 +1048,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object doUnicode(String s, long elementSize, long elements, Object errorMarker) {
             try {
-                // use native byte order
-                Charset utf32Charset = getUTF32Charset(0);
+                if (asWideCharNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    asWideCharNode = insert(UnicodeAsWideCharNode.create());
+                }
 
-                // elementSize == 2: Store String in 'wchar_t' of size == 2, i.e., use UCS2. This is
-                // achieved by decoding to UTF32 (which is basically UCS4) and ignoring the two
-                // MSBs.
-                if (elementSize == 2L) {
-                    ByteBuffer bytes = ByteBuffer.wrap(s.getBytes(utf32Charset));
-                    // FIXME unsafe narrowing
-                    ByteBuffer buf = ByteBuffer.allocate(Math.min(bytes.remaining() / 2, (int) (elements * elementSize)));
-                    while (bytes.remaining() >= 4) {
-                        buf.putChar((char) (bytes.getInt() & 0x0000FFFF));
-                    }
-                    buf.flip();
-                    byte[] barr = new byte[buf.remaining()];
-                    buf.get(barr);
-                    return factory().createBytes(barr);
-                } else if (elementSize == 4L) {
-                    return factory().createBytes(s.getBytes(utf32Charset));
+                PBytes wchars = asWideCharNode.execute(s, elementSize, elements);
+                if (wchars != null) {
+                    return wchars;
                 } else {
                     return raiseNative(errorMarker, PythonErrorType.ValueError, "unsupported wchar size; was: %d", elementSize);
                 }
@@ -1074,10 +1063,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 // TODO
                 return raiseNative(errorMarker, PythonErrorType.LookupError, e.getMessage());
             }
-        }
-
-        public static PyTruffle_Unicode_AsWideChar create() {
-            return TruffleCextBuiltinsFactory.PyTruffle_Unicode_AsWideCharFactory.create(null);
         }
     }
 
