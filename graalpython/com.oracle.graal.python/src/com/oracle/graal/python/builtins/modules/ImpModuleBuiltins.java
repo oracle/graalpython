@@ -41,6 +41,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
 import java.io.IOException;
 import java.net.URI;
@@ -172,7 +173,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallTarget callTarget = env.parse(env.newSourceBuilder(env.getTruffleFile(path)).language(LLVM_LANGUAGE).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
-                throw raise(ImportError, "cannot load %s", path);
+                throw raise(ImportError, "cannot load %s");
+            } catch (RuntimeException e) {
+                Throwable rootCaus = getRootCause(e);
+                throw raise(SystemError, "cannot load %s: %s", path, rootCaus.getMessage());
             }
             TruffleObject pyinitFunc;
             try {
@@ -197,6 +201,14 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 e.printStackTrace();
                 throw raise(ImportError, "cannot initialize %s with PyInit_%s", path, basename);
             }
+        }
+
+        private static Throwable getRootCause(Exception e) {
+            Throwable cause = e;
+            while (cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            return cause;
         }
 
         @TruffleBoundary
