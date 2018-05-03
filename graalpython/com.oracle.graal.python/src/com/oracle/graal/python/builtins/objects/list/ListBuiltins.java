@@ -232,7 +232,7 @@ public class ListBuiltins extends PythonBuiltins {
             if (!isValidIndexType(idx)) {
                 throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
             }
-            throw  raise(TypeError, "descriptor '__delitem__' requires a 'list' object but received a '%p'", idx);
+            throw raise(TypeError, "descriptor '__delitem__' requires a 'list' object but received a '%p'", idx);
         }
 
         protected boolean isValidIndexType(Object idx) {
@@ -318,7 +318,7 @@ public class ListBuiltins extends PythonBuiltins {
             if (!isValidIndexType(idx)) {
                 throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
             }
-            throw  raise(TypeError, "descriptor '__getitem__' requires a 'list' object but received a '%p'", idx);
+            throw raise(TypeError, "descriptor '__getitem__' requires a 'list' object but received a '%p'", idx);
         }
 
         protected boolean isValidIndexType(Object idx) {
@@ -400,7 +400,7 @@ public class ListBuiltins extends PythonBuiltins {
             if (!isValidIndexType(idx)) {
                 throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
             }
-            throw  raise(TypeError, "descriptor '__setitem__' requires a 'list' object but received a '%p'", idx);
+            throw raise(TypeError, "descriptor '__setitem__' requires a 'list' object but received a '%p'", idx);
         }
 
         protected boolean isValidIndexType(Object idx) {
