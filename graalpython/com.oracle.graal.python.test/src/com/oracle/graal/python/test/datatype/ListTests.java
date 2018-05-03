@@ -94,7 +94,8 @@ public class ListTests {
     @Test
     public void extend() {
         String source = "llist = [1,2]\n" + //
-                        "print(llist.extend([3, 4]))\n";
+                        "llist.extend([3, 4])\n" +
+                        "print(llist)\n";
 
         assertPrints("[1, 2, 3, 4]\n", source);
     }
