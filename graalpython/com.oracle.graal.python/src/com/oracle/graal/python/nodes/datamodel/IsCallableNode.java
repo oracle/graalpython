@@ -38,28 +38,18 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.truffle.PythonTypes;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-
-@TypeSystemReference(PythonTypes.class)
-@ImportStatic({PGuards.class, SpecialMethodNames.class})
-public abstract class IsCallableNode extends PBaseNode {
+public abstract class IsCallableNode extends PDataModelEmulationNode {
     @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create();
-
-    public abstract boolean execute(Object callableObject);
 
     protected static boolean isNoCallable(Object callee) {
         return !(callee instanceof PythonCallable);
