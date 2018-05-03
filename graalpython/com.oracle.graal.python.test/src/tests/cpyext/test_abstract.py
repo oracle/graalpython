@@ -468,3 +468,30 @@ class TestPySequence(CPyExtTestCase):
         arguments=["PyObject* sequence"],
     )
 
+    test_PySequence_Fast_ITEMS = CPyExtFunction(
+        lambda args: list(args[0]),
+        lambda: (
+            (tuple(),),
+            ((1,2,3),),
+            ((None,),),
+            ([],),
+            (['a','b','c'],),
+            ([None],),
+        ),
+        code='''PyObject* wrap_PySequence_Fast_ITEMS(PyObject* sequence) {
+            Py_ssize_t i;
+            Py_ssize_t n = PySequence_Fast_GET_SIZE(sequence);
+            PyObject **items = PySequence_Fast_ITEMS(sequence);
+            PyObject* result = PyList_New(n);
+            for (i = 0; i < n; i++) {
+                PyList_SetItem(result, i, items[i]);
+            } 
+            return result;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        callfunction="wrap_PySequence_Fast_ITEMS",
+        arguments=["PyObject* sequence"],
+    )
+
