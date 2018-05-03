@@ -388,7 +388,8 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization
         Object runNone(PNone object) {
-            return ensureIsPointer(callUnaryIntoCapi(object, getPyNoneHandle()));
+            PythonClass clazz = getClassNode().execute(object);
+            return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, clazz.getFlags()));
         }
 
         @Specialization(guards = "isNonNative(object)")
@@ -442,14 +443,6 @@ public class PythonObjectNativeWrapperMR {
 
         protected boolean isNonNative(PythonClass klass) {
             return !(klass instanceof PythonNativeClass);
-        }
-
-        private TruffleObject getPyNoneHandle() {
-            if (PyNoneHandle == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_NONE_HANDLE);
-            }
-            return PyNoneHandle;
         }
 
         private Object callUnaryIntoCapi(PythonAbstractObject arg, TruffleObject fun) {

@@ -35,7 +35,6 @@ import java.util.Map;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -52,8 +51,6 @@ public class PythonObject extends PythonAbstractObject {
     protected final PythonClass pythonClass;
     @CompilationFinal protected DynamicObject storage;
     private PDict dict;
-    private PythonObjectNativeWrapper nativeWrapper;
-
     public PythonObject(PythonClass pythonClass) {
         if (pythonClass == null) {
             CompilerDirectives.transferToInterpreter();
@@ -200,14 +197,5 @@ public class PythonObject extends PythonAbstractObject {
 
     public void setDict(PDict dict) {
         this.dict = dict;
-    }
-
-    public PythonObjectNativeWrapper getNativeWrapper() {
-        return nativeWrapper;
-    }
-
-    public void setNativeWrapper(PythonObjectNativeWrapper nativeWrapper) {
-        assert this.nativeWrapper == null;
-        this.nativeWrapper = nativeWrapper;
     }
 }

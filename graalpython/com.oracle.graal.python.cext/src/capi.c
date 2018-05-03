@@ -47,7 +47,7 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 }
 
 static void initialize_globals() {
-    void *jnone = polyglot_as__object(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None"));
+    void *jnone = polyglot_as__object(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None")));
     truffle_assign_managed(&_Py_NoneStruct, jnone);
     void *jnotimpl = polyglot_as__object(polyglot_get_member(PY_BUILTIN, "NotImplemented"));
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
@@ -151,10 +151,6 @@ void* get_ob_type(PyObject* obj) {
 typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;
-
-PyObject* PyNoneHandle(void* jobj) {
-    return &_Py_NoneStruct;
-}
 
 uint64_t PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;

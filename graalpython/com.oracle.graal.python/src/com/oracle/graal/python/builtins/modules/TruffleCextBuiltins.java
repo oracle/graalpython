@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.cpyobject.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cpyobject.PCallNativeNode;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapper;
@@ -232,8 +231,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "to_sulong", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ToSulongNode extends PythonUnaryBuiltinNode {
-        @CompilationFinal private TruffleObject PyNoneHandle;
-        @Child private PCallNativeNode callNative;
 
         /*
          * This is very sad. Only for Sulong, we cannot hand out java.lang.Strings, because then it
@@ -277,7 +274,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNone(none)")
         Object run(PNone none) {
-            return callIntoCapi(none, getPyNoneHandle());
+            return PythonObjectNativeWrapper.wrap(none);
         }
 
         @Specialization(guards = "!isNativeClass(object)")
@@ -292,22 +289,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         protected boolean isNativeClass(PythonObject o) {
             return o instanceof PythonNativeClass;
-        }
-
-        private TruffleObject getPyNoneHandle() {
-            if (PyNoneHandle == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_NONE_HANDLE);
-            }
-            return PyNoneHandle;
-        }
-
-        private Object callIntoCapi(PythonAbstractObject arg, TruffleObject function) {
-            if (callNative == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNative = insert(PCallNativeNode.create(1));
-            }
-            return callNative.execute(function, new Object[]{arg});
         }
 
         public static ToSulongNode create() {
@@ -697,7 +678,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PNativeToPTypeNode extends PForeignToPTypeNode {
 
         @Specialization
-        protected static PythonObject fromNativeNone(PythonObjectNativeWrapper nativeWrapper) {
+        protected static PythonAbstractObject fromNativeNone(PythonObjectNativeWrapper nativeWrapper) {
             return nativeWrapper.getPythonObject();
         }
 
@@ -720,7 +701,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyNoneNode extends PythonBuiltinNode {
         @Specialization
         PNone doNativeNone() {
-            return PNone.NATIVE_NONE;
+            return PNone.NONE;
         }
     }
 
