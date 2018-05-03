@@ -98,6 +98,7 @@ graalpython/com.oracle.graal.python.cext/include/objimpl.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/patchlevel.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/polyglot.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/pyarena.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/pycapsule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyconfig.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyctype.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyerrors.h,python.copyright
