@@ -820,11 +820,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class TrufflePInt_AsPrimitive extends NativeBuiltin {
 
         @Specialization
-        Object doPInt(int obj, boolean signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+        Object doPInt(int obj, int signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
             if (targetTypeSize == 4) {
                 return obj;
             } else if (targetTypeSize == 8) {
-                if (signed) {
+                if (signed != 0) {
                     return (long) obj;
                 } else {
                     return obj & 0xFFFFFFFFL;
@@ -835,7 +835,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPInt(long obj, @SuppressWarnings("unused") boolean signed, long targetTypeSize, String targetTypeName) {
+        Object doPInt(long obj, @SuppressWarnings("unused") int signed, long targetTypeSize, String targetTypeName) {
             if (targetTypeSize == 4) {
                 throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
             } else if (targetTypeSize == 8) {
@@ -846,10 +846,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPInt(PInt obj, boolean signed, long targetTypeSize, String targetTypeName) {
+        Object doPInt(PInt obj, int signed, long targetTypeSize, String targetTypeName) {
             try {
                 if (targetTypeSize == 4) {
-                    if (signed) {
+                    if (signed != 0) {
                         return obj.intValueExact();
                     } else if (obj.bitCount() <= 32) {
                         return obj.intValue();
@@ -857,7 +857,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         throw new ArithmeticException();
                     }
                 } else if (targetTypeSize == 8) {
-                    if (signed) {
+                    if (signed != 0) {
                         return obj.longValueExact();
                     } else if (obj.bitCount() <= 64) {
                         return obj.longValue();
