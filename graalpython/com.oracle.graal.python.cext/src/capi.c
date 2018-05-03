@@ -47,14 +47,19 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 }
 
 static void initialize_globals() {
+    // None
     void *jnone = polyglot_as__object(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None")));
     truffle_assign_managed(&_Py_NoneStruct, jnone);
+
+    // NotImplemented
     void *jnotimpl = polyglot_as__object(polyglot_get_member(PY_BUILTIN, "NotImplemented"));
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
+
+    // True, False
     void *jtrue = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_True");
-    truffle_assign_managed(&_Py_TrueStruct, to_sulong(jtrue));
+    truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(to_sulong(jtrue)));
     void *jfalse = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_False");
-    truffle_assign_managed(&_Py_FalseStruct, to_sulong(jfalse));
+    truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(to_sulong(jfalse)));
 }
 
 __attribute__((constructor))

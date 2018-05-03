@@ -63,6 +63,7 @@ POLYGLOT_DECLARE_TYPE(PyListObject);
 POLYGLOT_DECLARE_TYPE(PyDictObject);
 POLYGLOT_DECLARE_TYPE(PyUnicodeObject);
 POLYGLOT_DECLARE_TYPE(PyBytesObject);
+POLYGLOT_DECLARE_STRUCT(_longobject);
 
 
 extern void* to_java(PyObject* obj);
