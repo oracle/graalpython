@@ -477,23 +477,95 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListExtendNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PList extend(PList list, Object source,
+        @Specialization(guards = {"isIntStorage(list)", "isIntStorage(source)"})
+        public PNone extendIntInt(PList list, PList source) {
+            IntSequenceStorage target = (IntSequenceStorage) list.getSequenceStorage();
+            IntSequenceStorage what = list != source
+                            ? (IntSequenceStorage) source.getSequenceStorage()
+                            : (IntSequenceStorage) source.getSequenceStorage().copy();
+            int[] array = what.getInternalIntArray();
+            for (int i = 0; i < what.length(); i++) {
+                target.appendInt(array[i]);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isLongStorage(list)", "isIntStorage(source)"})
+        public PNone extendLongInt(PList list, PList source) {
+            LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
+            IntSequenceStorage what = list != source
+                            ? (IntSequenceStorage) source.getSequenceStorage()
+                            : (IntSequenceStorage) source.getSequenceStorage().copy();
+            int[] array = what.getInternalIntArray();
+            for (int i = 0; i < what.length(); i++) {
+                target.appendLong(array[i]);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isLongStorage(list)", "isLongStorage(source)"})
+        public PNone extendLongLong(PList list, PList source) {
+            LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
+            LongSequenceStorage what = list != source
+                            ? (LongSequenceStorage) source.getSequenceStorage()
+                            : (LongSequenceStorage) source.getSequenceStorage().copy();
+            long[] array = what.getInternalLongArray();
+            for (int i = 0; i < what.length(); i++) {
+                target.appendLong(array[i]);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isDoubleStorage(list)", "isDoubleStorage(source)"})
+        public PNone extendDoubleDouble(PList list, PList source) {
+            DoubleSequenceStorage target = (DoubleSequenceStorage) list.getSequenceStorage();
+            DoubleSequenceStorage what = list != source
+                            ? (DoubleSequenceStorage) source.getSequenceStorage()
+                            : (DoubleSequenceStorage) source.getSequenceStorage().copy();
+            double[] array = what.getInternalDoubleArray();
+            for (int i = 0; i < what.length(); i++) {
+                target.appendDouble(array[i]);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isObjectStorage(list)", "isObjectStorage(source)"})
+        public PNone extendObjectObject(PList list, PList source) {
+            ObjectSequenceStorage target = (ObjectSequenceStorage) list.getSequenceStorage();
+            ObjectSequenceStorage what = list != source
+                            ? (ObjectSequenceStorage) source.getSequenceStorage()
+                            : (ObjectSequenceStorage) source.getSequenceStorage().copy();
+            Object[] array = what.getInternalArray();
+            for (int i = 0; i < what.length(); i++) {
+                target.append(array[i]);
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNotSpecialCase(list, source)")
+        public PNone extend(PList list, Object source,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
 
-            Object iterator = getIterator.executeWith(source);
+            Object workSource = list != source ? source : factory().createList(((PList) source).getSequenceStorage().copy());
+            Object iterator = getIterator.executeWith(workSource);
             while (true) {
                 Object value;
                 try {
                     value = next.execute(iterator);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
-                    return list;
+                    return PNone.NONE;
                 }
                 list.append(value);
             }
+        }
+
+        protected boolean isNotSpecialCase(PList list, Object source) {
+            return !(source instanceof PList && (((PGuards.isIntStorage(list) || PGuards.isLongStorage(list)) && PGuards.isIntStorage((PList) source)) ||
+                            (PGuards.isLongStorage(list) && PGuards.isLongStorage((PList) source)) || (PGuards.isDoubleStorage(list) && PGuards.isDoubleStorage((PList) source)) ||
+                            (PGuards.isObjectStorage(list) && PGuards.isObjectStorage((PList) source))));
         }
     }
 

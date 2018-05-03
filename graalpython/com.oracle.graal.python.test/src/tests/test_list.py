@@ -280,6 +280,16 @@ class ListTest(list_tests.CommonTest):
         a[1:5] = [1.1, 2.2, 3.3]
         self.assertEqual([1,1.1, 2.2, 3.3], a)
 
+    def test_extend_spec(self):
+        a = [1,2]
+        a.extend(a)
+        self.assertEqual([1,2,1,2], a)
+        a = [923123123123]
+        a.extend(a)
+        self.assertEqual([923123123123,923123123123], a)
+        a = [1.1, 2.1]
+        a.extend(a)
+        self.assertEqual([1.1, 2.1, 1.1, 2.1], a)
     def test_remove_spec(self):
         a = [1,2]
         a.remove(2);
