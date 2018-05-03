@@ -68,11 +68,11 @@ public abstract class AbstractObjectIsSubclassNode extends PNode {
     }
 
     @Specialization(guards = {"derived != cls", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    @ExplodeLoop
     boolean isSubclass(@SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
                     @Cached("create()") AbstractObjectIsSubclassNode isSubclassNode) {
+        // TODO: Investigate adding @ExplodeLoop when the bases is constant in length (guard)
         PTuple bases = getBasesNode.execute(cachedDerived);
         if (bases == null || bases.isEmpty()) {
             return false;
