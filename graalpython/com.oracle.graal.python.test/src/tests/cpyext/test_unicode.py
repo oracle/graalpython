@@ -306,13 +306,13 @@ class TestPyUnicode(CPyExtTestCase):
     )
 
     # TODO enable once supported
-#     test_PyUnicode_GET_SIZE = CPyExtFunction(
-#         lambda args: len(args[0]),
-#         lambda: (
-#             ("hello",), 
-#         ),
-#         resultspec="n",
-#         argspec='O',
-#         arguments=["PyObject* o"],
-#         cmpfunc=unhandled_error_compare
-#     )
+    test_PyUnicode_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            ("hello",), 
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )

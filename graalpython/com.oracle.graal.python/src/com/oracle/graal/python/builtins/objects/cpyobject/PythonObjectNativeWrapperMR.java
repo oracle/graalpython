@@ -193,12 +193,25 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(UNICODE_WSTR, key)")
         Object doWstr(String object, @SuppressWarnings("unused") String key,
                         @Cached("create()") PyTruffle_Unicode_AsWideChar asWideCharNode) {
-            return new PySequenceArrayWrapper(asWideCharNode.execute(object, getWcharSize(), object.length(), null));
+            return new PySequenceArrayWrapper(asWideCharNode.execute(object, sizeofWchar(), object.length(), null));
+        }
+
+        @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
+        long doWstrLength(String object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") PyTruffle_Unicode_AsWideChar asWideCharNode) {
+            // TODO refactor 'PyTruffle_Unicode_AsWideChar'
+            long sizeofWchar = sizeofWchar();
+            Object result = asWideCharNode.execute(object, sizeofWchar, object.length(), null);
+            if (result instanceof PBytes) {
+                return ((PBytes) result).len() / sizeofWchar;
+            }
+            return -1;
         }
 
         @Specialization(guards = "eq(UNICODE_STATE, key)")
-        Object doState(String object, @SuppressWarnings("unused") String key) {
-            return factory().createBytes(new byte[]{(byte) 0xDE, (byte) 0xAD, (byte) 0xBE, (byte) 0xEF});
+        Object doState(PString object, @SuppressWarnings("unused") String key) {
+            // TODO also support bare 'String' ?
+            return new PyUnicodeState(object);
         }
 
         @Fallback
@@ -222,7 +235,7 @@ public class PythonObjectNativeWrapperMR {
             return toSulongNode;
         }
 
-        private long getWcharSize() {
+        private long sizeofWchar() {
             if (wcharSize < 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 TruffleObject boxed = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_WHCAR_SIZE);
