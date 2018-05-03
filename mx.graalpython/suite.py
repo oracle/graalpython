@@ -208,6 +208,9 @@ suite = {
         "GRAALPYTHON-ENV": {
         },
 
+        "GRAALPYTHON-ZIP": {
+        },
+
         "GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
