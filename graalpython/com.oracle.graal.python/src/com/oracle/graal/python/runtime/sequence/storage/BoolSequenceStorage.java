@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class BoolSequenceStorage extends TypedSequenceStorage {
 
@@ -266,7 +265,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
 
     }
 
-    @ExplodeLoop
     public int indexOfBool(boolean value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -313,7 +311,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         length = extendedLength;
     }
 
-    @ExplodeLoop
     @Override
     public void reverse() {
         if (length > 0) {
@@ -330,7 +327,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
     }
 
     // TODO: Should use Collection for sorting boolean
-    @ExplodeLoop
     @Override
     public void sort() {
         boolean[] copy = Arrays.copyOf(values, length);
@@ -355,7 +351,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         return 0;
     }
 
-    @ExplodeLoop
     @Override
     public boolean equals(SequenceStorage other) {
         if (other.length() != length() || !(other instanceof BoolSequenceStorage)) {

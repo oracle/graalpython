@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
@@ -266,7 +265,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    @ExplodeLoop
     public boolean equals(SequenceStorage other) {
         if (other.length() != length()) {
             return false;

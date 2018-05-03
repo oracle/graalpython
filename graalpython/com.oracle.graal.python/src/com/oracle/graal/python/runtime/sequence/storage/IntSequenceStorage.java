@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class IntSequenceStorage extends TypedSequenceStorage {
 
@@ -312,7 +311,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         length = extendedLength;
     }
 
-    @ExplodeLoop
     @Override
     public void reverse() {
         if (length > 0) {
@@ -328,7 +326,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    @ExplodeLoop
     @Override
     public void sort() {
         int[] copy = Arrays.copyOf(values, length);
@@ -342,7 +339,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return 0;
     }
 
-    @ExplodeLoop
     @Override
     public boolean equals(SequenceStorage other) {
         if (other.length() != length() || !(other instanceof IntSequenceStorage)) {
