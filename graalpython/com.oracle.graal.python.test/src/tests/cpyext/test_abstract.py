@@ -450,6 +450,21 @@ class TestPySequence(CPyExtTestCase):
         ),
         resultspec="O",
         argspec='On',
-        arguments=["PyObject* tuple", "Py_ssize_t idx"],
+        arguments=["PyObject* sequence", "Py_ssize_t idx"],
+    )
+
+    test_PySequence_Fast_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            (tuple(),),
+            ((1,2,3),),
+            ((None,),),
+            ([],),
+            (['a','b','c'],),
+            ([None],),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* sequence"],
     )
 

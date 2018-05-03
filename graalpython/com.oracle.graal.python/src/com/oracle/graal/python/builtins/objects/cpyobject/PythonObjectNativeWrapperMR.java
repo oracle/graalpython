@@ -134,7 +134,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_SIZE, key)")
-        int doObSize(PythonObject object, @SuppressWarnings("unused") String key,
+        long doObSize(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
             try {
                 return callLenNode.executeInt(object);
