@@ -44,7 +44,7 @@ from . import CPyExtTestCase, GRAALPYTHON
 
 class TestPosix(CPyExtTestCase):
     def test_graalpython_posixmodule(self):
-        if not GRAALPYTHON:
+        if True: # TODO: (tfel) see if we want to re-enable this at some point
             return
         from . import posixmodule
         posixenv = posixmodule.environ
