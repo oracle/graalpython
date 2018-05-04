@@ -539,10 +539,28 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PNone insert(PList list, PInt index, Object value) {
-            int where = normalizeIndex(index.intValue(), list.len());
-            list.insert(where, value);
-            return PNone.NONE;
+        public PNone insertLongIndex(PList list, long index, Object value,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            int where = index < Integer.MIN_VALUE ? 0 : index > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) index;
+            where = normalizeIndex(where, list.len());
+            return insertNode.execute(list, where, value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public PNone insertPIntIndex(PList list, PInt index, Object value,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            int where = 0;
+            BigInteger bigIndex = index.getValue();
+            if (bigIndex.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) == -1) {
+                where = 0;
+            } else if (bigIndex.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) == 1) {
+                where = Integer.MAX_VALUE;
+            } else {
+                where = bigIndex.intValue();
+            }
+            where = normalizeIndex(where, list.len());
+            return insertNode.execute(list, where, value);
         }
 
         @Specialization(guards = {"!isIntegerOrPInt(i)"})
