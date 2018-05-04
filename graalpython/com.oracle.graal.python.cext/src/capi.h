@@ -51,6 +51,14 @@ typedef struct {
     PyObject *md_name;  /* for logging purposes after md_dict is cleared */
 } PyModuleObject;
 
+// taken from CPython "Objects/capsule.c"
+typedef struct {
+    PyObject_HEAD
+    void *pointer;
+    const char *name;
+    void *context;
+    PyCapsule_Destructor destructor;
+} PyCapsule;
 
 /* Declare Python structs/types for explicit polyglot typecasts. */
 /* NOTE: Also add an appropriate case in 'PyTruffle_Explicit_Cast' ! */
@@ -64,6 +72,7 @@ POLYGLOT_DECLARE_TYPE(PyDictObject);
 POLYGLOT_DECLARE_TYPE(PyUnicodeObject);
 POLYGLOT_DECLARE_TYPE(PyBytesObject);
 POLYGLOT_DECLARE_STRUCT(_longobject);
+POLYGLOT_DECLARE_TYPE(PyCapsule);
 
 
 extern void* to_java(PyObject* obj);

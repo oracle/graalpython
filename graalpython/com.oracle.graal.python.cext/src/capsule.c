@@ -38,7 +38,26 @@
  */
 #include "capi.h"
 
+PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0);
+
 PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    // TODO: fail for now
-    return NULL;
+    return (PyObject *)polyglot_as_PyCapsule(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule", polyglot_from_string(name, "ascii"), pointer, destructor)));
 }
+
+void * PyCapsule_GetContext(PyObject *o) {
+	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetContext", to_java(o), ERROR_MARKER);
+	if (result == ERROR_MARKER) {
+		return NULL;
+	}
+	return (void *)as_long(result);
+}
+
+void * PyCapsule_GetPointer(PyObject *o, const char *name) {
+	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"), ERROR_MARKER);
+	if (result == ERROR_MARKER) {
+		return NULL;
+	}
+	return (void *)as_long(result);
+}
+
+

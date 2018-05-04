@@ -532,6 +532,50 @@ def PyUnicode_Format(format, args, error_marker):
     return error_marker
 
 
+##################### CAPSULE
+
+
+class PyCapsule:
+    name = None
+    pointer = None
+    context = None
+
+    def __init__(self, name, pointer, destructor):
+        self.name = name
+        self.pointer = pointer
+
+    def __repr__(self):
+        name = "NULL" if self.name is None else self.name
+        quote = "" if self.name is None else '"'
+        return "<capsule object %s%s%s at %p>" % (quote, name, quote, self.pointer)
+
+
+def PyCapsule_GetContext(obj, error_marker):
+    typ = val = tb = None
+    try:
+        if not isinstance(obj, PyCapsule) or obj.pointer is None:
+            raise ValueError("PyCapsule_GetContext called with invalid PyCapsule object")
+        return obj.context
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PyCapsule_GetPointer(obj, name, error_marker):
+    typ = val = tb = None
+    try:
+        if not isinstance(obj, PyCapsule) or obj.pointer is None:
+            raise ValueError("PyCapsule_GetPointer called with invalid PyCapsule object")
+        if name != obj.name:
+            raise ValueError("PyCapsule_GetPointer called with incorrect name")
+        return obj.pointer
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
 def PyModule_AddObject(m, k, v):
     m.__dict__[k] = v
     return None
@@ -996,6 +1040,8 @@ def PyTruffle_Type(type_name):
         return type(sys)
     elif type_name == "NoneType":
         return type(None)
+    elif type_name == "PyCapsule":
+        return PyCapsule
     else:
         return getattr(sys.modules["builtins"], type_name)
 
