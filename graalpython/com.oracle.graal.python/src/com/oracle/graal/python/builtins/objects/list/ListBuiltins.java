@@ -559,7 +559,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
         
         @Specialization(guards = "isDoubleStorage(list)")
-        public PNone removeLong(PList list, double value) {
+        public PNone removeDouble(PList list, double value) {
             DoubleSequenceStorage store = (DoubleSequenceStorage)list.getSequenceStorage();
             for(int index = 0; index < store.length(); index++) {
                 if (value == store.getDoubleItemNormalized(index)) {
@@ -572,7 +572,6 @@ public class ListBuiltins extends PythonBuiltins {
         
         @Specialization(guards = "isNotSpecialCase(list, value)")
         public PNone remove(PList list, Object value,
-                @Cached("createBinaryProfile()") ConditionProfile errorProfile,
                 @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
             int len = list.len();
             for (int i = 0; i < len; i++) {
