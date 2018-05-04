@@ -507,39 +507,34 @@ public class ListBuiltins extends PythonBuiltins {
         @Specialization(guards = "isIntStorage(list)")
         public PNone insertIntInt(PList list, int index, int value) {
             IntSequenceStorage target = (IntSequenceStorage) list.getSequenceStorage();
-            index = normalizeIndex(index, list.len());
-            target.insertIntItem(index, value);
+            target.insertIntItem(normalizeIndex(index, list.len()), value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isLongStorage(list)")
         public PNone insertLongLong(PList list, int index, int value) {
             LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
-            index = normalizeIndex(index, list.len());
-            target.insertLongItem(index, value);
+            target.insertLongItem(normalizeIndex(index, list.len()), value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isLongStorage(list)")
         public PNone insertLongLong(PList list, int index, long value) {
             LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
-            index = normalizeIndex(index, list.len());
-            target.insertLongItem(index, value);
+            target.insertLongItem(normalizeIndex(index, list.len()), value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isDoubleStorage(list)")
         public PNone insertDoubleDouble(PList list, int index, double value) {
             DoubleSequenceStorage target = (DoubleSequenceStorage) list.getSequenceStorage();
-            index = normalizeIndex(index, list.len());
-            target.insertDoubleItem(index, value);
+            target.insertDoubleItem(normalizeIndex(index, list.len()), value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNotSpecialCase(list, value)")
         public PNone insert(PList list, int index, Object value) {
-            index = normalizeIndex(index, list.len());
-            list.insert(index, value);
+            list.insert(normalizeIndex(index, list.len()), value);
             return PNone.NONE;
         }
 
@@ -551,7 +546,6 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isIntegerOrPInt(i)"})
-        @SuppressWarnings("unused")
         public PNone insert(PList list, Object i, Object value,
                         @Cached("create(__INDEX__)") LookupAndCallUnaryNode indexNode,
                         @Cached("createListInsertNode()") ListInsertNode insertNode) {
@@ -562,17 +556,18 @@ public class ListBuiltins extends PythonBuiltins {
             return insertNode.execute(list, indexValue, value);
         }
 
-        private int normalizeIndex(int index, int len) {
-            if (index < 0) {
-                index += len;
-                if (index < 0) {
-                    index = 0;
+        private static int normalizeIndex(int index, int len) {
+            int idx = index;
+            if (idx < 0) {
+                idx += len;
+                if (idx < 0) {
+                    idx = 0;
                 }
             }
-            if (index > len) {
-                index = len;
+            if (idx > len) {
+                idx = len;
             }
-            return index;
+            return idx;
         }
 
         protected boolean isNotSpecialCase(PList list, Object value) {
