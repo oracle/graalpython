@@ -316,7 +316,7 @@ class CommonTest(seq_tests.CommonTest):
 #        self.assertRaises(IndexError, a.pop)
         self.assertRaises(TypeError, a.pop, 42, 42)
         a = self.type2test([0, 10, 20, 30, 40])
-    '''
+    
     def test_remove(self):
         a = self.type2test([0, 0, 1])
         a.remove(1)
@@ -361,7 +361,7 @@ class CommonTest(seq_tests.CommonTest):
         for x, y in zip(d, e):
             # verify that original order and values are retained.
             self.assertIs(x, y)
-
+    '''        
     def test_count(self):
         a = self.type2test([0, 1, 2])*3
         self.assertEqual(a.count(0), 3)
