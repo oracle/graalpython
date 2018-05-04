@@ -110,6 +110,15 @@ class DummyFloatSubclass(float):
         return 2.71828
 
 
+class DummySequence():
+    def __getitem__(self, idx):
+        return idx * 10
+
+
+class DummyListSubclass(list):
+    pass
+
+
 def _default_bin_arith_args():
     return (
         (0,0),
@@ -529,5 +538,26 @@ class TestPySequence(CPyExtTestCase):
         callfunction="wrap_PyIter_Next",
         arguments=["PyObject* sequence", "int n"],
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Check = CPyExtFunction(
+        lambda args: not isinstance(args[0], dict) and hasattr(args[0], '__getitem__'),
+        lambda: (
+            (tuple(),),
+            ((1,2,3),),
+            ((None,),),
+            ([],),
+            (['a','b','c'],),
+            ([None],),
+            (dict(),),
+            (set(),),
+            ({'a', 'b'},),
+            ({'a':0, 'b':1},),
+            (DummySequence(),),
+            (DummyListSubclass(),),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* sequence"],
     )
 

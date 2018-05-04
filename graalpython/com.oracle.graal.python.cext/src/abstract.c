@@ -208,3 +208,52 @@ PyObject * PyIter_Next(PyObject *iter) {
 	}
     return to_sulong(result);
 }
+
+int PySequence_Check(PyObject *s) {
+	if (s == NULL) {
+		return 0;
+	}
+	return polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Check", to_java(s)));
+}
+
+Py_ssize_t PySequence_Size(PyObject *s) {
+	return polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Size", to_java(s)));
+}
+
+// taken from CPython "Objects/abstract.c"
+#undef PySequence_Length
+Py_ssize_t PySequence_Length(PyObject *s) {
+    return PySequence_Size(s);
+}
+#define PySequence_Length PySequence_Size
+
+PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i)
+{
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetItem", to_java(s), i, ERROR_MARKER);
+	if(result == ERROR_MARKER) {
+		return NULL;
+	}
+	return to_sulong(result);
+}
+
+int PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o) {
+	return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_SetItem", to_java(s), i, to_java(o)));
+}
+
+PyObject* PySequence_Tuple(PyObject *v) {
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Tuple", to_java(v), ERROR_MARKER);
+	if(result == ERROR_MARKER) {
+		return NULL;
+	}
+	return to_sulong(result);
+}
+
+PyObject *
+PySequence_Fast(PyObject *v, const char *m)
+{
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Fast", to_java(v), polyglot_from_string(m, "ascii"), ERROR_MARKER);
+	if(result == ERROR_MARKER) {
+		return NULL;
+	}
+	return to_sulong(result);
+}

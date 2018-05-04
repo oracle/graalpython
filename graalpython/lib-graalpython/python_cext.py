@@ -462,6 +462,43 @@ def PyIter_Next(itObj, error_marker):
     return error_marker
 
 
+##################### SEQUENCE
+
+
+def PySequence_Tuple(obj, error_marker):
+    typ = val = tb = None
+    try:
+        return tuple(obj)
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PySequence_Fast(obj, msg, error_marker):
+    typ = val = tb = None
+    if isinstance(obj, tuple) or isinstance(obj, list):
+        return obj
+    try:
+        return list(obj)
+    except TypeError:
+        try:
+            raise TypeError(msg)
+        except TypeError:
+            typ, val, tb = sys.exc_info()
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PySequence_Check(obj):
+    # dictionaries are explicitly excluded
+    if isinstance(obj, dict):
+        return False
+    return hasattr(obj, '__getitem__')
+
+
 ##################### UNICODE
 
 
