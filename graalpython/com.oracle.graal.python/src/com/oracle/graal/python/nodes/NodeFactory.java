@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsContextManagerNode;
+import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
@@ -528,5 +529,9 @@ public class NodeFactory {
 
     public PDataModelEmulationNode createIsCallable() {
         return IsCallableNode.create();
+    }
+
+    public PDataModelEmulationNode createIsIterable() {
+        return IsIterableNode.create();
     }
 }

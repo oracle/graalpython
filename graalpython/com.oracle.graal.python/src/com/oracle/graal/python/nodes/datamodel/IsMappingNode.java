@@ -58,8 +58,8 @@ public abstract class IsMappingNode extends PDataModelEmulationNode {
     public boolean isMapping(Object object) {
         if (isSequence.execute(object)) {
             return profile.profile((hasKeysNode.execute(object)) &&
-                    (hasItemsNode.execute(object)) &&
-                    (hasValuesNode.execute(object)));
+                            (hasItemsNode.execute(object)) &&
+                            (hasValuesNode.execute(object)));
         }
         return false;
     }

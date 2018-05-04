@@ -62,22 +62,22 @@ public abstract class IsCallableNode extends PDataModelEmulationNode {
     }
 
     @Specialization
-    protected boolean isMethod(PMethod callable) {
+    protected boolean isMethod(@SuppressWarnings("unused") PMethod callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isBuiltinMethod(PBuiltinMethod callable) {
+    protected boolean isBuiltinMethod(@SuppressWarnings("unused") PBuiltinMethod callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isFunctionCall(PFunction callable) {
+    protected boolean isFunctionCall(@SuppressWarnings("unused") PFunction callable) {
         return true;
     }
 
     @Specialization
-    protected boolean isBuiltinFunctionCall(PBuiltinFunction callable) {
+    protected boolean isBuiltinFunctionCall(@SuppressWarnings("unused") PBuiltinFunction callable) {
         return true;
     }
 
