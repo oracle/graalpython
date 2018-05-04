@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
@@ -392,10 +393,10 @@ public class PythonMessageResolution {
 
     @Resolve(message = "IS_EXECUTABLE")
     abstract static class PForeignIsExecutableNode extends Node {
-        @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create();
+        @Child private IsCallableNode isCallableNode = IsCallableNode.create();
 
         public Object access(Object receiver) {
-            return getCall.execute(receiver, SpecialMethodNames.__CALL__) != PNone.NO_VALUE;
+            return isCallableNode.execute(receiver);
         }
     }
 
