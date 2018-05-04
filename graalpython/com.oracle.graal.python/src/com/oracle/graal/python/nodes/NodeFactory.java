@@ -51,6 +51,11 @@ import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
+import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
+import com.oracle.graal.python.nodes.datamodel.IsContextManagerNode;
+import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
+import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -507,5 +512,21 @@ public class NodeFactory {
 
     public PNode createDestructuringAssignment(PNode rhs, List<ReadNode> slots, int starredIndex, PNode[] assignments) {
         return DestructuringAssignmentNode.create(rhs, slots, starredIndex, assignments);
+    }
+
+    public PDataModelEmulationNode createIsMapping() {
+        return IsMappingNode.create();
+    }
+
+    public PDataModelEmulationNode createIsSequence() {
+        return IsSequenceNode.create();
+    }
+
+    public PDataModelEmulationNode createIsContextManager() {
+        return IsContextManagerNode.create();
+    }
+
+    public PDataModelEmulationNode createIsCallable() {
+        return IsCallableNode.create();
     }
 }
