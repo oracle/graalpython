@@ -546,7 +546,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     name='Graal.Python',
     short_name='pyn',
     dir_name='python',
-    license_files=['link:GraalCE_Python_license_3rd_party_license.txt'],
+    license_files=['GraalCE_Python_license_3rd_party_license.txt'],
     third_party_license_files=[],
     truffle_jars=[
         'graalpython:GRAALPYTHON',
