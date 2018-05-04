@@ -36,31 +36,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.datamodel;
+package com.oracle.graal.python.nodes.attributes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.truffle.api.nodes.Node;
 
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+public class HasInheritedAttributeNode extends Node {
+    private final String attribute;
+    @Child private LookupInheritedAttributeNode lookupInheritedAttributeNode = LookupInheritedAttributeNode.create();
 
-public abstract class IsSequenceNode extends PDataModelEmulationNode {
-    @Child private HasInheritedAttributeNode hasGetItemNode = HasInheritedAttributeNode.create(__LEN__);
-    @Child private HasInheritedAttributeNode hasLenNode = HasInheritedAttributeNode.create(__GETITEM__);
-
-    private final ConditionProfile lenProfile = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile getItemProfile = ConditionProfile.createBinaryProfile();
-
-    @Specialization
-    public boolean isSequence(Object object) {
-        if (lenProfile.profile(hasLenNode.execute(object))) {
-            return getItemProfile.profile(hasGetItemNode.execute(object));
-        }
-        return false;
+    private HasInheritedAttributeNode(String attribute) {
+        this.attribute = attribute;
     }
 
-    public static IsSequenceNode create() {
-        return IsSequenceNodeGen.create();
+    public boolean execute(Object object) {
+        return lookupInheritedAttributeNode.execute(object, attribute) != PNone.NO_VALUE;
+    }
+
+    public static HasInheritedAttributeNode create(String attribute) {
+        return new HasInheritedAttributeNode(attribute);
     }
 }
