@@ -162,7 +162,8 @@ class TestPyList(CPyExtTestCase):
         ),
         code='''PyObject* wrap_PyList_SetItem(Py_ssize_t capacity, Py_ssize_t idx, PyObject* new_item) {
             PyObject *newList = PyList_New(capacity);
-            for (Py_ssize_t i = 0; i < capacity; i++) {
+            Py_ssize_t i;
+            for (i = 0; i < capacity; i++) {
                 if (i == idx) {
                     PyList_SetItem(newList, i, new_item);
                 } else {

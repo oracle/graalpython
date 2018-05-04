@@ -517,7 +517,8 @@ class TestPySequence(CPyExtTestCase):
             (iter({'a':0,'b':1,'c':2}),2)
         ),
         code='''PyObject* wrap_PyIter_Next(PyObject* iter, int n) {
-            for (int i = 0; i < n - 1; i++) {
+            int i;
+            for (i = 0; i < n - 1; i++) {
                 PyIter_Next(iter);
             } 
             return PyIter_Next(iter);
