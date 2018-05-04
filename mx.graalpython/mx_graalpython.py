@@ -575,7 +575,10 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 #
 # ----------------------------------------------------------------------------------------------------------------------
 if not os.getenv("GRAAL_PYTHONHOME"):
-    os.environ["GRAAL_PYTHONHOME"] = os.path.join(_suite.dir, "graalpython")
+    home = os.path.join(_suite.dir, "graalpython")
+    if not os.path.exists(home):
+        home = [d for d in _suite.dists if d.name == "GRAALPYTHON_GRAALVM_SUPPORT"][0].output
+    os.environ["GRAAL_PYTHONHOME"] = home
 
 
 # ----------------------------------------------------------------------------------------------------------------------
