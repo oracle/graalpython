@@ -361,7 +361,7 @@ class CommonTest(seq_tests.CommonTest):
         for x, y in zip(d, e):
             # verify that original order and values are retained.
             self.assertIs(x, y)
-    '''        
+    '''
     def test_count(self):
         a = self.type2test([0, 1, 2])*3
         self.assertEqual(a.count(0), 3)
