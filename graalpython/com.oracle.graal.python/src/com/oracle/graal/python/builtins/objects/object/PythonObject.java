@@ -51,6 +51,7 @@ public class PythonObject extends PythonAbstractObject {
     protected final PythonClass pythonClass;
     @CompilationFinal protected DynamicObject storage;
     private PDict dict;
+
     public PythonObject(PythonClass pythonClass) {
         if (pythonClass == null) {
             CompilerDirectives.transferToInterpreter();
