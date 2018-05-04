@@ -75,6 +75,17 @@ def _reference_asssize_t(args):
             return -1
 
 
+def _reference_next(args):
+    iterObj = args[0]
+    n = args[1]
+    try:
+        for i in range(n-1):
+            next(iterObj)
+        return next(iterObj)
+    except BaseException:
+        raise SystemError
+        
+
 class NoNumber():
     pass
 
@@ -493,5 +504,29 @@ class TestPySequence(CPyExtTestCase):
         argspec='O',
         callfunction="wrap_PySequence_Fast_ITEMS",
         arguments=["PyObject* sequence"],
+    )
+
+    test_PyIter_Next = CPyExtFunction(
+        _reference_next,
+        lambda: (
+            (iter((1,2,3)),0),
+            (iter((1,2,3)),3),
+            (iter((None,)),1),
+            (iter([]),1),
+            (iter(['a','b','c']),2),
+            (iter({'a':0,'b':1,'c':2}),2)
+        ),
+        code='''PyObject* wrap_PyIter_Next(PyObject* iter, int n) {
+            for (int i = 0; i < n - 1; i++) {
+                PyIter_Next(iter);
+            } 
+            return PyIter_Next(iter);
+        }
+        ''',
+        resultspec="O",
+        argspec='Oi',
+        callfunction="wrap_PyIter_Next",
+        arguments=["PyObject* sequence", "int n"],
+        cmpfunc=unhandled_error_compare
     )
 

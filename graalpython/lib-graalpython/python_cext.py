@@ -452,6 +452,16 @@ def PyNumber_Long(v, error_marker):
     return error_marker
 
 
+def PyIter_Next(itObj, error_marker):
+    typ = val = tb = None
+    try:
+        return next(itObj)
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
 ##################### UNICODE
 
 
