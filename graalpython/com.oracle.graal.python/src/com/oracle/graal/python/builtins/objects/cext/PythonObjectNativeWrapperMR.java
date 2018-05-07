@@ -187,8 +187,8 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_AS_NUMBER, key)")
         Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
-            // TODO
-            return getToSulongNode().execute(object);
+            // TODO check for type and return 'NULL'
+            return new PyNumberMethodsWrapper(object);
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")

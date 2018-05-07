@@ -707,3 +707,23 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyIndex_Check = CPyExtFunction(
+        lambda args: hasattr(args[0], "__index__"),
+        lambda: (
+            (1, ),
+            ("not a number", ),
+            (tuple(), ),
+            (dict(), ),
+            (list(), ),
+            (DummyFloatable(), ),
+            (DummyFloatSubclass(), ),
+            (DummyIntable(), ),
+            (DummyIntSubclass(), ),
+            (NoNumber(), ),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
