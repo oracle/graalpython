@@ -499,6 +499,35 @@ def PySequence_Check(obj):
     return hasattr(obj, '__getitem__')
 
 
+def PySequence_GetItem(obj, key, error_marker):
+    typ = val = tb = None
+    try:
+        if not hasattr(obj, '__getitem__'):
+            raise TypeError("'%s' object does not support indexing)" % repr(obj))
+        if len(obj) < 0:
+            return error_marker
+        return obj[key]
+    except BaseException as e:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PySequence_SetItem(obj, key, value):
+    typ = val = tb = None
+    try:
+        if not hasattr(obj, '__setitem__'):
+            raise TypeError("'%s' object does not support item assignment)" % repr(obj))
+        if len(obj) < 0:
+            return -1
+        obj.__setitem__(key, value)
+        return 0
+    except BaseException as e:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return -1
+
+
 ##################### UNICODE
 
 

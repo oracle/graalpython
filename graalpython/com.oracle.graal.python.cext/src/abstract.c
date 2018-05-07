@@ -227,9 +227,8 @@ Py_ssize_t PySequence_Length(PyObject *s) {
 }
 #define PySequence_Length PySequence_Size
 
-PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i)
-{
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetItem", to_java(s), i, ERROR_MARKER);
+PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i) {
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_GetItem", to_java(s), i, ERROR_MARKER);
 	if(result == ERROR_MARKER) {
 		return NULL;
 	}
@@ -237,7 +236,7 @@ PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i)
 }
 
 int PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o) {
-	return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_SetItem", to_java(s), i, to_java(o)));
+	return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_SetItem", to_java(s), i, to_java(o)));
 }
 
 PyObject* PySequence_Tuple(PyObject *v) {
