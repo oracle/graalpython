@@ -36,21 +36,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
+ * Wraps a sequence object (like a list) such that it behaves like a bare C array.
  */
-public class PythonNativeObject extends PythonAbstractObject {
-    public final Object object;
+public class PyUnicodeState implements TruffleObject {
 
-    public PythonNativeObject(Object obj) {
-        object = obj;
+    private final PString delegate;
+
+    public PyUnicodeState(PString delegate) {
+        this.delegate = delegate;
     }
 
-    public int compareTo(Object o) {
-        return 0;
+    public PString getDelegate() {
+        return delegate;
+    }
+
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PyUnicodeState;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return PyUnicodeStateMRForeign.ACCESS;
     }
 }

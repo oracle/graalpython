@@ -36,7 +36,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
 import java.util.Arrays;
 
@@ -44,10 +44,10 @@ import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cpyobject.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;

@@ -36,58 +36,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
- * correct shape of the corresponding native type {@code struct _object}.
+ * Wraps a sequence object (like a list) such that it behaves like a bare C array.
  */
-public class PythonObjectNativeWrapper implements TruffleObject {
-    private final PythonAbstractObject pythonObject;
-    private Object nativePointer;
+public class PySequenceArrayWrapper implements TruffleObject {
 
-    public PythonObjectNativeWrapper(PythonAbstractObject object) {
-        this.pythonObject = object;
+    private final Object delegate;
+
+    public PySequenceArrayWrapper(Object delegate) {
+        this.delegate = delegate;
     }
 
-    public boolean isNative() {
-        return nativePointer != null;
+    public Object getDelegate() {
+        return delegate;
     }
 
-    public Object getNativePointer() {
-        return nativePointer;
-    }
-
-    public void setNativePointer(Object nativePointer) {
-        // we should set the pointer just once
-        assert this.nativePointer == null || this.nativePointer.equals(nativePointer);
-        this.nativePointer = nativePointer;
-    }
-
-    public PythonAbstractObject getPythonObject() {
-        return pythonObject;
-    }
-
-    public static boolean isInstance(TruffleObject o) {
-        return o instanceof PythonObjectNativeWrapper;
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PySequenceArrayWrapper;
     }
 
     public ForeignAccess getForeignAccess() {
-        return PythonObjectNativeWrapperMRForeign.ACCESS;
+        return PySequenceArrayWrapperMRForeign.ACCESS;
     }
-
-    public static PythonObjectNativeWrapper wrap(PythonAbstractObject obj) {
-        // important: native wrappers are cached
-        PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
-        if (nativeWrapper == null) {
-            nativeWrapper = new PythonObjectNativeWrapper(obj);
-            obj.setNativeWrapper(nativeWrapper);
-        }
-        return nativeWrapper;
-    }
-
 }

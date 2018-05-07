@@ -36,13 +36,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cpyobject.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;

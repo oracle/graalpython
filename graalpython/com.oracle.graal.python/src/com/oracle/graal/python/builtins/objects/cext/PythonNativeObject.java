@@ -36,45 +36,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 
-public class PCallNativeNode extends PBaseNode {
-    private final int arity;
+/**
+ * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
+ */
+public class PythonNativeObject extends PythonAbstractObject {
+    public final Object object;
 
-    @Child private Node executeNode;
-
-    public PCallNativeNode(int arity) {
-        this.arity = arity;
+    public PythonNativeObject(Object obj) {
+        object = obj;
     }
 
-    private Node getExecuteNode() {
-        if (executeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.createExecute(arity).createNode());
-        }
-        return executeNode;
-    }
-
-    public Object execute(TruffleObject func, Object[] args) {
-        try {
-            return ForeignAccess.sendExecute(getExecuteNode(), func, args);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw e.raise();
-        }
-    }
-
-    public static PCallNativeNode create(int arity) {
-        return new PCallNativeNode(arity);
+    public int compareTo(Object o) {
+        return 0;
     }
 }
