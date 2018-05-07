@@ -203,7 +203,7 @@ public abstract class PythonObjectFactory extends Node {
      */
 
     public PInt createInt(boolean value) {
-        return trace(new PInt(lookupClass(PythonBuiltinClassType.PInt), value ? BigInteger.ONE : BigInteger.ZERO));
+        return trace(new PInt(lookupClass(PythonBuiltinClassType.Boolean), value ? BigInteger.ONE : BigInteger.ZERO));
     }
 
     public PInt createInt(int value) {

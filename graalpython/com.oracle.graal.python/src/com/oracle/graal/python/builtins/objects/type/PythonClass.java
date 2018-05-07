@@ -286,6 +286,7 @@ public class PythonClass extends PythonObject {
             this.initialDominantBase = superClass;
         }
 
+        @TruffleBoundary
         private long getValue() {
             // This method is only called from C code, i.e., the flags of the initial super class
             // must be available.

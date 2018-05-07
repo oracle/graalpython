@@ -75,6 +75,17 @@ def _reference_asssize_t(args):
             return -1
 
 
+def _reference_next(args):
+    iterObj = args[0]
+    n = args[1]
+    try:
+        for i in range(n-1):
+            next(iterObj)
+        return next(iterObj)
+    except BaseException:
+        raise SystemError
+        
+
 class NoNumber():
     pass
 
@@ -419,3 +430,104 @@ class TestPyNumber(CPyExtTestCase):
         arguments=["PyObject* v"],
         cmpfunc=unhandled_error_compare
     )
+
+class TestPySequence(CPyExtTestCase):
+    def compile_module(self, name):
+        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
+        super(TestPySequence, self).compile_module(name)
+
+    test_PySequence_Fast_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            (tuple(),),
+            (list(),),
+            ((1,2,3),),
+            (("a", "b"),),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* tuple"],
+    )
+
+    test_PySequence_Fast_GET_ITEM = CPyExtFunction(
+        lambda args: args[0][args[1]],
+        lambda: (
+            ((1,2,3),0),
+            ((1,2,3),1),
+            ((1,2,3),2),
+            (['a','b','c'],0),
+            (['a','b','c'],1),
+            (['a','b','c'],2),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* sequence", "Py_ssize_t idx"],
+    )
+
+    test_PySequence_Fast_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            (tuple(),),
+            ((1,2,3),),
+            ((None,),),
+            ([],),
+            (['a','b','c'],),
+            ([None],),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* sequence"],
+    )
+
+    test_PySequence_Fast_ITEMS = CPyExtFunction(
+        lambda args: list(args[0]),
+        lambda: (
+            (tuple(),),
+            ((1,2,3),),
+            ((None,),),
+            ([],),
+            (['a','b','c'],),
+            ([None],),
+        ),
+        code='''PyObject* wrap_PySequence_Fast_ITEMS(PyObject* sequence) {
+            Py_ssize_t i;
+            Py_ssize_t n = PySequence_Fast_GET_SIZE(sequence);
+            PyObject **items = PySequence_Fast_ITEMS(sequence);
+            PyObject* result = PyList_New(n);
+            for (i = 0; i < n; i++) {
+                PyList_SetItem(result, i, items[i]);
+            } 
+            return result;
+        }
+        ''',
+        resultspec="O",
+        argspec='O',
+        callfunction="wrap_PySequence_Fast_ITEMS",
+        arguments=["PyObject* sequence"],
+    )
+
+    test_PyIter_Next = CPyExtFunction(
+        _reference_next,
+        lambda: (
+            (iter((1,2,3)),0),
+            (iter((1,2,3)),3),
+            (iter((None,)),1),
+            (iter([]),1),
+            (iter(['a','b','c']),2),
+            (iter({'a':0,'b':1,'c':2}),2)
+        ),
+        code='''PyObject* wrap_PyIter_Next(PyObject* iter, int n) {
+            int i;
+            for (i = 0; i < n - 1; i++) {
+                PyIter_Next(iter);
+            } 
+            return PyIter_Next(iter);
+        }
+        ''',
+        resultspec="O",
+        argspec='Oi',
+        callfunction="wrap_PyIter_Next",
+        arguments=["PyObject* sequence", "int n"],
+        cmpfunc=unhandled_error_compare
+    )
+

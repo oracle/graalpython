@@ -199,3 +199,12 @@ PyObject * PyNumber_Float(PyObject *o) {
     }
     return to_sulong(result);
 }
+
+PyObject * PyIter_Next(PyObject *iter) {
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyIter_Next", to_java(iter), ERROR_MARKER);
+	if (result == ERROR_MARKER && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_StopIteration)) {
+        PyErr_Clear();
+		return NULL;
+	}
+    return to_sulong(result);
+}

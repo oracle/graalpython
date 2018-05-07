@@ -122,46 +122,7 @@ static PyNumberMethods none_as_number = {
     0,                          /* nb_index */
 };
 
-PyTypeObject _PyNone_Type = {
-    PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    "NoneType",
-    0,
-    0,
-    none_dealloc,       /*tp_dealloc*/ /*never called*/
-    0,                  /*tp_print*/
-    0,                  /*tp_getattr*/
-    0,                  /*tp_setattr*/
-    0,                  /*tp_reserved*/
-    none_repr,          /*tp_repr*/
-    &none_as_number,    /*tp_as_number*/
-    0,                  /*tp_as_sequence*/
-    0,                  /*tp_as_mapping*/
-    0,                  /*tp_hash */
-    0,                  /*tp_call */
-    0,                  /*tp_str */
-    0,                  /*tp_getattro */
-    0,                  /*tp_setattro */
-    0,                  /*tp_as_buffer */
-    Py_TPFLAGS_DEFAULT, /*tp_flags */
-    0,                  /*tp_doc */
-    0,                  /*tp_traverse */
-    0,                  /*tp_clear */
-    0,                  /*tp_richcompare */
-    0,                  /*tp_weaklistoffset */
-    0,                  /*tp_iter */
-    0,                  /*tp_iternext */
-    0,                  /*tp_methods */
-    0,                  /*tp_members */
-    0,                  /*tp_getset */
-    0,                  /*tp_base */
-    0,                  /*tp_dict */
-    0,                  /*tp_descr_get */
-    0,                  /*tp_descr_set */
-    0,                  /*tp_dictoffset */
-    0,                  /*tp_init */
-    0,                  /*tp_alloc */
-    none_new,           /*tp_new */
-};
+PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT);
 
 PyObject _Py_NoneStruct = {
   _PyObject_EXTRA_INIT
@@ -253,11 +214,12 @@ int PyType_Ready(PyTypeObject* cls) {
                                                       to_java_type(base),
                                                       truffle_read_string(cls->tp_name),
                                                       truffle_read_string(cls->tp_doc));
-    // store the back reference
-    if (truffle_is_truffle_object(javacls)) {
+    if (polyglot_is_value(javacls)) {
     	javacls = polyglot_as__typeobject(javacls);
     }
-    marry_objects((PyObject*)cls, javacls);
+
+    // remember the managed wrapper
+    ((PyObject*)cls)->ob_refcnt = truffle_handle_for_managed(javacls);
 
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_name
     const char* lastDot = strrchr(cls->tp_name, '.');

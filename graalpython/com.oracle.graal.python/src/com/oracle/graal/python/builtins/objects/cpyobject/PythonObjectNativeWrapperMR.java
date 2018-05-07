@@ -38,13 +38,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cpyobject;
 
+import java.util.Arrays;
+
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cpyobject.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -52,18 +58,24 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
@@ -86,16 +98,29 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
-    abstract static class ReadNativeMemberNode extends Node {
+    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class})
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ReadNativeMemberNode extends PBaseNode {
         @Child GetClassNode getClass = GetClassNode.create();
-        @Child LookupAndCallUnaryNode callLenNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__LEN__);
+        @Child private ToSulongNode toSulongNode;
+
+        @CompilationFinal long wcharSize = -1;
 
         abstract Object execute(Object receiver, Object key);
 
         @Specialization(guards = "eq(OB_BASE, key)")
-        PythonObjectNativeWrapper doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
-            return PythonObjectNativeWrapper.wrap(o);
+        Object doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(o);
+        }
+
+        @Specialization(guards = "eq(_BASE, key)")
+        Object doObBase(PString o, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(o);
+        }
+
+        @Specialization(guards = "eq(_BASE, key)")
+        Object doObBase(String o, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(o);
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
@@ -104,12 +129,23 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        PythonObjectNativeWrapper doObType(PythonObject object, @SuppressWarnings("unused") String key) {
-            return PythonObjectNativeWrapper.wrap(getClass.execute(object));
+        Object doObType(PythonObject object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(getClass.execute(object));
         }
 
         @Specialization(guards = "eq(OB_SIZE, key)")
-        int doObSize(PythonObject object, @SuppressWarnings("unused") String key) {
+        long doObSize(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
+            try {
+                return callLenNode.executeInt(object);
+            } catch (UnexpectedResultException e) {
+                return -1;
+            }
+        }
+
+        @Specialization(guards = "eq(MA_USED, key)")
+        int doMaUsed(PDict object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
             try {
                 return callLenNode.executeInt(object);
             } catch (UnexpectedResultException e) {
@@ -122,7 +158,10 @@ public class PythonObjectNativeWrapperMR {
                         @Cached("createClassProfile()") ValueProfile profile) {
             Object profiled = profile.profile(object);
             if (profiled instanceof PBytes) {
-                return ((PBytes) profiled).getInternalByteArray();
+                PythonContext context = getContext();
+                byte[] internalByteArray = ((PBytes) profiled).getInternalByteArray();
+                // TODO create a custom wrapper that has length+1 shape
+                return context.getEnv().asGuestValue(Arrays.copyOf(internalByteArray, internalByteArray.length + 1));
             }
             throw UnsupportedMessageException.raise(Message.READ);
         }
@@ -138,12 +177,42 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")
-        PythonObjectNativeWrapper doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpBase(PythonClass object, @SuppressWarnings("unused") String key) {
             PythonClass superClass = object.getSuperClass();
             if (superClass != null) {
                 return PythonObjectNativeWrapper.wrap(superClass);
             }
-            return PythonObjectNativeWrapper.wrap(object);
+            return getToSulongNode().execute(object);
+        }
+
+        @Specialization(guards = "eq(OB_ITEM, key)")
+        Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
+            return new PySequenceArrayWrapper(object);
+        }
+
+        @Specialization(guards = "eq(UNICODE_WSTR, key)")
+        Object doWstr(String object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") UnicodeAsWideCharNode asWideCharNode) {
+            return new PySequenceArrayWrapper(asWideCharNode.execute(object, sizeofWchar(), object.length()));
+        }
+
+        @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
+        long doWstrLength(String object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") UnicodeAsWideCharNode asWideCharNode) {
+            long sizeofWchar = sizeofWchar();
+            PBytes result = asWideCharNode.execute(object, sizeofWchar, object.length());
+            return result.len() / sizeofWchar;
+        }
+
+        @Specialization(guards = "eq(UNICODE_STATE, key)")
+        Object doState(PString object, @SuppressWarnings("unused") String key) {
+            // TODO also support bare 'String' ?
+            return new PyUnicodeState(object);
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object receiver, Object key) {
+            throw UnknownIdentifierException.raise(key.toString());
         }
 
         protected boolean eq(String expected, String actual) {
@@ -154,6 +223,27 @@ public class PythonObjectNativeWrapperMR {
             return ReadNativeMemberNodeGen.create();
         }
 
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
+
+        private long sizeofWchar() {
+            if (wcharSize < 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                TruffleObject boxed = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_WHCAR_SIZE);
+                try {
+                    wcharSize = (long) ForeignAccess.sendExecute(Message.createExecute(0).createNode(), boxed);
+                    assert wcharSize >= 0L;
+                } catch (InteropException e) {
+                    throw e.raise();
+                }
+            }
+            return wcharSize;
+        }
     }
 
     @Resolve(message = "WRITE")
@@ -280,7 +370,9 @@ public class PythonObjectNativeWrapperMR {
         @CompilationFinal private TruffleObject PyNoneHandle;
         @Child private Node isPointerNode;
         @Child private Node toNativeNode;
-        @Child private PCallNativeNode callNative;
+        @Child private PCallNativeNode callNativeUnary;
+        @Child private PCallNativeNode callNativeBinary;
+        @Child private GetClassNode getClassNode;
 
         public abstract Object execute(PythonAbstractObject value);
 
@@ -294,41 +386,27 @@ public class PythonObjectNativeWrapperMR {
             return ensureIsPointer(object.object);
         }
 
-        private TruffleObject getPyNoneHandle() {
-            if (PyNoneHandle == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol("PyNoneHandle");
-            }
-            return PyNoneHandle;
-        }
-
         @Specialization
         Object runNone(PNone object) {
-            return ensureIsPointer(callIntoCapi(object, getPyNoneHandle()));
-        }
-
-        private Object callIntoCapi(PythonAbstractObject arg, TruffleObject fun) {
-            if (callNative == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNative = insert(PCallNativeNode.create());
-            }
-            return callNative.execute(arg, fun);
+            PythonClass clazz = getClassNode().execute(object);
+            return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, clazz.getFlags()));
         }
 
         @Specialization(guards = "isNonNative(object)")
         Object runClass(PythonClass object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaType()));
+            return ensureIsPointer(callUnaryIntoCapi(object, getPyObjectHandle_ForJavaType()));
         }
 
         @Fallback
         Object runObject(PythonAbstractObject object) {
-            return ensureIsPointer(callIntoCapi(object, getPyObjectHandle_ForJavaObject()));
+            PythonClass clazz = getClassNode().execute(object);
+            return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, clazz.getFlags()));
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {
             if (PyObjectHandle_FromJavaType == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaType = (TruffleObject) getContext().getEnv().importSymbol("PyObjectHandle_ForJavaType");
+                PyObjectHandle_FromJavaType = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE);
             }
             return PyObjectHandle_FromJavaType;
         }
@@ -336,7 +414,7 @@ public class PythonObjectNativeWrapperMR {
         private TruffleObject getPyObjectHandle_ForJavaObject() {
             if (PyObjectHandle_FromJavaObject == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol("PyObjectHandle_ForJavaObject");
+                PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
             }
             return PyObjectHandle_FromJavaObject;
         }
@@ -365,6 +443,30 @@ public class PythonObjectNativeWrapperMR {
 
         protected boolean isNonNative(PythonClass klass) {
             return !(klass instanceof PythonNativeClass);
+        }
+
+        private Object callUnaryIntoCapi(PythonAbstractObject arg, TruffleObject fun) {
+            if (callNativeUnary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeUnary = insert(PCallNativeNode.create(1));
+            }
+            return callNativeUnary.execute(fun, new Object[]{arg});
+        }
+
+        private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, Object arg1) {
+            if (callNativeBinary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeBinary = insert(PCallNativeNode.create(1));
+            }
+            return callNativeBinary.execute(fun, new Object[]{arg0, arg1});
+        }
+
+        private GetClassNode getClassNode() {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode;
         }
     }
 

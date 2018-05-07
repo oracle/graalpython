@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -134,10 +135,15 @@ public final class BoolBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class IntNode extends PythonBinaryBuiltinNode {
+    abstract static class IntNode extends PythonUnaryBuiltinNode {
         @Specialization
         int op(boolean self) {
             return self ? 1 : 0;
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -148,10 +154,15 @@ public final class BoolBuiltins extends PythonBuiltins {
 
     @Builtin(name = __FLOAT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class FloatNode extends PythonBinaryBuiltinNode {
+    abstract static class FloatNode extends PythonUnaryBuiltinNode {
         @Specialization
         double op(boolean self) {
             return self ? 1.0 : 0.0;
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }
