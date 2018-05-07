@@ -288,7 +288,7 @@ class CommonTest(seq_tests.CommonTest):
         a = self.type2test([1,2,3,4])
         a.extend(CustomIter())
         self.assertEqual(a, [1,2,3,4])
-    '''    
+
     def test_insert(self):
         a = self.type2test([0, 1, 2])
         a.insert(0, -2)
