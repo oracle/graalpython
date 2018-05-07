@@ -279,3 +279,36 @@ class ListTest(list_tests.CommonTest):
         a = [1,2]
         a[1:5] = [1.1, 2.2, 3.3]
         self.assertEqual([1,1.1, 2.2, 3.3], a)
+
+    def test_insert_spec(self):
+        a = [1,2]
+        self.assertRaises(TypeError, a.insert, [1,2,3], 1)
+
+        class MyInt(int):
+            pass
+
+        a = [2,4]
+        a.insert(MyInt(1),3)
+        self.assertEqual([2,3,4], a)
+
+        class MyIndex():
+            def __index__(self):
+                return 2
+
+        a.insert(MyIndex(), 7)
+        self.assertEqual([2,3,7,4], a)
+
+        class SecondIndex(int):
+            def __index__(self):
+                return self + 3;
+
+        a = [0,0,0,0,0]
+        a.insert(SecondIndex(1), 1)
+        self.assertEqual([0,1,0,0,0,0], a)
+
+        a = [0]
+        a.insert(LONG_NUMBER, 1)
+        self.assertEqual([0,1], a)
+
+        a.insert(False, -1)
+        self.assertEqual([-1,0,1], a)

@@ -502,17 +502,110 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListInsertNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PList insert(PList list, int index, Object value) {
-            list.insert(index, value);
-            return list;
+        public abstract PNone execute(PList list, Object index, Object value);
+
+        @Specialization(guards = "isIntStorage(list)")
+        public PNone insertIntInt(PList list, int index, int value) {
+            IntSequenceStorage target = (IntSequenceStorage) list.getSequenceStorage();
+            target.insertIntItem(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone insertLongLong(PList list, int index, int value) {
+            LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
+            target.insertLongItem(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone insertLongLong(PList list, int index, long value) {
+            LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
+            target.insertLongItem(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        public PNone insertDoubleDouble(PList list, int index, double value) {
+            DoubleSequenceStorage target = (DoubleSequenceStorage) list.getSequenceStorage();
+            target.insertDoubleItem(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNotSpecialCase(list, value)")
+        public PNone insert(PList list, int index, Object value) {
+            list.insert(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        public PList insert(PList list, Object i, Object arg1) {
-            throw new RuntimeException("invalid arguments for insert()");
+        public PNone insertLongIndex(PList list, long index, Object value,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            int where = index < Integer.MIN_VALUE ? 0 : index > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) index;
+            where = normalizeIndex(where, list.len());
+            return insertNode.execute(list, where, value);
         }
+
+        @Specialization
+        public PNone insertPIntIndex(PList list, PInt index, Object value,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            int where = normalizePIntForIndex(index);
+            where = normalizeIndex(where, list.len());
+            return insertNode.execute(list, where, value);
+        }
+
+        @Specialization(guards = {"!isIntegerOrPInt(i)"})
+        public PNone insert(PList list, Object i, Object value,
+                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode indexNode,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            Object indexValue = indexNode.executeObject(i);
+            if (PNone.NO_VALUE == indexValue) {
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", i);
+            }
+            return insertNode.execute(list, indexValue, value);
+        }
+
+        @TruffleBoundary
+        private static int normalizePIntForIndex(PInt index) {
+            int where = 0;
+            BigInteger bigIndex = index.getValue();
+            if (bigIndex.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) == -1) {
+                where = 0;
+            } else if (bigIndex.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) == 1) {
+                where = Integer.MAX_VALUE;
+            } else {
+                where = bigIndex.intValue();
+            }
+            return where;
+        }
+
+        private static int normalizeIndex(int index, int len) {
+            int idx = index;
+            if (idx < 0) {
+                idx += len;
+                if (idx < 0) {
+                    idx = 0;
+                }
+            }
+            if (idx > len) {
+                idx = len;
+            }
+            return idx;
+        }
+
+        protected boolean isNotSpecialCase(PList list, Object value) {
+            return !((PGuards.isIntStorage(list) && value instanceof Integer) || (PGuards.isLongStorage(list) && PGuards.isInteger(value)) ||
+                            (PGuards.isDoubleStorage(list) && value instanceof Double));
+        }
+
+        protected boolean isIntegerOrPInt(Object index) {
+            return index instanceof Integer || index instanceof PInt;
+        }
+
+        protected ListInsertNode createListInsertNode() {
+            return ListBuiltinsFactory.ListInsertNodeFactory.create(new PNode[0]);
+        }
+
     }
 
     // list.remove(x)
