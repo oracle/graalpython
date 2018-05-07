@@ -62,10 +62,11 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.cpyobject.PCallNativeNode;
+import com.oracle.graal.python.builtins.objects.cpyobject.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cpyobject.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -83,6 +84,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -121,44 +123,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         return TruffleCextBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "marry_objects", fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class MarryObjectsNode extends PythonBuiltinNode {
-        @Specialization
-        boolean run(PythonObjectNativeWrapper object, Object nativeObject) {
-            object.setNativePointer(nativeObject);
-            return true;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        boolean doNativeClass(PythonNativeClass object, Object nativeObject) {
-            // nothing to do
-            assert object.object != null;
-            return true;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        boolean doNativeObject(PythonNativeObject object, Object nativeObject) {
-            // nothing to do
-            assert object.object != null;
-            return true;
-        }
-
-        @Fallback
-        boolean run(Object object, @SuppressWarnings("unused") Object nativeObject) {
-            throw new AssertionError("try to marry with object " + object);
-        }
-    }
-
     /**
      * Called mostly from our C code to convert arguments into a wrapped representation for
      * consumption in Java.
      */
     @Builtin(name = "to_java", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class AsPythonObjectNode extends PythonBuiltinNode {
+    public abstract static class AsPythonObjectNode extends PythonBuiltinNode {
         public abstract Object execute(Object value);
 
         @Child GetClassNode getClassNode = GetClassNode.create();
@@ -194,6 +165,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             }
             return object;
         }
+
+        public static AsPythonObjectNode create() {
+            return TruffleCextBuiltinsFactory.AsPythonObjectNodeFactory.create(null);
+        }
     }
 
     @Builtin(name = "is_python_object", fixedNumOfArguments = 1)
@@ -208,7 +183,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Called from C when they actually want a const char* for a Python string
+     * Called from C when they actually want a {@code const char*} for a Python string
      */
     @Builtin(name = "to_char_pointer", fixedNumOfArguments = 1)
     @GenerateNodeFactory
@@ -219,7 +194,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         TruffleObject getTruffleStringToCstr() {
             if (truffle_string_to_cstr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                truffle_string_to_cstr = (TruffleObject) getContext().getEnv().importSymbol("PyTruffle_StringToCstr");
+                truffle_string_to_cstr = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR);
             }
             return truffle_string_to_cstr;
         }
@@ -255,11 +230,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      */
     @Builtin(name = "to_sulong", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class ToSulongNode extends PythonBuiltinNode {
-        @CompilationFinal private TruffleObject PyNoneHandle;
-        @Child private PCallNativeNode callNative;
-
-        public abstract Object execute(Object value);
+    public abstract static class ToSulongNode extends PythonUnaryBuiltinNode {
 
         /*
          * This is very sad. Only for Sulong, we cannot hand out java.lang.Strings, because then it
@@ -303,7 +274,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNone(none)")
         Object run(PNone none) {
-            return callIntoCapi(none, getPyNoneHandle());
+            return PythonObjectNativeWrapper.wrap(none);
         }
 
         @Specialization(guards = "!isNativeClass(object)")
@@ -320,20 +291,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return o instanceof PythonNativeClass;
         }
 
-        private TruffleObject getPyNoneHandle() {
-            if (PyNoneHandle == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyNoneHandle = (TruffleObject) getContext().getEnv().importSymbol("PyNoneHandle");
-            }
-            return PyNoneHandle;
-        }
-
-        private Object callIntoCapi(PythonAbstractObject arg, TruffleObject function) {
-            if (callNative == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNative = insert(PCallNativeNode.create());
-            }
-            return callNative.execute(arg, function);
+        public static ToSulongNode create() {
+            return TruffleCextBuiltinsFactory.ToSulongNodeFactory.create(null);
         }
     }
 
@@ -719,7 +678,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PNativeToPTypeNode extends PForeignToPTypeNode {
 
         @Specialization
-        protected static PythonObject fromNativeNone(PythonObjectNativeWrapper nativeWrapper) {
+        protected static PythonAbstractObject fromNativeNone(PythonObjectNativeWrapper nativeWrapper) {
             return nativeWrapper.getPythonObject();
         }
 
@@ -742,7 +701,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyNoneNode extends PythonBuiltinNode {
         @Specialization
         PNone doNativeNone() {
-            return PNone.NATIVE_NONE;
+            return PNone.NONE;
         }
     }
 
@@ -1059,6 +1018,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Unicode_AsWideChar", fixedNumOfArguments = 4)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
+        @Child private UnicodeAsWideCharNode asWideCharNode;
 
         @Specialization
         Object doUnicode(PString s, long elementSize, long elements, Object errorMarker) {
@@ -1069,25 +1029,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object doUnicode(String s, long elementSize, long elements, Object errorMarker) {
             try {
-                // use native byte order
-                Charset utf32Charset = getUTF32Charset(0);
+                if (asWideCharNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    asWideCharNode = insert(UnicodeAsWideCharNode.create());
+                }
 
-                // elementSize == 2: Store String in 'wchar_t' of size == 2, i.e., use UCS2. This is
-                // achieved by decoding to UTF32 (which is basically UCS4) and ignoring the two
-                // MSBs.
-                if (elementSize == 2L) {
-                    ByteBuffer bytes = ByteBuffer.wrap(s.getBytes(utf32Charset));
-                    // FIXME unsafe narrowing
-                    ByteBuffer buf = ByteBuffer.allocate(Math.min(bytes.remaining() / 2, (int) (elements * elementSize)));
-                    while (bytes.remaining() >= 4) {
-                        buf.putChar((char) (bytes.getInt() & 0x0000FFFF));
-                    }
-                    buf.flip();
-                    byte[] barr = new byte[buf.remaining()];
-                    buf.get(barr);
-                    return factory().createBytes(barr);
-                } else if (elementSize == 4L) {
-                    return factory().createBytes(s.getBytes(utf32Charset));
+                PBytes wchars = asWideCharNode.execute(s, elementSize, elements);
+                if (wchars != null) {
+                    return wchars;
                 } else {
                     return raiseNative(errorMarker, PythonErrorType.ValueError, "unsupported wchar size; was: %d", elementSize);
                 }
@@ -1122,6 +1071,33 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         long getHash() {
             return PComplex.IMAG_MULTIPLIER;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_GetTpFlags", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_GetTpFlags extends NativeBuiltin {
+
+        @Child private GetClassNode getClassNode;
+
+        @Specialization
+        long doPythonObject(PythonObjectNativeWrapper nativeWrapper) {
+            PythonClass pclass = getClassNode().execute(nativeWrapper.getPythonObject());
+            return pclass.getFlags();
+        }
+
+        @Specialization
+        long doPythonObject(PythonAbstractObject object) {
+            PythonClass pclass = getClassNode().execute(object);
+            return pclass.getFlags();
+        }
+
+        private GetClassNode getClassNode() {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode;
         }
     }
 }

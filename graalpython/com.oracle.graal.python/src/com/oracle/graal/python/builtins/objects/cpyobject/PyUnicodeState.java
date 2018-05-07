@@ -36,28 +36,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cpyobject;
 
-PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0);
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    return (PyObject *)polyglot_as_PyCapsule(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule", polyglot_from_string(name, "ascii"), pointer, destructor)));
+/**
+ * Wraps a sequence object (like a list) such that it behaves like a bare C array.
+ */
+public class PyUnicodeState implements TruffleObject {
+
+    private final PString delegate;
+
+    public PyUnicodeState(PString delegate) {
+        this.delegate = delegate;
+    }
+
+    public PString getDelegate() {
+        return delegate;
+    }
+
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PyUnicodeState;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return PyUnicodeStateMRForeign.ACCESS;
+    }
 }
-
-void * PyCapsule_GetContext(PyObject *o) {
-	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetContext", to_java(o), ERROR_MARKER);
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-	return (void *)as_long(result);
-}
-
-void * PyCapsule_GetPointer(PyObject *o, const char *name) {
-	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"), ERROR_MARKER);
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-	return (void *)as_long(result);
-}
-
-

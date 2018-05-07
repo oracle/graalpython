@@ -35,105 +35,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
 
-def _reference_getslice(args):
-    t = args[0]
-    start = args[1]
-    end = args[2]
-    return t[start:end]
+class DummyNonInt():
+    pass
 
 
-class MyStr(str):
-    def __init__(self, s):
-        self.s = s
-    def __repr__(self):
-        return self.s
+class DummyIntable():
+    def __int__(self):
+        return 0xCAFE
 
-class TestPyTuple(CPyExtTestCase):
+
+class DummyIntSubclass(float):
+    def __int__(self):
+        return 0xBABE
+
+
+class TestPyBool(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyTuple, self).compile_module(name)
+        super(TestPyBool, self).compile_module(name)
 
-    # PyTuple_Size
-    test_PyTuple_Size = CPyExtFunction(
-        lambda args: len(args[0]),
+    test_PyBool_Check = CPyExtFunction(
+        lambda args: isinstance(args[0], bool),
         lambda: (
-            (tuple(),),
-            ((1,2,3),),
-            (("a", "b"),),
-        ),
-        resultspec="i",
-        argspec='O',
-        arguments=["PyObject* tuple"],
-    )
-
-    # PyTuple_GET_SIZE
-    test_PyTuple_GET_SIZE = CPyExtFunction(
-        lambda args: len(args[0]),
-        lambda: (
-            (tuple(),),
-            ((1,2,3),),
-            (("a", "b"),),
-            # no type checking, also accepts different objects
-            ([1,2,3,4],),
-            ({"a": 1, "b":2},),
-        ),
-        resultspec="i",
-        argspec='O',
-        arguments=["PyObject* tuple"],
-    )
-
-    # PyTuple_GetSlice
-    test_PyTuple_GetSlice = CPyExtFunctionOutVars(
-        _reference_getslice,
-        lambda: (
-            (tuple(),0,0),
-            ((1,2,3),0,2),
-            ((4,5,6),1,2),
-            ((7,8,9),2,2),
-        ),
-        resultspec="O",
-        argspec='Onn',
-        arguments=["PyObject* tuple", "Py_ssize_t start", "Py_ssize_t end"],
-    )
-
-    # PyTuple_Pack
-    test_PyTuple_Pack = CPyExtFunctionOutVars(
-        lambda vals: vals[1:],
-        lambda: ((3, MyStr("hello"),MyStr("beautiful"),MyStr("world")), ),
-        resultspec="O",
-        argspec='nOOO',
-        arguments=["Py_ssize_t n", "PyObject* arg0", "PyObject* arg1", "PyObject* arg2"],
-    )
-
-    # PyTuple_Check
-    test_PyTuple_Check = CPyExtFunction(
-        lambda args: isinstance(args[0], tuple),
-        lambda: (
-            (tuple(),),
-            (("hello", "world"),),
-            ((None,),),
-            ([],),
-            ({},),
-        ),
-        resultspec="i",
-        argspec='O',
-        arguments=["PyObject* o"],
-        cmpfunc=unhandled_error_compare
-    )
-
-    # PyTuple_Check
-    test_PyTuple_CheckExact = CPyExtFunction(
-        lambda args: type(args[0]) is tuple,
-        lambda: (
-            (tuple(),), 
-            (("hello", "world"),), 
-            ((None,),), 
-            ([],), 
-            ({},), 
+            (0,), 
+            (1,), 
+            (True,), 
+            (False,), 
+            (-1,), 
+            (0xffffffff,),
+            (0xfffffffffffffffffffffff,),
+            ("hello",),
+            (DummyNonInt(),),
+            (DummyIntable(),),
+            (DummyIntSubclass(),),
         ),
         resultspec="i",
         argspec='O',

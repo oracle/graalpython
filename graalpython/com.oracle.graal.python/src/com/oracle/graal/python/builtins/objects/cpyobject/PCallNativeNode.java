@@ -38,7 +38,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cpyobject;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.ArityException;
@@ -66,16 +65,16 @@ public class PCallNativeNode extends PBaseNode {
         return executeNode;
     }
 
-    public Object execute(PythonAbstractObject arg, TruffleObject func) {
+    public Object execute(TruffleObject func, Object[] args) {
         try {
-            return ForeignAccess.sendExecute(getExecuteNode(), func, arg);
+            return ForeignAccess.sendExecute(getExecuteNode(), func, args);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             CompilerDirectives.transferToInterpreter();
             throw e.raise();
         }
     }
 
-    public static PCallNativeNode create() {
-        return new PCallNativeNode(1);
+    public static PCallNativeNode create(int arity) {
+        return new PCallNativeNode(arity);
     }
 }

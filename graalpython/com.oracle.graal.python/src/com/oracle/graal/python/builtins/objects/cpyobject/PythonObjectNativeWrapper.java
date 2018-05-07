@@ -38,19 +38,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cpyobject;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * Used to wrap {@link PythonObject} when used in native code. This wrapper mimics the correct shape
- * of the corresponding native type {@code struct _object}.
+ * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
+ * correct shape of the corresponding native type {@code struct _object}.
  */
 public class PythonObjectNativeWrapper implements TruffleObject {
-    private final PythonObject pythonObject;
+    private final PythonAbstractObject pythonObject;
     private Object nativePointer;
 
-    public PythonObjectNativeWrapper(PythonObject object) {
+    public PythonObjectNativeWrapper(PythonAbstractObject object) {
         this.pythonObject = object;
     }
 
@@ -68,7 +68,7 @@ public class PythonObjectNativeWrapper implements TruffleObject {
         this.nativePointer = nativePointer;
     }
 
-    public PythonObject getPythonObject() {
+    public PythonAbstractObject getPythonObject() {
         return pythonObject;
     }
 
@@ -80,7 +80,7 @@ public class PythonObjectNativeWrapper implements TruffleObject {
         return PythonObjectNativeWrapperMRForeign.ACCESS;
     }
 
-    public static PythonObjectNativeWrapper wrap(PythonObject obj) {
+    public static PythonObjectNativeWrapper wrap(PythonAbstractObject obj) {
         // important: native wrappers are cached
         PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
         if (nativeWrapper == null) {

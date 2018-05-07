@@ -41,8 +41,38 @@
 
 #include "Python.h"
 
+/* Private types are defined here because we need to declare the type cast. */
+typedef struct {
+    PyObject_HEAD
+    PyObject *md_dict;
+    struct PyModuleDef *md_def;
+    void *md_state;
+    PyObject *md_weaklist;
+    PyObject *md_name;  /* for logging purposes after md_dict is cleared */
+} PyModuleObject;
+
+// taken from CPython "Objects/capsule.c"
+typedef struct {
+    PyObject_HEAD
+    void *pointer;
+    const char *name;
+    void *context;
+    PyCapsule_Destructor destructor;
+} PyCapsule;
+
+/* Declare Python structs/types for explicit polyglot typecasts. */
+/* NOTE: Also add an appropriate case in 'PyTruffle_Explicit_Cast' ! */
 POLYGLOT_DECLARE_STRUCT(_object);
+POLYGLOT_DECLARE_TYPE(PyModuleObject);
+POLYGLOT_DECLARE_TYPE(PyVarObject);
 POLYGLOT_DECLARE_STRUCT(_typeobject);
+POLYGLOT_DECLARE_TYPE(PyTupleObject);
+POLYGLOT_DECLARE_TYPE(PyListObject);
+POLYGLOT_DECLARE_TYPE(PyDictObject);
+POLYGLOT_DECLARE_TYPE(PyUnicodeObject);
+POLYGLOT_DECLARE_TYPE(PyBytesObject);
+POLYGLOT_DECLARE_STRUCT(_longobject);
+POLYGLOT_DECLARE_TYPE(PyCapsule);
 
 
 extern void* to_java(PyObject* obj);
@@ -134,7 +164,6 @@ void initialize_hashes();
 
 int PyTruffle_Debug(void *arg);
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj);
-void marry_objects(PyObject* obj, void* jobj);
 
 extern short ReadShortMember(PyObject* object, int offset);
 extern int ReadIntMember(PyObject* object, int offset);
@@ -181,7 +210,6 @@ extern PyObject marker_struct;
 
 /* UNICODE */
 
-void* PyTruffle_Unicode_FromUTF8(const char* o, void *error_marker);
 void* PyTruffle_Unicode_FromString(const char* o);
 
 /* DICT */

@@ -41,12 +41,5 @@
 #include <fcntl.h>
 
 #ifdef O_CLOEXEC
-/* Does open() support the O_CLOEXEC flag? Possible values:
-
-   -1: unknown
-    0: open() ignores O_CLOEXEC flag, ex: Linux kernel older than 2.6.23
-    1: open() supports O_CLOEXEC flag, close-on-exec is set
-
-   The flag is used by _Py_open(), io.FileIO and os.open() */
 int _Py_open_cloexec_works = -1;
 #endif

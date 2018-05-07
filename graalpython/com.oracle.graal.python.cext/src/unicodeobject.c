@@ -49,11 +49,7 @@ PyObject* PyUnicode_FromString(const char* o) {
 }
 
 static PyObject* _PyUnicode_FromUTF8(const char* o) {
-	PyObject *s = PyTruffle_Unicode_FromUTF8(o, ERROR_MARKER);
-	if(s == ERROR_MARKER) {
-		return NULL;
-	}
-    return to_sulong(s);
+    return to_sulong(polyglot_from_string(o, "utf-8"));
 }
 
 PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {

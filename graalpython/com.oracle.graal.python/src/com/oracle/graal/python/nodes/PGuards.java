@@ -91,10 +91,6 @@ public abstract class PGuards {
         return value == PNone.NONE;
     }
 
-    public static boolean isNativeNone(Object value) {
-        return value == PNone.NATIVE_NONE;
-    }
-
     public static boolean isNoValue(Object object) {
         return object == PNone.NO_VALUE;
     }

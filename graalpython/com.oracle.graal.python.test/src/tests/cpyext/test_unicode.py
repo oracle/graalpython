@@ -90,7 +90,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* v"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_FromStringAndSize = CPyExtFunction(
         lambda args: args[0][:args[1]],
         lambda: (
@@ -102,7 +102,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["char* v", "Py_ssize_t n"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_FromFormat = CPyExtFunction(
         lambda args: args[0] % tuple(args[1:]),
         lambda: (
@@ -113,7 +113,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["char* fmt", "char* arg0", "char* arg1", "int n"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_FromUnicode = CPyExtFunction(
         lambda args: args[0],
         lambda: (
@@ -121,7 +121,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("hellö", ),
         ),
         code="""#include <unicodeobject.h>
-
+ 
         PyObject* wrap_PyUnicode_FromUnicode(PyObject* strObj) {
             Py_UNICODE* wchars;
             Py_ssize_t n;
@@ -137,7 +137,7 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_FromUnicode",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_GetLength = CPyExtFunction(
         lambda args: len(args[0]),
         lambda: (
@@ -150,7 +150,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* v"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_Concat = CPyExtFunction(
         lambda args: args[0] + args[1],
         lambda: (
@@ -163,7 +163,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* left", "PyObject* right"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_FromEncodedObject = CPyExtFunction(
         lambda args: args[0].decode(args[1], args[2]),
         lambda: (
@@ -179,7 +179,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* o", "char* encoding", "char* errors"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_InternInPlace = CPyExtFunction(
         _reference_intern,
         gen_intern_args,
@@ -195,7 +195,7 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_InternInPlace",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_InternFromString = CPyExtFunction(
         _reference_intern,
         gen_intern_args,
@@ -204,7 +204,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["char* s"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_AsUTF8 = CPyExtFunction(
         lambda args: args[0],
         lambda: (
@@ -216,7 +216,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* s"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_AsUTF8String = CPyExtFunction(
         lambda args: args[0].encode("utf-8"),
         lambda: (
@@ -228,7 +228,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* s"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_DecodeUTF32 = CPyExtFunction(
         lambda args: args[1],
         lambda: (
@@ -251,7 +251,7 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_DecodeUTF32",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_AsLatin1String = CPyExtFunction(
         lambda args: args[0].encode("iso-8859-1"),
         lambda: (
@@ -263,7 +263,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* s"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_AsASCIIString = CPyExtFunction(
         lambda args: args[0].encode("ascii"),
         lambda: (
@@ -275,7 +275,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* s"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_Format = CPyExtFunction(
         lambda args: args[0] % args[1],
         lambda: (
@@ -289,7 +289,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* format", "PyObject* fmt_args"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyUnicode_Check = CPyExtFunction(
         lambda args: isinstance(args[0], str),
         lambda: (
@@ -300,6 +300,18 @@ class TestPyUnicode(CPyExtTestCase):
             (['a', 'b', 'c'],), 
         ),
         resultspec="i",
+        argspec='O',
+        arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    # TODO enable once supported
+    test_PyUnicode_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            ("hello",), 
+        ),
+        resultspec="n",
         argspec='O',
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare

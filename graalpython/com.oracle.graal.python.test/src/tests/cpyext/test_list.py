@@ -56,13 +56,22 @@ def _reference_getitem(args):
 
 
 def _reference_setitem(args):
-    listObj = args[0]
+    capacity = args[0]
     pos = args[1]
     newitem = args[2]
     if pos < 0:
         raise IndexError("list index out of range")
+    listObj = [None] * capacity
     listObj[pos] = newitem
-    return 0
+    return listObj
+
+
+def _reference_SET_ITEM(args):
+    listObj = args[0]
+    pos = args[1]
+    newitem = args[2]
+    listObj[pos] = newitem
+    return listObj
 
 
 def _reference_append(args):
@@ -132,15 +141,60 @@ class TestPyList(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyList_GET_ITEM = CPyExtFunction(
+        _wrap_list_fun(_reference_getitem),
+        lambda: (
+            ([1,2,3,4], 0),
+            ([1,2,3,4], 3),
+            ([None], 0),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* op", "Py_ssize_t size"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyList_SetItem = CPyExtFunction(
-        _wrap_list_fun(_reference_setitem),
+        _reference_setitem,
+        lambda: (
+            (4, 0, 0),
+            (4, 3, 5),
+        ),
+        code='''PyObject* wrap_PyList_SetItem(Py_ssize_t capacity, Py_ssize_t idx, PyObject* new_item) {
+            PyObject *newList = PyList_New(capacity);
+            Py_ssize_t i;
+            for (i = 0; i < capacity; i++) {
+                if (i == idx) {
+                    PyList_SetItem(newList, i, new_item);
+                } else {
+                    PyList_SetItem(newList, i, Py_None);
+                }
+            }
+            return newList;
+        }
+        ''',
+        resultspec="O",
+        argspec='nnO',
+        arguments=["Py_ssize_t capacity", "Py_ssize_t size", "PyObject* new_item"],
+        callfunction="wrap_PyList_SetItem",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_SET_ITEM = CPyExtFunction(
+        _wrap_list_fun(_reference_SET_ITEM),
         lambda: (
             ([1,2,3,4], 0, 0),
             ([1,2,3,4], 3, 5),
         ),
-        resultspec="i",
+        code='''PyObject* wrap_PyList_SET_ITEM(PyObject* op, Py_ssize_t idx, PyObject* newitem) {
+            PyList_SET_ITEM(op, idx, newitem);
+            return op;
+        }
+        ''',
+        resultspec="O",
         argspec='OnO',
-        arguments=["PyObject* op", "Py_ssize_t size", "PyObject* newitem"],
+        arguments=["PyObject* op", "Py_ssize_t idx", "PyObject* newitem"],
+        callfunction="wrap_PyList_SET_ITEM",
         cmpfunc=unhandled_error_compare
     )
 
@@ -204,6 +258,23 @@ class TestPyList(CPyExtTestCase):
             ([None],),
             ([],),
             ([1,2,3,4],),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* op"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyList_GET_SIZE = CPyExtFunction(
+        lambda args: len(args[0]),
+        lambda: (
+            ([1,2,3,4],),
+            ([None],),
+            ([],),
+            ([1,2,3,4],),
+            # no type checking, also accepts different objects
+            ((1,2,3,4,5),),
+            ({"a": 1, "b":2},),
         ),
         resultspec="n",
         argspec='O',

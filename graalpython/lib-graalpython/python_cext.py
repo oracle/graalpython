@@ -204,7 +204,7 @@ def PyList_New(size, errormarker):
     try:
         if size < 0:
             _PyErr_BadInternalCall(None, None, None)
-        return []
+        return [None] * size
     except BaseException:
         typ, val, tb = sys.exc_info()
     PyErr_Restore(typ, val, tb)
@@ -452,6 +452,16 @@ def PyNumber_Long(v, error_marker):
     return error_marker
 
 
+def PyIter_Next(itObj, error_marker):
+    typ = val = tb = None
+    try:
+        return next(itObj)
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
 ##################### UNICODE
 
 
@@ -516,6 +526,50 @@ def PyUnicode_Format(format, args, error_marker):
         if not isinstance(format, str):
             raise TypeError("Must be str, not %s" % type(format).__name__)
         return format % args
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+##################### CAPSULE
+
+
+class PyCapsule:
+    name = None
+    pointer = None
+    context = None
+
+    def __init__(self, name, pointer, destructor):
+        self.name = name
+        self.pointer = pointer
+
+    def __repr__(self):
+        name = "NULL" if self.name is None else self.name
+        quote = "" if self.name is None else '"'
+        return "<capsule object %s%s%s at %p>" % (quote, name, quote, self.pointer)
+
+
+def PyCapsule_GetContext(obj, error_marker):
+    typ = val = tb = None
+    try:
+        if not isinstance(obj, PyCapsule) or obj.pointer is None:
+            raise ValueError("PyCapsule_GetContext called with invalid PyCapsule object")
+        return obj.context
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PyCapsule_GetPointer(obj, name, error_marker):
+    typ = val = tb = None
+    try:
+        if not isinstance(obj, PyCapsule) or obj.pointer is None:
+            raise ValueError("PyCapsule_GetPointer called with invalid PyCapsule object")
+        if name != obj.name:
+            raise ValueError("PyCapsule_GetPointer called with incorrect name")
+        return obj.pointer
     except BaseException:
         typ, val, tb = sys.exc_info()
     PyErr_Restore(typ, val, tb)
@@ -982,6 +1036,12 @@ def PyTruffle_Type(type_name):
         return type(dict().keys())
     elif type_name == "NotImplementedType":
         return type(NotImplemented)
+    elif type_name == "module":
+        return type(sys)
+    elif type_name == "NoneType":
+        return type(None)
+    elif type_name == "PyCapsule":
+        return PyCapsule
     else:
         return getattr(sys.modules["builtins"], type_name)
 

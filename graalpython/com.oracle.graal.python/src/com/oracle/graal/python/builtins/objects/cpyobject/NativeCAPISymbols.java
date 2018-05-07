@@ -36,28 +36,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cpyobject;
 
-PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0);
+public abstract class NativeCAPISymbols {
 
-PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    return (PyObject *)polyglot_as_PyCapsule(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule", polyglot_from_string(name, "ascii"), pointer, destructor)));
+    public static final String FUNCTION_NATIVE_TO_JAVA = "native_to_java";
+    public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
+    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
+    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE = "PyObjectHandle_ForJavaType";
+    public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
+    public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
+
 }
-
-void * PyCapsule_GetContext(PyObject *o) {
-	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetContext", to_java(o), ERROR_MARKER);
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-	return (void *)as_long(result);
-}
-
-void * PyCapsule_GetPointer(PyObject *o, const char *name) {
-	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"), ERROR_MARKER);
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-	return (void *)as_long(result);
-}
-
-

@@ -30,12 +30,6 @@ public final class PNone extends PythonAbstractObject {
     public static final PNone NONE = new PNone();
     public static final PNone NO_VALUE = new PNone();
 
-    /**
-     * Object representing {@code None} in the native code but is not a interop {@code null} value
-     * such that it is not interpreted as a null pointer.
-     */
-    public static final PNone NATIVE_NONE = new PNone();
-
     private PNone() {
     }
 
