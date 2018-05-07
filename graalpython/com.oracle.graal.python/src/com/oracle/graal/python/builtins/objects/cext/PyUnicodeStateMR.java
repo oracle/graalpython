@@ -41,7 +41,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;

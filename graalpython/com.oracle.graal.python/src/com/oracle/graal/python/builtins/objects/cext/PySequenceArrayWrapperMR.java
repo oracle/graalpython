@@ -38,9 +38,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ReadArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -49,18 +48,15 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
-import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
@@ -95,7 +91,7 @@ public class PySequenceArrayWrapperMR {
     @Resolve(message = "WRITE")
     abstract static class WriteNode extends Node {
         @Child private WriteArrayItemNode writeArrayItemNode;
-        @Child private ToJavaNode toJavaNode;
+        @Child private CExtNodes.ToJavaNode toJavaNode;
 
         public Object access(PySequenceArrayWrapper object, Object key, Object value) {
             if (writeArrayItemNode == null) {
@@ -108,36 +104,13 @@ public class PySequenceArrayWrapperMR {
             return value;
         }
 
-        private ToJavaNode getToJavaNode() {
+        private CExtNodes.ToJavaNode getToJavaNode() {
             if (toJavaNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(ToJavaNode.create());
+                toJavaNode = insert(CExtNodes.ToJavaNode.create());
             }
             return toJavaNode;
         }
-    }
-
-    /**
-     * Does the same conversion as the native function {@code to_java}.
-     */
-    static class ToJavaNode extends PBaseNode {
-        @Child private PCallNativeNode callNativeNode = PCallNativeNode.create(1);
-        @Child private AsPythonObjectNode toJavaNode = AsPythonObjectNode.create();
-
-        @CompilationFinal TruffleObject nativeToJavaFunction;
-
-        Object execute(Object value) {
-            if (nativeToJavaFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeToJavaFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUNCTION_NATIVE_TO_JAVA);
-            }
-            return toJavaNode.execute(callNativeNode.execute(nativeToJavaFunction, new Object[]{value}));
-        }
-
-        public static ToJavaNode create() {
-            return new ToJavaNode();
-        }
-
     }
 
     @ImportStatic(SpecialMethodNames.class)
