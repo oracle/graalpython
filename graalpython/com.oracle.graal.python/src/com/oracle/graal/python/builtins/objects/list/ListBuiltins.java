@@ -613,15 +613,73 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListRemoveNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PList remove(PList list, Object arg) {
-            int index = list.index(arg);
-            if (index >= 0) {
-                list.delItem(index);
-                return list;
-            } else {
-                throw raise(PythonErrorType.ValueError, "list.remove(x): x not in list");
+        private static String NOT_IN_LIST_MESSAGE = "list.index(x): x not in list";
+
+        @Specialization(guards = "isIntStorage(list)")
+        public PNone removeInt(PList list, int value) {
+            IntSequenceStorage store = (IntSequenceStorage) list.getSequenceStorage();
+            for (int index = 0; index < store.length(); index++) {
+                if (value == store.getIntItemNormalized(index)) {
+                    store.delItemInBound(index);
+                    return PNone.NONE;
+                }
             }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone removeLong(PList list, int value) {
+            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
+            for (int index = 0; index < store.length(); index++) {
+                if (value == store.getLongItemNormalized(index)) {
+                    store.delItemInBound(index);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone removeLong(PList list, long value) {
+            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
+            for (int index = 0; index < store.length(); index++) {
+                if (value == store.getLongItemNormalized(index)) {
+                    store.delItemInBound(index);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        public PNone removeDouble(PList list, double value) {
+            DoubleSequenceStorage store = (DoubleSequenceStorage) list.getSequenceStorage();
+            for (int index = 0; index < store.length(); index++) {
+                if (value == store.getDoubleItemNormalized(index)) {
+                    store.delItemInBound(index);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        @Specialization(guards = "isNotSpecialCase(list, value)")
+        public PNone remove(PList list, Object value,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            int len = list.len();
+            for (int i = 0; i < len; i++) {
+                Object object = list.getItem(i);
+                if (eqNode.executeBool(object, value)) {
+                    list.delItem(i);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        protected boolean isNotSpecialCase(PList list, Object value) {
+            return !((PGuards.isIntStorage(list) && value instanceof Integer) || (PGuards.isLongStorage(list) && (value instanceof Integer || value instanceof Long)) ||
+                            PGuards.isDoubleStorage(list) && value instanceof Double);
         }
     }
 
