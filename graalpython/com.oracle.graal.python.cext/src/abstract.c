@@ -247,12 +247,19 @@ PyObject* PySequence_Tuple(PyObject *v) {
 	return to_sulong(result);
 }
 
-PyObject *
-PySequence_Fast(PyObject *v, const char *m)
-{
+PyObject * PySequence_Fast(PyObject *v, const char *m) {
 	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Fast", to_java(v), polyglot_from_string(m, "ascii"), ERROR_MARKER);
 	if(result == ERROR_MARKER) {
 		return NULL;
 	}
 	return to_sulong(result);
 }
+
+PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetItem", to_java(o), polyglot_from_string(key, "utf-8"), ERROR_MARKER);
+	if(result == ERROR_MARKER) {
+		return NULL;
+	}
+	return to_sulong(result);
+}
+

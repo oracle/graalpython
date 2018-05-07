@@ -691,22 +691,19 @@ class TestAbstract(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-#     test_PyMapping_GetItemString = CPyExtFunction(
-#         _reference_fast,
-#         lambda: (
-#             (tuple(), "should not be an error"),
-#             ((1,2,3), "should not be an error"),
-#             ((None,), "should not be an error"),
-#             ([], "should not be an error"),
-#             #(['a','b','c'],"should not be an error"),
-#             #({'a','b','c'}, "should not be an error"),
-#             #({'a': 0,'b': 1,'c': 2}, "should not be an error"),
-#             #(None, "None cannot be a sequence"),
-#             #(0, "int cannot be a sequence"),
-#         ),
-#         resultspec="O",
-#         argspec='Os',
-#         arguments=["PyObject* sequence", "char* error_msg"],
-#         cmpfunc=unhandled_error_compare
-#     )
+    test_PyMapping_GetItemString = CPyExtFunction(
+        lambda args: args[0][args[1]],
+        lambda: (
+            (tuple(), "hello"),
+            ((1,2,3), "1"),
+            (['a','b','c'],"nothing"),
+            ({'a','b','c'}, "a"),
+            ({'a': 0,'b': 1,'c': 2}, "nothing"),
+            ({'a': 0,'b': 1,'c': 2}, "c"),
+        ),
+        resultspec="O",
+        argspec='Os',
+        arguments=["PyObject* mapping", "char* keyStr"],
+        cmpfunc=unhandled_error_compare
+    )
 
