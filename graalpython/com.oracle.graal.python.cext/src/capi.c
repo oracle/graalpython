@@ -52,7 +52,7 @@ static void initialize_globals() {
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented
-    void *jnotimpl = polyglot_as__object(polyglot_get_member(PY_BUILTIN, "NotImplemented"));
+    void *jnotimpl = polyglot_as__object(to_sulong(polyglot_get_member(PY_BUILTIN, "NotImplemented")));
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
     // True, False

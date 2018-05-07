@@ -109,7 +109,7 @@ public class PythonObjectNativeWrapperMR {
         abstract Object execute(Object receiver, Object key);
 
         @Specialization(guards = "eq(OB_BASE, key)")
-        Object doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
+        Object doObBase(PythonAbstractObject o, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(o);
         }
 
@@ -124,12 +124,12 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
-        int doObRefcnt(@SuppressWarnings("unused") PythonObject o, @SuppressWarnings("unused") String key) {
+        int doObRefcnt(@SuppressWarnings("unused") PythonAbstractObject o, @SuppressWarnings("unused") String key) {
             return 0;
         }
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(PythonObject object, @SuppressWarnings("unused") String key) {
+        Object doObType(PythonAbstractObject object, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(getClass.execute(object));
         }
 

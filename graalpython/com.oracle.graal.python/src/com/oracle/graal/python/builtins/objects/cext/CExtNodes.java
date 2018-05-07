@@ -64,7 +64,7 @@ public abstract class CExtNodes {
             return object.object;
         }
 
-        @Specialization(guards = {"!isNativeClass(object)", "!isNativeObject(object)"})
+        @Specialization(guards = {"!isNativeClass(object)", "!isNativeObject(object)", "!isNoValue(object)"})
         Object runNativeObject(PythonAbstractObject object) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object);
