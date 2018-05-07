@@ -35,6 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:
@@ -278,3 +279,9 @@ def test_in_dict_keys():
     d = {'a': 1, 'b': 2, 'c': 3}
     keys = d.keys()
     assert 'a' in keys
+
+
+def test_create_seq_and_kw():
+    d = dict([('a', 1), ('b', 2), ('c', 3)], d=4)
+    for k in ['a', 'b', 'c', 'd']:
+        assert k in d
