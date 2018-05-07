@@ -361,7 +361,7 @@ class CommonTest(seq_tests.CommonTest):
         for x, y in zip(d, e):
             # verify that original order and values are retained.
             self.assertIs(x, y)
-    '''
+
     def test_count(self):
         a = self.type2test([0, 1, 2])*3
         self.assertEqual(a.count(0), 3)
@@ -380,7 +380,7 @@ class CommonTest(seq_tests.CommonTest):
                 return False
 
         self.assertRaises(BadExc, a.count, BadCmp())
-
+    
     def test_index(self):
         u = self.type2test([0, 1])
         self.assertEqual(u.index(0), 0)
@@ -437,7 +437,7 @@ class CommonTest(seq_tests.CommonTest):
         a[:] = [EvilCmp(a) for _ in range(100)]
         # This used to seg fault before patch #1005778
         self.assertRaises(ValueError, a.index, None)
-
+        
     def test_reverse(self):
         u = self.type2test([-2, -1, 0, 1, 2])
         u2 = u[:]
