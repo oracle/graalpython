@@ -185,6 +185,12 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(object);
         }
 
+        @Specialization(guards = "eq(TP_AS_NUMBER, key)")
+        Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
+            // TODO
+            return getToSulongNode().execute(object);
+        }
+
         @Specialization(guards = "eq(OB_ITEM, key)")
         Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object);
