@@ -120,3 +120,7 @@ PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
 int _PyLong_Sign(PyObject *vv) {
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "_PyLong_Sign", to_java(vv));
 }
+
+PyObject * PyLong_FromSize_t(size_t n)  {
+	return PyLong_FromUnsignedLongLong(n);
+}
