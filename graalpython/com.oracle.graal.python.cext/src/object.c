@@ -583,3 +583,20 @@ int PyObject_RichCompareBool(PyObject *v, PyObject *w, int op) {
         return PyObject_IsTrue(res);
     }
 }
+
+PyObject* _PyObject_New(PyTypeObject *tp) {
+    PyObject *op = (PyObject*)PyObject_MALLOC(_PyObject_SIZE(tp));
+    if (op == NULL) {
+        return PyErr_NoMemory();
+    }
+    return PyObject_INIT(op, tp);
+}
+
+PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
+    if (op == NULL) {
+        return PyErr_NoMemory();
+    }
+    Py_TYPE(op) = tp;
+    _Py_NewReference(op);
+    return op;
+}
