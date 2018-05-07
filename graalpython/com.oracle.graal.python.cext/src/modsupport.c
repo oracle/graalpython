@@ -48,7 +48,7 @@ PyObject* get_arg_or_kw(PyObject* argv, PyObject* kwds, char** kwdnames, int arg
         }
     }
     const char* kwdname = kwdnames[argnum];
-    void* kwarg = PyDict_GetItem(kwds, truffle_read_string(kwdname));
+    void* kwarg = PyDict_GetItem(kwds, to_sulong(truffle_read_string(kwdname)));
     if (kwarg == Py_None) {
         return NULL;
     } else {
