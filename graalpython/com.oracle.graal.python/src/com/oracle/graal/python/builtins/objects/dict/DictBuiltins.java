@@ -91,7 +91,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "args.length == 1")
         public Object doVarargs(PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            getInitNode().execute(self, args[0], PKeyword.EMPTY_KEYWORDS);
+            getInitNode().execute(self, args[0], kwargs);
             return PNone.NONE;
         }
 
