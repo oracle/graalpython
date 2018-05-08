@@ -42,7 +42,8 @@ import sys
 lib_python = None
 for p in sys.path:
     if "lib-python/3" in p:
-        lib_python = p
+        path, delim, _ = p.partition('lib-python/3')
+        lib_python = path + delim
         break
 
 
