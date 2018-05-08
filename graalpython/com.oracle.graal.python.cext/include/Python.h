@@ -99,6 +99,7 @@
 #include "pyhash.h"
 #include "import.h"
 #include "pycapsule.h"
+#include "pylifecycle.h"
 
 // our impls
 #ifdef Py_True
