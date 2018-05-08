@@ -683,13 +683,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "isclose", minNumOfArguments = 2, keywordArguments = {"rel_tol", "abs_tol"})
     @GenerateNodeFactory
     public abstract static class IsCloseNode extends PythonBuiltinNode {
-        private double defaultRel() {
-            return 1e-09;
-        }
-
-        private double defaultAbs() {
-            return 0.0;
-        }
+        private static double DEFAULT_REL = 1e-09;
+        private static double DEFAULT_ABS = 0.0;
 
         private boolean isCloseDouble(double a, double b, double rel_tol, double abs_tol) {
             double diff;
@@ -713,18 +708,18 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean isClose(double a, double b, PNone rel_tol, PNone abs_tol) {
-            return isCloseDouble(a, b, defaultRel(), defaultAbs());
+        public boolean isClose(double a, double b, @SuppressWarnings("unused") PNone rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+            return isCloseDouble(a, b, DEFAULT_REL, DEFAULT_ABS);
         }
 
         @Specialization
-        public boolean isClose(double a, double b, PNone rel_tol, double abs_tol) {
-            return isCloseDouble(a, b, defaultRel(), abs_tol);
+        public boolean isClose(double a, double b, @SuppressWarnings("unused") PNone rel_tol, double abs_tol) {
+            return isCloseDouble(a, b, DEFAULT_REL, abs_tol);
         }
 
         @Specialization
-        public boolean isClose(double a, double b, double rel_tol, PNone abs_tol) {
-            return isCloseDouble(a, b, rel_tol, defaultAbs());
+        public boolean isClose(double a, double b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+            return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
         }
 
         @Specialization

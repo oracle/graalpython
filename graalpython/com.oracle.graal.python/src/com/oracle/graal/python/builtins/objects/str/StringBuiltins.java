@@ -719,7 +719,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object doSplit(Object self, Object sep, Object maxsplit) {
+        public Object doSplit(@SuppressWarnings("unused") Object self, Object sep, @SuppressWarnings("unused") Object maxsplit) {
             throw raise(TypeError, " Can't convert %p object to str implicitly", sep);
         }
 

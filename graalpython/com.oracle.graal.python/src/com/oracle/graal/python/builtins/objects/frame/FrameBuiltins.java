@@ -198,7 +198,7 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FrameClearNode extends PythonBuiltinNode {
         @Specialization
-        Object clear(PFrame self) {
+        Object clear(@SuppressWarnings("unused") PFrame self) {
             // TODO: implement me
             // see: https://github.com/python/cpython/blob/master/Objects/frameobject.c#L503
             return PNone.NONE;

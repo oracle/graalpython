@@ -35,8 +35,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#!/bin/bash
-
 cd "$(dirname $0)"
 cd ..
 UNIT_TESTS_PATH="graalpython/lib-python/3/test/test_*.py"

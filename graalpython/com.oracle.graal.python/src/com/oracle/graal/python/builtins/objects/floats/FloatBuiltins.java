@@ -878,7 +878,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class GetFormatNode extends PythonUnaryBuiltinNode {
-        private String getDetectedEndianess() {
+        private static String getDetectedEndianess() {
             try {
                 ByteOrder byteOrder = ByteOrder.nativeOrder();
                 if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
