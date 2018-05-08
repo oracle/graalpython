@@ -89,8 +89,8 @@ public final class PythonParserImpl implements PythonParser {
                         Token token = ((RecognitionException) e).getOffendingToken();
                         line = token.getLine();
                         column = token.getCharPositionInLine();
-                    } else if (e.getCause() instanceof NoViableAltException) {
-                        Token token = ((NoViableAltException) e.getCause()).getOffendingToken();
+                    } else if (e.getCause() instanceof RecognitionException) {
+                        Token token = ((RecognitionException) e.getCause()).getOffendingToken();
                         line = token.getLine();
                         column = token.getCharPositionInLine();
                     } else {
