@@ -54,7 +54,7 @@ static PyObject* null_error(void) {
 }
 
 int PyNumber_Check(PyObject *o) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Check", to_java(o));
+    PyObject *result = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Check", to_java(o)));
     if(result == Py_True) {
     	return 1;
     }
