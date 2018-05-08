@@ -203,7 +203,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public boolean callable(Object object,
-                                @Cached("create()") LookupInheritedAttributeNode getAttributeNode) {
+                        @Cached("create()") LookupInheritedAttributeNode getAttributeNode) {
             /**
              * Added temporarily to skip translation/execution errors in unit testing
              */

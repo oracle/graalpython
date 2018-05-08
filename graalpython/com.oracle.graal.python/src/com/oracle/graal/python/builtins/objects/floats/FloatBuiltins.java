@@ -883,10 +883,11 @@ public final class FloatBuiltins extends PythonBuiltins {
                 ByteOrder byteOrder = ByteOrder.nativeOrder();
                 if (byteOrder.equals(ByteOrder.BIG_ENDIAN)) {
                     return "IEEE, big-endian";
-                } else if(byteOrder.equals(ByteOrder.LITTLE_ENDIAN)) {
+                } else if (byteOrder.equals(ByteOrder.LITTLE_ENDIAN)) {
                     return "IEEE, little-endian";
                 }
-            } catch (Error ignored) {}
+            } catch (Error ignored) {
+            }
             return "unknown";
         }
 

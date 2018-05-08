@@ -691,14 +691,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return 0.0;
         }
 
-        private boolean isCloseDouble(double a, double b, double rel_tol, double  abs_tol) {
-            double diff ;
+        private boolean isCloseDouble(double a, double b, double rel_tol, double abs_tol) {
+            double diff;
 
-            if (rel_tol < 0.0 || abs_tol < 0.0 ) {
+            if (rel_tol < 0.0 || abs_tol < 0.0) {
                 throw raise(ValueError, "tolerances must be non-negative");
             }
 
-            if ( a == b ) {
+            if (a == b) {
                 return true;
             }
 
@@ -708,8 +708,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
             diff = Math.abs(b - a);
             return (((diff <= Math.abs(rel_tol * b)) ||
-                    (diff <= Math.abs(rel_tol * a))) ||
-                    (diff <= abs_tol));
+                            (diff <= Math.abs(rel_tol * a))) ||
+                            (diff <= abs_tol));
         }
 
         @Specialization
@@ -728,7 +728,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean isClose(double a, double b, double rel_tol, double  abs_tol) {
+        public boolean isClose(double a, double b, double rel_tol, double abs_tol) {
             return isCloseDouble(a, b, rel_tol, abs_tol);
         }
     }
