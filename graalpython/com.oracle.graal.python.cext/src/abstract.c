@@ -228,7 +228,7 @@ Py_ssize_t PySequence_Length(PyObject *s) {
 #define PySequence_Length PySequence_Size
 
 PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_GetItem", to_java(s), i, ERROR_MARKER);
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_GetItem", to_java(s), i);
 	if(result == ERROR_MARKER) {
 		return NULL;
 	}
@@ -240,7 +240,7 @@ int PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o) {
 }
 
 PyObject* PySequence_Tuple(PyObject *v) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Tuple", to_java(v), ERROR_MARKER);
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Tuple", to_java(v));
 	if(result == ERROR_MARKER) {
 		return NULL;
 	}
@@ -248,7 +248,7 @@ PyObject* PySequence_Tuple(PyObject *v) {
 }
 
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Fast", to_java(v), polyglot_from_string(m, "ascii"), ERROR_MARKER);
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Fast", to_java(v), polyglot_from_string(m, "ascii"));
 	if(result == ERROR_MARKER) {
 		return NULL;
 	}
@@ -256,7 +256,7 @@ PyObject * PySequence_Fast(PyObject *v, const char *m) {
 }
 
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetItem", to_java(o), polyglot_from_string(key, "utf-8"), ERROR_MARKER);
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetItem", to_java(o), polyglot_from_string(key, "utf-8"));
 	if(result == ERROR_MARKER) {
 		return NULL;
 	}

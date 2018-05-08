@@ -59,7 +59,7 @@ char* PyBytes_AsString(PyObject *obj) {
 		return NULL;
 	}
 	// returns a Java byte array
- 	void *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Bytes_AsString", to_java(obj));
+ 	void *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Bytes_AsString", to_java(obj), ERROR_MARKER);
  	if (result == ERROR_MARKER) {
  		return NULL;
  	}

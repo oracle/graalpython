@@ -90,14 +90,10 @@ def PyDict_Size(dictObj):
 
 
 def PyDict_Copy(dictObj):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if not isinstance(dictObj, dict):
             _PyErr_BadInternalCall(None, None, dictObj)
         return dictObj.copy()
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return None
 
 
@@ -112,26 +108,18 @@ def PyDict_GetItem(dictObj, key):
 def PyDict_SetItem(dictObj, key, value):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
-    typ = val = tb = None
-    try:
+    with error_handler:
         dictObj[key] = value
         return 0
-    except TypeError as e:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
 def PyDict_DelItem(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
-    typ = val = tb = None
-    try:
+    with error_handler:
         del dictObj[key]
         return 0
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
@@ -195,57 +183,41 @@ def PyBytes_FromFormat(fmt, args):
 
 ##################### LIST
 
-def PyList_New(size, errormarker):
-    typ = val = tb = None
-    try:
+def PyList_New(size):
+    with error_handler:
         if size < 0:
             _PyErr_BadInternalCall(None, None, None)
         return [None] * size
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return errormarker
+    return error_handler
 
 
-def PyList_GetItem(listObj, pos, errormarker):
-    typ = val = tb = None
-    try:
+def PyList_GetItem(listObj, pos):
+    with error_handler:
         if not isinstance(listObj, list):
             _PyErr_BadInternalCall(None, None, listObj)
         if pos < 0:
             raise IndexError("list index out of range")
         return listObj[pos]
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return errormarker
+    return error_handler
 
 
 def PyList_SetItem(listObj, pos, newitem):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if not isinstance(listObj, list):
             _PyErr_BadInternalCall(None, None, listObj)
         if pos < 0:
             raise IndexError("list assignment index out of range")
         listObj[pos] = newitem
         return 0
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
 def PyList_Append(listObj, newitem):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if not isinstance(listObj, list):
             _PyErr_BadInternalCall(None, None, listObj)
         listObj.append(newitem)
         return 0
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
@@ -266,14 +238,10 @@ def PyList_GetSlice(listObj, ilow, ihigh):
 
 
 def PyList_Size(listObj):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if not isinstance(listObj, list):
             _PyErr_BadInternalCall(None, None, listObj)
         return len(listObj)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
@@ -289,15 +257,11 @@ def PyLong_FromLongLong(n, signed):
 
 
 def PyLong_AsPrimitive(n, signed, size, descr):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if isinstance(n, int):
             return TrufflePInt_AsPrimitive(n, signed, size, descr)
         else:
             return TrufflePInt_AsPrimitive(int(n), signed, size, descr)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
@@ -319,15 +283,11 @@ def PyFloat_FromDouble(n):
 
 
 def PyFloat_AsPrimitive(n):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if isinstance(n, float):
             return TrufflePFloat_AsPrimitive(n)
         else:
             return TrufflePFloat_AsPrimitive(float(n))
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1.0
 
 
@@ -421,31 +381,23 @@ def PyIter_Next(itObj):
 ##################### SEQUENCE
 
 
-def PySequence_Tuple(obj, error_marker):
+def PySequence_Tuple(obj):
     typ = val = tb = None
-    try:
+    with error_handler:
         return tuple(obj)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PySequence_Fast(obj, msg, error_marker):
+def PySequence_Fast(obj, msg):
     typ = val = tb = None
     if isinstance(obj, tuple) or isinstance(obj, list):
         return obj
-    try:
-        return list(obj)
-    except TypeError:
+    with error_handler:
         try:
-            raise TypeError(msg)
+            return list(obj)
         except TypeError:
-            typ, val, tb = sys.exc_info()
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+            raise TypeError(msg)
+    return error_handler
 
 
 def PySequence_Check(obj):
@@ -455,32 +407,24 @@ def PySequence_Check(obj):
     return hasattr(obj, '__getitem__')
 
 
-def PySequence_GetItem(obj, key, error_marker):
-    typ = val = tb = None
-    try:
+def PySequence_GetItem(obj, key):
+    with error_handler:
         if not hasattr(obj, '__getitem__'):
             raise TypeError("'%s' object does not support indexing)" % repr(obj))
         if len(obj) < 0:
             return error_marker
         return obj[key]
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PySequence_SetItem(obj, key, value):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if not hasattr(obj, '__setitem__'):
             raise TypeError("'%s' object does not support item assignment)" % repr(obj))
         if len(obj) < 0:
             return -1
         obj.__setitem__(key, value)
         return 0
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
@@ -496,14 +440,10 @@ def PyUnicode_FromObject(o):
 
 
 def PyUnicode_GetLength(o):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if not isinstance(o, str):
             raise TypeError("bad argument type for built-in operation");
         return len(o)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
@@ -730,14 +670,10 @@ def PyTuple_GetItem(t, n):
 
 
 def PyTuple_Size(t):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if not isinstance(t, tuple):
             _PyErr_BadInternalCall(None, None, t)
         return len(t)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 
@@ -771,16 +707,10 @@ def PyObject_GetItem(obj, key):
 
 
 def PyObject_SetItem(obj, key, value):
-    typ = val = tb = None
-    try:
+    with error_handler:
         obj[key] = value
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    if typ:
-        PyErr_Restore(typ, val, tb)
-        return 1
-    else:
         return 0
+    return 1
 
 
 def PyObject_IsInstance(obj, typ):
@@ -790,14 +720,10 @@ def PyObject_IsInstance(obj, typ):
         return 0
 
 
-def PyObject_RichCompare(left, right, op, errormarker):
-    typ = val = tb = None
-    try:
+def PyObject_RichCompare(left, right, op):
+    with error_handler:
         return do_richcompare(left, right, op)
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return errormarker
+    return error_handler
 
 
 def PyObject_AsFileDescriptor(obj):
@@ -815,16 +741,10 @@ def PyObject_AsFileDescriptor(obj):
 
 
 def PyObject_SetAttr(obj, attr, value):
-    typ = val = tb = None
-    try:
+    with error_handler:
         setattr(obj, attr, value)
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    if typ:
-        PyErr_Restore(typ, val, tb)
-        return -1
-    else:
         return 0
+    return -1
 
 
 def PyObject_HasAttr(obj, attr):
@@ -841,17 +761,13 @@ def PyObject_IsTrue(obj):
 ## EXCEPTIONS
 
 def PyErr_CreateAndSetException(exception_type, msg):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if not _is_exception_class(exception_type):
             raise SystemError("exception %r not a BaseException subclass" % exception_type)
         if msg is None:
             raise exception_type()
         else:
             raise exception_type(msg)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
 
 
 def _PyErr_BadInternalCall(filename, lineno, obj):
@@ -1005,8 +921,7 @@ def _PyErr_Warn(message, category, stack_level, source):
 ## FILE
 
 def PyFile_WriteObject(obj, file, flags):
-    typ = val = tb = None
-    try:
+    with error_handler:
         if file is None:
             raise TypeError("writeobject with NULL file")
 
@@ -1016,9 +931,6 @@ def PyFile_WriteObject(obj, file, flags):
             write_value = repr(obj)
         file.write(write_value)
         return 0
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
     return -1
 
 ##################### C EXT HELPERS
