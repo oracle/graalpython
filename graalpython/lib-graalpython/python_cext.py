@@ -876,14 +876,14 @@ def PyErr_Format(err_type, format_str, args):
     PyErr_CreateAndSetException(err_type, format_str % args)
 
 
-def PyErr_Fetch(consume):
+def PyErr_Fetch(consume, default):
     res = sys.exc_info()
     if res != (None, None, None):
         # fetch 'consumes' the exception
         if consume:
             PyErr_Restore(None, None, None)
         return res
-    return error_handler
+    return default
 
 
 def PyErr_PrintEx(set_sys_last_vars):
