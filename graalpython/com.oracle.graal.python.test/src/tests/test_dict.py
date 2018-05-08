@@ -285,3 +285,7 @@ def test_create_seq_and_kw():
     d = dict({'a': 1, 'b': 2, 'c': 3}, d=4)
     for k in ['a', 'b', 'c', 'd']:
         assert k in d
+
+    d = dict(dict(a=1, b=2, c=3), d=4)
+    for k in ['a', 'b', 'c', 'd']:
+        assert k in d
