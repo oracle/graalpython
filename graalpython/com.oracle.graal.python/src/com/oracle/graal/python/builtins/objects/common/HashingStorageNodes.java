@@ -295,9 +295,16 @@ public abstract class HashingStorageNodes {
             return lookupKeysAttributeNode.execute(o, KEYS) != PNone.NO_VALUE;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)"})
+        @Specialization(guards = {"!isNoValue(iterable)", "isEmpty(kwargs)"})
         public void doPDict(PDict self, PDict iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
             self.setDictStorage(iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE));
+        }
+
+        @Specialization(guards = {"!isNoValue(iterable)", "!isEmpty(kwargs)"})
+        public void doPDictKwargs(PDict self, PDict iterable, PKeyword[] kwargs) {
+            HashingStorage dictStorage = iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
+            dictStorage.addAll(new KeywordsStorage(kwargs));
+            self.setDictStorage(dictStorage);
         }
 
         @Specialization(guards = {"!isNoValue(mapping)", "!isPDict(mapping)", "hasKeysAttribute(mapping)"})
