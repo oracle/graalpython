@@ -36,15 +36,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-public abstract class NativeCAPISymbols {
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
-    public static final String FUNCTION_NATIVE_TO_JAVA = "native_to_java";
-    public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE = "PyObjectHandle_ForJavaType";
-    public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
-    public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
+/**
+ * A simple wrapper around types objects created through the Python C API that can be cast to
+ * PyTypeObject*. This wrapper exists because we eagerly create Python classes in PyTypeReady, and
+ * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
+ * but our copy should just never become stale.
+ */
+public class PythonNativeClass extends PythonClass {
+    public final Object object;
 
+    public PythonNativeClass(Object obj, PythonClass type, String name, PythonClass... bases) {
+        super(type, name, bases);
+        object = obj;
+    }
 }

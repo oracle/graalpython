@@ -36,21 +36,58 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * A simple wrapper around types objects created through the Python C API that can be cast to
- * PyTypeObject*. This wrapper exists because we eagerly create Python classes in PyTypeReady, and
- * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
- * but our copy should just never become stale.
+ * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
+ * correct shape of the corresponding native type {@code struct _object}.
  */
-public class PythonNativeClass extends PythonClass {
-    public final Object object;
+public class PythonObjectNativeWrapper implements TruffleObject {
+    private final PythonAbstractObject pythonObject;
+    private Object nativePointer;
 
-    public PythonNativeClass(Object obj, PythonClass type, String name, PythonClass... bases) {
-        super(type, name, bases);
-        object = obj;
+    public PythonObjectNativeWrapper(PythonAbstractObject object) {
+        this.pythonObject = object;
     }
+
+    public boolean isNative() {
+        return nativePointer != null;
+    }
+
+    public Object getNativePointer() {
+        return nativePointer;
+    }
+
+    public void setNativePointer(Object nativePointer) {
+        // we should set the pointer just once
+        assert this.nativePointer == null || this.nativePointer.equals(nativePointer);
+        this.nativePointer = nativePointer;
+    }
+
+    public PythonAbstractObject getPythonObject() {
+        return pythonObject;
+    }
+
+    public static boolean isInstance(TruffleObject o) {
+        return o instanceof PythonObjectNativeWrapper;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return PythonObjectNativeWrapperMRForeign.ACCESS;
+    }
+
+    public static PythonObjectNativeWrapper wrap(PythonAbstractObject obj) {
+        // important: native wrappers are cached
+        PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        if (nativeWrapper == null) {
+            nativeWrapper = new PythonObjectNativeWrapper(obj);
+            obj.setNativeWrapper(nativeWrapper);
+        }
+        return nativeWrapper;
+    }
+
 }

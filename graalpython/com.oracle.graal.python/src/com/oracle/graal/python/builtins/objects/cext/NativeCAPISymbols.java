@@ -36,45 +36,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+public abstract class NativeCAPISymbols {
 
-public class PCallNativeNode extends PBaseNode {
-    private final int arity;
+    public static final String FUNCTION_NATIVE_TO_JAVA = "native_to_java";
+    public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
+    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
+    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE = "PyObjectHandle_ForJavaType";
+    public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
+    public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
 
-    @Child private Node executeNode;
-
-    public PCallNativeNode(int arity) {
-        this.arity = arity;
-    }
-
-    private Node getExecuteNode() {
-        if (executeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.createExecute(arity).createNode());
-        }
-        return executeNode;
-    }
-
-    public Object execute(TruffleObject func, Object[] args) {
-        try {
-            return ForeignAccess.sendExecute(getExecuteNode(), func, args);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw e.raise();
-        }
-    }
-
-    public static PCallNativeNode create(int arity) {
-        return new PCallNativeNode(arity);
-    }
 }

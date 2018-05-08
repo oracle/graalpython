@@ -36,32 +36,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.Node;
 
-/**
- * Wraps a sequence object (like a list) such that it behaves like a bare C array.
- */
-public class PyUnicodeState implements TruffleObject {
+public class PCallNativeNode extends PBaseNode {
+    private final int arity;
 
-    private final PString delegate;
+    @Child private Node executeNode;
 
-    public PyUnicodeState(PString delegate) {
-        this.delegate = delegate;
+    public PCallNativeNode(int arity) {
+        this.arity = arity;
     }
 
-    public PString getDelegate() {
-        return delegate;
+    private Node getExecuteNode() {
+        if (executeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            executeNode = insert(Message.createExecute(arity).createNode());
+        }
+        return executeNode;
     }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PyUnicodeState;
+    public Object execute(TruffleObject func, Object[] args) {
+        try {
+            return ForeignAccess.sendExecute(getExecuteNode(), func, args);
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            CompilerDirectives.transferToInterpreter();
+            throw e.raise();
+        }
     }
 
-    public ForeignAccess getForeignAccess() {
-        return PyUnicodeStateMRForeign.ACCESS;
+    public static PCallNativeNode create(int arity) {
+        return new PCallNativeNode(arity);
     }
 }

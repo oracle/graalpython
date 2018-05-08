@@ -36,31 +36,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
  * Wraps a sequence object (like a list) such that it behaves like a bare C array.
  */
-public class PySequenceArrayWrapper implements TruffleObject {
+public class PyUnicodeState implements TruffleObject {
 
-    private final Object delegate;
+    private final PString delegate;
 
-    public PySequenceArrayWrapper(Object delegate) {
+    public PyUnicodeState(PString delegate) {
         this.delegate = delegate;
     }
 
-    public Object getDelegate() {
+    public PString getDelegate() {
         return delegate;
     }
 
     static boolean isInstance(TruffleObject o) {
-        return o instanceof PySequenceArrayWrapper;
+        return o instanceof PyUnicodeState;
     }
 
     public ForeignAccess getForeignAccess() {
-        return PySequenceArrayWrapperMRForeign.ACCESS;
+        return PyUnicodeStateMRForeign.ACCESS;
     }
 }

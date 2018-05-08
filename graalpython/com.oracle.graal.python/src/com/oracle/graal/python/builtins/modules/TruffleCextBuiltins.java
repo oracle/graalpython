@@ -61,18 +61,16 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.cpyobject.NativeCAPISymbols;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cpyobject.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -113,7 +111,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "python_cext")
 public class TruffleCextBuiltins extends PythonBuiltins {
@@ -129,45 +126,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      */
     @Builtin(name = "to_java", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class AsPythonObjectNode extends PythonBuiltinNode {
-        public abstract Object execute(Object value);
-
-        @Child GetClassNode getClassNode = GetClassNode.create();
-        ConditionProfile branchCond = ConditionProfile.createBinaryProfile();
-
+    public abstract static class AsPythonObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object run(PythonObjectNativeWrapper object) {
-            return object.getPythonObject();
-        }
-
-        @Specialization
-        Object run(PythonAbstractObject object) {
-            return object;
-        }
-
-        @Fallback
-        Object run(Object obj) {
-            if (branchCond.profile(getClassNode.execute(obj) == getCore().getForeignClass())) {
-                // TODO: this should very likely only be done for objects that come from Sulong...
-                // TODO: prevent calling this from any other place
-                return factory().createNativeObjectWrapper(obj);
-            } else {
-                return obj;
-            }
-        }
-
-        @TruffleBoundary
-        public static Object doSlowPath(Object object) {
-            if (object instanceof PythonObjectNativeWrapper) {
-                return ((PythonObjectNativeWrapper) object).getPythonObject();
-            } else if (GetClassNode.getItSlowPath(object) == PythonLanguage.getCore().getForeignClass()) {
-                throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
-            }
-            return object;
-        }
-
-        public static AsPythonObjectNode create() {
-            return TruffleCextBuiltinsFactory.AsPythonObjectNodeFactory.create(null);
+        Object run(Object object,
+                        @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode) {
+            return toJavaNode.execute(object);
         }
     }
 
@@ -232,67 +195,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ToSulongNode extends PythonUnaryBuiltinNode {
 
-        /*
-         * This is very sad. Only for Sulong, we cannot hand out java.lang.Strings, because then it
-         * won't know what to do with them when they go native. So all places where Strings may be
-         * passed from Python into C code need to wrap Strings into PStrings.
-         */
         @Specialization
-        Object run(String str) {
-            return PythonObjectNativeWrapper.wrap(factory().createString(str));
-        }
-
-        @Specialization
-        Object run(boolean b) {
-            return PythonObjectNativeWrapper.wrap(factory().createInt(b));
-        }
-
-        @Specialization
-        Object run(int integer) {
-            return PythonObjectNativeWrapper.wrap(factory().createInt(integer));
-        }
-
-        @Specialization
-        Object run(long integer) {
-            return PythonObjectNativeWrapper.wrap(factory().createInt(integer));
-        }
-
-        @Specialization
-        Object run(double number) {
-            return PythonObjectNativeWrapper.wrap(factory().createFloat(number));
-        }
-
-        @Specialization
-        Object runNativeClass(PythonNativeClass object) {
-            return object.object;
-        }
-
-        @Specialization
-        Object runNativeObject(PythonNativeObject object) {
-            return object.object;
-        }
-
-        @Specialization(guards = "isNone(none)")
-        Object run(PNone none) {
-            return PythonObjectNativeWrapper.wrap(none);
-        }
-
-        @Specialization(guards = "!isNativeClass(object)")
-        Object runNativeObject(PythonObject object) {
-            return PythonObjectNativeWrapper.wrap(object);
-        }
-
-        @Fallback
-        Object run(Object obj) {
-            return obj;
-        }
-
-        protected boolean isNativeClass(PythonObject o) {
-            return o instanceof PythonNativeClass;
-        }
-
-        public static ToSulongNode create() {
-            return TruffleCextBuiltinsFactory.ToSulongNodeFactory.create(null);
+        Object run(Object obj,
+                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(obj);
         }
     }
 

@@ -36,52 +36,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-public abstract class NativeMemberNames {
-    public static final String OB_BASE = "ob_base";
-    public static final String OB_REFCNT = "ob_refcnt";
-    public static final String OB_TYPE = "ob_type";
-    public static final String OB_SIZE = "ob_size";
-    public static final String OB_SVAL = "ob_sval";
-    public static final String TP_FLAGS = "tp_flags";
-    public static final String TP_NAME = "tp_name";
-    public static final String TP_BASE = "tp_base";
-    public static final String _BASE = "_base";
-    public static final String OB_ITEM = "ob_item";
-    public static final String MA_USED = "ma_used";
-    public static final String UNICODE_WSTR = "wstr";
-    public static final String UNICODE_WSTR_LENGTH = "wstr_length";
-    public static final String UNICODE_STATE = "state";
-    public static final String UNICODE_STATE_INTERNED = "interned";
-    public static final String UNICODE_STATE_KIND = "kind";
-    public static final String UNICODE_STATE_COMPACT = "compact";
-    public static final String UNICODE_STATE_ASCII = "ascii";
-    public static final String UNICODE_STATE_READY = "ready";
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-    public static boolean isValid(String key) {
-        switch (key) {
-            case OB_BASE:
-            case OB_REFCNT:
-            case OB_TYPE:
-            case OB_SIZE:
-            case OB_SVAL:
-            case TP_FLAGS:
-            case TP_NAME:
-            case TP_BASE:
-            case _BASE:
-            case OB_ITEM:
-            case MA_USED:
-            case UNICODE_WSTR:
-            case UNICODE_WSTR_LENGTH:
-            case UNICODE_STATE:
-            case UNICODE_STATE_INTERNED:
-            case UNICODE_STATE_KIND:
-            case UNICODE_STATE_COMPACT:
-            case UNICODE_STATE_ASCII:
-            case UNICODE_STATE_READY:
-                return true;
-        }
-        return false;
+/**
+ * Wraps a sequence object (like a list) such that it behaves like a bare C array.
+ */
+public class PySequenceArrayWrapper implements TruffleObject {
+
+    private final Object delegate;
+
+    public PySequenceArrayWrapper(Object delegate) {
+        this.delegate = delegate;
+    }
+
+    public Object getDelegate() {
+        return delegate;
+    }
+
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PySequenceArrayWrapper;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return PySequenceArrayWrapperMRForeign.ACCESS;
     }
 }

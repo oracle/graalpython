@@ -462,6 +462,72 @@ def PyIter_Next(itObj, error_marker):
     return error_marker
 
 
+##################### SEQUENCE
+
+
+def PySequence_Tuple(obj, error_marker):
+    typ = val = tb = None
+    try:
+        return tuple(obj)
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PySequence_Fast(obj, msg, error_marker):
+    typ = val = tb = None
+    if isinstance(obj, tuple) or isinstance(obj, list):
+        return obj
+    try:
+        return list(obj)
+    except TypeError:
+        try:
+            raise TypeError(msg)
+        except TypeError:
+            typ, val, tb = sys.exc_info()
+    except BaseException:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PySequence_Check(obj):
+    # dictionaries are explicitly excluded
+    if isinstance(obj, dict):
+        return False
+    return hasattr(obj, '__getitem__')
+
+
+def PySequence_GetItem(obj, key, error_marker):
+    typ = val = tb = None
+    try:
+        if not hasattr(obj, '__getitem__'):
+            raise TypeError("'%s' object does not support indexing)" % repr(obj))
+        if len(obj) < 0:
+            return error_marker
+        return obj[key]
+    except BaseException as e:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return error_marker
+
+
+def PySequence_SetItem(obj, key, value):
+    typ = val = tb = None
+    try:
+        if not hasattr(obj, '__setitem__'):
+            raise TypeError("'%s' object does not support item assignment)" % repr(obj))
+        if len(obj) < 0:
+            return -1
+        obj.__setitem__(key, value)
+        return 0
+    except BaseException as e:
+        typ, val, tb = sys.exc_info()
+    PyErr_Restore(typ, val, tb)
+    return -1
+
+
 ##################### UNICODE
 
 
