@@ -62,7 +62,7 @@ int PyNumber_Check(PyObject *o) {
 }
 
 static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop, char *unaryop_name) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_UnaryOp", to_java(v), unaryop, truffle_read_string(unaryop_name), ERROR_MARKER);
+    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_UnaryOp", to_java(v), unaryop, truffle_read_string(unaryop_name));
     if (result == ERROR_MARKER) {
     	return NULL;
     }
@@ -70,7 +70,7 @@ static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop, char *unaryop_name) {
 }
 
 static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop, char *binop_name) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_BinOp", to_java(v), to_java(w), binop, truffle_read_string(binop_name), ERROR_MARKER);
+    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_BinOp", to_java(v), to_java(w), binop, truffle_read_string(binop_name));
     if (result == ERROR_MARKER) {
     	return NULL;
     }
@@ -133,7 +133,7 @@ PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {
         return null_error();
     }
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Index", to_java(o), ERROR_MARKER);
+    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Index", to_java(o));
     if (result == ERROR_MARKER) {
     	return NULL;
     }
@@ -185,7 +185,7 @@ Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
 }
 
 PyObject * PyNumber_Long(PyObject *o) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Long", to_java(o), ERROR_MARKER);
+    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Long", to_java(o));
     if (result == ERROR_MARKER) {
     	return NULL;
     }
@@ -193,7 +193,7 @@ PyObject * PyNumber_Long(PyObject *o) {
 }
 
 PyObject * PyNumber_Float(PyObject *o) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Float", to_java(o), ERROR_MARKER);
+    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Float", to_java(o));
     if (result == ERROR_MARKER) {
     	return NULL;
     }
@@ -201,7 +201,7 @@ PyObject * PyNumber_Float(PyObject *o) {
 }
 
 PyObject * PyIter_Next(PyObject *iter) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyIter_Next", to_java(iter), ERROR_MARKER);
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyIter_Next", to_java(iter));
 	if (result == ERROR_MARKER && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_StopIteration)) {
         PyErr_Clear();
 		return NULL;

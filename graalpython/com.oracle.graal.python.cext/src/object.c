@@ -567,7 +567,7 @@ int PyObject_Not(PyObject* obj) {
 }
 
 PyObject * PyObject_RichCompare(PyObject *v, PyObject *w, int op) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_RichCompare", to_java(v), to_java(w), op, ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_RichCompare", to_java(v), to_java(w), op);
     if (result == ERROR_MARKER) {
         return NULL;
     } else {

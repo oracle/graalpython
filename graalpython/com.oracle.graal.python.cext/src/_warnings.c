@@ -46,7 +46,7 @@ static int warn_unicode(PyObject *category, PyObject *message, Py_ssize_t stack_
         category = PyExc_RuntimeWarning;
     }
 
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyErr_Warn", to_java(message), to_java(category), stack_level, to_java(source), ERROR_MARKER);
+    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyErr_Warn", to_java(message), to_java(category), stack_level, to_java(source));
     if(result == ERROR_MARKER) {
     	return -1;
     }

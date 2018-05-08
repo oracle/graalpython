@@ -70,17 +70,17 @@ def PyDict_New():
     return {}
 
 
-def PyDict_Next(dictObj, pos, error_marker):
+def PyDict_Next(dictObj, pos):
     if isinstance(dictObj, dict):
         curPos = 0
         max = len(dictObj)
         if pos >= max:
-            return error_marker
+            return error_handler
         for key in dictObj:
             if curPos == pos:
                 return key, dictObj[key]
             curPos = curPos + 1
-    return error_marker
+    return error_handler
 
 
 def PyDict_Size(dictObj):
@@ -101,16 +101,12 @@ def PyDict_Copy(dictObj):
     return None
 
 
-def PyDict_GetItem(dictObj, key, error_marker):
+def PyDict_GetItem(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
-    typ = val = tb = None
-    try:
-        return dictObj.get(key, error_marker)
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    with error_handler:
+        return dictObj.get(key, error_handler)
+    return error_handler
 
 
 def PyDict_SetItem(dictObj, key, value):
@@ -253,28 +249,20 @@ def PyList_Append(listObj, newitem):
     return -1
 
 
-def PyList_AsTuple(listObj, error_marker):
-    typ = val = tb = None
-    try:
+def PyList_AsTuple(listObj):
+    with error_handler:
         if not isinstance(listObj, list):
             _PyErr_BadInternalCall(None, None, listObj)
         return tuple(listObj)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyList_GetSlice(listObj, ilow, ihigh, error_marker):
-    typ = val = tb = None
-    try:
+def PyList_GetSlice(listObj, ilow, ihigh):
+    with error_handler:
         if not isinstance(listObj, list):
             _PyErr_BadInternalCall(None, None, listObj)
         return listObj[ilow:ihigh]
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyList_Size(listObj):
@@ -291,17 +279,13 @@ def PyList_Size(listObj):
 
 ##################### LONG
 
-def PyLong_FromLongLong(n, signed, error_marker):
-    typ = val = tb = None
-    try:
+def PyLong_FromLongLong(n, signed):
+    with error_handler:
         if signed:
             return int(n)
         else:
             return int(n & 0xffffffffffffffff)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyLong_AsPrimitive(n, signed, size, descr):
@@ -328,14 +312,10 @@ def _PyLong_Sign(n):
 
 ##################### FLOAT
 
-def PyFloat_FromDouble(n, error_marker):
-    typ = val = tb = None
-    try:
+def PyFloat_FromDouble(n):
+    with error_handler:
         return float(n)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyFloat_AsPrimitive(n):
@@ -364,9 +344,8 @@ def PyNumber_Check(v):
     return _safe_check(v, lambda x: isinstance(int(x), int)) or _safe_check(v, lambda x: isinstance(float(x), float))
 
 
-def PyNumber_BinOp(v, w, binop, name, error_marker):
-    typ = val = tb = None
-    try:
+def PyNumber_BinOp(v, w, binop, name):
+    with error_handler:
         if binop == 0:
             return v + w
         elif binop == 1:
@@ -391,30 +370,22 @@ def PyNumber_BinOp(v, w, binop, name, error_marker):
             return v % w
         else:
             raise SystemError("unknown binary operator %s" % name)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyNumber_UnaryOp(v, unaryop, name, error_marker):
-    typ = val = tb = None
-    try:
+def PyNumber_UnaryOp(v, unaryop, name):
+    with error_handler:
         if unaryop == 0:
             return +v
         elif unaryop == 1:
             return -v
         else:
             raise SystemError("unknown unary operator %s" % name)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyNumber_Index(v, error_marker):
-    typ = val = tb = None
-    try:
+def PyNumber_Index(v):
+    with error_handler:
         if not hasattr(v, "__index__"):
             raise TypeError("'%s' object cannot be interpreted as an integer" % type(v))
         result = v.__index__()
@@ -426,40 +397,25 @@ def PyNumber_Index(v, error_marker):
             warn("__index__ returned non-int (type %s). The ability to return an instance of a strict subclass of int "
                  "is deprecated, and may be removed in a future version of Python." % result_type)
         return result
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyNumber_Float(v, error_marker):
-    typ = val = tb = None
-    try:
+def PyNumber_Float(v):
+    with error_handler:
         return float(v)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyNumber_Long(v, error_marker):
-    typ = val = tb = None
-    try:
+def PyNumber_Long(v):
+    with error_handler:
         return int(v)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyIter_Next(itObj, error_marker):
-    typ = val = tb = None
-    try:
+def PyIter_Next(itObj):
+    with error_handler:
         return next(itObj)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 ##################### SEQUENCE
@@ -531,16 +487,12 @@ def PySequence_SetItem(obj, key, value):
 ##################### UNICODE
 
 
-def PyUnicode_FromObject(o, error_marker):
-    typ = val = tb = None
-    try:
+def PyUnicode_FromObject(o):
+    with error_handler:
         if not isinstance(o, str):
             raise TypeError("Can't convert '%s' object to str implicitly" % type(o).__name__)
         return str(o)
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyUnicode_GetLength(o):
@@ -555,47 +507,35 @@ def PyUnicode_GetLength(o):
     return -1
 
 
-def PyUnicode_Concat(left, right, error_marker):
-    typ = val = tb = None
-    try:
+def PyUnicode_Concat(left, right):
+    with error_handler:
         if not isinstance(left, str):
             raise TypeError("must be str, not %s" % type(left));
         if not isinstance(right, str):
             raise TypeError("must be str, not %s" % type(right));
         return left + right
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyUnicode_FromEncodedObject(obj, encoding, errors, error_marker):
-    typ = val = tb = None
-    try:
+def PyUnicode_FromEncodedObject(obj, encoding, errors):
+    with error_handler:
         if isinstance(obj, bytes):
             return obj.decode(encoding, errors)
         if isinstance(obj, str):
             raise TypeError("decoding str is not supported")
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyUnicode_InternInPlace(s):
     return sys.intern(s)
 
 
-def PyUnicode_Format(format, args, error_marker):
-    typ = val = tb = None
-    try:
+def PyUnicode_Format(format, args):
+    with error_handler:
         if not isinstance(format, str):
             raise TypeError("Must be str, not %s" % type(format).__name__)
         return format % args
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 ##################### CAPSULE
@@ -616,30 +556,22 @@ class PyCapsule:
         return "<capsule object %s%s%s at %p>" % (quote, name, quote, self.pointer)
 
 
-def PyCapsule_GetContext(obj, error_marker):
-    typ = val = tb = None
-    try:
+def PyCapsule_GetContext(obj):
+    with error_handler:
         if not isinstance(obj, PyCapsule) or obj.pointer is None:
             raise ValueError("PyCapsule_GetContext called with invalid PyCapsule object")
         return obj.context
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyCapsule_GetPointer(obj, name, error_marker):
-    typ = val = tb = None
-    try:
+def PyCapsule_GetPointer(obj, name):
+    with error_handler:
         if not isinstance(obj, PyCapsule) or obj.pointer is None:
             raise ValueError("PyCapsule_GetPointer called with invalid PyCapsule object")
         if name != obj.name:
             raise ValueError("PyCapsule_GetPointer called with incorrect name")
         return obj.pointer
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyModule_AddObject(m, k, v):
@@ -776,16 +708,25 @@ def PyTuple_New(size):
     return (None,) * size
 
 
-def PyTuple_GetItem(t, n, error_marker):
-    typ = val = tb = None
-    try:
+class CErrorHandler(object):
+    def __enter__(self, *args):
+        pass
+
+    def __exit__(self, typ, val, tb):
+        if typ != None:
+            PyErr_Restore(typ, val, tb)
+            return True
+
+
+error_handler = CErrorHandler()
+
+
+def PyTuple_GetItem(t, n):
+    with error_handler:
         if not isinstance(t, tuple):
             _PyErr_BadInternalCall(None, None, t)
         return t[n]
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyTuple_Size(t):
@@ -800,16 +741,12 @@ def PyTuple_Size(t):
     return -1
 
 
-def PyTuple_GetSlice(t, start, end, error_marker):
-    typ = val = tb = None
-    try:
+def PyTuple_GetSlice(t, start, end):
+    with error_handler:
         if not isinstance(t, tuple):
             _PyErr_BadInternalCall(None, None, t)
         return t[start:end]
-    except BaseException:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyObject_Size(obj):
@@ -827,14 +764,10 @@ def PyObject_CallMethod(rcvr, method, args):
     return getattr(rcvr, method)(*args)
 
 
-def PyObject_GetItem(obj, key, error_marker):
-    typ = val = tb = None
-    try:
+def PyObject_GetItem(obj, key):
+    with error_handler:
         return obj[key]
-    except BaseException as e:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 def PyObject_SetItem(obj, key, value):
@@ -943,14 +876,14 @@ def PyErr_Format(err_type, format_str, args):
     PyErr_CreateAndSetException(err_type, format_str % args)
 
 
-def PyErr_Fetch(consume, error_marker):
+def PyErr_Fetch(consume):
     res = sys.exc_info()
     if res != (None, None, None):
         # fetch 'consumes' the exception
         if consume:
             PyErr_Restore(None, None, None)
         return res
-    return error_marker
+    return error_handler
 
 
 def PyErr_PrintEx(set_sys_last_vars):
@@ -1052,24 +985,21 @@ def PyErr_GivenExceptionMatches(err, exc):
     return exc is err
 
 
-def _PyErr_NormalizeExceptionEx(exc, val, tb, recursion_depth, error_marker):
+def _PyErr_NormalizeExceptionEx(exc, val, tb, recursion_depth):
     pass
 
 
-def PyErr_NormalizeException(exc, val, tb, error_marker):
-    return _PyErr_NormalizeExceptionEx(exc, val, tb, 0, error_marker)
+def PyErr_NormalizeException(exc, val, tb):
+    return _PyErr_NormalizeExceptionEx(exc, val, tb, 0)
 
 
-def _PyErr_Warn(message, category, stack_level, source, error_marker):
+def _PyErr_Warn(message, category, stack_level, source):
     typ = val = tb = None
-    try:
+    with error_handler:
         import warnings
         warnings.warn(message, category, stack_level, source)
         return None
-    except:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
 ## FILE
@@ -1158,19 +1088,13 @@ def initialize_member_accessors():
     WriteMemberFunctions.append(lambda x,v: None)
 
 
-def PyImport_ImportModule(name, error_marker):
-    try:
+def PyImport_ImportModule(name):
+    with error_handler:
         return __import__(name)
-    except Exception:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler
 
 
-def PyRun_String(source, typ, globals, locals, error_marker):
-    try:
+def PyRun_String(source, typ, globals, locals):
+    with error_handler:
         return exec(compile(source, typ, typ), globals, locals)
-    except Exception:
-        typ, val, tb = sys.exc_info()
-    PyErr_Restore(typ, val, tb)
-    return error_marker
+    return error_handler

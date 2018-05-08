@@ -45,7 +45,7 @@ PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor de
 }
 
 void * PyCapsule_GetContext(PyObject *o) {
-	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetContext", to_java(o), ERROR_MARKER);
+	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetContext", to_java(o));
 	if (result == ERROR_MARKER) {
 		return NULL;
 	}
@@ -53,7 +53,7 @@ void * PyCapsule_GetContext(PyObject *o) {
 }
 
 void * PyCapsule_GetPointer(PyObject *o, const char *name) {
-	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"), ERROR_MARKER);
+	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"));
 	if (result == ERROR_MARKER) {
 		return NULL;
 	}
