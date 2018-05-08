@@ -302,7 +302,7 @@ public abstract class HashingStorageNodes {
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isEmpty(kwargs)"}, rewriteOn = HashingStorage.UnmodifiableStorageException.class)
         public void doPDictKwargs(PDict self, PDict iterable, PKeyword[] kwargs,
-                                  @Cached("create()") UnionNode unionNode) {
+                        @Cached("create()") UnionNode unionNode) {
             HashingStorage dictStorage = unionNode.execute(iterable.getDictStorage(), new KeywordsStorage(kwargs));
             self.setDictStorage(dictStorage);
         }
