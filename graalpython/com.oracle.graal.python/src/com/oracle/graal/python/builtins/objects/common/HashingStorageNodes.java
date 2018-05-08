@@ -301,9 +301,15 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isEmpty(kwargs)"})
-        public void doPDictKwargs(PDict self, PDict iterable, PKeyword[] kwargs) {
-            HashingStorage dictStorage = iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
-            dictStorage.addAll(new KeywordsStorage(kwargs));
+        public void doPDictKwargs(PDict self, PDict iterable, PKeyword[] kwargs,
+                        @Cached("create()") UnionNode unionNode) {
+            HashingStorage dictStorage;
+            try {
+                dictStorage = iterable.getDictStorage().copy(HashingStorage.DEFAULT_EQIVALENCE);
+                dictStorage.addAll(new KeywordsStorage(kwargs));
+            } catch (HashingStorage.UnmodifiableStorageException e) {
+                dictStorage = unionNode.execute(iterable.getDictStorage(), new KeywordsStorage(kwargs));
+            }
             self.setDictStorage(dictStorage);
         }
 
