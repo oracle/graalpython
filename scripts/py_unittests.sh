@@ -44,7 +44,7 @@ for TEST in ${UNIT_TESTS_PATH}
 do
     echo "----------------------------------------------------------------------"
     echo "running: ${TEST}"
-    mx python3 ${TEST}
+    mx python3 --python.CatchAllExceptions=true ${TEST}
 done
 
 echo "DONE"
