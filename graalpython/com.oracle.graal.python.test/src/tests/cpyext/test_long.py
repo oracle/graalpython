@@ -193,6 +193,8 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyLong_FromSize_t = test_PyLong_FromSsize_t
+
     test_PyLong_FromDouble = CPyExtFunction(
         lambda args: int(args[0]),
         lambda: (
