@@ -59,6 +59,29 @@ class TestPyBool(CPyExtTestCase):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyBool, self).compile_module(name)
 
+    # (tfel): This test actually checks that the wrapped booleans that are
+    # stored as sulong globals are singletons
+    test_PyBools_areSingleton = CPyExtFunction(
+        lambda args: 1,
+        lambda: (
+            ("True",),
+            ("False",),
+        ),
+        callfunction="CheckPyTrue",
+        code="""
+        static int CheckPyTrue(const char* str) {
+            if (!strcmp(str, "True")) {
+                return PyRun_StringFlags("True", Py_eval_input, PyDict_New(), PyDict_New(), NULL) == Py_True;
+            } else {
+                return PyRun_StringFlags("False", Py_eval_input, PyDict_New(), PyDict_New(), NULL) == Py_False;
+            }
+        }
+        """,
+        resultspec="i",
+        argspec="s",
+        arguments=["const char* source"],
+    )
+
     test_PyBool_Check = CPyExtFunction(
         lambda args: isinstance(args[0], bool),
         lambda: (
