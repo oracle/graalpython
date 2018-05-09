@@ -808,8 +808,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         private int findIndex(PList list, Object value, int start, int end, BinaryComparisonNode eqNode) {
-            int len = list.len();
-            for (int i = start; i < end && i < len; i++) {
+            for (int i = start; i < end && i < list.len(); i++) {
                 Object object = list.getItem(i);
                 if (eqNode.executeBool(object, value)) {
                     return i;
