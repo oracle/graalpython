@@ -34,6 +34,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -43,6 +44,8 @@ public class TryExceptNode extends StatementNode {
     @Child private PNode body;
     @Children final ExceptNode[] exceptNodes;
     @Child private PNode orelse;
+
+    @CompilerDirectives.CompilationFinal boolean seenException;
 
     public TryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse) {
         this.body = body;
@@ -58,6 +61,11 @@ public class TryExceptNode extends StatementNode {
             catchException(frame, ex);
             return PNone.NONE;
         } catch (Throwable t) {
+            if (!seenException) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                seenException  = true;
+            }
+
             if (PythonOptions.getOption(getContext(), CatchAllExceptions)) {
                 if (t instanceof ControlFlowException) {
                     throw t;
