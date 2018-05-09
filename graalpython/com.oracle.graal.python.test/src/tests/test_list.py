@@ -303,6 +303,7 @@ class ListTest(list_tests.CommonTest):
         a = [1,2,3]
         a.remove(MyInt(2))
         self.assertEqual([1,3], a)
+
     def test_insert_spec(self):
         a = [1,2]
         self.assertRaises(TypeError, a.insert, [1,2,3], 1)

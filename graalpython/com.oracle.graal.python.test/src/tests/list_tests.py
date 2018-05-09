@@ -447,7 +447,7 @@ class CommonTest(seq_tests.CommonTest):
         self.assertEqual(u, u2)
 
         self.assertRaises(TypeError, u.reverse, 42)
-    '''
+
     def test_clear(self):
         u = self.type2test([2, 3, 4])
         u.clear()
