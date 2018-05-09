@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.builtins.objects.complex;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -454,7 +456,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "__getnewargs__", fixedNumOfArguments = 1)
+    @Builtin(name = __GETNEWARGS__, fixedNumOfArguments = 1)
     static abstract class GetNewArgsNode extends PythonBuiltinNode {
         @Specialization
         PTuple get(PComplex self) {

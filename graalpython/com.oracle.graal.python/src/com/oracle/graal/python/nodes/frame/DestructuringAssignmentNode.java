@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
@@ -36,6 +38,8 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNodeFactory.GetItemNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -53,6 +57,8 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
     @Child private GetItemNode getItem = GetItemNodeGen.create();
     @Child private GetItemNode getNonExistingItem = GetItemNodeGen.create();
     @Child private BuiltinFunctions.LenNode lenNode;
+    @Child private LookupInheritedAttributeNode lookupInheritedAttributeNode = LookupInheritedAttributeNode.create();
+    @Child private TupleNodes.ConstructTupleNode constructTupleNode = TupleNodes.ConstructTupleNode.create();
 
     private final BranchProfile notEnoughValuesProfile = BranchProfile.create();
     private final BranchProfile tooManyValuesProfile = BranchProfile.create();
@@ -146,6 +152,10 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
     @Override
     public Object execute(VirtualFrame frame) {
         Object rhsValue = rhs.execute(frame);
+        Object getItemAttribute = lookupInheritedAttributeNode.execute(rhsValue, __GETITEM__);
+        if (getItemAttribute == NO_VALUE) {
+            rhsValue = constructTupleNode.execute(rhsValue);
+        }
         return doWrite(frame, rhsValue);
     }
 

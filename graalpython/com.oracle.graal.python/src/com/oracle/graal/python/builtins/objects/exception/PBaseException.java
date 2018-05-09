@@ -114,6 +114,10 @@ public final class PBaseException extends PythonObject {
         this.traceback = traceback.getException().traceback;
     }
 
+    public void clearTraceback() {
+        this.traceback = new PTraceback[0];
+    }
+
     /**
      * Can be null in case of lazily formatted arguments.
      */

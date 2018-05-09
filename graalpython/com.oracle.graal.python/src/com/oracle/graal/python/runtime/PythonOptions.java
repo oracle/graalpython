@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
@@ -81,6 +82,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> ForceLongType = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.DEBUG, help = "") //
+    public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.") //
     public static final OptionKey<String> SysPrefix = new OptionKey<>("");
 
@@ -103,6 +107,7 @@ public final class PythonOptions {
         return new PythonOptionsOptionDescriptors();
     }
 
+    @TruffleBoundary
     public static <T> T getOption(PythonContext context, OptionKey<T> key) {
         if (context == null) {
             return key.getDefaultValue();
@@ -110,6 +115,7 @@ public final class PythonOptions {
         return context.getOptions().get(key);
     }
 
+    @TruffleBoundary
     public static int getIntOption(PythonContext context, OptionKey<Integer> key) {
         if (context == null) {
             return key.getDefaultValue();
