@@ -62,27 +62,27 @@ public class TryExceptNode extends StatementNode {
         } catch (PException ex) {
             catchException(frame, ex);
             return PNone.NONE;
-        } catch (Throwable t) {
+        } catch (Exception e) {
             if (!seenException) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 seenException = true;
             }
 
             if (PythonOptions.getOption(getContext(), CatchAllExceptions)) {
-                if (t instanceof ControlFlowException) {
-                    throw t;
+                if (e instanceof ControlFlowException) {
+                    throw e;
                 } else {
-                    PException pe = new PException(getBaseException(t), this);
+                    PException pe = new PException(getBaseException(e), this);
                     try {
                         catchException(frame, pe);
                     } catch (PException pe_thrown) {
                         if (pe_thrown != pe) {
-                            throw t;
+                            throw e;
                         }
                     }
                 }
             } else {
-                throw t;
+                throw e;
             }
         }
         return orelse.execute(frame);
