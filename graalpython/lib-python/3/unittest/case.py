@@ -999,7 +999,7 @@ class TestCase(object):
         # standardMsg = self._truncateMessage(standardMsg, diffMsg)
         # msg = self._formatMessage(msg, standardMsg)
         # self.fail(msg)
-        # TODO: reneable me once pformat / difflib work (GR-9152) (GR-9153)
+        # TODO: Truffle reneable me once pformat / difflib work (GR-9152) (GR-9153)
         self.fail(differing)
 
     def _truncateMessage(self, message, diff):

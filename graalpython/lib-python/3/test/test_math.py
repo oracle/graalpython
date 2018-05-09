@@ -1411,7 +1411,7 @@ class IsCloseTests(unittest.TestCase):
 
 
 def test_main():
-    # TODO: revertme once doctest is supported (once io can read text files) (GR-9151)
+    # TODO: Truffle revertme once doctest is supported (once io can read text files) (GR-9151)
     # from doctest import DocFileSuite
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(MathTests))

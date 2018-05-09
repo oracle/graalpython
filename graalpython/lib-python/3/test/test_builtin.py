@@ -1842,7 +1842,7 @@ class TestType(unittest.TestCase):
 
 
 def load_tests(loader, tests, pattern):
-    # TODO: revertme once doctest is supported (once io can read text files) (GR-9151)
+    # TODO: Truffle revertme once doctest is supported (once io can read text files) (GR-9151)
     # from doctest import DocTestSuite
     # tests.addTest(DocTestSuite(builtins))
     return tests
