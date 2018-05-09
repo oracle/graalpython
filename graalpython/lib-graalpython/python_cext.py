@@ -129,7 +129,7 @@ def PyDict_Copy(dictObj):
 def PyDict_GetItem(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
-    return dictObj[key]
+    return dictObj.get(key, error_handler)
 
 
 @may_raise(-1)
