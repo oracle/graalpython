@@ -71,6 +71,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -934,6 +935,21 @@ public class ListBuiltins extends PythonBuiltins {
                 }
             }
             return count;
+        }
+
+    }
+
+    // list.clear()
+    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ListClearNode extends PythonBuiltinNode {
+
+        @Specialization
+        public PNone clear(PList list) {
+            if (list.len() > 0) {
+                list.setSequenceStorage(new EmptySequenceStorage());
+            }
+            return PNone.NONE;
         }
 
     }
