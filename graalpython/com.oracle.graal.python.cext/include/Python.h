@@ -101,6 +101,7 @@
 #include "pycapsule.h"
 #include "pylifecycle.h"
 #include "pydebug.h"
+#include "code.h"
 
 // our impls
 #ifdef Py_True
