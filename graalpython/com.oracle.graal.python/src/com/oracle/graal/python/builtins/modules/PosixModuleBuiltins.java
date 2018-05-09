@@ -251,7 +251,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class GetPidNode extends PythonBuiltinNode {
         @Specialization
         int getPid() {
-            // TODO: this needs to be implemented properly at some point (consider managed execution as well)
+            // TODO: this needs to be implemented properly at some point (consider managed execution
+            // as well)
             return getContext().hashCode();
         }
     }
