@@ -45,6 +45,8 @@
 #define HAVE_FCNTL_H
 #define HAVE_SYS_WAIT_H
 
+#define PYPY_VERSION 0
+
 #include <truffle.h>
 #include <polyglot.h>
 #include <stdio.h>
@@ -102,6 +104,8 @@
 #include "pylifecycle.h"
 #include "pydebug.h"
 #include "code.h"
+#include "pyfpe.h"
+#include "memoryobject.h"
 
 // our impls
 #ifdef Py_True

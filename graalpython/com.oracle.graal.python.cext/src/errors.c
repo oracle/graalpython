@@ -91,7 +91,6 @@ int PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc) {
         return 0;
     }
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyErr_GivenExceptionMatches", to_java(err), to_java(exc));
-
 }
 
 void PyErr_SetNone(PyObject *exception) {
@@ -161,4 +160,3 @@ void PyErr_WriteUnraisable(PyObject *obj) {
 void PyErr_Display(PyObject *exception, PyObject *value, PyObject *tb) {
     truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_Display", to_java(exception), to_java(value), to_java(tb));
 }
-
