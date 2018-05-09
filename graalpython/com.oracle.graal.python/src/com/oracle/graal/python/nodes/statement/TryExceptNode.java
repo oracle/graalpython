@@ -34,6 +34,8 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -45,7 +47,7 @@ public class TryExceptNode extends StatementNode {
     @Children final ExceptNode[] exceptNodes;
     @Child private PNode orelse;
 
-    @CompilerDirectives.CompilationFinal boolean seenException;
+    @CompilationFinal boolean seenException;
 
     public TryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse) {
         this.body = body;
@@ -70,8 +72,7 @@ public class TryExceptNode extends StatementNode {
                 if (t instanceof ControlFlowException) {
                     throw t;
                 } else {
-                    PBaseException baseException = factory().createBaseException(getCore().getErrorClass(PythonErrorType.ValueError), t.getMessage(), new Object[0]);
-                    PException pe = new PException(baseException, this);
+                    PException pe = new PException(getBaseException(t), this);
                     try {
                         catchException(frame, pe);
                     } catch (PException pe_thrown) {
@@ -85,6 +86,11 @@ public class TryExceptNode extends StatementNode {
             }
         }
         return orelse.execute(frame);
+    }
+
+    @TruffleBoundary
+    private PBaseException getBaseException(Throwable t) {
+        return factory().createBaseException(getCore().getErrorClass(PythonErrorType.ValueError), t.getMessage(), new Object[0]);
     }
 
     @ExplodeLoop
