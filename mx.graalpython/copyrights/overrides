@@ -121,6 +121,7 @@ graalpython/com.oracle.graal.python.cext/include/warnings.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/code.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pydebug.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pylifecycle.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/memoryobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
 graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonEnvVars.java,zippy.copyright
