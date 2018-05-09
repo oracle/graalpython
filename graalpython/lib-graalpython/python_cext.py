@@ -60,7 +60,7 @@ def may_raise(error_result=error_handler):
         def decorator(fun):
             def wrapper(*args):
                 with error_handler:
-                    return fun
+                    return fun(*args)
                 return error_result
             wrapper.__name__ = fun.__name__
             return wrapper
