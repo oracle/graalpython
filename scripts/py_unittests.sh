@@ -35,12 +35,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+#!/bin/bash
+
 cd "$(dirname $0)"
 cd ..
 UNIT_TESTS_PATH="graalpython/lib-python/3/test/test_*.py"
 for TEST in ${UNIT_TESTS_PATH}
 do
-    echo "-------------------------------------------------------------------------------"
+    echo "----------------------------------------------------------------------"
     echo "running: ${TEST}"
     mx python3 ${TEST}
 done

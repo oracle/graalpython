@@ -63,7 +63,7 @@ public class TryExceptNode extends StatementNode {
         } catch (Throwable t) {
             if (!seenException) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                seenException  = true;
+                seenException = true;
             }
 
             if (PythonOptions.getOption(getContext(), CatchAllExceptions)) {
