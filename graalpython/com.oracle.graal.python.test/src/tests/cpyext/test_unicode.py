@@ -103,14 +103,35 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
  
-    test_PyUnicode_FromFormat = CPyExtFunction(
+    test_PyUnicode_FromFormat0 = CPyExtFunction(
+        lambda args: args[0] % tuple(args[1:]),
+        lambda: (
+            ("hello, world!",),
+        ),
+        code="""PyObject* wrap_PyUnicode_FromFormat0(char* fmt) {
+            return PyUnicode_FromFormat(fmt);
+        }
+        """,
+        resultspec="O",
+        argspec='s',
+        arguments=["char* fmt"],
+        callfunction="wrap_PyUnicode_FromFormat0",
+        cmpfunc=unhandled_error_compare
+    )
+ 
+    test_PyUnicode_FromFormat3 = CPyExtFunction(
         lambda args: args[0] % tuple(args[1:]),
         lambda: (
             ("word0: %s; word1: %s; int: %d", "hello", "world", 1234),
         ),
+        code="""PyObject* wrap_PyUnicode_FromFormat3(char* fmt, char* arg0, char* arg1, int n) {
+            return PyUnicode_FromFormat(fmt, arg0, arg1, n);
+        }
+        """,
         resultspec="O",
         argspec='sssi',
         arguments=["char* fmt", "char* arg0", "char* arg1", "int n"],
+        callfunction="wrap_PyUnicode_FromFormat3",
         cmpfunc=unhandled_error_compare
     )
  
