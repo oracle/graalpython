@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
-import com.oracle.graal.python.builtins.objects.cpyobject.PyObjectByteBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
@@ -255,7 +254,6 @@ public final class Python3Core implements PythonCore {
                     new AstModuleBuiltins(),
                     new SignalModuleBuiltins(),
                     new TracebackBuiltins(),
-                    new PyObjectByteBuiltins(),
                     new GcModuleBuiltins(),
                     new AtexitModuleBuiltins(),
                     new FaulthandlerModuleBuiltins(),
