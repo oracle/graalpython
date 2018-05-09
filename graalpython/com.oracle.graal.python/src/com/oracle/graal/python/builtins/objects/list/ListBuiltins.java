@@ -1319,14 +1319,4 @@ public class ListBuiltins extends PythonBuiltins {
             throw raise(TypeError, "unhashable type: '%p'", self);
         }
     }
-
-    @Builtin(name = "clear", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class ListClearNode extends PythonBuiltinNode {
-        @Specialization
-        Object doPlist(PList self) {
-            self.clear();
-            return PNone.NONE;
-        }
-    }
 }
