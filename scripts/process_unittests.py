@@ -60,6 +60,11 @@ def process_output(output):
             self.num_fails = -1
             self.num_skipped = -1
 
+        def all_ok(self):
+            self.num_errors = 0
+            self.num_fails = 0
+            self.num_skipped = 0
+
         @property
         def num_passes(self):
             if self.num_tests > 0:
@@ -83,8 +88,7 @@ def process_output(output):
 
             # stats 
             if line.strip() == 'OK':
-                stats[unittests[-1]].num_fails = 0
-                stats[unittests[-1]].num_errors = 0
+                stats[unittests[-1]].all_ok()
                 continue
 
             match = re.match(PTRN_NUM_TESTS, line)
@@ -117,6 +121,7 @@ def process_output(output):
             'num_passes': 0, 
         }
         total_not_run_at_all = 0
+        total_pass_all = 0
 
         for unittest in unittests:
             unittest_stats = stats[unittest]
@@ -138,12 +143,15 @@ def process_output(output):
                 totals['num_errors'] += unittest_stats.num_errors
                 totals['num_skipped'] += unittest_stats.num_skipped
                 totals['num_passes'] += unittest_stats.num_passes
+                if unittest_stats.num_tests == unittest_stats.num_passes:
+                    total_pass_all += 1
             else:
                 total_not_run_at_all += 1
 
         _all_runs = len(unittests)-total_not_run_at_all
         _all_total = len(unittests)
         _percent_all_runs = float(_all_runs) / float(_all_total) * 100.0
+        _percent_all_full_passes = float(total_pass_all) / float(_all_total) * 100.0
 
         _test_runs = totals['num_passes']
         _test_total = totals['num_tests']
@@ -156,8 +164,8 @@ def process_output(output):
             'num_errors': totals['num_errors'], 
             'num_skipped': totals['num_skipped'], 
             'num_passes': totals['num_passes'], 
-            'python_errors': 'Could run {}/{} unittests ({}%). Of the ones which ran, could run: {}/{} tests ({}%)'.format(
-                _all_runs, _all_total, _percent_all_runs,
+            'python_errors': 'Could run {0}/{1} unittests ({2:.2f}%). Unittests which pass completely: {3:.2f}%. Of the ones which ran, could run: {4}/{5} tests ({6:.2f}%)'.format(
+                _all_runs, _all_total, _percent_all_runs, _percent_all_full_passes,
                 _test_runs, _test_total, _percent_test_runs)
             })
 
