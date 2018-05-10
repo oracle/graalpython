@@ -35,17 +35,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#!/usr/bin/env python3
 import os 
 import sys 
 import re
+import csv
+from json import dumps
 from collections import defaultdict
 from pprint import pprint, pformat
 
 PTRN_ERROR = re.compile(r'^(?P<error>[A-Z][a-z][a-zA-Z]+):(?P<message>.*)$')
 PTRN_UNITTEST = re.compile(r'^#### running: graalpython/lib-python/3/test/(?P<unittest>.*)$')
 PTRN_NUM_TESTS = re.compile(r'^Ran (?P<num_tests>\d+) test.*$')
-PTRN_NUM_ERRORS = re.compile(r'^FAILED \((failures=(?P<failures>\d+))?(, )?((errors=(?P<errors>\d+)))?\)$')
+PTRN_NUM_ERRORS = re.compile(r'^FAILED \((failures=(?P<failures>\d+))?(, )?((errors=(?P<errors>\d+)))?(, )?((skipped=(?P<skipped>\d+)))?\)$')
 
 
 def process_output(output):
@@ -54,19 +55,16 @@ def process_output(output):
     
     class StatEntry(object):
         def __init__(self):
-            self.total_runs = -1
+            self.num_tests = -1
             self.num_errors = -1
             self.num_fails = -1
+            self.num_skipped = -1
 
         @property
         def num_passes(self):
-            return self.total_runs - (self.num_fails + self.num_errors)
-        
-        def __str__(self):
-            return '<{}: E={}, F={}, P={}>'.format(self.total_runs, self.num_errors, self.num_fails, self.num_passes)
-
-        def __repr__(self):
-            return self.__str__()
+            if self.num_tests > 0:
+                return self.num_tests - (self.num_fails + self.num_errors + self.num_skipped)
+            return -1
 
     stats = defaultdict(StatEntry)
         
@@ -80,7 +78,7 @@ def process_output(output):
             # extract python reported python error messages 
             match = re.match(PTRN_ERROR, line)
             if match:
-                error_messages[match.group('error')].add((unittests[-1], match.group('message')))
+                error_messages[unittests[-1]].add((match.group('error'), match.group('message')))
                 continue
 
             # stats 
@@ -91,19 +89,37 @@ def process_output(output):
 
             match = re.match(PTRN_NUM_TESTS, line)
             if match:
-                stats[unittests[-1]].total_runs = int(match.group('num_tests'))
+                stats[unittests[-1]].num_tests = int(match.group('num_tests'))
                 continue
 
             match = re.match(PTRN_NUM_ERRORS, line)
             if match:
                 fails = match.group('failures')
                 errs = match.group('errors')
-                if not fails and not errs:
+                skipped = match.group('skipped')
+                if not fails and not errs and not skipped:
                     continue
 
                 stats[unittests[-1]].num_fails = int(fails) if fails else 0
                 stats[unittests[-1]].num_errors = int(errs) if errs else 0
+                stats[unittests[-1]].num_skipped = int(skipped) if skipped else 0
 
+    with open('unittests.csv', 'w') as CSV:
+        fieldnames = ['unittest', 'num_tests', 'num_fails', 'num_errors', 'num_skipped', 'num_passes', 'python_errors']
+        writer = csv.DictWriter(CSV, fieldnames=fieldnames)
+        writer.writeheader()
+        for unittest in unittests:
+            unittest_stats = stats[unittest]
+            unittest_errmsg = error_messages[unittest]
+            writer.writerow({
+                'unittest': unittest,
+                'num_tests': unittest_stats.num_tests, 
+                'num_fails': unittest_stats.num_fails, 
+                'num_errors': unittest_stats.num_errors, 
+                'num_skipped': unittest_stats.num_skipped, 
+                'num_passes': unittest_stats.num_passes, 
+                'python_errors': dumps(list(unittest_errmsg))
+                })
 
 if __name__ == '__main__':
     process_output(sys.argv[1])
