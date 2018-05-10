@@ -108,6 +108,16 @@ def process_output(output):
         fieldnames = ['unittest', 'num_tests', 'num_fails', 'num_errors', 'num_skipped', 'num_passes', 'python_errors']
         writer = csv.DictWriter(CSV, fieldnames=fieldnames)
         writer.writeheader()
+
+        totals = {
+            'num_tests': 0, 
+            'num_fails': 0, 
+            'num_errors': 0, 
+            'num_skipped': 0, 
+            'num_passes': 0, 
+        }
+        total_not_run_at_all = 0
+
         for unittest in unittests:
             unittest_stats = stats[unittest]
             unittest_errmsg = error_messages[unittest]
@@ -120,6 +130,36 @@ def process_output(output):
                 'num_passes': unittest_stats.num_passes, 
                 'python_errors': dumps(list(unittest_errmsg))
                 })
+
+            # update totals that ran in some way
+            if unittest_stats.num_tests > 0:
+                totals['num_tests'] += unittest_stats.num_tests
+                totals['num_fails'] += unittest_stats.num_fails
+                totals['num_errors'] += unittest_stats.num_errors
+                totals['num_skipped'] += unittest_stats.num_skipped
+                totals['num_passes'] += unittest_stats.num_passes
+            else:
+                total_not_run_at_all += 1
+
+        _all_runs = len(unittests)-total_not_run_at_all
+        _all_total = len(unittests)
+        _percent_all_runs = float(_all_runs) / float(_all_total) * 100.0
+
+        _test_runs = totals['num_passes']
+        _test_total = totals['num_tests']
+        _percent_test_runs = float(_test_runs) / float(_test_total) * 100.0
+
+        writer.writerow({
+            'unittest': 'TOTAL',
+            'num_tests': totals['num_tests'], 
+            'num_fails': totals['num_fails'], 
+            'num_errors': totals['num_errors'], 
+            'num_skipped': totals['num_skipped'], 
+            'num_passes': totals['num_passes'], 
+            'python_errors': 'Could run {}/{} unittests ({}%). Of the ones which ran, could run: {}/{} tests ({}%)'.format(
+                _all_runs, _all_total, _percent_all_runs,
+                _test_runs, _test_total, _percent_test_runs)
+            })
 
 if __name__ == '__main__':
     process_output(sys.argv[1])
