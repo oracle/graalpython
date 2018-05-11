@@ -360,6 +360,10 @@ def graalpython_gate_runner(args, tasks):
         if task:
             python_checkcopyrights([])
 
+    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
+        if task:
+            run_shared_lib_test()
+
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
         if task:
             mx.run_mx(
@@ -383,10 +387,6 @@ def graalpython_gate_runner(args, tasks):
                 "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 36, 36, 35, 41, 41, 40, 40, 45, 51, 52, 53, 54, 55]"])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-
-    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
-        if task:
-            run_shared_lib_test()
 
     for name, iterations in sorted(python_test_benchmarks.iteritems()):
         with Task('PythonBenchmarksTest:' + name, tasks, tags=[GraalPythonTags.benchmarks]) as task:
@@ -446,6 +446,10 @@ def run_shared_lib_test(args=None):
                 return status;
             }
             status = poly_context_builder_engine(isolate_thread, builder, engine);
+            if (status != poly_ok) {
+                return status;
+            }
+            status = poly_context_builder_option(isolate_thread, builder, "python.VerboseFlag", "true");
             if (status != poly_ok) {
                 return status;
             }
@@ -516,16 +520,16 @@ def run_shared_lib_test(args=None):
             if (poly_create_isolate(&isolate_params, &global_isolate)) {
                 return 1;
             }
-            if (test_basic_python_function()) {
-                return 0;
-            } else {
-                return 1;
-            }
+            return test_basic_python_function();
         }
         """)
         os.close(fd)
-        progname = tempfile.mktemp()
-        mx.run(["cc", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"], nonZeroIsFatal=True)
+        progname = os.path.join(_suite.dir, "graalpython-embedded-tool")
+        mx.log("".join(["Running ", "'clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o", progname, "-lpolyglot"]))
+        mx.run(["clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"], nonZeroIsFatal=True)
+        mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
+        mx.run(["ls", "-l", progname])
+        mx.run(["ls", "-l", svm_lib_path])
         mx.run([progname], env={"LD_LIBRARY_PATH": svm_lib_path})
     finally:
         try:
