@@ -42,8 +42,8 @@ cd ..
 UNIT_TESTS_PATH="graalpython/lib-python/3/test/test_*.py"
 for TEST in ${UNIT_TESTS_PATH}
 do
-    echo "----------------------------------------------------------------------"
-    echo "running: ${TEST}"
+    echo "##############################################################"
+    echo "#### running: ${TEST}"
     mx python3 --python.CatchAllExceptions=true ${TEST}
 done
 
