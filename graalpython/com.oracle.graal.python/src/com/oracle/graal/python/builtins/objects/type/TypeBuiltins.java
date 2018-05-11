@@ -415,7 +415,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean instanceCheck(PythonClass cls, Object derived) {
-            return isSubtypeNode.execute(derived, cls);
+            return cls == derived || isSubtypeNode.execute(derived, cls);
         }
     }
 

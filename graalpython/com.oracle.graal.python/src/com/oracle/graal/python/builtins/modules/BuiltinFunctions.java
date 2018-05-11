@@ -731,11 +731,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract boolean executeWith(Object derived, Object cls);
 
-        @Specialization
-        public boolean isSubclassType(Object derived, PythonClass cls) {
-            return derived == cls || isSubtypeNode.execute(derived, cls);
-        }
-
         @Specialization(guards = "clsTuple.len() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop
         public boolean isSubclassTupleConstantLen(Object derived, PTuple clsTuple,
@@ -764,7 +759,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         public boolean isSubclass(Object derived, Object cls) {
-            return isInstanceCheckInternal(derived, cls) || isSubtypeNode.execute(derived, cls);
+            return derived == cls || isInstanceCheckInternal(derived, cls) || isSubtypeNode.execute(derived, cls);
         }
     }
 
