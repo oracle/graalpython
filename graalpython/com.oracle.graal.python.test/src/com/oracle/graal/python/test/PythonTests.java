@@ -55,7 +55,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.shell.GraalPythonEnvVars;
 import com.oracle.graal.python.test.interop.JavaInteropTest;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;

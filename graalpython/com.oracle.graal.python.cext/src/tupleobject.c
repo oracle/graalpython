@@ -50,7 +50,7 @@ int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
 }
 
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position) {
-	void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetItem", jtuple, position, ERROR_MARKER);
+	void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetItem", jtuple, position);
 	if (result == ERROR_MARKER) {
 		return NULL;
 	}
@@ -66,7 +66,7 @@ Py_ssize_t PyTuple_Size(PyObject *op) {
 }
 
 PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetSlice", to_java(tuple), i, j, ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetSlice", to_java(tuple), i, j);
     if (result == ERROR_MARKER) {
     	return NULL;
     }

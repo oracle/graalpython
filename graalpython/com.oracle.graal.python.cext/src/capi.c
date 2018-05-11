@@ -60,6 +60,10 @@ static void initialize_globals() {
     truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(to_sulong(jtrue)));
     void *jfalse = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_False");
     truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(to_sulong(jfalse)));
+
+    // error marker
+    void *jerrormarker = polyglot_as__object(polyglot_get_member(PY_TRUFFLE_CEXT, "error_handler"));
+    truffle_assign_managed(&marker_struct, jerrormarker);
 }
 
 __attribute__((constructor))
@@ -359,7 +363,7 @@ void WritePySSizeT(PyObject* object, int offset, Py_ssize_t value) {
 
 PyObject marker_struct = {
   _PyObject_EXTRA_INIT
-  1, &_PyNone_Type
+  1, &PyBaseObject_Type
 };
 
 #undef WriteMember

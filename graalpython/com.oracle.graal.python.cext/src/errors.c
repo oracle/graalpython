@@ -98,7 +98,7 @@ void PyErr_SetNone(PyObject *exception) {
 }
 
 static void _PyErr_GetOrFetchExcInfo(int consume, PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_Fetch", (consume ? Py_True : Py_False), ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_Fetch", (consume ? Py_True : Py_False));
     if(result == ERROR_MARKER) {
     	*p_type = NULL;
     	*p_value = NULL;

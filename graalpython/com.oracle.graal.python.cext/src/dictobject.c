@@ -51,7 +51,7 @@ int PyDict_SetItem(PyObject* d, PyObject* k, PyObject* v) {
 }
 
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
-    void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_GetItem", to_java(d), to_java(k), ERROR_MARKER);
+    void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_GetItem", to_java(d), to_java(k));
     if (result == ERROR_MARKER) {
         return NULL;
     } else {
@@ -65,7 +65,7 @@ int PyDict_DelItem(PyObject *d, PyObject *key) {
 
 
 int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
-    void *tresult = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_Next", to_java(d), *ppos, ERROR_MARKER);
+    void *tresult = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_Next", to_java(d), *ppos);
     if (tresult == ERROR_MARKER) {
     	if(pkey != NULL) {
     		*pkey = NULL;

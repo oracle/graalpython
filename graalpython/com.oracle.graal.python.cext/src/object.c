@@ -567,7 +567,7 @@ int PyObject_Not(PyObject* obj) {
 }
 
 PyObject * PyObject_RichCompare(PyObject *v, PyObject *w, int op) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_RichCompare", to_java(v), to_java(w), op, ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_RichCompare", to_java(v), to_java(w), op);
     if (result == ERROR_MARKER) {
         return NULL;
     } else {
@@ -582,4 +582,21 @@ int PyObject_RichCompareBool(PyObject *v, PyObject *w, int op) {
     } else {
         return PyObject_IsTrue(res);
     }
+}
+
+PyObject* _PyObject_New(PyTypeObject *tp) {
+    PyObject *op = (PyObject*)PyObject_MALLOC(_PyObject_SIZE(tp));
+    if (op == NULL) {
+        return PyErr_NoMemory();
+    }
+    return PyObject_INIT(op, tp);
+}
+
+PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
+    if (op == NULL) {
+        return PyErr_NoMemory();
+    }
+    Py_TYPE(op) = tp;
+    _Py_NewReference(op);
+    return op;
 }
