@@ -89,6 +89,10 @@ public final class PList extends PSequence {
         store.delSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step);
     }
 
+    public final void clear() {
+        store.delSlice(0, store.length(), 1);
+    }
+
     @Override
     public final boolean lessThan(PSequence sequence) {
         return false;

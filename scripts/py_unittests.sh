@@ -35,27 +35,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _imp
-import sys
+#!/bin/bash
 
+cd "$(dirname $0)"
+cd ..
+UNIT_TESTS_PATH="graalpython/lib-python/3/test/test_*.py"
+for TEST in ${UNIT_TESTS_PATH}
+do
+    echo "----------------------------------------------------------------------"
+    echo "running: ${TEST}"
+    mx python3 --python.CatchAllExceptions=true ${TEST}
+done
 
-lib_python = None
-for p in sys.path:
-    if "lib-python/3" in p:
-        path, delim, _ = p.partition('lib-python/3')
-        lib_python = path + delim
-        break
-
-if lib_python is None:
-    raise RuntimeError("Cannot load frozen_importlib")
-
-
-_imp._truffle_bootstrap_file_into_module(lib_python + "/importlib/_bootstrap.py", "_frozen_importlib")
-
-
-# This will setup and install first the builtin and frozen,
-# then the path-based and file-based loaders
-sys.modules[__name__] = sys.modules['_frozen_importlib']
-_install(sys, _imp)
-
-sys.modules['builtins'].__import__ = __import__
+echo "DONE"

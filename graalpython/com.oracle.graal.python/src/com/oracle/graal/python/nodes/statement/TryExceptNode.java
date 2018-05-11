@@ -25,11 +25,20 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
+
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class TryExceptNode extends StatementNode {
@@ -37,6 +46,8 @@ public class TryExceptNode extends StatementNode {
     @Child private PNode body;
     @Children final ExceptNode[] exceptNodes;
     @Child private PNode orelse;
+
+    @CompilationFinal boolean seenException;
 
     public TryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse) {
         this.body = body;
@@ -51,8 +62,35 @@ public class TryExceptNode extends StatementNode {
         } catch (PException ex) {
             catchException(frame, ex);
             return PNone.NONE;
+        } catch (Exception e) {
+            if (!seenException) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                seenException = true;
+            }
+
+            if (PythonOptions.getOption(getContext(), CatchAllExceptions)) {
+                if (e instanceof ControlFlowException) {
+                    throw e;
+                } else {
+                    PException pe = new PException(getBaseException(e), this);
+                    try {
+                        catchException(frame, pe);
+                    } catch (PException pe_thrown) {
+                        if (pe_thrown != pe) {
+                            throw e;
+                        }
+                    }
+                }
+            } else {
+                throw e;
+            }
         }
         return orelse.execute(frame);
+    }
+
+    @TruffleBoundary
+    private PBaseException getBaseException(Throwable t) {
+        return factory().createBaseException(getCore().getErrorClass(PythonErrorType.ValueError), t.getMessage(), new Object[0]);
     }
 
     @ExplodeLoop

@@ -61,6 +61,9 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
+import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
+import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
@@ -88,21 +91,6 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonObject.class)
 public class PythonMessageResolution {
-    private static final class IsSequence extends Node {
-        @Child private LookupInheritedAttributeNode getGetItemNode = LookupInheritedAttributeNode.create();
-        @Child private LookupInheritedAttributeNode getLenNode = LookupInheritedAttributeNode.create();
-        final ConditionProfile lenProfile = ConditionProfile.createBinaryProfile();
-        final ConditionProfile getItemProfile = ConditionProfile.createBinaryProfile();
-
-        public boolean execute(Object object) {
-            Object len = getLenNode.execute(object, SpecialMethodNames.__LEN__);
-            if (lenProfile.profile(len != PNone.NO_VALUE)) {
-                return getItemProfile.profile(getGetItemNode.execute(object, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE);
-            }
-            return false;
-        }
-    }
-
     private static final class HasSetItem extends Node {
         @Child private LookupInheritedAttributeNode getSetItemNode = LookupInheritedAttributeNode.create();
         final ConditionProfile profile = ConditionProfile.createBinaryProfile();
@@ -122,7 +110,7 @@ public class PythonMessageResolution {
     }
 
     private static final class IsImmutable extends Node {
-        @Child private IsSequence isSequence = new IsSequence();
+        @Child private IsSequenceNode isSequence = IsSequenceNode.create();
         @Child private HasSetItem hasSetItem = new HasSetItem();
         final ConditionProfile builtinProfile = ConditionProfile.createBinaryProfile();
 
@@ -131,23 +119,6 @@ public class PythonMessageResolution {
                 return true;
             }
             return isSequence.execute(object) && !hasSetItem.execute(object);
-        }
-    }
-
-    private static final class IsMapping extends Node {
-        @Child private LookupInheritedAttributeNode getKeysNode = LookupInheritedAttributeNode.create();
-        @Child private LookupInheritedAttributeNode getItemsNode = LookupInheritedAttributeNode.create();
-        @Child private LookupInheritedAttributeNode getValuesNode = LookupInheritedAttributeNode.create();
-        @Child private IsSequence isSequence = new IsSequence();
-        final ConditionProfile profile = ConditionProfile.createBinaryProfile();
-
-        public boolean execute(Object object) {
-            if (isSequence.execute(object)) {
-                return profile.profile((getKeysNode.execute(object, SpecialMethodNames.KEYS) != PNone.NO_VALUE) &&
-                                (getItemsNode.execute(object, SpecialMethodNames.ITEMS) != PNone.NO_VALUE) &&
-                                (getValuesNode.execute(object, SpecialMethodNames.VALUES) != PNone.NO_VALUE));
-            }
-            return false;
         }
     }
 
@@ -184,7 +155,7 @@ public class PythonMessageResolution {
     private static final class ReadNode extends Node {
         private static final Object NONEXISTING_IDENTIFIER = new Object();
 
-        @Child private IsSequence isSequence = new IsSequence();
+        @Child private IsSequenceNode isSequence = IsSequenceNode.create();
         @Child private GetAttributeNode readNode = GetAttributeNode.create();
         @Child private GetItemNode getItemNode = GetItemNode.create();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();
@@ -226,7 +197,7 @@ public class PythonMessageResolution {
     }
 
     private static final class KeysNode extends Node {
-        @Child private IsMapping isMapping = new IsMapping();
+        @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private LookupAndCallUnaryNode keysNode = LookupAndCallUnaryNode.create(SpecialMethodNames.KEYS);
         @Child private CastToListNode castToList = CastToListNode.create();
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
@@ -325,7 +296,7 @@ public class PythonMessageResolution {
     abstract static class WriteNode extends Node {
         @Child private SetItemNode setItemNode = SetItemNode.create();
         @Child private SetAttributeNode writeNode = SetAttributeNode.create();
-        @Child private IsMapping isMapping = new IsMapping();
+        @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private HasSetItem hasSetItem = new HasSetItem();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();
         @Child private KeyForItemAccess getItemKey = new KeyForItemAccess();
@@ -369,7 +340,7 @@ public class PythonMessageResolution {
     abstract static class PRemoveNode extends Node {
         @Child private DeleteItemNode delItemNode = DeleteItemNode.create();
         @Child private DeleteAttributeNode delNode = DeleteAttributeNode.create();
-        @Child private IsMapping isMapping = new IsMapping();
+        @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private HasDelItem hasDelItem = new HasDelItem();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();
         @Child private KeyForItemAccess getItemKey = new KeyForItemAccess();
@@ -422,10 +393,10 @@ public class PythonMessageResolution {
 
     @Resolve(message = "IS_EXECUTABLE")
     abstract static class PForeignIsExecutableNode extends Node {
-        @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create();
+        @Child private IsCallableNode isCallableNode = IsCallableNode.create();
 
         public Object access(Object receiver) {
-            return getCall.execute(receiver, SpecialMethodNames.__CALL__) != PNone.NO_VALUE;
+            return isCallableNode.execute(receiver);
         }
     }
 
@@ -480,7 +451,7 @@ public class PythonMessageResolution {
 
     @Resolve(message = "GET_SIZE")
     abstract static class PForeignGetSizeNode extends Node {
-        @Child IsSequence isSeq = new IsSequence();
+        @Child IsSequenceNode isSeq = IsSequenceNode.create();
         @Child private BuiltinFunctions.LenNode lenNode = BuiltinFunctionsFactory.LenNodeFactory.create(null);
 
         public Object access(Object object) {

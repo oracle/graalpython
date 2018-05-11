@@ -25,16 +25,26 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -48,12 +58,12 @@ import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -71,6 +81,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -88,7 +99,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PList.class)
 public class ListBuiltins extends PythonBuiltins {
@@ -477,24 +487,56 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListExtendNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PList extend(PList list, Object source,
+        @Specialization(guards = {"isPSequenceWithStorage(source)"}, rewriteOn = {SequenceStoreException.class})
+        public PNone extendSequenceStore(PList list, Object source) throws SequenceStoreException {
+            SequenceStorage target = list.getSequenceStorage();
+            target.extend(((PSequence) source).getSequenceStorage());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isPSequenceWithStorage(source)"})
+        public PNone extendSequence(PList list, Object source) {
+            SequenceStorage eSource = ((PSequence) source).getSequenceStorage();
+            if (eSource.length() > 0) {
+                SequenceStorage target = list.getSequenceStorage();
+                try {
+                    target.extend(eSource);
+                } catch (SequenceStoreException e) {
+                    target = target.generalizeFor(eSource.getItemNormalized(0));
+                    list.setSequenceStorage(target);
+                    try {
+                        target.extend(eSource);
+                    } catch (SequenceStoreException e1) {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPSequenceWithStorage(source)")
+        public PNone extend(PList list, Object source,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-
-            Object iterator = getIterator.executeWith(source);
+            Object workSource = list != source ? source : factory().createList(((PList) source).getSequenceStorage().copy());
+            Object iterator = getIterator.executeWith(workSource);
             while (true) {
                 Object value;
                 try {
                     value = next.execute(iterator);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
-                    return list;
+                    return PNone.NONE;
                 }
                 list.append(value);
             }
         }
+
+        protected boolean isPSequenceWithStorage(Object source) {
+            return (source instanceof PSequence && !(source instanceof PTuple || source instanceof PRange));
+        }
+
     }
 
     // list.insert(i, x)
@@ -807,8 +849,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         private int findIndex(PList list, Object value, int start, int end, BinaryComparisonNode eqNode) {
-            int len = list.len();
-            for (int i = start; i < end && i < len; i++) {
+            for (int i = start; i < end && i < list.len(); i++) {
                 Object object = list.getItem(i);
                 if (eqNode.executeBool(object, value)) {
                     return i;
@@ -938,6 +979,21 @@ public class ListBuiltins extends PythonBuiltins {
 
     }
 
+    // list.clear()
+    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ListClearNode extends PythonBuiltinNode {
+
+        @Specialization
+        public PNone clear(PList list) {
+            if (list.len() > 0) {
+                list.setSequenceStorage(new EmptySequenceStorage());
+            }
+            return PNone.NONE;
+        }
+
+    }
+
     // list.reverse()
     @Builtin(name = "reverse", fixedNumOfArguments = 1)
     @GenerateNodeFactory
@@ -1004,7 +1060,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBuiltinNode {
         @Specialization(guards = "areBothIntStorage(left,right)")
@@ -1046,7 +1102,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
         @Specialization
@@ -1092,12 +1148,12 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBuiltinNode {
         protected abstract boolean executeWith(Object left, Object right);
@@ -1132,7 +1188,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBuiltinNode {
         @Specialization(guards = "areBothIntStorage(left,right)")
@@ -1167,7 +1223,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
 
@@ -1194,7 +1250,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
@@ -1221,7 +1277,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization(guards = "isEmptyStorage(list)")
@@ -1258,7 +1314,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
@@ -1287,7 +1343,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization

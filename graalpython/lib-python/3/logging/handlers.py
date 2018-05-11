@@ -22,14 +22,18 @@ Copyright (C) 2001-2016 Vinay Sajip. All Rights Reserved.
 
 To use, simply 'import logging.handlers' and log away!
 """
-
-import logging, socket, os, pickle, struct, time, re
+# TODO: Truffle reenable me once socket is supported (GR-9140)
+# import logging, socket, os, pickle, struct, time, re
+import logging, os, pickle, struct, time, re
 from stat import ST_DEV, ST_INO, ST_MTIME
-import queue
-try:
-    import threading
-except ImportError: #pragma: no cover
-    threading = None
+# TODO: Truffle reenable me once queue and threading is supported (GR-9144)
+# import queue
+# TODO: Truffle reenable me once threading is supported (GR-9144)
+# try:
+#     import threading
+# except ImportError: #pragma: no cover
+#     threading = None
+threading = None
 
 #
 # Some constants...
