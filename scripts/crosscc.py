@@ -48,7 +48,7 @@ args = sys.argv[1:]
 
 
 gcc = " ".join(["gcc"] + args)
-print("GCC: ", gcc)
+os.write(2, bytes("GCC: " + gcc + "\n"))
 retval = os.system(gcc)
 
 
@@ -62,7 +62,7 @@ args = ["-I%s/graalpython/include" % GP] + args
 
 
 sulong = " ".join([MX, "-p", GP, "python -CC"] + args)
-print("SULONG: ", sulong)
+os.write(2, bytes("SULONG: " + sulong + "\n"))
 retval |= os.system(sulong)
 
 os._exit(retval)
