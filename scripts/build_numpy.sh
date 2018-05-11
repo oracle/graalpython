@@ -48,4 +48,65 @@ export CC="${DIR}/crosscc.py"
 
 pushd "$NPY_PATH"
 python3 setup.py build
+
+# finally, link the multiarray module
+LD -pthread -shared -Bsymbolic-functions -Bsymbolic-functions \
+   -specs=/usr/share/dpkg/no-pie-link.specs -Bsymbolic-functions \
+   -specs=/usr/share/dpkg/no-pie-link.specs -g \
+   -fdebug-prefix-map=/build/python3.6-sXpGnM/python3.6-3.6.3=. -specs=/usr/share/dpkg/no-pie-compile.specs \
+   -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time \
+   -D_FORTIFY_SOURCE=2 \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/alloc.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/arrayobject.bc \
+   build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.6/numpy/core/src/multiarray/arraytypes.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/array_assign.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/array_assign_scalar.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/array_assign_array.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/buffer.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/calculation.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/compiled_base.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/common.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/convert.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/convert_datatype.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/conversion_utils.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/ctors.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/datetime.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/datetime_strings.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/datetime_busday.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/datetime_busdaycal.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/descriptor.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/dragon4.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/dtype_transfer.bc \
+   build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.6/numpy/core/src/multiarray/einsum.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/flagsobject.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/getset.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/hashdescr.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/item_selection.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/iterators.bc \
+   build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.6/numpy/core/src/multiarray/lowlevel_strided_loops.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/mapping.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/methods.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/multiarraymodule.bc \
+   build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.6/numpy/core/src/multiarray/nditer_templ.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/nditer_api.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/nditer_constr.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/nditer_pywrap.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/number.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/numpyos.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/refcount.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/sequence.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/shape.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/scalarapi.bc \
+   build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.6/numpy/core/src/multiarray/scalartypes.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/strfuncs.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/temp_elide.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/usertypes.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/ucsnarrow.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/vdot.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/private/mem_overlap.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/private/npy_longdouble.bc \
+   build/temp.linux-x86_64-3.*/numpy/core/src/private/ufunc_override.bc \
+   -Lbuild/temp.linux-x86_64-3.* -lnpymath -lnpysort -o \
+   build/multiarray.bc
+
 popd
