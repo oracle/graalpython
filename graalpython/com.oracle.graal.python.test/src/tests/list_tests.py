@@ -256,24 +256,24 @@ class CommonTest(seq_tests.CommonTest):
         self.assertEqual(a, self.type2test([0, 1, 2]))
 
         self.assertRaises(TypeError, a.append)
-    '''
+    
     def test_extend(self):
         a1 = self.type2test([0])
         a2 = self.type2test((0, 1))
         a = a1[:]
         a.extend(a2)
         self.assertEqual(a, a1 + a2)
-
+        
         a.extend(self.type2test([]))
         self.assertEqual(a, a1 + a2)
-
+        
         a.extend(a)
         self.assertEqual(a, self.type2test([0, 0, 1, 0, 0, 1]))
-
+        
         a = self.type2test("spam")
         a.extend("eggs")
         self.assertEqual(a, list("spameggs"))
-
+        
         self.assertRaises(TypeError, a.extend, None)
         self.assertRaises(TypeError, a.extend)
 
@@ -288,7 +288,7 @@ class CommonTest(seq_tests.CommonTest):
         a = self.type2test([1,2,3,4])
         a.extend(CustomIter())
         self.assertEqual(a, [1,2,3,4])
-    '''
+
     def test_insert(self):
         a = self.type2test([0, 1, 2])
         a.insert(0, -2)

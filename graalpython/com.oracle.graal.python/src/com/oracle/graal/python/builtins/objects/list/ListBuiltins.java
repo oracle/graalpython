@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -486,24 +487,56 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListExtendNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PList extend(PList list, Object source,
+        @Specialization(guards = {"isPSequenceWithStorage(source)"}, rewriteOn = {SequenceStoreException.class})
+        public PNone extendSequenceStore(PList list, Object source) throws SequenceStoreException {
+            SequenceStorage target = list.getSequenceStorage();
+            target.extend(((PSequence) source).getSequenceStorage());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isPSequenceWithStorage(source)"})
+        public PNone extendSequence(PList list, Object source) {
+            SequenceStorage eSource = ((PSequence) source).getSequenceStorage();
+            if (eSource.length() > 0) {
+                SequenceStorage target = list.getSequenceStorage();
+                try {
+                    target.extend(eSource);
+                } catch (SequenceStoreException e) {
+                    target = target.generalizeFor(eSource.getItemNormalized(0));
+                    list.setSequenceStorage(target);
+                    try {
+                        target.extend(eSource);
+                    } catch (SequenceStoreException e1) {
+                        throw new IllegalStateException();
+                    }
+                }
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPSequenceWithStorage(source)")
+        public PNone extend(PList list, Object source,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-
-            Object iterator = getIterator.executeWith(source);
+            Object workSource = list != source ? source : factory().createList(((PList) source).getSequenceStorage().copy());
+            Object iterator = getIterator.executeWith(workSource);
             while (true) {
                 Object value;
                 try {
                     value = next.execute(iterator);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
-                    return list;
+                    return PNone.NONE;
                 }
                 list.append(value);
             }
         }
+
+        protected boolean isPSequenceWithStorage(Object source) {
+            return (source instanceof PSequence && !(source instanceof PTuple || source instanceof PRange));
+        }
+
     }
 
     // list.insert(i, x)
