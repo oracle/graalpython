@@ -55,6 +55,10 @@ static void initialize_globals() {
     void *jnotimpl = polyglot_as__object(to_sulong(polyglot_get_member(PY_BUILTIN, "NotImplemented")));
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
+    // Ellipsis
+    void *jellipsis = polyglot_as__object(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_Ellipsis")));
+    truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
+
     // True, False
     void *jtrue = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_True");
     truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(to_sulong(jtrue)));

@@ -129,6 +129,11 @@ PyObject _Py_NoneStruct = {
   1, &_PyNone_Type
 };
 
+PyObject _Py_EllipsisObject = {
+  _PyObject_EXTRA_INIT
+  1, &_PyNone_Type
+};
+
 PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT);
 
 PyObject _Py_NotImplementedStruct = {

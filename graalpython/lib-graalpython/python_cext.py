@@ -75,6 +75,10 @@ def Py_False():
     return False
 
 
+def Py_Ellipsis():
+    return ...
+
+
 moduletype = type(sys)
 
 
