@@ -69,6 +69,7 @@ public abstract class SpecialMethodNames {
     public static final String __INIT_SUBCLASS__ = "__init_subclass__";
     public static final String __INSTANCECHECK__ = "__instancecheck__";
     public static final String __SUBCLASSCHECK__ = "__subclasscheck__";
+    public static final String __SUBCLASSES__ = "__subclasses__";
     public static final String __CALL__ = "__call__";
     public static final String __LEN__ = "__len__";
     public static final String __LENGTH_HINT__ = "__length_hint__";
