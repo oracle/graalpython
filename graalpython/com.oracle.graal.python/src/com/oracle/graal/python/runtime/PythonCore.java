@@ -124,13 +124,23 @@ public interface PythonCore {
     public PythonContext getContext();
 
     static void writeWarning(TruffleLanguage.Env env, String warning) {
-        if (!LIBPOLYGLOT) {
-            try {
-                env.err().write("[python] WARNING: ".getBytes());
-                env.err().write(warning.getBytes());
-                env.err().write('\n');
-            } catch (IOException e) {
-            }
+        if (!LIBPOLYGLOT || env.getOptions().get(PythonOptions.VerboseFlag)) {
+            write(env, "WARNING: " + warning);
+        }
+    }
+
+    static void writeInfo(TruffleLanguage.Env env, String warning) {
+        if (env.getOptions().get(PythonOptions.VerboseFlag)) {
+            write(env, warning);
+        }
+    }
+
+    static void write(TruffleLanguage.Env env, String warning) {
+        try {
+            env.err().write("[python] ".getBytes());
+            env.err().write(warning.getBytes());
+            env.err().write('\n');
+        } catch (IOException e) {
         }
     }
 
@@ -155,7 +165,7 @@ public interface PythonCore {
         String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
         if (sysPrefix.isEmpty()) {
             writeWarning(env, NO_PREFIX_WARNING);
-            env.getOptions().set(PythonOptions.CoreHome, PREFIX);
+            env.getOptions().set(PythonOptions.SysPrefix, PREFIX);
             return LIB_GRAALPYTHON;
         }
         return sysPrefix;
