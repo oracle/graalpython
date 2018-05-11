@@ -36,15 +36,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.nodes.datamodel;
 
-public abstract class NativeCAPISymbols {
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.truffle.api.dsl.ImportStatic;
 
-    public static final String FUNCTION_NATIVE_TO_JAVA = "native_to_java";
-    public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE = "PyObjectHandle_ForJavaType";
-    public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
-    public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
-
+@ImportStatic({PGuards.class, SpecialMethodNames.class})
+public abstract class PDataModelEmulationNode extends PBaseNode {
+    public abstract boolean execute(Object object);
 }

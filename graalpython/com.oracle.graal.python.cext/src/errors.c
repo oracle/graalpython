@@ -91,7 +91,6 @@ int PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc) {
         return 0;
     }
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyErr_GivenExceptionMatches", to_java(err), to_java(exc));
-
 }
 
 void PyErr_SetNone(PyObject *exception) {
@@ -149,7 +148,7 @@ int PyErr_ExceptionMatches(PyObject *exc) {
 }
 
 PyObject* PyTruffle_Err_Format(PyObject* exception, const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
-    PyObject *formatted_msg = PyTruffle_Unicode_FromFormat(fmt, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
+    PyObject *formatted_msg = PyTruffle_Unicode_FromFormat(fmt, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_CreateAndSetException", to_java(exception), to_java(formatted_msg));
     return NULL;
 }
@@ -161,4 +160,3 @@ void PyErr_WriteUnraisable(PyObject *obj) {
 void PyErr_Display(PyObject *exception, PyObject *value, PyObject *tb) {
     truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_Display", to_java(exception), to_java(value), to_java(tb));
 }
-

@@ -25,16 +25,26 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -53,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -71,6 +80,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -88,7 +98,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
-import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PList.class)
 public class ListBuiltins extends PythonBuiltins {
@@ -502,17 +511,110 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListInsertNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PList insert(PList list, int index, Object value) {
-            list.insert(index, value);
-            return list;
+        public abstract PNone execute(PList list, Object index, Object value);
+
+        @Specialization(guards = "isIntStorage(list)")
+        public PNone insertIntInt(PList list, int index, int value) {
+            IntSequenceStorage target = (IntSequenceStorage) list.getSequenceStorage();
+            target.insertIntItem(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone insertLongLong(PList list, int index, int value) {
+            LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
+            target.insertLongItem(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone insertLongLong(PList list, int index, long value) {
+            LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
+            target.insertLongItem(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        public PNone insertDoubleDouble(PList list, int index, double value) {
+            DoubleSequenceStorage target = (DoubleSequenceStorage) list.getSequenceStorage();
+            target.insertDoubleItem(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isNotSpecialCase(list, value)")
+        public PNone insert(PList list, int index, Object value) {
+            list.insert(normalizeIndex(index, list.len()), value);
+            return PNone.NONE;
         }
 
         @Specialization
-        @SuppressWarnings("unused")
-        public PList insert(PList list, Object i, Object arg1) {
-            throw new RuntimeException("invalid arguments for insert()");
+        public PNone insertLongIndex(PList list, long index, Object value,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            int where = index < Integer.MIN_VALUE ? 0 : index > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) index;
+            where = normalizeIndex(where, list.len());
+            return insertNode.execute(list, where, value);
         }
+
+        @Specialization
+        public PNone insertPIntIndex(PList list, PInt index, Object value,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            int where = normalizePIntForIndex(index);
+            where = normalizeIndex(where, list.len());
+            return insertNode.execute(list, where, value);
+        }
+
+        @Specialization(guards = {"!isIntegerOrPInt(i)"})
+        public PNone insert(PList list, Object i, Object value,
+                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode indexNode,
+                        @Cached("createListInsertNode()") ListInsertNode insertNode) {
+            Object indexValue = indexNode.executeObject(i);
+            if (PNone.NO_VALUE == indexValue) {
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", i);
+            }
+            return insertNode.execute(list, indexValue, value);
+        }
+
+        @TruffleBoundary
+        private static int normalizePIntForIndex(PInt index) {
+            int where = 0;
+            BigInteger bigIndex = index.getValue();
+            if (bigIndex.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) == -1) {
+                where = 0;
+            } else if (bigIndex.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) == 1) {
+                where = Integer.MAX_VALUE;
+            } else {
+                where = bigIndex.intValue();
+            }
+            return where;
+        }
+
+        private static int normalizeIndex(int index, int len) {
+            int idx = index;
+            if (idx < 0) {
+                idx += len;
+                if (idx < 0) {
+                    idx = 0;
+                }
+            }
+            if (idx > len) {
+                idx = len;
+            }
+            return idx;
+        }
+
+        protected boolean isNotSpecialCase(PList list, Object value) {
+            return !((PGuards.isIntStorage(list) && value instanceof Integer) || (PGuards.isLongStorage(list) && PGuards.isInteger(value)) ||
+                            (PGuards.isDoubleStorage(list) && value instanceof Double));
+        }
+
+        protected boolean isIntegerOrPInt(Object index) {
+            return index instanceof Integer || index instanceof PInt;
+        }
+
+        protected ListInsertNode createListInsertNode() {
+            return ListBuiltinsFactory.ListInsertNodeFactory.create(new PNode[0]);
+        }
+
     }
 
     // list.remove(x)
@@ -520,15 +622,73 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListRemoveNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PList remove(PList list, Object arg) {
-            int index = list.index(arg);
-            if (index >= 0) {
-                list.delItem(index);
-                return list;
-            } else {
-                throw raise(PythonErrorType.ValueError, "list.remove(x): x not in list");
+        private static String NOT_IN_LIST_MESSAGE = "list.index(x): x not in list";
+
+        @Specialization(guards = "isIntStorage(list)")
+        public PNone removeInt(PList list, int value) {
+            IntSequenceStorage store = (IntSequenceStorage) list.getSequenceStorage();
+            for (int index = 0; index < store.length(); index++) {
+                if (value == store.getIntItemNormalized(index)) {
+                    store.delItemInBound(index);
+                    return PNone.NONE;
+                }
             }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone removeLong(PList list, int value) {
+            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
+            for (int index = 0; index < store.length(); index++) {
+                if (value == store.getLongItemNormalized(index)) {
+                    store.delItemInBound(index);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        public PNone removeLong(PList list, long value) {
+            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
+            for (int index = 0; index < store.length(); index++) {
+                if (value == store.getLongItemNormalized(index)) {
+                    store.delItemInBound(index);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        public PNone removeDouble(PList list, double value) {
+            DoubleSequenceStorage store = (DoubleSequenceStorage) list.getSequenceStorage();
+            for (int index = 0; index < store.length(); index++) {
+                if (value == store.getDoubleItemNormalized(index)) {
+                    store.delItemInBound(index);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        @Specialization(guards = "isNotSpecialCase(list, value)")
+        public PNone remove(PList list, Object value,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            int len = list.len();
+            for (int i = 0; i < len; i++) {
+                Object object = list.getItem(i);
+                if (eqNode.executeBool(object, value)) {
+                    list.delItem(i);
+                    return PNone.NONE;
+                }
+            }
+            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
+        }
+
+        protected boolean isNotSpecialCase(PList list, Object value) {
+            return !((PGuards.isIntStorage(list) && value instanceof Integer) || (PGuards.isLongStorage(list) && (value instanceof Integer || value instanceof Long)) ||
+                            PGuards.isDoubleStorage(list) && value instanceof Double);
         }
     }
 
@@ -656,8 +816,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         private int findIndex(PList list, Object value, int start, int end, BinaryComparisonNode eqNode) {
-            int len = list.len();
-            for (int i = start; i < end && i < len; i++) {
+            for (int i = start; i < end && i < list.len(); i++) {
                 Object object = list.getItem(i);
                 if (eqNode.executeBool(object, value)) {
                     return i;
@@ -787,6 +946,21 @@ public class ListBuiltins extends PythonBuiltins {
 
     }
 
+    // list.clear()
+    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ListClearNode extends PythonBuiltinNode {
+
+        @Specialization
+        public PNone clear(PList list) {
+            if (list.len() > 0) {
+                list.setSequenceStorage(new EmptySequenceStorage());
+            }
+            return PNone.NONE;
+        }
+
+    }
+
     // list.reverse()
     @Builtin(name = "reverse", fixedNumOfArguments = 1)
     @GenerateNodeFactory
@@ -853,7 +1027,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBuiltinNode {
         @Specialization(guards = "areBothIntStorage(left,right)")
@@ -895,7 +1069,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
         @Specialization
@@ -941,12 +1115,12 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBuiltinNode {
         protected abstract boolean executeWith(Object left, Object right);
@@ -981,7 +1155,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBuiltinNode {
         @Specialization(guards = "areBothIntStorage(left,right)")
@@ -1016,7 +1190,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
 
@@ -1043,7 +1217,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
@@ -1070,7 +1244,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization(guards = "isEmptyStorage(list)")
@@ -1107,7 +1281,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
@@ -1136,7 +1310,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization

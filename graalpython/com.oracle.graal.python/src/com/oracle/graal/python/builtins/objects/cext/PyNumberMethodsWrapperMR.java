@@ -36,60 +36,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.nodes.Node;
 
-@MessageResolution(receiverType = PyUnicodeState.class)
-public class PyUnicodeStateMR {
+@MessageResolution(receiverType = PyNumberMethodsWrapper.class)
+public class PyNumberMethodsWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
+        @Child private LookupAttributeInMRONode getAttributeNode;
         @Child private ToSulongNode toSulongNode;
 
-        public Object access(PyUnicodeState object, String key) {
-            switch (key) {
-                case NativeMemberNames.UNICODE_STATE_INTERNED:
-                    return getToSulongNode().execute(false);
-                case NativeMemberNames.UNICODE_STATE_KIND:
-                    return getToSulongNode().execute(0);
-                case NativeMemberNames.UNICODE_STATE_COMPACT:
-                    return getToSulongNode().execute(false);
-                case NativeMemberNames.UNICODE_STATE_ASCII:
-                    return getToSulongNode().execute(onlyAscii(object.getDelegate().getValue()));
-                case NativeMemberNames.UNICODE_STATE_READY:
-                    return getToSulongNode().execute(true);
+        public Object access(PyNumberMethodsWrapper object, String key) {
+            // translate key to attribute name
+            String attributeName = toAttributeName(key);
+
+            Object execute = getReadArrayItemNode().execute(object.getDelegate(), attributeName);
+            return getToSulongNode().execute(execute);
+        }
+
+        private static String toAttributeName(String numberMethodsMember) {
+            switch (numberMethodsMember) {
+                case "nb_add":
+                    return SpecialMethodNames.__ADD__;
+                case "nb_index":
+                    return SpecialMethodNames.__INDEX__;
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.raise(numberMethodsMember);
             }
-            throw UnknownIdentifierException.raise(key);
         }
 
-        @CompilationFinal private CharsetEncoder asciiEncoder;
-
-        public boolean isPureAscii(String v) {
-            return asciiEncoder.canEncode(v);
-        }
-
-        private boolean onlyAscii(String value) {
-            if (asciiEncoder == null) {
+        private LookupAttributeInMRONode getReadArrayItemNode() {
+            if (getAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asciiEncoder = Charset.forName("US-ASCII").newEncoder();
+                getAttributeNode = insert(LookupAttributeInMRONode.create());
             }
-            return doCheck(value, asciiEncoder);
-        }
-
-        @TruffleBoundary
-        private static boolean doCheck(String value, CharsetEncoder asciiEncoder) {
-            return asciiEncoder.canEncode(value);
+            return getAttributeNode;
         }
 
         private ToSulongNode getToSulongNode() {

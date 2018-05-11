@@ -86,6 +86,40 @@ def _reference_next(args):
         raise SystemError
         
 
+def _reference_size(args):
+    seq = args[0]
+    if isinstance(seq, dict):
+        return -1
+    if not hasattr(seq, '__len__'):
+        raise TypeError()
+    return len(seq)
+
+
+def _reference_getitem(args):
+    seq = args[0]
+    idx = args[1]
+    if not hasattr(seq, '__getitem__'):
+        raise TypeError
+    return seq.__getitem__(idx)
+
+
+def _reference_setitem(args):
+    seq = args[0]
+    idx = args[1]
+    value = args[2]
+    if not hasattr(seq, '__setitem__'):
+        raise TypeError
+    seq.__setitem__(idx, value)
+    return seq
+
+
+def _reference_fast(args):
+    obj = args[0]
+    if isinstance(obj, tuple) or isinstance(obj, list):
+        return obj
+    return list(obj)
+
+
 class NoNumber():
     pass
 
@@ -108,6 +142,15 @@ class DummyFloatable():
 class DummyFloatSubclass(float):
     def __float__(self):
         return 2.71828
+
+
+class DummySequence():
+    def __getitem__(self, idx):
+        return idx * 10
+
+
+class DummyListSubclass(list):
+    pass
 
 
 def _default_bin_arith_args():
@@ -137,10 +180,10 @@ def _default_bin_arith_args():
     )
 
 
-class TestPyNumber(CPyExtTestCase):
+class TestAbstract(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyNumber, self).compile_module(name)
+        super(TestAbstract, self).compile_module(name)
 
 
     test_PyNumber_Check = CPyExtFunction(
@@ -431,11 +474,6 @@ class TestPyNumber(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-class TestPySequence(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPySequence, self).compile_module(name)
-
     test_PySequence_Fast_GET_SIZE = CPyExtFunction(
         lambda args: len(args[0]),
         lambda: (
@@ -528,6 +566,164 @@ class TestPySequence(CPyExtTestCase):
         argspec='Oi',
         callfunction="wrap_PyIter_Next",
         arguments=["PyObject* sequence", "int n"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Check = CPyExtFunction(
+        lambda args: not isinstance(args[0], dict) and hasattr(args[0], '__getitem__'),
+        lambda: (
+            (tuple(),),
+            ((1,2,3),),
+            ((None,),),
+            ([],),
+            (['a','b','c'],),
+            ([None],),
+            (dict(),),
+            (set(),),
+            ({'a', 'b'},),
+            ({'a':0, 'b':1},),
+            (DummySequence(),),
+            (DummyListSubclass(),),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* sequence"],
+    )
+
+    test_PySequence_Size = CPyExtFunction(
+        _reference_size,
+        lambda: (
+            (tuple(),),
+            ((1,2,3),),
+            ((None,),),
+            ([],),
+            (['a','b','c'],),
+            ([None],),
+            (set(),),
+            (DummyListSubclass(),),
+        ),
+        resultspec="n",
+        argspec='O',
+        arguments=["PyObject* sequence"],
+        cmpfunc=unhandled_error_compare
+    )
+ 
+    # 'PySequence_Length' is just a redefinition of 'PySequence_Size'
+    test_PySequence_Length = test_PySequence_Size
+
+    test_PySequence_GetItem = CPyExtFunction(
+        _reference_getitem,
+        lambda: (
+            (tuple(), 10),
+            ((1,2,3), 2),
+            ((None,), 0),
+            ([], 10),
+            (['a','b','c'], 2),
+            ([None], 0),
+            (set(), 0),
+            ({'a', 'b'}, 0),
+            (DummyListSubclass(), 1),
+        ),
+        resultspec="O",
+        argspec='On',
+        arguments=["PyObject* sequence", "Py_ssize_t idx"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_SetItem = CPyExtFunction(
+        _reference_setitem,
+        lambda: (
+            (tuple(), 0, 'a'),
+            ((1,2,3), 2, 99),
+            ((None,), 1, None),
+            ([], 10, 1),
+            (['a','b','c'], 2, 'z'),
+        ),
+        code=''' PyObject* wrap_PySequence_SetItem(PyObject* sequence, Py_ssize_t idx, PyObject* value) {
+            if (PySequence_SetItem(sequence, idx, value) < 0) {
+                return NULL;
+            }
+            return sequence;
+        }
+        ''',
+        resultspec="O",
+        argspec='OnO',
+        arguments=["PyObject* sequence", "Py_ssize_t idx", "PyObject* value"],
+        callfunction="wrap_PySequence_SetItem",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Tuple = CPyExtFunction(
+        lambda args: tuple(args[0]),
+        lambda: (
+            (tuple(), ),
+            ((1,2,3), ),
+            ((None,), ),
+            ([], ),
+            (['a','b','c'],),
+            ({'a','b','c'},),
+            ({'a': 0,'b': 1,'c': 2},),
+            (None,),
+            (0,),
+        ),
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* sequence"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PySequence_Fast = CPyExtFunction(
+        _reference_fast,
+        lambda: (
+            (tuple(), "should not be an error"),
+            ((1,2,3), "should not be an error"),
+            ((None,), "should not be an error"),
+            ([], "should not be an error"),
+            (['a','b','c'],"should not be an error"),
+            ({'a','b','c'}, "should not be an error"),
+            ({'a': 0,'b': 1,'c': 2}, "should not be an error"),
+            (None, "None cannot be a sequence"),
+            (0, "int cannot be a sequence"),
+        ),
+        resultspec="O",
+        argspec='Os',
+        arguments=["PyObject* sequence", "char* error_msg"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyMapping_GetItemString = CPyExtFunction(
+        lambda args: args[0][args[1]],
+        lambda: (
+            (tuple(), "hello"),
+            ((1,2,3), "1"),
+            (['a','b','c'],"nothing"),
+            ({'a','b','c'}, "a"),
+            ({'a': 0,'b': 1,'c': 2}, "nothing"),
+            ({'a': 0,'b': 1,'c': 2}, "c"),
+        ),
+        resultspec="O",
+        argspec='Os',
+        arguments=["PyObject* mapping", "char* keyStr"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyIndex_Check = CPyExtFunction(
+        lambda args: hasattr(args[0], "__index__"),
+        lambda: (
+            (1, ),
+            ("not a number", ),
+            (tuple(), ),
+            (dict(), ),
+            (list(), ),
+            (DummyFloatable(), ),
+            (DummyFloatSubclass(), ),
+            (DummyIntable(), ),
+            (DummyIntSubclass(), ),
+            (NoNumber(), ),
+        ),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
     )
 

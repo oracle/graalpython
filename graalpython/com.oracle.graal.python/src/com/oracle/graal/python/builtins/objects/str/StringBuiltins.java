@@ -643,6 +643,18 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // str.capitalize()
+    @Builtin(name = "capitalize", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class CapitalizeNode extends PythonBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public String lower(String self) {
+            return self.substring(0, 1).toUpperCase() + self.substring(1);
+        }
+    }
+
     // str.rpartition
     @Builtin(name = "rpartition", fixedNumOfArguments = 2)
     @GenerateNodeFactory
@@ -704,6 +716,11 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         public PList doSplit(String self, @SuppressWarnings("unused") PNone sep, int maxsplit) {
             return splitfields(self, maxsplit + 1);
+        }
+
+        @Fallback
+        public Object doSplit(@SuppressWarnings("unused") Object self, Object sep, @SuppressWarnings("unused") Object maxsplit) {
+            throw raise(TypeError, " Can't convert %p object to str implicitly", sep);
         }
 
         // See {@link PyString}

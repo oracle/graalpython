@@ -36,45 +36,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.nodes.datamodel;
 
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 
-public class PCallNativeNode extends PBaseNode {
-    private final int arity;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.truffle.api.dsl.Specialization;
 
-    @Child private Node executeNode;
+public abstract class IsCallableNode extends PDataModelEmulationNode {
+    @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create();
 
-    public PCallNativeNode(int arity) {
-        this.arity = arity;
+    protected static boolean isNoCallable(Object callee) {
+        return !(callee instanceof PythonCallable);
     }
 
-    private Node getExecuteNode() {
-        if (executeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.createExecute(arity).createNode());
-        }
-        return executeNode;
+    @Specialization(guards = {"isNoCallable(callable) || isClass(callable)"})
+    protected boolean isSpecialCallable(Object callable) {
+        Object call = callAttrGetterNode.execute(callable, __CALL__);
+        return !isNoCallable(call);
     }
 
-    public Object execute(TruffleObject func, Object[] args) {
-        try {
-            return ForeignAccess.sendExecute(getExecuteNode(), func, args);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw e.raise();
-        }
+    @Specialization
+    protected boolean isMethod(@SuppressWarnings("unused") PMethod callable) {
+        return true;
     }
 
-    public static PCallNativeNode create(int arity) {
-        return new PCallNativeNode(arity);
+    @Specialization
+    protected boolean isBuiltinMethod(@SuppressWarnings("unused") PBuiltinMethod callable) {
+        return true;
+    }
+
+    @Specialization
+    protected boolean isFunctionCall(@SuppressWarnings("unused") PFunction callable) {
+        return true;
+    }
+
+    @Specialization
+    protected boolean isBuiltinFunctionCall(@SuppressWarnings("unused") PBuiltinFunction callable) {
+        return true;
+    }
+
+    public static IsCallableNode create() {
+        return IsCallableNodeGen.create();
     }
 }

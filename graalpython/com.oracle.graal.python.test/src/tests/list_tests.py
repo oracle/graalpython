@@ -288,7 +288,7 @@ class CommonTest(seq_tests.CommonTest):
         a = self.type2test([1,2,3,4])
         a.extend(CustomIter())
         self.assertEqual(a, [1,2,3,4])
-    
+    '''
     def test_insert(self):
         a = self.type2test([0, 1, 2])
         a.insert(0, -2)
@@ -298,12 +298,12 @@ class CommonTest(seq_tests.CommonTest):
 
         b = a[:]
         b.insert(-2, "foo")
-        b.insert(-200, "left")e
-        b.intert(200, "right")
+        b.insert(-200, "left")
+        b.insert(200, "right")
         self.assertEqual(b, self.type2test(["left",-2,-1,0,0,"foo",1,2,"right"]))
 
         self.assertRaises(TypeError, a.insert)
-    '''
+    
     def test_pop(self):
         a = self.type2test([-1, 0, 1])
         a.pop()
@@ -316,7 +316,7 @@ class CommonTest(seq_tests.CommonTest):
 #        self.assertRaises(IndexError, a.pop)
         self.assertRaises(TypeError, a.pop, 42, 42)
         a = self.type2test([0, 10, 20, 30, 40])
-    '''
+    
     def test_remove(self):
         a = self.type2test([0, 0, 1])
         a.remove(1)
@@ -465,7 +465,6 @@ class CommonTest(seq_tests.CommonTest):
 
         self.assertRaises(TypeError, u.clear, None)
 
-    '''
     def test_copy(self):
         u = self.type2test([1, 2, 3])
         v = u.copy()

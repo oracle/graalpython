@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
@@ -176,6 +177,7 @@ public final class Python3Core implements PythonCore {
                     "python_cext",
                     "_sre",
                     "_collections",
+                    "memoryview",
                     "list",
                     "_codecs",
                     "bytes",
@@ -255,6 +257,7 @@ public final class Python3Core implements PythonCore {
                     new TracebackBuiltins(),
                     new GcModuleBuiltins(),
                     new AtexitModuleBuiltins(),
+                    new FaulthandlerModuleBuiltins(),
                     new SysModuleBuiltins(),
     };
 

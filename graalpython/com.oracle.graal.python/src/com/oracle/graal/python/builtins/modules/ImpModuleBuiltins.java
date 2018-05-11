@@ -41,7 +41,6 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
 import java.io.IOException;
 import java.net.URI;
@@ -53,8 +52,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -176,7 +175,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "cannot load %s");
             } catch (RuntimeException e) {
                 Throwable rootCaus = getRootCause(e);
-                throw raise(SystemError, "cannot load %s: %s", path, rootCaus.getMessage());
+                throw raise(ImportError, "cannot load %s: %s", path, rootCaus.getMessage());
             }
             TruffleObject pyinitFunc;
             try {

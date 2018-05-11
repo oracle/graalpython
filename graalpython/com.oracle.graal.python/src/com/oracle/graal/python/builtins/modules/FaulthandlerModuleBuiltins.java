@@ -36,21 +36,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * A simple wrapper around types objects created through the Python C API that can be cast to
- * PyTypeObject*. This wrapper exists because we eagerly create Python classes in PyTypeReady, and
- * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
- * but our copy should just never become stale.
- */
-public class PythonNativeClass extends PythonClass {
-    public final Object object;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.dsl.NodeFactory;
 
-    public PythonNativeClass(Object obj, PythonClass type, String name, PythonClass... bases) {
-        super(type, name, bases);
-        object = obj;
+@CoreFunctions(defineModule = "faulthandler")
+public class FaulthandlerModuleBuiltins extends PythonBuiltins {
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+        return new ArrayList<>();
     }
 }

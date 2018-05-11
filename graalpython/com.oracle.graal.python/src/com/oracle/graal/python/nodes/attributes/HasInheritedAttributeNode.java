@@ -36,21 +36,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.truffle.api.nodes.Node;
 
-/**
- * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
- */
-public class PythonNativeObject extends PythonAbstractObject {
-    public final Object object;
+public class HasInheritedAttributeNode extends Node {
+    private final String attribute;
+    @Child private LookupInheritedAttributeNode lookupInheritedAttributeNode = LookupInheritedAttributeNode.create();
 
-    public PythonNativeObject(Object obj) {
-        object = obj;
+    private HasInheritedAttributeNode(String attribute) {
+        this.attribute = attribute;
     }
 
-    public int compareTo(Object o) {
-        return 0;
+    public boolean execute(Object object) {
+        return lookupInheritedAttributeNode.execute(object, attribute) != PNone.NO_VALUE;
+    }
+
+    public static HasInheritedAttributeNode create(String attribute) {
+        return new HasInheritedAttributeNode(attribute);
     }
 }

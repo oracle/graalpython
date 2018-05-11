@@ -36,31 +36,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.nodes.datamodel;
 
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 
-/**
- * Wraps a sequence object (like a list) such that it behaves like a bare C array.
- */
-public class PySequenceArrayWrapper implements TruffleObject {
+import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-    private final Object delegate;
+public abstract class IsContextManagerNode extends PDataModelEmulationNode {
+    @Child private HasInheritedAttributeNode hasEnterNode = HasInheritedAttributeNode.create(__ENTER__);
+    @Child private HasInheritedAttributeNode hasExitNode = HasInheritedAttributeNode.create(__EXIT__);
 
-    public PySequenceArrayWrapper(Object delegate) {
-        this.delegate = delegate;
+    private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
+
+    @Specialization
+    public boolean isContextManager(Object object) {
+        return profile.profile(hasEnterNode.execute(object) && hasExitNode.execute(object));
     }
 
-    public Object getDelegate() {
-        return delegate;
-    }
-
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PySequenceArrayWrapper;
-    }
-
-    public ForeignAccess getForeignAccess() {
-        return PySequenceArrayWrapperMRForeign.ACCESS;
+    public static IsContextManagerNode create() {
+        return IsContextManagerNodeGen.create();
     }
 }

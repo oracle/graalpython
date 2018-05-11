@@ -36,18 +36,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cpyobject;
+package com.oracle.graal.python.builtins.objects.cext;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
-import com.oracle.graal.python.builtins.objects.cpyobject.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -109,7 +109,7 @@ public class PythonObjectNativeWrapperMR {
         abstract Object execute(Object receiver, Object key);
 
         @Specialization(guards = "eq(OB_BASE, key)")
-        Object doObBase(PythonObject o, @SuppressWarnings("unused") String key) {
+        Object doObBase(PythonAbstractObject o, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(o);
         }
 
@@ -124,12 +124,12 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
-        int doObRefcnt(@SuppressWarnings("unused") PythonObject o, @SuppressWarnings("unused") String key) {
+        int doObRefcnt(@SuppressWarnings("unused") PythonAbstractObject o, @SuppressWarnings("unused") String key) {
             return 0;
         }
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(PythonObject object, @SuppressWarnings("unused") String key) {
+        Object doObType(PythonAbstractObject object, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(getClass.execute(object));
         }
 
@@ -183,6 +183,12 @@ public class PythonObjectNativeWrapperMR {
                 return PythonObjectNativeWrapper.wrap(superClass);
             }
             return getToSulongNode().execute(object);
+        }
+
+        @Specialization(guards = "eq(TP_AS_NUMBER, key)")
+        Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
+            // TODO check for type and return 'NULL'
+            return new PyNumberMethodsWrapper(object);
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")
