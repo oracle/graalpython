@@ -379,3 +379,5 @@ int PyTruffle_Debug(void *arg) {
 	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
 	return 0;
 }
+
+int _Py_CheckRecursionLimit = 1000;
