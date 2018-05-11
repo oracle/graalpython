@@ -922,6 +922,8 @@ def PyTruffle_Type(type_name):
         return type(None)
     elif type_name == "PyCapsule":
         return PyCapsule
+    elif type_name == "function":
+        return type(getattr)
     else:
         return getattr(sys.modules["builtins"], type_name)
 
