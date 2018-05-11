@@ -64,22 +64,22 @@ class TestPyBool(CPyExtTestCase):
     test_PyBools_areSingleton = CPyExtFunction(
         lambda args: 1,
         lambda: (
-            ("True",),
-            ("False",),
+            (1,),
+            (0,),
         ),
         callfunction="CheckPyTrue",
         code="""
-        static int CheckPyTrue(const char* str) {
-            if (!strcmp(str, "True")) {
-                return PyRun_StringFlags("True", Py_eval_input, PyDict_New(), PyDict_New(), NULL) == Py_True;
+        static int CheckPyTrue(int flag) {
+            if (flag) {
+                return PyBool_FromLong(flag) == Py_True;
             } else {
-                return PyRun_StringFlags("False", Py_eval_input, PyDict_New(), PyDict_New(), NULL) == Py_False;
+                return PyBool_FromLong(flag) == Py_False;
             }
         }
         """,
         resultspec="i",
-        argspec="s",
-        arguments=["const char* source"],
+        argspec="i",
+        arguments=["int flag"],
     )
 
     test_PyBool_Check = CPyExtFunction(
