@@ -759,7 +759,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Fallback
         public boolean isSubclass(Object derived, Object cls) {
-            return derived == cls || isInstanceCheckInternal(derived, cls) || isSubtypeNode.execute(derived, cls);
+            return isInstanceCheckInternal(derived, cls) || isSubtypeNode.execute(derived, cls);
         }
     }
 
