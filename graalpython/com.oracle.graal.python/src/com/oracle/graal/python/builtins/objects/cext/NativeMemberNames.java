@@ -59,6 +59,7 @@ public abstract class NativeMemberNames {
     public static final String UNICODE_STATE_COMPACT = "compact";
     public static final String UNICODE_STATE_ASCII = "ascii";
     public static final String UNICODE_STATE_READY = "ready";
+    public static final String MD_DICT = "md_dict";
 
     public static boolean isValid(String key) {
         switch (key) {
@@ -82,6 +83,7 @@ public abstract class NativeMemberNames {
             case UNICODE_STATE_COMPACT:
             case UNICODE_STATE_ASCII:
             case UNICODE_STATE_READY:
+            case MD_DICT:
                 return true;
         }
         return false;

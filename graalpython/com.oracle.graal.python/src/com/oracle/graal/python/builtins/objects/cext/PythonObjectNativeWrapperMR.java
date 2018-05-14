@@ -53,7 +53,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
@@ -214,6 +216,12 @@ public class PythonObjectNativeWrapperMR {
         Object doState(PString object, @SuppressWarnings("unused") String key) {
             // TODO also support bare 'String' ?
             return new PyUnicodeState(object);
+        }
+
+        @Specialization(guards = "eq(MD_DICT, key)")
+        Object doMdDict(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getDictNode) {
+            return getToSulongNode().execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
         }
 
         @Fallback
