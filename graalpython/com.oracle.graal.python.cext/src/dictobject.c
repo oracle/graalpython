@@ -103,7 +103,7 @@ PyObject * PyDict_GetItemString(PyObject *v, const char *key) {
 }
 
 int PyDict_SetItemString(PyObject *v, const char *key, PyObject *item) {
-    truffle_invoke(to_java(v), "__setitem__", PyUnicode_FromString(key), to_java(item));
+    truffle_invoke(to_java(v), "__setitem__", to_java(PyUnicode_FromString(key)), to_java(item));
     return 0;
 }
 
