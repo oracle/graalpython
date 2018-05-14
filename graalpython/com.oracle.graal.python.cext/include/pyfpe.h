@@ -1,11 +1,6 @@
-#ifndef Py_PYFPE_H
-#define Py_PYFPE_H
-#ifdef __cplusplus
-extern "C" {
-#endif
 /*
      ---------------------------------------------------------------------
-    /                       Copyright (c) 1996.                           \
+    /                       Copyright (c) 1996, 2018.                      \
    |          The Regents of the University of California.                 |
    |                        All rights reserved.                           |
    |                                                                       |
@@ -41,6 +36,11 @@ extern "C" {
      ---------------------------------------------------------------------
 */
 
+#ifndef Py_PYFPE_H
+#define Py_PYFPE_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 /*
  *       Define macros for handling SIGFPE.
  *       Lee Busby, LLNL, November, 1996
