@@ -75,6 +75,11 @@ _objectdir = __dir__
 object.__dir__ = _objectdir
 type.__dir__ = _classdir
 
+def __subclasshook(cls, subclass):
+    return NotImplemented
+
+type.__subclasshook__ = classmethod(__subclasshook)
+
 
 # TODO -----------------------------------------------------------------------------------------------------------------
 # TODO: REMOVEME, temporary patch for coroutines

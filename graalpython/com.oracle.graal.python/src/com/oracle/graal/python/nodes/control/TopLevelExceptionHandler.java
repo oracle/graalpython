@@ -154,7 +154,7 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     private void handleSystemExit(PException e) {
-        if (PythonOptions.getOption(context, PythonOptions.PythonInspectFlag) && !getSourceSection().getSource().isInteractive()) {
+        if (PythonOptions.getOption(context, PythonOptions.InspectFlag) && !getSourceSection().getSource().isInteractive()) {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
         }

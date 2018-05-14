@@ -8,7 +8,7 @@ Tests common to list and UserList.UserList
 
 import sys
 import os
-#from functools import cmp_to_key
+from functools import cmp_to_key
 import seq_tests
 #from test import support
 
@@ -489,8 +489,6 @@ class CommonTest(seq_tests.CommonTest):
 
         self.assertRaises(TypeError, u.copy, None)
 
-    # TODO cmp_to_key is not available yet
-    '''
     def test_sort(self):
         u = self.type2test([1, 0])
         u.sort()
@@ -538,7 +536,6 @@ class CommonTest(seq_tests.CommonTest):
                           key=cmp_to_key(selfmodifyingComparison))
 
         self.assertRaises(TypeError, z.sort, 42, 42, 42, 42)
-    '''
 
     def test_slice(self):
         u = self.type2test("spam")

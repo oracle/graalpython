@@ -103,7 +103,7 @@ public final class SetBuiltins extends PythonBuiltins {
         Object remove(PBaseSet self, Object other,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
 
-            if (delItemNode.execute(self, self.getDictStorage(), other)) {
+            if (!delItemNode.execute(self, self.getDictStorage(), other)) {
                 throw raise(PythonErrorType.KeyError, "%s", other);
             }
             return PNone.NONE;

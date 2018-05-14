@@ -26,6 +26,7 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import org.graalvm.options.OptionDescriptors;
@@ -117,7 +118,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         // Verify that the option for using a shared core is the same as
         // at image building time
         final boolean useSharedCore = newEnv.getOptions().get(PythonOptions.SharedCore);
-        return context.getCore().hasSingletonContext() == !useSharedCore;
+        boolean canUsePreinitializedContext = context.getCore().hasSingletonContext() == !useSharedCore;
+        if (canUsePreinitializedContext) {
+            PythonCore.writeInfo(newEnv, "Using preinitialized context.");
+        } else {
+            PythonCore.writeInfo(newEnv, "Not using preinitialized context.");
+        }
+        return canUsePreinitializedContext;
     }
 
     @Override
@@ -136,6 +143,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
+
+        PythonCore.writeInfo(env, (MessageFormat.format("Initial locations:" +
+                        "\n\tLanguage home: {0}" +
+                        "\n\tSysPrefix: {1}" +
+                        "\n\tCoreHome: {2}" +
+                        "\n\tStdLibHome: {3}", languageHome, sysPrefix, coreHome, stdLibHome)));
 
         TruffleFile home = null;
         if (languageHome != null) {
@@ -187,6 +200,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 }
                 env.getOptions().set(PythonOptions.StdLibHome, stdLibHome);
             }
+
+            PythonCore.writeInfo(env, (MessageFormat.format("Updated locations:" +
+                            "\n\tLanguage home: {0}" +
+                            "\n\tSysPrefix: {1}" +
+                            "\n\tCoreHome: {2}" +
+                            "\n\tStdLibHome: {3}", home.getPath(), sysPrefix, coreHome, stdLibHome)));
         }
     }
 

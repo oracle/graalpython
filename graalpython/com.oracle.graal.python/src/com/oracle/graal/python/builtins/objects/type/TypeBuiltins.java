@@ -39,6 +39,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -51,6 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -413,7 +415,19 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean instanceCheck(PythonClass cls, Object derived) {
-            return isSubtypeNode.execute(derived, cls);
+            return cls == derived || isSubtypeNode.execute(derived, cls);
+        }
+    }
+
+    @Builtin(name = __SUBCLASSES__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    static abstract class SubclassesNode extends PythonBinaryBuiltinNode {
+        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
+
+        @Specialization
+        PList getSubclasses(PythonClass cls) {
+            // TODO: missing: keep track of subclasses
+            return factory().createList(cls.getSubClasses().toArray());
         }
     }
 }

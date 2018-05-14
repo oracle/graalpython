@@ -53,3 +53,10 @@ def test_set_or():
 
     union = s1 | s4
     assert union == {1, 2, 3}
+
+
+def test_set_remove():
+    s = {1, 2, 3}
+    assert s == {1, 2, 3}
+    s.remove(3)
+    assert s == {1, 2}
