@@ -63,3 +63,12 @@ else:
 retval = x(b=42)
     """, globs)
     assert globs["retval"] == (None, 42)
+
+
+def test_lambda_no_args_with_nested_lambdas():
+    no_err = True
+    try:
+        eval("lambda: ((lambda args: args[0], ), (lambda args: args[1], ), )")
+    except Exception as e:
+        no_err = False
+    assert no_err
