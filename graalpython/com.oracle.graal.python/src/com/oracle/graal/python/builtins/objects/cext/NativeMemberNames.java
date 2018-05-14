@@ -49,6 +49,7 @@ public abstract class NativeMemberNames {
     public static final String TP_BASE = "tp_base";
     public static final String TP_AS_NUMBER = "tp_as_number";
     public static final String TP_HASH = "tp_hash";
+    public static final String TP_RICHCOMPARE = "tp_richcompare";
     public static final String _BASE = "_base";
     public static final String OB_ITEM = "ob_item";
     public static final String MA_USED = "ma_used";
@@ -72,8 +73,9 @@ public abstract class NativeMemberNames {
             case TP_FLAGS:
             case TP_NAME:
             case TP_BASE:
-            case TP_HASH:
             case TP_AS_NUMBER:
+            case TP_HASH:
+            case TP_RICHCOMPARE:
             case _BASE:
             case OB_ITEM:
             case MA_USED:

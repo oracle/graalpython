@@ -735,7 +735,7 @@ def PyObject_IsInstance(obj, typ):
 
 @may_raise
 def PyObject_RichCompare(left, right, op):
-    return do_richcompare(left, right, op)
+    left.__truffle_richcompare__(right, op)
 
 
 def PyObject_AsFileDescriptor(obj):

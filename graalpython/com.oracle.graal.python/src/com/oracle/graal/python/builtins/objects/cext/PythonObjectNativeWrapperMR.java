@@ -187,16 +187,22 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(object);
         }
 
+        @Specialization(guards = "eq(TP_AS_NUMBER, key)")
+        Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
+            // TODO check for type and return 'NULL'
+            return new PyNumberMethodsWrapper(object);
+        }
+
         @Specialization(guards = "eq(TP_HASH, key)")
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetAttributeNode getHashNode) {
             return getToSulongNode().execute(getHashNode.execute(object, SpecialMethodNames.__HASH__));
         }
 
-        @Specialization(guards = "eq(TP_AS_NUMBER, key)")
-        Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
-            // TODO check for type and return 'NULL'
-            return new PyNumberMethodsWrapper(object);
+        @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
+        Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getCmpNode) {
+            return getToSulongNode().execute(getCmpNode.execute(object, SpecialMethodNames.RICHCMP));
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")
