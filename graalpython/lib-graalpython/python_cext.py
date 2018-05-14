@@ -690,6 +690,16 @@ def PyTuple_GetSlice(t, start, end):
     return t[start:end]
 
 
+@may_raise
+def dict_from_list(lst):
+    if len(lst) % 2 != 0:
+        raise SystemError("list cannot be converted to dict")
+    d = {}
+    for i in range(0, len(lst), 2):
+        d[l[i]] = d[l[i + 1]]
+    return d
+
+
 def PyObject_Size(obj):
     try:
         return int(len(obj))

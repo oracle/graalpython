@@ -77,16 +77,16 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
     case 7: __ASSIGN(T, 7, arg); break;         \
     case 8: __ASSIGN(T, 8, arg); break;         \
     case 9: __ASSIGN(T, 9, arg); break;         \
-    case 10: __ASSIGN(T, 10, arg); break;         \
-    case 11: __ASSIGN(T, 11, arg); break;         \
-    case 12: __ASSIGN(T, 12, arg); break;         \
-    case 13: __ASSIGN(T, 13, arg); break;         \
-    case 14: __ASSIGN(T, 14, arg); break;         \
-    case 15: __ASSIGN(T, 15, arg); break;         \
-    case 16: __ASSIGN(T, 16, arg); break;         \
-    case 17: __ASSIGN(T, 17, arg); break;         \
-    case 18: __ASSIGN(T, 18, arg); break;         \
-    case 19: __ASSIGN(T, 19, arg); break;         \
+    case 10: __ASSIGN(T, 10, arg); break;       \
+    case 11: __ASSIGN(T, 11, arg); break;       \
+    case 12: __ASSIGN(T, 12, arg); break;       \
+    case 13: __ASSIGN(T, 13, arg); break;       \
+    case 14: __ASSIGN(T, 14, arg); break;       \
+    case 15: __ASSIGN(T, 15, arg); break;       \
+    case 16: __ASSIGN(T, 16, arg); break;       \
+    case 17: __ASSIGN(T, 17, arg); break;       \
+    case 18: __ASSIGN(T, 18, arg); break;       \
+    case 19: __ASSIGN(T, 19, arg); break;       \
     }
 #   define __ASSIGN(T, num, arg) *((T*)_ARG(num)) = (T)arg
 #   define _ARG(num) v ## num
@@ -241,75 +241,134 @@ int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, PyObject* kwnames
     return 1;
 }
 
+typedef struct _build_stack {
+    PyObject* list;
+    struct _build_stack* prev;
+} build_stack;
+
 PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
-    void* arg;
-    int valuen = 1;
-    int max = strlen(format);
-    PyObject* tuple = PyTuple_New(max);
-    void* jtuple = to_java(tuple);
+#   define ARG truffle_get_arg(value_idx)
+#   define APPEND_VALUE(list, value) PyList_Append(list, value); value_idx++
 
-    while (valuen <= max) {
-        arg = truffle_get_arg(valuen);
+    unsigned int value_idx = 1;
+    unsigned int format_idx = 0;
+    build_stack *v = (build_stack*)calloc(1, sizeof(build_stack));
+    build_stack *next;
+    v->list = PyList_New(0);
 
-        switch(format[valuen - 1]) {
+    char c = format[format_idx];
+    while (c != '\0') {
+        PyObject* list = v->list;
+
+        switch(c) {
         case 'n':
-            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, (Py_ssize_t)arg);
+            APPEND_VALUE(list, (Py_ssize_t)ARG);
             break;
         case 'i':
-            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, (int)arg);
-        	break;
+            APPEND_VALUE(list, (int)ARG);
+            break;
         case 's':
-            if (arg == NULL) {
-                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, Py_None);
+            if (ARG == NULL) {
+                APPEND_VALUE(list, Py_None);
             } else {
-                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, polyglot_from_string((char*)arg, "utf-8"));
+                APPEND_VALUE(list, polyglot_from_string((char*)ARG, "utf-8"));
             }
-        	break;
+            break;
         case 'd':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, to_java(PyFloat_FromDouble((double)(unsigned long long)arg)));
-        	break;
+            APPEND_VALUE(list, PyFloat_FromDouble((double)(unsigned long long)ARG));
+            break;
         case 'l':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((long)arg));
-        	break;
+            APPEND_VALUE(list, (long)ARG);
+            break;
         case 'L':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((long long)arg));
-        	break;
+            APPEND_VALUE(list, (long long)ARG);
+            break;
         case 'k':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((unsigned long)arg));
-        	break;
+            APPEND_VALUE(list, (unsigned long)ARG);
+            break;
         case 'K':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((unsigned long long)arg));
-        	break;
+            APPEND_VALUE(list, (unsigned long long)ARG);
+            break;
         case 'N':
         case 'S':
         case 'O':
-        	if (arg == NULL && !PyErr_Occurred()) {
+            if (ARG == NULL && !PyErr_Occurred()) {
                 /* If a NULL was passed because a call that should have constructed a value failed, that's OK,
                  * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
                 PyErr_SetString(PyExc_SystemError, "NULL object passed to Py_BuildValue");
-        	} else {
-        		truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, to_java(arg));
-        	}
-        	break;
+            } else {
+                APPEND_VALUE(list, ARG);
+            }
+            break;
+        case '(':
+            next = (build_stack*)calloc(1, sizeof(build_stack));
+            next->list = PyList_New(0);
+            next->prev = v;
+            v = next;
+            break;
+        case ')':
+            if (v->prev == NULL) {
+                PyErr_SetString(PyExc_SystemError, "')' without '(' in Py_BuildValue");
+            } else {
+                PyList_Append(v->prev->list, PyList_AsTuple(v->list));
+                next = v;
+                v = v->prev;
+                free(next);
+            }
+            break;
+        case '[':
+            next = (build_stack*)calloc(1, sizeof(build_stack));
+            next->list = PyList_New(0);
+            next->prev = v;
+            v = next;
+            break;
+        case ']':
+            if (v->prev == NULL) {
+                PyErr_SetString(PyExc_SystemError, "']' without '[' in Py_BuildValue");
+            } else {
+                PyList_Append(v->prev->list, v->list);
+                next = v;
+                v = v->prev;
+                free(next);
+            }
+            break;
+        case '{':
+            next = (build_stack*)calloc(1, sizeof(build_stack));
+            next->list = PyList_New(0);
+            next->prev = v;
+            v = next;
+            break;
+        case '}':
+            if (v->prev == NULL) {
+                PyErr_SetString(PyExc_SystemError, "'}' without '{' in Py_BuildValue");
+            } else {
+                PyList_Append(v->prev->list, polyglot_invoke(PY_TRUFFLE_CEXT, "dict_from_list", to_java(v->list)));
+                next = v;
+                v = v->prev;
+                free(next);
+            }
+            break;
         default:
-            fprintf(stderr, "error: unsupported format starting at %d : '%s'\n", valuen - 1, format);
-            exit(-1);
+            fprintf(stderr, "error: unsupported format starting at %d : '%s'\n", format_idx, format);
         }
-
-        valuen++;
+        c = format[++format_idx];
     }
 
-    if (valuen == 1) {
+#   undef APPEND_VALUE
+#   undef ARG
+
+    if (v->prev != NULL) {
+        PyErr_SetString(PyExc_SystemError, "dangling group in Py_BuildValue");
+        return NULL;
+    }
+
+    switch (PyList_Size(v->list)) {
+    case 0:
         return Py_None;
-    } else if (valuen == 2) {
-        // we're not using PyTuple_GetItem here because we definitely want a
-        // java object and not call to_sulong on it
-        return to_java(to_sulong(truffle_invoke(jtuple, "__getitem__", 0)));
-    } else {
-        PyObject* outputtuple = to_java(PyTuple_New(valuen - 1));
-        for (valuen--; valuen > 0; valuen--) {
-            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", outputtuple, valuen - 1, to_java(PyTuple_GetItem(tuple, valuen - 1)));
-        }
-        return outputtuple;
+    case 1:
+        // single item gets unwrapped
+        return PyList_GetItem(v->list, 0);
+    default:
+        return PyList_AsTuple(v->list);
     }
 }
