@@ -211,14 +211,14 @@ int PyType_Ready(PyTypeObject* cls) {
     }
 
     PyTypeObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
-                                                      "PyType_Ready",
-                                                      // no conversion of cls here, because we
-                                                      // store this into the PyTypeObject
-                                                      cls,
-                                                      to_java_type(metaclass),
-                                                      to_java_type(base),
-                                                      truffle_read_string(cls->tp_name),
-                                                      truffle_read_string(cls->tp_doc));
+                                           "PyType_Ready",
+                                           // no conversion of cls here, because we
+                                           // store this into the PyTypeObject
+                                           cls,
+                                           to_java_type(metaclass),
+                                           to_java_type(base),
+                                           truffle_read_string(cls->tp_name),
+                                           truffle_read_string(cls->tp_doc ? cls->tp_doc : ""));
     if (polyglot_is_value(javacls)) {
     	javacls = polyglot_as__typeobject(javacls);
     }
@@ -263,7 +263,7 @@ int PyType_Ready(PyTypeObject* cls) {
                            member.offset,
                            // TODO: support other flags
                            ((member.flags & READONLY) == 0) ? Py_True : Py_False,
-                           truffle_read_string(member.doc));
+                           truffle_read_string(member.doc ? member.doc : ""));
             member = members[++i];
         }
     }
