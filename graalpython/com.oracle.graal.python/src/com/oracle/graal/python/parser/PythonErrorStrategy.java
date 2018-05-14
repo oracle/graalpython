@@ -56,7 +56,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         super.recover(recognizer, e);
     }
 
-    private String getTokeLineText(Parser recognizer, Token token) {
+    private static String getTokeLineText(Parser recognizer, Token token) {
         TokenStream tokenStream = recognizer.getTokenStream();
         int index = token.getTokenIndex();
         // search for line start
