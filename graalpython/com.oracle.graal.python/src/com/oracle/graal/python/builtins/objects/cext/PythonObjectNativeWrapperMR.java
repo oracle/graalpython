@@ -187,6 +187,12 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(object);
         }
 
+        @Specialization(guards = "eq(TP_HASH, key)")
+        Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getHashNode) {
+            return getToSulongNode().execute(getHashNode.execute(object, SpecialMethodNames.__HASH__));
+        }
+
         @Specialization(guards = "eq(TP_AS_NUMBER, key)")
         Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
             // TODO check for type and return 'NULL'
