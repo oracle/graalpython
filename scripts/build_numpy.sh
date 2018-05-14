@@ -50,23 +50,23 @@ pushd "$NPY_PATH"
 python3 setup.py build
 
 # npysort and npymath are statically linked
-llvm-link -o build/temp.linux-x86_64-3.6/libnpysort.bc \
+eval "llvm-link -o build/libnpysort.bc \
           build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/npysort/quicksort.bc \
           build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/npysort/mergesort.bc \
           build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/npysort/heapsort.bc \
           build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/npysort/selection.bc \
-          build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/npysort/binsearch.bc
+          build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/npysort/binsearch.bc"
 
-llvm-link -o build/temp.linux-x86_64-3.*/libnpymath.bc \
+eval "llvm-link -o build/libnpymath.bc \
           build/temp.linux-x86_64-3.*/numpy/core/src/npymath/npy_math.bc \
           build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/npymath/npy_math_complex.bc \
           build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/npymath/ieee754.bc \
-          build/temp.linux-x86_64-3.*/numpy/core/src/npymath/halffloat.bc
+          build/temp.linux-x86_64-3.*/numpy/core/src/npymath/halffloat.bc"
 
 # finally, link the multiarray module
-llvm-link -o build/multiarray.bc \
-   build/temp.linux-x86_64-3.*/libnpymath.bc \
-   build/temp.linux-x86_64-3.*/libnpysort.bc \
+eval "llvm-link -o build/multiarray.bc \
+   build/libnpymath.bc \
+   build/libnpysort.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/alloc.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/arrayobject.bc \
    build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/multiarray/arraytypes.bc \
@@ -116,6 +116,6 @@ llvm-link -o build/multiarray.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/vdot.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/private/mem_overlap.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/private/npy_longdouble.bc \
-   build/temp.linux-x86_64-3.*/numpy/core/src/private/ufunc_override.bc
+   build/temp.linux-x86_64-3.*/numpy/core/src/private/ufunc_override.bc"
 
 popd
