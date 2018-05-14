@@ -164,3 +164,13 @@ def test_subclass_tuple():
 
     assert issubclass(int, (int, (float, int)))
     assert issubclass(str, (str, (Child, str)))
+
+
+def test_abstract_numbers_issubclass():
+    from numbers import Number, Integral, Complex, Real
+    assert issubclass(int, Number)
+    assert issubclass(int, Integral)
+    assert issubclass(int, Complex)
+
+    assert not issubclass(complex, Real)
+    assert issubclass(complex, Complex)

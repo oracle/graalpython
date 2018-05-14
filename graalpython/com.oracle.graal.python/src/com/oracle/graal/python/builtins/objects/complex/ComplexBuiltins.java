@@ -38,7 +38,27 @@
  */
 package com.oracle.graal.python.builtins.objects.complex;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ABS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEG__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import java.util.List;
 
@@ -47,7 +67,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -64,7 +83,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfArguments = 1)
+    @Builtin(name = __ABS__, fixedNumOfArguments = 1)
     static abstract class AbsNode extends PythonBuiltinNode {
         @Specialization
         double abs(PComplex c) {
@@ -197,7 +216,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     static abstract class AddNode extends PythonBuiltinNode {
         @Specialization
         PComplex doComplexBoolean(PComplex left, boolean right) {
@@ -230,12 +249,12 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__RADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __RADD__, fixedNumOfArguments = 2)
     static abstract class RAddNode extends AddNode {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__TRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = __TRUEDIV__, fixedNumOfArguments = 2)
     static abstract class DivNode extends PythonBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
@@ -255,7 +274,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = __RTRUEDIV__, fixedNumOfArguments = 2)
     static abstract class RDivNode extends PythonBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex right, double left) {
@@ -267,7 +286,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     static abstract class MulNode extends PythonBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
@@ -302,12 +321,12 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
     static abstract class RMulNode extends MulNode {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUB__, fixedNumOfArguments = 2)
     static abstract class SubNode extends PythonBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
@@ -321,7 +340,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     static abstract class EqNode extends PythonBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -336,7 +355,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
     static abstract class GeNode extends PythonBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -351,7 +370,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
     static abstract class GtNode extends PythonBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -366,7 +385,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
     static abstract class LtNode extends PythonBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -381,7 +400,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
     static abstract class LeNode extends PythonBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -396,7 +415,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
     static abstract class NeNode extends PythonBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -411,7 +430,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
     static abstract class ReprNode extends PythonBuiltinNode {
         @Specialization
         String repr(PComplex self) {
@@ -420,7 +439,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__STR__, fixedNumOfArguments = 1)
+    @Builtin(name = __STR__, fixedNumOfArguments = 1)
     static abstract class StrNode extends PythonBuiltinNode {
         @Specialization
         String repr(PComplex self) {
@@ -429,7 +448,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
     static abstract class BoolNode extends PythonBuiltinNode {
         @Specialization
         boolean bool(PComplex self) {
@@ -438,7 +457,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__NEG__, fixedNumOfArguments = 1)
+    @Builtin(name = __NEG__, fixedNumOfArguments = 1)
     static abstract class NegNode extends PythonBuiltinNode {
         @Specialization
         PComplex neg(PComplex self) {
@@ -447,7 +466,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__POS__, fixedNumOfArguments = 1)
+    @Builtin(name = __POS__, fixedNumOfArguments = 1)
     static abstract class PosNode extends PythonBuiltinNode {
         @Specialization
         PComplex pos(PComplex self) {
@@ -483,7 +502,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
     static abstract class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
