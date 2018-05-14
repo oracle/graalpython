@@ -217,7 +217,7 @@ class TestPyLong(CPyExtTestCase):
         ),
         resultspec="O",
         argspec='n',
-        arguments=["Py_ssize_t n"],
+        arguments=["void* ptr"],
         cmpfunc=unhandled_error_compare
     )
 
