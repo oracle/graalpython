@@ -86,7 +86,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         return token.getInputStream().getText(Interval.of(start, stop));
     }
 
-    private void handlePythonSyntaxError(Parser recognizer, RecognitionException e) {
+    private static void handlePythonSyntaxError(Parser recognizer, RecognitionException e) {
         Token offendingToken = e.getOffendingToken();
         String lineText = getTokeLineText(recognizer, offendingToken);
         String errorMarker = new String(new char[offendingToken.getCharPositionInLine() + 1]).replace('\0', ' ') + "^";
@@ -94,7 +94,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
 
         RecognitionException re = e;
         // the error message in some cases is not set properly producing an annoying "null" in the
-        // final message, we replace the error with a copy of itself but, no message
+        // final message, we replace the error with a copy of itself and an empty message
         if (re.getMessage() == null) {
             re = new RecognitionException("", e.getRecognizer(), e.getInputStream(), (ParserRuleContext) e.getCtx());
         }
