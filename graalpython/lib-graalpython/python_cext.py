@@ -513,6 +513,28 @@ def PyCapsule_GetPointer(obj, name):
     return obj.pointer
 
 
+@may_raise
+def PyCapsule_Import(name, no_block):
+    obj = None
+    mod = name.split(".")[0]
+    try:
+        obj = __import__(mod)
+    except:
+        raise ImportError('PyCapsule_Import could not import module "%s"' % name)
+    for attr in name.split(".")[1:]:
+        obj = getattr(obj, attr)
+    if PyCapsule_IsValid(obj, name):
+        return obj.pointer
+    else:
+        raise AttributeError('PyCapsule_Import "%s" is not valid' % name)
+
+
+def PyCapsule_IsValid(obj, name):
+    return (isinstance(obj, PyCapsule) and
+            obj.pointer != None and
+            obj.name == name)
+
+
 def PyModule_AddObject(m, k, v):
     m.__dict__[k] = v
     return None
@@ -945,10 +967,57 @@ capi = capi_to_java = None
 def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
-    capi = capi_library
-    initialize_member_accessors()
     global capi_to_java
+    capi = capi_library
     capi_to_java = import_c_func("to_java")
+
+    initialize_member_accessors()
+    initialize_datetime_capi()
+
+
+def initialize_datetime_capi():
+    import datetime
+
+    class PyDateTime_CAPI:
+        DateType = type(datetime.date)
+        DateTimeType = type(datetime.datetime)
+        TimeType = type(datetime.time)
+        DeltaType = type(datetime.timedelta)
+        TZInfoType = type(datetime.tzinfo)
+
+        @staticmethod
+        def Date_FromDate(y, m, d, typ):
+            return typ(y, month=m, day=d)
+
+        @staticmethod
+        def DateTime_FromDateAndTime(y, mon, d, h, m, s, usec, tzinfo, typ):
+            return PyDateTime_CAPI.DateTime_FromDateAndTimeAndFold(y, mon, d, h, m, s, usec, tzinfo, 0, typ)
+
+        @staticmethod
+        def Time_FromTime(h, m, s, usec, tzinfo, typ):
+            return PyDateTime_CAPI.Time_FromTimeAndFold(h, m, s, usec, tzinfo, 0, typ)
+
+        @staticmethod
+        def Delta_FromDelta(d, s, microsec, normalize, typ):
+            return typ(days=d, seconds=s, microseconds=microsec)
+
+        @staticmethod
+        def DateTime_FromTimestamp(cls, args, kwds):
+            return cls(*args, **kwds)
+
+        @staticmethod
+        def Date_FromTimestamp(cls, args):
+            return cls(*args)
+
+        @staticmethod
+        def DateTime_FromDateAndTimeAndFold(y, mon, d, h, m, s, usec, tz, fold, typ):
+            return typ(y, month=mon, day=d, hour=h, minute=m, second=s, microseconds=usec, tzinfo=tz, fold=fold)
+
+        @staticmethod
+        def Time_FromTimeAndFold(h, m, s, us, tz, fold, typ):
+            return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
+
+    datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
 
 
 ReadMemberFunctions = []
