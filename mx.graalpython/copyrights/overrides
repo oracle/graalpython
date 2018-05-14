@@ -123,10 +123,10 @@ graalpython/com.oracle.graal.python.cext/include/pydebug.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pylifecycle.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
-graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonEnvVars.java,zippy.copyright
 graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonMain.java,zippy.copyright
 graalpython/com.oracle.graal.python.tck/src/com/oracle/graal/python/tck/resources/euler31.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.tck/src/com/oracle/graal/python/tck/resources/mandelbrot3.py,benchmarks.copyright
+graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/GraalPythonEnvVars.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/GraalPythonJUnitRunner.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/PythonTests.java,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/com/oracle/graal/python/test/advance/BenchmarkTests.java,zippy.copyright

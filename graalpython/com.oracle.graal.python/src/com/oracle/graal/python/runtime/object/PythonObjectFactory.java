@@ -201,9 +201,18 @@ public abstract class PythonObjectFactory extends Node {
     /*
      * Primitive types
      */
+    @CompilationFinal PInt pyTrue = null;
+    @CompilationFinal PInt pyFalse = null;
 
     public PInt createInt(boolean value) {
-        return trace(new PInt(lookupClass(PythonBuiltinClassType.Boolean), value ? BigInteger.ONE : BigInteger.ZERO));
+        if (value && pyTrue == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            pyTrue = new PInt(lookupClass(PythonBuiltinClassType.Boolean), BigInteger.ONE);
+        } else if (!value && pyFalse == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            pyFalse = new PInt(lookupClass(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
+        }
+        return value ? pyTrue : pyFalse;
     }
 
     public PInt createInt(int value) {

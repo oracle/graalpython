@@ -23,7 +23,7 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.shell;
+package com.oracle.graal.python.test;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,13 +32,12 @@ import java.nio.file.Paths;
 import java.security.CodeSource;
 
 public class GraalPythonEnvVars {
-    private static final boolean AOT = Boolean.getBoolean("com.oracle.truffle.aot") || Boolean.getBoolean("com.oracle.graalvm.isaot");
     private static final String LIB_GRAALPYTHON = "lib-graalpython";
     private static final String NO_CORE = "Fatal: You need to pass --python.CoreHome because its location could not be discovered.";
 
     public static String graalpythonHome() {
         try {
-            return discoverHome();
+            return discoverHomeFromSource();
         } catch (IOException e) {
             graalpythonExit(NO_CORE);
         }
@@ -48,30 +47,6 @@ public class GraalPythonEnvVars {
     private static void graalpythonExit(String msg) {
         System.err.println("GraalPython unexpected failure: " + msg);
         System.exit(1);
-    }
-
-    private static String discoverHome() throws IOException {
-        if (AOT) {
-            final String executablePath = (String) Compiler.command(new Object[]{"com.oracle.svm.core.posix.GetExecutableName"});
-            final Path parentDirectory = Paths.get(executablePath).getParent().getParent();
-
-            // Root of the GraalVM distribution.
-            Path candidate = parentDirectory.resolve("languages").resolve("python");
-            if (isGraalPythonHome(candidate)) {
-                return candidate.toFile().getCanonicalPath().toString();
-            }
-
-            // Root of the GraalPython source tree.
-            candidate = parentDirectory.resolve("graalpython");
-            if (isGraalPythonHome(parentDirectory)) {
-                return parentDirectory.toFile().getCanonicalPath().toString();
-            }
-
-            // we cache the parse trees above, so we don't need to return anything here
-            return "";
-        } else {
-            return discoverHomeFromSource();
-        }
     }
 
     private static String discoverHomeFromSource() throws IOException {
@@ -133,21 +108,5 @@ public class GraalPythonEnvVars {
 
     private static boolean isGraalPythonHome(Path src) {
         return Files.isDirectory(src.resolve(LIB_GRAALPYTHON));
-    }
-
-    public static String includeDirectory() {
-        Path graalpythonHome = Paths.get(graalpythonHome());
-
-        Path candidate = graalpythonHome.resolve("include");
-        if (Files.exists(candidate)) {
-            return candidate.toString();
-        }
-
-        candidate = graalpythonHome.resolve("com.oracle.graal.python.cext").resolve("include");
-        if (Files.exists(candidate)) {
-            return candidate.toString();
-        }
-
-        return ".";
     }
 }
