@@ -49,6 +49,20 @@ export CC="${DIR}/crosscc.py"
 pushd "$NPY_PATH"
 python3 setup.py build
 
+# npysort and npymath are statically linked
+llvm-link -o build/temp.linux-x86_64-3.6/libnpysort.bc \
+          build/temp.linux-x86_64-3.6/build/src.linux-x86_64-3.6/numpy/core/src/npysort/quicksort.bc \
+          build/temp.linux-x86_64-3.6/build/src.linux-x86_64-3.6/numpy/core/src/npysort/mergesort.bc \
+          build/temp.linux-x86_64-3.6/build/src.linux-x86_64-3.6/numpy/core/src/npysort/heapsort.bc \
+          build/temp.linux-x86_64-3.6/build/src.linux-x86_64-3.6/numpy/core/src/npysort/selection.bc \
+          build/temp.linux-x86_64-3.6/build/src.linux-x86_64-3.6/numpy/core/src/npysort/binsearch.bc
+
+llvm-link -o build/temp.linux-x86_64-3.6/libnpymath.bc \
+          build/temp.linux-x86_64-3.6/numpy/core/src/npymath/npy_math.bc \
+          build/temp.linux-x86_64-3.6/build/src.linux-x86_64-3.6/numpy/core/src/npymath/npy_math_complex.bc \
+          build/temp.linux-x86_64-3.6/build/src.linux-x86_64-3.6/numpy/core/src/npymath/ieee754.bc \
+          build/temp.linux-x86_64-3.6/numpy/core/src/npymath/halffloat.bc
+
 # finally, link the multiarray module
 LD -pthread -shared -Bsymbolic-functions -Bsymbolic-functions \
    -specs=/usr/share/dpkg/no-pie-link.specs -Bsymbolic-functions \
@@ -56,6 +70,8 @@ LD -pthread -shared -Bsymbolic-functions -Bsymbolic-functions \
    -fdebug-prefix-map=/build/python3.6-sXpGnM/python3.6-3.6.3=. -specs=/usr/share/dpkg/no-pie-compile.specs \
    -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time \
    -D_FORTIFY_SOURCE=2 \
+   build/temp.linux-x86_64-3.6/libnpymath.bc \
+   build/temp.linux-x86_64-3.6/libnpysort.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/alloc.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/multiarray/arrayobject.bc \
    build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.6/numpy/core/src/multiarray/arraytypes.bc \
