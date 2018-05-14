@@ -382,4 +382,3 @@ int PyTruffle_Debug(void *arg) {
 	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
 	return 0;
 }
-

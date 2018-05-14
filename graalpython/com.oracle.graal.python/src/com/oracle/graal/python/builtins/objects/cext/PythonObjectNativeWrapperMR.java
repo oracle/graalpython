@@ -65,6 +65,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -205,6 +206,12 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(getCmpNode.execute(object, SpecialMethodNames.RICHCMP));
         }
 
+        @Specialization(guards = "eq(TP_SUBCLASSES, key)")
+        Object doTpSubclasses(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+            // TODO create dict view on subclasses set
+            return PythonObjectNativeWrapper.wrap(factory().createDict());
+        }
+
         @Specialization(guards = "eq(OB_ITEM, key)")
         Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object);
@@ -300,6 +307,17 @@ public class PythonObjectNativeWrapperMR {
         long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key, long flags) {
             object.setFlags(flags);
             return flags;
+        }
+
+        @Specialization(guards = "eq(TP_SUBCLASSES, key)")
+        @TruffleBoundary
+        Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value) {
+            // TODO more type checking; do fast path
+            PDict dict = (PDict) value.getPythonObject();
+            for (Object item : dict.items()) {
+                object.getSubClasses().add((PythonClass) item);
+            }
+            return value;
         }
 
         @Fallback

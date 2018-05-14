@@ -493,15 +493,21 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child WriteAttributeToObjectNode writeNode = WriteAttributeToObjectNode.create();
 
         @Specialization
-        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PythonClass baseClass, String name, String doc) {
-            PythonClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, new PythonClass[]{baseClass});
+        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PTuple baseClasses, String name, String doc) {
+            Object[] array = baseClasses.getArray();
+            PythonClass[] bases = new PythonClass[array.length];
+            for (int i = 0; i < array.length; i++) {
+                bases[i] = (PythonClass) array[i];
+            }
+
+            PythonClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, bases);
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
             return cclass;
         }
 
         @Specialization
-        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PythonClass baseClass, PString name, PString doc) {
-            return run(typestruct, metaClass, baseClass, name.getValue(), doc.getValue());
+        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PTuple baseClasses, PString name, PString doc) {
+            return run(typestruct, metaClass, baseClasses, name.getValue(), doc.getValue());
         }
     }
 
