@@ -960,6 +960,8 @@ def PyTruffle_Type(type_name):
         return PyCapsule
     elif type_name == "function":
         return type(getattr)
+    elif type_name == "ellipsis":
+        return type(Py_Ellipsis())
     else:
         return getattr(sys.modules["builtins"], type_name)
 

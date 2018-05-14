@@ -60,22 +60,18 @@ class TestMisc(CPyExtTestCase):
         arguments=["PyObject* ellipsis_singleton"],
     )
 
-#     test_PyEllipsis_type = CPyExtFunction(
-#         lambda args: 1,
-#         lambda: (
-#             (...,),
-#         ),
-#         callfunction="CheckPyTrue",
-#         code="""
-#         static int CheckPyTrue(int flag) {
-#             if (flag) {
-#                 return ellipsis_new() == _Py_EllipsisObject;
-#             } else {
-#                 return PyBool_FromLong(flag) == Py_False;
-#             }
-#         }
-#         """,
-#         resultspec="i",
-#         argspec="O",
-#         arguments=["PyObject* ellipsisSingleton"],
-#     )
+    test_PyEllipsis_type = CPyExtFunction(
+        lambda args: 1,
+        lambda: (
+            (...,),
+        ),
+        callfunction="CheckPyEllipsisType",
+        code="""
+        static int CheckPyEllipsisType(PyObject* ellipsis_singleton) {
+            return Py_TYPE(&_Py_EllipsisObject) == &PyEllipsis_Type;
+        }
+        """,
+        resultspec="i",
+        argspec="O",
+        arguments=["PyObject* ellipsis_singleton"],
+    )
