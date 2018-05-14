@@ -152,6 +152,25 @@ def PyDict_DelItem(dictObj, key):
     return 0
 
 
+##################### SET, FROZENSET
+
+
+@may_raise
+def PySet_New(iterable):
+    if iterable:
+        return set(iterable)
+    else:
+        return set()
+
+
+@may_raise
+def PyFrozenSet_New(iterable):
+    if iterable:
+        return frozenset(iterable)
+    else:
+        return frozenset()
+
+
 ##################### MAPPINGPROXY
 
 
