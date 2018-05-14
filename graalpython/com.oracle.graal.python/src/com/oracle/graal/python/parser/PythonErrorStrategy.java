@@ -40,6 +40,7 @@ package com.oracle.graal.python.parser;
 
 import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.InputMismatchException;
+import org.antlr.v4.runtime.NoViableAltException;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
@@ -85,8 +86,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         return token.getInputStream().getText(Interval.of(start, stop));
     }
 
-    @Override
-    protected void reportInputMismatch(Parser recognizer, InputMismatchException e) {
+    private void handlePythonSyntaxError(Parser recognizer, RecognitionException e) {
         Token offendingToken = e.getOffendingToken();
         String lineText = getTokeLineText(recognizer, offendingToken);
         String errorMarker = new String(new char[offendingToken.getCharPositionInLine() + 1]).replace('\0', ' ') + "^";
@@ -99,5 +99,15 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
             re = new RecognitionException("", e.getRecognizer(), e.getInputStream(), (ParserRuleContext) e.getCtx());
         }
         recognizer.notifyErrorListeners(offendingToken, pythonSyntaxErrorMessage, re);
+    }
+
+    @Override
+    protected void reportInputMismatch(Parser recognizer, InputMismatchException e) {
+        handlePythonSyntaxError(recognizer, e);
+    }
+
+    @Override
+    protected void reportNoViableAlternative(Parser recognizer, NoViableAltException e) {
+        handlePythonSyntaxError(recognizer, e);
     }
 }
