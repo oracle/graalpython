@@ -28,6 +28,7 @@ package com.oracle.graal.python.parser;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
 import java.util.HashMap;
+import java.util.InputMismatchException;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -63,6 +64,7 @@ public final class PythonParserImpl implements PythonParser {
         String fileDirAndName = pathParts[pathParts.length - 2] + PythonCore.FILE_SEPARATOR + pathParts[pathParts.length - 1];
         CodePointCharStream fromString = CharStreams.fromString(source.getCharacters().toString(), fileDirAndName);
         Python3Parser parser = new com.oracle.graal.python.parser.antlr.Builder.Parser(fromString).build();
+        parser.setErrorHandler(new PythonErrorStrategy());
         ParserRuleContext input;
         if (!core.isInitialized()) {
             input = cachedParseTrees.get(fileDirAndName);
