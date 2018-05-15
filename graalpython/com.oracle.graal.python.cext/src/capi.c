@@ -96,6 +96,7 @@ static void initialize_capi() {
     initialize_type_structure(&PyCFunction_Type, "function");
     initialize_type_structure(&PyFrozenSet_Type, "frozenset");
     initialize_type_structure(&PySet_Type, "set");
+    initialize_type_structure(&PyEllipsis_Type, "ellipsis");
 
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
@@ -381,4 +382,3 @@ int PyTruffle_Debug(void *arg) {
 	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
 	return 0;
 }
-

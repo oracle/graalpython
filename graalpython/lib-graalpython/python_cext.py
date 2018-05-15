@@ -152,6 +152,25 @@ def PyDict_DelItem(dictObj, key):
     return 0
 
 
+##################### SET, FROZENSET
+
+
+@may_raise
+def PySet_New(iterable):
+    if iterable:
+        return set(iterable)
+    else:
+        return set()
+
+
+@may_raise
+def PyFrozenSet_New(iterable):
+    if iterable:
+        return frozenset(iterable)
+    else:
+        return frozenset()
+
+
 ##################### MAPPINGPROXY
 
 
@@ -664,6 +683,14 @@ def PyType_IsSubtype(a, b):
     return b in a.mro()
 
 
+@may_raise
+def PyTruffle_Add_Subclass(bases_dict, key, cls):
+    if not bases_dict:
+        bases_dict = dict()
+    bases_dict[key] = cls
+    return bases_dict
+
+
 def PyTuple_New(size):
     return (None,) * size
 
@@ -780,6 +807,7 @@ def PyErr_CreateAndSetException(exception_type, msg):
         raise exception_type(msg)
 
 
+@may_raise(None)
 def _PyErr_BadInternalCall(filename, lineno, obj):
     if filename is not None and lineno is not None:
         msg = "{!s}:{!s}: bad argument to internal function".format(filename, lineno)
@@ -959,6 +987,8 @@ def PyTruffle_Type(type_name):
         return PyCapsule
     elif type_name == "function":
         return type(getattr)
+    elif type_name == "ellipsis":
+        return type(Py_Ellipsis())
     else:
         return getattr(sys.modules["builtins"], type_name)
 

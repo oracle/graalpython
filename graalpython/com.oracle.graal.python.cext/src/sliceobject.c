@@ -38,4 +38,10 @@
  */
 #include "capi.h"
 
+PyTypeObject PyEllipsis_Type = PY_TRUFFLE_TYPE("ellipsis", &PyType_Type, Py_TPFLAGS_DEFAULT);
 PyTypeObject PySlice_Type = PY_TRUFFLE_TYPE("slice", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC);
+
+PyObject _Py_EllipsisObject = {
+    _PyObject_EXTRA_INIT
+    1, &PyEllipsis_Type
+};
