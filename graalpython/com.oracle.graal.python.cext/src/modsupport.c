@@ -351,10 +351,13 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
             }
         case 'S':
         case 'N':
-            if (ARG == NULL && !PyErr_Occurred()) {
-                /* If a NULL was passed because a call that should have constructed a value failed, that's OK,
-                 * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
-                PyErr_SetString(PyExc_SystemError, "NULL object passed to Py_BuildValue");
+            if (ARG == NULL) {
+                if (!PyErr_Occurred()) {
+                    /* If a NULL was passed because a call that should have constructed a value failed, that's OK,
+                     * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
+                    PyErr_SetString(PyExc_SystemError, "NULL object passed to Py_BuildValue");
+                }
+                return NULL;
             } else if (converter != NULL) {
                 APPEND_VALUE(list, converter(ARG));
                 converter = NULL;
