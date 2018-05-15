@@ -380,4 +380,3 @@ int PyTruffle_Debug(void *arg) {
 	return 0;
 }
 
-int _Py_CheckRecursionLimit = 1000;
