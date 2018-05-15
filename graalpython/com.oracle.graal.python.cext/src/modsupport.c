@@ -95,7 +95,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
 #   define PEEKFMT format[formatn]
 #   define POPFMT format[formatn++]
 #   define POPARG get_arg_or_kw(argv, kwds, kwdnames, valuen++, rest_optional, rest_keywords)
-#   define POPOUTPUTVARIABLE ARG(outputn++)
+#   define POPOUTPUTVARIABLE ARG(outputn); outputn++
 
     int max = strlen(format);
     while (outputn < outc) {
@@ -193,7 +193,8 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 POPFMT;
                 void* (*converter)(PyObject*,void*) = POPOUTPUTVARIABLE;
                 PyObject* arg = POPARG;
-                int status = converter(arg, POPOUTPUTVARIABLE);
+                void* output = POPOUTPUTVARIABLE;
+                int status = converter(arg, output);
                 if (!status) { // converter should have set exception
                     return NULL;
                 }
