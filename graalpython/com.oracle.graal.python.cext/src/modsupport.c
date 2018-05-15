@@ -307,27 +307,27 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         case 'i':
         case 'b':
         case 'h':
-            APPEND_VALUE(list,PyLong_FromLong((int)ARG));
+            APPEND_VALUE(list, PyLong_FromLong((int)ARG));
             break;
         case 'l':
-            APPEND_VALUE(list, (long)ARG);
+            APPEND_VALUE(list, PyLong_FromLong((long)ARG));
             break;
         case 'B':
         case 'H':
         case 'I':
-            APPEND_VALUE(list, (unsigned int)ARG);
+            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned int)ARG));
             break;
         case 'k':
-            APPEND_VALUE(list, (unsigned long)ARG);
+            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned long)ARG));
             break;
         case 'L':
-            APPEND_VALUE(list, (long long)ARG);
+            APPEND_VALUE(list, PyLong_FromLongLong((long long)ARG));
             break;
         case 'K':
-            APPEND_VALUE(list, (unsigned long long)ARG);
+            APPEND_VALUE(list, PyLong_FromLongLong((unsigned long long)ARG));
             break;
         case 'n':
-            APPEND_VALUE(list, (Py_ssize_t)ARG);
+            APPEND_VALUE(list, PyLong_FromSsize_t((Py_ssize_t)ARG));
             break;
         case 'c':
             argchar[0] = (char)ARG;
