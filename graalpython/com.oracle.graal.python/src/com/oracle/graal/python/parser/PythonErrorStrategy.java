@@ -60,7 +60,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         TokenStream tokenStream = recognizer.getTokenStream();
         int index = token.getTokenIndex();
         // search for line start
-        int tokenIndex = index - 1;
+        int tokenIndex = index;
         int start = -1;
         while (tokenIndex >= 0) {
             Token t = tokenStream.get(tokenIndex);
@@ -72,7 +72,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         }
 
         // search for line stop
-        tokenIndex = index + 1;
+        tokenIndex = index;
         int stop = -1;
         while (tokenIndex < tokenStream.size()) {
             Token t = tokenStream.get(tokenIndex);
@@ -82,14 +82,13 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
             }
             tokenIndex++;
         }
-
         return token.getInputStream().getText(Interval.of(start, stop));
     }
 
     private static void handlePythonSyntaxError(Parser recognizer, RecognitionException e) {
         Token offendingToken = e.getOffendingToken();
         String lineText = getTokeLineText(recognizer, offendingToken);
-        String errorMarker = new String(new char[offendingToken.getCharPositionInLine() + 1]).replace('\0', ' ') + "^";
+        String errorMarker = new String(new char[offendingToken.getCharPositionInLine()]).replace('\0', ' ') + "^";
         String pythonSyntaxErrorMessage = "\n" + LINE_PADDING + lineText + "\n" + LINE_PADDING + errorMarker;
 
         RecognitionException re = e;
