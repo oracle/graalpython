@@ -250,6 +250,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
 #   define ARG truffle_get_arg(value_idx)
 #   define APPEND_VALUE(list, value) PyList_Append(list, value); value_idx++
 
+    PyObject* (*converter)(void*) = NULL;
     unsigned int value_idx = 1;
     unsigned int format_idx = 0;
     build_stack *v = (build_stack*)calloc(1, sizeof(build_stack));
@@ -261,41 +262,102 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         PyObject* list = v->list;
 
         switch(c) {
-        case 'n':
-            APPEND_VALUE(list, (Py_ssize_t)ARG);
-            break;
-        case 'i':
-            APPEND_VALUE(list, (int)ARG);
-            break;
         case 's':
-            if (ARG == NULL) {
-                APPEND_VALUE(list, Py_None);
+        case 'z':
+        case 'U':
+            if (format[format_idx + 1] == '#') {
+                int size = (int)truffle_get_arg(value_idx + 1);
+                if (ARG == NULL) {
+                    APPEND_VALUE(list, Py_None);
+                } else {
+                    APPEND_VALUE(list, polyglot_from_string_n((char*)ARG, size, "utf-8"));
+                }
+                value_idx++; // skip length argument
+                format_idx++;
             } else {
-                APPEND_VALUE(list, polyglot_from_string((char*)ARG, "utf-8"));
+                if (ARG == NULL) {
+                    APPEND_VALUE(list, Py_None);
+                } else {
+                    APPEND_VALUE(list, polyglot_from_string((char*)ARG, "utf-8"));
+                }
             }
             break;
-        case 'd':
-            APPEND_VALUE(list, PyFloat_FromDouble((double)(unsigned long long)ARG));
+        case 'y':
+            if (format[format_idx + 1] == '#') {
+                int size = (int)truffle_get_arg(value_idx + 1);
+                if (ARG == NULL) {
+                    APPEND_VALUE(list, Py_None);
+                } else {
+                    APPEND_VALUE(list, PyBytes_FromStringAndSize((char*)ARG, size));
+                }
+                value_idx++; // skip length argument
+                format_idx++;
+            } else {
+                if (ARG == NULL) {
+                    APPEND_VALUE(list, Py_None);
+                } else {
+                    APPEND_VALUE(list, PyBytes_FromString((char*)ARG));
+                }
+            }
+            break;
+        case 'u':
+            fprintf(stderr, "error: unsupported format 'u'\n");
+            break;
+        case 'i':
+        case 'b':
+        case 'h':
+            APPEND_VALUE(list, (int)ARG);
             break;
         case 'l':
             APPEND_VALUE(list, (long)ARG);
             break;
-        case 'L':
-            APPEND_VALUE(list, (long long)ARG);
+        case 'B':
+        case 'H':
+        case 'I':
+            APPEND_VALUE(list, (unsigned int)ARG);
             break;
         case 'k':
             APPEND_VALUE(list, (unsigned long)ARG);
             break;
+        case 'L':
+            APPEND_VALUE(list, (long long)ARG);
+            break;
         case 'K':
             APPEND_VALUE(list, (unsigned long long)ARG);
             break;
-        case 'N':
-        case 'S':
+        case 'n':
+            APPEND_VALUE(list, (Py_ssize_t)ARG);
+            break;
+        case 'c':
+            c = (char)ARG;
+            APPEND_VALUE(list, PyBytes_FromStringAndSize(&c, 1));
+            break;
+        case 'C':
+            c = (char)ARG;
+            APPEND_VALUE(list, polyglot_from_string_n(&c, 1, "utf-8"));
+            break;
+        case 'd':
+        case 'f':
+            APPEND_VALUE(list, PyFloat_FromDouble((double)(unsigned long long)ARG));
+            break;
+        case 'D':
+            fprintf(stderr, "error: unsupported format 'D'\n");
+            break;
         case 'O':
+            if (format[format_idx + 1] == '&') {
+                converter = truffle_get_arg(value_idx + 1);
+            }
+        case 'S':
+        case 'N':
             if (ARG == NULL && !PyErr_Occurred()) {
                 /* If a NULL was passed because a call that should have constructed a value failed, that's OK,
                  * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
                 PyErr_SetString(PyExc_SystemError, "NULL object passed to Py_BuildValue");
+            } else if (converter != NULL) {
+                APPEND_VALUE(list, converter(ARG));
+                converter = NULL;
+                value_idx++; // skip converter argument
+                format_idx++;
             } else {
                 APPEND_VALUE(list, ARG);
             }
