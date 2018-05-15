@@ -503,7 +503,7 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), args));
+    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), to_java(args)));
 }
 
 PyObject* PyObject_Type(PyObject* obj) {
