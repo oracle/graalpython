@@ -565,7 +565,7 @@ class CommonTest(seq_tests.CommonTest):
         oldid = id(s)
         s *= 10
         self.assertEqual(id(s), oldid)
-    
+    '''
     def test_extendedslicing(self):
         #  subscript
         a = self.type2test([0,1,2,3,4])
@@ -605,7 +605,8 @@ class CommonTest(seq_tests.CommonTest):
         self.assertEqual(a, self.type2test([0, 1, 1, 3, 2, 5, 3, 7, 4, 9]))
         # test issue7788
         a = self.type2test(range(10))
-        del a[9::1<<333]
+# TODO currently we don't support slices with PInt
+#        del a[9::1<<333]
 
     def test_constructor_exception_handling(self):
         # Bug #1242657
@@ -613,7 +614,7 @@ class CommonTest(seq_tests.CommonTest):
             def __iter__(self):
                 raise KeyboardInterrupt
         self.assertRaises(KeyboardInterrupt, list, F())
-    '''
+
     def test_exhausted_iterator(self):
         a = self.type2test([1, 2, 3])
         exhit = iter(a)
