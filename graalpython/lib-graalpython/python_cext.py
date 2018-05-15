@@ -808,6 +808,7 @@ def PyErr_CreateAndSetException(exception_type, msg):
         raise exception_type(msg)
 
 
+@may_raise(None)
 def _PyErr_BadInternalCall(filename, lineno, obj):
     if filename is not None and lineno is not None:
         msg = "{!s}:{!s}: bad argument to internal function".format(filename, lineno)
