@@ -56,7 +56,7 @@ class TestPyCapsule(CPyExtTestCase):
         ''',
         resultspec="i",
         argspec='sn',
-        arguments=["PyObject* name", "Py_ssize_t ptr"],
+        arguments=["char* name", "Py_ssize_t ptr"],
         callfunction="wrap_PyCapsule_Check",
         cmpfunc=unhandled_error_compare
     )
