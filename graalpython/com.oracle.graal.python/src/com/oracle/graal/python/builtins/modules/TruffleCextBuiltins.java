@@ -957,9 +957,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_Bytes_AsString extends NativeBuiltin {
         @Specialization
-        Object doUnicode(PBytes bytes, @SuppressWarnings("unused") Object errorMarker) {
+        Object doBytes(PBytes bytes, @SuppressWarnings("unused") Object errorMarker) {
             // according to Python's documentation, the last byte is always '0x00'
             byte[] store = bytes.getInternalByteArray();
+            byte[] nativeBytes = Arrays.copyOf(store, store.length + 1);
+            assert nativeBytes[nativeBytes.length - 1] == 0;
+            return getContext().getEnv().asGuestValue(nativeBytes);
+        }
+
+        @Specialization
+        Object doUnicode(PString str, @SuppressWarnings("unused") Object errorMarker) {
+            // according to Python's documentation, the last byte is always '0x00'
+            byte[] store = str.getValue().getBytes();
             byte[] nativeBytes = Arrays.copyOf(store, store.length + 1);
             assert nativeBytes[nativeBytes.length - 1] == 0;
             return getContext().getEnv().asGuestValue(nativeBytes);

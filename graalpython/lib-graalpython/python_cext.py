@@ -193,7 +193,6 @@ def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
 
 
 def PyBytes_Size(obj):
-    assert isinstance(obj, bytes)
     return PyObject_Size(obj)
 
 
