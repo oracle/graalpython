@@ -542,7 +542,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
             }
             try {
-                return fromNative(checkFunctionResult(asPythonObjectNode.execute(ForeignAccess.sendExecute(executeNode, callable, arguments))));
+                return fromNative(asPythonObjectNode.execute(checkFunctionResult(ForeignAccess.sendExecute(executeNode, callable, arguments))));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException(e.toString());
