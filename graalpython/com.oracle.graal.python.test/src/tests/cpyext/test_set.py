@@ -144,4 +144,3 @@ class TestPySet(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
-    
