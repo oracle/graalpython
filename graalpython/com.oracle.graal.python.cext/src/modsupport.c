@@ -306,7 +306,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         case 'i':
         case 'b':
         case 'h':
-            APPEND_VALUE(list, (int)ARG);
+            APPEND_VALUE(list,PyLong_FromLong((int)ARG));
             break;
         case 'l':
             APPEND_VALUE(list, (long)ARG);
