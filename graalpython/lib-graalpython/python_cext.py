@@ -267,7 +267,7 @@ def PyList_Append(listObj, newitem):
 @may_raise
 def PyList_AsTuple(listObj):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        raise SystemError("expected list type")
     return tuple(listObj)
 
 
