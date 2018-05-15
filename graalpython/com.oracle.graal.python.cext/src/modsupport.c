@@ -272,7 +272,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
                 if (ARG == NULL) {
                     APPEND_VALUE(list, Py_None);
                 } else {
-                    APPEND_VALUE(list, polyglot_from_string_n((char*)ARG, size, "utf-8"));
+                    APPEND_VALUE(list, PyUnicode_FromStringAndSize((char*)ARG, size));
                 }
                 value_idx++; // skip length argument
                 format_idx++;
@@ -280,7 +280,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
                 if (ARG == NULL) {
                     APPEND_VALUE(list, Py_None);
                 } else {
-                    APPEND_VALUE(list, polyglot_from_string((char*)ARG, "utf-8"));
+                    APPEND_VALUE(list, PyUnicode_FromString((char*)ARG));
                 }
             }
             break;
