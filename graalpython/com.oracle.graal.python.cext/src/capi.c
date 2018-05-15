@@ -105,10 +105,12 @@ static void initialize_capi() {
 }
 
 void* native_to_java(PyObject* obj) {
-	if (obj == Py_None) {
+    if (obj == Py_None) {
         return Py_None;
     } else if (obj == NULL) {
     	return Py_NoValue;
+    } else if (polyglot_is_string(obj)) {
+        return obj;
     } else if (truffle_is_handle_to_managed(obj)) {
     	return truffle_managed_from_handle(obj);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {

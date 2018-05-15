@@ -251,6 +251,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
 #   define APPEND_VALUE(list, value) PyList_Append(list, value); value_idx++
 
     PyObject* (*converter)(void*) = NULL;
+    char argchar[2] = {'\0'};
     unsigned int value_idx = 1;
     unsigned int format_idx = 0;
     build_stack *v = (build_stack*)calloc(1, sizeof(build_stack));
@@ -329,12 +330,12 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
             APPEND_VALUE(list, (Py_ssize_t)ARG);
             break;
         case 'c':
-            c = (char)ARG;
-            APPEND_VALUE(list, PyBytes_FromStringAndSize(&c, 1));
+            argchar[0] = (char)ARG;
+            APPEND_VALUE(list, PyBytes_FromStringAndSize(argchar, 1));
             break;
         case 'C':
-            c = (char)ARG;
-            APPEND_VALUE(list, polyglot_from_string_n(&c, 1, "utf-8"));
+            argchar[0] = (char)ARG;
+            APPEND_VALUE(list, polyglot_from_string(argchar, "ascii"));
             break;
         case 'd':
         case 'f':
