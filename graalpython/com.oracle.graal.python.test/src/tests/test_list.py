@@ -355,3 +355,28 @@ class ListTest(list_tests.CommonTest):
 
         a.insert(False, -1)
         self.assertEqual([-1,0,1], a)
+
+    def testStopIteration(self):
+        l = [1.0]
+        i = l.__iter__()
+        i.__next__()
+        self.assertRaises(StopIteration, i.__next__)
+        l.append(2.0)
+        self.assertRaises(StopIteration, i.__next__)
+        l.append('a')
+        self.assertRaises(StopIteration, i.__next__)
+
+        l = []
+        i = l.__iter__()
+        self.assertRaises(StopIteration, i.__next__)
+        l.append(2.0)
+        self.assertRaises(StopIteration, i.__next__)
+
+        l = ['a']
+        i = l.__iter__()
+        i.__next__()
+        self.assertRaises(StopIteration, i.__next__)
+        l.append('b')
+        self.assertRaises(StopIteration, i.__next__)
+        l.append(3)
+        self.assertRaises(StopIteration, i.__next__)
