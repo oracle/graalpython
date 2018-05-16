@@ -185,7 +185,7 @@ public abstract class CExtNodes {
         Object execute(Object value) {
             if (nativeToJavaFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeToJavaFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUNCTION_NATIVE_TO_JAVA);
+                nativeToJavaFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_NATIVE_TO_JAVA);
             }
             return toJavaNode.execute(callNativeNode.execute(nativeToJavaFunction, new Object[]{value}));
         }
