@@ -513,26 +513,4 @@ public class PythonObjectNativeWrapperMR {
             return getClassNode;
         }
     }
-
-    @Resolve(message = "IS_BOXED")
-    abstract static class IsBoxedNode extends Node {
-        public Object access(PythonObjectNativeWrapper object) {
-            return PTypeToForeignNode.isBoxed(object.getPythonObject());
-        }
-    }
-
-    @Resolve(message = "UNBOX")
-    abstract static class UnboxNode extends Node {
-        @Child private PTypeUnboxNode unboxNode = PTypeUnboxNode.create();
-
-        Object access(PythonObjectNativeWrapper object) {
-            Object result = unboxNode.execute(object.getPythonObject());
-            if (result == object) {
-                throw UnsupportedTypeException.raise(new Object[]{object.getPythonObject()});
-            } else {
-                return result;
-            }
-        }
-    }
-
 }
