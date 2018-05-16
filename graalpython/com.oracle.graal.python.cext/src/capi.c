@@ -39,7 +39,14 @@
 #include "capi.h"
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    PyTypeObject* ptype = (PyTypeObject *)to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
+	void *jtype = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname));
+    PyTypeObject* ptype = (PyTypeObject *)to_sulong(jtype);
+    PyTypeObject *nativePointer = PyObjectHandle_ForJavaType(jtype);
+
+    // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
+    // TODO Remove this as soon as this is properly supported.
+    truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", ptype, nativePointer);
+
     unsigned long original_flags = structure->tp_flags;
     PyTypeObject* type_handle = truffle_assign_managed(structure, polyglot_as__typeobject(ptype));
     // write flags as specified in the dummy to the PythonClass object

@@ -1051,4 +1051,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return getClassNode;
         }
     }
+
+    @Builtin(name = "PyTruffle_Set_Ptr", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Set_Ptr extends NativeBuiltin {
+
+        @Specialization
+        PythonObjectNativeWrapper doPythonObject(PythonObjectNativeWrapper nativeWrapper, Object ptr) {
+            nativeWrapper.setNativePointer(ptr);
+            return nativeWrapper;
+        }
+    }
 }
