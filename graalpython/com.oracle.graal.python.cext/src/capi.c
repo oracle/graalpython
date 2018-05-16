@@ -156,13 +156,17 @@ static inline PyObject* PyTruffle_Explicit_Cast(PyObject* cobj, unsigned long fl
 }
 
 
-PyObject* to_sulong(void *o) {
-    PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
+__attribute__((always_inline))
+static inline PyObject* _explicit_cast(PyObject* cobj) {
     if(polyglot_is_value(cobj)) {
         unsigned long flags = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetTpFlags", cobj));
         return PyTruffle_Explicit_Cast(cobj, flags);
     }
     return cobj;
+}
+
+PyObject* to_sulong(void *o) {
+    return _explicit_cast(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
 }
 
 void* get_ob_type(PyObject* obj) {
@@ -381,4 +385,48 @@ PyObject marker_struct = {
 int PyTruffle_Debug(void *arg) {
 	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
 	return 0;
+}
+
+PyObject *wrap_direct(PyCFunction fun, PyObject *module, ...) {
+	PyObject *res = NULL;
+	switch(polyglot_get_arg_count()) {
+	case 0:
+		res = fun(Py_None, Py_None);
+		break;
+	case 2:
+		res = fun(module, Py_None);
+		break;
+	case 3:
+		res = fun(module, _explicit_cast((PyObject*)polyglot_get_arg(2)));
+		break;
+	case 4:
+		res = ((PyCFunctionWithKeywords)fun)(module, _explicit_cast((PyObject*)polyglot_get_arg(1)), _explicit_cast((PyObject*)polyglot_get_arg(3)));
+		break;
+	}
+	PyTruffle_Debug(res);
+	return res;
+}
+
+PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs) {
+	return fun(module, _explicit_cast(varargs));
+}
+
+PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs) {
+	return fun(module, _explicit_cast(varargs), _explicit_cast(kwargs));
+}
+
+PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
+	return fun(module, pnone);
+}
+
+PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames) {
+	Py_ssize_t i;
+    for (i=0; i < nargs; i++) {
+    	args[i] = _explicit_cast(args[i]);
+    }
+	return fun(self, args, nargs, _explicit_cast(kwnames));
+}
+
+PyObject *wrap_unsupported(void *fun, ...) {
+	return NULL;
 }

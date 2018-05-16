@@ -94,6 +94,14 @@ void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
+// prototype of C landing function
+PyObject *wrap_direct(PyCFunction fun, PyObject *module, ...);
+PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
+PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
+PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
+PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames);
+PyObject *wrap_unsupported(void *fun, ...);
+
 #define write_struct_field(object, struct, fieldname, value)            \
     truffle_write(to_java(object),                                      \
                   #fieldname ,                                          \
@@ -118,6 +126,21 @@ void initialize_hashes();
          (((flags) & METH_FASTCALL) ?                                   \
           truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :              \
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
+
+#define get_method_flags_cwrapper(flags)                                \
+    (void*)((((flags) < 0) ?                                                    \
+     wrap_direct :                                                      \
+     (((flags) & METH_KEYWORDS) ?                                       \
+      wrap_keywords :                                                   \
+      (((flags) & METH_VARARGS) ?                                       \
+       wrap_varargs :                                                   \
+       (((flags) & METH_NOARGS) ?                                       \
+        wrap_noargs :                                                   \
+        (((flags) & METH_O) ?                                           \
+         wrap_direct :                                                  \
+         (((flags) & METH_FASTCALL) ?                                   \
+          wrap_fastcall :                                               \
+          wrap_unsupported)))))))
 
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__) {\

@@ -54,6 +54,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
                        mod_w,
                        truffle_read_string((const char*)(def.ml_name)),
                        truffle_address_to_function(def.ml_meth),
+                       truffle_address_to_function(get_method_flags_cwrapper(def.ml_flags)),
                        get_method_flags_wrapper(def.ml_flags),
                        truffle_read_string((const char*)(def.ml_doc ? def.ml_doc : "")));
         def = methods[++idx];
