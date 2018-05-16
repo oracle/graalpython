@@ -145,7 +145,68 @@ class UnboundLocalError(NameError):
 class OSError(Exception):
     pass
 
+
 class IOError(Exception):
+    pass
+
+
+class BlockingIOError(OSError):
+    pass
+
+
+class ChildProcessError(OSError):
+    pass
+
+
+class ConnectionError(OSError):
+    pass
+
+
+class BrokenPipeError(OSError):
+    pass
+
+
+class ConnectionAbortedError(OSError):
+    pass
+
+
+class ConnectionRefusedError(OSError):
+    pass
+
+
+class ConnectionResetError(OSError):
+    pass
+
+
+class FileExistsError(OSError):
+    pass
+
+
+class FileNotFoundError(OSError):
+    pass
+
+
+class InterruptedError(OSError):
+    pass
+
+
+class IsADirectoryError(OSError):
+    pass
+
+
+class NotADirectoryError(OSError):
+    pass
+
+
+class PermissionError(OSError):
+    pass
+
+
+class ProcessLookupError(OSError):
+    pass
+
+
+class TimeoutError(OSError):
     pass
 
 
