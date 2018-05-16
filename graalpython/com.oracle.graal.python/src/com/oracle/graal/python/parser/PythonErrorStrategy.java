@@ -42,7 +42,6 @@ import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.InputMismatchException;
 import org.antlr.v4.runtime.NoViableAltException;
 import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
@@ -102,14 +101,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         String lineText = getTokeLineText(recognizer, offendingToken);
         String errorMarker = new String(new char[offendingToken.getCharPositionInLine()]).replace('\0', ' ') + "^";
         String pythonSyntaxErrorMessage = "\n" + LINE_PADDING + lineText + "\n" + LINE_PADDING + errorMarker;
-
-        RecognitionException re = e;
-        // the error message in some cases is not set properly producing an annoying "null" in the
-        // final message, we replace the error with a copy of itself and an empty message
-        if (re.getMessage() == null) {
-            re = new RecognitionException("", e.getRecognizer(), e.getInputStream(), (ParserRuleContext) e.getCtx());
-        }
-        recognizer.notifyErrorListeners(offendingToken, pythonSyntaxErrorMessage, re);
+        recognizer.notifyErrorListeners(offendingToken, pythonSyntaxErrorMessage, e);
     }
 
     @Override
