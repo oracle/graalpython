@@ -32,6 +32,7 @@ public final class PLongSequenceIterator extends PLongIterator {
 
     final LongSequenceStorage sequence;
     int index;
+    protected boolean stopIterationReached = false;
 
     public PLongSequenceIterator(PythonClass clazz, LongSequenceStorage sequence) {
         super(clazz);
