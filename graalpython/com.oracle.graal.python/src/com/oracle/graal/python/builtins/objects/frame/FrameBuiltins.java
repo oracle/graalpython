@@ -83,6 +83,7 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TruffleGetClassScopeNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object add(PFrame self) {
             // TODO: remove me
             // TODO: do it properly via the python API in super.__init__ :

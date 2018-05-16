@@ -407,17 +407,18 @@ int PyType_Ready(PyTypeObject* cls) {
         // TODO ...
     }
 
+    // TODO link subclasses
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
-    Py_ssize_t n = PyTuple_GET_SIZE(bases);
-    Py_ssize_t i;
-    for (i = 0; i < n; i++) {
-        PyTypeObject *b = polyglot_as__typeobject(PyTuple_GET_ITEM(bases, i));
-        if (PyType_Check(b) && add_subclass((PyTypeObject *)b, cls) < 0) {
-        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
-        	return -1;
-        }
-    }
+//    Py_ssize_t n = PyTuple_GET_SIZE(bases);
+//    Py_ssize_t i;
+//    for (i = 0; i < n; i++) {
+//        PyTypeObject *b = polyglot_as__typeobject(PyTuple_GetItem(bases, i));
+//        if (PyType_Check(b) && add_subclass((PyTypeObject *)b, cls) < 0) {
+//        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
+//        	return -1;
+//        }
+//    }
 
     // done
     cls->tp_flags = cls->tp_flags & ~Py_TPFLAGS_READYING;
