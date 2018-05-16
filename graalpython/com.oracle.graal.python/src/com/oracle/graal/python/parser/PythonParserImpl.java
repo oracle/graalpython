@@ -33,10 +33,7 @@ import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CodePointCharStream;
-import org.antlr.v4.runtime.NoViableAltException;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Token;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PNode;
@@ -95,20 +92,12 @@ public final class PythonParserImpl implements PythonParser {
                     parser.reset();
                     input = parser.eval_input();
                 } catch (Throwable e2) {
-                    int line;
                     if (source.isInteractive() && e instanceof PIncompleteSourceException) {
                         ((PIncompleteSourceException) e).setSource(source);
                         throw e;
-                    } else if (e instanceof RecognitionException) {
-                        Token token = ((RecognitionException) e).getOffendingToken();
-                        line = token.getLine();
-                    } else if (e.getCause() instanceof NoViableAltException) {
-                        Token token = ((NoViableAltException) e.getCause()).getOffendingToken();
-                        line = token.getLine();
-                    } else {
-                        throw core.raise(SyntaxError, e.getMessage());
                     }
-                    throw core.raise(SyntaxError, getLocation(source, line), e.getMessage());
+                    Node location = getLocation(source, PythonErrorStrategy.getLine(e));
+                    throw core.raise(SyntaxError, location, e.getMessage());
                 }
             }
         }
@@ -126,17 +115,8 @@ public final class PythonParserImpl implements PythonParser {
                 parser.reset();
                 input = parser.eval_input();
             } catch (Throwable e2) {
-                int line;
-                if (e instanceof RecognitionException) {
-                    Token token = ((RecognitionException) e).getOffendingToken();
-                    line = token.getLine();
-                } else if (e.getCause() instanceof NoViableAltException) {
-                    Token token = ((NoViableAltException) e.getCause()).getOffendingToken();
-                    line = token.getLine();
-                } else {
-                    throw core.raise(SyntaxError, e.getMessage());
-                }
-                throw core.raise(SyntaxError, getLocation(source, line), e.getMessage());
+                Node location = getLocation(source, PythonErrorStrategy.getLine(e));
+                throw core.raise(SyntaxError, location, e.getMessage());
             }
         }
         return input;

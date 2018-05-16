@@ -56,6 +56,18 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         super.recover(recognizer, e);
     }
 
+    static int getLine(Throwable e) {
+        if (e instanceof RecognitionException) {
+            return ((RecognitionException) e).getOffendingToken().getLine();
+        } else {
+            Throwable cause = e.getCause();
+            if (cause instanceof RecognitionException) {
+                return ((RecognitionException) cause).getOffendingToken().getLine();
+            }
+            return -1;
+        }
+    }
+
     private static String getTokeLineText(Parser recognizer, Token token) {
         TokenStream tokenStream = recognizer.getTokenStream();
         int index = token.getTokenIndex();
