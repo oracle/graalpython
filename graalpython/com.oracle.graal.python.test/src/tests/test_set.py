@@ -60,3 +60,8 @@ def test_set_remove():
     assert s == {1, 2, 3}
     s.remove(3)
     assert s == {1, 2}
+
+
+def test_set_le():
+    assert set("a") <= set("abc")
+
