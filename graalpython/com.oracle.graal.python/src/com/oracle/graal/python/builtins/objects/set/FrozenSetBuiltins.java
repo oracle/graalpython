@@ -98,6 +98,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode = HashingStorageNodes.ContainsKeyNode.create();
 
+        private HashingStorageNodes.ContainsKeyNode getContainsKeyNode() {
+            if (containsKeyNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                containsKeyNode = insert(HashingStorageNodes.ContainsKeyNode.create());
+            }
+            return containsKeyNode;
+        }
+
         @Specialization
         Object run(PBaseSet self, PBaseSet other) {
             if (self.size() > other.size()) {
@@ -105,7 +113,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             }
 
             for (Object value : self.values()) {
-                if (!containsKeyNode.execute(other.getDictStorage(), value)) {
+                if (!getContainsKeyNode().execute(other.getDictStorage(), value)) {
                     return false;
                 }
             }
