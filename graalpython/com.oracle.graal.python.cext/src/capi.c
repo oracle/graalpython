@@ -55,6 +55,10 @@ static void initialize_globals() {
     void *jnotimpl = polyglot_as__object(to_sulong(polyglot_get_member(PY_BUILTIN, "NotImplemented")));
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
+    // Ellipsis
+    void *jellipsis = polyglot_as__object(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_Ellipsis")));
+    truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
+
     // True, False
     void *jtrue = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_True");
     truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(to_sulong(jtrue)));
@@ -89,6 +93,10 @@ static void initialize_capi() {
     initialize_type_structure(&_PyNotImplemented_Type, "NotImplementedType");
     initialize_type_structure(&PyCapsule_Type, "PyCapsule");
     initialize_type_structure(&PyMemoryView_Type, "memoryview");
+    initialize_type_structure(&PyCFunction_Type, "function");
+    initialize_type_structure(&PyFrozenSet_Type, "frozenset");
+    initialize_type_structure(&PySet_Type, "set");
+    initialize_type_structure(&PyEllipsis_Type, "ellipsis");
 
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
@@ -98,10 +106,12 @@ static void initialize_capi() {
 }
 
 void* native_to_java(PyObject* obj) {
-	if (obj == Py_None) {
+    if (obj == Py_None) {
         return Py_None;
     } else if (obj == NULL) {
     	return Py_NoValue;
+    } else if (polyglot_is_string(obj)) {
+        return obj;
     } else if (truffle_is_handle_to_managed(obj)) {
     	return truffle_managed_from_handle(obj);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {

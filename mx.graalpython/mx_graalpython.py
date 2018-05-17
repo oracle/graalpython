@@ -186,14 +186,6 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
         dists.append('SULONG')
 
-    if not any("-Dpython.home" in arg for arg in vm_args):
-        if not any("--python.SysPrefix" in arg for arg in graalpython_args):
-            graalpython_args.insert(0, "--python.SysPrefix=%s" % os.path.join(_suite.dir, "graalpython", "com.oracle.graal.python.cext"))
-        if not any("--python.CoreHome" in arg for arg in graalpython_args):
-            graalpython_args.insert(0, "--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"))
-        if not any("--python.StdLibHome" in arg for arg in graalpython_args):
-            graalpython_args.insert(0, "--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python", "3"))
-
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
         def _is_user(user, home=None):
@@ -318,6 +310,20 @@ def find_eclipse():
                 return
 
 
+def python_svm(args):
+    mx.run_mx(
+        ["--dynamicimports", "/substratevm,/vm", "build",
+         "--force-deprecation-as-warning", "--dependencies",
+         "GRAAL_MANAGEMENT,graalpython.image"],
+        nonZeroIsFatal=True
+    )
+    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
+    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+    shutil.copy(svm_image, os.path.join(_suite.dir, "graalpython-svm"))
+    mx.run([svm_image] + args)
+    return svm_image
+
+
 def graalpython_gate_runner(args, tasks):
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
@@ -366,14 +372,7 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
         if task:
-            mx.run_mx(
-                ["--dynamicimports", "/substratevm,/vm",
-                 "build", "--force-deprecation-as-warning", "--dependencies",
-                 "GRAAL_MANAGEMENT,graalpython.image"],
-                nonZeroIsFatal=True
-            )
-            vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
-            svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+            svm_image = python_svm(["--version"])
             benchmark = os.path.join("graalpython", "benchmarks", "src", "benchmarks", "image_magix.py")
             out = mx.OutputCapture()
             mx.run(
@@ -747,6 +746,7 @@ mx.update_commands(_suite, {
     'python-update-import': [update_import_cmd, 'import name'],
     'delete-graalpython-if-testdownstream': [delete_self_if_testdownstream, ''],
     'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
+    'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
     'nativebuild': [nativebuild, ''],
     'python-so-test': [run_shared_lib_test, ''],

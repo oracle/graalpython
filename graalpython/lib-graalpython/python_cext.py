@@ -75,6 +75,10 @@ def Py_False():
     return False
 
 
+def Py_Ellipsis():
+    return ...
+
+
 moduletype = type(sys)
 
 
@@ -148,6 +152,25 @@ def PyDict_DelItem(dictObj, key):
     return 0
 
 
+##################### SET, FROZENSET
+
+
+@may_raise
+def PySet_New(iterable):
+    if iterable:
+        return set(iterable)
+    else:
+        return set()
+
+
+@may_raise
+def PyFrozenSet_New(iterable):
+    if iterable:
+        return frozenset(iterable)
+    else:
+        return frozenset()
+
+
 ##################### MAPPINGPROXY
 
 
@@ -189,7 +212,6 @@ def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
 
 
 def PyBytes_Size(obj):
-    assert isinstance(obj, bytes)
     return PyObject_Size(obj)
 
 
@@ -245,7 +267,7 @@ def PyList_Append(listObj, newitem):
 @may_raise
 def PyList_AsTuple(listObj):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        raise SystemError("expected list type")
     return tuple(listObj)
 
 
@@ -509,6 +531,28 @@ def PyCapsule_GetPointer(obj, name):
     return obj.pointer
 
 
+@may_raise
+def PyCapsule_Import(name, no_block):
+    obj = None
+    mod = name.split(".")[0]
+    try:
+        obj = __import__(mod)
+    except:
+        raise ImportError('PyCapsule_Import could not import module "%s"' % name)
+    for attr in name.split(".")[1:]:
+        obj = getattr(obj, attr)
+    if PyCapsule_IsValid(obj, name):
+        return obj.pointer
+    else:
+        raise AttributeError('PyCapsule_Import "%s" is not valid' % name)
+
+
+def PyCapsule_IsValid(obj, name):
+    return (isinstance(obj, PyCapsule) and
+            obj.pointer != None and
+            obj.name == name)
+
+
 def PyModule_AddObject(m, k, v):
     m.__dict__[k] = v
     return None
@@ -639,6 +683,14 @@ def PyType_IsSubtype(a, b):
     return b in a.mro()
 
 
+@may_raise
+def PyTruffle_Add_Subclass(bases_dict, key, cls):
+    if not bases_dict:
+        bases_dict = dict()
+    bases_dict[key] = cls
+    return bases_dict
+
+
 def PyTuple_New(size):
     return (None,) * size
 
@@ -662,6 +714,16 @@ def PyTuple_GetSlice(t, start, end):
     if not isinstance(t, tuple):
         _PyErr_BadInternalCall(None, None, t)
     return t[start:end]
+
+
+@may_raise
+def dict_from_list(lst):
+    if len(lst) % 2 != 0:
+        raise SystemError("list cannot be converted to dict")
+    d = {}
+    for i in range(0, len(lst), 2):
+        d[l[i]] = d[l[i + 1]]
+    return d
 
 
 def PyObject_Size(obj):
@@ -699,7 +761,7 @@ def PyObject_IsInstance(obj, typ):
 
 @may_raise
 def PyObject_RichCompare(left, right, op):
-    return do_richcompare(left, right, op)
+    left.__truffle_richcompare__(right, op)
 
 
 def PyObject_AsFileDescriptor(obj):
@@ -745,6 +807,7 @@ def PyErr_CreateAndSetException(exception_type, msg):
         raise exception_type(msg)
 
 
+@may_raise(None)
 def _PyErr_BadInternalCall(filename, lineno, obj):
     if filename is not None and lineno is not None:
         msg = "{!s}:{!s}: bad argument to internal function".format(filename, lineno)
@@ -922,6 +985,10 @@ def PyTruffle_Type(type_name):
         return type(None)
     elif type_name == "PyCapsule":
         return PyCapsule
+    elif type_name == "function":
+        return type(getattr)
+    elif type_name == "ellipsis":
+        return type(Py_Ellipsis())
     else:
         return getattr(sys.modules["builtins"], type_name)
 
@@ -939,10 +1006,57 @@ capi = capi_to_java = None
 def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
-    capi = capi_library
-    initialize_member_accessors()
     global capi_to_java
+    capi = capi_library
     capi_to_java = import_c_func("to_java")
+
+    initialize_member_accessors()
+    initialize_datetime_capi()
+
+
+def initialize_datetime_capi():
+    import datetime
+
+    class PyDateTime_CAPI:
+        DateType = type(datetime.date)
+        DateTimeType = type(datetime.datetime)
+        TimeType = type(datetime.time)
+        DeltaType = type(datetime.timedelta)
+        TZInfoType = type(datetime.tzinfo)
+
+        @staticmethod
+        def Date_FromDate(y, m, d, typ):
+            return typ(y, month=m, day=d)
+
+        @staticmethod
+        def DateTime_FromDateAndTime(y, mon, d, h, m, s, usec, tzinfo, typ):
+            return PyDateTime_CAPI.DateTime_FromDateAndTimeAndFold(y, mon, d, h, m, s, usec, tzinfo, 0, typ)
+
+        @staticmethod
+        def Time_FromTime(h, m, s, usec, tzinfo, typ):
+            return PyDateTime_CAPI.Time_FromTimeAndFold(h, m, s, usec, tzinfo, 0, typ)
+
+        @staticmethod
+        def Delta_FromDelta(d, s, microsec, normalize, typ):
+            return typ(days=d, seconds=s, microseconds=microsec)
+
+        @staticmethod
+        def DateTime_FromTimestamp(cls, args, kwds):
+            return cls(*args, **kwds)
+
+        @staticmethod
+        def Date_FromTimestamp(cls, args):
+            return cls(*args)
+
+        @staticmethod
+        def DateTime_FromDateAndTimeAndFold(y, mon, d, h, m, s, usec, tz, fold, typ):
+            return typ(y, month=mon, day=d, hour=h, minute=m, second=s, microseconds=usec, tzinfo=tz, fold=fold)
+
+        @staticmethod
+        def Time_FromTimeAndFold(h, m, s, us, tz, fold, typ):
+            return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
+
+    datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
 
 
 ReadMemberFunctions = []

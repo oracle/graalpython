@@ -39,24 +39,39 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
-class TestPyCapsule(CPyExtTestCase):
+class TestMisc(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyCapsule, self).compile_module(name)
+        super(TestMisc, self).compile_module(name)
 
-    test_PyCapsule_CheckExact = CPyExtFunction(
-        lambda args: True,
+    test_PyEllipsis_isSingleton = CPyExtFunction(
+        lambda args: 1,
         lambda: (
-            ("hello",0xDEADBEEF), 
+            (...,),
         ),
-        code='''int wrap_PyCapsule_Check(char * name, Py_ssize_t ptr) {
-            PyObject* capsule = PyCapsule_New(ptr, name, NULL);
-            return PyCapsule_CheckExact(capsule);
+        callfunction="CheckPyEllipsis",
+        code="""
+        static int CheckPyEllipsis(PyObject* ellipsis_singleton) {
+            return ellipsis_singleton == &_Py_EllipsisObject;
         }
-        ''',
+        """,
         resultspec="i",
-        argspec='sn',
-        arguments=["char* name", "Py_ssize_t ptr"],
-        callfunction="wrap_PyCapsule_Check",
-        cmpfunc=unhandled_error_compare
+        argspec="O",
+        arguments=["PyObject* ellipsis_singleton"],
+    )
+
+    test_PyEllipsis_type = CPyExtFunction(
+        lambda args: 1,
+        lambda: (
+            (...,),
+        ),
+        callfunction="CheckPyEllipsisType",
+        code="""
+        static int CheckPyEllipsisType(PyObject* ellipsis_singleton) {
+            return Py_TYPE(&_Py_EllipsisObject) == &PyEllipsis_Type;
+        }
+        """,
+        resultspec="i",
+        argspec="O",
+        arguments=["PyObject* ellipsis_singleton"],
     )

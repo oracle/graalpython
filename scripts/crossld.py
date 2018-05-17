@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2018, Oracle and/or its affiliates.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -35,28 +36,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from __future__ import print_function
+import os
 import sys
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
-__dir__ = __file__.rpartition("/")[0]
 
-class TestPyCapsule(CPyExtTestCase):
-    def compile_module(self, name):
-        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyCapsule, self).compile_module(name)
 
-    test_PyCapsule_CheckExact = CPyExtFunction(
-        lambda args: True,
-        lambda: (
-            ("hello",0xDEADBEEF), 
-        ),
-        code='''int wrap_PyCapsule_Check(char * name, Py_ssize_t ptr) {
-            PyObject* capsule = PyCapsule_New(ptr, name, NULL);
-            return PyCapsule_CheckExact(capsule);
-        }
-        ''',
-        resultspec="i",
-        argspec='sn',
-        arguments=["char* name", "Py_ssize_t ptr"],
-        callfunction="wrap_PyCapsule_Check",
-        cmpfunc=unhandled_error_compare
-    )
+MX = "/home/tim/.graalenv/mx/mx"
+GP = "/home/tim/Dev/graalpython/graalpython-open"
+
+args = sys.argv[1:]
+
+
+gcc = " ".join(["gcc", "-shared"] + args)
+print("GCC: ", gcc)
+retval = os.system(gcc)
+
+
+for idx, arg in  enumerate(args):
+    if arg.endswith(".o") or arg.endswith(".so"):
+        args[idx] = arg.replace(".o", ".bc")
+    if arg == "-I/usr/include/python3.6m":
+        args[idx] = "-I%s/graalpython/include" % GP
+
+
+sulong = " ".join([MX, "-p", GP, "python -LD"] + args)
+print("SULONG: ", sulong)
+retval |= os.system(sulong)
+
+os.exit(retval)

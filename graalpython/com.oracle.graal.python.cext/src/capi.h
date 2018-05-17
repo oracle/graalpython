@@ -74,6 +74,7 @@ POLYGLOT_DECLARE_TYPE(PyBytesObject);
 POLYGLOT_DECLARE_STRUCT(_longobject);
 POLYGLOT_DECLARE_TYPE(PyCapsule);
 POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
+POLYGLOT_DECLARE_TYPE(PySetObject);
 
 
 extern void* to_java(PyObject* obj);

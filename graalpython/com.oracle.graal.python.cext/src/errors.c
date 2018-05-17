@@ -39,7 +39,7 @@
 #include "capi.h"
 
 void _PyErr_BadInternalCall(const char *filename, int lineno) {
-    truffle_invoke(PY_TRUFFLE_CEXT, "_PyErr_BadInternalCall", truffle_read_string(filename), lineno);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "_PyErr_BadInternalCall", polyglot_from_string(filename, "utf-8"), lineno, Py_NoValue);
 }
 
 #undef PyErr_BadInternalCall

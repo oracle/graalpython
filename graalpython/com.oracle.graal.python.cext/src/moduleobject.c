@@ -55,7 +55,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
                        truffle_read_string((const char*)(def.ml_name)),
                        truffle_address_to_function(def.ml_meth),
                        get_method_flags_wrapper(def.ml_flags),
-                       truffle_read_string((const char*)(def.ml_doc)));
+                       truffle_read_string((const char*)(def.ml_doc ? def.ml_doc : "")));
         def = methods[++idx];
     }
     return 0;
@@ -114,4 +114,12 @@ int PyModule_AddIntConstant(PyObject* m, const char* k, long constant) {
 
 PyObject* PyModule_Create2(PyModuleDef* moduledef, int apiversion) {
     return _PyModule_CreateInitialized(moduledef, apiversion);
+}
+
+PyObject* PyModule_GetDict(PyObject* o) {
+    if (!PyModule_Check(o)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    return ((PyModuleObject*)polyglot_as_PyModuleObject(o))->md_dict;
 }

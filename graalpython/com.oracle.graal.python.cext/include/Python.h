@@ -145,11 +145,6 @@
 #undef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_None;
 
-#define PyMem_RawMalloc(size) malloc(size)
-#define PyMem_RawCalloc(nelem, elsize) calloc(nelem, elsize)
-#define PyMem_RawRealloc(ptr, new_size) realloc(ptr, new_size)
-#define PyMem_RawFree(ptr) free(ptr)
-
 #define _PyLong_FromTime_t(o) ((long)o)
 
 extern int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, int outc, void *v0, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9, void *v10, void *v11, void *v12, void *v13, void *v14, void *v15, void *v16, void *v17, void *v18, void *v19);

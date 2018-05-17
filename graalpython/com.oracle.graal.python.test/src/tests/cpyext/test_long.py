@@ -193,7 +193,18 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_PyLong_FromSize_t = test_PyLong_FromSsize_t
+    test_PyLong_FromSize_t = CPyExtFunction(
+        lambda args: int(args[0]),
+        lambda: (
+            (0,),
+            (1,),
+            (0xffffffff,),
+        ),
+        resultspec="O",
+        argspec='n',
+        arguments=["size_t n"],
+        cmpfunc=unhandled_error_compare
+    )
 
     test_PyLong_FromDouble = CPyExtFunction(
         lambda args: int(args[0]),
@@ -226,8 +237,8 @@ class TestPyLong(CPyExtTestCase):
     test_PyLong_Check = CPyExtFunction(
         lambda args: isinstance(args[0], int),
         lambda: (
-            (0,), 
-            (-1,), 
+            (0,),
+            (-1,),
             (0xffffffff,),
             (0xfffffffffffffffffffffff,),
             ("hello",),
@@ -244,8 +255,8 @@ class TestPyLong(CPyExtTestCase):
     test_PyLong_CheckExact = CPyExtFunction(
         lambda args: type(args[0]) is int,
         lambda: (
-            (0,), 
-            (-1,), 
+            (0,),
+            (-1,),
             (0xffffffff,),
             (0xfffffffffffffffffffffff,),
             ("hello",),

@@ -49,8 +49,8 @@ PyObject* get_arg_or_kw(PyObject* argv, PyObject* kwds, char** kwdnames, int arg
     }
     const char* kwdname = kwdnames[argnum];
     void* kwarg = PyDict_GetItem(kwds, to_sulong(truffle_read_string(kwdname)));
-    if (kwarg == Py_None) {
-        return NULL;
+    if (kwarg == NULL) {
+        return Py_None;
     } else {
         return kwarg;
     }
@@ -77,16 +77,16 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
     case 7: __ASSIGN(T, 7, arg); break;         \
     case 8: __ASSIGN(T, 8, arg); break;         \
     case 9: __ASSIGN(T, 9, arg); break;         \
-    case 10: __ASSIGN(T, 10, arg); break;         \
-    case 11: __ASSIGN(T, 11, arg); break;         \
-    case 12: __ASSIGN(T, 12, arg); break;         \
-    case 13: __ASSIGN(T, 13, arg); break;         \
-    case 14: __ASSIGN(T, 14, arg); break;         \
-    case 15: __ASSIGN(T, 15, arg); break;         \
-    case 16: __ASSIGN(T, 16, arg); break;         \
-    case 17: __ASSIGN(T, 17, arg); break;         \
-    case 18: __ASSIGN(T, 18, arg); break;         \
-    case 19: __ASSIGN(T, 19, arg); break;         \
+    case 10: __ASSIGN(T, 10, arg); break;       \
+    case 11: __ASSIGN(T, 11, arg); break;       \
+    case 12: __ASSIGN(T, 12, arg); break;       \
+    case 13: __ASSIGN(T, 13, arg); break;       \
+    case 14: __ASSIGN(T, 14, arg); break;       \
+    case 15: __ASSIGN(T, 15, arg); break;       \
+    case 16: __ASSIGN(T, 16, arg); break;       \
+    case 17: __ASSIGN(T, 17, arg); break;       \
+    case 18: __ASSIGN(T, 18, arg); break;       \
+    case 19: __ASSIGN(T, 19, arg); break;       \
     }
 #   define __ASSIGN(T, num, arg) *((T*)_ARG(num)) = (T)arg
 #   define _ARG(num) v ## num
@@ -95,7 +95,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
 #   define PEEKFMT format[formatn]
 #   define POPFMT format[formatn++]
 #   define POPARG get_arg_or_kw(argv, kwds, kwdnames, valuen++, rest_optional, rest_keywords)
-#   define POPOUTPUTVARIABLE ARG(outputn++)
+#   define POPOUTPUTVARIABLE ARG(outputn); outputn++
 
     int max = strlen(format);
     while (outputn < outc) {
@@ -193,7 +193,8 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 POPFMT;
                 void* (*converter)(PyObject*,void*) = POPOUTPUTVARIABLE;
                 PyObject* arg = POPARG;
-                int status = converter(arg, POPOUTPUTVARIABLE);
+                void* output = POPOUTPUTVARIABLE;
+                int status = converter(arg, output);
                 if (!status) { // converter should have set exception
                     return NULL;
                 }
@@ -241,75 +242,200 @@ int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, PyObject* kwnames
     return 1;
 }
 
+typedef struct _build_stack {
+    PyObject* list;
+    struct _build_stack* prev;
+} build_stack;
+
 PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
-    void* arg;
-    int valuen = 1;
-    int max = strlen(format);
-    PyObject* tuple = PyTuple_New(max);
-    void* jtuple = to_java(tuple);
+#   define ARG truffle_get_arg(value_idx)
+#   define APPEND_VALUE(list, value) PyList_Append(list, value); value_idx++
 
-    while (valuen <= max) {
-        arg = truffle_get_arg(valuen);
+    PyObject* (*converter)(void*) = NULL;
+    char argchar[2] = {'\0'};
+    unsigned int value_idx = 1;
+    unsigned int format_idx = 0;
+    build_stack *v = (build_stack*)calloc(1, sizeof(build_stack));
+    build_stack *next;
+    v->list = PyList_New(0);
 
-        switch(format[valuen - 1]) {
-        case 'n':
-            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, (Py_ssize_t)arg);
+    char c = format[format_idx];
+    while (c != '\0') {
+        PyObject* list = v->list;
+
+        switch(c) {
+        case 's':
+        case 'z':
+        case 'U':
+            if (format[format_idx + 1] == '#') {
+                int size = (int)truffle_get_arg(value_idx + 1);
+                if (ARG == NULL) {
+                    APPEND_VALUE(list, Py_None);
+                } else {
+                    APPEND_VALUE(list, PyUnicode_FromStringAndSize((char*)ARG, size));
+                }
+                value_idx++; // skip length argument
+                format_idx++;
+            } else {
+                if (ARG == NULL) {
+                    APPEND_VALUE(list, Py_None);
+                } else {
+                    APPEND_VALUE(list, PyUnicode_FromString((char*)ARG));
+                }
+            }
+            break;
+        case 'y':
+            if (format[format_idx + 1] == '#') {
+                int size = (int)truffle_get_arg(value_idx + 1);
+                if (ARG == NULL) {
+                    APPEND_VALUE(list, Py_None);
+                } else {
+                    APPEND_VALUE(list, PyBytes_FromStringAndSize((char*)ARG, size));
+                }
+                value_idx++; // skip length argument
+                format_idx++;
+            } else {
+                if (ARG == NULL) {
+                    APPEND_VALUE(list, Py_None);
+                } else {
+                    APPEND_VALUE(list, PyBytes_FromString((char*)ARG));
+                }
+            }
+            break;
+        case 'u':
+            fprintf(stderr, "error: unsupported format 'u'\n");
             break;
         case 'i':
-            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, (int)arg);
-        	break;
-        case 's':
-            if (arg == NULL) {
-                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, Py_None);
-            } else {
-                truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, polyglot_from_string((char*)arg, "utf-8"));
-            }
-        	break;
-        case 'd':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, to_java(PyFloat_FromDouble((double)(unsigned long long)arg)));
-        	break;
+        case 'b':
+        case 'h':
+            APPEND_VALUE(list, PyLong_FromLong((int)ARG));
+            break;
         case 'l':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((long)arg));
-        	break;
-        case 'L':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((long long)arg));
-        	break;
+            APPEND_VALUE(list, PyLong_FromLong((long)ARG));
+            break;
+        case 'B':
+        case 'H':
+        case 'I':
+            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned int)ARG));
+            break;
         case 'k':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((unsigned long)arg));
-        	break;
+            APPEND_VALUE(list, PyLong_FromUnsignedLong((unsigned long)ARG));
+            break;
+        case 'L':
+            APPEND_VALUE(list, PyLong_FromLongLong((long long)ARG));
+            break;
         case 'K':
-        	truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, as_long((unsigned long long)arg));
-        	break;
-        case 'N':
-        case 'S':
+            APPEND_VALUE(list, PyLong_FromLongLong((unsigned long long)ARG));
+            break;
+        case 'n':
+            APPEND_VALUE(list, PyLong_FromSsize_t((Py_ssize_t)ARG));
+            break;
+        case 'c':
+            argchar[0] = (char)ARG;
+            APPEND_VALUE(list, PyBytes_FromStringAndSize(argchar, 1));
+            break;
+        case 'C':
+            argchar[0] = (char)ARG;
+            APPEND_VALUE(list, polyglot_from_string(argchar, "ascii"));
+            break;
+        case 'd':
+        case 'f':
+            APPEND_VALUE(list, PyFloat_FromDouble((double)(unsigned long long)ARG));
+            break;
+        case 'D':
+            fprintf(stderr, "error: unsupported format 'D'\n");
+            break;
         case 'O':
-        	if (arg == NULL && !PyErr_Occurred()) {
-                /* If a NULL was passed because a call that should have constructed a value failed, that's OK,
-                 * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
-                PyErr_SetString(PyExc_SystemError, "NULL object passed to Py_BuildValue");
-        	} else {
-        		truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", jtuple, valuen - 1, to_java(arg));
-        	}
-        	break;
+            if (format[format_idx + 1] == '&') {
+                converter = truffle_get_arg(value_idx + 1);
+            }
+        case 'S':
+        case 'N':
+            if (ARG == NULL) {
+                if (!PyErr_Occurred()) {
+                    /* If a NULL was passed because a call that should have constructed a value failed, that's OK,
+                     * and we pass the error on; but if no error occurred it's not clear that the caller knew what she was doing. */
+                    PyErr_SetString(PyExc_SystemError, "NULL object passed to Py_BuildValue");
+                }
+                return NULL;
+            } else if (converter != NULL) {
+                APPEND_VALUE(list, converter(ARG));
+                converter = NULL;
+                value_idx++; // skip converter argument
+                format_idx++;
+            } else {
+                APPEND_VALUE(list, ARG);
+            }
+            break;
+        case '(':
+            next = (build_stack*)calloc(1, sizeof(build_stack));
+            next->list = PyList_New(0);
+            next->prev = v;
+            v = next;
+            break;
+        case ')':
+            if (v->prev == NULL) {
+                PyErr_SetString(PyExc_SystemError, "')' without '(' in Py_BuildValue");
+            } else {
+                PyList_Append(v->prev->list, PyList_AsTuple(v->list));
+                next = v;
+                v = v->prev;
+                free(next);
+            }
+            break;
+        case '[':
+            next = (build_stack*)calloc(1, sizeof(build_stack));
+            next->list = PyList_New(0);
+            next->prev = v;
+            v = next;
+            break;
+        case ']':
+            if (v->prev == NULL) {
+                PyErr_SetString(PyExc_SystemError, "']' without '[' in Py_BuildValue");
+            } else {
+                PyList_Append(v->prev->list, v->list);
+                next = v;
+                v = v->prev;
+                free(next);
+            }
+            break;
+        case '{':
+            next = (build_stack*)calloc(1, sizeof(build_stack));
+            next->list = PyList_New(0);
+            next->prev = v;
+            v = next;
+            break;
+        case '}':
+            if (v->prev == NULL) {
+                PyErr_SetString(PyExc_SystemError, "'}' without '{' in Py_BuildValue");
+            } else {
+                PyList_Append(v->prev->list, polyglot_invoke(PY_TRUFFLE_CEXT, "dict_from_list", to_java(v->list)));
+                next = v;
+                v = v->prev;
+                free(next);
+            }
+            break;
         default:
-            fprintf(stderr, "error: unsupported format starting at %d : '%s'\n", valuen - 1, format);
-            exit(-1);
+            fprintf(stderr, "error: unsupported format starting at %d : '%s'\n", format_idx, format);
         }
-
-        valuen++;
+        c = format[++format_idx];
     }
 
-    if (valuen == 1) {
+#   undef APPEND_VALUE
+#   undef ARG
+
+    if (v->prev != NULL) {
+        PyErr_SetString(PyExc_SystemError, "dangling group in Py_BuildValue");
+        return NULL;
+    }
+
+    switch (PyList_Size(v->list)) {
+    case 0:
         return Py_None;
-    } else if (valuen == 2) {
-        // we're not using PyTuple_GetItem here because we definitely want a
-        // java object and not call to_sulong on it
-        return to_java(to_sulong(truffle_invoke(jtuple, "__getitem__", 0)));
-    } else {
-        PyObject* outputtuple = to_java(PyTuple_New(valuen - 1));
-        for (valuen--; valuen > 0; valuen--) {
-            truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", outputtuple, valuen - 1, to_java(PyTuple_GetItem(tuple, valuen - 1)));
-        }
-        return outputtuple;
+    case 1:
+        // single item gets unwrapped
+        return PyList_GetItem(v->list, 0);
+    default:
+        return PyList_AsTuple(v->list);
     }
 }
