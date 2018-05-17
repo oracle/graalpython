@@ -477,21 +477,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         int find(PByteArray self, int sub, int start, int ending) {
-            byte[] haystack = self.getInternalByteArray();
-            int end = ending;
-            if (start >= haystack.length) {
-                return -1;
-            } else if (end < 0) {
-                end = end % haystack.length + 1;
-            } else if (end > haystack.length) {
-                end = haystack.length;
-            }
-            for (int i = start; i < haystack.length; i++) {
-                if (haystack[i] == sub) {
-                    return i;
-                }
-            }
-            return -1;
+            return BytesUtils.find(self, sub, start, ending);
         }
 
         @Specialization
@@ -505,27 +491,8 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int find(PByteArray self, PIBytesLike sub, int start, int endIng) {
-            byte[] haystack = self.getInternalByteArray();
-            byte[] needle = sub.getInternalByteArray();
-            int end = endIng;
-            if (start >= haystack.length) {
-                return -1;
-            } else if (end < 0) {
-                end = end % haystack.length + 1;
-            } else if (end > haystack.length) {
-                end = haystack.length;
-            }
-            end = end - needle.length;
-            outer: for (int i = start; i < end; i++) {
-                for (int j = 0; j < needle.length; j++) {
-                    if (needle[j] != haystack[i + j]) {
-                        continue outer;
-                    }
-                }
-                return i;
-            }
-            return -1;
+        int find(PByteArray self, PIBytesLike sub, int start, int ending) {
+            return BytesUtils.find(self, sub, start, ending);
         }
     }
 
