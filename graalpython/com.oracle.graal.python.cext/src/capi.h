@@ -95,7 +95,7 @@ void initialize_exceptions();
 void initialize_hashes();
 
 // prototype of C landing function
-PyObject *wrap_direct(PyCFunction fun, PyObject *module, ...);
+PyObject *wrap_direct(PyCFunction fun, ...);
 PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
 PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
 PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);

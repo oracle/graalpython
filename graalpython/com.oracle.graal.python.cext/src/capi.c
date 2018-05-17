@@ -413,24 +413,80 @@ int PyTruffle_Debug(void *arg) {
 	return 0;
 }
 
-PyObject *wrap_direct(PyCFunction fun, PyObject *module, ...) {
+typedef PyObject* (*f0)();
+typedef PyObject* (*f1)(PyObject*);
+typedef PyObject* (*f2)(PyObject*, PyObject*);
+typedef PyObject* (*f3)(PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f4)(PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f5)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f6)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f7)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f8)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f9)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f10)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f11)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f12)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f13)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f14)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f15)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f16)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f17)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f18)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f19)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f20)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+
+#define _PICK_FUN_CAST(DUMMY, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, NAME, ...) NAME
+#define _CALL_ARITY(FUN, ...) ( (_PICK_FUN_CAST(NULL, ##__VA_ARGS__, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0))(FUN))(__VA_ARGS__)
+#define ARG(__n) _explicit_cast((PyObject*)polyglot_get_arg((__n)))
+
+PyObject *wrap_direct(PyCFunction fun, ...) {
 	PyObject *res = NULL;
-	switch(polyglot_get_arg_count()) {
+	switch(polyglot_get_arg_count()-1) {
 	case 0:
-		res = fun(Py_None, Py_None);
-		break;
+		return _CALL_ARITY(fun);
+	case 1:
+		return _CALL_ARITY(fun, ARG(1));
 	case 2:
-		res = fun(module, Py_None);
-		break;
+		return _CALL_ARITY(fun, ARG(1), ARG(2));
 	case 3:
-		res = fun(module, _explicit_cast((PyObject*)polyglot_get_arg(2)));
-		break;
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
 	case 4:
-		res = ((PyCFunctionWithKeywords)fun)(module, _explicit_cast((PyObject*)polyglot_get_arg(1)), _explicit_cast((PyObject*)polyglot_get_arg(3)));
-		break;
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4));
+	case 5:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+	case 6:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
+	case 7:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7));
+	case 8:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8));
+	case 9:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9));
+	case 10:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10));
+	case 11:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11));
+	case 12:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12));
+	case 13:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13));
+	case 14:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14));
+	case 15:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15));
+	case 16:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16));
+	case 17:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17));
+	case 18:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18));
+	case 19:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
+	case 20:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19), ARG(20));
 	}
-	PyTruffle_Debug(res);
-	return res;
+	_PyErr_BadInternalCall(__FILE__, __LINE__);
+	return NULL;
 }
 
 PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs) {
