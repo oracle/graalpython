@@ -218,7 +218,6 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_API",
-                "truffle:TRUFFLE_DSL_PROCESSOR",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
             ],
@@ -239,7 +238,6 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
-                "truffle:TRUFFLE_DSL_PROCESSOR",
                 "truffle:TRUFFLE_TCK",
             ],
             "sourcesPath": "graalpython.tests.src.zip",
