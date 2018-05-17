@@ -36,7 +36,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -62,7 +61,7 @@ public class PZipBuiltins extends PythonBuiltins {
             for (int i = 0; i < iterators.length; i++) {
                 tupleElements[i] = next.execute(iterators[i]);
             }
-            return PythonObjectFactory.get().createTuple(tupleElements);
+            return factory().createTuple(tupleElements);
         }
     }
 

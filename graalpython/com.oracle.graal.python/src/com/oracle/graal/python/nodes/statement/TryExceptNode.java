@@ -34,23 +34,26 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public class TryExceptNode extends StatementNode {
-
+public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private PNode body;
-    @Children final ExceptNode[] exceptNodes;
+    @Children private final ExceptNode[] exceptNodes;
     @Child private PNode orelse;
+    @CompilationFinal private TryExceptNodeMessageResolution.CatchesFunction catchesFunction;
 
     @CompilationFinal boolean seenException;
 
     public TryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse) {
         this.body = body;
+        body.markAsTryBlock();
         this.exceptNodes = exceptNodes;
         this.orelse = orelse;
     }
@@ -124,5 +127,19 @@ public class TryExceptNode extends StatementNode {
 
     public PNode getOrelse() {
         return orelse;
+    }
+
+    @Override
+    public ForeignAccess getForeignAccess() {
+        return TryExceptNodeMessageResolutionForeign.ACCESS;
+    }
+
+    public TryExceptNodeMessageResolution.CatchesFunction getCatchesFunction() {
+        return this.catchesFunction;
+    }
+
+    public void setCatchesFunction(TryExceptNodeMessageResolution.CatchesFunction catchesFunction) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        this.catchesFunction = catchesFunction;
     }
 }
