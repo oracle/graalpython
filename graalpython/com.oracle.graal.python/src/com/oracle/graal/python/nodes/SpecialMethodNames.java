@@ -120,6 +120,7 @@ public abstract class SpecialMethodNames {
     public static final String __IDIVMOD__ = "__idivmod__";
     public static final String __IPOW__ = "__ipow__";
     public static final String __ILSHIFT__ = "__ilshift__";
+    public static final String __IRSHIFT__ = "__irshift__";
     public static final String __IAND__ = "__iand__";
     public static final String __IXOR__ = "__ixor__";
     public static final String __IOR__ = "__ior__";

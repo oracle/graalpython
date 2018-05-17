@@ -294,13 +294,13 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     @Override
     public void extend(SequenceStorage other) throws SequenceStoreException {
         if (other instanceof DoubleSequenceStorage) {
-            extendWithIntStorage((DoubleSequenceStorage) other);
+            extendWithDoubleStorage((DoubleSequenceStorage) other);
         } else {
             throw SequenceStoreException.INSTANCE;
         }
     }
 
-    public void extendWithIntStorage(DoubleSequenceStorage other) {
+    public void extendWithDoubleStorage(DoubleSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);
         double[] otherValues = other.values;

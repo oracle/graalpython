@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.list;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -486,6 +487,8 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = "extend", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class ListExtendNode extends PythonBuiltinNode {
+
+        public abstract PNone execute(PList list, Object source);
 
         @Specialization(guards = {"isPSequenceWithStorage(source)"}, rewriteOn = {SequenceStoreException.class})
         public PNone extendSequenceStore(PList list, Object source) throws SequenceStoreException {
@@ -1092,13 +1095,67 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        protected boolean isList(Object o) {
-            return o instanceof PList;
-        }
-
         @Specialization(guards = "!isList(right)")
         Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
             throw raise(TypeError, "can only concatenate list (not \"%p\") to list", right);
+        }
+    }
+
+    @Builtin(name = __IADD__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class IAddNode extends PythonBuiltinNode {
+
+        @Specialization(guards = "areBothIntStorage(left,right)")
+        PList doPListInt(PList left, PList right) {
+            IntSequenceStorage leftStore = (IntSequenceStorage) left.getSequenceStorage();
+            IntSequenceStorage rightStore = (IntSequenceStorage) right.getSequenceStorage();
+            leftStore.extendWithIntStorage(rightStore);
+            return left;
+        }
+
+        @Specialization(guards = "areBothLongStorage(left,right)")
+        PList doPListLong(PList left, PList right) {
+            LongSequenceStorage leftStore = (LongSequenceStorage) left.getSequenceStorage();
+            LongSequenceStorage rightStore = (LongSequenceStorage) right.getSequenceStorage();
+            leftStore.extendWithLongStorage(rightStore);
+            return left;
+        }
+
+        @Specialization(guards = "areBothDoubleStorage(left,right)")
+        PList doPListDouble(PList left, PList right) {
+            DoubleSequenceStorage leftStore = (DoubleSequenceStorage) left.getSequenceStorage();
+            DoubleSequenceStorage rightStore = (DoubleSequenceStorage) right.getSequenceStorage();
+            leftStore.extendWithDoubleStorage(rightStore);
+            return left;
+        }
+
+        @Specialization(guards = "areBothObjectStorage(left,right)")
+        PList doPListObject(PList left, PList right) {
+            ObjectSequenceStorage leftStore = (ObjectSequenceStorage) left.getSequenceStorage();
+            ObjectSequenceStorage rightStore = (ObjectSequenceStorage) right.getSequenceStorage();
+            leftStore.extend(rightStore);
+            return left;
+        }
+
+        @Specialization(guards = "isNotSameStorage(left, right)")
+        PList doPList(PList left, PList right) {
+            left.extend(right);
+            return left;
+        }
+
+        @Specialization(guards = "!isList(right)")
+        PList doPList(PList left, Object right,
+                        @Cached("createExtendNode()") ListExtendNode extendNode) {
+            extendNode.execute(left, right);
+            return left;
+        }
+
+        protected ListExtendNode createExtendNode() {
+            return ListBuiltinsFactory.ListExtendNodeFactory.create(new PNode[0]);
+        }
+
+        protected boolean isNotSameStorage(PList left, PList right) {
+            return !(PGuards.areBothIntStorage(right, left) || PGuards.areBothDoubleStorage(right, left) || PGuards.areBothLongStorage(right, left) || PGuards.areBothObjectStorage(right, left));
         }
     }
 

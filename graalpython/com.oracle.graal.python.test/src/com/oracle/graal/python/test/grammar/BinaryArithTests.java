@@ -131,7 +131,7 @@ public class BinaryArithTests {
     public void NonePlusInt() {
         String source = "a = None\n" + //
                         "a += 1\n";
-        assertLastLineError("TypeError: unsupported operand type(s) for +: 'NoneType' and 'int'\n", source);
+        assertLastLineError("TypeError: unsupported operand type(s) for +=: 'NoneType' and 'int'\n", source);
     }
 
 }
