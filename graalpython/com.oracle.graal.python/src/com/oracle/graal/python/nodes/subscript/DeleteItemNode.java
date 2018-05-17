@@ -27,11 +27,7 @@ package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
@@ -48,30 +44,6 @@ public abstract class DeleteItemNode extends BinaryOpNode {
 
     public PNode getSlice() {
         return getRightNode();
-    }
-
-    @Specialization
-    public Object doPList(PList primary, int index) {
-        primary.delItem(index);
-        return PNone.NONE;
-    }
-
-    @Specialization
-    public Object doPList(PList primary, PSlice slice) {
-        primary.delSlice(slice);
-        return PNone.NONE;
-    }
-
-    @Specialization
-    public Object doPByteArray(PByteArray primary, int index) {
-        primary.delItem(index);
-        return PNone.NONE;
-    }
-
-    @Specialization
-    public Object doPByteArray(PByteArray primary, PSlice slice) {
-        primary.delSlice(slice);
-        return PNone.NONE;
     }
 
     @Specialization

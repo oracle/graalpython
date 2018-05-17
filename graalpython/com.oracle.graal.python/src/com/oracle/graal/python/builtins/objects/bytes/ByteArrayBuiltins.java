@@ -27,11 +27,13 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -47,19 +49,24 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -67,6 +74,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PByteArray.class)
@@ -86,6 +94,75 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             // TODO: tfel: throw an error if we get additional arguments and the __new__
             // method was the same as object.__new__
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __DELITEM__, fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
+        @Child private SequenceUtil.NormalizeIndexNode normalize = SequenceUtil.NormalizeIndexNode.create();
+
+        @Specialization(guards = "isByteStorage(primary)")
+        protected PNone doBytes(PByteArray primary, long idx) {
+            ByteSequenceStorage storage = (ByteSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isByteStorage(primary)")
+        protected PNone doBytes(PByteArray primary, PInt idx) {
+            ByteSequenceStorage storage = (ByteSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isIntStorage(primary)")
+        protected PNone doInt(PByteArray primary, long idx) {
+            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isIntStorage(primary)")
+        protected PNone doInt(PByteArray primary, PInt idx) {
+            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization
+        protected PNone doArray(PByteArray byteArray, long idx) {
+            SequenceStorage storage = byteArray.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization
+        protected PNone doArray(PByteArray byteArray, PInt idx) {
+            SequenceStorage storage = byteArray.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+
+        @Specialization
+        protected PNone doSlice(PByteArray self, PSlice slice) {
+            self.delSlice(slice);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        protected Object doGeneric(Object self, Object idx) {
+            if (!isValidIndexType(idx)) {
+                throw raise(TypeError, "bytearray indices must be integers or slices, not %p", idx);
+            }
+            throw raise(TypeError, "descriptor '__delitem__' requires a 'bytearray' object but received a '%p'", idx);
+        }
+
+        protected boolean isValidIndexType(Object idx) {
+            return PGuards.isInteger(idx) || idx instanceof PSlice;
         }
     }
 
@@ -112,7 +189,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
