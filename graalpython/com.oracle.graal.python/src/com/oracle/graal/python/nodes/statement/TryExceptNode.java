@@ -255,23 +255,19 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
         protected static class CatchesFunction implements TruffleObject {
             private final RootCallTarget isInstance;
-            private final PTuple caughtClasses;
             private final Object[] args = PArguments.create(2);
 
             CatchesFunction(RootCallTarget callTarget, PTuple caughtClasses) {
                 this.isInstance = callTarget;
-                this.caughtClasses = caughtClasses;
+                PArguments.setArgument(args, 1, caughtClasses);
             }
 
             @ExplodeLoop
             boolean catches(Object exception) {
                 if (exception instanceof PBaseException) {
                     PArguments.setArgument(args, 0, exception);
-                    PArguments.setArgument(args, 1, caughtClasses);
                     try {
-                        if (isInstance.call(args) == Boolean.TRUE) {
-                            return true;
-                        }
+                        return isInstance.call(args) == Boolean.TRUE;
                     } catch (PException e) {
                     }
                 }
