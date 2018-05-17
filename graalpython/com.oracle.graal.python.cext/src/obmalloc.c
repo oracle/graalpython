@@ -38,6 +38,22 @@
  */
 #include "capi.h"
 
-typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
+void* PyMem_RawMalloc(size_t size) {
+    return malloc(size);
+}
 
-PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC);
+void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
+    return calloc(nelem, elsize);
+}
+
+void* PyMem_RawRealloc(void *ptr, size_t new_size) {
+    return realloc(ptr, new_size);
+}
+
+void PyMem_RawFree(void *ptr) {
+    free(ptr);
+}
+
+int PyTraceMalloc_Track(_PyTraceMalloc_domain_t domain, uintptr_t ptr, size_t size) {
+    return -2; // we do not track
+}

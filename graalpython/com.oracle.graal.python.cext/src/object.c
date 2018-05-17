@@ -162,6 +162,15 @@ Py_ssize_t PyObject_Size(PyObject *o) {
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_Size", to_java(o));
 }
 
+static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", to_java(base->tp_subclasses), to_java(PyLong_FromVoidPtr(type)), to_java((PyObject*)type));
+	if (result == ERROR_MARKER) {
+		return -1;
+	}
+	base->tp_subclasses = to_sulong(result);
+	return 0;
+}
+
 int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
 #define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, m.ml_meth, m.ml_flags, m.ml_doc)
@@ -205,15 +214,31 @@ int PyType_Ready(PyTypeObject* cls) {
         cls->tp_doc = "";
     }
 
+    /* Initialize tp_bases */
+    PyObject* bases = cls->tp_bases;
+    if (bases == NULL) {
+        if (base == NULL) {
+            bases = PyTuple_New(0);
+        } else {
+            bases = PyTuple_Pack(1, base);
+        }
+        if (bases == NULL) {
+        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
+        	return -1;
+        }
+        cls->tp_bases = bases;
+    }
+
+
     PyTypeObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
-                                                      "PyType_Ready",
-                                                      // no conversion of cls here, because we
-                                                      // store this into the PyTypeObject
-                                                      cls,
-                                                      to_java_type(metaclass),
-                                                      to_java_type(base),
-                                                      truffle_read_string(cls->tp_name),
-                                                      truffle_read_string(cls->tp_doc));
+                                           "PyType_Ready",
+                                           // no conversion of cls here, because we
+                                           // store this into the PyTypeObject
+                                           cls,
+                                           to_java_type(metaclass),
+                                           to_java(bases),
+                                           truffle_read_string(cls->tp_name),
+                                           truffle_read_string(cls->tp_doc ? cls->tp_doc : ""));
     if (polyglot_is_value(javacls)) {
     	javacls = polyglot_as__typeobject(javacls);
     }
@@ -258,7 +283,7 @@ int PyType_Ready(PyTypeObject* cls) {
                            member.offset,
                            // TODO: support other flags
                            ((member.flags & READONLY) == 0) ? Py_True : Py_False,
-                           truffle_read_string(member.doc));
+                           truffle_read_string(member.doc ? member.doc : ""));
             member = members[++i];
         }
     }
@@ -382,6 +407,19 @@ int PyType_Ready(PyTypeObject* cls) {
         // TODO ...
     }
 
+    // TODO link subclasses
+    /* Link into each base class's list of subclasses */
+    bases = cls->tp_bases;
+//    Py_ssize_t n = PyTuple_GET_SIZE(bases);
+//    Py_ssize_t i;
+//    for (i = 0; i < n; i++) {
+//        PyTypeObject *b = polyglot_as__typeobject(PyTuple_GetItem(bases, i));
+//        if (PyType_Check(b) && add_subclass((PyTypeObject *)b, cls) < 0) {
+//        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
+//        	return -1;
+//        }
+//    }
+
     // done
     cls->tp_flags = cls->tp_flags & ~Py_TPFLAGS_READYING;
     cls->tp_flags = cls->tp_flags | Py_TPFLAGS_READY;
@@ -466,7 +504,7 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), args));
+    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), to_java(args)));
 }
 
 PyObject* PyObject_Type(PyObject* obj) {

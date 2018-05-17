@@ -52,7 +52,7 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         return -1;
     }
     long result = truffle_invoke_l(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), true, sizeof(long), truffle_read_string("long"));
-    *overflow = result == -1L && PyErr_Occurred();
+    *overflow = result == -1L && PyErr_Occurred() != NULL;
     return result;
 }
 
@@ -93,8 +93,13 @@ PyObject * PyLong_FromVoidPtr(void *p) {
 void * PyLong_AsVoidPtr(PyObject *obj){
 	return (void *)PyLong_AsSsize_t(obj);
 }
+
 PyObject * PyLong_FromLong(long n)  {
-	return PyLong_FromUnsignedLongLong(n);
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_FromLongLong", n, true);
+    if (result == ERROR_MARKER) {
+    	return NULL;
+    }
+    return to_sulong(result);
 }
 
 PyObject * PyLong_FromLongLong(long long n)  {

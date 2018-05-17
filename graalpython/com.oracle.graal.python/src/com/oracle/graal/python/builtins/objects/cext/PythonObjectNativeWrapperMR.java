@@ -53,7 +53,9 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
@@ -63,6 +65,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -191,6 +194,24 @@ public class PythonObjectNativeWrapperMR {
             return new PyNumberMethodsWrapper(object);
         }
 
+        @Specialization(guards = "eq(TP_HASH, key)")
+        Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getHashNode) {
+            return getToSulongNode().execute(getHashNode.execute(object, SpecialMethodNames.__HASH__));
+        }
+
+        @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
+        Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getCmpNode) {
+            return getToSulongNode().execute(getCmpNode.execute(object, SpecialMethodNames.RICHCMP));
+        }
+
+        @Specialization(guards = "eq(TP_SUBCLASSES, key)")
+        Object doTpSubclasses(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+            // TODO create dict view on subclasses set
+            return PythonObjectNativeWrapper.wrap(factory().createDict());
+        }
+
         @Specialization(guards = "eq(OB_ITEM, key)")
         Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object);
@@ -214,6 +235,12 @@ public class PythonObjectNativeWrapperMR {
         Object doState(PString object, @SuppressWarnings("unused") String key) {
             // TODO also support bare 'String' ?
             return new PyUnicodeState(object);
+        }
+
+        @Specialization(guards = "eq(MD_DICT, key)")
+        Object doMdDict(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getDictNode) {
+            return getToSulongNode().execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
         }
 
         @Fallback
@@ -280,6 +307,17 @@ public class PythonObjectNativeWrapperMR {
         long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key, long flags) {
             object.setFlags(flags);
             return flags;
+        }
+
+        @Specialization(guards = "eq(TP_SUBCLASSES, key)")
+        @TruffleBoundary
+        Object doTpSubclasses(PythonClass object, @SuppressWarnings("unused") String key, PythonObjectNativeWrapper value) {
+            // TODO more type checking; do fast path
+            PDict dict = (PDict) value.getPythonObject();
+            for (Object item : dict.items()) {
+                object.getSubClasses().add((PythonClass) item);
+            }
+            return value;
         }
 
         @Fallback

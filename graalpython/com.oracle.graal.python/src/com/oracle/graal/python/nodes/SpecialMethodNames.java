@@ -150,4 +150,6 @@ public abstract class SpecialMethodNames {
     public static final String KEYS = "keys";
     public static final String ITEMS = "items";
     public static final String VALUES = "values";
+
+    public static final String RICHCMP = "__truffle_richcompare__";
 }

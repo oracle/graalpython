@@ -41,23 +41,34 @@
 PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0);
 
 PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    return (PyObject *)polyglot_as_PyCapsule(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule", polyglot_from_string(name, "ascii"), pointer, destructor)));
+    return (PyObject *)polyglot_as_PyCapsule(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule", name ? polyglot_from_string(name, "ascii") : to_java(Py_None), pointer, destructor)));
 }
 
-void * PyCapsule_GetContext(PyObject *o) {
-	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetContext", to_java(o));
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-	return (void *)as_long(result);
+void* PyCapsule_GetContext(PyObject *o) {
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetContext", to_java(o));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return (void *)as_long(result);
 }
 
-void * PyCapsule_GetPointer(PyObject *o, const char *name) {
-	void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"));
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-	return (void *)as_long(result);
+void* PyCapsule_GetPointer(PyObject *o, const char *name) {
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return (void *)as_long(result);
 }
 
+void* PyCapsule_Import(const char *name, int no_block) {
+    // TODO (tfel): no_block is currently ignored
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_Import", polyglot_from_string(name, "ascii"), no_block);
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return (void*)to_sulong(result);
+}
 
+int PyCapsule_IsValid(PyObject *o, const char *name) {
+    return o != NULL && polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_IsValid", to_java(o), polyglot_from_string(name, "ascii"));
+}

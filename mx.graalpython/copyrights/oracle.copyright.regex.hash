@@ -1,4 +1,4 @@
-# Copyright \(c\) (?:20[0-9][0-9], )*(20[0-9][0-9]), Oracle and/or its affiliates.
+(?:#!/usr/bin/env .*\n)?# Copyright \(c\) (?:20[0-9][0-9], )*(20[0-9][0-9]), Oracle and/or its affiliates.
 #
 # The Universal Permissive License \(UPL\), Version 1.0
 #

@@ -38,6 +38,21 @@
  */
 #include "capi.h"
 
-typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
+PyTypeObject PySet_Type = PY_TRUFFLE_TYPE("set", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC);
+PyTypeObject PyFrozenSet_Type = PY_TRUFFLE_TYPE("frozenset", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC);
 
-PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC);
+PyObject * PySet_New(PyObject *iterable) {
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySet_New", to_java(iterable));
+	if (result == ERROR_MARKER) {
+		return NULL;
+	}
+	return to_sulong(result);
+}
+
+PyObject * PyFrozenSet_New(PyObject *iterable) {
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyFrozenSet_New", to_java(iterable));
+	if (result == ERROR_MARKER) {
+		return NULL;
+	}
+	return to_sulong(result);
+}

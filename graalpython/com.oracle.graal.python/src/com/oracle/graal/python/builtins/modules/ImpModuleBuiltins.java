@@ -172,10 +172,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallTarget callTarget = env.parse(env.newSourceBuilder(env.getTruffleFile(path)).language(LLVM_LANGUAGE).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
-                throw raise(ImportError, "cannot load %s");
+                throw raise(ImportError, "cannot load %s: %s", path, e.getMessage());
             } catch (RuntimeException e) {
-                Throwable rootCaus = getRootCause(e);
-                throw raise(ImportError, "cannot load %s: %s", path, rootCaus.getMessage());
+                StringBuilder sb = new StringBuilder();
+                sb.append(e.getMessage());
+                Throwable cause = e;
+                while ((cause = cause.getCause()) != null) {
+                    if (cause.getMessage() != null) {
+                        sb.append(", ");
+                        sb.append(cause.getMessage());
+                    }
+                }
+                throw raise(ImportError, "cannot load %s: %s", path, sb.toString());
             }
             TruffleObject pyinitFunc;
             try {
@@ -200,14 +208,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 e.printStackTrace();
                 throw raise(ImportError, "cannot initialize %s with PyInit_%s", path, basename);
             }
-        }
-
-        private static Throwable getRootCause(Exception e) {
-            Throwable cause = e;
-            while (cause.getCause() != null) {
-                cause = cause.getCause();
-            }
-            return cause;
         }
 
         @TruffleBoundary

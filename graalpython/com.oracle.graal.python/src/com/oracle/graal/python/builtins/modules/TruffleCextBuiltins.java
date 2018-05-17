@@ -493,15 +493,21 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child WriteAttributeToObjectNode writeNode = WriteAttributeToObjectNode.create();
 
         @Specialization
-        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PythonClass baseClass, String name, String doc) {
-            PythonClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, new PythonClass[]{baseClass});
+        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PTuple baseClasses, String name, String doc) {
+            Object[] array = baseClasses.getArray();
+            PythonClass[] bases = new PythonClass[array.length];
+            for (int i = 0; i < array.length; i++) {
+                bases[i] = (PythonClass) array[i];
+            }
+
+            PythonClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, bases);
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
             return cclass;
         }
 
         @Specialization
-        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PythonClass baseClass, PString name, PString doc) {
-            return run(typestruct, metaClass, baseClass, name.getValue(), doc.getValue());
+        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PTuple baseClasses, PString name, PString doc) {
+            return run(typestruct, metaClass, baseClasses, name.getValue(), doc.getValue());
         }
     }
 
@@ -536,7 +542,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
             }
             try {
-                return fromNative(checkFunctionResult(asPythonObjectNode.execute(ForeignAccess.sendExecute(executeNode, callable, arguments))));
+                return fromNative(asPythonObjectNode.execute(checkFunctionResult(ForeignAccess.sendExecute(executeNode, callable, arguments))));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException(e.toString());
@@ -957,9 +963,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_Bytes_AsString extends NativeBuiltin {
         @Specialization
-        Object doUnicode(PBytes bytes, @SuppressWarnings("unused") Object errorMarker) {
+        Object doBytes(PBytes bytes, @SuppressWarnings("unused") Object errorMarker) {
             // according to Python's documentation, the last byte is always '0x00'
             byte[] store = bytes.getInternalByteArray();
+            byte[] nativeBytes = Arrays.copyOf(store, store.length + 1);
+            assert nativeBytes[nativeBytes.length - 1] == 0;
+            return getContext().getEnv().asGuestValue(nativeBytes);
+        }
+
+        @Specialization
+        Object doUnicode(PString str, @SuppressWarnings("unused") Object errorMarker) {
+            // according to Python's documentation, the last byte is always '0x00'
+            byte[] store = str.getValue().getBytes();
             byte[] nativeBytes = Arrays.copyOf(store, store.length + 1);
             assert nativeBytes[nativeBytes.length - 1] == 0;
             return getContext().getEnv().asGuestValue(nativeBytes);

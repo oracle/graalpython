@@ -35,15 +35,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -64,6 +67,11 @@ public final class BoolBuiltins extends PythonBuiltins {
         public Object str(boolean self) {
             return self ? "True" : "False";
         }
+
+        @Specialization
+        public Object str(PInt self) {
+            return self.getValue() == BigInteger.ZERO ? "False" : "True";
+        }
     }
 
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)
@@ -77,6 +85,12 @@ public final class BoolBuiltins extends PythonBuiltins {
         @Specialization
         boolean eq(boolean left, boolean right) {
             return left == right;
+        }
+
+        @TruffleBoundary
+        @Specialization
+        boolean eq(PInt left, PInt right) {
+            return left.getValue().equals(right.getValue());
         }
 
         @SuppressWarnings("unused")
