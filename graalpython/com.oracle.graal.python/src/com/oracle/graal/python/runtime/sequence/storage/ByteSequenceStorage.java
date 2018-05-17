@@ -324,6 +324,9 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     public void appendInt(int value) {
+        if (value <0 || value >= 256) {
+            throw SequenceStoreException.INSTANCE;
+        }
         ensureCapacity(length + 1);
         values[length] = ((Integer) value).byteValue();
         length++;
@@ -339,18 +342,36 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     public void extend(SequenceStorage other) throws SequenceStoreException {
         if (other instanceof ByteSequenceStorage) {
             extendWithByteStorage((ByteSequenceStorage) other);
+        } else if (other instanceof IntSequenceStorage) {
+            extendWithIntStorage((IntSequenceStorage) other);
         } else {
             throw SequenceStoreException.INSTANCE;
         }
     }
 
-    public void extendWithByteStorage(ByteSequenceStorage other) {
+    private void extendWithByteStorage(ByteSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);
         byte[] otherValues = other.values;
 
         for (int i = length, j = 0; i < extendedLength; i++, j++) {
             values[i] = otherValues[j];
+        }
+
+        length = extendedLength;
+    }
+
+    private void extendWithIntStorage(IntSequenceStorage other) {
+        int extendedLength = length + other.length();
+        ensureCapacity(extendedLength);
+        int[] otherValues = other.getInternalIntArray();
+
+        for (int i = length, j = 0; i < extendedLength; i++, j++) {
+            int otherValue = otherValues[j];
+            if (otherValue <0 || otherValue >= 256) {
+                throw SequenceStoreException.INSTANCE;
+            }
+            values[i] = ((Integer) otherValue).byteValue();
         }
 
         length = extendedLength;

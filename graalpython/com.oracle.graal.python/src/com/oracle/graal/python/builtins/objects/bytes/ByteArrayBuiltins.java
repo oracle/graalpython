@@ -47,20 +47,27 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PByteArray.class)
 public class ByteArrayBuiltins extends PythonBuiltins {
@@ -196,7 +203,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "isByteStorage(byteArray)")
         public PByteArray appendInt(PByteArray byteArray, int arg) {
             ByteSequenceStorage store = (ByteSequenceStorage) byteArray.getSequenceStorage();
-            store.appendInt(arg);
+            try {
+                store.appendInt(arg);
+            } catch (SequenceStoreException e) {
+                throw raise(ValueError, "byte must be in range(0, 256)");
+            }
             return byteArray;
         }
 
@@ -206,6 +217,62 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             store.appendByte(arg);
             return byteArray;
         }
+    }
+
+    // bytearray.extend(L)
+    @Builtin(name = "extend", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class ByteArrayExtendNode extends PythonBuiltinNode {
+
+        @Specialization(guards = {"isPSequenceWithStorage(source)"}, rewriteOn = {SequenceStoreException.class})
+        public PNone extendSequenceStore(PByteArray byteArray, Object source) throws SequenceStoreException {
+            SequenceStorage target = byteArray.getSequenceStorage();
+            target.extend(((PSequence) source).getSequenceStorage());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isPSequenceWithStorage(source)"})
+        public PNone extendSequence(PByteArray byteArray, Object source) {
+            SequenceStorage eSource = ((PSequence) source).getSequenceStorage();
+            if (eSource.length() > 0) {
+                SequenceStorage target = byteArray.getSequenceStorage();
+                try {
+                    target.extend(eSource);
+                } catch (SequenceStoreException e) {
+                    throw raise(ValueError, "byte must be in range(0, 256)");
+                }
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPSequenceWithStorage(source)")
+        public PNone extend(PByteArray byteArray, Object source,
+                            @Cached("create()") GetIteratorNode getIterator,
+                            @Cached("create()") GetNextNode next,
+                            @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+            Object workSource = byteArray != source ? source : factory().createByteArray(((PSequence) source).getSequenceStorage().copy());
+            Object iterator = getIterator.executeWith(workSource);
+            while (true) {
+                Object value;
+                try {
+                    value = next.execute(iterator);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    return PNone.NONE;
+                }
+
+                try {
+                    byteArray.append(value);
+                } catch (SequenceStoreException e) {
+                    throw raise(ValueError, "byte must be in range(0, 256)");
+                }
+            }
+        }
+
+        protected boolean isPSequenceWithStorage(Object source) {
+            return (source instanceof PSequence && !(source instanceof PTuple || source instanceof PRange));
+        }
+
     }
 
     // bytearray.copy()

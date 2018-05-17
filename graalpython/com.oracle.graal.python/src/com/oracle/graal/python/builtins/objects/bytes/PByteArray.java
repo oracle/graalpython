@@ -137,6 +137,10 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         return store;
     }
 
+    public final void setSequenceStorage(SequenceStorage newStorage) {
+        this.store = newStorage;
+    }
+
     @Override
     public boolean lessThan(PSequence sequence) {
         return false;
@@ -182,20 +186,9 @@ public final class PByteArray extends PSequence implements PIBytesLike {
 
     public final void append(Object value) {
         if (store instanceof EmptySequenceStorage) {
-            store = store.generalizeFor(value);
+            store = new ByteSequenceStorage(1);
         }
-
-        try {
-            store.append(value);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value);
-
-            try {
-                store.append(value);
-            } catch (SequenceStoreException e1) {
-                throw new IllegalStateException();
-            }
-        }
+        store.append(value);
     }
 
     public PByteArray copy() {

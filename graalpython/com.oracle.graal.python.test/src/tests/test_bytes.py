@@ -35,6 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:
@@ -327,3 +328,34 @@ def test_contains():
     assert b"/" in b"/", "b'/' was not in b'/'"
     assert bytearray([32]) in b" ", "bytearray([32]) was not in b' '"
     assert_raises(TypeError, lambda: "/" in b"/")
+
+
+def test_extend():
+    orig = b'hello'
+    a = bytearray(orig)
+    a.extend(a)
+
+    assert a == orig + orig
+    assert a[5:] == orig
+
+    a = bytearray(b'')
+    # Test iterators that don't have a __length_hint__
+    a.extend(map(int, orig * 25))
+    a.extend(int(x) for x in orig * 25)
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    a.extend(iter(map(int, orig * 50)))
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    a.extend(list(map(int, orig * 50)))
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    assert_raises(ValueError, a.extend, [0, 1, 2, 256])
+    assert_raises(ValueError, a.extend, [0, 1, 2, -1])
+    assert len(a) == 0
