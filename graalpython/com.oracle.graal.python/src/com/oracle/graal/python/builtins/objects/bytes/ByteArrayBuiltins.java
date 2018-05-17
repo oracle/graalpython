@@ -147,7 +147,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-
         @Specialization
         protected PNone doSlice(PByteArray self, PSlice slice) {
             self.delSlice(slice);
@@ -326,9 +325,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPSequenceWithStorage(source)")
         public PNone extend(PByteArray byteArray, Object source,
-                            @Cached("create()") GetIteratorNode getIterator,
-                            @Cached("create()") GetNextNode next,
-                            @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             Object workSource = byteArray != source ? source : factory().createByteArray(((PSequence) source).getSequenceStorage().copy());
             Object iterator = getIterator.executeWith(workSource);
             while (true) {

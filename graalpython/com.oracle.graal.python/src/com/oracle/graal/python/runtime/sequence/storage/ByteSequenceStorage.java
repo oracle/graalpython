@@ -324,7 +324,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     public void appendInt(int value) {
-        if (value <0 || value >= 256) {
+        if (value < 0 || value >= 256) {
             throw SequenceStoreException.INSTANCE;
         }
         ensureCapacity(length + 1);
@@ -368,7 +368,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
         for (int i = length, j = 0; i < extendedLength; i++, j++) {
             int otherValue = otherValues[j];
-            if (otherValue <0 || otherValue >= 256) {
+            if (otherValue < 0 || otherValue >= 256) {
                 throw SequenceStoreException.INSTANCE;
             }
             values[i] = ((Integer) otherValue).byteValue();

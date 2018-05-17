@@ -310,7 +310,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-
     @Builtin(name = "stat", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class StatNode extends PythonBuiltinNode {
