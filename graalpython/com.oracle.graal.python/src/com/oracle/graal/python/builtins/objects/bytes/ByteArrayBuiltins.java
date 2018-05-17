@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -557,6 +558,37 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         Object getitem(PByteArray self, PSlice slice) {
             return self.getSlice(factory(), slice);
+        }
+    }
+
+    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class BoolNode extends PythonBuiltinNode {
+        @Specialization(guards = "isEmptyStorage(byteArray)")
+        public boolean doEmpty(@SuppressWarnings("unused") PByteArray byteArray) {
+            return false;
+        }
+
+        @Specialization(guards = "isIntStorage(byteArray)")
+        public boolean doInt(PByteArray byteArray) {
+            IntSequenceStorage store = (IntSequenceStorage) byteArray.getSequenceStorage();
+            return store.length() != 0;
+        }
+
+        @Specialization(guards = "isByteStorage(byteArray)")
+        public boolean doByte(PByteArray byteArray) {
+            ByteSequenceStorage store = (ByteSequenceStorage) byteArray.getSequenceStorage();
+            return store.length() != 0;
+        }
+
+        @Specialization
+        boolean doLen(PByteArray operand) {
+            return operand.len() != 0;
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }
