@@ -301,87 +301,104 @@ Py_ssize_t ReadPySSizeT(PyObject* object, PyObject* offset) {
 
 #undef ReadMember
 
-#define WriteMember(object, offset, value, T) do {\
-    *(T*)(((char*)object) + PyLong_AsSsize_t(offset)) = (T)(value); \
-} while(0)
+#define WriteMember(object, offset, value, T) *(T*)(((char*)object) + PyLong_AsSsize_t(offset)) = (T)(value)
 
-void WriteShortMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteShortMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, PyLong_AsLong(value), short);
+    return value;
 }
 
-void WriteIntMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteIntMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, PyLong_AsLong(value), int);
+    return value;
 }
 
-void WriteLongMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteLongMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, PyLong_AsLong(value), long);
+    return value;
 }
 
-void WriteFloatMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteFloatMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, PyFloat_AsDouble(value), float);
+    return value;
 }
 
-void WriteDoubleMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteDoubleMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, PyFloat_AsDouble(value), double);
+    return value;
 }
 
-void WriteStringMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteStringMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, as_char_pointer(value), char*);
+    return value;
 }
 
-void WriteObjectMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteObjectMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, value, PyObject*);
+    return value;
 }
 
-void WriteCharMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteCharMember(PyObject* object, PyObject* offset, PyObject* value) {
     const char* ptr = as_char_pointer(value);
     const char c = ptr[0];
     truffle_free_cstr(ptr);
     WriteMember(object, offset, c, char);
+    return value;
 }
 
-void WriteByteMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteByteMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteCharMember(object, offset, value);
+    return value;
 }
 
-void WriteUByteMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteUByteMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteCharMember(object, offset, value);
+    return value;
 }
 
-void WriteUShortMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteUShortMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, PyLong_AsUnsignedLong(value), unsigned short);
+    return value;
 }
 
-void WriteUIntMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteUIntMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, PyLong_AsUnsignedLong(value), unsigned int);
+    return value;
 }
 
-void WriteULongMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteULongMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, PyLong_AsUnsignedLong(value), unsigned long);
+    return value;
 }
 
-void WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, truffle_invoke(to_java(value), "__bool__") == Py_True ? (char)1 : (char)0, char);
+    return value;
 }
 
-void WriteObjectExMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteObjectExMember(PyObject* object, PyObject* offset, PyObject* value) {
     if (value == NULL) {
         PyErr_SetString(PyExc_ValueError, "member must not be NULL");
+        return NULL;
     } else {
         WriteMember(object, offset, value, PyObject*);
+        return value;
     }
 }
 
-void WriteLongLongMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteLongLongMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, value, long long);
+    return value;
 }
 
-void WriteULongLongMember(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WriteULongLongMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, value, unsigned long long);
+    return value;
 }
 
-void WritePySSizeT(PyObject* object, PyObject* offset, PyObject* value) {
+PyObject* WritePySSizeT(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, value, Py_ssize_t);
+    return value;
 }
 
 PyObject marker_struct = {
