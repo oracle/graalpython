@@ -70,6 +70,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -416,6 +417,46 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         public Object iter(PByteArray byteArray,
                         @Cached("create()") GetIteratorNode getIterator) {
             return getIterator.executeWith(byteArray);
+        }
+    }
+
+    @Builtin(name = "startswith", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class StartsWithNode extends PythonBuiltinNode {
+        @Specialization
+        @CompilerDirectives.TruffleBoundary
+        boolean startswith(PByteArray self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return new String(self.getInternalByteArray()).startsWith(prefix);
+        }
+
+        @Specialization
+        boolean startswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.startsWith(self, prefix);
+        }
+
+        @Specialization
+        boolean startswith(PByteArray self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.startsWith(self, prefix, start, -1);
+        }
+
+        @Specialization
+        boolean startswith(PByteArray self, PIBytesLike prefix, int start, int end) {
+            return BytesUtils.startsWith(self, prefix, start, end);
+        }
+    }
+
+    @Builtin(name = "endswith", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class EndsWithNode extends PythonBuiltinNode {
+        @Specialization
+        @CompilerDirectives.TruffleBoundary
+        boolean endswith(PByteArray self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return new String(self.getInternalByteArray()).endsWith(prefix);
+        }
+
+        @Specialization
+        boolean endswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.endsWith(self, prefix);
         }
     }
 
