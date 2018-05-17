@@ -215,28 +215,28 @@ const char* PyTruffle_StringToCstr(void* jlString) {
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
 
-short ReadShortMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, short);
+PyObject* ReadShortMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLong(ReadMember(object, offset, short));
 }
 
-int ReadIntMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, int);
+PyObject* ReadIntMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLong(ReadMember(object, offset, int));
 }
 
-long ReadLongMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, long);
+PyObject* ReadLongMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLong(ReadMember(object, offset, long));
 }
 
-float ReadFloatMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, float);
+PyObject* ReadFloatMember(PyObject* object, PyObject* offset) {
+	return PyFloat_FromDouble(ReadMember(object, offset, float));
 }
 
-double ReadDoubleMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, double);
+PyObject* ReadDoubleMember(PyObject* object, PyObject* offset) {
+	return PyFloat_FromDouble(ReadMember(object, offset, double));
 }
 
-void* ReadStringMember(PyObject* object, PyObject* offset) {
-    return truffle_read_string(ReadMember(object, offset, char*));
+PyObject* ReadStringMember(PyObject* object, PyObject* offset) {
+    return (PyObject*)polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
 }
 
 PyObject* ReadObjectMember(PyObject* object, PyObject* offset) {
@@ -248,31 +248,31 @@ PyObject* ReadObjectMember(PyObject* object, PyObject* offset) {
     }
 }
 
-char ReadCharMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, char);
+PyObject* ReadCharMember(PyObject* object, PyObject* offset) {
+    return polyglot_from_string_n(&ReadMember(object, offset, char), 1, "utf-8");
 }
 
-char ReadByteMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, char);
+PyObject* ReadByteMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLong(ReadMember(object, offset, char));
 }
 
-unsigned char ReadUByteMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, unsigned char);
+PyObject* ReadUByteMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned char));
 }
 
-unsigned short ReadUShortMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, unsigned short);
+PyObject* ReadUShortMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned short));
 }
 
-unsigned int ReadUIntMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, unsigned int);
+PyObject* ReadUIntMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned int));
 }
 
-unsigned long ReadULongMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, unsigned long);
+PyObject* ReadULongMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned long));
 }
 
-char ReadBoolMember(PyObject* object, PyObject* offset) {
+PyObject* ReadBoolMember(PyObject* object, PyObject* offset) {
     char flag = ReadMember(object, offset, char);
     return flag ? Py_True : Py_False;
 }
@@ -287,16 +287,16 @@ PyObject* ReadObjectExMember(PyObject* object, PyObject* offset) {
     }
 }
 
-long long ReadLongLongMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, long long);
+PyObject* ReadLongLongMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLongLong(ReadMember(object, offset, long long));
 }
 
-unsigned long long ReadULongLongMember(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, unsigned long long);
+PyObject* ReadULongLongMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLongLong(ReadMember(object, offset, unsigned long long));
 }
 
-Py_ssize_t ReadPySSizeT(PyObject* object, PyObject* offset) {
-    return ReadMember(object, offset, Py_ssize_t);
+PyObject* ReadPySSizeT(PyObject* object, PyObject* offset) {
+	return PyLong_FromSsize_t(ReadMember(object, offset, Py_ssize_t));
 }
 
 #undef ReadMember
@@ -347,12 +347,12 @@ PyObject* WriteCharMember(PyObject* object, PyObject* offset, PyObject* value) {
 }
 
 PyObject* WriteByteMember(PyObject* object, PyObject* offset, PyObject* value) {
-    WriteCharMember(object, offset, value);
+    WriteMember(object, offset, PyLong_AsLong(value), char);
     return value;
 }
 
 PyObject* WriteUByteMember(PyObject* object, PyObject* offset, PyObject* value) {
-    WriteCharMember(object, offset, value);
+    WriteMember(object, offset, PyLong_AsLong(value), uint8_t);
     return value;
 }
 

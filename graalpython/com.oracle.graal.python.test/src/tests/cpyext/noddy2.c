@@ -41,11 +41,23 @@
 #include <Python.h>
 #include "structmember.h"
 
+#include <stddef.h>
+
 typedef struct {
     PyObject_HEAD
     PyObject *first; /* first name */
     PyObject *last;  /* last name */
     int number;
+    short n_short;
+    long n_long;
+    float n_float;
+    double n_double;
+    char c;
+    int8_t n_byte;
+    uint8_t n_ubyte;
+    unsigned short n_ushort;
+    unsigned int n_unumber;
+    unsigned long n_ulong;
 } Noddy;
 
 static void
@@ -76,6 +88,16 @@ Noddy_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         }
 
         self->number = 0;
+        self->n_short = 0;
+        self->n_long = 0;
+        self->n_float = 0;
+        self->n_double = 0;
+        self->c = 0;
+        self->n_byte = 0;
+        self->n_ubyte = 0;
+        self->n_ushort = 0;
+        self->n_unumber = 0;
+        self->n_ulong = 0;
     }
 
     return (PyObject *)self;
@@ -118,6 +140,26 @@ static PyMemberDef Noddy_members[] = {
      "last name"},
     {"number", T_INT, offsetof(Noddy, number), 0,
      "noddy number"},
+    {"n_short", T_SHORT, offsetof(Noddy, n_short), 0,
+     "noddy short"},
+    {"n_long", T_LONG, offsetof(Noddy, n_long), 0,
+     "noddy long"},
+    {"n_float", T_FLOAT, offsetof(Noddy, n_float), 0,
+     "noddy float"},
+    {"n_double", T_DOUBLE, offsetof(Noddy, n_double), 0,
+     "noddy double"},
+    {"c", T_CHAR, offsetof(Noddy, c), 0,
+     "noddy char"},
+    {"n_byte", T_BYTE, offsetof(Noddy, n_byte), 0,
+     "noddy byte"},
+    {"n_ubyte", T_UBYTE, offsetof(Noddy, n_ubyte), 0,
+     "noddy ubyte"},
+    {"n_ushort", T_USHORT, offsetof(Noddy, n_ushort), 0,
+     "noddy ushort"},
+    {"n_unumber", T_UINT, offsetof(Noddy, n_unumber), 0,
+     "noddy uint"},
+    {"n_ulong", T_ULONG, offsetof(Noddy, n_ulong), 0,
+     "noddy ulong"},
     {NULL}  /* Sentinel */
 };
 

@@ -149,7 +149,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      */
     @Builtin(name = "to_char_pointer", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class TruffleString_AsString extends PythonBuiltinNode {
+    abstract static class TruffleString_AsString extends NativeBuiltin {
         @CompilationFinal TruffleObject truffle_string_to_cstr;
         @Child private Node executeNode;
 
@@ -182,6 +182,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 throw e.raise();
             }
         }
+
+        @Fallback
+        Object run(Object o) {
+            return raiseNative(PNone.NO_VALUE, PythonErrorType.SystemError, "Cannot convert object of type %p to C string.", o);
+        }
+
     }
 
     /**
