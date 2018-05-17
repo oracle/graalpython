@@ -217,7 +217,7 @@ public final class PByteArray extends PSequence implements PIBytesLike {
 
     @TruffleBoundary
     public byte[] join(PythonCore core, Object... values) {
-        return BytesUtils.join(core, getInternalByteArray(), values);
+        return BytesUtils.join(core, getBytesExact(), values);
     }
 
     @Override

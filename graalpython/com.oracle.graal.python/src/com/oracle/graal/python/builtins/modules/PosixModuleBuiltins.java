@@ -672,25 +672,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "fd == 0 || fd > 2")
         @TruffleBoundary
         Object write(int fd, PBytes data) {
-            return write(fd, data.getInternalByteArray());
+            return write(fd, data.getBytesExact());
         }
 
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, PBytes data) {
-            return writeStd(fd, data.getInternalByteArray());
+            return writeStd(fd, data.getBytesExact());
         }
 
         @Specialization(guards = "fd == 0 || fd > 2")
         @TruffleBoundary
         Object write(int fd, PByteArray data) {
-            return write(fd, data.getInternalByteArray());
+            return write(fd, data.getBytesExact());
         }
 
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, PByteArray data) {
-            return writeStd(fd, data.getInternalByteArray());
+            return writeStd(fd, data.getBytesExact());
         }
     }
 

@@ -459,7 +459,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             if (table.getInternalByteArray().length != 256) {
                 throw raise(ValueError, "translation table must be 256 characters long");
             }
-            byte[] newBytes = self.getInternalBytesArrayCopy();
+            byte[] newBytes = self.getBytesExact();
             byte[] tableBytes = table.getInternalByteArray();
             for (int i = 0; i < newBytes.length; i++) {
                 byte b = newBytes[i];
