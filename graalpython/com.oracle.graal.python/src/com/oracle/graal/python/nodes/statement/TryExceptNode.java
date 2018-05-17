@@ -28,15 +28,20 @@ package com.oracle.graal.python.nodes.statement;
 import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.nodes.statement.TryExceptNode.ExceptBlockMR.CatchesFunction;
+import com.oracle.graal.python.nodes.statement.TryExceptNode.ExceptBlockMR.CatchesFunction.ExceptListMR.ExecuteNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -44,12 +49,13 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.CanResolve;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -64,10 +70,13 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @Children private final ExceptNode[] exceptNodes;
     @Child private PNode orelse;
 
+    @CompilationFinal CatchesFunction catchesFunction;
+
     @CompilationFinal boolean seenException;
 
     public TryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse) {
         this.body = body;
+        body.markAsTryBlock();
         this.exceptNodes = exceptNodes;
         this.orelse = orelse;
     }
@@ -144,14 +153,6 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @Override
-    public boolean hasTag(Class<? extends Tag> tag) {
-        return super.hasTag(tag) || StandardTags.TryBlockTag.class == tag;
-    }
-
-    public Object getNodeObject() {
-        return this;
-    }
-
     public ForeignAccess getForeignAccess() {
         return ExceptBlockMRForeign.ACCESS;
     }
@@ -172,28 +173,76 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             }
         }
 
+        @Resolve(message = "KEY_INFO")
+        abstract static class KeyInfoNode extends Node {
+            Object access(@SuppressWarnings("unused") TryExceptNode object, String name) {
+                if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
+                    return KeyInfo.INVOCABLE | KeyInfo.READABLE;
+                } else {
+                    return KeyInfo.NONE;
+                }
+            }
+        }
+
         @Resolve(message = "READ")
         abstract static class ReadNode extends Node {
-            Object access(TryExceptNode object, String name) {
+            @Child GetAttributeNode getAttr = GetAttributeNode.create();
+
+            CatchesFunction access(TryExceptNode object, String name) {
+                return doit(object, name, getAttr);
+            }
+
+            static CatchesFunction doit(TryExceptNode object, String name, GetAttributeNode getAttr) {
                 if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
-                    ExceptNode[] exceptNodes = object.getExceptNodes();
-                    List<String> literalCatches = new ArrayList<>();
-                    for (ExceptNode node : exceptNodes) {
-                        PNode exceptType = node.getExceptType();
-                        if (exceptType instanceof ReadGlobalOrBuiltinNode) {
-                            literalCatches.add(((ReadGlobalOrBuiltinNode) exceptType).getAttributeId());
-                        } else if (exceptType instanceof TupleLiteralNode) {
-                            for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
-                                if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
-                                    literalCatches.add(((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId());
+                    if (object.catchesFunction == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        ArrayList<Object> literalCatches = new ArrayList<>();
+                        ExceptNode[] exceptNodes = object.getExceptNodes();
+                        PythonModule builtins = object.getContext().getBuiltins();
+
+                        for (ExceptNode node : exceptNodes) {
+                            PNode exceptType = node.getExceptType();
+                            if (exceptType instanceof ReadGlobalOrBuiltinNode) {
+                                try {
+                                    literalCatches.add(getAttr.execute(builtins, ((ReadGlobalOrBuiltinNode) exceptType).getAttributeId()));
+                                } catch (PException e) {
+                                }
+                            } else if (exceptType instanceof TupleLiteralNode) {
+                                for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
+                                    if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
+                                        try {
+                                            literalCatches.add(getAttr.execute(builtins, ((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId()));
+                                        } catch (PException e) {
+                                        }
+                                    }
                                 }
                             }
                         }
+
+                        Object isinstanceFunc = getAttr.execute(builtins, BuiltinNames.ISINSTANCE);
+                        PTuple caughtClasses = object.factory().createTuple(literalCatches.toArray());
+
+                        if (isinstanceFunc instanceof PBuiltinFunction) {
+                            RootCallTarget callTarget = ((PBuiltinFunction) isinstanceFunc).getCallTarget();
+                            object.catchesFunction = new CatchesFunction(callTarget, caughtClasses);
+                        } else {
+                            throw new IllegalStateException("isinstance was redefined, cannot check exceptions");
+                        }
                     }
-                    return new CatchesFunction(object.getContext().getBuiltins(), literalCatches.toArray(new String[0]));
+                    return object.catchesFunction;
                 } else {
                     throw UnknownIdentifierException.raise(name);
                 }
+            }
+        }
+
+        @Resolve(message = "INVOKE")
+        abstract static class InvokeNode extends Node {
+            @Child GetAttributeNode getAttr = GetAttributeNode.create();
+
+            Object access(TryExceptNode object, String name, Object[] arguments) {
+                CatchesFunction catchesFunction = ReadNode.doit(object, name, getAttr);
+                return ExecuteNode.access(catchesFunction, arguments);
             }
         }
 
@@ -205,20 +254,25 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         }
 
         protected static class CatchesFunction implements TruffleObject {
-            private final PythonModule builtins;
-            @CompilationFinal(dimensions = 1) private final String[] attributes;
-            private final ReadAttributeFromObjectNode getAttribute = ReadAttributeFromObjectNode.create();
+            private final RootCallTarget isInstance;
+            private final PTuple caughtClasses;
+            private final Object[] args = PArguments.create(2);
 
-            CatchesFunction(PythonModule builtins, String[] array) {
-                this.builtins = builtins;
-                this.attributes = array;
+            CatchesFunction(RootCallTarget callTarget, PTuple caughtClasses) {
+                this.isInstance = callTarget;
+                this.caughtClasses = caughtClasses;
             }
 
+            @ExplodeLoop
             boolean catches(Object exception) {
-                for (String name : attributes) {
-                    Object execute = getAttribute.execute(builtins, name);
-                    if (execute == exception) {
-                        return true;
+                if (exception instanceof PBaseException) {
+                    PArguments.setArgument(args, 0, exception);
+                    PArguments.setArgument(args, 1, caughtClasses);
+                    try {
+                        if (isInstance.call(args) == Boolean.TRUE) {
+                            return true;
+                        }
+                    } catch (PException e) {
                     }
                 }
                 return false;
@@ -239,7 +293,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
                 @Resolve(message = "EXECUTE")
                 abstract static class ExecuteNode extends Node {
-                    Object access(CatchesFunction object, Object[] arguments) {
+                    static Object access(CatchesFunction object, Object[] arguments) {
                         if (arguments.length != 1) {
                             throw ArityException.raise(1, arguments.length);
                         }
