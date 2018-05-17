@@ -304,7 +304,7 @@ public final class BytesUtils {
         return -1;
     }
 
-    public static int find(PIBytesLike primary, int sub, int starting, int ending) {
+    public static int find(PIBytesLike primary, int sub, int starting, @SuppressWarnings("unused") int ending) {
         byte[] haystack = primary.getInternalByteArray();
         int len1 = primary.len();
 
