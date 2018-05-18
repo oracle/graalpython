@@ -278,7 +278,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected Object findMetaObject(PythonContext context, Object value) {
         if (value != null) {
             if (value instanceof PythonObject) {
-                return ((PythonObject) value).asPythonClass().getName();
+                return ((PythonObject) value).asPythonClass();
             } else if (value instanceof PythonAbstractObject ||
                             value instanceof Number ||
                             value instanceof String ||
@@ -304,14 +304,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         for (Scope s : super.findLocalScopes(context, node, frame)) {
             scopes.add(s);
         }
-        PythonObject globals = PArguments.getGlobals(frame);
-        if (globals != null) {
-            scopes.add(Scope.newBuilder("globals()", globals).build());
-        }
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        if (generatorFrame != null) {
-            for (Scope s : super.findLocalScopes(context, node, generatorFrame)) {
-                scopes.add(s);
+        if (frame != null) {
+            PythonObject globals = PArguments.getGlobals(frame);
+            if (globals != null) {
+                scopes.add(Scope.newBuilder("globals()", globals).build());
+            }
+            Frame generatorFrame = PArguments.getGeneratorFrame(frame);
+            if (generatorFrame != null) {
+                for (Scope s : super.findLocalScopes(context, node, generatorFrame)) {
+                    scopes.add(s);
+                }
             }
         }
         return scopes;
@@ -321,6 +323,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected Iterable<Scope> findTopScopes(PythonContext context) {
         ArrayList<Scope> scopes = new ArrayList<>();
         scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
+        scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
         return scopes;
     }
 

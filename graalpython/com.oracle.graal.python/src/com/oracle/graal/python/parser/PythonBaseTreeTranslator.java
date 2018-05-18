@@ -161,7 +161,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     }
 
     protected void deriveSourceSection(RuleNode node, Object r) {
-        if (r instanceof PNode) {
+        if (r instanceof PNode && ((PNode) r).getSourceSection() == null) {
             SourceSection derivedSection = deriveSourceSection(node);
             if (derivedSection != null) {
                 ((PNode) r).assignSourceSection(derivedSection);
@@ -185,7 +185,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         } else if (node instanceof ParserRuleContext) {
             int start = ((ParserRuleContext) node).getStart().getStartIndex();
             int stop = ((ParserRuleContext) node).getStop().getStopIndex();
-            return createSourceSection(start, stop - start);
+            return createSourceSection(start, stop - start + 1);
         }
         return null;
     }
