@@ -479,3 +479,57 @@ class ListTest(list_tests.CommonTest):
         a = [1,2]
         a += a 
         self.assertEqual([1,2,1,2], a)
+
+    def test_imul_len(self):
+        a = [1]
+        a *= 0
+        self.assertEqual(0, len(a))
+
+        a = [1]
+        a *= 1
+        self.assertEqual(1, len(a))
+        
+        a = [1]
+        a *= -11
+        self.assertEqual(0, len(a))
+
+        a = [1]
+        a *= 10
+        self.assertEqual(10, len(a))
+
+        a = [1,2]
+        a *= 4
+        self.assertEqual(8, len(a))
+
+    def test_imul_01(self):
+        class My():
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return self.value + 1;
+        l = [1]
+        ob = My(10)
+        l *= ob
+        self.assertEqual(11, len(l))
+
+    def test_imul_02(self):
+        class My():
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return LONG_NUMBER*LONG_NUMBER
+        l = [1]
+        ob = My(10)
+        self.assertRaises(OverflowError, l.__imul__, ob)
+
+    def test_imul_03(self):
+        class My():
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return 'Ahoj'
+        l = [1]
+        ob = My(10)
+        self.assertRaises(TypeError, l.__imul__, ob)
+
+
