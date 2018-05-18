@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
+import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -184,6 +185,7 @@ public final class Python3Core implements PythonCore {
                     "bytes",
                     "float",
                     "time",
+                    "unicodedata",
     };
 
     private static final Map<String, Object> BUILTIN_CONSTANTS = new HashMap<>();
@@ -260,6 +262,7 @@ public final class Python3Core implements PythonCore {
                     new GcModuleBuiltins(),
                     new AtexitModuleBuiltins(),
                     new FaulthandlerModuleBuiltins(),
+                    new UnicodeDataModuleBuiltins(),
                     new SysModuleBuiltins(),
     };
 
