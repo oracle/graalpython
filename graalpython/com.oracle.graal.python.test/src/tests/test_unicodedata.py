@@ -35,3 +35,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
+def test_normalize():
+    import unicodedata
+    assert_raises(TypeError, unicodedata.normalize)
+    assert_raises(ValueError, unicodedata.normalize, 'unknown', 'xx')
+    assert unicodedata.normalize('NFKC', '') == ''
