@@ -94,6 +94,14 @@ void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
+// prototype of C landing function
+PyObject *wrap_direct(PyCFunction fun, ...);
+PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
+PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
+PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
+PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames);
+PyObject *wrap_unsupported(void *fun, ...);
+
 #define write_struct_field(object, struct, fieldname, value)            \
     truffle_write(to_java(object),                                      \
                   #fieldname ,                                          \
@@ -118,6 +126,21 @@ void initialize_hashes();
          (((flags) & METH_FASTCALL) ?                                   \
           truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :              \
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
+
+#define get_method_flags_cwrapper(flags)                                \
+    (void*)((((flags) < 0) ?                                                    \
+     wrap_direct :                                                      \
+     (((flags) & METH_KEYWORDS) ?                                       \
+      wrap_keywords :                                                   \
+      (((flags) & METH_VARARGS) ?                                       \
+       wrap_varargs :                                                   \
+       (((flags) & METH_NOARGS) ?                                       \
+        wrap_noargs :                                                   \
+        (((flags) & METH_O) ?                                           \
+         wrap_direct :                                                  \
+         (((flags) & METH_FASTCALL) ?                                   \
+          wrap_fastcall :                                               \
+          wrap_unsupported)))))))
 
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__) {\
@@ -167,43 +190,43 @@ void initialize_hashes();
 int PyTruffle_Debug(void *arg);
 PyTypeObject* PyObjectHandle_ForJavaType(void* jobj);
 
-extern short ReadShortMember(PyObject* object, int offset);
-extern int ReadIntMember(PyObject* object, int offset);
-extern long ReadLongMember(PyObject* object, int offset);
-extern float ReadFloatMember(PyObject* object, int offset);
-extern double ReadDoubleMember(PyObject* object, int offset);
-extern void* ReadStringMember(PyObject* object, int offset);
-extern PyObject* ReadObjectMember(PyObject* object, int offset);
-extern char ReadCharMember(PyObject* object, int offset);
-extern char ReadByteMember(PyObject* object, int offset);
-extern unsigned char ReadUByteMember(PyObject* object, int offset);
-extern unsigned short ReadUShortMember(PyObject* object, int offset);
-extern unsigned int ReadUIntMember(PyObject* object, int offset);
-extern unsigned long ReadULongMember(PyObject* object, int offset);
-extern char ReadBoolMember(PyObject* object, int offset);
-extern PyObject* ReadObjectExMember(PyObject* object, int offset);
-extern long long ReadLongLongMember(PyObject* object, int offset);
-extern unsigned long long ReadULongLongMember(PyObject* object, int offset);
-extern Py_ssize_t ReadPySSizeT(PyObject* object, int offset);
+extern PyObject* ReadShortMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadIntMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadLongMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadFloatMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadDoubleMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadStringMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadObjectMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadCharMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadByteMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadUByteMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadUShortMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadUIntMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadULongMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadBoolMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadObjectExMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadLongLongMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadULongLongMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadPySSizeT(PyObject* object, PyObject* offset);
 
-extern void WriteShortMember(PyObject* object, int offset, short value);
-extern void WriteIntMember(PyObject* object, int offset, int value);
-extern void WriteLongMember(PyObject* object, int offset, long value);
-extern void WriteFloatMember(PyObject* object, int offset, float value);
-extern void WriteDoubleMember(PyObject* object, int offset, double value);
-extern void WriteStringMember(PyObject* object, int offset, PyObject* value);
-extern void WriteObjectMember(PyObject* object, int offset, PyObject* value);
-extern void WriteCharMember(PyObject* object, int offset, PyObject* value);
-extern void WriteByteMember(PyObject* object, int offset, PyObject* value);
-extern void WriteUByteMember(PyObject* object, int offset, PyObject* value);
-extern void WriteUShortMember(PyObject* object, int offset, unsigned short value);
-extern void WriteUIntMember(PyObject* object, int offset, unsigned int value);
-extern void WriteULongMember(PyObject* object, int offset, unsigned long value);
-extern void WriteBoolMember(PyObject* object, int offset, PyObject* value);
-extern void WriteObjectExMember(PyObject* object, int offset, PyObject* value);
-extern void WriteLongLongMember(PyObject* object, int offset, long long value);
-extern void WriteULongLongMember(PyObject* object, int offset, unsigned long long value);
-extern void WritePySSizeT(PyObject* object, int offset, Py_ssize_t value);
+extern PyObject* WriteShortMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteIntMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteLongMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteFloatMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteDoubleMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteStringMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteObjectMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteCharMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteByteMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteUByteMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteUShortMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteUIntMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteULongMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteObjectExMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteLongLongMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteULongLongMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WritePySSizeT(PyObject* object, PyObject* offset, PyObject* value);
 
 extern PyObject marker_struct;
 #define ERROR_MARKER &marker_struct

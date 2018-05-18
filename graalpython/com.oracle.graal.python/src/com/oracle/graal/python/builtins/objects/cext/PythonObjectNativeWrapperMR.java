@@ -57,8 +57,6 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
-import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -80,7 +78,6 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -513,26 +510,4 @@ public class PythonObjectNativeWrapperMR {
             return getClassNode;
         }
     }
-
-    @Resolve(message = "IS_BOXED")
-    abstract static class IsBoxedNode extends Node {
-        public Object access(PythonObjectNativeWrapper object) {
-            return PTypeToForeignNode.isBoxed(object.getPythonObject());
-        }
-    }
-
-    @Resolve(message = "UNBOX")
-    abstract static class UnboxNode extends Node {
-        @Child private PTypeUnboxNode unboxNode = PTypeUnboxNode.create();
-
-        Object access(PythonObjectNativeWrapper object) {
-            Object result = unboxNode.execute(object.getPythonObject());
-            if (result == object) {
-                throw UnsupportedTypeException.raise(new Object[]{object.getPythonObject()});
-            } else {
-                return result;
-            }
-        }
-    }
-
 }
