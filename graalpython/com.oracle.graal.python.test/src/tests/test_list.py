@@ -430,7 +430,7 @@ class ListTest(list_tests.CommonTest):
         a.insert(False, -1)
         self.assertEqual([-1,0,1], a)
 
-    def testStopIteration(self):
+    def test_StopIteration(self):
         l = [1.0]
         i = l.__iter__()
         i.__next__()
@@ -454,3 +454,28 @@ class ListTest(list_tests.CommonTest):
         self.assertRaises(StopIteration, i.__next__)
         l.append(3)
         self.assertRaises(StopIteration, i.__next__)
+
+    def test_iadd_special(self):
+        a = [1]
+        a += (2,3)
+        self.assertEqual([1,2,3], a)
+
+        a += {'a' : 1, 'b' : 2}
+        self.assertEqual([1,2,3,'a','b'], a)
+        
+        a = [1]
+        a += range(2,5)
+        self.assertEqual([1,2,3,4], a)
+        self.assertRaises(TypeError, a.__iadd__, 1)
+
+        class MyList(list):
+            def __iadd__(self, value):
+                return super().__iadd__([100])
+
+        mya = MyList([1,2])
+        mya += [3]
+        self.assertEqual([1,2,100], mya)
+        
+        a = [1,2]
+        a += a 
+        self.assertEqual([1,2,1,2], a)

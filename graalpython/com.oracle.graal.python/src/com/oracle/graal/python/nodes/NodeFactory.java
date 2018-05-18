@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.IsNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -305,6 +306,39 @@ public class NodeFactory {
                 return UnaryArithmetic.Invert.create(operand);
             case "not":
                 return CastToBooleanNode.createIfFalseNode(operand);
+            default:
+                throw new RuntimeException("unexpected operation: " + string);
+        }
+    }
+
+    public PNode createInplaceOperation(String string, PNode left, PNode right) {
+        switch (string) {
+            case "+=":
+                return InplaceArithmetic.IAdd.create(left, right);
+            case "-=":
+                return InplaceArithmetic.ISub.create(left, right);
+            case "*=":
+                return InplaceArithmetic.IMul.create(left, right);
+            case "/=":
+                return InplaceArithmetic.ITrueDiv.create(left, right);
+            case "//=":
+                return InplaceArithmetic.IFloorDiv.create(left, right);
+            case "%=":
+                return InplaceArithmetic.IMod.create(left, right);
+            case "**=":
+                return InplaceArithmetic.IPow.create(left, right);
+            case "<<=":
+                return InplaceArithmetic.ILShift.create(left, right);
+            case ">>=":
+                return InplaceArithmetic.IRShift.create(left, right);
+            case "&=":
+                return InplaceArithmetic.IAnd.create(left, right);
+            case "|=":
+                return InplaceArithmetic.IOr.create(left, right);
+            case "^=":
+                return InplaceArithmetic.IXor.create(left, right);
+            case "@=":
+                return InplaceArithmetic.IMatMul.create(left, right);
             default:
                 throw new RuntimeException("unexpected operation: " + string);
         }

@@ -164,8 +164,8 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
         if (!(lhs instanceof ReadNode)) {
             throw core.raise(SyntaxError, "illegal expression for augmented assignment");
         }
-        String opWithoutEquals = text.substring(0, text.length() - 1);
-        PNode binOp = factory.createBinaryOperation(opWithoutEquals, lhs, rhs);
+        PNode binOp;
+        binOp = factory.createInplaceOperation(text, lhs, rhs);
         PNode duplicate = factory.duplicate(lhs, PNode.class);
         PNodeUtil.clearSourceSections(duplicate);
         return ((ReadNode) duplicate).makeWriteNode(binOp);
