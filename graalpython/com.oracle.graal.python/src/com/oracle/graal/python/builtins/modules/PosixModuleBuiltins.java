@@ -698,7 +698,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class ReadNode extends PythonFileNode {
         @Specialization
         @TruffleBoundary
-        Object read(int fd, int requestedSize) {
+        Object read(int fd, long requestedSize) {
             SeekableByteChannel channel = getFileChannel(fd);
             try {
                 long size = Math.min(requestedSize, channel.size() - channel.position());

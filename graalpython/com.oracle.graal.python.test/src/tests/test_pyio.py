@@ -89,3 +89,80 @@ def test_read_write_file():
     try_one(b"1234567890")
     try_one(b"hello_world_12345")
     try_one(b'\0' * 1000)
+
+
+
+def test_file():
+    import _pyio as pyio # Python implementation.
+    file_name = "dump.txt"
+
+    unlink(file_name)
+    try:
+        # def testWeakRefs(self):
+        # verify weak references
+        from array import array
+        from weakref import proxy
+        from collections import UserList
+
+        f = pyio.open(file_name, "wb")
+
+        p = proxy(f)
+        p.write(b'teststring')
+        assert f.tell() == p.tell()
+        f.close()
+        f = None
+        # breakpoint()
+        # TODO: since weakref is not yet properly implemenmted this will not work
+        # assert_raises(ReferenceError, getattr, p, 'tell')
+
+        # def testAttributes(self):
+        # verify expected attributes exist
+        f = pyio.open(file_name, "wb")
+        f.name     # merely shouldn't blow up
+        f.mode     # ditto
+        f.closed   # ditto
+        f.close()
+
+        # def testWritelinesUserList(self):
+        # verify writelines with instance sequence
+        f = pyio.open(file_name, "wb")
+        l = UserList([b'1', b'2'])
+        f.writelines(l)
+        f.close()
+        f = pyio.open(file_name, 'rb')
+        buf = f.read()
+        assert buf == b'12'
+        f.close()
+
+        # def testWritelinesIntegers(self):
+        # verify writelines with integers
+        f = pyio.open(file_name, "wb")
+        assert_raises(TypeError, f.writelines, [1, 2, 3])
+        f.close()
+
+        # def testWritelinesIntegersUserList(self):
+        # verify writelines with integers in UserList
+        f = pyio.open(file_name, "wb")
+        l = UserList([1,2,3])
+        assert_raises(TypeError, f.writelines, l)
+        f.close()
+
+        # def testWritelinesNonString(self):
+        # verify writelines with non-string object
+        class NonString:
+            pass
+
+        f = pyio.open(file_name, "wb")
+        assert_raises(TypeError, f.writelines, [NonString(), NonString()])
+        f.close()
+
+        # def testErrors(self):
+        f = pyio.open(file_name, "wb")
+        assert f.name == file_name
+        assert not f.isatty()
+        assert not f.closed
+
+        f.close()
+        assert f.closed
+    finally:
+        unlink(file_name)
