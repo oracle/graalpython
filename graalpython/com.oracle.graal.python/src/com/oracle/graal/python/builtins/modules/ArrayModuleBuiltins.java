@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
@@ -141,6 +142,20 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     }
 
                     return factory().createDoubleArray(cls, doubleArray);
+                case 'b':
+                    store = initializer.getSequenceStorage();
+                    byte[] byteArray = new byte[store.length()];
+
+                    for (i = 0; i < byteArray.length; i++) {
+                        Object val = store.getItemNormalized(i);
+                        if (val instanceof Number) {
+                            byteArray[i] = ((Number) val).byteValue();
+                        } else {
+                            throw raise(ValueError, "byte value expected");
+                        }
+                    }
+
+                    return factory().createByteArray(cls, byteArray);
                 default:
                     return null;
             }

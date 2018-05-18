@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -45,7 +46,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class PByteArray extends PSequence implements PIBytesLike {
+public final class PByteArray extends PArray implements PIBytesLike {
 
     @CompilationFinal private SequenceStorage store;
 
