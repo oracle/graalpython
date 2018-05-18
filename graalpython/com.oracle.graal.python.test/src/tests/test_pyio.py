@@ -88,3 +88,4 @@ def test_read_write_file():
 
     try_one(b"1234567890")
     try_one(b"hello_world_12345")
+    try_one(b'\0' * 1000)
