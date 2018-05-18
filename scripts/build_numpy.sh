@@ -118,4 +118,6 @@ eval "llvm-link -o build/multiarray.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/private/npy_longdouble.bc \
    build/temp.linux-x86_64-3.*/numpy/core/src/private/ufunc_override.bc"
 
+cp build/multiarray.bc numpy/core/
+
 popd
