@@ -1215,12 +1215,12 @@ public class ListBuiltins extends PythonBuiltins {
         public abstract PList execute(PList list, Object value);
 
         @Specialization(guards = "isEmptyStorage(list)")
-        PList doEmptyBoolean(PList list, boolean right) {
+        PList doEmptyBoolean(PList list, @SuppressWarnings("unused") boolean right) {
             return list;
         }
 
         @Specialization(guards = "isEmptyStorage(list)")
-        PList doEmptyInt(PList list, int right) {
+        PList doEmptyInt(PList list, @SuppressWarnings("unused") int right) {
             return list;
         }
 
