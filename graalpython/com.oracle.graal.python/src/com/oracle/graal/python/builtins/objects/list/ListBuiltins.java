@@ -1264,6 +1264,8 @@ public class ListBuiltins extends PythonBuiltins {
                 return list;
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1305,6 +1307,8 @@ public class ListBuiltins extends PythonBuiltins {
                 return list;
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1346,6 +1350,8 @@ public class ListBuiltins extends PythonBuiltins {
                 return list;
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1387,6 +1393,8 @@ public class ListBuiltins extends PythonBuiltins {
                 return list;
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
