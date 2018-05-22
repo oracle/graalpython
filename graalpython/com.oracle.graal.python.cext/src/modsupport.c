@@ -40,198 +40,332 @@
 
 #include <stdio.h>
 
-PyObject* get_arg_or_kw(PyObject* argv, PyObject* kwds, char** kwdnames, int argnum, int is_optional, int is_keyword) {
-    if (!is_keyword) {
-        int l = truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_LEN", to_java(argv));
-        if (argnum < l) {
-            return PyTuple_GetItem(argv, argnum);
+typedef struct _positional_argstack {
+    PyObject* argv;
+    int argnum;
+    struct _positional_argstack* prev;
+} positional_argstack;
+
+MUST_INLINE
+PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnames, unsigned char keywords_only) {
+    if (!keywords_only) {
+        int l = truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_LEN", to_java(p->argv));
+        if (p->argnum < l) {
+            return PyTuple_GetItem(p->argv, p->argnum);
         }
     }
-    const char* kwdname = kwdnames[argnum];
-    void* kwarg = PyDict_GetItem(kwds, to_sulong(truffle_read_string(kwdname)));
-    if (kwarg == NULL) {
-        return Py_None;
-    } else {
-        return kwarg;
+    if (p->prev == NULL && kwdnames != NULL) { // only the bottom argstack can have keyword names
+        const char* kwdname = kwdnames[p->argnum];
+        if (kwdname != NULL) {
+            void* kwarg = PyDict_GetItem(kwds, to_sulong(truffle_read_string(kwdname)));
+            if (kwarg == NULL) {
+                if (PyErr_Occurred()) {
+                    return NULL;
+                }
+                return Py_None;
+            } else {
+                return kwarg;
+            }
+        }
     }
+    return NULL;
 }
+
+#define PyTruffle_WriteOutImmediate(n, T, arg) {        \
+        T __oai = arg;                                  \
+        if (PyErr_Occurred()) {                         \
+            return 0;                                   \
+        }                                               \
+        switch(n) {                                     \
+        case 0: *((T*)v0) = (T)__oai; break;            \
+        case 1: *((T*)v1) = (T)__oai; break;            \
+        case 2: *((T*)v2) = (T)__oai; break;            \
+        case 3: *((T*)v3) = (T)__oai; break;            \
+        case 4: *((T*)v4) = (T)__oai; break;            \
+        case 5: *((T*)v5) = (T)__oai; break;            \
+        case 6: *((T*)v6) = (T)__oai; break;            \
+        case 7: *((T*)v7) = (T)__oai; break;            \
+        case 8: *((T*)v8) = (T)__oai; break;            \
+        case 9: *((T*)v9) = (T)__oai; break;            \
+        case 10: *((T*)v10) = (T)__oai; break;          \
+        case 11: *((T*)v11) = (T)__oai; break;          \
+        case 12: *((T*)v12) = (T)__oai; break;          \
+        case 13: *((T*)v13) = (T)__oai; break;          \
+        case 14: *((T*)v14) = (T)__oai; break;          \
+        case 15: *((T*)v15) = (T)__oai; break;          \
+        case 16: *((T*)v16) = (T)__oai; break;          \
+        case 17: *((T*)v17) = (T)__oai; break;          \
+        case 18: *((T*)v18) = (T)__oai; break;          \
+        case 19: *((T*)v19) = (T)__oai; break;          \
+        }                                               \
+        n++;                                            \
+    } while(0);
+
+#define PyTruffle_WriteOut(n, T, arg, optional) {               \
+        T __oa = arg;                                           \
+        if (__oa == NULL) {                                     \
+            if (!optional) {                                    \
+                PyErr_Format(PyExc_TypeError,                   \
+                             "not enough arguments "            \
+                             "(expected at least %d, got %d)",  \
+                             n,                                 \
+                             n - 1);                            \
+                return 0;                                       \
+            } else {                                            \
+                n++;                                            \
+            }                                                   \
+        } else {                                                \
+            PyTruffle_WriteOutImmediate(n, T, __oa);            \
+        }                                                       \
+    } while(0);
+
+#define PyTruffle_ArgN(n) (((n) == 0) ? v0 : (((n) == 1) ? v1 : (((n) == 2) ? v2 : (((n) == 3) ? v3 : (((n) == 4) ? v4 : (((n) == 5) ? v5 : (((n) == 6) ? v6 : (((n) == 7) ? v7 : (((n) == 8) ? v8 : (((n) == 9) ? v9 : (((n) == 10) ? v10 : (((n) == 11) ? v11 : (((n) == 12) ? v12 : (((n) == 13) ? v13 : (((n) == 14) ? v14 : (((n) == 15) ? v15 : (((n) == 16) ? v16 : (((n) == 17) ? v17 : (((n) == 18) ? v18 : (((n) == 19) ? v19 : NULL))))))))))))))))))))
 
 /* argparse */
 int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, int outc, void *v0, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9, void *v10, void *v11, void *v12, void *v13, void *v14, void *v15, void *v16, void *v17, void *v18, void *v19) {
-    int outputn = 0;
-    int formatn = 0;
-    int valuen = 0;
-    int rest_optional = 0;
-    int rest_keywords = 0;
+    PyObject* arg;
+    int format_idx = 0;
+    int output_idx = 0;
+    unsigned char rest_optional = 0;
+    unsigned char rest_keywords_only = 0;
 
-#   define ASSIGN(T, arg) _ASSIGN(T, outputn, arg); outputn++
-#   define _ASSIGN(T, n, arg)                   \
-    switch(n) {                                 \
-    case 0: __ASSIGN(T, 0, arg); break;         \
-    case 1: __ASSIGN(T, 1, arg); break;         \
-    case 2: __ASSIGN(T, 2, arg); break;         \
-    case 3: __ASSIGN(T, 3, arg); break;         \
-    case 4: __ASSIGN(T, 4, arg); break;         \
-    case 5: __ASSIGN(T, 5, arg); break;         \
-    case 6: __ASSIGN(T, 6, arg); break;         \
-    case 7: __ASSIGN(T, 7, arg); break;         \
-    case 8: __ASSIGN(T, 8, arg); break;         \
-    case 9: __ASSIGN(T, 9, arg); break;         \
-    case 10: __ASSIGN(T, 10, arg); break;       \
-    case 11: __ASSIGN(T, 11, arg); break;       \
-    case 12: __ASSIGN(T, 12, arg); break;       \
-    case 13: __ASSIGN(T, 13, arg); break;       \
-    case 14: __ASSIGN(T, 14, arg); break;       \
-    case 15: __ASSIGN(T, 15, arg); break;       \
-    case 16: __ASSIGN(T, 16, arg); break;       \
-    case 17: __ASSIGN(T, 17, arg); break;       \
-    case 18: __ASSIGN(T, 18, arg); break;       \
-    case 19: __ASSIGN(T, 19, arg); break;       \
-    }
-#   define __ASSIGN(T, num, arg) *((T*)_ARG(num)) = (T)arg
-#   define _ARG(num) v ## num
-#   define ARG(n) (((n) == 0) ? v0 : (((n) == 1) ? v1 : (((n) == 2) ? v2 : (((n) == 3) ? v3 : (((n) == 4) ? v4 : (((n) == 5) ? v5 : (((n) == 6) ? v6 : (((n) == 7) ? v7 : (((n) == 8) ? v8 : (((n) == 9) ? v9 : (((n) == 10) ? v10 : (((n) == 11) ? v11 : (((n) == 12) ? v12 : (((n) == 13) ? v13 : (((n) == 14) ? v14 : (((n) == 15) ? v15 : (((n) == 16) ? v16 : (((n) == 17) ? v17 : (((n) == 18) ? v18 : (((n) == 19) ? v19 : NULL))))))))))))))))))))
+    positional_argstack *v = (positional_argstack*)calloc(1, sizeof(positional_argstack));
+    v->argv = argv;
+    v->argnum = 0;
+    positional_argstack *next;
 
-#   define PEEKFMT format[formatn]
-#   define POPFMT format[formatn++]
-#   define POPARG get_arg_or_kw(argv, kwds, kwdnames, valuen++, rest_optional, rest_keywords)
-#   define POPOUTPUTVARIABLE ARG(outputn); outputn++
-
-    int max = strlen(format);
-    while (outputn < outc) {
-        char c = POPFMT;
-
-        if (c == 's' || c == 'z' || c == 'y') {
-            PyObject* arg = POPARG;
-            if (c == 'z' && arg == Py_None) {
-                ASSIGN(const char*, NULL);
-                if (PEEKFMT == '#') {
-                    ASSIGN(int, NULL);
-                    POPFMT;
-                }
-            } else if (PEEKFMT == '*') {
-                // TODO: bytes
-                ASSIGN(const char*, as_char_pointer(arg));
-                POPFMT;
-            } else if (PEEKFMT == '#') {
-                ASSIGN(const char*, as_char_pointer(arg));
-                ASSIGN(int, as_int(truffle_invoke(to_java(arg), "__len__")));
-                POPFMT;
-            } else {
-                ASSIGN(const char*, as_char_pointer(arg));
-            }
-        } else if (c == 'S') {
-            PyObject* arg = POPARG;
-            truffle_invoke(PY_TRUFFLE_CEXT, "check_argtype", outputn, to_java(arg), truffle_read(PY_BUILTIN, "bytes"));
-            ASSIGN(PyObject*, arg);
-        } else if (c == 'Y') {
-            goto error;
-        } else if (c == 'u' || c == 'Z') {
-            if (PEEKFMT == '#') {
-                POPFMT;
-            }
-            goto error;
-        } else if (c == 'U') {
-            goto error;
-        } else if (c == 'w' && PEEKFMT == '*') {
-            POPFMT;
-            goto error;
-        } else if (c == 'e') {
-            c = POPFMT;
-            if (c == 's') {
-                if (PEEKFMT == '#') {
-                    POPFMT;
-                }
-            } else if (c == 't') {
-            }
-            goto error;
-        } else if (c == 'b') {
-            ASSIGN(unsigned char, as_uchar(POPARG));
-        } else if (c == 'B') {
-            ASSIGN(unsigned char, as_uchar(POPARG));
-        } else if (c == 'h') {
-            ASSIGN(short int, as_short(POPARG));
-        } else if (c == 'H') {
-            ASSIGN(short int, as_short(POPARG));
-        } else if (c == 'i') {
-            ASSIGN(int, as_int(POPARG));
-        } else if (c == 'I') {
-            ASSIGN(int, as_int(POPARG));
-        } else if (c == 'l') {
-            ASSIGN(long, as_long(POPARG));
-        } else if (c == 'k') {
-            ASSIGN(unsigned long, as_long(POPARG));
-        } else if (c == 'L') {
-            ASSIGN(long long, POPARG);
-        } else if (c == 'K') {
-            ASSIGN(unsigned long long, POPARG);
-        } else if (c == 'n') {
-            ASSIGN(Py_ssize_t, as_long(POPARG));
-        } else if (c == 'c') {
-            PyObject* arg = POPARG;
-            ASSIGN(char, as_char(truffle_invoke(to_java(arg), "__getitem__", 0)));
-        } else if (c == 'C') {
-            PyObject* arg = POPARG;
-            ASSIGN(int, as_int(truffle_invoke(to_java(arg), "__getitem__", 0)));
-        } else if (c == 'f') {
-            ASSIGN(float, as_float(POPARG));
-        } else if (c == 'd') {
-            ASSIGN(double, as_double(POPARG));
-        } else if (c == 'D') {
-            goto error;
-        } else if (c == 'O') {
-            if (PEEKFMT == '!') {
-                POPFMT;
-                PyTypeObject* typeobject = (PyTypeObject*)POPOUTPUTVARIABLE;
-                PyObject* arg = POPARG;
-                if (!(Py_TYPE(arg) == typeobject)) {
-                    goto error;
+    char c = format[format_idx];
+    while (c != '\0') {
+        switch (c) {
+        case 's':
+        case 'z':
+        case 'y':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (format[format_idx + 1] == '*') {
+                format_idx++; // skip over '*'
+                PyErr_Format(PyExc_TypeError, "%c* not supported", c);
+                return 0;
+            } else if (arg == Py_None) {
+                if (c == 'z') {
+                    PyTruffle_WriteOut(output_idx, const char*, NULL, rest_optional);
+                    if (format[format_idx + 1] == '#') {
+                        format_idx++; // skip over '#'
+                        PyTruffle_WriteOutImmediate(output_idx, int, 0);
+                    }
                 } else {
-                    ASSIGN(PyObject*, arg);
-                }
-            } else if (PEEKFMT == '&') {
-                POPFMT;
-                void* (*converter)(PyObject*,void*) = POPOUTPUTVARIABLE;
-                PyObject* arg = POPARG;
-                void* output = POPOUTPUTVARIABLE;
-                int status = converter(arg, output);
-                if (!status) { // converter should have set exception
-                    return NULL;
+                    PyErr_Format(PyExc_TypeError, "expected str or bytes-like, got None");
+                    return 0;
                 }
             } else {
-                ASSIGN(PyObject*, POPARG);
+                PyTruffle_WriteOut(output_idx, const char*, as_char_pointer(arg), rest_optional);
+                if (format[format_idx + 1] == '#') {
+                    format_idx++;
+                    PyTruffle_WriteOutImmediate(output_idx, int, Py_SIZE(arg));
+                }
             }
-        } else if (c == 'p') {
-            ASSIGN(int, as_int(truffle_invoke(to_java(POPARG), "__bool__")));
-        } else if (c == '(') {
-            goto error;
-        } else if (c == '|') {
+            break;
+        case 'S':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (!PyBytes_Check(arg)) {
+                PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg));
+                return 0;
+            }
+            PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+            break;
+        case 'Y':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (!PyByteArray_Check(arg)) {
+                PyErr_Format(PyExc_TypeError, "expected bytearray, got %R", Py_TYPE(arg));
+                return 0;
+            }
+            PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+            break;
+        case 'u':
+        case 'Z':
+            PyErr_Format(PyExc_TypeError, "Py_UNICODE argument parsing not supported");
+            return 0;
+        case 'U':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (!PyUnicode_Check(arg)) {
+                PyErr_Format(PyExc_TypeError, "expected str, got %R", Py_TYPE(arg));
+                return 0;
+            }
+            PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+            break;
+        case 'w':
+            PyErr_Format(PyExc_TypeError, "'w' format specifier in argument parsing not supported");
+            return 0;
+        case 'e':
+            switch (format[++format_idx]) {
+            case 's':
+            case 't':
+                break;
+            }
+            if (format[format_idx + 1] == '#') {
+                format_idx++;
+            }
+            PyErr_Format(PyExc_TypeError, "'e*' format specifiers are not supported");
+            return 0;
+        case 'b':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (_PyLong_Sign(arg) < 0) {
+                PyErr_Format(PyExc_TypeError, "expected non-negative integer");
+                return 0;
+            }
+            PyTruffle_WriteOutImmediate(output_idx, unsigned char, as_uchar(arg));
+            break;
+        case 'B':
+            PyTruffle_WriteOutImmediate(output_idx, unsigned char,
+                                        as_uchar(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'h':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (_PyLong_Sign(arg) < 0) {
+                PyErr_Format(PyExc_TypeError, "expected non-negative integer");
+                return 0;
+            }
+            PyTruffle_WriteOutImmediate(output_idx, short int, as_short(arg));
+            break;
+        case 'H':
+            PyTruffle_WriteOutImmediate(output_idx, short int,
+                                        as_short(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'i':
+            PyTruffle_WriteOutImmediate(output_idx, int,
+                                        as_int(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'I':
+            PyTruffle_WriteOutImmediate(output_idx, unsigned int,
+                                        as_int(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'l':
+            PyTruffle_WriteOutImmediate(output_idx, long,
+                                        as_long(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'k':
+            PyTruffle_WriteOutImmediate(output_idx, unsigned long,
+                                        as_long(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'L':
+            PyErr_Format(PyExc_TypeError, "long long argument parsing not yet supported");
+            return 0;
+        case 'K':
+            PyErr_Format(PyExc_TypeError, "long long argument parsing not yet supported");
+            return 0;
+        case 'n':
+            PyTruffle_WriteOutImmediate(output_idx, Py_ssize_t,
+                                        as_long(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'c':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (!(PyBytes_Check(arg) || PyByteArray_Check(arg))) {
+                PyErr_Format(PyExc_TypeError, "expted bytes or bytearray, got %R", Py_TYPE(arg));
+                return 0;
+            }
+            if (Py_SIZE(arg) != 1) {
+                PyErr_Format(PyExc_TypeError, "expted bytes or bytearray of length 1, was length %d", Py_SIZE(arg));
+                return 0;
+            }
+            PyTruffle_WriteOutImmediate(output_idx, char, as_char(polyglot_invoke(to_java(arg), "__getitem__", 0)));
+            break;
+        case 'C':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (!PyUnicode_Check(arg)) {
+                PyErr_Format(PyExc_TypeError, "expted bytes or bytearray, got %R", Py_TYPE(arg));
+                return 0;
+            }
+            if (Py_SIZE(arg) != 1) {
+                PyErr_Format(PyExc_TypeError, "expted str of length 1, was length %d", Py_SIZE(arg));
+                return 0;
+            }
+            PyTruffle_WriteOutImmediate(output_idx, int, as_int(polyglot_invoke(to_java(arg), "__getitem__", 0)));
+            break;
+        case 'f':
+            PyTruffle_WriteOutImmediate(output_idx, float,
+                                        as_float(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'd':
+            PyTruffle_WriteOutImmediate(output_idx, double,
+                                        as_double(PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only)));
+            break;
+        case 'D':
+            PyErr_Format(PyExc_TypeError, "converting complex arguments not implemented, yet");
+            return 0;
+        case 'O':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (format[format_idx + 1] == '!') {
+                format_idx++;
+                PyTypeObject* typeobject = (PyTypeObject*)PyTruffle_ArgN(output_idx);
+                output_idx++;
+                if (!PyType_IsSubtype(Py_TYPE(arg), typeobject)) {
+                    PyErr_Format(PyExc_TypeError, "expected object of type %R, got %R", typeobject, Py_TYPE(arg));
+                    return 0;
+                }
+                PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+            } else if (format[format_idx + 1] == '&') {
+                format_idx++;
+                void* (*converter)(PyObject*,void*) = PyTruffle_ArgN(output_idx);
+                output_idx++;
+                void* output = PyTruffle_ArgN(output_idx);
+                output_idx++;
+                int status = converter(arg, output);
+                if (!status) {
+                    if (!PyErr_Occurred()) {
+                        // converter should have set exception
+                        PyErr_Format(PyExc_TypeError, "converter function failed to set an error on failure");
+                    }
+                    return 0;
+                }
+            } else {
+                PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+            }
+            break;
+        case 'p':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            PyTruffle_WriteOutImmediate(output_idx, int, as_int(truffle_invoke(to_java(arg), "__bool__")));
+            break;
+        case '(':
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            if (!PyTuple_Check(arg)) {
+                PyErr_Format(PyExc_TypeError, "expected tuple, got %R", Py_TYPE(arg));
+                return 0;
+            }
+            next = (positional_argstack*)calloc(1, sizeof(positional_argstack));
+            next->argv = arg;
+            next->argnum = 0;
+            next->prev = v;
+            v = next;
+            break;
+        case ')':
+            if (v->prev == NULL) {
+                PyErr_SetString(PyExc_SystemError, "')' without '(' in argument parsing");
+            } else {
+                next = v;
+                v = v->prev;
+                free(next);
+            }
+            break;
+        case '|':
             rest_optional = 1;
-        } else if (c == '$') {
-            rest_keywords = 1;
-        } else if (c == ':') {
             break;
-        } else if (c == ';') {
+        case '$':
+            rest_keywords_only = 1;
             break;
-        } else {
-            goto error;
+        case ':':
+            // TODO: adapt error message based on string after this
+            break;
+        case ';':
+            // TODO: adapt error message based on string after this
+            break;
+        default:
+            PyErr_Format(PyExc_TypeError, "unrecognized format char in arguments parsing: %c", c);
         }
+        c = format[++format_idx];
+        v->argnum++;
     }
-    return outputn;
 
- error:
-    fprintf(stderr, "ERROR: unimplemented format '%s'\n", format + formatn -1);
-    return outputn;
-
-#   undef ASSIGN
-#   undef _ASSIGN
-#   undef __ASSIGN
-#   undef _ARG
-#   undef ARG
-#   undef PEEKFMT
-#   undef POPFMT
-#   undef POPARG
-#   undef POPOUTPUTVARIABLE
+    free(v);
+    return 1;
 }
 
 int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
