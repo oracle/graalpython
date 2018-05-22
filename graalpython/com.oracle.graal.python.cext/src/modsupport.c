@@ -64,52 +64,34 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
     return NULL;
 }
 
-#define PyTruffle_WriteOutImmediate(n, T, arg) {        \
+#define PyTruffle_WriteOut(n, T, arg) {                 \
         T __oai = arg;                                  \
         if (PyErr_Occurred()) {                         \
             return 0;                                   \
         }                                               \
         switch(n) {                                     \
-        case 0: *((T*)v0) = (T)__oai; break;            \
-        case 1: *((T*)v1) = (T)__oai; break;            \
-        case 2: *((T*)v2) = (T)__oai; break;            \
-        case 3: *((T*)v3) = (T)__oai; break;            \
-        case 4: *((T*)v4) = (T)__oai; break;            \
-        case 5: *((T*)v5) = (T)__oai; break;            \
-        case 6: *((T*)v6) = (T)__oai; break;            \
-        case 7: *((T*)v7) = (T)__oai; break;            \
-        case 8: *((T*)v8) = (T)__oai; break;            \
-        case 9: *((T*)v9) = (T)__oai; break;            \
-        case 10: *((T*)v10) = (T)__oai; break;          \
-        case 11: *((T*)v11) = (T)__oai; break;          \
-        case 12: *((T*)v12) = (T)__oai; break;          \
-        case 13: *((T*)v13) = (T)__oai; break;          \
-        case 14: *((T*)v14) = (T)__oai; break;          \
-        case 15: *((T*)v15) = (T)__oai; break;          \
-        case 16: *((T*)v16) = (T)__oai; break;          \
-        case 17: *((T*)v17) = (T)__oai; break;          \
-        case 18: *((T*)v18) = (T)__oai; break;          \
-        case 19: *((T*)v19) = (T)__oai; break;          \
+        case 0: *((T*)v0) = __oai; break;               \
+        case 1: *((T*)v1) = __oai; break;               \
+        case 2: *((T*)v2) = __oai; break;               \
+        case 3: *((T*)v3) = __oai; break;               \
+        case 4: *((T*)v4) = __oai; break;               \
+        case 5: *((T*)v5) = __oai; break;               \
+        case 6: *((T*)v6) = __oai; break;               \
+        case 7: *((T*)v7) = __oai; break;               \
+        case 8: *((T*)v8) = __oai; break;               \
+        case 9: *((T*)v9) = __oai; break;               \
+        case 10: *((T*)v10) = __oai; break;             \
+        case 11: *((T*)v11) = __oai; break;             \
+        case 12: *((T*)v12) = __oai; break;             \
+        case 13: *((T*)v13) = __oai; break;             \
+        case 14: *((T*)v14) = __oai; break;             \
+        case 15: *((T*)v15) = __oai; break;             \
+        case 16: *((T*)v16) = __oai; break;             \
+        case 17: *((T*)v17) = __oai; break;             \
+        case 18: *((T*)v18) = __oai; break;             \
+        case 19: *((T*)v19) = __oai; break;             \
         }                                               \
         n++;                                            \
-    } while(0);
-
-#define PyTruffle_WriteOut(n, T, arg, optional) {               \
-        T __oa = arg;                                           \
-        if (__oa == NULL) {                                     \
-            if (!optional) {                                    \
-                PyErr_Format(PyExc_TypeError,                   \
-                             "not enough arguments "            \
-                             "(expected at least %d, got %d)",  \
-                             n,                                 \
-                             n - 1);                            \
-                return 0;                                       \
-            } else {                                            \
-                n++;                                            \
-            }                                                   \
-        } else {                                                \
-            PyTruffle_WriteOutImmediate(n, T, __oa);            \
-        }                                                       \
     } while(0);
 
 #define PyTruffle_ArgN(n) (((n) == 0) ? v0 : (((n) == 1) ? v1 : (((n) == 2) ? v2 : (((n) == 3) ? v3 : (((n) == 4) ? v4 : (((n) == 5) ? v5 : (((n) == 6) ? v6 : (((n) == 7) ? v7 : (((n) == 8) ? v8 : (((n) == 9) ? v9 : (((n) == 10) ? v10 : (((n) == 11) ? v11 : (((n) == 12) ? v12 : (((n) == 13) ? v13 : (((n) == 14) ? v14 : (((n) == 15) ? v15 : (((n) == 16) ? v16 : (((n) == 17) ? v17 : (((n) == 18) ? v18 : (((n) == 19) ? v19 : NULL))))))))))))))))))))
@@ -147,10 +129,10 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 return 0;
             } else if (arg == Py_None) {
                 if (c == 'z') {
-                    PyTruffle_WriteOut(output_idx, const char*, NULL, rest_optional);
+                    PyTruffle_WriteOut(output_idx, const char*, NULL);
                     if (format[format_idx + 1] == '#') {
                         format_idx++; // skip over '#'
-                        PyTruffle_WriteOutImmediate(output_idx, int, 0);
+                        PyTruffle_WriteOut(output_idx, int, 0);
                     }
                 } else {
                     PyErr_Format(PyExc_TypeError, "expected str or bytes-like, got None");
@@ -158,10 +140,10 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 }
             } else {
                 PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-                PyTruffle_WriteOut(output_idx, const char*, as_char_pointer(arg), rest_optional);
+                PyTruffle_WriteOut(output_idx, const char*, as_char_pointer(arg));
                 if (format[format_idx + 1] == '#') {
                     format_idx++;
-                    PyTruffle_WriteOutImmediate(output_idx, int, Py_SIZE(arg));
+                    PyTruffle_WriteOut(output_idx, int, Py_SIZE(arg));
                 }
             }
             break;
@@ -173,7 +155,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 PyErr_Format(PyExc_TypeError, "expected bytes, got %R", Py_TYPE(arg));
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+            PyTruffle_WriteOut(output_idx, PyObject*, arg);
             break;
         case 'Y':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
@@ -183,7 +165,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 PyErr_Format(PyExc_TypeError, "expected bytearray, got %R", Py_TYPE(arg));
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+            PyTruffle_WriteOut(output_idx, PyObject*, arg);
             break;
         case 'u':
         case 'Z':
@@ -197,7 +179,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 PyErr_Format(PyExc_TypeError, "expected str, got %R", Py_TYPE(arg));
                 return 0;
             }
-            PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+            PyTruffle_WriteOut(output_idx, PyObject*, arg);
             break;
         case 'w':
             PyErr_Format(PyExc_TypeError, "'w' format specifier in argument parsing not supported");
@@ -221,13 +203,13 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 PyErr_Format(PyExc_TypeError, "expected non-negative integer");
                 return 0;
             }
-            PyTruffle_WriteOutImmediate(output_idx, unsigned char, as_uchar(arg));
+            PyTruffle_WriteOut(output_idx, unsigned char, as_uchar(arg));
             break;
         case 'B':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, unsigned char, as_uchar(arg));
+            PyTruffle_WriteOut(output_idx, unsigned char, as_uchar(arg));
             break;
         case 'h':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
@@ -237,37 +219,37 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 PyErr_Format(PyExc_TypeError, "expected non-negative integer");
                 return 0;
             }
-            PyTruffle_WriteOutImmediate(output_idx, short int, as_short(arg));
+            PyTruffle_WriteOut(output_idx, short int, as_short(arg));
             break;
         case 'H':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, short int, as_short(arg));
+            PyTruffle_WriteOut(output_idx, short int, as_short(arg));
             break;
         case 'i':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, int, as_int(arg));
+            PyTruffle_WriteOut(output_idx, int, as_int(arg));
             break;
         case 'I':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, unsigned int, as_int(arg));
+            PyTruffle_WriteOut(output_idx, unsigned int, as_int(arg));
             break;
         case 'l':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, long, as_long(arg));
+            PyTruffle_WriteOut(output_idx, long, as_long(arg));
             break;
         case 'k':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, unsigned long, as_long(arg));
+            PyTruffle_WriteOut(output_idx, unsigned long, as_long(arg));
             break;
         case 'L':
             PyErr_Format(PyExc_TypeError, "long long argument parsing not yet supported");
@@ -279,7 +261,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, Py_ssize_t, as_long(arg));
+            PyTruffle_WriteOut(output_idx, Py_ssize_t, as_long(arg));
             break;
         case 'c':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
@@ -293,7 +275,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 PyErr_Format(PyExc_TypeError, "expted bytes or bytearray of length 1, was length %d", Py_SIZE(arg));
                 return 0;
             }
-            PyTruffle_WriteOutImmediate(output_idx, char, as_char(polyglot_invoke(to_java(arg), "__getitem__", 0)));
+            PyTruffle_WriteOut(output_idx, char, as_char(polyglot_invoke(to_java(arg), "__getitem__", 0)));
             break;
         case 'C':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
@@ -307,19 +289,19 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 PyErr_Format(PyExc_TypeError, "expted str of length 1, was length %d", Py_SIZE(arg));
                 return 0;
             }
-            PyTruffle_WriteOutImmediate(output_idx, int, as_int(polyglot_invoke(to_java(arg), "__getitem__", 0)));
+            PyTruffle_WriteOut(output_idx, int, as_int(polyglot_invoke(to_java(arg), "__getitem__", 0)));
             break;
         case 'f':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, float, as_float(arg));
+            PyTruffle_WriteOut(output_idx, float, as_float(arg));
             break;
         case 'd':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, double, as_double(arg));
+            PyTruffle_WriteOut(output_idx, double, as_double(arg));
             break;
         case 'D':
             PyErr_Format(PyExc_TypeError, "converting complex arguments not implemented, yet");
@@ -336,7 +318,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                     PyErr_Format(PyExc_TypeError, "expected object of type %R, got %R", typeobject, Py_TYPE(arg));
                     return 0;
                 }
-                PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+                PyTruffle_WriteOut(output_idx, PyObject*, arg);
             } else if (format[format_idx + 1] == '&') {
                 format_idx++;
                 void* (*converter)(PyObject*,void*) = PyTruffle_ArgN(output_idx);
@@ -353,14 +335,14 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                     return 0;
                 }
             } else {
-                PyTruffle_WriteOut(output_idx, PyObject*, arg, rest_optional);
+                PyTruffle_WriteOut(output_idx, PyObject*, arg);
             }
             break;
         case 'p':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             v->argnum++;
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOutImmediate(output_idx, int, as_int(truffle_invoke(to_java(arg), "__bool__")));
+            PyTruffle_WriteOut(output_idx, int, as_int(truffle_invoke(to_java(arg), "__bool__")));
             break;
         case '(':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
