@@ -104,6 +104,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
             StringBuilder sb = new StringBuilder();
             sb.append(System.getProperty("java.home")).append(PythonCore.FILE_SEPARATOR).append("bin").append(PythonCore.FILE_SEPARATOR).append("java ");
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
+                    arg = arg.replace("suspend=y", "suspend=n");
+                }
                 sb.append(arg).append(' ');
             }
             sb.append("-classpath ");
