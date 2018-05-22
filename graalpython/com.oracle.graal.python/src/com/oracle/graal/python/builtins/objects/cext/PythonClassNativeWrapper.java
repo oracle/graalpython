@@ -39,54 +39,32 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 /**
  * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
  * correct shape of the corresponding native type {@code struct _object}.
  */
-public class PythonObjectNativeWrapper implements TruffleObject {
-    private final PythonAbstractObject pythonObject;
-    private Object nativePointer;
+public class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
+    private final CStringWrapper nameWrapper;
 
-    public PythonObjectNativeWrapper(PythonAbstractObject object) {
-        this.pythonObject = object;
+    public PythonClassNativeWrapper(PythonClass object) {
+        super(object);
+        this.nameWrapper = new CStringWrapper(object.getName());
     }
 
-    public boolean isNative() {
-        return nativePointer != null;
+    public CStringWrapper getNameWrapper() {
+        return nameWrapper;
     }
 
-    public Object getNativePointer() {
-        return nativePointer;
-    }
-
-    public void setNativePointer(Object nativePointer) {
-        // we should set the pointer just once
-        assert this.nativePointer == null || this.nativePointer.equals(nativePointer);
-        this.nativePointer = nativePointer;
-    }
-
-    public PythonAbstractObject getPythonObject() {
-        return pythonObject;
-    }
-
-    public static boolean isInstance(TruffleObject o) {
-        return o instanceof PythonObjectNativeWrapper;
-    }
-
-    public ForeignAccess getForeignAccess() {
-        return PythonObjectNativeWrapperMRForeign.ACCESS;
-    }
-
-    public static PythonObjectNativeWrapper wrap(PythonAbstractObject obj) {
+    public static PythonClassNativeWrapper wrap(PythonClass obj) {
         // important: native wrappers are cached
-        PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
         if (nativeWrapper == null) {
-            nativeWrapper = new PythonObjectNativeWrapper(obj);
+            nativeWrapper = new PythonClassNativeWrapper(obj);
             obj.setNativeWrapper(nativeWrapper);
         }
         return nativeWrapper;
     }
+
 }

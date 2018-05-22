@@ -172,8 +172,9 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_NAME, key)")
-        String doTpName(PythonClass object, @SuppressWarnings("unused") String key) {
-            return object.getName();
+        Object doTpName(PythonClass object, @SuppressWarnings("unused") String key) {
+            // return a C string wrapper that really allocates 'char*' on TO_NATIVE
+            return object.getNativeWrapper().getNameWrapper();
         }
 
         @Specialization(guards = "eq(TP_BASE, key)")

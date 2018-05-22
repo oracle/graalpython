@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -304,5 +305,10 @@ public class PythonClass extends PythonObject {
             }
             this.flags = flags;
         }
+    }
+
+    @Override
+    public PythonClassNativeWrapper getNativeWrapper() {
+        return (PythonClassNativeWrapper) super.getNativeWrapper();
     }
 }

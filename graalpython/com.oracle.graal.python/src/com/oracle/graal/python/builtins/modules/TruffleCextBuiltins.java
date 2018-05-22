@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -150,24 +149,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "to_char_pointer", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class TruffleString_AsString extends NativeBuiltin {
-        @CompilationFinal TruffleObject truffle_string_to_cstr;
-        @Child private Node executeNode;
-
-        TruffleObject getTruffleStringToCstr() {
-            if (truffle_string_to_cstr == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                truffle_string_to_cstr = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR);
-            }
-            return truffle_string_to_cstr;
-        }
-
-        private Node getExecuteNode() {
-            if (executeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(1).createNode());
-            }
-            return executeNode;
-        }
+        @Child private CExtNodes.AsCharPointer asCharPointerNode;
 
         @Specialization
         Object run(PString str) {
@@ -176,11 +158,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(String str) {
-            try {
-                return ForeignAccess.sendExecute(getExecuteNode(), getTruffleStringToCstr(), str);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw e.raise();
+            if (asCharPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asCharPointerNode = insert(CExtNodes.AsCharPointer.create());
             }
+            return asCharPointerNode.execute(str);
         }
 
         @Fallback
