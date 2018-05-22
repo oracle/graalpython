@@ -59,7 +59,7 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
             out = PyDict_GetItem(kwds, to_sulong(truffle_read_string(kwdname)));
         }
     }
-    v->argnum++;
+    p->argnum++;
     return out;
 }
 
@@ -354,16 +354,17 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
             break;
         case ':':
             // TODO: adapt error message based on string after this
-            break;
+            goto end;
         case ';':
             // TODO: adapt error message based on string after this
-            break;
+            goto end;
         default:
             PyErr_Format(PyExc_TypeError, "unrecognized format char in arguments parsing: %c", c);
         }
         c = format[++format_idx];
     }
 
+ end:
     free(v);
     return 1;
 }
