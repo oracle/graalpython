@@ -680,7 +680,7 @@ def PyObject_Repr(o):
 
 
 def PyType_IsSubtype(a, b):
-    return b in a.mro()
+    return 1 if b in a.mro() else 0
 
 
 @may_raise
