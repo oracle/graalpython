@@ -39,6 +39,8 @@
 #ifndef CAPI_H
 #define CAPI_H
 
+#define MUST_INLINE __attribute__((always_inline)) inline
+
 #include "Python.h"
 
 /* Private types are defined here because we need to declare the type cast. */
@@ -80,13 +82,13 @@ POLYGLOT_DECLARE_TYPE(PySetObject);
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
-#define as_char_pointer(obj) truffle_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
-#define as_long(obj) truffle_invoke(PY_TRUFFLE_CEXT, "to_long", obj)
+#define as_char_pointer(obj) polyglot_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
+#define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
 #define as_int(obj) ((int)as_long(obj))
 #define as_short(obj) ((short)as_long(obj))
 #define as_uchar(obj) ((unsigned char)as_long(obj))
 #define as_char(obj) ((char)as_long(obj))
-#define as_double(obj) truffle_invoke_d(PY_TRUFFLE_CEXT, "to_double", to_java(obj))
+#define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
 
 // defined in 'exceptions.c'
