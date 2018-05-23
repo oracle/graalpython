@@ -83,6 +83,7 @@ POLYGLOT_DECLARE_TYPE(PySetObject);
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
+extern PyObject* explicit_cast(PyObject* cobj);
 #define as_char_pointer(obj) polyglot_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
 #define as_int(obj) ((int)as_long(obj))
@@ -146,10 +147,10 @@ PyObject *wrap_unsupported(void *fun, ...);
           wrap_unsupported)))))))
 
 
-#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__) {\
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
-    0,                                          /* tp_basicsize */\
+    (__SIZE__),                                 /* tp_basicsize */\
     0,                                          /* tp_itemsize */\
     0,                                          /* tp_dealloc */\
     0,                                          /* tp_print */\

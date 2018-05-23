@@ -38,8 +38,7 @@
  */
 #include "capi.h"
 
-
-PyTypeObject PyList_Type = PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS);
+PyTypeObject PyList_Type = PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS, sizeof(PyListObject));
 
 PyObject* PyList_New(Py_ssize_t size) {
     PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_New", size);

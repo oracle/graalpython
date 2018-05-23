@@ -38,4 +38,4 @@
  */
 #include "capi.h"
 
-PyTypeObject PyComplex_Type = PY_TRUFFLE_TYPE("complex", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC);
+PyTypeObject PyComplex_Type = PY_TRUFFLE_TYPE("complex", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyComplexObject));

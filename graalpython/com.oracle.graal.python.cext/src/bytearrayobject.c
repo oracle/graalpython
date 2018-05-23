@@ -38,5 +38,5 @@
  */
 #include "capi.h"
 
-PyTypeObject PyByteArray_Type = PY_TRUFFLE_TYPE("bytearray", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE);
+PyTypeObject PyByteArray_Type = PY_TRUFFLE_TYPE("bytearray", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyByteArrayObject));
 char _PyByteArray_empty_string[] = "";

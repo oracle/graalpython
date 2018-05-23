@@ -38,8 +38,8 @@
  */
 #include "capi.h"
 
-PyTypeObject PySet_Type = PY_TRUFFLE_TYPE("set", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC);
-PyTypeObject PyFrozenSet_Type = PY_TRUFFLE_TYPE("frozenset", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC);
+PyTypeObject PySet_Type = PY_TRUFFLE_TYPE("set", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PySetObject));
+PyTypeObject PyFrozenSet_Type = PY_TRUFFLE_TYPE("frozenset", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PySetObject));
 
 PyObject * PySet_New(PyObject *iterable) {
 	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySet_New", to_java(iterable));

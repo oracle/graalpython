@@ -29,6 +29,7 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MRO__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
@@ -88,7 +89,7 @@ public class TypeBuiltins extends PythonBuiltins {
         return TypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "__mro__", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __MRO__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class MroAttrNode extends PythonBuiltinNode {
         @Specialization
