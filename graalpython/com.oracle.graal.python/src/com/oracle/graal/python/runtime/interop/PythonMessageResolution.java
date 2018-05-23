@@ -227,7 +227,7 @@ public class PythonMessageResolution {
         }
     }
 
-    private static final class ExecuteNode extends Node {
+    public static final class ExecuteNode extends Node {
         @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
         @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create();

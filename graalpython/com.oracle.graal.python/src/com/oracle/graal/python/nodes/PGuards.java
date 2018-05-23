@@ -244,11 +244,11 @@ public abstract class PGuards {
     }
 
     public static boolean isPythonUserClass(Object klass) {
-        return klass.getClass() == PythonClass.class;
+        return !isPythonBuiltinClass(klass);
     }
 
     public static boolean isPythonBuiltinClass(Object klass) {
-        return !isPythonUserClass(klass);
+        return klass instanceof PythonBuiltinClass;
     }
 
     public static boolean isPRange(Object obj) {

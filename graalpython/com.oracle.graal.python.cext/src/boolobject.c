@@ -40,7 +40,7 @@
 
 #include <stdarg.h>
 
-PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT);
+PyTypeObject PyBool_Type = PY_TRUFFLE_TYPE("bool", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(struct _longobject));
 
 // taken from CPython "Python/Objects/boolobject.c"
 PyObject *PyBool_FromLong(long ok) {

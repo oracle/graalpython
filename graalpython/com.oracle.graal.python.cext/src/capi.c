@@ -48,9 +48,11 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
     truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", ptype, nativePointer);
 
     unsigned long original_flags = structure->tp_flags;
+    Py_ssize_t basicsize = structure->tp_basicsize;
     PyTypeObject* type_handle = truffle_assign_managed(structure, polyglot_as__typeobject(ptype));
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
+    type_handle->tp_basicsize = basicsize;
 }
 
 static void initialize_globals() {
@@ -170,7 +172,7 @@ static inline PyObject* PyTruffle_Explicit_Cast(PyObject* cobj, unsigned long fl
 
 
 __attribute__((always_inline))
-static inline PyObject* _explicit_cast(PyObject* cobj) {
+inline PyObject* explicit_cast(PyObject* cobj) {
     if(polyglot_is_value(cobj)) {
         unsigned long flags = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetTpFlags", cobj));
         return PyTruffle_Explicit_Cast(cobj, flags);
@@ -179,7 +181,7 @@ static inline PyObject* _explicit_cast(PyObject* cobj) {
 }
 
 PyObject* to_sulong(void *o) {
-    return _explicit_cast(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
+    return explicit_cast(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
 }
 
 void* get_ob_type(PyObject* obj) {
@@ -443,7 +445,7 @@ typedef PyObject* (*f20)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, 
 
 #define _PICK_FUN_CAST(DUMMY, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, NAME, ...) NAME
 #define _CALL_ARITY(FUN, ...) ( (_PICK_FUN_CAST(NULL, ##__VA_ARGS__, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0))(FUN))(__VA_ARGS__)
-#define ARG(__n) _explicit_cast((PyObject*)polyglot_get_arg((__n)))
+#define ARG(__n) explicit_cast((PyObject*)polyglot_get_arg((__n)))
 
 PyObject *wrap_direct(PyCFunction fun, ...) {
 	PyObject *res = NULL;
@@ -496,23 +498,23 @@ PyObject *wrap_direct(PyCFunction fun, ...) {
 }
 
 PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs) {
-	return fun(_explicit_cast(module), _explicit_cast(varargs));
+	return fun(explicit_cast(module), explicit_cast(varargs));
 }
 
 PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs) {
-	return fun(_explicit_cast(module), _explicit_cast(varargs), _explicit_cast(kwargs));
+	return fun(explicit_cast(module), explicit_cast(varargs), explicit_cast(kwargs));
 }
 
 PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
-	return fun(_explicit_cast(module), _explicit_cast(pnone));
+	return fun(explicit_cast(module), explicit_cast(pnone));
 }
 
 PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames) {
 	Py_ssize_t i;
     for (i=0; i < nargs; i++) {
-    	args[i] = _explicit_cast(args[i]);
+    	args[i] = explicit_cast(args[i]);
     }
-	return fun(_explicit_cast(self), args, nargs, _explicit_cast(kwnames));
+	return fun(explicit_cast(self), args, nargs, explicit_cast(kwnames));
 }
 
 PyObject *wrap_unsupported(void *fun, ...) {

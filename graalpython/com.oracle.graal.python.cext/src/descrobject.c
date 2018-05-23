@@ -38,7 +38,13 @@
  */
 #include "capi.h"
 
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC);
+// taken from CPython "Objects/descrobject.c"
+typedef struct {
+    PyObject_HEAD
+    PyObject *mapping;
+} mappingproxyobject;
+
+PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
 
 /* Dicts */
 PyObject* PyDictProxy_New(PyObject *mapping) {

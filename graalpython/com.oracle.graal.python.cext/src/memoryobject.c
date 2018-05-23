@@ -38,4 +38,12 @@
  */
 #include "capi.h"
 
-PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC);
+PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, offsetof(PyMemoryViewObject, ob_array));
+
+PyObject* PyMemoryView_FromObject(PyObject *v) {
+
+	// TODO implement
+
+    PyErr_Format(PyExc_TypeError, "memoryview: a bytes-like object is required, not '%.200s'", Py_TYPE(v)->tp_name);
+    return NULL;
+}

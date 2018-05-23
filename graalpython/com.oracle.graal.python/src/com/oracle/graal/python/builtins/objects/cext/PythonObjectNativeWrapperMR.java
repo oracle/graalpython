@@ -51,8 +51,10 @@ import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeA
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -186,6 +189,13 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(object);
         }
 
+        @Specialization(guards = "eq(TP_ALLOC, key)")
+        Object doTpAlloc(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getAllocNode) {
+            Object result = getAllocNode.execute(object, SpecialMethodNames.__ALLOC__);
+            return getToSulongNode().execute(result);
+        }
+
         @Specialization(guards = "eq(TP_AS_NUMBER, key)")
         Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
             // TODO check for type and return 'NULL'
@@ -196,6 +206,12 @@ public class PythonObjectNativeWrapperMR {
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetAttributeNode getHashNode) {
             return getToSulongNode().execute(getHashNode.execute(object, SpecialMethodNames.__HASH__));
+        }
+
+        @Specialization(guards = "eq(TP_BASICSIZE, key)")
+        Object doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getAttrNode) {
+            return getAttrNode.execute(object, SpecialAttributeNames.__BASICSIZE__);
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
@@ -290,7 +306,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    @ImportStatic(NativeMemberNames.class)
+    @ImportStatic({NativeMemberNames.class, PGuards.class})
     abstract static class WriteNativeMemberNode extends Node {
 
         abstract Object execute(Object receiver, Object key, Object value);
@@ -305,6 +321,22 @@ public class PythonObjectNativeWrapperMR {
         long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key, long flags) {
             object.setFlags(flags);
             return flags;
+        }
+
+        @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonBuiltinClass(object)"})
+        long doTpBasicsize(PythonBuiltinClass object, @SuppressWarnings("unused") String key, long basicsize) {
+            // We have to use the 'setAttributeUnsafe' because this properly cannot be modified by
+            // the user and we need to initialize it.
+            object.setAttributeUnsafe(SpecialAttributeNames.__BASICSIZE__, basicsize);
+            return basicsize;
+        }
+
+        @Specialization(guards = {"eq(TP_BASICSIZE, key)", "isPythonUserClass(object)"})
+        long doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key, long basicsize) {
+            // Do deliberately not use "SetAttributeNode" because we want to directly set the
+            // attribute an bypass any user code.
+            object.setAttribute(SpecialAttributeNames.__BASICSIZE__, basicsize);
+            return basicsize;
         }
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
@@ -332,6 +364,28 @@ public class PythonObjectNativeWrapperMR {
             return WriteNativeMemberNodeGen.create();
         }
 
+    }
+
+    @Resolve(message = "EXECUTE")
+    abstract static class ExecuteNode extends Node {
+        @Child PythonMessageResolution.ExecuteNode executeNode;
+        @Child private ToSulongNode toSulongNode;
+
+        public Object access(PythonObjectNativeWrapper object, Object[] arguments) {
+            if (executeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                executeNode = insert(new PythonMessageResolution.ExecuteNode());
+            }
+            return getToSulongNode().execute(executeNode.execute(object.getPythonObject(), arguments));
+        }
+
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
     }
 
     @Resolve(message = "KEY_INFO")
