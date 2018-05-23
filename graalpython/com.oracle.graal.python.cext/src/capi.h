@@ -65,6 +65,7 @@ typedef struct {
 /* Declare Python structs/types for explicit polyglot typecasts. */
 /* NOTE: Also add an appropriate case in 'PyTruffle_Explicit_Cast' ! */
 POLYGLOT_DECLARE_STRUCT(_object);
+POLYGLOT_DECLARE_TYPE(PyBaseExceptionObject);
 POLYGLOT_DECLARE_TYPE(PyModuleObject);
 POLYGLOT_DECLARE_TYPE(PyVarObject);
 POLYGLOT_DECLARE_STRUCT(_typeobject);
