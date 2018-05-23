@@ -148,7 +148,9 @@ void* to_java_type(PyTypeObject* cls) {
 
 __attribute__((always_inline))
 static inline PyObject* PyTruffle_Explicit_Cast(PyObject* cobj, unsigned long flags) {
-    if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_TUPLE_SUBCLASS)) {
+    if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_TYPE_SUBCLASS)) {
+    	return (PyObject*)polyglot_as__typeobject(cobj);
+    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_TUPLE_SUBCLASS)) {
     	return (PyObject*)polyglot_as_PyTupleObject(cobj);
     } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_LIST_SUBCLASS)) {
     	return (PyObject*)polyglot_as_PyListObject(cobj);
@@ -158,6 +160,10 @@ static inline PyObject* PyTruffle_Explicit_Cast(PyObject* cobj, unsigned long fl
     	return (PyObject*)polyglot_as_PyUnicodeObject(cobj);
     } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_BYTES_SUBCLASS)) {
     	return (PyObject*)polyglot_as_PyBytesObject(cobj);
+    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_LONG_SUBCLASS)) {
+    	return (PyObject*)polyglot_as__longobject(cobj);
+    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_BASE_EXC_SUBCLASS)) {
+    	return (PyObject*)polyglot_as_PyBaseExceptionObject(cobj);
     }
     return (PyObject*)polyglot_as_PyVarObject(cobj);
 }
@@ -490,15 +496,15 @@ PyObject *wrap_direct(PyCFunction fun, ...) {
 }
 
 PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs) {
-	return fun(module, _explicit_cast(varargs));
+	return fun(_explicit_cast(module), _explicit_cast(varargs));
 }
 
 PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs) {
-	return fun(module, _explicit_cast(varargs), _explicit_cast(kwargs));
+	return fun(_explicit_cast(module), _explicit_cast(varargs), _explicit_cast(kwargs));
 }
 
 PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
-	return fun(module, pnone);
+	return fun(_explicit_cast(module), _explicit_cast(pnone));
 }
 
 PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames) {
@@ -506,7 +512,7 @@ PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, P
     for (i=0; i < nargs; i++) {
     	args[i] = _explicit_cast(args[i]);
     }
-	return fun(self, args, nargs, _explicit_cast(kwnames));
+	return fun(_explicit_cast(self), args, nargs, _explicit_cast(kwnames));
 }
 
 PyObject *wrap_unsupported(void *fun, ...) {
