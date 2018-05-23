@@ -53,9 +53,6 @@ def unlink(file_name):
         pass
 
 
-def test_import():
-    pass
-
 
 def test_read_write_file():
     import _pyio as pyio # Python implementation.

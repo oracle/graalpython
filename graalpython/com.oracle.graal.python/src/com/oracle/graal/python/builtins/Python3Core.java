@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.InteropModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
@@ -186,6 +187,7 @@ public final class Python3Core implements PythonCore {
                     "float",
                     "time",
                     "unicodedata",
+                    "_locale",
     };
 
     private static final Map<String, Object> BUILTIN_CONSTANTS = new HashMap<>();
@@ -263,6 +265,7 @@ public final class Python3Core implements PythonCore {
                     new AtexitModuleBuiltins(),
                     new FaulthandlerModuleBuiltins(),
                     new UnicodeDataModuleBuiltins(),
+                    new LocaleModuleBuiltins(),
                     new SysModuleBuiltins(),
     };
 
