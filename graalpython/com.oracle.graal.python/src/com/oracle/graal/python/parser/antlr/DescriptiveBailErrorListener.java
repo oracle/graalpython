@@ -38,13 +38,14 @@
  */
 package com.oracle.graal.python.parser.antlr;
 
-import com.oracle.graal.python.runtime.PythonParser.PIncompleteSourceException;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.misc.IntervalSet;
+
+import com.oracle.graal.python.runtime.PythonParser.PIncompleteSourceException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * An error listener that immediately bails out of the parse (does not recover) and throws a runtime
@@ -73,7 +74,9 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
                 throw handleRecognitionException;
             }
         }
-
+        if (offendingSymbol instanceof Token) {
+            throw new RuntimeException(entireMessage, new EmptyRecognitionException(entireMessage, recognizer, (Token) offendingSymbol));
+        }
         throw new RuntimeException(entireMessage, e);
     }
 
@@ -82,5 +85,20 @@ public class DescriptiveBailErrorListener extends BaseErrorListener {
             return new PIncompleteSourceException(message, cause, line);
         }
         return null;
+    }
+
+    private static class EmptyRecognitionException extends RecognitionException {
+        private static final long serialVersionUID = 1L;
+        private Token offendingToken;
+
+        public EmptyRecognitionException(String message, Recognizer<?, ?> recognizer, Token offendingToken) {
+            super(message, recognizer, offendingToken.getInputStream(), null);
+            this.offendingToken = offendingToken;
+        }
+
+        @Override
+        public Token getOffendingToken() {
+            return offendingToken;
+        }
     }
 }
