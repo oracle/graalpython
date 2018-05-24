@@ -120,4 +120,19 @@ eval "llvm-link -o build/multiarray.bc \
 
 cp build/multiarray.bc numpy/core/
 
+eval "llvm-link -o build/umath.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/umath/umathmodule.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/umath/reduction.bc \
+     build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/umath/loops.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/umath/ufunc_object.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/umath/extobj.bc \
+     build/temp.linux-x86_64-3.*/build/src.linux-x86_64-3.*/numpy/core/src/umath/scalarmath.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/umath/ufunc_type_resolution.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/umath/override.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/private/mem_overlap.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/private/npy_longdouble.bc \
+     build/temp.linux-x86_64-3.*/numpy/core/src/private/ufunc_override.bc"
+
+cp build/umath.bc numpy/core/
+
 popd
