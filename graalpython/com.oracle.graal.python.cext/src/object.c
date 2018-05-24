@@ -643,3 +643,7 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     _Py_NewReference(op);
     return op;
 }
+
+int PyCallable_Check(PyObject *o) {
+    return PyObject_HasAttrString(o, "__call__");
+}
