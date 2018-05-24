@@ -1,8 +1,7 @@
 # Copyright (c) 2018, Oracle and/or its affiliates.
-# Copyright (c) 1996-2017 Python Software Foundation
+# Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-
 import re
 import string
 import unittest

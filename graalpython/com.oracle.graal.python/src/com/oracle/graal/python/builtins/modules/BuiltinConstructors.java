@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FROZENSET;
 import static com.oracle.graal.python.nodes.BuiltinNames.INT;
 import static com.oracle.graal.python.nodes.BuiltinNames.LIST;
-import static com.oracle.graal.python.nodes.BuiltinNames.MEMORYVIEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
 import static com.oracle.graal.python.nodes.BuiltinNames.RANGE;
@@ -102,7 +101,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -311,7 +309,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class DictionaryNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        public PDict dictEmpty(PythonClass cls, PTuple args, PKeyword[] keywordArgs) {
+        public PDict dictEmpty(PythonClass cls, Object[] args, PKeyword[] keywordArgs) {
             return factory().createDict(cls);
         }
     }
@@ -797,14 +795,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        Object doObjectDirect(@SuppressWarnings("unused") PythonClass self, PTuple varargs, PKeyword[] kwargs,
+        Object doObjectDirect(@SuppressWarnings("unused") PythonClass self, Object[] varargs, PKeyword[] kwargs,
                         @Cached("self") PythonClass cachedSelf) {
             return doObjectIndirect(cachedSelf, varargs, kwargs);
         }
 
         @Specialization(replaces = "doObjectDirect")
-        Object doObjectIndirect(PythonClass self, PTuple varargs, PKeyword[] kwargs) {
-            if (varargs.len() > 0 || kwargs.length > 0) {
+        Object doObjectIndirect(PythonClass self, Object[] varargs, PKeyword[] kwargs) {
+            if (varargs.length > 0 || kwargs.length > 0) {
                 // TODO: tfel: this should throw an error only if init isn't overridden
             }
             return factory().createPythonObject(self);
@@ -1031,11 +1029,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ZipNode extends PythonBuiltinNode {
         @Specialization
-        public PZip zip(PythonClass cls, PTuple args,
+        public PZip zip(PythonClass cls, Object[] args,
                         @Cached("create()") GetIteratorNode getIterator) {
-            Object[] iterables = new Object[args.len()];
-            for (int i = 0; i < args.len(); i++) {
-                Object item = args.getItem(i);
+            Object[] iterables = new Object[args.length];
+            for (int i = 0; i < args.length; i++) {
+                Object item = args[i];
                 // TODO: check whether the argument supports iteration (has __next__ and __iter__)
                 iterables[i] = getIterator.executeWith(item);
             }
@@ -1385,23 +1383,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = MEMORYVIEW, constructsClass = {PMemoryView.class}, isPublic = true, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class MemoryViewNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        Object memoryview(PythonClass cls, Object obj) {
-            throw raise(NotImplementedError, "memoryview objects");
-        }
-    }
-
     @Builtin(name = "BaseException", constructsClass = {PBaseException.class}, isPublic = true, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object call(PythonClass cls, PTuple varargs, PKeyword[] kwargs) {
-            return factory().createBaseException(cls, varargs);
+        Object call(PythonClass cls, Object[] varargs, PKeyword[] kwargs) {
+            return factory().createBaseException(cls, factory().createTuple(varargs));
         }
     }
 

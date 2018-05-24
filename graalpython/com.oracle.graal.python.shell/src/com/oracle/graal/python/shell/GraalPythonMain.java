@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -65,6 +65,7 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     private String commandString = null;
     private String inputFile = null;
     private boolean inspectFlag = false;
+    private boolean verboseFlag = false;
     private boolean runCC = false;
     private boolean runLD = false;
     private VersionAction versionAction = VersionAction.None;
@@ -80,6 +81,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                 case "-OO":
                 case "-B":
                     System.out.println("Warning: " + arg + " does nothing on GraalPython.");
+                    break;
+                case "-v":
+                    verboseFlag = true;
                     break;
                 case "-V":
                 case "--version":
@@ -160,7 +164,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         // to print Python exceptions
         contextBuilder.option("python.AlwaysRunExcepthook", "true");
         if (inspectFlag) {
-            contextBuilder.option("python.PythonInspectFlag", "true");
+            contextBuilder.option("python.InspectFlag", "true");
+        }
+        if (verboseFlag) {
+            contextBuilder.option("python.VerboseFlag", "true");
         }
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);

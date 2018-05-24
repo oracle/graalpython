@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime.object;
 
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.Optional;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -37,14 +38,14 @@ import com.oracle.graal.python.builtins.objects.array.PLongArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
@@ -113,6 +114,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class PythonObjectFactory extends Node {
 
@@ -166,8 +168,30 @@ public abstract class PythonObjectFactory extends Node {
      * Python objects
      */
 
+    @CompilationFinal private Optional<Shape> cachedInstanceShape = Optional.empty();
+
     public PythonObject createPythonObject(PythonClass cls) {
-        return trace(new PythonObject(cls));
+        if (cls == null) {
+            CompilerDirectives.transferToInterpreter();
+            // special case for base type class
+            return trace(new PythonObject(null));
+        } else {
+            Optional<Shape> cached = cachedInstanceShape;
+            if (cached != null) {
+                if (cached.isPresent()) {
+                    if (cached.get() == cls.getInstanceShape()) {
+                        return trace(new PythonObject(cls, cached.get()));
+                    } else {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        cachedInstanceShape = null;
+                    }
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    cachedInstanceShape = Optional.of(cls.getInstanceShape());
+                }
+            }
+            return trace(new PythonObject(cls, cls.getInstanceShape()));
+        }
     }
 
     public PythonNativeObject createNativeObjectWrapper(Object obj) {
@@ -177,9 +201,18 @@ public abstract class PythonObjectFactory extends Node {
     /*
      * Primitive types
      */
+    @CompilationFinal PInt pyTrue = null;
+    @CompilationFinal PInt pyFalse = null;
 
     public PInt createInt(boolean value) {
-        return trace(new PInt(lookupClass(PythonBuiltinClassType.PInt), value ? BigInteger.ONE : BigInteger.ZERO));
+        if (value && pyTrue == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            pyTrue = new PInt(lookupClass(PythonBuiltinClassType.Boolean), BigInteger.ONE);
+        } else if (!value && pyFalse == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            pyFalse = new PInt(lookupClass(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
+        }
+        return value ? pyTrue : pyFalse;
     }
 
     public PInt createInt(int value) {

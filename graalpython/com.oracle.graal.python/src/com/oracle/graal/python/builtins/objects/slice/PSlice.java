@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -100,98 +100,54 @@ public class PSlice extends PythonBuiltinObject {
         int newStart = this.start;
         int newStop = this.stop;
         int newStep = this.step;
+        int tmpStart, tmpStop;
+        int newLen;
 
-        if (newStep == 0) {
-            CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(ValueError, "slice step cannot be zero");
-        }
-
-        if (newStart == MISSING_INDEX && newStep == MISSING_INDEX) {
-
-            newStart = 0;
-
-            if (newStop < 0) {
-                newStop += len;
-            }
-            if (newStop < 0) {
-                newStop = -1;
-            }
-            if (newStop > len) {
-                newStop = len;
-            }
-
-            if (newStop < newStart) {
-                newStop = newStart;
-            }
+        if (newStep == MISSING_INDEX) {
             newStep = 1;
-        } else if (newStop == MISSING_INDEX && newStep == MISSING_INDEX) {
+        } else {
+            if (newStep == 0) {
+                CompilerDirectives.transferToInterpreter();
+                throw PythonLanguage.getCore().raise(ValueError, "slice step cannot be zero");
+            }
+        }
+        tmpStart = newStep < 0 ? len - 1 : 0;
+        tmpStop = newStep < 0 ? -1 : len;
 
+        if (newStart == MISSING_INDEX) {
+            newStart = tmpStart;
+        } else {
             if (newStart < 0) {
                 newStart += len;
             }
             if (newStart < 0) {
-                newStart = 0;
+                newStart = newStep < 0 ? -1 : 0;
             }
             if (newStart >= len) {
-                newStart = len;
+                newStart = newStep < 0 ? len - 1 : len;
             }
-
-            newStop = len;
-
-            if (newStop < newStart) {
-                newStop = newStart;
-            }
-            newStep = 1;
+        }
+        if (newStop == MISSING_INDEX) {
+            newStop = tmpStop;
         } else {
-            if (newStart == MISSING_INDEX) {
-                newStart = newStep < 0 ? len - 1 : 0;
-            } else {
-                if (newStart < 0) {
-                    newStart += len;
-                }
-                if (newStart < 0) {
-                    newStart = newStep < 0 ? -1 : 0;
-                }
-                if (newStart >= len) {
-                    newStart = newStep < 0 ? len - 1 : len;
-                }
+            if (newStop < 0) {
+                newStop += len;
             }
-
-            if (newStop == MISSING_INDEX) {
-                newStop = newStep < 0 ? -1 : len;
-            } else {
-                if (newStop < 0) {
-                    newStop += len;
-                }
-                if (newStop < 0) {
-                    newStop = -1;
-                }
-                if (newStop > len) {
-                    newStop = len;
-                }
+            if (newStop < 0) {
+                newStop = newStep < 0 ? -1 : 0;
             }
-
-            if (newStep > 0 && newStop < newStart) {
-                newStop = newStart;
+            if (newStop >= len) {
+                newStop = newStep < 0 ? len - 1 : len;
             }
         }
-
-        int length;
-        if (newStep > 0) {
-            length = (newStop - newStart + newStep - 1) / newStep;
+        if ((newStep < 0 && newStop >= newStart) || (newStep > 0 && newStart >= newStop)) {
+            newLen = 0;
+        } else if (newStep < 0) {
+            newLen = (newStop - newStart + 1) / newStep + 1;
         } else {
-            if (newStep == MISSING_INDEX) {
-                newStep = 1;
-                length = newStop - newStart;
-            } else {
-                length = (newStop - newStart + newStep + 1) / newStep;
-            }
+            newLen = (newStop - newStart - 1) / newStep + 1;
         }
-        if (length < 0) {
-            length = 0;
-        }
-
-        return new SliceInfo(newStart, newStop, newStep, length);
+        return new SliceInfo(newStart, newStop, newStep, newLen);
     }
 
     /**

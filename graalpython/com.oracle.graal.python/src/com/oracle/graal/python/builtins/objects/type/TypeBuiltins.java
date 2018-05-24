@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -39,6 +39,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -51,8 +52,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -147,14 +148,14 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        protected Object doIt(@SuppressWarnings("unused") PythonClass self, PTuple arguments, PKeyword[] keywords,
+        protected Object doIt(@SuppressWarnings("unused") PythonClass self, Object[] arguments, PKeyword[] keywords,
                         @Cached("self") PythonClass cachedSelf) {
-            return op(cachedSelf, arguments.getArray(), keywords, true);
+            return op(cachedSelf, arguments, keywords, true);
         }
 
         @Specialization(replaces = "doIt")
-        protected Object doItIndirect(PythonClass self, PTuple arguments, PKeyword[] keywords) {
-            return op(self, arguments.getArray(), keywords, true);
+        protected Object doItIndirect(PythonClass self, Object[] arguments, PKeyword[] keywords) {
+            return op(self, arguments, keywords, true);
         }
 
         private Object op(PythonClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
@@ -414,7 +415,19 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean instanceCheck(PythonClass cls, Object derived) {
-            return isSubtypeNode.execute(derived, cls);
+            return cls == derived || isSubtypeNode.execute(derived, cls);
+        }
+    }
+
+    @Builtin(name = __SUBCLASSES__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    static abstract class SubclassesNode extends PythonBinaryBuiltinNode {
+        @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
+
+        @Specialization
+        PList getSubclasses(PythonClass cls) {
+            // TODO: missing: keep track of subclasses
+            return factory().createList(cls.getSubClasses().toArray());
         }
     }
 }

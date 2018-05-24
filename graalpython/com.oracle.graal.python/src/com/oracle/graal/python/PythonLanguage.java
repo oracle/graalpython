@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -26,7 +26,7 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.nio.file.InvalidPathException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import org.graalvm.options.OptionDescriptors;
@@ -70,7 +70,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false)
-@ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, DebuggerTags.AlwaysHalt.class})
+@ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, DebuggerTags.AlwaysHalt.class})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static final String ID = "python";
@@ -95,6 +95,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
+    protected void finalizeContext(PythonContext context) {
+        context.runShutdownHooks();
+        super.finalizeContext(context);
+    }
+
+    @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
         ensureHomeInOptions(newEnv);
         if (!optionsAllowPreInitializedContext(context, newEnv)) {
@@ -112,7 +118,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         // Verify that the option for using a shared core is the same as
         // at image building time
         final boolean useSharedCore = newEnv.getOptions().get(PythonOptions.SharedCore);
-        return context.getCore().hasSingletonContext() == !useSharedCore;
+        boolean canUsePreinitializedContext = context.getCore().hasSingletonContext() == !useSharedCore;
+        if (canUsePreinitializedContext) {
+            PythonCore.writeInfo(newEnv, "Using preinitialized context.");
+        } else {
+            PythonCore.writeInfo(newEnv, "Not using preinitialized context.");
+        }
+        return canUsePreinitializedContext;
     }
 
     @Override
@@ -132,15 +144,26 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
 
+        PythonCore.writeInfo(env, (MessageFormat.format("Initial locations:" +
+                        "\n\tLanguage home: {0}" +
+                        "\n\tSysPrefix: {1}" +
+                        "\n\tCoreHome: {2}" +
+                        "\n\tStdLibHome: {3}", languageHome, sysPrefix, coreHome, stdLibHome)));
+
         TruffleFile home = null;
         if (languageHome != null) {
             home = env.getTruffleFile(languageHome);
-            try {
-                if (home.resolveSibling("graalpython-zip").exists()) {
-                    home = home.resolveSibling("graalpython-zip");
+        }
+
+        try {
+            String envHome = System.getenv("GRAAL_PYTHONHOME");
+            if (envHome != null) {
+                TruffleFile envHomeFile = env.getTruffleFile(envHome);
+                if (envHomeFile.isDirectory()) {
+                    home = envHomeFile;
                 }
-            } catch (SecurityException | InvalidPathException t) {
             }
+        } catch (SecurityException e) {
         }
 
         if (home != null) {
@@ -177,6 +200,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 }
                 env.getOptions().set(PythonOptions.StdLibHome, stdLibHome);
             }
+
+            PythonCore.writeInfo(env, (MessageFormat.format("Updated locations:" +
+                            "\n\tLanguage home: {0}" +
+                            "\n\tSysPrefix: {1}" +
+                            "\n\tCoreHome: {2}" +
+                            "\n\tStdLibHome: {3}", home.getPath(), sysPrefix, coreHome, stdLibHome)));
         }
     }
 
@@ -284,7 +313,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected Object findMetaObject(PythonContext context, Object value) {
         if (value != null) {
             if (value instanceof PythonObject) {
-                return ((PythonObject) value).asPythonClass().getName();
+                return ((PythonObject) value).asPythonClass();
             } else if (value instanceof PythonAbstractObject ||
                             value instanceof Number ||
                             value instanceof String ||
@@ -310,14 +339,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         for (Scope s : super.findLocalScopes(context, node, frame)) {
             scopes.add(s);
         }
-        PythonObject globals = PArguments.getGlobals(frame);
-        if (globals != null) {
-            scopes.add(Scope.newBuilder("globals()", globals).build());
-        }
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        if (generatorFrame != null) {
-            for (Scope s : super.findLocalScopes(context, node, generatorFrame)) {
-                scopes.add(s);
+        if (frame != null) {
+            PythonObject globals = PArguments.getGlobals(frame);
+            if (globals != null) {
+                scopes.add(Scope.newBuilder("globals()", globals).build());
+            }
+            Frame generatorFrame = PArguments.getGeneratorFrame(frame);
+            if (generatorFrame != null) {
+                for (Scope s : super.findLocalScopes(context, node, generatorFrame)) {
+                    scopes.add(s);
+                }
             }
         }
         return scopes;
@@ -327,6 +358,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected Iterable<Scope> findTopScopes(PythonContext context) {
         ArrayList<Scope> scopes = new ArrayList<>();
         scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
+        scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
         return scopes;
     }
 

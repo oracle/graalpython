@@ -1,5 +1,5 @@
 {
-  overlay: "fe68531f163967a8bef53a3c5569dc675133ef96",
+  overlay: "4c51f4dae2d670a4895aaafbe47780ac2541c008",
 
   // ======================================================================================================
   // 
@@ -201,15 +201,18 @@
     baseGraalGate + {tags:: "python-"+type} + getPlatform(platform) + {name: "python-"+ type +"-"+platform},
 
   local styleGate = baseGraalGate + eclipseMixin + linuxMixin + {
-    tags:: "style,fullbuild,license",
+    tags:: "style,fullbuild,python-license",
     name: "python-style",
 
     timelimit: TIME_LIMIT["1h"],
   },
 
-  local svmImportGate = function(source, platform="linux") 
-    local type = (if (source == true) then "source" else "binary");
-    baseGate + getPlatform(platform) + {name: "python-svm-"+ type + "-import", tags:: "python-svm-" + type},
+  local graalVmGate = baseGraalGate + linuxMixin {
+    tags:: "python-graalvm",
+    name: "python-graalvm",
+
+    timelimit: TIME_LIMIT["1h"],
+  },
 
   // ------------------------------------------------------------------------------------------------------
   //
@@ -246,10 +249,8 @@
     // style 
     styleGate,
 
-    // svm builder gates 
-    svmImportGate(source=true),
-    // TODO temporarily disabled
-    // svmImportGate(source=false),
+    // graalvm gates
+    graalVmGate,
 
     // deploy binaries 
     deployGate(platform="linux"),

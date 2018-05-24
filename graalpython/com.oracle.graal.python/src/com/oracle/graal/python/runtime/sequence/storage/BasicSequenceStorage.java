@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,6 +38,11 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
         return length;
     }
 
+    @Override
+    public void setNewLength(int length) {
+        this.length = length;
+    }
+
     /**
      * The capacity we should allocate for a given length.
      */
@@ -49,7 +54,8 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
      * Ensure that the current capacity is big enough. If not, we increase capacity to the next
      * designated size (not necessarily the requested one).
      */
-    protected void ensureCapacity(int newCapacity) {
+    @Override
+    public void ensureCapacity(int newCapacity) {
         if (newCapacity > capacity) {
             increaseCapacityExactWithCopy(capacityFor(newCapacity));
         }

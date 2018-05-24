@@ -38,41 +38,42 @@
  */
 #include "capi.h"
 
+PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS);
+
+void* PyTruffle_Unicode_FromString(const char* o) {
+    return truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromString", polyglot_from_string(o, "utf-8"));
+}
+
 PyObject* PyUnicode_FromString(const char* o) {
-	// TODO probably also use 'PyTruffle_Unicode_FromUTF8'
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromString", truffle_read_string(o)));
+    return to_sulong(PyTruffle_Unicode_FromString(o));
 }
 
 static PyObject* _PyUnicode_FromUTF8(const char* o) {
-	PyObject *s = PyTruffle_Unicode_FromUTF8(o, ERROR_MARKER);
-	if(s == ERROR_MARKER) {
-		return NULL;
-	}
-    return to_sulong(s);
+    return to_sulong(polyglot_from_string(o, "utf-8"));
 }
 
 PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
-	if (size < 0) {
-		PyErr_SetString(PyExc_SystemError, "Negative size passed to PyUnicode_FromStringAndSize");
+    if (size < 0) {
+        PyErr_SetString(PyExc_SystemError, "Negative size passed to PyUnicode_FromStringAndSize");
         return NULL;
     }
     return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromString", truffle_read_n_string(u, size)));
 }
 
-PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
+PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
     char** allocated_strings = calloc(sizeof(char*), s);
-#   define ASSIGN(n, value)            \
-    switch(n) {                        \
-    case 0: v0 = value; break;         \
-    case 1: v1 = value; break;         \
-    case 2: v2 = value; break;         \
-    case 3: v3 = value; break;         \
-    case 4: v4 = value; break;         \
-    case 5: v5 = value; break;         \
-    case 6: v6 = value; break;         \
-    case 7: v7 = value; break;         \
-    case 8: v8 = value; break;         \
-    case 9: v9 = value; break;         \
+#   define ASSIGN(n, value)                     \
+    switch(n) {                                 \
+    case 0: v0 = value; break;                  \
+    case 1: v1 = value; break;                  \
+    case 2: v2 = value; break;                  \
+    case 3: v3 = value; break;                  \
+    case 4: v4 = value; break;                  \
+    case 5: v5 = value; break;                  \
+    case 6: v6 = value; break;                  \
+    case 7: v7 = value; break;                  \
+    case 8: v8 = value; break;                  \
+    case 9: v9 = value; break;                  \
     }
 
     char* fmtcpy = strdup(fmt);
@@ -129,8 +130,8 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
 
 
 PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
-	PyObject *result;
-	int i;
+    PyObject *result;
+    int i;
     result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_FromWchar", truffle_read_n_bytes((char *)u, size * Py_UNICODE_SIZE), Py_UNICODE_SIZE, ERROR_MARKER);
     if (result == ERROR_MARKER) {
     	return NULL;
@@ -139,12 +140,12 @@ PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
 }
 
 PyObject* PyUnicode_FromObject(PyObject* o) {
-     PyObject *result;
-     result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromObject", to_java(o), ERROR_MARKER);
-     if (result == ERROR_MARKER) {
-    	 return NULL;
-     }
-     return to_sulong(result);
+    PyObject *result;
+    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromObject", to_java(o));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return to_sulong(result);
 }
 
 Py_ssize_t PyUnicode_GetLength(PyObject *unicode) {
@@ -152,28 +153,28 @@ Py_ssize_t PyUnicode_GetLength(PyObject *unicode) {
 }
 
 PyObject * PyUnicode_Concat(PyObject *left, PyObject *right) {
-     PyObject *result;
-     result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_Concat", to_java(left), to_java(right), ERROR_MARKER);
-     if (result == ERROR_MARKER) {
-    	 return NULL;
-     }
-     return to_sulong(result);
+    PyObject *result;
+    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_Concat", to_java(left), to_java(right));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return to_sulong(result);
 }
 
 PyObject * PyUnicode_FromEncodedObject(PyObject *obj, const char *encoding, const char *errors) {
-     PyObject *result;
-     result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromEncodedObject", to_java(obj), truffle_read_string(encoding), truffle_read_string(errors), ERROR_MARKER);
-     if (result == ERROR_MARKER) {
-    	 return NULL;
-     }
+    PyObject *result;
+    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromEncodedObject", to_java(obj), truffle_read_string(encoding), truffle_read_string(errors));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
 
-     // TODO buffer treatment
-     return to_sulong(result);
+    // TODO buffer treatment
+    return to_sulong(result);
 }
 
 void PyUnicode_InternInPlace(PyObject **s) {
-     PyObject *interned = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_InternInPlace", to_java(*s));
-     *s = interned;
+    PyObject *interned = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_InternInPlace", to_java(*s));
+    *s = to_sulong(interned);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -192,25 +193,25 @@ char* PyUnicode_AsUTF8(PyObject *unicode) {
 }
 
 char* PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize) {
-     PyObject *result;
-     result = _PyUnicode_AsUTF8String(unicode, NULL);
-     if (psize) {
-    	 *psize = PyObject_Length(result);
-     }
-     return PyBytes_AsString(result);
+    PyObject *result;
+    result = _PyUnicode_AsUTF8String(unicode, NULL);
+    if (psize) {
+        *psize = PyObject_Length(result);
+    }
+    return PyBytes_AsString(result);
 }
 
 PyObject* _PyUnicode_AsUTF8String(PyObject *unicode, const char *errors) {
-     PyObject *result;
-     void *jerrors = NULL;
-     if (errors != NULL) {
-    	 jerrors = truffle_read_string(errors);
-     }
-     result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyUnicode_AsUTF8String", to_java(unicode), to_java(jerrors), ERROR_MARKER);
-     if (result == ERROR_MARKER) {
-    	 return NULL;
-     }
-     return to_sulong(result);
+    PyObject *result;
+    void *jerrors = NULL;
+    if (errors != NULL) {
+        jerrors = truffle_read_string(errors);
+    }
+    result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyUnicode_AsUTF8String", to_java(unicode), to_java(jerrors), ERROR_MARKER);
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return to_sulong(result);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -219,29 +220,29 @@ PyObject * PyUnicode_AsUTF8String(PyObject *unicode) {
 }
 
 PyObject * PyUnicode_DecodeUTF32(const char *s, Py_ssize_t size, const char *errors, int *byteorder) {
-	PyObject *result;
-	void *jerrors = NULL;
-	if (errors != NULL) {
-		jerrors = truffle_read_string(errors);
-	}
-	int bo = 0;
+    PyObject *result;
+    void *jerrors = NULL;
+    if (errors != NULL) {
+        jerrors = truffle_read_string(errors);
+    }
+    int bo = 0;
     if (byteorder != NULL) {
         bo = *byteorder;
     }
-	result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_DecodeUTF32", truffle_read_n_bytes(s, size), to_java(jerrors), bo, ERROR_MARKER);
-	return to_sulong(result);
+    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_DecodeUTF32", truffle_read_n_bytes(s, size), to_java(jerrors), bo, ERROR_MARKER);
+    return to_sulong(result);
 }
 
 Py_ssize_t PyUnicode_AsWideChar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
     PyObject* result;
     Py_ssize_t n;
     char* data;
-	int i;
+    int i;
     if (unicode == NULL) {
         PyErr_BadInternalCall();
         return -1;
     }
-	result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_AsWideChar", to_java(unicode), SIZEOF_WCHAR_T, size, ERROR_MARKER);
+    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_AsWideChar", to_java(unicode), SIZEOF_WCHAR_T, size, ERROR_MARKER);
     if (result == ERROR_MARKER) {
     	return -1;
     }
@@ -249,20 +250,20 @@ Py_ssize_t PyUnicode_AsWideChar(PyObject *unicode, wchar_t *w, Py_ssize_t size) 
     data = PyBytes_AsString(n_result);
     n = PyBytes_Size(n_result);
     memcpy(w, data, n);
-	return n / SIZEOF_WCHAR_T;
+    return n / SIZEOF_WCHAR_T;
 }
 
 PyObject * _PyUnicode_AsLatin1String(PyObject *unicode, const char *errors) {
-     PyObject *result;
-     void *jerrors = NULL;
-     if (errors != NULL) {
-    	 jerrors = truffle_read_string(errors);
-     }
-     result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyTruffle_Unicode_AsLatin1String", to_java(unicode), to_java(jerrors), ERROR_MARKER);
-     if (result == ERROR_MARKER) {
-    	 return NULL;
-     }
-     return to_sulong(result);
+    PyObject *result;
+    void *jerrors = NULL;
+    if (errors != NULL) {
+        jerrors = truffle_read_string(errors);
+    }
+    result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyTruffle_Unicode_AsLatin1String", to_java(unicode), to_java(jerrors), ERROR_MARKER);
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return to_sulong(result);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -271,16 +272,16 @@ PyObject* PyUnicode_AsLatin1String(PyObject *unicode) {
 }
 
 PyObject * _PyUnicode_AsASCIIString(PyObject *unicode, const char *errors) {
-     PyObject *result;
-     void *jerrors = NULL;
-     if (errors != NULL) {
-    	 jerrors = truffle_read_string(errors);
-     }
-     result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyTruffle_Unicode_AsASCIIString", to_java(unicode), to_java(jerrors), ERROR_MARKER);
-     if (result == ERROR_MARKER) {
-    	 return NULL;
-     }
-     return to_sulong(result);
+    PyObject *result;
+    void *jerrors = NULL;
+    if (errors != NULL) {
+        jerrors = truffle_read_string(errors);
+    }
+    result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyTruffle_Unicode_AsASCIIString", to_java(unicode), to_java(jerrors), ERROR_MARKER);
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return to_sulong(result);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -289,11 +290,11 @@ PyObject * PyUnicode_AsASCIIString(PyObject *unicode) {
 }
 
 PyObject * PyUnicode_Format(PyObject *format, PyObject *args) {
-	if (format == NULL || args == NULL) {
+    if (format == NULL || args == NULL) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_Format", to_java(format), to_java(args), ERROR_MARKER);
+    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_Format", to_java(format), to_java(args));
     if (result == ERROR_MARKER) {
     	return NULL;
     }

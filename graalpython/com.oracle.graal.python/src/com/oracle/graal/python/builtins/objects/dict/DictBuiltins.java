@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.ContainsKeyNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -90,21 +89,21 @@ public final class DictBuiltins extends PythonBuiltins {
             return initNode;
         }
 
-        @Specialization(guards = "args.len() == 1")
-        public Object doVarargs(PDict self, PTuple args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            getInitNode().execute(self, args.getItem(0), PKeyword.EMPTY_KEYWORDS);
+        @Specialization(guards = "args.length == 1")
+        public Object doVarargs(PDict self, Object[] args, PKeyword[] kwargs) {
+            getInitNode().execute(self, args[0], kwargs);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "args.len() == 0")
-        public Object doKeywords(PDict self, @SuppressWarnings("unused") PTuple args, PKeyword[] kwargs) {
+        @Specialization(guards = "args.length == 0")
+        public Object doKeywords(PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs) {
             getInitNode().execute(self, NO_VALUE, kwargs);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "args.len() > 1")
-        public Object doGeneric(@SuppressWarnings("unused") PDict self, PTuple args, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            throw raise(TypeError, "dict expected at most 1 arguments, got %d", args.len());
+        @Specialization(guards = "args.length > 1")
+        public Object doGeneric(@SuppressWarnings("unused") PDict self, Object[] args, @SuppressWarnings("unused") PKeyword[] kwargs) {
+            throw raise(TypeError, "dict expected at most 1 arguments, got %d", args.length);
         }
     }
 

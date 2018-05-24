@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -32,6 +32,7 @@ public final class PLongSequenceIterator extends PLongIterator {
 
     final LongSequenceStorage sequence;
     int index;
+    protected boolean stopIterationReached = false;
 
     public PLongSequenceIterator(PythonClass clazz, LongSequenceStorage sequence) {
         super(clazz);

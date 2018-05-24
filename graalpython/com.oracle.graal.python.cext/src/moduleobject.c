@@ -38,6 +38,8 @@
  */
 #include "capi.h"
 
+PyTypeObject PyModule_Type = PY_TRUFFLE_TYPE("module", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE);
+
 /* Modules */
 int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     if (!methods) {
@@ -53,7 +55,7 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
                        truffle_read_string((const char*)(def.ml_name)),
                        truffle_address_to_function(def.ml_meth),
                        get_method_flags_wrapper(def.ml_flags),
-                       truffle_read_string((const char*)(def.ml_doc)));
+                       truffle_read_string((const char*)(def.ml_doc ? def.ml_doc : "")));
         def = methods[++idx];
     }
     return 0;
@@ -72,7 +74,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         return NULL;
     }
 
-    PyObject* mod = truffle_invoke(PY_TRUFFLE_CEXT, "_PyModule_CreateInitialized_PyModule_New", truffle_read_string(moduledef->m_name));
+    PyObject* mod = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "_PyModule_CreateInitialized_PyModule_New", truffle_read_string(moduledef->m_name)));
 
     if (moduledef->m_size > 0) {
         void* md_state = PyMem_MALLOC(moduledef->m_size);
@@ -105,6 +107,19 @@ int PyModule_AddObject(PyObject* m, const char* k, PyObject* v) {
     return 0;
 }
 
+int PyModule_AddIntConstant(PyObject* m, const char* k, long constant) {
+    truffle_invoke(PY_TRUFFLE_CEXT, "PyModule_AddObject", to_java(m), truffle_read_string(k), constant);
+    return 0;
+}
+
 PyObject* PyModule_Create2(PyModuleDef* moduledef, int apiversion) {
     return _PyModule_CreateInitialized(moduledef, apiversion);
+}
+
+PyObject* PyModule_GetDict(PyObject* o) {
+    if (!PyModule_Check(o)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    return ((PyModuleObject*)polyglot_as_PyModuleObject(o))->md_dict;
 }

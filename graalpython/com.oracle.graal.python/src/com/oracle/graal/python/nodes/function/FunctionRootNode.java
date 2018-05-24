@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,8 +28,8 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -45,10 +45,9 @@ import com.oracle.truffle.api.source.SourceSection;
 /**
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
-public class FunctionRootNode extends PRootNode implements CellSupplier {
+public class FunctionRootNode extends PClosureRootNode implements CellSupplier {
 
     @CompilationFinal(dimensions = 1) private final FrameSlot[] cellVarSlots;
-    @CompilationFinal(dimensions = 1) private final FrameSlot[] freeVarSlots;
     private final PCell[] cells;
 
     private final ExecutionCellSlots executionCellSlots;
@@ -61,16 +60,16 @@ public class FunctionRootNode extends PRootNode implements CellSupplier {
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, PNode body,
                     ExecutionCellSlots executionCellSlots) {
-        super(language, frameDescriptor);
+        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots());
+        this.executionCellSlots = executionCellSlots;
+        this.cellVarSlots = executionCellSlots.getCellVarSlots();
+        this.cells = new PCell[this.cellVarSlots.length];
+
         this.sourceSection = sourceSection;
         assert sourceSection != null;
         this.functionName = functionName;
         this.isGenerator = isGenerator;
         this.body = NodeUtil.cloneNode(body);
-        this.executionCellSlots = executionCellSlots;
-        this.cellVarSlots = executionCellSlots.getCellVarSlots();
-        this.freeVarSlots = executionCellSlots.getFreeVarSlots();
-        this.cells = new PCell[this.cellVarSlots.length];
         this.uninitializedBody = NodeUtil.cloneNode(body);
     }
 
@@ -113,8 +112,8 @@ public class FunctionRootNode extends PRootNode implements CellSupplier {
     }
 
     @Override
-    public ExecutionCellSlots getCellSlots() {
-        return executionCellSlots;
+    public FrameSlot[] getCellVarSlots() {
+        return cellVarSlots;
     }
 
     @Override
@@ -139,16 +138,6 @@ public class FunctionRootNode extends PRootNode implements CellSupplier {
             // store the cell as a local var
             frame.setObject(frameSlot, cell);
             this.cells[i] = cell;
-        }
-    }
-
-    private void addClosureCellsToLocals(Frame frame) {
-        PCell[] closure = PArguments.getClosure(frame);
-        if (closure != null) {
-            assert closure.length == freeVarSlots.length : "function root node: the closure must have the same length as the free var slots array";
-            for (int i = 0; i < closure.length; i++) {
-                frame.setObject(freeVarSlots[i], closure[i]);
-            }
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
@@ -50,7 +51,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cpyobject.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -65,6 +66,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -422,6 +424,23 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Fallback
         Object formatFail(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object formatSpec) {
             throw raise(TypeError, "format_spec must be a string");
+        }
+    }
+
+    @Builtin(name = RICHCMP, fixedNumOfArguments = 3)
+    @GenerateNodeFactory
+    static abstract class RichCompareNode extends PythonTernaryBuiltinNode {
+        protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
+
+        protected BinaryComparisonNode createOp(String op) {
+            return (BinaryComparisonNode) getContext().getLanguage().getNodeFactory().createComparisonOperation(op, null, null);
+        }
+
+        @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")
+        boolean richcmp(Object left, Object right, @SuppressWarnings("unused") String op,
+                        @SuppressWarnings("unused") @Cached("op") String cachedOp,
+                        @Cached("createOp(op)") BinaryComparisonNode node) {
+            return node.executeBool(left, right);
         }
     }
 }

@@ -1,6 +1,40 @@
 # Copyright (c) 2018, Oracle and/or its affiliates.
 #
-# All rights reserved.
+# The Universal Permissive License (UPL), Version 1.0
+#
+# Subject to the condition set forth below, permission is hereby granted to any
+# person obtaining a copy of this software, associated documentation and/or data
+# (collectively the "Software"), free of charge and under any and all copyright
+# rights in the Software, and any and all patent rights owned or freely
+# licensable by each licensor hereunder covering either (i) the unmodified
+# Software as contributed to or provided by such licensor, or (ii) the Larger
+# Works (as defined below), to deal in both
+#
+# (a) the Software, and
+# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+#     one is included with the Software (each a "Larger Work" to which the
+#     Software is contributed by such licensors),
+#
+# without restriction, including without limitation the rights to copy, create
+# derivative works of, display, perform, and distribute the Software and make,
+# use, sell, offer for sale, import, export, have made, and have sold the
+# Software and the Larger Work(s), and to sublicense the foregoing rights on
+# either these or other terms.
+#
+# This license is subject to the following condition:
+#
+# The above copyright notice and either this complete permission notice or at a
+# minimum a reference to the UPL must be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import sys
 import warnings
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, CPyExtFunctionVoid, unhandled_error_compare, GRAALPYTHON
@@ -16,7 +50,7 @@ def _reference_setnone(args):
 
 
 def _reference_format(args):
-    raise args[0](args[1] % args[2:])
+    raise args[0](args[1].lower() % args[2:])
 
 
 def _is_exception_class(exc):
@@ -65,7 +99,7 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_SetObject = CPyExtFunctionVoid(
         _reference_setstring,
         lambda: (
@@ -79,7 +113,7 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_SetNone = CPyExtFunctionVoid(
         _reference_setnone,
         lambda: (
@@ -97,10 +131,10 @@ class TestPyNumber(CPyExtTestCase):
     test_PyErr_Format = CPyExtFunctionVoid(
         _reference_format,
         lambda: (
-            (ValueError, "hello %s %s", "", ""),
-            (TypeError, "world %s %s", "", ""),
-            (KeyError, "key %s %s", "", ""),
-            (KeyError, "unknown key: %s %s", "some_key", ""),
+            (ValueError, "hello %S %S", "beautiful", "world"),
+            (TypeError, "world %S %S", "", ""),
+            (KeyError, "key %S %S", "", ""),
+            (KeyError, "unknown key: %S %S", "some_key", ""),
         ),
         resultspec="O",
         argspec='OsOO',
@@ -126,7 +160,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_PrintEx",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_GivenExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
         lambda: (
@@ -145,7 +179,7 @@ class TestPyNumber(CPyExtTestCase):
         arguments=["PyObject* err", "PyObject* exc"],
         cmpfunc=unhandled_error_compare
     )
-    
+ 
     test_PyErr_Occurred = CPyExtFunction(
         lambda args: args[0] if _is_exception_class(args[0]) else SystemError,
         lambda: (
@@ -168,7 +202,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_Occurred",
         cmpfunc=unhandled_error_compare
     )
-    
+ 
     test_PyErr_ExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
         lambda: (
@@ -193,7 +227,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_ExceptionMatches",
         cmpfunc=unhandled_error_compare
     )
-    
+ 
     test_PyErr_WarnEx = CPyExtFunctionVoid(
         lambda args: warnings.warn(args[1], args[0], args[2]),
         lambda: (
@@ -204,7 +238,7 @@ class TestPyNumber(CPyExtTestCase):
         arguments=["PyObject* category", "char* msg", "Py_ssize_t level"],
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_NoMemory = CPyExtFunctionVoid(
         _reference_nomemory,
         lambda: (
@@ -217,7 +251,7 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
-
+ 
     test_PyErr_WriteUnraisable = CPyExtFunctionVoid(
         lambda args: None,
         lambda: (

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -72,7 +72,7 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
     public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
         Object[] newArray = new Object[length];
         if (step == 1) {
-            System.arraycopy(array, start, newArray, 0, stop - start);
+            System.arraycopy(array, start, newArray, 0, length);
             return factory.createTuple(newArray);
         }
         for (int i = start, j = 0; j < length; i += step, j++) {

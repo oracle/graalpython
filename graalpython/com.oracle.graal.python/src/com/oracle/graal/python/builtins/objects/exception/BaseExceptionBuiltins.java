@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -61,8 +62,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
-        Object init(PBaseException self, PTuple args) {
-            self.setArgs(args);
+        Object init(PBaseException self, Object[] args) {
+            self.setArgs(factory().createTuple(args));
             return PNone.NONE;
         }
     }
@@ -154,6 +155,23 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization
         public Object traceback(PBaseException self) {
             return self.getTraceback(factory());
+        }
+    }
+
+    @Builtin(name = "with_traceback", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class WithTracebackNode extends PythonBuiltinNode {
+
+        @Specialization
+        public Object withTraceback(PBaseException self, @SuppressWarnings("unused") PNone tb) {
+            self.clearTraceback();
+            return PNone.NONE;
+        }
+
+        @Specialization
+        public Object withTraceback(PBaseException self, PTraceback tb) {
+            self.setTraceback(tb);
+            return PNone.NONE;
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -67,29 +67,15 @@ public final class PList extends PSequence {
 
     @Override
     public final void setSlice(PSlice slice, PSequence value) {
-        setSlice(slice.getStart(), slice.getStop(), slice.getStep(), value);
+        // Should not be used. Replaces with ListNodes.SetSliceNode.
+        // When it will be replaced in other PSequence implementeations,
+        // then the setSlice from PSequence can be removed.
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public final void setSlice(int start, int stop, int step, PSequence value) {
-        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length(), "list assignment index out of range");
-        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length(), "list assignment index out of range");
-
-        if (normalizedStop < normalizedStart) {
-            normalizedStop = normalizedStart;
-        }
-
-        try {
-            store.setSliceInBound(normalizedStart, normalizedStop, step, value.getSequenceStorage());
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value.getSequenceStorage().getIndicativeValue());
-
-            try {
-                store.setSliceInBound(start, stop, step, value.getSequenceStorage());
-            } catch (SequenceStoreException ex) {
-                throw new IllegalStateException();
-            }
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -99,9 +85,12 @@ public final class PList extends PSequence {
     }
 
     public final void delSlice(PSlice slice) {
-        int start = SequenceUtil.normalizeSliceStart(slice, store.length(), "list index out of range");
-        final int stop = SequenceUtil.normalizeSliceStop(slice, store.length(), "list index out of range");
-        store.delSlice(start, stop);
+        PSlice.SliceInfo sliceInfo = slice.computeActualIndices(this.len());
+        store.delSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step);
+    }
+
+    public final void clear() {
+        store.delSlice(0, store.length(), 1);
     }
 
     @Override
@@ -233,7 +222,9 @@ public final class PList extends PSequence {
         if (!(other instanceof PList)) {
             return false;
         }
-
+        if (this == other) {
+            return true;
+        }
         PList otherList = (PList) other;
         SequenceStorage otherStore = otherList.getSequenceStorage();
         return store.equals(otherStore);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
@@ -34,7 +36,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -76,12 +77,22 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
         Object doGeneric(Object self) {
             throw raise(TypeError, "unhashable type: '%p'", self);
+        }
+    }
+
+    @Builtin(name = __OR__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class SetOrNode extends PythonBuiltinNode {
+        @Specialization
+        Object doSet(PBaseSet self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
+            return factory().createSet(unionNode.execute(self.getDictStorage(), other.getDictStorage()));
         }
     }
 
@@ -92,7 +103,7 @@ public final class SetBuiltins extends PythonBuiltins {
         Object remove(PBaseSet self, Object other,
                         @Cached("create()") HashingStorageNodes.DelItemNode delItemNode) {
 
-            if (delItemNode.execute(self, self.getDictStorage(), other)) {
+            if (!delItemNode.execute(self, self.getDictStorage(), other)) {
                 throw raise(PythonErrorType.KeyError, "%s", other);
             }
             return PNone.NONE;

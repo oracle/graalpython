@@ -1,3 +1,8 @@
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 
 /* Interfaces to parse and execute pieces of python code */
 
@@ -190,6 +195,12 @@ PyAPI_DATA(PyThreadState*) _PyOS_ReadlineTState;
 /* Check that we aren't overflowing our stack */
 PyAPI_FUNC(int) PyOS_CheckStack(void);
 #endif
+
+// taken from compile.h
+#define Py_single_input 256
+#define Py_file_input 257
+#define Py_eval_input 258
+
 
 #ifdef __cplusplus
 }

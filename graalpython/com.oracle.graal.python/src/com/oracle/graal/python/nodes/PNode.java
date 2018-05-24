@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -46,6 +47,7 @@ public abstract class PNode extends PBaseNode implements InstrumentableNode {
     @CompilationFinal private SourceSection sourceSection;
     @CompilationFinal private boolean isStmt = false;
     @CompilationFinal private boolean isRoot = false;
+    @CompilationFinal private boolean isTryBlock = false;
 
     public NodeFactory getNodeFactory() {
         return getCore().getLanguage().getNodeFactory();
@@ -115,7 +117,7 @@ public abstract class PNode extends PBaseNode implements InstrumentableNode {
     }
 
     public boolean hasTag(Class<? extends Tag> tag) {
-        return (isStmt && tag == StandardTags.StatementTag.class) || (isRoot && tag == StandardTags.RootTag.class);
+        return (isStmt && tag == StandardTags.StatementTag.class) || (isRoot && tag == StandardTags.RootTag.class) || (isTryBlock && tag == StandardTags.TryBlockTag.class);
     }
 
     public WrapperNode createWrapper(ProbeNode probeNode) {
@@ -140,5 +142,25 @@ public abstract class PNode extends PBaseNode implements InstrumentableNode {
 
     public boolean isRoot() {
         return isRoot;
+    }
+
+    public void markAsTryBlock() {
+        isTryBlock = true;
+    }
+
+    public boolean isTryBlock() {
+        return isTryBlock;
+    }
+
+    public Object getNodeObject() {
+        if (isTryBlock) {
+            if (this.getParent() instanceof TryExceptNode) {
+                return this.getParent();
+            } else if (this.getParent() instanceof PNodeWrapper) {
+                assert this.getParent().getParent() instanceof TryExceptNode;
+                return this.getParent().getParent();
+            }
+        }
+        return null;
     }
 }

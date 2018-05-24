@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -1733,7 +1732,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object frombytesSignedOrNot(String str, String byteorder, PTuple args, boolean keywordArg) {
+        public Object frombytesSignedOrNot(String str, String byteorder, Object[] args, boolean keywordArg) {
             byte[] bytes = littleToBig(str.getBytes(), byteorder);
             BigInteger integer = new BigInteger(bytes);
             if (keywordArg) {
@@ -1745,7 +1744,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object frombytes(String str, String byteorder, PTuple args, PNone keywordArg) {
+        public Object frombytes(String str, String byteorder, Object[] args, PNone keywordArg) {
             byte[] bytes = littleToBig(str.getBytes(), byteorder);
             return factory().createInt(new BigInteger(bytes));
         }

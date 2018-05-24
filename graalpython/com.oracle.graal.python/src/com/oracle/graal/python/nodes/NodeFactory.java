@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -51,10 +51,17 @@ import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
+import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
+import com.oracle.graal.python.nodes.datamodel.IsContextManagerNode;
+import com.oracle.graal.python.nodes.datamodel.IsIterableNode;
+import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
+import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
+import com.oracle.graal.python.nodes.datamodel.PDataModelEmulationNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.IsNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -132,9 +139,13 @@ public class NodeFactory {
         return (T) NodeUtil.cloneNode(orig);
     }
 
-    public ModuleNode createModule(String name, PNode body, FrameDescriptor fd) {
+    public ModuleRootNode createModuleRoot(String name, PNode body, FrameDescriptor fd) {
+        return createModuleRoot(name, body, fd, null);
+    }
+
+    public ModuleRootNode createModuleRoot(String name, PNode body, FrameDescriptor fd, FrameSlot[] freeVarSlots) {
         body.markAsRoot();
-        return new ModuleNode(language, name, body, fd);
+        return new ModuleRootNode(language, name, body, fd, freeVarSlots);
     }
 
     public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, PNode body, ExecutionCellSlots cellSlots) {
@@ -295,6 +306,39 @@ public class NodeFactory {
                 return UnaryArithmetic.Invert.create(operand);
             case "not":
                 return CastToBooleanNode.createIfFalseNode(operand);
+            default:
+                throw new RuntimeException("unexpected operation: " + string);
+        }
+    }
+
+    public PNode createInplaceOperation(String string, PNode left, PNode right) {
+        switch (string) {
+            case "+=":
+                return InplaceArithmetic.IAdd.create(left, right);
+            case "-=":
+                return InplaceArithmetic.ISub.create(left, right);
+            case "*=":
+                return InplaceArithmetic.IMul.create(left, right);
+            case "/=":
+                return InplaceArithmetic.ITrueDiv.create(left, right);
+            case "//=":
+                return InplaceArithmetic.IFloorDiv.create(left, right);
+            case "%=":
+                return InplaceArithmetic.IMod.create(left, right);
+            case "**=":
+                return InplaceArithmetic.IPow.create(left, right);
+            case "<<=":
+                return InplaceArithmetic.ILShift.create(left, right);
+            case ">>=":
+                return InplaceArithmetic.IRShift.create(left, right);
+            case "&=":
+                return InplaceArithmetic.IAnd.create(left, right);
+            case "|=":
+                return InplaceArithmetic.IOr.create(left, right);
+            case "^=":
+                return InplaceArithmetic.IXor.create(left, right);
+            case "@=":
+                return InplaceArithmetic.IMatMul.create(left, right);
             default:
                 throw new RuntimeException("unexpected operation: " + string);
         }
@@ -503,5 +547,25 @@ public class NodeFactory {
 
     public PNode createDestructuringAssignment(PNode rhs, List<ReadNode> slots, int starredIndex, PNode[] assignments) {
         return DestructuringAssignmentNode.create(rhs, slots, starredIndex, assignments);
+    }
+
+    public PDataModelEmulationNode createIsMapping() {
+        return IsMappingNode.create();
+    }
+
+    public PDataModelEmulationNode createIsSequence() {
+        return IsSequenceNode.create();
+    }
+
+    public PDataModelEmulationNode createIsContextManager() {
+        return IsContextManagerNode.create();
+    }
+
+    public PDataModelEmulationNode createIsCallable() {
+        return IsCallableNode.create();
+    }
+
+    public PDataModelEmulationNode createIsIterable() {
+        return IsIterableNode.create();
     }
 }

@@ -69,6 +69,8 @@ public abstract class SpecialMethodNames {
     public static final String __INIT_SUBCLASS__ = "__init_subclass__";
     public static final String __INSTANCECHECK__ = "__instancecheck__";
     public static final String __SUBCLASSCHECK__ = "__subclasscheck__";
+    public static final String __SUBCLASSES__ = "__subclasses__";
+    public static final String __SUBCLASSHOOK__ = "__subclasshook__";
     public static final String __CALL__ = "__call__";
     public static final String __LEN__ = "__len__";
     public static final String __LENGTH_HINT__ = "__length_hint__";
@@ -118,6 +120,7 @@ public abstract class SpecialMethodNames {
     public static final String __IDIVMOD__ = "__idivmod__";
     public static final String __IPOW__ = "__ipow__";
     public static final String __ILSHIFT__ = "__ilshift__";
+    public static final String __IRSHIFT__ = "__irshift__";
     public static final String __IAND__ = "__iand__";
     public static final String __IXOR__ = "__ixor__";
     public static final String __IOR__ = "__ior__";
@@ -137,7 +140,17 @@ public abstract class SpecialMethodNames {
     public static final String __ANEXT__ = "__anext__";
     public static final String __AENTER__ = "__aenter__";
     public static final String __AEXIT__ = "__aexit__";
+    public static final String __REDUCE__ = "__reduce__";
+    public static final String __REDUCE_EX__ = "__reduce_ex__";
+    public static final String __GETINITARGS__ = "__getinitargs__";
+    public static final String __GETNEWARGS__ = "__getnewargs__";
+    public static final String __GETSTATE__ = "__getstate__";
+    public static final String __SETSTATE__ = "__setstate__";
+    public static final String __GETFORMAT__ = "__getformat__";
+    public static final String __SETFORMAT__ = "__setformat__";
     public static final String KEYS = "keys";
     public static final String ITEMS = "items";
     public static final String VALUES = "values";
+
+    public static final String RICHCMP = "__truffle_richcompare__";
 }

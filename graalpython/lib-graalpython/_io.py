@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2017, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -21,7 +21,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
 import sys
 _warn = sys.modules["_warnings"]._warn
 _os = sys.modules.get("posix", sys.modules.get("nt"))

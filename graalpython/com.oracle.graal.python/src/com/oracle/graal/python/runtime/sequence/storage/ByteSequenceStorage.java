@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -33,7 +32,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class ByteSequenceStorage extends TypedSequenceStorage {
 
@@ -142,6 +140,11 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
+    public void copyItem(int idxTo, int idxFrom) {
+        values[idxTo] = values[idxFrom];
+    }
+
+    @Override
     public ByteSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         byte[] newArray = new byte[sliceLength];
 
@@ -200,13 +203,53 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void delSlice(int start, int stop) {
-        if (stop == SequenceUtil.MISSING_INDEX || stop >= length) {
+    public void delSlice(int startParam, int stopParam, int stepParam) {
+        int start = startParam;
+        int stop = stopParam;
+        int step = stepParam;
+        if ((stop == SequenceUtil.MISSING_INDEX || stop >= length) && step == 1) {
             length = start;
-        } else if (start == 0 && stop >= length) {
+        } else if ((start == 0 && stop >= length) && step == 1) {
             length = 0;
         } else {
-            throw PythonLanguage.getCore().raise(NotImplementedError, "delete slice not yet supported in this case: [%s: %s]", start, stop);
+            int decraseLen; // how much will be the result array shorter
+            int index;  // index of the "old" array
+            if (step < 0) {
+                // For the simplicity of algorithm, then start and stop are swapped.
+                // The start index has to recalculated according the step, because
+                // the algorithm bellow removes the start itema and then start + step ....
+                step = Math.abs(step);
+                stop++;
+                int tmpStart = stop + ((start - stop) % step);
+                stop = start + 1;
+                start = tmpStart;
+            }
+            int arrayIndex = start; // pointer to the "new" form of array
+            if (step == 1) {
+                // this is easy, just remove the part of array
+                decraseLen = stop - start;
+                index = start + decraseLen;
+            } else {
+                int nextStep = index = start; // nextStep is a pointer to the next removed item
+                decraseLen = (stop - start - 1) / step + 1;
+                for (; index < stop && nextStep < stop; index++) {
+                    if (nextStep == index) {
+                        nextStep += step;
+                    } else {
+                        values[arrayIndex++] = values[index];
+                    }
+                }
+            }
+            if (decraseLen > 0) {
+                // shift all other items in array behind the last change
+                for (; index < length; arrayIndex++, index++) {
+                    values[arrayIndex] = values[index];
+                }
+                // change the result length
+                // TODO Shouldn't we realocate the array, if the chane is big?
+                // Then unnecessary big array is kept in the memory.
+                length = length - decraseLen;
+            }
         }
     }
 
@@ -249,7 +292,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     }
 
-    @ExplodeLoop
     public int indexOfByte(byte value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -260,7 +302,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @ExplodeLoop
     public int indexOfInt(int value) {
         for (int i = 0; i < length; i++) {
             if ((values[i] & 0xFF) == value) {
@@ -303,7 +344,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    // @ExplodeLoop
     public void extendWithByteStorage(ByteSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);

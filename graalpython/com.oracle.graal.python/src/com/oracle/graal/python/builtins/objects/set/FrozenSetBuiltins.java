@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,15 +25,22 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -52,7 +59,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         return FrozenSetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -61,7 +68,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -70,7 +77,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -86,7 +93,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
@@ -107,7 +114,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__AND__, fixedNumOfArguments = 2)
+    @Builtin(name = __AND__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.IntersectNode intersectNode;
@@ -133,7 +140,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUB__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.DiffNode diffNode;
@@ -159,7 +166,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization

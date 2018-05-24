@@ -38,8 +38,11 @@
  */
 #include "capi.h"
 
+
+PyTypeObject PyList_Type = PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS);
+
 PyObject* PyList_New(Py_ssize_t size) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_New", size, ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_New", size);
     if (result == ERROR_MARKER) {
         return NULL;
     } else {
@@ -48,7 +51,7 @@ PyObject* PyList_New(Py_ssize_t size) {
 }
 
 PyObject* PyList_GetItem(PyObject *op, Py_ssize_t i) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_GetItem", to_java(op), i, ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_GetItem", to_java(op), i);
     if (result == ERROR_MARKER) {
         return NULL;
     } else {
@@ -73,7 +76,7 @@ PyObject* PyList_AsTuple(PyObject *v) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_AsTuple", to_java(v), ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_AsTuple", to_java(v));
     if (result == ERROR_MARKER) {
         return NULL;
     } else {
@@ -82,7 +85,7 @@ PyObject* PyList_AsTuple(PyObject *v) {
 }
 
 PyObject* PyList_GetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_GetSlice", to_java(a), ilow, ihigh, ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_GetSlice", to_java(a), ilow, ihigh);
     if (result == ERROR_MARKER) {
         return NULL;
     } else {

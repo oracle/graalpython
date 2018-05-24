@@ -1,3 +1,26 @@
+# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2013, Regents of the University of California
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification, are
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this list of
+# conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice, this list of
+# conditions and the following disclaimer in the documentation and/or other materials provided
+# with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+# GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+# OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 import os
 import platform
@@ -5,16 +28,17 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+
+import mx_sdk
 
 import mx
-import mx_sdk
 import mx_benchmark
 import mx_gate
 import mx_subst
 from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
-from mx_graalpython_license import update_license_headers
 from mx_unittest import unittest
 from mx_urlrewrites import _urlrewrites
 
@@ -156,7 +180,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
     internal_graalpython_args, graalpython_args, additional_dists = _extract_graalpython_internal_options(graalpython_args)
     dists += additional_dists
     if '--python.WithJavaStacktrace' not in graalpython_args:
-        graalpython_args = ['--python.WithJavaStacktrace'] + graalpython_args
+        graalpython_args.insert(0, '--python.WithJavaStacktrace')
 
     if _sulong:
         vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
@@ -169,7 +193,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
                 return os.environ.get("USER") == user and os.environ.get(home)
             return os.environ.get("USER") == user
 
-        if _is_user("tim", "MAGLEV_HOME") or _is_user("cbasca"):
+        if _is_user("tim", "MAGLEV_HOME") or _is_user("cbasca") or _is_user("fa"):
             suite_import = mx.SuiteImport("tools", version=None, urlinfos=None, dynamicImport=True, in_subdir=True)
             imported_suite, _ = mx._find_suite_import(_suite, suite_import, fatalIfMissing=False, load=False)
             if imported_suite:
@@ -214,7 +238,7 @@ def punittest(args):
 
 
 def nativebuild(args):
-    mx.build(["--only", "com.oracle.graal.python.cext"])
+    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON"])
 
 # mx gate --tags pythonbenchmarktest
 # mx gate --tags pythontest
@@ -226,8 +250,7 @@ class GraalPythonTags(object):
     unittest = 'python-unittest'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
-    svmbinary = 'python-svm-binary'
-    svmsource = 'python-svm-source'
+    graalvm = 'python-graalvm'
     R = 'python-R'
     license = 'python-license'
 
@@ -262,6 +285,8 @@ def python_gate(args):
         find_jdt()
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
+    if "--tags" not in args:
+        args += ["--tags", "fullbuild,style,python-junit,python-unittest,python-license,python-downstream"]
     return mx.command_function("gate")(args)
 
 
@@ -283,6 +308,20 @@ def find_eclipse():
             if os.path.exists(eclipse_exe):
                 os.environ["ECLIPSE_EXE"] = eclipse_exe
                 return
+
+
+def python_svm(args):
+    mx.run_mx(
+        ["--dynamicimports", "/substratevm,/vm", "build",
+         "--force-deprecation-as-warning", "--dependencies",
+         "GRAAL_MANAGEMENT,graalpython.image"],
+        nonZeroIsFatal=True
+    )
+    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
+    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+    shutil.copy(svm_image, os.path.join(_suite.dir, "graalpython-svm"))
+    mx.run([svm_image] + args)
+    return svm_image
 
 
 def graalpython_gate_runner(args, tasks):
@@ -325,21 +364,28 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
-            python_license_headers_update([])
+            python_checkcopyrights([])
 
-    with Task('GraalPython downstream svm binary tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.svmbinary]) as task:
+    with Task('GraalPython GraalVM shared-library build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
         if task:
-            _run_downstream_svm(
-                [["--dynamicimports", "graalpython", "delete-graalpython-if-testdownstream"],
-                 ["gate", '-B--force-deprecation-as-warning', "--tags", "build,python"]],
-                binary=True
+            run_shared_lib_test()
+
+    with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
+        if task:
+            svm_image = python_svm(["--version"])
+            benchmark = os.path.join("graalpython", "benchmarks", "src", "benchmarks", "image_magix.py")
+            out = mx.OutputCapture()
+            mx.run(
+                [svm_image, benchmark],
+                nonZeroIsFatal=True,
+                out=mx.TeeOutputCapture(out)
             )
-
-    with Task('GraalPython downstream svm source tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.svmsource]) as task:
-        if task:
-            _run_downstream_svm([[
-                "--dynamicimports", "graalpython", "--strict-compliance", "gate", '-B--force-deprecation-as-warning', "--strict-mode", "--tags", "build,python"
-            ]])
+            success = "\n".join([
+                "[0, 0, 0, 0, 0, 0, 20, 20, 20, 0, 0, 20, 20, 20, 0, 0, 20, 20, 20, 0, 0, 0, 0, 0, 0]",
+                "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 33, 34, 35, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55]",
+                "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 36, 36, 35, 41, 41, 40, 40, 45, 51, 52, 53, 54, 55]"])
+            if success not in out.data:
+                mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
 
     for name, iterations in sorted(python_test_benchmarks.iteritems()):
         with Task('PythonBenchmarksTest:' + name, tasks, tags=[GraalPythonTags.benchmarks]) as task:
@@ -350,48 +396,153 @@ def graalpython_gate_runner(args, tasks):
 mx_gate.add_gate_runner(_suite, graalpython_gate_runner)
 
 
-def _run_downstream_svm(commands, binary=False):
-    new_rewrites = None
-    if binary:
-        localmvn = "/tmp/graalpythonsnapshots"
-        localmvnrepl = "file://%s" % localmvn
-        publicmvn = mx.repository("python-public-snapshots").url
-        publicmvnpattern = re.compile(publicmvn)
-        git = mx.GitConfig()
-
-        new_rewrites = [{publicmvnpattern.pattern: {"replacement": localmvnrepl}}]
-        for rewrite in _urlrewrites:
-            if rewrite.pattern.match(publicmvn):
-                # we replace rewrites of our public repo
-                pass
-            elif publicmvnpattern.match(rewrite.replacement):
-                # we rewrite to what we want
-                new_rewrites.append({rewrite.pattern.pattern: {"replacement": localmvnrepl}})
-            else:
-                new_rewrites.append({rewrite.pattern.pattern: {"replacement": rewrite.replacement}})
-        os.environ["TRUFFLE_PYTHON_VERSION"] = git.tip(_suite.dir).strip()
-        os.environ["TRUFFLE_SULONG_VERSION"] = git.tip(_sulong.dir).strip()
-        prev_urlrewrites = os.environ.get("MX_URLREWRITES")
-        os.environ["MX_URLREWRITES"] = json.dumps(new_rewrites)
-
-        mx.command_function("deploy-binary")(["--all-suites", "python-local-snapshots", localmvnrepl])
-
+def run_shared_lib_test(args=None):
+    mx.run_mx(
+        ["--dynamicimports", "/substratevm,/vm",
+         "build", "--force-deprecation-as-warning", "--dependencies",
+         "GRAAL_MANAGEMENT,POLYGLOT_NATIVE_API_HEADERS,libpolyglot.so.image"],
+        nonZeroIsFatal=True
+    )
+    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
+    svm_lib_path = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "libpolyglot.so.image")
+    fd = name = progname = None
     try:
-        mx.log(str(dict(os.environ)))
-        testdownstream(
-            _suite,
-            [mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
-            "substratevm",
-            commands)
+        fd, name = tempfile.mkstemp(suffix='.c')
+        os.write(fd, """
+        #include "stdio.h"
+        #include "polyglot_api.h"
+
+        #define assert_ok(msg, f) { if (!(f)) { \\
+             const poly_extended_error_info* error_info; \\
+             poly_get_last_error_info(isolate_thread, &error_info); \\
+             fprintf(stderr, "%s\\n", error_info->error_message); \\
+             return fprintf(stderr, "%s\\n", msg); } } while (0)
+
+        poly_isolate global_isolate;
+        poly_thread isolate_thread;
+        poly_engine engine;
+        poly_context context;
+
+        static poly_status create_context() {
+            poly_status status;
+
+            if (poly_attach_thread(global_isolate, &isolate_thread)) {
+                return poly_generic_failure;
+            }
+
+            poly_engine_builder engine_builder;
+            status = poly_create_engine_builder(isolate_thread, &engine_builder);
+            if (status != poly_ok) {
+                return status;
+            }
+            status = poly_engine_builder_build(isolate_thread, engine_builder, &engine);
+            if (status != poly_ok) {
+                return status;
+            }
+            poly_context_builder builder;
+            status = poly_create_context_builder(isolate_thread, NULL, 0, &builder);
+            if (status != poly_ok) {
+                return status;
+            }
+            status = poly_context_builder_engine(isolate_thread, builder, engine);
+            if (status != poly_ok) {
+                return status;
+            }
+            status = poly_context_builder_option(isolate_thread, builder, "python.VerboseFlag", "true");
+            if (status != poly_ok) {
+                return status;
+            }
+            status = poly_context_builder_build(isolate_thread, builder, &context);
+            if (status != poly_ok) {
+                return status;
+            }
+
+            poly_destroy_handle(isolate_thread, engine_builder);
+            poly_destroy_handle(isolate_thread, builder);
+
+            return poly_ok;
+        }
+
+        static poly_status tear_down_context() {
+            poly_status status = poly_context_close(isolate_thread, context, true);
+            if (status != poly_ok) {
+                return status;
+            }
+
+            status = poly_destroy_handle(isolate_thread, context);
+            if (status != poly_ok) {
+                return status;
+            }
+
+            status = poly_engine_close(isolate_thread, engine, true);
+            if (status != poly_ok) {
+                return status;
+            }
+
+            status = poly_destroy_handle(isolate_thread, engine);
+            if (status != poly_ok) {
+                return status;
+            }
+
+            if (poly_detach_thread(isolate_thread)) {
+                return poly_ok;
+            }
+
+            return poly_ok;
+        }
+
+        static int test_basic_python_function() {
+            assert_ok("Context creation failed.", create_context() == poly_ok);
+
+            poly_value func;
+            assert_ok("function eval failed", poly_context_eval(isolate_thread, context, "python", "test_func", "def test_func(x):\\n  return x * x\\ntest_func", &func) == poly_ok);
+            int32_t arg_value = 42;
+            poly_value primitive_object;
+            assert_ok("create argument failed", poly_create_int32(isolate_thread, context, arg_value, &primitive_object) == poly_ok);
+            poly_value arg[1] = {primitive_object};
+            poly_value value;
+            assert_ok("invocation was unsuccessful", poly_value_execute(isolate_thread, func, arg, 1, &value) == poly_ok);
+
+            int32_t result_value;
+            poly_value_as_int32(isolate_thread, value, &result_value);
+
+            assert_ok("primitive free failed", poly_destroy_handle(isolate_thread, primitive_object) == poly_ok);
+            assert_ok("value free failed", poly_destroy_handle(isolate_thread, value) == poly_ok);
+            assert_ok("value computation was incorrect", result_value == 42 * 42);
+            assert_ok("func free failed", poly_destroy_handle(isolate_thread, func) == poly_ok);
+            assert_ok("Context tear down failed.", tear_down_context() == poly_ok);
+            return 0;
+        }
+
+        int32_t main(int32_t argc, char **argv) {
+            poly_isolate_params isolate_params = {};
+            if (poly_create_isolate(&isolate_params, &global_isolate)) {
+                return 1;
+            }
+            return test_basic_python_function();
+        }
+        """)
+        os.close(fd)
+        progname = os.path.join(_suite.dir, "graalpython-embedded-tool")
+        mx.log("".join(["Running ", "'clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o", progname, "-lpolyglot"]))
+        mx.run(["clang", "-I%s" % svm_lib_path, "-L%s" % svm_lib_path, name, "-o%s" % progname, "-lpolyglot"], nonZeroIsFatal=True)
+        mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
+        mx.run(["ls", "-l", progname])
+        mx.run(["ls", "-l", svm_lib_path])
+        mx.run([progname], env={"LD_LIBRARY_PATH": svm_lib_path})
     finally:
-        if binary:
-            os.environ.pop("TRUFFLE_PYTHON_VERSION")
-            os.environ.pop("TRUFFLE_SULONG_VERSION")
-            if prev_urlrewrites:
-                os.environ["MX_URLREWRITES"] = prev_urlrewrites
-            else:
-                os.environ.pop("MX_URLREWRITES")
-            shutil.rmtree(localmvn, ignore_errors=True)
+        try:
+            os.unlink(progname)
+        except:
+            pass
+        try:
+            os.close(fd)
+        except:
+            pass
+        try:
+            os.unlink(name)
+        except:
+            pass
 
 
 class ArchiveProject(mx.ArchivableProject):
@@ -506,9 +657,26 @@ def update_import_cmd(args):
         update_import(name, callback=callback)
 
 
-def python_license_headers_update(args):
-    if update_license_headers(args[0] if args else None):
-        mx.abort("License headers were updated. Please review and commit changes")
+def python_checkcopyrights(args):
+    # we wan't to ignore lib-python/3, because that's just crazy
+    listfilename = tempfile.mktemp()
+    with open(listfilename, "w") as listfile:
+        mx.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], out=listfile)
+    with open(listfilename, "r") as listfile:
+        content = listfile.read()
+    with open(listfilename, "w") as listfile:
+        for line in content.split("\n"):
+            if "lib-python/3" in line:
+                pass
+            elif os.path.splitext(line)[1] in [".py", ".java", ".c", ".h", ".sh"]:
+                listfile.write(line)
+                listfile.write("\n")
+    try:
+        r = mx.command_function("checkcopyrights")(["--primary", "--", "--file-list", listfilename] + args)
+        if r != 0:
+            mx.abort("copyrights check failed")
+    finally:
+        os.unlink(listfilename)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -526,24 +694,23 @@ for py_bench_suite in PythonBenchmarkSuite.get_benchmark_suites():
 #
 # ----------------------------------------------------------------------------------------------------------------------
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
+    suite=_suite,
     name='Graal.Python',
     short_name='pyn',
     dir_name='python',
-    documentation_files=['link:<support>/README_GRAALPYTHON.md'],
-    license_files=['link:<support>/GraalCE_Python_license_3rd_party_license.txt'],
+    license_files=['GraalCE_Python_license_3rd_party_license.txt'],
     third_party_license_files=[],
     truffle_jars=[
-        'dependency:graalpython:GRAALPYTHON',
-        'dependency:graalpython:GRAALPYTHON-ENV',
+        'graalpython:GRAALPYTHON',
     ],
     support_distributions=[
-        'extracted-dependency:graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
-        'extracted-dependency:graalpython:GRAALPYTHON_GRAALVM_DOCS',
+        'graalpython:GRAALPYTHON_GRAALVM_SUPPORT',
+        'graalpython:GRAALPYTHON_GRAALVM_DOCS',
     ],
     launcher_configs=[
         mx_sdk.LanguageLauncherConfig(
             destination='bin/<exe:graalpython>',
-            jar_distributions=['dependency:graalpython:GRAALPYTHON-LAUNCHER'],
+            jar_distributions=['graalpython:GRAALPYTHON-LAUNCHER'],
             main_class='com.oracle.graal.python.shell.GraalPythonMain',
             build_args=[
                 '--language:python',
@@ -551,7 +718,19 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
             ]
         )
     ],
-), _suite)
+))
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# set our GRAAL_PYTHONHOME if not already set
+#
+# ----------------------------------------------------------------------------------------------------------------------
+if not os.getenv("GRAAL_PYTHONHOME"):
+    home = os.path.join(_suite.dir, "graalpython")
+    if not os.path.exists(home):
+        home = [d for d in _suite.dists if d.name == "GRAALPYTHON_GRAALVM_SUPPORT"][0].output
+    os.environ["GRAAL_PYTHONHOME"] = home
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -566,7 +745,9 @@ mx.update_commands(_suite, {
     'python-gate': [python_gate, ''],
     'python-update-import': [update_import_cmd, 'import name'],
     'delete-graalpython-if-testdownstream': [delete_self_if_testdownstream, ''],
-    'python-license-headers-update': [python_license_headers_update, 'Make sure code files have copyright notices'],
+    'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
+    'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
-    'nativebuild': [nativebuild, '']
+    'nativebuild': [nativebuild, ''],
+    'python-so-test': [run_shared_lib_test, ''],
 })

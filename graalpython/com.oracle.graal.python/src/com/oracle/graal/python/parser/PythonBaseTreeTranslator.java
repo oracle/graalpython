@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.ModuleNode;
+import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
@@ -100,6 +100,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -161,7 +162,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     }
 
     protected void deriveSourceSection(RuleNode node, Object r) {
-        if (r instanceof PNode) {
+        if (r instanceof PNode && ((PNode) r).getSourceSection() == null) {
             SourceSection derivedSection = deriveSourceSection(node);
             if (derivedSection != null) {
                 ((PNode) r).assignSourceSection(derivedSection);
@@ -185,7 +186,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         } else if (node instanceof ParserRuleContext) {
             int start = ((ParserRuleContext) node).getStart().getStartIndex();
             int stop = ((ParserRuleContext) node).getStop().getStopIndex();
-            return createSourceSection(start, stop - start);
+            return createSourceSection(start, stop - start + 1);
         }
         return null;
     }
@@ -197,7 +198,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         deriveSourceSection(ctx, file);
         FrameDescriptor fd = environment.getCurrentFrame();
         environment.endScope(ctx);
-        ModuleNode newNode = factory.createModule(name, file, fd);
+        ModuleRootNode newNode = factory.createModuleRoot(name, file, fd);
         return newNode;
     }
 
@@ -207,8 +208,9 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         PNode node = (PNode) super.visitEval_input(ctx);
         deriveSourceSection(ctx, node);
         FrameDescriptor fd = environment.getCurrentFrame();
+        FrameSlot[] freeVarSlots = environment.getFreeVarSlots();
         environment.endScope(ctx);
-        return factory.createModule(name, node, fd);
+        return factory.createModuleRoot(name, node, fd, freeVarSlots);
     }
 
     @Override
@@ -218,7 +220,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         deriveSourceSection(ctx, body);
         FrameDescriptor fd = environment.getCurrentFrame();
         environment.endScope(ctx);
-        return factory.createModule("<expression>", body, fd);
+        return factory.createModuleRoot("<expression>", body, fd);
     }
 
     @Override
@@ -1098,8 +1100,10 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         loops.beginLoop(ctx);
         PNode test = (PNode) ctx.test().accept(this);
         PNode body = asBlockOrPNode(ctx.suite(0).accept(this));
+        LoopInfo info = loops.endLoop();
+        // the else node is outside of the loop info structure
         PNode orelse = ctx.suite().size() == 2 ? asBlockOrPNode(ctx.suite(1).accept(this)) : EmptyNode.create();
-        return createWhileNode(test, body, orelse, loops.endLoop());
+        return createWhileNode(test, body, orelse, info);
     }
 
     private PNode createWhileNode(PNode test, PNode body, PNode orelse, LoopInfo info) {
@@ -1130,8 +1134,10 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         PNode target = assigns.translate(ctx.exprlist());
         PNode iter = asBlockOrPNode(ctx.testlist().accept(this));
         PNode body = asBlockOrPNode(ctx.suite(0).accept(this));
+        LoopInfo info = loops.endLoop();
+        // the else node is outside of the loop info structure
         PNode orelse = ctx.suite().size() == 2 ? asBlockOrPNode(ctx.suite(1).accept(this)) : EmptyNode.create();
-        return createForNode(target, iter, body, orelse, loops.endLoop());
+        return createForNode(target, iter, body, orelse, info);
     }
 
     private PNode createForNode(PNode target, PNode iter, PNode body, PNode orelse, LoopInfo info) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,12 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -38,8 +44,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -51,8 +55,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 
 @CoreFunctions(defineModule = "math")
 public class MathModuleBuiltins extends PythonBuiltins {
@@ -675,6 +677,54 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Fallback
         public boolean isNan(Object value) {
             throw raise(TypeError, "must be real number, not %p", value);
+        }
+    }
+
+    @Builtin(name = "isclose", minNumOfArguments = 2, keywordArguments = {"rel_tol", "abs_tol"})
+    @GenerateNodeFactory
+    public abstract static class IsCloseNode extends PythonBuiltinNode {
+        private static double DEFAULT_REL = 1e-09;
+        private static double DEFAULT_ABS = 0.0;
+
+        private boolean isCloseDouble(double a, double b, double rel_tol, double abs_tol) {
+            double diff;
+
+            if (rel_tol < 0.0 || abs_tol < 0.0) {
+                throw raise(ValueError, "tolerances must be non-negative");
+            }
+
+            if (a == b) {
+                return true;
+            }
+
+            if (Double.isInfinite(a) || Double.isInfinite(b)) {
+                return false;
+            }
+
+            diff = Math.abs(b - a);
+            return (((diff <= Math.abs(rel_tol * b)) ||
+                            (diff <= Math.abs(rel_tol * a))) ||
+                            (diff <= abs_tol));
+        }
+
+        @Specialization
+        public boolean isClose(double a, double b, @SuppressWarnings("unused") PNone rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+            return isCloseDouble(a, b, DEFAULT_REL, DEFAULT_ABS);
+        }
+
+        @Specialization
+        public boolean isClose(double a, double b, @SuppressWarnings("unused") PNone rel_tol, double abs_tol) {
+            return isCloseDouble(a, b, DEFAULT_REL, abs_tol);
+        }
+
+        @Specialization
+        public boolean isClose(double a, double b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+            return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
+        }
+
+        @Specialization
+        public boolean isClose(double a, double b, double rel_tol, double abs_tol) {
+            return isCloseDouble(a, b, rel_tol, abs_tol);
         }
     }
 

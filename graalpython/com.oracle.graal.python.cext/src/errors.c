@@ -39,7 +39,7 @@
 #include "capi.h"
 
 void _PyErr_BadInternalCall(const char *filename, int lineno) {
-    truffle_invoke(PY_TRUFFLE_CEXT, "_PyErr_BadInternalCall", truffle_read_string(filename), lineno);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "_PyErr_BadInternalCall", polyglot_from_string(filename, "utf-8"), lineno, Py_NoValue);
 }
 
 #undef PyErr_BadInternalCall
@@ -77,12 +77,12 @@ void PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback) {
 
 PyObject* PyErr_NewException(const char *name, PyObject *base, PyObject *dict) {
     if (base == NULL) {
-        base = truffle_read(PY_BUILTIN, "Exception");
+        base = PyExc_Exception;
     }
     if (dict == NULL) {
         dict = PyDict_New();
     }
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_NewException", truffle_read_string(name), to_java(base), to_java(dict));
+    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_NewException", truffle_read_string(name), to_java(base), to_java(dict)));
 }
 
 int PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc) {
@@ -91,7 +91,6 @@ int PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc) {
         return 0;
     }
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyErr_GivenExceptionMatches", to_java(err), to_java(exc));
-
 }
 
 void PyErr_SetNone(PyObject *exception) {
@@ -99,7 +98,7 @@ void PyErr_SetNone(PyObject *exception) {
 }
 
 static void _PyErr_GetOrFetchExcInfo(int consume, PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_Fetch", (consume ? Py_True : Py_False), ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_Fetch", (consume ? Py_True : Py_False));
     if(result == ERROR_MARKER) {
     	*p_type = NULL;
     	*p_value = NULL;
@@ -149,8 +148,7 @@ int PyErr_ExceptionMatches(PyObject *exc) {
 }
 
 PyObject* PyTruffle_Err_Format(PyObject* exception, const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
-    char** allocated_strings = calloc(sizeof(char*), s);
-    PyObject *formatted_msg = PyTruffle_Unicode_FromFormat(fmt, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
+    PyObject *formatted_msg = PyTruffle_Unicode_FromFormat(fmt, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_CreateAndSetException", to_java(exception), to_java(formatted_msg));
     return NULL;
 }
@@ -162,4 +160,3 @@ void PyErr_WriteUnraisable(PyObject *obj) {
 void PyErr_Display(PyObject *exception, PyObject *value, PyObject *tb) {
     truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_Display", to_java(exception), to_java(value), to_java(tb));
 }
-

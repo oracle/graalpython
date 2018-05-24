@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -171,7 +172,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallTarget callTarget = env.parse(env.newSourceBuilder(env.getTruffleFile(path)).language(LLVM_LANGUAGE).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
-                throw raise(ImportError, "cannot load %s", path);
+                throw raise(ImportError, "cannot load %s: %s", path, e.getMessage());
+            } catch (RuntimeException e) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(e.getMessage());
+                Throwable cause = e;
+                while ((cause = cause.getCause()) != null) {
+                    if (cause.getMessage() != null) {
+                        sb.append(", ");
+                        sb.append(cause.getMessage());
+                    }
+                }
+                throw raise(ImportError, "cannot load %s: %s", path, sb.toString());
             }
             TruffleObject pyinitFunc;
             try {
@@ -180,7 +192,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
-                Object result = ForeignAccess.sendExecute(executeNode, pyinitFunc);
+                Object result = AsPythonObjectNode.doSlowPath(ForeignAccess.sendExecute(executeNode, pyinitFunc));
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,12 +29,6 @@ public final class PNone extends PythonAbstractObject {
 
     public static final PNone NONE = new PNone();
     public static final PNone NO_VALUE = new PNone();
-
-    /**
-     * Object representing {@code None} in the native code but is not a interop {@code null} value
-     * such that it is not interpreted as a null pointer.
-     */
-    public static final PNone NATIVE_NONE = new PNone();
 
     private PNone() {
     }

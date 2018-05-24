@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes.literal;
 import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class PIntLiteralNode extends LiteralNode {
@@ -36,7 +35,7 @@ public final class PIntLiteralNode extends LiteralNode {
     private final PInt value;
 
     public PIntLiteralNode(BigInteger value) {
-        this.value = PythonObjectFactory.get().createInt(value);
+        this.value = factory().createInt(value);
     }
 
     public PInt getValue() {

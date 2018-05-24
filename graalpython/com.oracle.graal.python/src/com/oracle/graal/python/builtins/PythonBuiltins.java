@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -200,7 +200,7 @@ public abstract class PythonBuiltins {
 
         // read splat args if any
         if (builtin.takesVariableArguments()) {
-            args.add(ReadVarArgsNode.create(args.size()));
+            args.add(ReadVarArgsNode.create(args.size(), true));
         }
 
         // read named keyword arguments

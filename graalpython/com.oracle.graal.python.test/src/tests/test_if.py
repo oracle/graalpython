@@ -1,5 +1,5 @@
 # Copyright (c) 2018, Oracle and/or its affiliates.
-# Copyright (c) 2013-2016, Regents of the University of California
+# Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
 #
@@ -21,7 +21,6 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-
 # if and elif
 
 def test_if():
@@ -37,7 +36,7 @@ def test_if():
             sum -= 1
 
     assert sum == 31
-    
+
 
 def test_no_long():
     longval = 0xFFFFFFFFFFFFFFFFFF & 0

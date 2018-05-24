@@ -49,7 +49,7 @@ import org.graalvm.polyglot.PolyglotException;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.graal.python.shell.GraalPythonEnvVars;
+import com.oracle.graal.python.test.GraalPythonEnvVars;
 import com.oracle.graal.python.test.PythonTests;
 
 public class PyTests {

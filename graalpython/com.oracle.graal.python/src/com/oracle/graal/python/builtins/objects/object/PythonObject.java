@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -45,6 +45,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
+import com.oracle.truffle.api.object.Shape;
 
 public class PythonObject extends PythonAbstractObject {
     protected final PythonClass pythonClass;
@@ -61,6 +62,11 @@ public class PythonObject extends PythonAbstractObject {
             this.pythonClass = pythonClass;
             storage = pythonClass.getInstanceShape().newInstance();
         }
+    }
+
+    public PythonObject(PythonClass pythonClass, Shape instanceShape) {
+        this.pythonClass = pythonClass;
+        storage = instanceShape.newInstance();
     }
 
     public final PythonClass getPythonClass() {
@@ -117,7 +123,6 @@ public class PythonObject extends PythonAbstractObject {
     @TruffleBoundary
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        assert value != PNone.NO_VALUE;
         getStorage().define(name, value);
     }
 

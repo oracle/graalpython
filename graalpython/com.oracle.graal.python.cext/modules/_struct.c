@@ -1,6 +1,7 @@
-/* Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2011, 2012, 2013, 2014, 2015, 2016, 2017 Python Software Foundation; All Rights
- * Reserved
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
 
 /* struct module -- pack values into and (out of) bytes objects */

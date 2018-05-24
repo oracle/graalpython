@@ -69,6 +69,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         PY_CODECS_ALIASES.put("us-ascii", "us-ascii");
         PY_CODECS_ALIASES.put("ascii", "us-ascii");
         PY_CODECS_ALIASES.put("646", "us-ascii");
+
         // latin 1
         PY_CODECS_ALIASES.put("iso-8859-1", "iso-8859-1");
         PY_CODECS_ALIASES.put("latin-1", "iso-8859-1");
@@ -80,12 +81,30 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         PY_CODECS_ALIASES.put("latin", "iso-8859-1");
         PY_CODECS_ALIASES.put("latin1", "iso-8859-1");
         PY_CODECS_ALIASES.put("L1", "iso-8859-1");
+
         // utf-8
         PY_CODECS_ALIASES.put("utf-8", "utf-8");
         PY_CODECS_ALIASES.put("utf_8", "utf-8");
         PY_CODECS_ALIASES.put("U8", "utf-8");
         PY_CODECS_ALIASES.put("UTF", "utf-8");
         PY_CODECS_ALIASES.put("utf8", "utf-8");
+
+        // utf-16
+        PY_CODECS_ALIASES.put("utf-16", "utf-16");
+        PY_CODECS_ALIASES.put("utf_16", "utf-16");
+        PY_CODECS_ALIASES.put("U16", "utf-16");
+        PY_CODECS_ALIASES.put("utf16", "utf-16");
+        // TODO BMP only
+        PY_CODECS_ALIASES.put("utf_16_be", "utf-16be");
+        PY_CODECS_ALIASES.put("utf_16_le", "utf-16le");
+
+        // utf-32
+        PY_CODECS_ALIASES.put("utf-32", "utf-32");
+        PY_CODECS_ALIASES.put("utf_32", "utf-32");
+        PY_CODECS_ALIASES.put("U32", "utf-32");
+        PY_CODECS_ALIASES.put("utf_32_be", "utf-32be");
+        PY_CODECS_ALIASES.put("utf_32_le", "utf-32le");
+        PY_CODECS_ALIASES.put("utf32", "utf-32");
         // big5 big5-tw, csbig5 Traditional Chinese
         // big5hkscs big5-hkscs, hkscs Traditional Chinese
         // cp037 IBM037, IBM039 English
@@ -170,12 +189,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         // shift_jis csshiftjis, shiftjis, sjis, s_jis Japanese
         // shift_jis_2004 shiftjis2004, sjis_2004, sjis2004 Japanese
         // shift_jisx0213 shiftjisx0213, sjisx0213, s_jisx0213 Japanese
-        // utf_32 U32, utf32 all languages
-        // utf_32_be UTF-32BE all languages
-        // utf_32_le UTF-32LE all languages
-        // utf_16 U16, utf16 all languages
-        // utf_16_be UTF-16BE all languages (BMP only)
-        // utf_16_le UTF-16LE all languages (BMP only)
         // utf_7 U7, unicode-1-1-utf-7 all languages
         // utf_8_sig
     }
@@ -188,9 +201,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             String val = PY_CODECS_ALIASES.get(encoding);
             if (val != null) {
                 return Charset.forName(val);
-            } else {
-                throw new IllegalArgumentException("python encoding not known: " + encoding);
             }
+            return Charset.forName(encoding);
         }
     }
 

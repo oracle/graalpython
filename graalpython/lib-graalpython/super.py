@@ -80,7 +80,7 @@ def make_super_class():
                     if attr in cls.__dict__:
                         x = cls.__dict__[attr]
                         if hasattr(x, "__get__"):
-                            x = x.__get__(obj, cls)
+                            x = x.__get__(obj, typ)
                         return x
             raise AttributeError(attr)
 

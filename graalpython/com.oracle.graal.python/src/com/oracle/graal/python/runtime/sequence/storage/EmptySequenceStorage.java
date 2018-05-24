@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -75,6 +75,12 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
+    public void setNewLength(int length) {
+        CompilerDirectives.transferToInterpreter();
+        throw PythonLanguage.getCore().raise(ValueError, "list length out of range");
+    }
+
+    @Override
     public int index(Object value) {
         return -1;
     }
@@ -118,6 +124,10 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
+    public void copyItem(int idxTo, int idxFrom) {
+    }
+
+    @Override
     public SequenceStorage getSliceInBound(int start, int stop, int step, int length) {
         assert start == stop && stop == 0;
         return this;
@@ -129,7 +139,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void delSlice(int start, int stop) {
+    public void delSlice(int start, int stop, int step) {
         // the slice is empty. Do nothing here
     }
 
@@ -167,6 +177,11 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public boolean equals(SequenceStorage other) {
         return other == EmptySequenceStorage.INSTANCE;
+    }
+
+    @Override
+    public void ensureCapacity(int newCapacity) {
+
     }
 
 }

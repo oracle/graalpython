@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -75,9 +75,10 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public int next(PIntegerSequenceIterator self) {
-            if (self.index < self.sequence.length()) {
+            if (!self.stopIterationReached && self.index < self.sequence.length()) {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
+            self.stopIterationReached = true;
             throw raise(StopIteration);
         }
 
@@ -111,9 +112,10 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public double next(PDoubleSequenceIterator self) {
-            if (self.index < self.sequence.length()) {
+            if (!self.stopIterationReached && self.index < self.sequence.length()) {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
+            self.stopIterationReached = true;
             throw raise(StopIteration);
         }
 
@@ -127,9 +129,10 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public long next(PLongSequenceIterator self) {
-            if (self.index < self.sequence.length()) {
+            if (!self.stopIterationReached && self.index < self.sequence.length()) {
                 return self.sequence.getLongItemNormalized(self.index++);
             }
+            self.stopIterationReached = true;
             throw raise(StopIteration);
         }
 
@@ -143,9 +146,10 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isPSequence()")
         public Object next(PSequenceIterator self) {
-            if (self.index < self.getPSequence().len()) {
+            if (!self.stopIterationReached && self.index < self.getPSequence().len()) {
                 return self.getPSequence().getItem(self.index++);
             }
+            self.stopIterationReached = true;
             throw raise(StopIteration);
         }
 

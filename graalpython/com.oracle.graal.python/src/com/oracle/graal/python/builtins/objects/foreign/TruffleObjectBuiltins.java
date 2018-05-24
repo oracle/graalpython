@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -730,14 +729,14 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.
          */
         @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
-        protected Object doInteropCall(TruffleObject callee, PTuple arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        protected Object doInteropCall(TruffleObject callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached("createNew(0).createNode()") Node newNode,
                         @Cached("create()") PTypeToForeignNode toForeignNode,
                         @Cached("create()") PForeignToPTypeNode toPTypeNode) {
             try {
-                Object[] convertedArgs = new Object[arguments.len()];
-                for (int i = 0; i < arguments.len(); i++) {
-                    convertedArgs[i] = toForeignNode.executeConvert(arguments.getItem(i));
+                Object[] convertedArgs = new Object[arguments.length];
+                for (int i = 0; i < arguments.length; i++) {
+                    convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
                 Object res = ForeignAccess.sendNew(newNode, callee, convertedArgs);
                 return toPTypeNode.executeConvert(res);
@@ -760,16 +759,16 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
          * optimization based on the callee has to happen on the other side.
          */
         @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
-        protected Object doInteropCall(TruffleObject callee, PTuple arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        protected Object doInteropCall(TruffleObject callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached("IS_EXECUTABLE.createNode()") Node isExecutableNode,
                         @Cached("createExecute(0).createNode()") Node executeNode,
                         @Cached("createNew(0).createNode()") Node newNode,
                         @Cached("create()") PTypeToForeignNode toForeignNode,
                         @Cached("create()") PForeignToPTypeNode toPTypeNode) {
             try {
-                Object[] convertedArgs = new Object[arguments.len()];
-                for (int i = 0; i < arguments.len(); i++) {
-                    convertedArgs[i] = toForeignNode.executeConvert(arguments.getItem(i));
+                Object[] convertedArgs = new Object[arguments.length];
+                for (int i = 0; i < arguments.length; i++) {
+                    convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
                 }
                 if (ForeignAccess.sendIsExecutable(isExecutableNode, callee)) {
                     Object res = ForeignAccess.sendExecute(executeNode, callee, convertedArgs);

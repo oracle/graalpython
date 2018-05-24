@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -43,11 +43,13 @@ import java.util.Map.Entry;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AstModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.AtexitModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.IOModuleBuiltins;
@@ -76,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
-import com.oracle.graal.python.builtins.objects.cpyobject.PyObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
@@ -176,10 +177,12 @@ public final class Python3Core implements PythonCore {
                     "python_cext",
                     "_sre",
                     "_collections",
+                    "memoryview",
                     "list",
                     "_codecs",
                     "bytes",
                     "float",
+                    "time",
     };
 
     private static final Map<String, Object> BUILTIN_CONSTANTS = new HashMap<>();
@@ -252,8 +255,9 @@ public final class Python3Core implements PythonCore {
                     new AstModuleBuiltins(),
                     new SignalModuleBuiltins(),
                     new TracebackBuiltins(),
-                    new PyObjectBuiltins(),
                     new GcModuleBuiltins(),
+                    new AtexitModuleBuiltins(),
+                    new FaulthandlerModuleBuiltins(),
                     new SysModuleBuiltins(),
     };
 

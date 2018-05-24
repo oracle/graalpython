@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -30,6 +30,9 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PComplex extends PythonBuiltinObject {
+    /* Prime multiplier used in string and various other hashes in CPython. */
+    public static final int IMAG_MULTIPLIER = 1000003; /* 0xf4243 */
+
     private final double real;
     private final double imag;
 

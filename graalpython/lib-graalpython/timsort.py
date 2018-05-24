@@ -1,7 +1,8 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
-# Copyright (c) PyPy Copyright holders 2003-2017
+# coding=utf-8
+# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, The PyPy Project
 #
-# The MIT License
+#     The MIT License
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
 # files (the "Software"), to deal in the Software without

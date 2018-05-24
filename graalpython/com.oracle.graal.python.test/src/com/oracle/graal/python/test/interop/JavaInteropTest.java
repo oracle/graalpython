@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
@@ -105,6 +105,15 @@ public class JavaInteropTest extends PythonTests {
         context.eval(script);
         Value main = context.getPolyglotBindings().getMember("foo");
         assertTrue(main.canExecute());
+    }
+
+    @Test
+    public void javaArraySet() throws Exception {
+        String source = "import java\n" +
+                        "array = java.type(\"int[]\")(4)\n" +
+                        "array[2] = 42\n" +
+                        "print(array[2])\n\n";
+        assertPrints("42\n", source);
     }
 
     @Test

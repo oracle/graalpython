@@ -38,21 +38,27 @@
  */
 #include "capi.h"
 
+PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS);
+
 /* Tuples */
 PyObject* PyTuple_New(Py_ssize_t size) {
-    return (PyObject*)truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_New", size);
+    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_New", size));
 }
 
 int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyTuple_SetItem", to_java(tuple), position, to_java(item));
 }
 
-PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-	PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetItem", to_java(tuple), position, ERROR_MARKER);
+void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position) {
+	void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetItem", jtuple, position);
 	if (result == ERROR_MARKER) {
 		return NULL;
 	}
-    return to_sulong(result);
+    return result;
+}
+
+PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
+	return to_sulong(PyTruffle_Tuple_GetItem(to_java(tuple), position));
 }
 
 Py_ssize_t PyTuple_Size(PyObject *op) {
@@ -60,7 +66,7 @@ Py_ssize_t PyTuple_Size(PyObject *op) {
 }
 
 PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetSlice", to_java(tuple), i, j, ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetSlice", to_java(tuple), i, j);
     if (result == ERROR_MARKER) {
     	return NULL;
     }
@@ -68,18 +74,13 @@ PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
 }
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {
-    va_list vargs;
-
-    va_start(vargs, n);
     PyObject *result = PyTuple_New(n);
     if (result == NULL) {
-        va_end(vargs);
         return NULL;
     }
-    for (Py_ssize_t i = 0; i < n; i++) {
-        PyObject *o = va_arg(vargs, PyObject *);
-        PyTuple_SetItem(result, i, o);
+    for (int i = 1; i < polyglot_get_arg_count(); i++) {
+        PyObject *o = polyglot_get_arg(i);
+        PyTuple_SetItem(result, i - 1, o);
     }
-    va_end(vargs);
     return result;
 }

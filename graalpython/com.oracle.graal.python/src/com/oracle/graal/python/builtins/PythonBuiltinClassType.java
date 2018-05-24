@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -69,7 +69,6 @@ public enum PythonBuiltinClassType {
     PLongArray(com.oracle.graal.python.builtins.objects.array.PLongArray.class, "longs"),
     PLongArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PLongArrayIterator.class, "iterator"),
     PLongSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator.class, "iterator"),
-    PMemoryView(com.oracle.graal.python.builtins.objects.memoryview.PMemoryView.class, "memoryview"),
     PMappingproxy(com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy.class, "mapping_proxy"),
     PMethod(com.oracle.graal.python.builtins.objects.method.PMethod.class, "method"),
     PNone(com.oracle.graal.python.builtins.objects.PNone.class, "NoneType"),

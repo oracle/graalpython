@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -31,6 +31,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 public final class PSequenceIterator extends PBuiltinIterator {
     protected final Object sequence;
     protected int index = 0;
+    protected boolean stopIterationReached = false;
 
     public PSequenceIterator(PythonClass clazz, Object sequence) {
         super(clazz);

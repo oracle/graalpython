@@ -1,5 +1,6 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
-# Copyright (c) 2003-2017 PyPy Copyright holders
+# coding=utf-8
+# Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
 # Permission is hereby granted, free of charge, to any person
@@ -20,8 +21,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
-
 class repeat():
     pass
 
@@ -49,8 +48,24 @@ class islice(object):
                 return element
 
 
-class count():
-    pass
+class count(object):
+    def __init__(self, start=0, step=1):
+        if not isinstance(start, (int, float)) or \
+                not isinstance(step, (int, float)):
+            raise TypeError('a number is required')
+        self._cnt = start
+        self._step = step
+
+    def __next__(self):
+        _cnt = self._cnt
+        self._cnt += self._step
+        return _cnt
+
+    def __repr__(self):
+        _repr = 'count({}'.format(self._cnt)
+        if not isinstance(self._step, int) or self._step != 1:
+            _repr += ', {}'.format(self._step)
+        return _repr + ')'
 
 
 class permutations():

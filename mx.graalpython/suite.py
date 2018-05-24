@@ -4,7 +4,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.144.0",
+    "mxversion": "5.153.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -25,14 +25,14 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "3b99e94a515f5155a6f2875ae746afd84cd255a8",
+                "version": "1ea7ec556932ffd2177a41054aebb06ab48a8307",
                 "urls": [
-                    {"url": "https://github.com/oracle/graal", "kind": "git"},
+                    {"url": "https://github.com/graalvm/sulong", "kind": "git"},
                 ]
             },
             {
                 "name": "regex",
-                "version": "5a45980a4cb8b32a3d964a99d6e356717fcdb678",
+                "version": "a8fb89610ab91373ae9c6ed42ab184b2d7ba93d5",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -208,6 +208,9 @@ suite = {
         "GRAALPYTHON-ENV": {
         },
 
+        "GRAALPYTHON-ZIP": {
+        },
+
         "GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
@@ -215,7 +218,6 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",
                 "truffle:TRUFFLE_API",
-                "truffle:TRUFFLE_DSL_PROCESSOR",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
             ],
@@ -236,7 +238,6 @@ suite = {
             "distDependencies": [
                 "GRAALPYTHON",
                 "GRAALPYTHON-LAUNCHER",
-                "truffle:TRUFFLE_DSL_PROCESSOR",
                 "truffle:TRUFFLE_TCK",
             ],
             "sourcesPath": "graalpython.tests.src.zip",
@@ -264,8 +265,8 @@ suite = {
                     "file:graalpython/com.oracle.graal.python.cext/include",
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
-                    "file:mx.graalpython/GraalCE_Python_license_3rd_party_license.txt",
                 ],
+                "GraalCE_Python_license_3rd_party_license.txt": "file:LICENSE",
             }
         },
 

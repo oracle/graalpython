@@ -38,6 +38,8 @@
  */
 #include "capi.h"
 
+PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC);
+
 /* Dicts */
 PyObject* PyDictProxy_New(PyObject *mapping) {
     return truffle_invoke(PY_TRUFFLE_CEXT, "PyDictProxy_New", to_java(mapping));

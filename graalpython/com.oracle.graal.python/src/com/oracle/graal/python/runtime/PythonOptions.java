@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
@@ -81,6 +82,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> ForceLongType = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.DEBUG, help = "") //
+    public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
+
     @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.") //
     public static final OptionKey<String> SysPrefix = new OptionKey<>("");
 
@@ -94,12 +98,19 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
     @Option(category = OptionCategory.USER, help = "") //
-    public static final OptionKey<Boolean> PythonInspectFlag = new OptionKey<>(false);
+    public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
+
+    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.") public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(
+                    false);
+
+    @Option(category = OptionCategory.DEBUG, help = "Turn on verbose mode") //
+    public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);
 
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
 
+    @TruffleBoundary
     public static <T> T getOption(PythonContext context, OptionKey<T> key) {
         if (context == null) {
             return key.getDefaultValue();
@@ -107,6 +118,7 @@ public final class PythonOptions {
         return context.getOptions().get(key);
     }
 
+    @TruffleBoundary
     public static int getIntOption(PythonContext context, OptionKey<Integer> key) {
         if (context == null) {
             return key.getDefaultValue();

@@ -1,3 +1,8 @@
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 /* The PyMem_ family:  low-level memory allocation interfaces.
    See objimpl.h for the PyObject_ memory family.
 */

@@ -36,3 +36,4 @@
 # SOFTWARE.
 
 float.fromhex = classmethod(float.fromhex)
+float.__getformat__ = classmethod(float.__getformat__)

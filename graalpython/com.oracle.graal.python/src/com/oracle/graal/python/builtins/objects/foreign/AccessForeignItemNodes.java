@@ -167,7 +167,7 @@ abstract class AccessForeignItemNodes {
 
         @Specialization
         public Object doForeignObjectSlice(TruffleObject object, PSlice idxSlice, PSequence pvalues,
-                        @Cached("READ.createNode()") Node foreignRead,
+                        @Cached("WRITE.createNode()") Node foreignWrite,
                         @Cached("KEY_INFO.createNode()") Node keyInfoNode,
                         @Cached("HAS_SIZE.createNode()") Node hasSizeNode,
                         @Cached("GET_SIZE.createNode()") Node getSizeNode,
@@ -178,7 +178,7 @@ abstract class AccessForeignItemNodes {
                 SliceInfo mslice = materializeSlice(idxSlice, object, getSizeNode, foreign2PTypeNode);
                 for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
                     Object convertedValue = valueToForeignNode.executeConvert(pvalues.getItem(i));
-                    writeForeignValue(object, i, convertedValue, foreignRead, keyInfoNode, hasSizeNode, foreign2PTypeNode);
+                    writeForeignValue(object, i, convertedValue, foreignWrite, keyInfoNode, hasSizeNode, foreign2PTypeNode);
                 }
                 return PNone.NONE;
             } catch (InteropException e) {
@@ -189,7 +189,7 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = "!isSlice(idx)")
         public Object doForeignObject(TruffleObject object, Object idx, Object value,
-                        @Cached("READ.createNode()") Node foreignRead,
+                        @Cached("WRITE.createNode()") Node foreignWrite,
                         @Cached("KEY_INFO.createNode()") Node keyInfoNode,
                         @Cached("HAS_SIZE.createNode()") Node hasSizeNode,
                         @Cached("create()") PTypeToForeignNode indexToForeignNode,
@@ -198,18 +198,18 @@ abstract class AccessForeignItemNodes {
             try {
                 Object convertedIdx = indexToForeignNode.executeConvert(idx);
                 Object convertedValue = valueToForeignNode.executeConvert(value);
-                return writeForeignValue(object, convertedIdx, convertedValue, foreignRead, keyInfoNode, hasSizeNode, foreign2PTypeNode);
+                return writeForeignValue(object, convertedIdx, convertedValue, foreignWrite, keyInfoNode, hasSizeNode, foreign2PTypeNode);
             } catch (InteropException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw raise(RuntimeError, e.getMessage());
             }
         }
 
-        private Object writeForeignValue(TruffleObject object, Object idx, Object value, Node foreignRead, Node keyInfoNode, Node hasSizeNode, PForeignToPTypeNode foreign2PTypeNode)
+        private Object writeForeignValue(TruffleObject object, Object idx, Object value, Node foreignWrite, Node keyInfoNode, Node hasSizeNode, PForeignToPTypeNode foreign2PTypeNode)
                         throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException {
             int info = ForeignAccess.sendKeyInfo(keyInfoNode, object, idx);
             if (KeyInfo.isWritable(info) || ForeignAccess.sendHasSize(hasSizeNode, object)) {
-                return foreign2PTypeNode.executeConvert(ForeignAccess.sendWrite(foreignRead, object, idx, value));
+                return foreign2PTypeNode.executeConvert(ForeignAccess.sendWrite(foreignWrite, object, idx, value));
             }
             // TODO error message
             CompilerDirectives.transferToInterpreter();

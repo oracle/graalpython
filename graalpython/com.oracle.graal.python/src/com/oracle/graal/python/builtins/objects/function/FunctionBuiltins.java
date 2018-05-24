@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -83,13 +82,13 @@ public class FunctionBuiltins extends PythonBuiltins {
         @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
         @Specialization
-        protected Object doIt(PFunction self, PTuple arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self, createArgs.execute(arguments.getArray()), keywords);
+        protected Object doIt(PFunction self, Object[] arguments, PKeyword[] keywords) {
+            return dispatch.executeCall(self, createArgs.execute(arguments), keywords);
         }
 
         @Specialization
-        protected Object doIt(PBuiltinFunction self, PTuple arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self, createArgs.execute(arguments.getArray()), keywords);
+        protected Object doIt(PBuiltinFunction self, Object[] arguments, PKeyword[] keywords) {
+            return dispatch.executeCall(self, createArgs.execute(arguments), keywords);
         }
     }
 

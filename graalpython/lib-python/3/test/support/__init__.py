@@ -13,53 +13,75 @@ import gc
 import importlib
 import importlib.util
 import logging.handlers
-import nntplib
+# TODO: Truffle reenable me once supported (GR-9138)
+# import nntplib
 import os
 import platform
 import re
-import shutil
-import socket
+# TODO: Truffle reenable me once supported (GR-9139)
+# import shutil
+# TODO: Truffle reenable me once supported (GR-9140)
+# import socket
 import stat
 import struct
-import subprocess
+# TODO: Truffle reenable me once supported (GR-9141)
+# import subprocess
 import sys
 import sysconfig
-import tempfile
+# TODO: Truffle reenable me once supported (GR-9142)
+# import tempfile
 import time
 import types
 import unittest
-import urllib.error
+# TODO: Truffle reenable me once supported (GR-9143)
+# import urllib.error
 import warnings
 
-try:
-    import _thread, threading
-except ImportError:
-    _thread = None
-    threading = None
-try:
-    import multiprocessing.process
-except ImportError:
-    multiprocessing = None
 
-try:
-    import zlib
-except ImportError:
-    zlib = None
+# TODO: Truffle reenable me once supported  (GR-9144)
+# try:
+#     import _thread, threading
+# except ImportError:
+#     _thread = None
+#     threading = None
+_thread = None
+threading = None
 
-try:
-    import gzip
-except ImportError:
-    gzip = None
+# TODO: Truffle reenable me once supported (GR-9145)
+# try:
+#     import multiprocessing.process
+# except ImportError:
+#     multiprocessing = None
+multiprocessing = None
 
-try:
-    import bz2
-except ImportError:
-    bz2 = None
+# TODO: Truffle reenable me once supported (GR-9146)
+# try:
+#     import zlib
+# except ImportError:
+#     zlib = None
+zlib = None
 
-try:
-    import lzma
-except ImportError:
-    lzma = None
+# TODO: Truffle reenable me once supported (GR-9147)
+# try:
+#     import gzip
+# except ImportError:
+#     gzip = None
+gzip = None
+
+
+# TODO: Truffle reenable me once supported (GR-9148)
+# try:
+#     import bz2
+# except ImportError:
+#     bz2 = None
+bz2 = None
+
+# TODO: Truffle reenable me once supported (GR-9149)
+# try:
+#     import lzma
+# except ImportError:
+#     lzma = None
+lzma = None
 
 try:
     import resource
@@ -610,7 +632,9 @@ HOST = "127.0.0.1"
 HOSTv6 = "::1"
 
 
-def find_unused_port(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
+# TODO: revert me once socket is implemented (GR-9140)
+# def find_unused_port(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
+def find_unused_port(family, socktype):
     """Returns an unused port that should be suitable for binding.  This is
     achieved by creating a temporary socket with the same family and type as
     the 'sock' parameter (default is AF_INET, SOCK_STREAM), and binding it to
@@ -718,22 +742,24 @@ def bind_unix_socket(sock, addr):
         sock.close()
         raise unittest.SkipTest('cannot bind AF_UNIX sockets')
 
-def _is_ipv6_enabled():
-    """Check whether IPv6 is enabled on this host."""
-    if socket.has_ipv6:
-        sock = None
-        try:
-            sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-            sock.bind((HOSTv6, 0))
-            return True
-        except OSError:
-            pass
-        finally:
-            if sock:
-                sock.close()
-    return False
-
-IPV6_ENABLED = _is_ipv6_enabled()
+# TODO: reenable me once socket is implemented (GR-9140)
+# def _is_ipv6_enabled():
+#     """Check whether IPv6 is enabled on this host."""
+#     if socket.has_ipv6:
+#         sock = None
+#         try:
+#             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+#             sock.bind((HOSTv6, 0))
+#             return True
+#         except OSError:
+#             pass
+#         finally:
+#             if sock:
+#                 sock.close()
+#     return False
+#
+# IPV6_ENABLED = _is_ipv6_enabled()
+IPV6_ENABLED = False
 
 def system_must_validate_cert(f):
     """Skip the test on TLS certificate validation failures."""
@@ -777,8 +803,10 @@ requires_lzma = unittest.skipUnless(lzma, 'requires lzma')
 
 is_jython = sys.platform.startswith('java')
 
-_ANDROID_API_LEVEL = sysconfig.get_config_var('ANDROID_API_LEVEL')
-is_android = (_ANDROID_API_LEVEL is not None and _ANDROID_API_LEVEL > 0)
+# TODO: reenable me once sysconfig is properly implemented (GR-9150)
+# _ANDROID_API_LEVEL = sysconfig.get_config_var('ANDROID_API_LEVEL')
+# is_android = (_ANDROID_API_LEVEL is not None and _ANDROID_API_LEVEL > 0)
+is_android = False
 android_not_root = (is_android and os.geteuid() != 0)
 
 if sys.platform != 'win32':
@@ -1933,9 +1961,12 @@ def run_unittest(*classes):
 def _check_docstrings():
     """Just used to check if docstrings are enabled"""
 
-MISSING_C_DOCSTRINGS = (check_impl_detail() and
-                        sys.platform != 'win32' and
-                        not sysconfig.get_config_var('WITH_DOC_STRINGS'))
+
+#TODO reenable me once platform and sysconfig are implemented/supported
+# MISSING_C_DOCSTRINGS = (check_impl_detail() and
+#                         sys.platform != 'win32' and
+#                         not sysconfig.get_config_var('WITH_DOC_STRINGS'))
+MISSING_C_DOCSTRINGS = False
 
 HAVE_DOCSTRINGS = (_check_docstrings.__doc__ is not None and
                    not MISSING_C_DOCSTRINGS)

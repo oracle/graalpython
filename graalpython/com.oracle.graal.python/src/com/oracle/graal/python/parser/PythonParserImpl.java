@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -33,20 +33,20 @@ import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CodePointCharStream;
-import org.antlr.v4.runtime.NoViableAltException;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Token;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.parser.antlr.Builder;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -54,13 +54,25 @@ import com.oracle.truffle.api.source.SourceSection;
 public final class PythonParserImpl implements PythonParser {
     private static final Map<String, ParserRuleContext> cachedParseTrees = new HashMap<>();
 
+    private static Python3Parser getPython3Parser(CodePointCharStream fromString) {
+        Python3Parser parser = new Builder.Parser(fromString).build();
+        parser.setErrorHandler(new PythonErrorStrategy());
+        return parser;
+    }
+
+    private static Python3Parser getPython3Parser(String string) {
+        Python3Parser parser = new Builder.Parser(string).build();
+        parser.setErrorHandler(new PythonErrorStrategy());
+        return parser;
+    }
+
     @TruffleBoundary
     private static ParserRuleContext preParseWithAntlr(PythonCore core, Source source) {
         String path = source.getURI().toString();
         String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
         String fileDirAndName = pathParts[pathParts.length - 2] + PythonCore.FILE_SEPARATOR + pathParts[pathParts.length - 1];
         CodePointCharStream fromString = CharStreams.fromString(source.getCharacters().toString(), fileDirAndName);
-        Python3Parser parser = new com.oracle.graal.python.parser.antlr.Builder.Parser(fromString).build();
+        Python3Parser parser = getPython3Parser(fromString);
         ParserRuleContext input;
         if (!core.isInitialized()) {
             input = cachedParseTrees.get(fileDirAndName);
@@ -80,23 +92,12 @@ public final class PythonParserImpl implements PythonParser {
                     parser.reset();
                     input = parser.eval_input();
                 } catch (Throwable e2) {
-                    int line = -1;
-                    int column = -1;
                     if (source.isInteractive() && e instanceof PIncompleteSourceException) {
                         ((PIncompleteSourceException) e).setSource(source);
                         throw e;
-                    } else if (e instanceof RecognitionException) {
-                        Token token = ((RecognitionException) e).getOffendingToken();
-                        line = token.getLine();
-                        column = token.getCharPositionInLine();
-                    } else if (e.getCause() instanceof NoViableAltException) {
-                        Token token = ((NoViableAltException) e.getCause()).getOffendingToken();
-                        line = token.getLine();
-                        column = token.getCharPositionInLine();
-                    } else {
-                        throw core.raise(SyntaxError, e.getMessage());
                     }
-                    throw core.raise(SyntaxError, getLocation(source, line), "invalid syntax: line %d, column %d. ", line, column);
+                    Node location = getLocation(source, PythonErrorStrategy.getLine(e));
+                    throw core.raise(SyntaxError, location, e.getMessage());
                 }
             }
         }
@@ -105,7 +106,7 @@ public final class PythonParserImpl implements PythonParser {
 
     @TruffleBoundary
     private static ParserRuleContext preParseInlineWithAntlr(PythonCore core, Source source) {
-        Python3Parser parser = new com.oracle.graal.python.parser.antlr.Builder.Parser(source.getCharacters().toString()).build();
+        Python3Parser parser = getPython3Parser(source.getCharacters().toString());
         ParserRuleContext input;
         try {
             input = parser.single_input();
@@ -114,20 +115,8 @@ public final class PythonParserImpl implements PythonParser {
                 parser.reset();
                 input = parser.eval_input();
             } catch (Throwable e2) {
-                int line = -1;
-                int column = -1;
-                if (e instanceof RecognitionException) {
-                    Token token = ((RecognitionException) e).getOffendingToken();
-                    line = token.getLine();
-                    column = token.getCharPositionInLine();
-                } else if (e.getCause() instanceof NoViableAltException) {
-                    Token token = ((NoViableAltException) e.getCause()).getOffendingToken();
-                    line = token.getLine();
-                    column = token.getCharPositionInLine();
-                } else {
-                    throw core.raise(SyntaxError, e.getMessage());
-                }
-                throw core.raise(SyntaxError, getLocation(source, line), "invalid syntax: line %d, column %d. ", line, column);
+                Node location = getLocation(source, PythonErrorStrategy.getLine(e));
+                throw core.raise(SyntaxError, location, e.getMessage());
             }
         }
         return input;
@@ -162,7 +151,7 @@ public final class PythonParserImpl implements PythonParser {
     @Override
     @TruffleBoundary
     public PythonParseResult parseEval(PythonCore core, String expression, String filename) {
-        Python3Parser parser = new com.oracle.graal.python.parser.antlr.Builder.Parser(expression).build();
+        Python3Parser parser = getPython3Parser(expression);
         ParserRuleContext input;
         try {
             input = parser.eval_input();
@@ -170,13 +159,14 @@ public final class PythonParserImpl implements PythonParser {
             throw handleParserError(core, e);
         }
         Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
-        return translateParseResult(core, filename, input, source);
+        Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
+        return translateParseResult(core, filename, input, source, callerFrame);
     }
 
     @Override
     @TruffleBoundary
     public PythonParseResult parseExec(PythonCore core, String expression, String filename) {
-        Python3Parser parser = new com.oracle.graal.python.parser.antlr.Builder.Parser(expression).build();
+        Python3Parser parser = getPython3Parser(expression);
         ParserRuleContext input;
         try {
             input = parser.file_input();
@@ -190,7 +180,7 @@ public final class PythonParserImpl implements PythonParser {
     @Override
     @TruffleBoundary
     public PythonParseResult parseSingle(PythonCore core, String expression, String filename) {
-        Python3Parser parser = new com.oracle.graal.python.parser.antlr.Builder.Parser(expression).build();
+        Python3Parser parser = getPython3Parser(expression);
         ParserRuleContext input;
         try {
             input = parser.single_input();
@@ -204,7 +194,7 @@ public final class PythonParserImpl implements PythonParser {
     @Override
     @TruffleBoundary
     public boolean isIdentifier(PythonCore core, String snippet) {
-        Python3Parser parser = new com.oracle.graal.python.parser.antlr.Builder.Parser(snippet).build();
+        Python3Parser parser = getPython3Parser(snippet);
         Python3Parser.AtomContext input;
         try {
             input = parser.atom();
@@ -215,20 +205,18 @@ public final class PythonParserImpl implements PythonParser {
     }
 
     private static PException handleParserError(PythonCore core, Throwable e) {
-        if (e instanceof RecognitionException) {
-            Token token = ((RecognitionException) e).getOffendingToken();
-            int line = token.getLine();
-            int column = token.getCharPositionInLine();
-            return core.raise(SyntaxError, "parser error at %d:%d\n%s", line, column, e.toString());
-        } else {
-            return core.raise(SyntaxError, e.getMessage());
-        }
+        return core.raise(SyntaxError, e.getMessage());
     }
 
     private static PythonParseResult translateParseResult(PythonCore core, String name, ParserRuleContext input, Source source) {
+        return translateParseResult(core, name, input, source, null);
+    }
+
+    private static PythonParseResult translateParseResult(PythonCore core, String name, ParserRuleContext input, Source source, Frame frame) {
         TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
         ScopeTranslator.accept(input, environment,
-                        (env, trackCells) -> new ScopeTranslator<>(core, env, source.isInteractive(), trackCells));
+                        (env, trackCells) -> new ScopeTranslator<>(core, env, source.isInteractive(), trackCells),
+                        (env) -> env.setFreeVarsInRootScope(frame));
 
         PythonTreeTranslator treeTranslator = new PythonTreeTranslator(core, name, input, environment, source);
         return treeTranslator.getTranslationResult();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -83,6 +83,7 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TruffleGetClassScopeNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object add(PFrame self) {
             // TODO: remove me
             // TODO: do it properly via the python API in super.__init__ :
@@ -191,6 +192,17 @@ public final class FrameBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             }
             return traceback.getPFrame(factory());
+        }
+    }
+
+    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class FrameClearNode extends PythonBuiltinNode {
+        @Specialization
+        Object clear(@SuppressWarnings("unused") PFrame self) {
+            // TODO: implement me
+            // see: https://github.com/python/cpython/blob/master/Objects/frameobject.c#L503
+            return PNone.NONE;
         }
     }
 }

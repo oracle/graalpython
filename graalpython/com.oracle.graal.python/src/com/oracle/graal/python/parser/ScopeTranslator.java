@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -155,7 +155,9 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitLambdef(Python3Parser.LambdefContext ctx) {
         argListCompilers.push(new ArgListCompiler<>(core));
-        ctx.accept(argListCompilers.peek());
+        if (ctx.varargslist() != null) {
+            ctx.accept(argListCompilers.peek());
+        }
         environment.beginScope(ctx, ScopeKind.Function);
         try {
             return super.visitLambdef(ctx);

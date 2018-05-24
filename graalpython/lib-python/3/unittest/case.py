@@ -991,14 +991,16 @@ class TestCase(object):
                 except (TypeError, IndexError, NotImplementedError):
                     differing += ('Unable to index element %d '
                                   'of second %s\n' % (len1, seq_type_name))
-        standardMsg = differing
-        diffMsg = '\n' + '\n'.join(
-            difflib.ndiff(pprint.pformat(seq1).splitlines(),
-                          pprint.pformat(seq2).splitlines()))
-
-        standardMsg = self._truncateMessage(standardMsg, diffMsg)
-        msg = self._formatMessage(msg, standardMsg)
-        self.fail(msg)
+        # standardMsg = differing
+        # diffMsg = '\n' + '\n'.join(
+        #     difflib.ndiff(pprint.pformat(seq1).splitlines(),
+        #                   pprint.pformat(seq2).splitlines()))
+        #
+        # standardMsg = self._truncateMessage(standardMsg, diffMsg)
+        # msg = self._formatMessage(msg, standardMsg)
+        # self.fail(msg)
+        # TODO: Truffle reneable me once pformat / difflib work (GR-9152) (GR-9153)
+        self.fail(differing)
 
     def _truncateMessage(self, message, diff):
         max_diff = self.maxDiff

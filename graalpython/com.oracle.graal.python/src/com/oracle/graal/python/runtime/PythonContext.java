@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.graalvm.options.OptionValues;
@@ -38,8 +39,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 
 public class PythonContext {
@@ -47,6 +50,7 @@ public class PythonContext {
     private final PythonLanguage language;
     private PythonModule mainModule;
     private final PythonCore core;
+    private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -187,5 +191,22 @@ public class PythonContext {
             slowPathEquivalence = new HashingStorage.SlowPathEquivalence();
         }
         return slowPathEquivalence;
+    }
+
+    @TruffleBoundary
+    public void registerShutdownHook(Object callable, CallTarget ct) {
+        atExitHooks.put(callable, ct);
+    }
+
+    @TruffleBoundary
+    public void deregisterShutdownHook(Object callable) {
+        atExitHooks.remove(callable);
+    }
+
+    @TruffleBoundary
+    public void runShutdownHooks() {
+        for (CallTarget f : atExitHooks.values()) {
+            f.call();
+        }
     }
 }

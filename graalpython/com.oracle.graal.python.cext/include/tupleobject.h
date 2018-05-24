@@ -1,3 +1,8 @@
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 
 /* Tuple object interface */
 
@@ -24,7 +29,7 @@ returned item's reference count.
 #ifndef Py_LIMITED_API
 typedef struct {
     PyObject_VAR_HEAD
-    PyObject *ob_item[1];
+    PyObject **ob_item;
 
     /* ob_item contains space for 'ob_size' elements.
      * Items must normally not be NULL, except during construction when

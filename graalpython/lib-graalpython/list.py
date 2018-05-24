@@ -54,7 +54,10 @@ def sort(self, key=None, reverse=False):
             lt = lambda a,b: key(a) < key(b)
         else:
             lt = lambda a,b: a < b
+    origLen = len(self)
     TimSort(self, lt=lt).sort()
+    if(origLen != len(self)):
+        raise ValueError("list modified during sort")
     return None
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,15 +26,10 @@
 package com.oracle.graal.python.nodes.cell;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.parser.CellSlots;
 import com.oracle.truffle.api.frame.FrameSlot;
 
 public interface CellSupplier {
     PCell[] getCells();
 
-    CellSlots getCellSlots();
-
-    default FrameSlot[] getCellVarSlots() {
-        return getCellSlots().getCellVarSlots();
-    }
+    FrameSlot[] getCellVarSlots();
 }

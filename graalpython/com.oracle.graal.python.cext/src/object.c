@@ -122,50 +122,18 @@ static PyNumberMethods none_as_number = {
     0,                          /* nb_index */
 };
 
-PyTypeObject _PyNone_Type = {
-    PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    "NoneType",
-    0,
-    0,
-    none_dealloc,       /*tp_dealloc*/ /*never called*/
-    0,                  /*tp_print*/
-    0,                  /*tp_getattr*/
-    0,                  /*tp_setattr*/
-    0,                  /*tp_reserved*/
-    none_repr,          /*tp_repr*/
-    &none_as_number,    /*tp_as_number*/
-    0,                  /*tp_as_sequence*/
-    0,                  /*tp_as_mapping*/
-    0,                  /*tp_hash */
-    0,                  /*tp_call */
-    0,                  /*tp_str */
-    0,                  /*tp_getattro */
-    0,                  /*tp_setattro */
-    0,                  /*tp_as_buffer */
-    Py_TPFLAGS_DEFAULT, /*tp_flags */
-    0,                  /*tp_doc */
-    0,                  /*tp_traverse */
-    0,                  /*tp_clear */
-    0,                  /*tp_richcompare */
-    0,                  /*tp_weaklistoffset */
-    0,                  /*tp_iter */
-    0,                  /*tp_iternext */
-    0,                  /*tp_methods */
-    0,                  /*tp_members */
-    0,                  /*tp_getset */
-    0,                  /*tp_base */
-    0,                  /*tp_dict */
-    0,                  /*tp_descr_get */
-    0,                  /*tp_descr_set */
-    0,                  /*tp_dictoffset */
-    0,                  /*tp_init */
-    0,                  /*tp_alloc */
-    none_new,           /*tp_new */
-};
+PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT);
 
 PyObject _Py_NoneStruct = {
   _PyObject_EXTRA_INIT
   1, &_PyNone_Type
+};
+
+PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT);
+
+PyObject _Py_NotImplementedStruct = {
+    _PyObject_EXTRA_INIT
+    1, &_PyNotImplemented_Type
 };
 
 PyObject* PyType_GenericAlloc(PyTypeObject* cls, Py_ssize_t nitems) {
@@ -192,6 +160,15 @@ void PyObject_Free(void* ptr) {
 
 Py_ssize_t PyObject_Size(PyObject *o) {
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_Size", to_java(o));
+}
+
+static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
+	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", to_java(base->tp_subclasses), to_java(PyLong_FromVoidPtr(type)), to_java((PyObject*)type));
+	if (result == ERROR_MARKER) {
+		return -1;
+	}
+	base->tp_subclasses = to_sulong(result);
+	return 0;
 }
 
 int PyType_Ready(PyTypeObject* cls) {
@@ -237,17 +214,37 @@ int PyType_Ready(PyTypeObject* cls) {
         cls->tp_doc = "";
     }
 
-    PyObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
-                                       "PyType_Ready",
-                                       // no conversion of cls here, because we
-                                       // store this into the PyTypeObject
-                                       cls,
-                                       to_java_type(metaclass),
-                                       to_java_type(base),
-                                       truffle_read_string(cls->tp_name),
-                                       truffle_read_string(cls->tp_doc));
-    // store the back reference
-    marry_objects(cls, javacls);
+    /* Initialize tp_bases */
+    PyObject* bases = cls->tp_bases;
+    if (bases == NULL) {
+        if (base == NULL) {
+            bases = PyTuple_New(0);
+        } else {
+            bases = PyTuple_Pack(1, base);
+        }
+        if (bases == NULL) {
+        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
+        	return -1;
+        }
+        cls->tp_bases = bases;
+    }
+
+
+    PyTypeObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
+                                           "PyType_Ready",
+                                           // no conversion of cls here, because we
+                                           // store this into the PyTypeObject
+                                           cls,
+                                           to_java_type(metaclass),
+                                           to_java(bases),
+                                           truffle_read_string(cls->tp_name),
+                                           truffle_read_string(cls->tp_doc ? cls->tp_doc : ""));
+    if (polyglot_is_value(javacls)) {
+    	javacls = polyglot_as__typeobject(javacls);
+    }
+
+    // remember the managed wrapper
+    ((PyObject*)cls)->ob_refcnt = truffle_handle_for_managed(javacls);
 
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_name
     const char* lastDot = strrchr(cls->tp_name, '.');
@@ -286,7 +283,7 @@ int PyType_Ready(PyTypeObject* cls) {
                            member.offset,
                            // TODO: support other flags
                            ((member.flags & READONLY) == 0) ? Py_True : Py_False,
-                           truffle_read_string(member.doc));
+                           truffle_read_string(member.doc ? member.doc : ""));
             member = members[++i];
         }
     }
@@ -302,7 +299,7 @@ int PyType_Ready(PyTypeObject* cls) {
                            truffle_read_string(getset.name),
                            truffle_address_to_function(getset.get),
                            truffle_address_to_function(getset.set),
-                           truffle_read_string(getset.doc),
+                           getset.doc ? truffle_read_string(getset.doc) : truffle_read_string(""),
                            // do not convert the closure, it is handed to the
                            // getter and setter as-is
                            getset.closure);
@@ -410,6 +407,19 @@ int PyType_Ready(PyTypeObject* cls) {
         // TODO ...
     }
 
+    // TODO link subclasses
+    /* Link into each base class's list of subclasses */
+    bases = cls->tp_bases;
+//    Py_ssize_t n = PyTuple_GET_SIZE(bases);
+//    Py_ssize_t i;
+//    for (i = 0; i < n; i++) {
+//        PyTypeObject *b = polyglot_as__typeobject(PyTuple_GetItem(bases, i));
+//        if (PyType_Check(b) && add_subclass((PyTypeObject *)b, cls) < 0) {
+//        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
+//        	return -1;
+//        }
+//    }
+
     // done
     cls->tp_flags = cls->tp_flags & ~Py_TPFLAGS_READYING;
     cls->tp_flags = cls->tp_flags | Py_TPFLAGS_READY;
@@ -442,8 +452,37 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
     return PyObject_Call(callable, args, PyDict_New());
 }
 
-PyObject* PyTruffle_Object_CallFunction(PyObject* callable, const char* fmt, int c, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
-    PyObject* args = PyTruffle_BuildValue(fmt, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
+// (tfel): this is used a couple of times in this file only, for now
+#define CALL_WITH_VARARGS(retval, funcname, skipN, ...)                 \
+    switch (polyglot_get_arg_count() - skipN) {                         \
+    case 0:                                                             \
+        retval = funcname(__VA_ARGS__); break;                          \
+    case 1:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN)); break; \
+    case 2:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1)); break; \
+    case 3:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2)); break; \
+    case 4:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3)); break; \
+    case 5:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4)); break; \
+    case 6:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4), polyglot_get_arg(skipN + 5)); break; \
+    case 7:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4), polyglot_get_arg(skipN + 5), polyglot_get_arg(skipN + 6)); break; \
+    case 8:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4), polyglot_get_arg(skipN + 5), polyglot_get_arg(skipN + 6), polyglot_get_arg(skipN + 7)); break; \
+    case 9:                                                             \
+        retval = funcname(__VA_ARGS__, polyglot_get_arg(skipN), polyglot_get_arg(skipN + 1), polyglot_get_arg(skipN + 2), polyglot_get_arg(skipN + 3), polyglot_get_arg(skipN + 4), polyglot_get_arg(skipN + 5), polyglot_get_arg(skipN + 6), polyglot_get_arg(skipN + 7), polyglot_get_arg(skipN + 8)); break; \
+    default:                                                            \
+        fprintf(stderr, "Too many arguments passed through varargs: %d", polyglot_get_arg_count() - skipN); \
+    }
+
+PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
+    PyObject* args;
+    CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
+    args = to_sulong(args);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
@@ -454,8 +493,17 @@ PyObject* PyTruffle_Object_CallFunction(PyObject* callable, const char* fmt, int
     return PyObject_CallObject(callable, args);
 }
 
-PyObject* PyTruffle_Object_CallMethod(PyObject* object, const char* method, const char* fmt, int c, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
-    PyObject* args = PyTruffle_BuildValue(fmt, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
+PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
+    PyObject* args = PyTuple_New(polyglot_get_arg_count() - 1);
+    for (int i = 1; i < polyglot_get_arg_count(); i++) {
+        PyTuple_SetItem(args, i - 1, polyglot_get_arg(i));
+    }
+    return PyObject_CallObject(callable, args);
+}
+
+PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
+    PyObject* args;
+    CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
     return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), to_java(args)));
 }
 
@@ -557,7 +605,7 @@ int PyObject_Not(PyObject* obj) {
 }
 
 PyObject * PyObject_RichCompare(PyObject *v, PyObject *w, int op) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_RichCompare", to_java(v), to_java(w), op, ERROR_MARKER);
+    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_RichCompare", to_java(v), to_java(w), op);
     if (result == ERROR_MARKER) {
         return NULL;
     } else {
@@ -572,4 +620,21 @@ int PyObject_RichCompareBool(PyObject *v, PyObject *w, int op) {
     } else {
         return PyObject_IsTrue(res);
     }
+}
+
+PyObject* _PyObject_New(PyTypeObject *tp) {
+    PyObject *op = (PyObject*)PyObject_MALLOC(_PyObject_SIZE(tp));
+    if (op == NULL) {
+        return PyErr_NoMemory();
+    }
+    return PyObject_INIT(op, tp);
+}
+
+PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
+    if (op == NULL) {
+        return PyErr_NoMemory();
+    }
+    Py_TYPE(op) = tp;
+    _Py_NewReference(op);
+    return op;
 }

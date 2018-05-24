@@ -39,8 +39,11 @@
 #include "capi.h"
 
 /* Dicts */
+
+PyTypeObject PyDict_Type = PY_TRUFFLE_TYPE("dict", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS);
+
 PyObject* PyDict_New(void) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_New");
+    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_New"));
 }
 
 int PyDict_SetItem(PyObject* d, PyObject* k, PyObject* v) {
@@ -48,8 +51,8 @@ int PyDict_SetItem(PyObject* d, PyObject* k, PyObject* v) {
 }
 
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
-    void* result = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_GetItem", to_java(d), to_java(k)));
-    if (result == Py_None) {
+    void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_GetItem", to_java(d), to_java(k));
+    if (result == ERROR_MARKER) {
         return NULL;
     } else {
         return to_sulong(result);
@@ -62,7 +65,7 @@ int PyDict_DelItem(PyObject *d, PyObject *key) {
 
 
 int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
-    PyObject *tresult = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_Next", to_java(d), *ppos, ERROR_MARKER);
+    void *tresult = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_Next", to_java(d), *ppos);
     if (tresult == ERROR_MARKER) {
     	if(pkey != NULL) {
     		*pkey = NULL;
@@ -74,10 +77,10 @@ int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalu
     }
     (*ppos)++;
     if (pkey != NULL) {
-    	*pkey = PyTuple_GetItem(tresult, 0);
+    	*pkey = to_sulong(PyTruffle_Tuple_GetItem(tresult, 0));
     }
     if (pvalue != NULL) {
-    	*pvalue = PyTuple_GetItem(tresult, 1);
+    	*pvalue = to_sulong(PyTruffle_Tuple_GetItem(tresult, 1));
     }
     return 1;
 }
@@ -100,10 +103,10 @@ PyObject * PyDict_GetItemString(PyObject *v, const char *key) {
 }
 
 int PyDict_SetItemString(PyObject *v, const char *key, PyObject *item) {
-    truffle_invoke(to_java(v), "__setitem__", PyUnicode_FromString(key), to_java(item));
+    truffle_invoke(to_java(v), "__setitem__", to_java(PyUnicode_FromString(key)), to_java(item));
     return 0;
 }
 
 int PyDict_DelItemString(PyObject *d, const char *key) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyDict_DelItem", to_java(d), PyUnicode_FromString(key));
+    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyDict_DelItem", to_java(d), polyglot_from_string(key, "utf-8"));
 }

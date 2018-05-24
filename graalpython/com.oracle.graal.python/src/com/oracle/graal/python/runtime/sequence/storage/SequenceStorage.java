@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -36,6 +36,8 @@ public abstract class SequenceStorage {
 
     public abstract int length();
 
+    public abstract void setNewLength(int length);
+
     public abstract SequenceStorage copy();
 
     public abstract SequenceStorage createEmpty(int newCapacity);
@@ -54,7 +56,7 @@ public abstract class SequenceStorage {
 
     public abstract void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException;
 
-    public abstract void delSlice(int start, int stop);
+    public abstract void delSlice(int start, int stop, int step);
 
     public abstract void delItemInBound(int idx);
 
@@ -76,8 +78,12 @@ public abstract class SequenceStorage {
 
     public abstract Object getIndicativeValue();
 
+    public abstract void ensureCapacity(int newCapacity);
+
+    public abstract void copyItem(int idxTo, int idxFrom);
+
     public void clear() {
-        this.delSlice(0, length());
+        this.delSlice(0, length(), 1);
     }
 
     public int count(Object arg) {

@@ -39,13 +39,18 @@
 package com.oracle.graal.python.tck;
 
 import static org.graalvm.polyglot.tck.TypeDescriptor.ANY;
+import static org.graalvm.polyglot.tck.TypeDescriptor.ARRAY;
 import static org.graalvm.polyglot.tck.TypeDescriptor.BOOLEAN;
+import static org.graalvm.polyglot.tck.TypeDescriptor.EXECUTABLE;
+import static org.graalvm.polyglot.tck.TypeDescriptor.HOST_OBJECT;
+import static org.graalvm.polyglot.tck.TypeDescriptor.NATIVE_POINTER;
 import static org.graalvm.polyglot.tck.TypeDescriptor.NULL;
 import static org.graalvm.polyglot.tck.TypeDescriptor.NUMBER;
 import static org.graalvm.polyglot.tck.TypeDescriptor.OBJECT;
 import static org.graalvm.polyglot.tck.TypeDescriptor.STRING;
 import static org.graalvm.polyglot.tck.TypeDescriptor.array;
 import static org.graalvm.polyglot.tck.TypeDescriptor.executable;
+import static org.graalvm.polyglot.tck.TypeDescriptor.intersection;
 import static org.graalvm.polyglot.tck.TypeDescriptor.union;
 
 import java.io.IOException;
@@ -100,6 +105,8 @@ public class PythonProvider implements LanguageProvider {
 
     public Collection<? extends Snippet> createValueConstructors(Context context) {
         List<Snippet> snippets = new ArrayList<>();
+        final TypeDescriptor noType = intersection();
+        final TypeDescriptor allTypes = intersection(noType, NULL, BOOLEAN, NUMBER, STRING, HOST_OBJECT, NATIVE_POINTER, OBJECT, ARRAY, EXECUTABLE);
         // @formatter:off
         addValueSnippet(context, snippets, "BooleanType:True",  BOOLEAN,    "lambda: True");
         addValueSnippet(context, snippets, "BooleanType:False", BOOLEAN,    "lambda: False");
@@ -108,11 +115,11 @@ public class PythonProvider implements LanguageProvider {
         addValueSnippet(context, snippets, "FloatType",         NUMBER,     "lambda: 1.1");
         addValueSnippet(context, snippets, "ComplexType",       OBJECT,     "lambda: 1.0j");
         addValueSnippet(context, snippets, "StringType",        STRING,     "lambda: 'spam'");
-        addValueSnippet(context, snippets, "TupleType:Empty",   array(NULL),                    "lambda: ()");
+        addValueSnippet(context, snippets, "TupleType:Empty",   array(allTypes),                     "lambda: ()");
         addValueSnippet(context, snippets, "TupleType:Number",  array(NUMBER),                  "lambda: (1, 2.1)");
         addValueSnippet(context, snippets, "TupleType:String",  array(STRING),                  "lambda: ('foo', 'bar')");
         addValueSnippet(context, snippets, "TupleType:Mixed",   array(union(NUMBER, STRING)),   "lambda: ('foo', 1)");
-        addValueSnippet(context, snippets, "ListType:Empty",    array(NULL),                    "lambda: []");
+        addValueSnippet(context, snippets, "ListType:Empty",    array(allTypes),                     "lambda: []");
         addValueSnippet(context, snippets, "ListType:Number",   array(NUMBER),                  "lambda: [1, 2.1]");
         addValueSnippet(context, snippets, "ListType:String",   array(STRING),                  "lambda: ['foo', 'bar']");
         addValueSnippet(context, snippets, "ListType:Mixed",    array(union(NUMBER, STRING)),   "lambda: ['foo', 1]");
