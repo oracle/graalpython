@@ -52,3 +52,14 @@ def test_import():
     except ImportError:
         imported = False
     assert imported
+
+
+def test_get_setlocale():
+    import locale
+    current_locale = locale.getlocale(0)
+    try:
+        new_locale = ('en_GB', 'UTF-8')
+        assert str(locale.setlocale(0, new_locale)) == '.'.join(new_locale)
+        assert locale.getlocale(0) == new_locale
+    finally:
+        assert str(locale.setlocale(0, current_locale)) == '.'.join(current_locale)
