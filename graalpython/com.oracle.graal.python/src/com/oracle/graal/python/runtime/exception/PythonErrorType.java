@@ -62,5 +62,6 @@ public enum PythonErrorType {
     UserWarning,
     ValueError,
     Warning,
-    ZeroDivisionError;
+    ZeroDivisionError,
+    BufferError;
 }

@@ -42,6 +42,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
@@ -200,6 +201,16 @@ public class PythonObjectNativeWrapperMR {
         Object doTpAsNumber(PythonClass object, @SuppressWarnings("unused") String key) {
             // TODO check for type and return 'NULL'
             return new PyNumberMethodsWrapper(object);
+        }
+
+        @Specialization(guards = "eq(TP_AS_BUFFER, key)")
+        Object doTpAsBuffer(PythonObject object, @SuppressWarnings("unused") String key) {
+            if (object instanceof PBytes || object instanceof PByteArray) {
+                return new PyBufferProcsWrapper(object);
+            }
+
+            // NULL pointer
+            return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")

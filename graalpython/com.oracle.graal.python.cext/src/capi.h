@@ -238,11 +238,12 @@ extern PyObject marker_struct;
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
 /* UNICODE */
-
 void* PyTruffle_Unicode_FromString(const char* o);
 
 /* DICT */
-
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
+
+/* BYTES */
+int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
 
 #endif

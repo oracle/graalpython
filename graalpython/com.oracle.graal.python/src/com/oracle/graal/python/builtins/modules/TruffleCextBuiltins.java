@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -1048,6 +1049,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         PythonObjectNativeWrapper doPythonObject(PythonObjectNativeWrapper nativeWrapper, Object ptr) {
             nativeWrapper.setNativePointer(ptr);
             return nativeWrapper;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_SetBufferProcs", fixedNumOfArguments = 3)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_SetBufferProcs extends NativeBuiltin {
+
+        @Specialization
+        Object doPythonObject(PythonObject obj, Object getBufferProc, Object releaseBufferProc) {
+            obj.setAttribute(SpecialAttributeNames.__GET_BUFFER__, getBufferProc);
+            obj.setAttribute(SpecialAttributeNames.__RELEASE_BUFFER__, releaseBufferProc);
+            return PNone.NO_VALUE;
         }
     }
 }
