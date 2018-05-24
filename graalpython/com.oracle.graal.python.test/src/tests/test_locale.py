@@ -36,6 +36,14 @@
 # SOFTWARE.
 
 
-class Error(Exception):
-    pass
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
 
+
+def test_import():
+    pass
