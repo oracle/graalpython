@@ -124,3 +124,8 @@ PyObject* PyModule_GetDict(PyObject* o) {
     }
     return ((PyModuleObject*)polyglot_as_PyModuleObject(o))->md_dict;
 }
+
+int PyModule_AddStringConstant(PyObject* m, const char* k, const char* constant) {
+    truffle_invoke(PY_TRUFFLE_CEXT, "PyModule_AddObject", to_java(m), truffle_read_string(k), truffle_read_string(constant));
+    return 0;
+}
