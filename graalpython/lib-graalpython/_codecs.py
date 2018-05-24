@@ -51,7 +51,8 @@ def make_base_search_function():
     base_decode = decode
     def search_function(encoding):
         if base_lookup(encoding):
-            return (
+            from codecs import CodecInfo
+            return CodecInfo(
                 lambda data, errors=None: base_encode(data, encoding, errors),
                 lambda data, errors=None: base_decode(data, encoding, errors),
                 None, # TODO: stream_reader
