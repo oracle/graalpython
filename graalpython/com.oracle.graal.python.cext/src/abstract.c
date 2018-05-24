@@ -263,6 +263,7 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
 	return to_sulong(result);
 }
 
+// taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
     PyBufferProcs *pb = obj->ob_type->tp_as_buffer;
 
@@ -273,6 +274,19 @@ int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
         return -1;
     }
     return (*pb->bf_getbuffer)(obj, view, flags);
+}
+
+// taken from CPython "Objects/abstract.c"
+void PyBuffer_Release(Py_buffer *view) {
+    PyObject *obj = view->obj;
+    PyBufferProcs *pb;
+    if (obj == NULL)
+        return;
+    pb = Py_TYPE(obj)->tp_as_buffer;
+    if (pb && pb->bf_releasebuffer)
+        pb->bf_releasebuffer(obj, view);
+    view->obj = NULL;
+    Py_DECREF(obj);
 }
 
 // taken from CPython "Objects/abstract.c"

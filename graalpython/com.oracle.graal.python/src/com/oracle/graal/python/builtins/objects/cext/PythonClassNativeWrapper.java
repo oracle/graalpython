@@ -47,6 +47,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
  */
 public class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
+    private Object getBufferProc;
+    private Object releaseBufferProc;
 
     public PythonClassNativeWrapper(PythonClass object) {
         super(object);
@@ -55,6 +57,22 @@ public class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
 
     public CStringWrapper getNameWrapper() {
         return nameWrapper;
+    }
+
+    public Object getGetBufferProc() {
+        return getBufferProc;
+    }
+
+    public void setGetBufferProc(Object getBufferProc) {
+        this.getBufferProc = getBufferProc;
+    }
+
+    public Object getReleaseBufferProc() {
+        return releaseBufferProc;
+    }
+
+    public void setReleaseBufferProc(Object releaseBufferProc) {
+        this.releaseBufferProc = releaseBufferProc;
     }
 
     public static PythonClassNativeWrapper wrap(PythonClass obj) {

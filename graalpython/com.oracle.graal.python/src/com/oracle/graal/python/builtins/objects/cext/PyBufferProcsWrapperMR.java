@@ -38,41 +38,48 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.MessageResolution;
+import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.nodes.Node;
 
-/**
- * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
- * correct shape of the corresponding native type {@code struct _object}.
- */
-public class PythonObjectNativeWrapper extends PythonNativeWrapper {
-    private final PythonAbstractObject pythonObject;
+@MessageResolution(receiverType = PyBufferProcsWrapper.class)
+public class PyBufferProcsWrapperMR {
 
-    public PythonObjectNativeWrapper(PythonAbstractObject object) {
-        this.pythonObject = object;
-    }
+    @Resolve(message = "READ")
+    abstract static class ReadNode extends Node {
+        @Child private ToSulongNode toSulongNode;
 
-    public PythonAbstractObject getPythonObject() {
-        return pythonObject;
-    }
-
-    public static boolean isInstance(TruffleObject o) {
-        return o instanceof PythonObjectNativeWrapper;
-    }
-
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PythonObjectNativeWrapperMRForeign.ACCESS;
-    }
-
-    public static PythonObjectNativeWrapper wrap(PythonAbstractObject obj) {
-        // important: native wrappers are cached
-        PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
-        if (nativeWrapper == null) {
-            nativeWrapper = new PythonObjectNativeWrapper(obj);
-            obj.setNativeWrapper(nativeWrapper);
+        public Object access(PyBufferProcsWrapper object, String key) {
+            // translate key to attribute name
+            PythonClassNativeWrapper nativeWrapper = object.getDelegate().getNativeWrapper();
+            // TODO handle case if nativeWrapper does not exist yet
+            Object result;
+            switch (key) {
+                case "bf_getbuffer":
+                    result = nativeWrapper.getGetBufferProc();
+                    break;
+                case "bf_releasebuffer":
+                    // TODO
+                    result = nativeWrapper.getReleaseBufferProc();
+                    break;
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.raise(key);
+            }
+            // use NO_VALUE for NULL
+            return getToSulongNode().execute(result == null ? PNone.NO_VALUE : result);
         }
-        return nativeWrapper;
+
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
     }
 }
