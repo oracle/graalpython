@@ -251,7 +251,7 @@ public class NodeFactory {
         return new StringLiteralNode(value);
     }
 
-    public PNode createBytesLiteral(String value) {
+    public PNode createBytesLiteral(byte[] value) {
         return new BytesLiteralNode(value);
     }
 
