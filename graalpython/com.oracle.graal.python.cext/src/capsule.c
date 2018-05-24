@@ -49,15 +49,21 @@ void* PyCapsule_GetContext(PyObject *o) {
     if (result == ERROR_MARKER) {
         return NULL;
     }
-    return (void *)as_long(result);
+    return result;
 }
 
 void* PyCapsule_GetPointer(PyObject *o, const char *name) {
-    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"));
+    void* namearg;
+    if (name == NULL) {
+        namearg = to_java(Py_None);
+    } else {
+        namearg = polyglot_from_string(name, "ascii");
+    }
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), namearg);
     if (result == ERROR_MARKER) {
         return NULL;
     }
-    return (void *)as_long(result);
+    return result;
 }
 
 void* PyCapsule_Import(const char *name, int no_block) {

@@ -526,7 +526,7 @@ def PyCapsule_GetContext(obj):
 def PyCapsule_GetPointer(obj, name):
     if not isinstance(obj, PyCapsule) or obj.pointer is None:
         raise ValueError("PyCapsule_GetPointer called with invalid PyCapsule object")
-    if name != obj.name:
+    if name != None and name != obj.name:
         raise ValueError("PyCapsule_GetPointer called with incorrect name")
     return obj.pointer
 
