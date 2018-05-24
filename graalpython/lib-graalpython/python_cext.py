@@ -1093,7 +1093,7 @@ def initialize_member_accessors():
 
 @may_raise
 def PyImport_ImportModule(name):
-    return __import__(name)
+    return __import__(name, fromlist=["*"])
 
 
 @may_raise
