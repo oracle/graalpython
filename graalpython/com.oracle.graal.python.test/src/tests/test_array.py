@@ -45,6 +45,15 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
+def test_import():
+    imported = True
+    try:
+        import array
+    except ImportError:
+        imported = False
+    assert imported
+
+
 def test_create():
     from array import array
     a = array('b', b'x'*10)

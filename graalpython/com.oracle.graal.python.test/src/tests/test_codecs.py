@@ -12,7 +12,12 @@ def assert_raises(err, fn, *args, **kwargs):
 
 
 def test_import():
-    import codecs
+    imported = True
+    try:
+        import codecs
+    except ImportError:
+        imported = False
+    assert imported
 
 
 def test_decode():

@@ -46,4 +46,9 @@ def assert_raises(err, fn, *args, **kwargs):
 
 
 def test_import():
-    pass
+    imported = True
+    try:
+        from _locale import (setlocale, LC_ALL, LC_CTYPE, LC_NUMERIC, localeconv, Error)
+    except ImportError:
+        imported = False
+    assert imported
