@@ -38,41 +38,27 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
-/**
- * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
- * correct shape of the corresponding native type {@code struct _object}.
- */
-public class PythonObjectNativeWrapper extends PythonNativeWrapper {
-    private final PythonAbstractObject pythonObject;
+public class PyBufferProcsWrapper implements TruffleObject {
 
-    public PythonObjectNativeWrapper(PythonAbstractObject object) {
-        this.pythonObject = object;
+    private final PythonClass delegate;
+
+    public PyBufferProcsWrapper(PythonClass delegate) {
+        this.delegate = delegate;
     }
 
-    public PythonAbstractObject getPythonObject() {
-        return pythonObject;
+    public PythonClass getDelegate() {
+        return delegate;
     }
 
-    public static boolean isInstance(TruffleObject o) {
-        return o instanceof PythonObjectNativeWrapper;
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PyBufferProcsWrapper;
     }
 
-    @Override
     public ForeignAccess getForeignAccess() {
-        return PythonObjectNativeWrapperMRForeign.ACCESS;
-    }
-
-    public static PythonObjectNativeWrapper wrap(PythonAbstractObject obj) {
-        // important: native wrappers are cached
-        PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
-        if (nativeWrapper == null) {
-            nativeWrapper = new PythonObjectNativeWrapper(obj);
-            obj.setNativeWrapper(nativeWrapper);
-        }
-        return nativeWrapper;
+        return PyBufferProcsWrapperMRForeign.ACCESS;
     }
 }

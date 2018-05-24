@@ -123,6 +123,7 @@ public abstract class CExtNodes {
 
         @Fallback
         Object run(Object obj) {
+            assert obj != null : "Java 'null' cannot be a Sulong value";
             return obj;
         }
 

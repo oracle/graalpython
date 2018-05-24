@@ -38,8 +38,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -62,7 +60,6 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -162,10 +159,7 @@ public class PythonObjectNativeWrapperMR {
                         @Cached("createClassProfile()") ValueProfile profile) {
             Object profiled = profile.profile(object);
             if (profiled instanceof PBytes) {
-                PythonContext context = getContext();
-                byte[] internalByteArray = ((PBytes) profiled).getInternalByteArray();
-                // TODO create a custom wrapper that has length+1 shape
-                return context.getEnv().asGuestValue(Arrays.copyOf(internalByteArray, internalByteArray.length + 1));
+                return new PySequenceArrayWrapper(profiled);
             }
             throw UnsupportedMessageException.raise(Message.READ);
         }
@@ -204,13 +198,13 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
-        Object doTpAsBuffer(PythonObject object, @SuppressWarnings("unused") String key) {
-            if (object instanceof PBytes || object instanceof PByteArray) {
+        Object doTpAsBuffer(PythonClass object, @SuppressWarnings("unused") String key) {
+            if (object == getCore().lookupType(PBytes.class) || object == getCore().lookupType(PByteArray.class)) {
                 return new PyBufferProcsWrapper(object);
             }
 
             // NULL pointer
-            return PNone.NO_VALUE;
+            return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
@@ -471,12 +465,10 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    abstract static class ToPyObjectNode extends PBaseNode {
+    abstract static class ToPyObjectNode extends TransformToNativeNode {
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
         @CompilationFinal private TruffleObject PyNoneHandle;
-        @Child private Node isPointerNode;
-        @Child private Node toNativeNode;
         @Child private PCallNativeNode callNativeUnary;
         @Child private PCallNativeNode callNativeBinary;
         @Child private GetClassNode getClassNode;
@@ -524,28 +516,6 @@ public class PythonObjectNativeWrapperMR {
                 PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
             }
             return PyObjectHandle_FromJavaObject;
-        }
-
-        private Object ensureIsPointer(Object value) {
-            if (value instanceof TruffleObject) {
-                TruffleObject truffleObject = (TruffleObject) value;
-                if (isPointerNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    isPointerNode = insert(Message.IS_POINTER.createNode());
-                }
-                if (!ForeignAccess.sendIsPointer(isPointerNode, truffleObject)) {
-                    if (toNativeNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        toNativeNode = insert(Message.TO_NATIVE.createNode());
-                    }
-                    try {
-                        return ForeignAccess.sendToNative(toNativeNode, truffleObject);
-                    } catch (UnsupportedMessageException e) {
-                        throw e.raise();
-                    }
-                }
-            }
-            return value;
         }
 
         protected boolean isNonNative(PythonClass klass) {

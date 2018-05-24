@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -68,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -1057,9 +1057,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_SetBufferProcs extends NativeBuiltin {
 
         @Specialization
-        Object doPythonObject(PythonObject obj, Object getBufferProc, Object releaseBufferProc) {
-            obj.setAttribute(SpecialAttributeNames.__GET_BUFFER__, getBufferProc);
-            obj.setAttribute(SpecialAttributeNames.__RELEASE_BUFFER__, releaseBufferProc);
+        Object doPythonObject(PythonClass obj, Object getBufferProc, Object releaseBufferProc) {
+            PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
+            nativeWrapper.setGetBufferProc(getBufferProc);
+            nativeWrapper.setReleaseBufferProc(releaseBufferProc);
             return PNone.NO_VALUE;
         }
     }

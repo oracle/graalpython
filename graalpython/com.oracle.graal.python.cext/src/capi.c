@@ -223,6 +223,12 @@ PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
 	return jobj;
 }
 
+/** to be used from Java code only; creates the deref handle for a sequence wrapper */
+void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
+    // TODO do polyglot typecast depending on element_size
+    return truffle_deref_handle_for_managed(jobj);
+}
+
 const char* PyTruffle_StringToCstr(void* jlString) {
     return truffle_string_to_cstr(jlString);
 }
