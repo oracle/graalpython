@@ -263,3 +263,14 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
 	return to_sulong(result);
 }
 
+PyObject* PyNumber_Absolute(PyObject* o) {
+    return to_sulong(polyglot_invoke(PY_BUILTIN, "abs", o));
+}
+
+PyObject* PyNumber_Divmod(PyObject* a, PyObject* b) {
+    return to_sulong(polyglot_invoke(PY_BUILTIN, "divmod", a, b));
+}
+
+PyObject* PyNumber_Invert(PyObject* o) {
+    return to_sulong(polyglot_invoke(o, "__invert__"));
+}
