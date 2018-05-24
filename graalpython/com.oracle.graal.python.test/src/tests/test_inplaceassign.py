@@ -35,50 +35,48 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import unittest
 
-def test_lambdas_as_function_default_argument_values():
-    globs = {}
-    exec("""
-def x(aaaa, bbbb=None, cccc={}, dddd=lambda name: '*'+name):
-    return aaaa, bbbb, cccc, dddd(aaaa)
+class InplaceAssignmentTest(unittest.TestCase):
+    
+    def test_iadd_01(self):
 
-retval = x('hello')
-    """, globs)
-    assert globs["retval"] == ('hello', None, {}, '*hello')
+        class MyInt(int):
+            def __iadd__(self, value):
+                return 7
+            def __add__(self, value):
+                return 6
 
+        a = MyInt(10)
+        a += 4
+        self.assertEqual(a, 7)
 
-def test_required_kw_arg():
-    globs = {}
-    exec("""
-def x(*, a=None, b):
-    return a, b
+        a = MyInt(10)
+        a = a + 4
+        self.assertEqual(a, 6)
 
-try:
-    x()
-except TypeError:
-    assert True
-else:
-    assert False
+    def test_iadd_02(self):
 
-retval = x(b=42)
-    """, globs)
-    assert globs["retval"] == (None, 42)
+        class MyInt(int):
+            def __add__(self, value):
+                return 6
 
+        a = MyInt(10)
+        a += 4
+        self.assertEqual(a, 6)
 
-def test_syntax_error_simple():
-    globs = {}
-    was_exception = False
-    try:
-        exec("""c = a += 3""", globs)
-    except SyntaxError:
-        was_exception = True
-    assert was_exception
+        a = MyInt(10)
+        a = a + 4
+        self.assertEqual(a, 6)
 
+    def test_iadd_03(self):
+        
+        class MyInt(int):
+            def __new__(cls, value):
+                return int.__new__(cls, value)
+            def __iadd__(self, value):
+                return self + value + 1
 
-def test_lambda_no_args_with_nested_lambdas():
-    no_err = True
-    try:
-        eval("lambda: ((lambda args: args[0], ), (lambda args: args[1], ), )")
-    except Exception as e:
-        no_err = False
-    assert no_err
+        a = MyInt(1)
+        a += 1
+        self.assertEqual(a, 3)

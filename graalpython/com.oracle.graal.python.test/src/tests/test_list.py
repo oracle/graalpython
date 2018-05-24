@@ -430,7 +430,7 @@ class ListTest(list_tests.CommonTest):
         a.insert(False, -1)
         self.assertEqual([-1,0,1], a)
 
-    def testStopIteration(self):
+    def test_StopIteration(self):
         l = [1.0]
         i = l.__iter__()
         i.__next__()
@@ -454,3 +454,82 @@ class ListTest(list_tests.CommonTest):
         self.assertRaises(StopIteration, i.__next__)
         l.append(3)
         self.assertRaises(StopIteration, i.__next__)
+
+    def test_iadd_special(self):
+        a = [1]
+        a += (2,3)
+        self.assertEqual([1,2,3], a)
+
+        a += {'a' : 1, 'b' : 2}
+        self.assertEqual([1,2,3,'a','b'], a)
+        
+        a = [1]
+        a += range(2,5)
+        self.assertEqual([1,2,3,4], a)
+        self.assertRaises(TypeError, a.__iadd__, 1)
+
+        class MyList(list):
+            def __iadd__(self, value):
+                return super().__iadd__([100])
+
+        mya = MyList([1,2])
+        mya += [3]
+        self.assertEqual([1,2,100], mya)
+        
+        a = [1,2]
+        a += a 
+        self.assertEqual([1,2,1,2], a)
+
+    def test_imul_len(self):
+        a = [1]
+        a *= 0
+        self.assertEqual(0, len(a))
+
+        a = [1]
+        a *= 1
+        self.assertEqual(1, len(a))
+        
+        a = [1]
+        a *= -11
+        self.assertEqual(0, len(a))
+
+        a = [1]
+        a *= 10
+        self.assertEqual(10, len(a))
+
+        a = [1,2]
+        a *= 4
+        self.assertEqual(8, len(a))
+
+    def test_imul_01(self):
+        class My():
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return self.value + 1;
+        l = [1]
+        ob = My(10)
+        l *= ob
+        self.assertEqual(11, len(l))
+
+    def test_imul_02(self):
+        class My():
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return LONG_NUMBER*LONG_NUMBER
+        l = [1]
+        ob = My(10)
+        self.assertRaises(OverflowError, l.__imul__, ob)
+
+    def test_imul_03(self):
+        class My():
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return 'Ahoj'
+        l = [1]
+        ob = My(10)
+        self.assertRaises(TypeError, l.__imul__, ob)
+
+

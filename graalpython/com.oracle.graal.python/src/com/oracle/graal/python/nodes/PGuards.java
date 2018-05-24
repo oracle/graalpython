@@ -139,6 +139,10 @@ public abstract class PGuards {
         return list.getSequenceStorage() instanceof DoubleSequenceStorage;
     }
 
+    public static boolean areBothDoubleStorage(PList first, PList second) {
+        return first.getSequenceStorage() instanceof DoubleSequenceStorage && second.getSequenceStorage() instanceof DoubleSequenceStorage;
+    }
+
     public static boolean isListStorage(PList list) {
         return list.getSequenceStorage() instanceof ListSequenceStorage;
     }
@@ -153,6 +157,10 @@ public abstract class PGuards {
 
     public static boolean areBothObjectStorage(PList first, PList second) {
         return first.getSequenceStorage() instanceof ObjectSequenceStorage && second.getSequenceStorage() instanceof ObjectSequenceStorage;
+    }
+
+    public static boolean isList(Object o) {
+        return o instanceof PList;
     }
 
     public static boolean isObjectStorageIterator(PSequenceIterator iterator) {

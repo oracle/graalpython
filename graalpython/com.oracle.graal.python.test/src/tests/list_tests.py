@@ -541,7 +541,7 @@ class CommonTest(seq_tests.CommonTest):
         u = self.type2test("spam")
         u[:2] = "h"
         self.assertEqual(u, list("ham"))
-    '''
+
     def test_iadd(self):
         super().test_iadd()
         u = self.type2test([0, 1])
@@ -554,7 +554,7 @@ class CommonTest(seq_tests.CommonTest):
         self.assertEqual(u, self.type2test("spameggs"))
 
         self.assertRaises(TypeError, u.__iadd__, None)
-    
+
     def test_imul(self):
         u = self.type2test([0, 1])
         u *= 3
@@ -565,7 +565,7 @@ class CommonTest(seq_tests.CommonTest):
         oldid = id(s)
         s *= 10
         self.assertEqual(id(s), oldid)
-    '''
+
     def test_extendedslicing(self):
         #  subscript
         a = self.type2test([0,1,2,3,4])

@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.list;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -36,6 +37,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
@@ -486,6 +488,8 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = "extend", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class ListExtendNode extends PythonBuiltinNode {
+
+        public abstract PNone execute(PList list, Object source);
 
         @Specialization(guards = {"isPSequenceWithStorage(source)"}, rewriteOn = {SequenceStoreException.class})
         public PNone extendSequenceStore(PList list, Object source) throws SequenceStoreException {
@@ -1092,19 +1096,75 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        protected boolean isList(Object o) {
-            return o instanceof PList;
-        }
-
         @Specialization(guards = "!isList(right)")
         Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
             throw raise(TypeError, "can only concatenate list (not \"%p\") to list", right);
         }
     }
 
+    @Builtin(name = __IADD__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class IAddNode extends PythonBuiltinNode {
+
+        @Specialization(guards = "areBothIntStorage(left,right)")
+        PList doPListInt(PList left, PList right) {
+            IntSequenceStorage leftStore = (IntSequenceStorage) left.getSequenceStorage();
+            IntSequenceStorage rightStore = (IntSequenceStorage) right.getSequenceStorage();
+            leftStore.extendWithIntStorage(rightStore);
+            return left;
+        }
+
+        @Specialization(guards = "areBothLongStorage(left,right)")
+        PList doPListLong(PList left, PList right) {
+            LongSequenceStorage leftStore = (LongSequenceStorage) left.getSequenceStorage();
+            LongSequenceStorage rightStore = (LongSequenceStorage) right.getSequenceStorage();
+            leftStore.extendWithLongStorage(rightStore);
+            return left;
+        }
+
+        @Specialization(guards = "areBothDoubleStorage(left,right)")
+        PList doPListDouble(PList left, PList right) {
+            DoubleSequenceStorage leftStore = (DoubleSequenceStorage) left.getSequenceStorage();
+            DoubleSequenceStorage rightStore = (DoubleSequenceStorage) right.getSequenceStorage();
+            leftStore.extendWithDoubleStorage(rightStore);
+            return left;
+        }
+
+        @Specialization(guards = "areBothObjectStorage(left,right)")
+        PList doPListObject(PList left, PList right) {
+            ObjectSequenceStorage leftStore = (ObjectSequenceStorage) left.getSequenceStorage();
+            ObjectSequenceStorage rightStore = (ObjectSequenceStorage) right.getSequenceStorage();
+            leftStore.extend(rightStore);
+            return left;
+        }
+
+        @Specialization(guards = "isNotSameStorage(left, right)")
+        PList doPList(PList left, PList right) {
+            left.extend(right);
+            return left;
+        }
+
+        @Specialization(guards = "!isList(right)")
+        PList doPList(PList left, Object right,
+                        @Cached("createExtendNode()") ListExtendNode extendNode) {
+            extendNode.execute(left, right);
+            return left;
+        }
+
+        protected ListExtendNode createExtendNode() {
+            return ListBuiltinsFactory.ListExtendNodeFactory.create(new PNode[0]);
+        }
+
+        protected boolean isNotSameStorage(PList left, PList right) {
+            return !(PGuards.areBothIntStorage(right, left) || PGuards.areBothDoubleStorage(right, left) || PGuards.areBothLongStorage(right, left) || PGuards.areBothObjectStorage(right, left));
+        }
+    }
+
     @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
+        public static String CANNOT_FIT_MESSAGE = "cannot fit 'int' into an index-sized integer";
+
         @Specialization
         PList doPListInt(PList left, boolean right,
                         @Cached("createClassProfile()") ValueProfile profile) {
@@ -1127,7 +1187,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doPListInt(left, PInt.intValueExact(right), profile);
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, "cannot fit 'int' into an index-sized integer");
+                throw raise(OverflowError, CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1137,7 +1197,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doPListInt(left, right.intValueExact(), profile);
             } catch (ArithmeticException | OutOfMemoryError e) {
-                throw raise(OverflowError, "cannot fit 'int' into an index-sized integer");
+                throw raise(OverflowError, CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1145,6 +1205,257 @@ public class ListBuiltins extends PythonBuiltins {
         @Fallback
         Object doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __IMUL__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class IMulNode extends PythonBuiltinNode {
+
+        public abstract PList execute(PList list, Object value);
+
+        @Specialization(guards = "isEmptyStorage(list)")
+        PList doEmptyBoolean(PList list, @SuppressWarnings("unused") boolean right) {
+            return list;
+        }
+
+        @Specialization(guards = "isEmptyStorage(list)")
+        PList doEmptyInt(PList list, @SuppressWarnings("unused") int right) {
+            return list;
+        }
+
+        @Specialization(guards = "isEmptyStorage(list)")
+        PList doEmptyLong(PList list, long right) {
+            try {
+                PInt.intValueExact(right);
+                return list;
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isEmptyStorage(list)")
+        PList doEmptyPInt(PList list, PInt right) {
+            try {
+                right.intValueExact();
+                return list;
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isIntStorage(list)")
+        PList doIntBoolean(PList list, boolean right) {
+            return doIntInt(list, right ? 1 : 0);
+        }
+
+        @Specialization(guards = "isIntStorage(list)")
+        PList doIntInt(PList list, int right) {
+            IntSequenceStorage store = (IntSequenceStorage) list.getSequenceStorage();
+            if (right < 1) {
+                store.clear();
+                return list;
+            }
+            try {
+                IntSequenceStorage copy = (IntSequenceStorage) store.copy();
+                for (int i = 1; i < right; i++) {
+                    store.extendWithIntStorage(copy);
+                }
+                return list;
+            } catch (OutOfMemoryError e) {
+                throw raise(MemoryError);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isIntStorage(list)")
+        PList doIntLong(PList list, long right) {
+            try {
+                return doIntInt(list, PInt.intValueExact(right));
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isIntStorage(list)")
+        PList doIntPInt(PList list, PInt right) {
+            try {
+                return doIntInt(list, right.intValueExact());
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        PList doLongBoolean(PList list, boolean right) {
+            return doLongInt(list, right ? 1 : 0);
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        PList doLongInt(PList list, int right) {
+            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
+            if (right < 1) {
+                store.clear();
+                return list;
+            }
+            try {
+                LongSequenceStorage copy = (LongSequenceStorage) store.copy();
+                for (int i = 1; i < right; i++) {
+                    store.extendWithLongStorage(copy);
+                }
+                return list;
+            } catch (OutOfMemoryError e) {
+                throw raise(MemoryError);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        PList doLongLong(PList list, long right) {
+            try {
+                return doLongInt(list, PInt.intValueExact(right));
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isLongStorage(list)")
+        PList doLongPInt(PList list, PInt right) {
+            try {
+                return doLongInt(list, right.intValueExact());
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        PList doDoubleBoolean(PList list, boolean right) {
+            return doDoubleInt(list, right ? 1 : 0);
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        PList doDoubleInt(PList list, int right) {
+            DoubleSequenceStorage store = (DoubleSequenceStorage) list.getSequenceStorage();
+            if (right < 1) {
+                store.clear();
+                return list;
+            }
+            try {
+                DoubleSequenceStorage copy = (DoubleSequenceStorage) store.copy();
+                for (int i = 1; i < right; i++) {
+                    store.extendWithDoubleStorage(copy);
+                }
+                return list;
+            } catch (OutOfMemoryError e) {
+                throw raise(MemoryError);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        PList doDoubleLong(PList list, long right) {
+            try {
+                return doDoubleInt(list, PInt.intValueExact(right));
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isDoubleStorage(list)")
+        PList doDoublePInt(PList list, PInt right) {
+            try {
+                return doLongInt(list, right.intValueExact());
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isObjectStorage(list)")
+        PList doObjectBoolean(PList list, boolean right) {
+            return doDoubleInt(list, right ? 1 : 0);
+        }
+
+        @Specialization(guards = "isObjectStorage(list)")
+        PList doObjectInt(PList list, int right) {
+            ObjectSequenceStorage store = (ObjectSequenceStorage) list.getSequenceStorage();
+            if (right < 1) {
+                store.clear();
+                return list;
+            }
+            try {
+                ObjectSequenceStorage copy = (ObjectSequenceStorage) store.copy();
+                for (int i = 1; i < right; i++) {
+                    store.extend(copy);
+                }
+                return list;
+            } catch (OutOfMemoryError e) {
+                throw raise(MemoryError);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isObjectStorage(list)")
+        PList doObjectLong(PList list, long right) {
+            try {
+                return doObjectInt(list, PInt.intValueExact(right));
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = "isObjectStorage(list)")
+        PList doObjectPInt(PList list, PInt right) {
+            try {
+                return doObjectInt(list, right.intValueExact());
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+            }
+        }
+
+        @Specialization(guards = {"!isInt(right)"})
+        Object doGeneric(PList list, Object right,
+                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode dispatchIndex,
+                        @Cached("createIMulNode()") IMulNode imulNode) {
+            Object index = dispatchIndex.executeObject(right);
+            if (index != PNone.NO_VALUE) {
+                int iIndex;
+                try {
+                    iIndex = convertToInt(index);
+                } catch (ArithmeticException e) {
+                    throw raise(OverflowError, "cannot fit '%p' into an index-sized integer", index);
+                }
+
+                return imulNode.execute(list, iIndex);
+            }
+            throw raise(TypeError, "can't multiply sequence by non-int of type '%p'", right);
+        }
+
+        private int convertToInt(Object value) throws ArithmeticException {
+            if (value instanceof Integer) {
+                return (Integer) value;
+            }
+            if (value instanceof Boolean) {
+                return (Boolean) value ? 0 : 1;
+            }
+            if (value instanceof Long) {
+                return PInt.intValueExact((Long) value);
+            }
+            if (value instanceof PInt) {
+                return ((PInt) value).intValueExact();
+            }
+            throw raise(TypeError, "can't multiply sequence by non-int of type '%p'", value);
+        }
+
+        protected IMulNode createIMulNode() {
+            return ListBuiltinsFactory.IMulNodeFactory.create(new PNode[0]);
+        }
+
+        protected boolean isInt(Object value) {
+            return value instanceof Boolean || value instanceof Integer || value instanceof Long || value instanceof PInt;
         }
     }
 
