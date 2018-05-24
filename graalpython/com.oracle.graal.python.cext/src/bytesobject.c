@@ -273,3 +273,7 @@ void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart) {
 Py_ssize_t PyBytes_Size(PyObject *bytes) {
 	return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyBytes_Size", to_java(bytes));
 }
+
+int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags) {
+    return PyBuffer_FillInfo(view, (PyObject*)self, (void *)self->ob_sval, Py_SIZE(self), 1, flags);
+}

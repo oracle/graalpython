@@ -79,6 +79,11 @@ static void initialize_globals() {
     truffle_assign_managed(&marker_struct, jerrormarker);
 }
 
+static void initialize_bufferprocs() {
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyByteArray_Type), (getbufferproc)NULL, (releasebufferproc)NULL);
+}
+
 __attribute__((constructor))
 static void initialize_capi() {
     // initialize base types
@@ -112,6 +117,7 @@ static void initialize_capi() {
 
     initialize_exceptions();
     initialize_hashes();
+    initialize_bufferprocs();
 }
 
 void* native_to_java(PyObject* obj) {
