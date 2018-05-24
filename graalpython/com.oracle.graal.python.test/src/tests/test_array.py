@@ -45,10 +45,6 @@ def assert_raises(err, fn, *args, **kwargs):
     assert raised
 
 
-def test_import():
-    pass
-
-
 def test_create():
     from array import array
     a = array('b', b'x'*10)
