@@ -209,6 +209,12 @@ public class PythonObjectNativeWrapperMR {
             return PythonObjectNativeWrapper.wrap(factory().createDict());
         }
 
+        @Specialization(guards = "eq(TP_GETATTR, key)")
+        Object doTpGetattr(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getCmpNode) {
+            return getToSulongNode().execute(getCmpNode.execute(object, SpecialMethodNames.__GETATTR__));
+        }
+
         @Specialization(guards = "eq(OB_ITEM, key)")
         Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object);
