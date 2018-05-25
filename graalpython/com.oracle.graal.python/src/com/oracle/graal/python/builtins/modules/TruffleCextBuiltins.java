@@ -720,18 +720,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     return obj & 0xFFFFFFFFL;
                 }
             } else {
-                throw raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+                return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
             }
         }
 
         @Specialization
         Object doPInt(long obj, @SuppressWarnings("unused") int signed, long targetTypeSize, String targetTypeName) {
             if (targetTypeSize == 4) {
-                throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
+                return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
             } else if (targetTypeSize == 8) {
                 return obj;
             } else {
-                throw raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+                return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
             }
         }
 
@@ -755,17 +755,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         throw new ArithmeticException();
                     }
                 } else {
-                    throw raise(PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+                    return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
                 }
 
             } catch (ArithmeticException e) {
-                try {
-                    throw raise(PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
-                } catch (PException p) {
-                    p.getExceptionObject().reifyException();
-                    getContext().setCurrentException(p);
-                    return -1;
-                }
+                return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
             }
         }
 
