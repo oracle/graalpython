@@ -45,15 +45,18 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -74,6 +77,7 @@ public class PySequenceArrayWrapperMR {
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceArrayWrapper object, Object key) {
+            System.out.println(object.getDelegate().toString() + "[" + key + "]");
             return getToSulongNode().execute(getReadArrayItemNode().execute(object.getDelegate(), key));
         }
 
@@ -146,12 +150,26 @@ public class PySequenceArrayWrapperMR {
             return tuple.getInternalByteArray()[(int) idx];
         }
 
+        @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
+        Object doGeneric(PythonObject object, long idx,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
+            return getItemNode.executeObject(object, idx);
+        }
+
         protected static ListBuiltins.GetItemNode createListGetItem() {
             return ListBuiltinsFactory.GetItemNodeFactory.create(null);
         }
 
         protected static TupleBuiltins.GetItemNode createTupleGetItem() {
             return TupleBuiltinsFactory.GetItemNodeFactory.create(null);
+        }
+
+        protected boolean isTuple(Object object) {
+            return object instanceof PTuple;
+        }
+
+        protected boolean isList(Object object) {
+            return object instanceof PList;
         }
 
         public static ReadArrayItemNode create() {
