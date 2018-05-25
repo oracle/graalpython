@@ -251,6 +251,10 @@ int PyType_Ready(PyTypeObject* cls) {
         cls->tp_bases = bases;
     }
 
+    PyObject* native_members = PyDict_New();
+    PyDict_SetItemString(native_members, "tp_name", polyglot_from_string(cls->tp_name, "utf-8"));
+    PyDict_SetItemString(native_members, "tp_doc", polyglot_from_string(cls->tp_doc ? cls->tp_doc : "", "utf-8"));
+    PyDict_SetItemString(native_members, "tp_basicsize", PyLong_FromSsize_t(cls->tp_basicsize));
 
     PyTypeObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
                                            "PyType_Ready",
@@ -259,8 +263,7 @@ int PyType_Ready(PyTypeObject* cls) {
                                            cls,
                                            to_java_type(metaclass),
                                            to_java(bases),
-                                           truffle_read_string(cls->tp_name),
-                                           truffle_read_string(cls->tp_doc ? cls->tp_doc : ""));
+                                           to_java(native_members));
     if (polyglot_is_value(javacls)) {
     	javacls = polyglot_as__typeobject(javacls);
     }
