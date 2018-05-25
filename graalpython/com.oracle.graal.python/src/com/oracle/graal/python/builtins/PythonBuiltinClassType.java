@@ -94,7 +94,8 @@ public enum PythonBuiltinClassType {
     PythonModule(com.oracle.graal.python.builtins.objects.module.PythonModule.class, "module"),
     PythonObject(com.oracle.graal.python.builtins.objects.object.PythonObject.class, "object"),
     PythonParseResult(com.oracle.graal.python.runtime.PythonParseResult.class, "code"),
-    PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip");
+    PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip"),
+    PBuffer(com.oracle.graal.python.builtins.objects.memoryview.PBuffer.class, "buffer");
 
     private final Class<?> clazz;
     private final String shortName;

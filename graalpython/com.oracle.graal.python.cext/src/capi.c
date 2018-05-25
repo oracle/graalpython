@@ -82,6 +82,7 @@ static void initialize_globals() {
 static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyByteArray_Type), (getbufferproc)NULL, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
 }
 
 __attribute__((constructor))
@@ -111,6 +112,7 @@ static void initialize_capi() {
     initialize_type_structure(&PyFrozenSet_Type, "frozenset");
     initialize_type_structure(&PySet_Type, "set");
     initialize_type_structure(&PyEllipsis_Type, "ellipsis");
+    initialize_type_structure(&PyBuffer_Type, "buffer");
 
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
