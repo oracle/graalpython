@@ -86,6 +86,8 @@ extern PyObject* to_sulong(void *o);
 extern PyObject* explicit_cast(PyObject* cobj);
 #define as_char_pointer(obj) polyglot_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
+#define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long long), polyglot_from_string("long long", "utf-8"))))
+#define as_unsigned_long_long(obj) ((unsigned long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 0, sizeof(unsigned long long), polyglot_from_string("unsigned long long", "utf-8"))))
 #define as_int(obj) ((int)as_long(obj))
 #define as_short(obj) ((short)as_long(obj))
 #define as_uchar(obj) ((unsigned char)as_long(obj))
