@@ -49,14 +49,15 @@ def make_base_search_function():
     base_lookup = lookup
     base_encode = encode
     base_decode = decode
+
     def search_function(encoding):
         if base_lookup(encoding):
             from codecs import CodecInfo
             return CodecInfo(
                 lambda data, errors=None: base_encode(data, encoding, errors),
                 lambda data, errors=None: base_decode(data, encoding, errors),
-                None, # TODO: stream_reader
-                None, # TODO: stream_write
+                None,  # TODO: stream_reader
+                None,  # TODO: stream_write
             )
     return search_function
 
