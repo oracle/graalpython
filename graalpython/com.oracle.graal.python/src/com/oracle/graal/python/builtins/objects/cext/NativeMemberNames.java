@@ -66,6 +66,7 @@ public abstract class NativeMemberNames {
     public static final String UNICODE_STATE_ASCII = "ascii";
     public static final String UNICODE_STATE_READY = "ready";
     public static final String MD_DICT = "md_dict";
+    public static final String BUF_DELEGATE = "buf_delegate";
 
     public static boolean isValid(String key) {
         switch (key) {

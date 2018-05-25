@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -199,7 +200,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         Object doTpAsBuffer(PythonClass object, @SuppressWarnings("unused") String key) {
-            if (object == getCore().lookupType(PBytes.class) || object == getCore().lookupType(PByteArray.class)) {
+            if (object == getCore().lookupType(PBytes.class) || object == getCore().lookupType(PByteArray.class) || object == getCore().lookupType(PBuffer.class)) {
                 return new PyBufferProcsWrapper(object);
             }
 
@@ -260,6 +261,11 @@ public class PythonObjectNativeWrapperMR {
         Object doMdDict(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetAttributeNode getDictNode) {
             return getToSulongNode().execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
+        }
+
+        @Specialization(guards = "eq(BUF_DELEGATE, key)")
+        Object doObSval(PBuffer object, @SuppressWarnings("unused") String key) {
+            return new PySequenceArrayWrapper(object.getDelegate());
         }
 
         @Fallback

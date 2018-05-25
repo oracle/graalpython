@@ -62,6 +62,13 @@ typedef struct {
     PyCapsule_Destructor destructor;
 } PyCapsule;
 
+typedef struct {
+    PyObject_VAR_HEAD
+    void *buf_delegate;
+} PyBufferDecorator;
+
+PyAPI_DATA(PyTypeObject) PyBuffer_Type;
+
 /* Declare Python structs/types for explicit polyglot typecasts. */
 /* NOTE: Also add an appropriate case in 'PyTruffle_Explicit_Cast' ! */
 POLYGLOT_DECLARE_STRUCT(_object);
@@ -78,6 +85,7 @@ POLYGLOT_DECLARE_STRUCT(_longobject);
 POLYGLOT_DECLARE_TYPE(PyCapsule);
 POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
 POLYGLOT_DECLARE_TYPE(PySetObject);
+POLYGLOT_DECLARE_TYPE(PyBufferDecorator);
 
 
 extern void* to_java(PyObject* obj);
@@ -247,5 +255,8 @@ void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
 
 /* BYTES */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+
+/* MEMORYVIEW, BUFFERDECORATOR */
+int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
 
 #endif
