@@ -63,7 +63,9 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -487,27 +489,50 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyType_Ready", fixedNumOfArguments = 5)
+    @Builtin(name = "PyType_Ready", fixedNumOfArguments = 4)
     @GenerateNodeFactory
     abstract static class PyType_ReadyNode extends PythonBuiltinNode {
         @Child WriteAttributeToObjectNode writeNode = WriteAttributeToObjectNode.create();
+        @Child private HashingStorageNodes.GetItemNode getItemNode;
+
+        private HashingStorageNodes.GetItemNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
+            }
+            return getItemNode;
+        }
 
         @Specialization
-        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PTuple baseClasses, String name, String doc) {
+        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PTuple baseClasses, PDict nativeMembers) {
             Object[] array = baseClasses.getArray();
             PythonClass[] bases = new PythonClass[array.length];
             for (int i = 0; i < array.length; i++) {
                 bases[i] = (PythonClass) array[i];
             }
 
+            String name = getStringItem(nativeMembers, "tp_name");
+            String doc = getStringItem(nativeMembers, "tp_doc");
             PythonClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, bases);
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
+            writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, "tp_basicsize"));
             return cclass;
         }
 
-        @Specialization
-        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PTuple baseClasses, PString name, PString doc) {
-            return run(typestruct, metaClass, baseClasses, name.getValue(), doc.getValue());
+        private String getStringItem(PDict nativeMembers, String key) {
+            Object item = getGetItemNode().execute(nativeMembers.getDictStorage(), key);
+            if (item instanceof PString) {
+                return ((PString) item).getValue();
+            }
+            return (String) item;
+        }
+
+        private Object getLongItem(PDict nativeMembers, String key) {
+            Object item = getGetItemNode().execute(nativeMembers.getDictStorage(), key);
+            if (item instanceof PInt || item instanceof Number) {
+                return item;
+            }
+            return (long) item;
         }
     }
 
