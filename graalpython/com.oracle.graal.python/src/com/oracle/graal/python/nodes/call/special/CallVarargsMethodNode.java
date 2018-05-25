@@ -57,7 +57,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     Object call(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getVarargs(func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
-        return builtinNode.execute(arguments, keywords);
+        return builtinNode.varArgExecute(arguments, keywords);
     }
 
     @Specialization

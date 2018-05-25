@@ -49,10 +49,6 @@ public abstract class PNode extends PBaseNode implements InstrumentableNode {
     @CompilationFinal private boolean isRoot = false;
     @CompilationFinal private boolean isTryBlock = false;
 
-    public NodeFactory getNodeFactory() {
-        return getCore().getLanguage().getNodeFactory();
-    }
-
     @Override
     public String toString() {
         if (getSourceSection() != null)

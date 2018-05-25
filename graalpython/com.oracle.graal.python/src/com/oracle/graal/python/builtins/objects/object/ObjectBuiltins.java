@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -90,7 +91,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public class ObjectBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ObjectBuiltinsFactory.getFactories();
     }
 
@@ -108,13 +109,13 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
         @Override
-        public final Object execute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public final Object varArgExecute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return PNone.NONE;
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        public PNone init(Object self, Object args, Object kwargs) {
+        public PNone init(Object self, Object[] arguments, PKeyword[] keywords) {
             // TODO: tfel: throw an error if we get additional arguments and the __new__
             // method was the same as object.__new__
             return PNone.NONE;

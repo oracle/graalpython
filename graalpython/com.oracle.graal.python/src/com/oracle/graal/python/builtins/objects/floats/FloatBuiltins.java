@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -91,7 +92,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class FloatBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FloatBuiltinsFactory.getFactories();
     }
 
@@ -1012,7 +1013,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class GetFormatNode extends PythonUnaryBuiltinNode {
+    abstract static class GetFormatNode extends PythonBinaryBuiltinNode {
         private static String getDetectedEndianess() {
             try {
                 ByteOrder byteOrder = ByteOrder.nativeOrder();

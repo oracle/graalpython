@@ -30,30 +30,20 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
-import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
-import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -64,14 +54,14 @@ public abstract class PythonBuiltins {
     private final Map<String, PBuiltinFunction> builtinFunctions = new HashMap<>();
     private final Map<PythonBuiltinClass, Map.Entry<Class<?>[], Boolean>> builtinClasses = new HashMap<>();
 
-    protected abstract List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories();
+    protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
 
     public void initialize(PythonCore core) {
         if (builtinFunctions.size() > 0) {
             return;
         }
-        initializeEachFactoryWith(factory -> builtin -> {
-            RootCallTarget callTarget = createBuiltinCallTarget(core.getLanguage(), factory, builtin.name(), createArgumentsList(builtin));
+        initializeEachFactoryWith((factory, builtin) -> {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory));
             String name = builtin.name();
             if (builtin.constructsClass().length > 0) {
                 name = __NEW__;
@@ -104,7 +94,7 @@ public abstract class PythonBuiltins {
 
     public final void initializeClasses(PythonCore core) {
         assert builtinClasses.isEmpty();
-        initializeEachFactoryWith(factory -> builtin -> {
+        initializeEachFactoryWith((factory, builtin) -> {
             if (builtin.constructsClass().length > 0) {
                 createBuiltinClassFor(core, builtin);
             }
@@ -147,22 +137,13 @@ public abstract class PythonBuiltins {
         return builtinClass;
     }
 
-    private void initializeEachFactoryWith(Function<NodeFactory<PythonBuiltinNode>, Consumer<Builtin>> func) {
-        @SuppressWarnings("unchecked")
-        List<NodeFactory<PythonBuiltinNode>> factories = (List<NodeFactory<PythonBuiltinNode>>) getNodeFactories();
+    private void initializeEachFactoryWith(BiConsumer<NodeFactory<? extends PythonBuiltinBaseNode>, Builtin> func) {
+        List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> factories = getNodeFactories();
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
-        for (NodeFactory<PythonBuiltinNode> factory : factories) {
+        for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
             Builtin builtin = factory.getNodeClass().getAnnotation(Builtin.class);
-            func.apply(factory).accept(builtin);
+            func.accept(factory, builtin);
         }
-    }
-
-    private static RootCallTarget createBuiltinCallTarget(PythonLanguage language, NodeFactory<PythonBuiltinNode> factory, String name, PNode[] argsKeywords) {
-        PythonBuiltinNode builtinNode = factory.createNode((Object) argsKeywords);
-        language.getNodeFactory().registerNodeFactory(builtinNode, factory);
-        BuiltinFunctionRootNode rootNode = new BuiltinFunctionRootNode(language, name, builtinNode);
-        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(rootNode);
-        return callTarget;
     }
 
     private static Arity createArity(Builtin builtin) {
@@ -176,53 +157,6 @@ public abstract class PythonBuiltins {
         }
         return new Arity(builtin.name(), minNum, maxNum, builtin.keywordArguments().length > 0 || builtin.takesVariableKeywords(), builtin.takesVariableArguments(),
                         Arrays.asList(new String[0]), Arrays.asList(builtin.keywordArguments()));
-    }
-
-    private static PNode[] createArgumentsList(Builtin builtin) {
-        ArrayList<PNode> args = new ArrayList<>();
-        int numOfPositionalArgs = Math.max(builtin.minNumOfArguments(), builtin.maxNumOfArguments());
-
-        if (builtin.keywordArguments().length > 0 && builtin.maxNumOfArguments() > builtin.minNumOfArguments()) {
-            // (tfel): This is actually a specification error, if there are keyword
-            // names, we cannot also have optional positional arguments, but we're
-            // being defensive here.
-            numOfPositionalArgs = builtin.minNumOfArguments();
-        }
-
-        if (builtin.fixedNumOfArguments() > 0) {
-            numOfPositionalArgs = builtin.fixedNumOfArguments();
-        }
-
-        // read those arguments that only come positionally
-        for (int i = 0; i < numOfPositionalArgs; i++) {
-            args.add(ReadIndexedArgumentNode.create(i));
-        }
-
-        // read splat args if any
-        if (builtin.takesVariableArguments()) {
-            args.add(ReadVarArgsNode.create(args.size(), true));
-        }
-
-        // read named keyword arguments
-        for (int i = 0; i < builtin.keywordArguments().length; i++) {
-            String name = builtin.keywordArguments()[i];
-            ReadDefaultArgumentNode defaultNode = new ReadDefaultArgumentNode();
-            defaultNode.setValue(PNone.NO_VALUE);
-            if (!builtin.takesVariableArguments()) {
-                // if there's no splat, we also accept the keywords positionally
-                args.add(ReadKeywordNode.create(name, i + numOfPositionalArgs, defaultNode));
-            } else {
-                // if there is a splat, keywords have to be passed by name
-                args.add(ReadKeywordNode.create(name, defaultNode));
-            }
-        }
-
-        if (builtin.takesVariableKeywords()) {
-            args.add(ReadVarKeywordsNode.create(builtin.keywordArguments()));
-        }
-
-        PNode[] argsKeywords = args.toArray(new PNode[args.size()]);
-        return argsKeywords;
     }
 
     private void setBuiltinFunction(String name, PBuiltinFunction function) {

@@ -53,34 +53,34 @@ import com.oracle.truffle.api.nodes.Node;
 @ImportStatic(PythonOptions.class)
 abstract class CallSpecialMethodNode extends Node {
     protected static boolean isUnary(PBuiltinFunction func) {
-        return func.getBuiltinNode() instanceof PythonUnaryBuiltinNode;
+        return PythonUnaryBuiltinNode.class.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass());
     }
 
     protected static boolean isBinary(PBuiltinFunction func) {
-        return func.getBuiltinNode() instanceof PythonBinaryBuiltinNode;
+        return PythonBinaryBuiltinNode.class.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass());
     }
 
     protected static boolean isTernary(PBuiltinFunction func) {
-        return func.getBuiltinNode() instanceof PythonTernaryBuiltinNode;
+        return PythonTernaryBuiltinNode.class.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass());
     }
 
     protected static boolean isVarargs(PBuiltinFunction func) {
-        return func.getBuiltinNode() instanceof PythonVarargsBuiltinNode;
+        return PythonVarargsBuiltinNode.class.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass());
     }
 
     protected static PythonUnaryBuiltinNode getUnary(PBuiltinFunction func) {
-        return (PythonUnaryBuiltinNode) func.getBuiltinNode().emptyCopy();
+        return (PythonUnaryBuiltinNode) func.getBuiltinNodeFactory().createNode();
     }
 
     protected static PythonBinaryBuiltinNode getBinary(PBuiltinFunction func) {
-        return (PythonBinaryBuiltinNode) func.getBuiltinNode().emptyCopy();
+        return (PythonBinaryBuiltinNode) func.getBuiltinNodeFactory().createNode();
     }
 
     protected static PythonTernaryBuiltinNode getTernary(PBuiltinFunction func) {
-        return (PythonTernaryBuiltinNode) func.getBuiltinNode().emptyCopy();
+        return (PythonTernaryBuiltinNode) func.getBuiltinNodeFactory().createNode();
     }
 
     protected static PythonVarargsBuiltinNode getVarargs(PBuiltinFunction func) {
-        return (PythonVarargsBuiltinNode) func.getBuiltinNode().emptyCopy();
+        return (PythonVarargsBuiltinNode) func.getBuiltinNodeFactory().createNode();
     }
 }

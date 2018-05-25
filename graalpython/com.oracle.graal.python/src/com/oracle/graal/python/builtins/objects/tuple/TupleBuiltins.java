@@ -26,7 +26,9 @@
 package com.oracle.graal.python.builtins.objects.tuple;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -44,12 +46,12 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -59,13 +61,12 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PTuple.class)
 public class TupleBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TupleBuiltinsFactory.getFactories();
     }
 
@@ -247,7 +248,7 @@ public class TupleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBuiltinNode {
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         private static final String TYPE_ERROR_MESSAGE = "tuple indices must be integers of slices, not %p";
 
@@ -282,7 +283,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         protected GetItemNode createGetItemNode() {
-            return GetItemNodeFactory.create(new PNode[0]);
+            return GetItemNodeFactory.create();
         }
 
         protected boolean isPSlice(Object object) {

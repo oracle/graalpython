@@ -39,10 +39,10 @@
 package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-public abstract class PythonBinaryBuiltinNode extends PythonBuiltinNode {
+public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
     public abstract Object execute(Object arg, Object arg2);
 
     public boolean executeBool(boolean arg, boolean arg2) throws UnexpectedResultException {

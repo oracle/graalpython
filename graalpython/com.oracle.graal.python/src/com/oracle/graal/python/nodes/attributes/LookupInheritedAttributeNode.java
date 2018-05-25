@@ -59,11 +59,6 @@ public abstract class LookupInheritedAttributeNode extends PNode {
     }
 
     /**
-     * See {@link #execute(Object, Object)}, which is executed with the results of the sub nodes.
-     */
-    public abstract Object execute();
-
-    /**
      * Looks up the {@code key} in the MRO of the Python type of the {@code object}.
      *
      * @return The lookup result, or {@link PNone#NO_VALUE} if the key isn't inherited by the

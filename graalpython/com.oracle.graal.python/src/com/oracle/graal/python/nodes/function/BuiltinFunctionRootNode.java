@@ -25,19 +25,172 @@
  */
 package com.oracle.graal.python.nodes.function;
 
+import java.util.ArrayList;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
-public class BuiltinFunctionRootNode extends PRootNode {
-    private final String functionName;
+public final class BuiltinFunctionRootNode extends PRootNode {
 
-    @Child private PythonBuiltinNode body;
+    private final Builtin builtin;
+    private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
 
-    public BuiltinFunctionRootNode(PythonLanguage language, String functionName, PythonBuiltinNode builtinNode) {
+    @Child private BuiltinCallNode body;
+
+    private abstract static class BuiltinCallNode extends Node {
+        public abstract Object execute(VirtualFrame frame);
+    }
+
+    private static final class BuiltinAnyCallNode extends BuiltinCallNode {
+        @Child private PythonBuiltinNode node;
+
+        public BuiltinAnyCallNode(PythonBuiltinNode node) {
+            this.node = node;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(frame);
+        }
+    }
+
+    private static final class BuiltinUnaryCallNode extends BuiltinCallNode {
+        @Child private PythonUnaryBuiltinNode node;
+        @Child private PNode arg;
+
+        public BuiltinUnaryCallNode(PythonUnaryBuiltinNode node, PNode arg) {
+            this.node = node;
+            this.arg = arg;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(arg.execute(frame));
+        }
+    }
+
+    private static final class BuiltinBinaryCallNode extends BuiltinCallNode {
+        @Child private PythonBinaryBuiltinNode node;
+        @Child private PNode arg1;
+        @Child private PNode arg2;
+
+        public BuiltinBinaryCallNode(PythonBinaryBuiltinNode node, PNode arg1, PNode arg2) {
+            this.node = node;
+            this.arg1 = arg1;
+            this.arg2 = arg2;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(arg1.execute(frame), arg2.execute(frame));
+        }
+    }
+
+    private static final class BuiltinTernaryCallNode extends BuiltinCallNode {
+        @Child private PythonTernaryBuiltinNode node;
+        @Child private PNode arg1;
+        @Child private PNode arg2;
+        @Child private PNode arg3;
+
+        public BuiltinTernaryCallNode(PythonTernaryBuiltinNode node, PNode arg1, PNode arg2, PNode arg3) {
+            this.node = node;
+            this.arg1 = arg1;
+            this.arg2 = arg2;
+            this.arg3 = arg3;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(arg1.execute(frame), arg2.execute(frame), arg3.execute(frame));
+        }
+    }
+
+    private static final class BuiltinVarArgsCallNode extends BuiltinCallNode {
+        @Child private PythonVarargsBuiltinNode node;
+        @Child private PNode arg1;
+        @Child private PNode arg2;
+        @Child private PNode arg3;
+
+        public BuiltinVarArgsCallNode(PythonVarargsBuiltinNode node, PNode arg1, PNode arg2, PNode arg3) {
+            this.node = node;
+            this.arg1 = arg1;
+            this.arg2 = arg2;
+            this.arg2 = arg3;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return node.execute(arg1.execute(frame), (Object[]) arg2.execute(frame), (PKeyword[]) arg3.execute(frame));
+        }
+    }
+
+    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory) {
         super(language, null);
-        this.functionName = functionName;
-        this.body = builtinNode;
+        this.builtin = builtin;
+        this.factory = factory;
+    }
+
+    private static PNode[] createArgumentsList(Builtin builtin) {
+        ArrayList<PNode> args = new ArrayList<>();
+        int numOfPositionalArgs = Math.max(builtin.minNumOfArguments(), builtin.maxNumOfArguments());
+
+        if (builtin.keywordArguments().length > 0 && builtin.maxNumOfArguments() > builtin.minNumOfArguments()) {
+            // (tfel): This is actually a specification error, if there are keyword
+            // names, we cannot also have optional positional arguments, but we're
+            // being defensive here.
+            numOfPositionalArgs = builtin.minNumOfArguments();
+        }
+
+        if (builtin.fixedNumOfArguments() > 0) {
+            numOfPositionalArgs = builtin.fixedNumOfArguments();
+        }
+
+        // read those arguments that only come positionally
+        for (int i = 0; i < numOfPositionalArgs; i++) {
+            args.add(ReadIndexedArgumentNode.create(i));
+        }
+
+        // read splat args if any
+        if (builtin.takesVariableArguments()) {
+            args.add(ReadVarArgsNode.create(args.size(), true));
+        }
+
+        // read named keyword arguments
+        for (int i = 0; i < builtin.keywordArguments().length; i++) {
+            String name = builtin.keywordArguments()[i];
+            ReadDefaultArgumentNode defaultNode = new ReadDefaultArgumentNode();
+            defaultNode.setValue(PNone.NO_VALUE);
+            if (!builtin.takesVariableArguments()) {
+                // if there's no splat, we also accept the keywords positionally
+                args.add(ReadKeywordNode.create(name, i + numOfPositionalArgs, defaultNode));
+            } else {
+                // if there is a splat, keywords have to be passed by name
+                args.add(ReadKeywordNode.create(name, defaultNode));
+            }
+        }
+
+        if (builtin.takesVariableKeywords()) {
+            args.add(ReadVarKeywordsNode.create(builtin.keywordArguments()));
+        }
+
+        return args.toArray(new PNode[args.size()]);
     }
 
     @Override
@@ -47,24 +200,44 @@ public class BuiltinFunctionRootNode extends PRootNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
+        if (body == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            PNode[] argumentsList = createArgumentsList(builtin);
+            if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
+                body = new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList));
+            } else {
+                PythonBuiltinBaseNode node = factory.createNode();
+                if (node instanceof PythonUnaryBuiltinNode) {
+                    body = new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]);
+                } else if (node instanceof PythonBinaryBuiltinNode) {
+                    body = new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]);
+                } else if (node instanceof PythonTernaryBuiltinNode) {
+                    body = new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
+                } else if (node instanceof PythonVarargsBuiltinNode) {
+                    body = new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
+                } else {
+                    throw new RuntimeException("unexpected builtin node type: " + node.getClass());
+                }
+            }
+        }
         return body.execute(frame);
     }
 
     public String getFunctionName() {
-        return functionName;
+        return builtin.name();
     }
 
-    public PythonBuiltinNode getBody() {
-        return body;
+    public NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
+        return factory;
     }
 
     @Override
     public String toString() {
-        return "<builtin function " + functionName + " at " + Integer.toHexString(hashCode()) + ">";
+        return "<builtin function " + builtin.name() + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
     @Override
     public String getName() {
-        return functionName;
+        return builtin.name();
     }
 }

@@ -38,9 +38,9 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 
-public abstract class PythonTernaryBuiltinNode extends PythonBuiltinNode {
+public abstract class PythonTernaryBuiltinNode extends PythonBuiltinBaseNode {
     public abstract Object execute(Object arg, int arg2, Object arg3);
 
     public abstract Object execute(Object arg, Object arg2, Object arg3);

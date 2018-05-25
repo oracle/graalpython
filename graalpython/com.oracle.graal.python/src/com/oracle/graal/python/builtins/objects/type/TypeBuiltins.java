@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -85,7 +86,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public class TypeBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TypeBuiltinsFactory.getFactories();
     }
 
@@ -124,11 +125,11 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child PositionalArgumentsNode createArgs = PositionalArgumentsNode.create();
 
         public static CallNode create() {
-            return CallNodeFactory.create(null);
+            return CallNodeFactory.create();
         }
 
         @Override
-        public final Object execute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public final Object varArgExecute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return execute(PNone.NO_VALUE, arguments, keywords);
         }
 
@@ -200,7 +201,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
         public static GetattributeNode create() {
-            return TypeBuiltinsFactory.GetattributeNodeFactory.create(null);
+            return TypeBuiltinsFactory.GetattributeNodeFactory.create();
         }
 
         private final BranchProfile hasDescProfile = BranchProfile.create();
@@ -374,7 +375,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private ConditionProfile typeErrorProfile = ConditionProfile.createBinaryProfile();
 
         public static InstanceCheckNode create() {
-            return TypeBuiltinsFactory.InstanceCheckNodeFactory.create(null);
+            return TypeBuiltinsFactory.InstanceCheckNodeFactory.create();
         }
 
         private PythonObject getInstanceClassAttr(Object instance) {
