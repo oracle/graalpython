@@ -5,6 +5,7 @@
 import seq_tests
 import unittest
 import pickle
+from compare import CompareTest
 
 class TupleTest(seq_tests.CommonTest):
 
@@ -221,64 +222,7 @@ class TupleTest(seq_tests.CommonTest):
         raiseTypeError(t, IndexF())
 
 
-class TupleCompareTest(unittest.TestCase):
-
-    def comp_eq(self, left, right):
-        self.assertFalse(left < right)
-        self.assertTrue(left<=right)
-        self.assertTrue(left==right)
-        self.assertFalse(left!=right)
-        self.assertFalse(left>right)
-        self.assertTrue(left>=right)
-
-    def comp_ne(self, left, right):
-        self.assertFalse(left==right)
-        self.assertTrue(left!=right)
-
-    def comp_gt(self, left, right):
-        self.assertFalse(left < right)
-        self.assertFalse(left <= right)
-        self.assertTrue(left>right)
-        self.assertTrue(left>=right)
-        self.assertFalse(left==right)
-        self.assertTrue(left!=right)
-
-    def comp_lt(self, left, right):
-        self.assertTrue(left < right)
-        self.assertTrue(left <= right)
-        self.assertFalse(left>right)
-        self.assertFalse(left>=right)
-        self.assertFalse(left==right)
-        self.assertTrue(left!=right)
-
-    def comp_ge(self, left, right, isEQ):
-        self.assertFalse(left < right)
-        self.assertTrue(left>=right)
-        if (isEQ):
-            self.assertTrue(left<=right)
-            self.assertTrue(left==right)
-            self.assertFalse(left!=right)
-            self.assertFalse(left>right)
-        else:
-            self.assertFalse(left<=right)
-            self.assertFalse(left==right)
-            self.assertTrue(left!=right)
-            self.assertTrue(left>right)
-
-    def comp_le(self, left, right, isEQ):
-        self.assertFalse(left > right)
-        self.assertTrue(left<=right)
-        if (isEQ):
-            self.assertTrue(left==right)
-            self.assertFalse(left!=right)
-            self.assertFalse(left<right)
-            self.assertTrue(left>=right)
-        else:
-            self.assertFalse(left==right)
-            self.assertTrue(left!=right)
-            self.assertTrue(left<right)
-            self.assertFalse(left>=right)
-
+class TupleCompareTest(CompareTest):
 
     def test_compare(self):
         t1 = (1, 2, 3)
