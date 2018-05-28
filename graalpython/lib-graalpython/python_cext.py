@@ -787,6 +787,11 @@ def PyObject_AsFileDescriptor(obj):
     return int(result)
 
 
+@may_raise
+def PyObject_GetAttr(obj, attr):
+    return getattr(obj, attr)
+
+
 @may_raise(-1)
 def PyObject_SetAttr(obj, attr, value):
     setattr(obj, attr, value)
