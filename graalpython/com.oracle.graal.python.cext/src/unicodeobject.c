@@ -76,6 +76,7 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
     case 9: v9 = value; break;                  \
     }
 
+    TDEBUG;
     char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
     char* allocated;
@@ -115,7 +116,7 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
     }
 
     char buffer[2048] = {'\0'};
-    snprintf(buffer, 2047, fmtcpy, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9);
+    snprintf(buffer, 2047, fmtcpy, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19);
 
     for (int i = 0; i < s; i++) {
         if (allocated_strings[i] != NULL) {
