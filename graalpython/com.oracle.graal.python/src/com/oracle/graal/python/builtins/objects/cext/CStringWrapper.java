@@ -38,9 +38,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
@@ -71,19 +69,6 @@ public class CStringWrapper implements TruffleObject {
 
     public boolean isNative() {
         return nativePointer != null;
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        if (nativePointer != null) {
-            TruffleObject freeCString = (TruffleObject) PythonLanguage.getContext().getEnv().importSymbol("truffle_free_cstr");
-            assert freeCString != null;
-            try {
-                ForeignAccess.sendExecute(Message.createExecute(1).createNode(), freeCString, nativePointer);
-            } catch (Exception e) {
-                // ignore
-            }
-        }
     }
 
     static boolean isInstance(TruffleObject o) {
