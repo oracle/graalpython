@@ -109,12 +109,12 @@ void initialize_exceptions();
 void initialize_hashes();
 
 // prototype of C landing function
-PyObject *wrap_direct(PyCFunction fun, ...);
-PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
-PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
-PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
-PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames);
-PyObject *wrap_unsupported(void *fun, ...);
+void* wrap_direct(PyCFunction fun, ...);
+void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
+void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
+void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames);
+void* wrap_unsupported(void *fun, ...);
 
 #define write_struct_field(object, struct, fieldname, value)            \
     truffle_write(to_java(object),                                      \
