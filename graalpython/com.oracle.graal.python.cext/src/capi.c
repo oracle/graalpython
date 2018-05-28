@@ -461,76 +461,99 @@ typedef PyObject* (*f20)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, 
 #define _CALL_ARITY(FUN, ...) ( (_PICK_FUN_CAST(NULL, ##__VA_ARGS__, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0))(FUN))(__VA_ARGS__)
 #define ARG(__n) explicit_cast((PyObject*)polyglot_get_arg((__n)))
 
-PyObject *wrap_direct(PyCFunction fun, ...) {
+void* wrap_direct(PyCFunction fun, ...) {
 	PyObject *res = NULL;
 	switch(polyglot_get_arg_count()-1) {
 	case 0:
-		return _CALL_ARITY(fun);
+		res = _CALL_ARITY(fun);
+		break;
 	case 1:
-		return _CALL_ARITY(fun, ARG(1));
+		res = _CALL_ARITY(fun, ARG(1));
+		break;
 	case 2:
-		return _CALL_ARITY(fun, ARG(1), ARG(2));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2));
+		break;
 	case 3:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
+		break;
 	case 4:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4));
+		break;
 	case 5:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+		break;
 	case 6:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
+		break;
 	case 7:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7));
+		break;
 	case 8:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8));
+		break;
 	case 9:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9));
+		break;
 	case 10:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10));
+		break;
 	case 11:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11));
+		break;
 	case 12:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12));
+		break;
 	case 13:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13));
+		break;
 	case 14:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14));
+		break;
 	case 15:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15));
+		break;
 	case 16:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16));
+		break;
 	case 17:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17));
+		break;
 	case 18:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18));
+		break;
 	case 19:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
+		break;
 	case 20:
-		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19), ARG(20));
+		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19), ARG(20));
+		break;
+	default:
+	    _PyErr_BadInternalCall(__FILE__, __LINE__);
+	    res = NULL;
 	}
-	_PyErr_BadInternalCall(__FILE__, __LINE__);
-	return NULL;
+	return native_to_java(res);
 }
 
-PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs) {
-	return fun(explicit_cast(module), explicit_cast(varargs));
+void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs) {
+	return native_to_java(fun(explicit_cast(module), explicit_cast(varargs)));
 }
 
-PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs) {
-	return fun(explicit_cast(module), explicit_cast(varargs), explicit_cast(kwargs));
+void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs) {
+	return native_to_java(fun(explicit_cast(module), explicit_cast(varargs), explicit_cast(kwargs)));
 }
 
-PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
-	return fun(explicit_cast(module), explicit_cast(pnone));
+void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
+	return native_to_java(fun(explicit_cast(module), explicit_cast(pnone)));
 }
 
-PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames) {
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames) {
 	Py_ssize_t i;
     for (i=0; i < nargs; i++) {
     	args[i] = explicit_cast(args[i]);
     }
-	return fun(explicit_cast(self), args, nargs, explicit_cast(kwnames));
+	return native_to_java(fun(explicit_cast(self), args, nargs, explicit_cast(kwnames)));
 }
 
-PyObject *wrap_unsupported(void *fun, ...) {
+void* wrap_unsupported(void *fun, ...) {
 	return NULL;
 }
