@@ -318,12 +318,16 @@ int PyType_Ready(PyTypeObject* cls) {
         int i = 0;
         PyGetSetDef getset = getsets[i];
         while (getset.name != NULL) {
+            getter getter_fun = getset.get;
+            setter setter_fun = getset.set;
             truffle_invoke(PY_TRUFFLE_CEXT,
                            "AddGetSet",
                            javacls,
                            truffle_read_string(getset.name),
-                           truffle_address_to_function(getset.get),
-                           truffle_address_to_function(getset.set),
+                           getter_fun != NULL ? getter_fun : to_java(Py_None),
+                           wrap_direct,
+                           setter_fun != NULL ? setter_fun : to_java(Py_None),
+                           wrap_direct,
                            getset.doc ? truffle_read_string(getset.doc) : truffle_read_string(""),
                            // do not convert the closure, it is handed to the
                            // getter and setter as-is

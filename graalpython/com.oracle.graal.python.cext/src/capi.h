@@ -142,7 +142,7 @@ void* wrap_unsupported(void *fun, ...);
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
 #define get_method_flags_cwrapper(flags)                                \
-    (void*)((((flags) < 0) ?                                                    \
+    (void*)((((flags) < 0) ?                                            \
      wrap_direct :                                                      \
      (((flags) & METH_KEYWORDS) ?                                       \
       wrap_keywords :                                                   \
@@ -155,7 +155,6 @@ void* wrap_unsupported(void *fun, ...);
          (((flags) & METH_FASTCALL) ?                                   \
           wrap_fastcall :                                               \
           wrap_unsupported)))))))
-
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
