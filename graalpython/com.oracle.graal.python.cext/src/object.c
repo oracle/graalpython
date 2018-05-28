@@ -592,7 +592,11 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
 }
 
 PyObject* PyObject_GetAttrString(PyObject* obj, const char* attr) {
-    return to_sulong(truffle_read(to_java(obj), truffle_read_string(attr)));
+    void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetAttr", to_java(obj), polyglot_from_string(attr, "utf-8"));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return to_sulong(result);
 }
 
 int PyObject_SetAttrString(PyObject* obj, const char* attr, PyObject* value) {
