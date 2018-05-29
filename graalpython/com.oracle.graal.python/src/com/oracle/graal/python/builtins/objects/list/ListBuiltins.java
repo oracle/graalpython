@@ -1549,39 +1549,57 @@ public class ListBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
+    abstract static class LtNode extends ListComparisonNode {
 
         @Specialization
         boolean contains(PList self, PList other,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
                         @Cached("create(__LT__, __GT__, __LT__)") BinaryComparisonNode ltNode) {
-            int len = self.len();
-            int len2 = other.len();
-            int min = Math.min(len, len2);
-            for (int i = 0; i < min; i++) {
-                Object left = self.getItem(i);
-                Object right = other.getItem(i);
-                if (!eqNode.executeBool(left, right)) {
-                    return ltNode.executeBool(left, right);
-                }
-            }
-            return len < len2;
-        }
-
-        @Fallback
-        PNotImplemented contains(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            return doComparison(self, other, eqNode, ltNode);
         }
     }
 
     @Builtin(name = __GT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class GtNode extends PythonBinaryBuiltinNode {
+    abstract static class GtNode extends ListComparisonNode {
 
         @Specialization
         boolean contains(PList self, PList other,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
                         @Cached("create(__GT__, __LT__, __GT__)") BinaryComparisonNode gtNode) {
+            return doComparison(self, other, eqNode, gtNode);
+        }
+    }
+
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends ListComparisonNode {
+
+        @Specialization
+        boolean doPTuple(PList left, PList right,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
+                        @Cached("create(__GE__, __LE__, __GE__)") BinaryComparisonNode geNode) {
+            return doComparison(left, right, eqNode, geNode);
+        }
+    }
+
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends ListComparisonNode {
+
+        @Specialization
+        boolean doPList(PList left, PList right,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
+                        @Cached("create(__LE__, __GE__, __LE__)") BinaryComparisonNode leNode) {
+            return doComparison(left, right, eqNode, leNode);
+        }
+    }
+
+    abstract static class ListComparisonNode extends PythonBinaryBuiltinNode {
+
+        static boolean doComparison(PList self, PList other,
+                        BinaryComparisonNode eqNode,
+                        BinaryComparisonNode compNode) {
             int len = self.len();
             int len2 = other.len();
             int min = Math.min(len, len2);
@@ -1589,37 +1607,10 @@ public class ListBuiltins extends PythonBuiltins {
                 Object left = self.getItem(i);
                 Object right = other.getItem(i);
                 if (!eqNode.executeBool(left, right)) {
-                    return gtNode.executeBool(left, right);
+                    return compNode.executeBool(left, right);
                 }
             }
-            return len > len2;
-        }
-
-        @Fallback
-        PNotImplemented contains(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __GE__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class GeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        boolean doPTuple(PList left, PList right,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
-                        @Cached("create(__GE__, __LE__, __GE__)") BinaryComparisonNode geNode) {
-            int llen = left.len();
-            int rlen = right.len();
-            int min = Math.min(llen, rlen);
-            for (int i = 0; i < min; i++) {
-                Object oleft = left.getItem(i);
-                Object oright = right.getItem(i);
-                if (!eqNode.executeBool(oleft, oright)) {
-                    return geNode.executeBool(oleft, oright);
-                }
-            }
-            return llen >= rlen;
+            return compNode.executeBool(len, len2);
         }
 
         @Fallback
@@ -1627,36 +1618,6 @@ public class ListBuiltins extends PythonBuiltins {
         PNotImplemented doOther(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
-
-    }
-
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class LeNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        boolean doPTuple(PList left, PList right,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
-                        @Cached("create(__LE__, __GE__, __LE__)") BinaryComparisonNode geNode) {
-            int llen = left.len();
-            int rlen = right.len();
-            int min = Math.min(llen, rlen);
-            for (int i = 0; i < min; i++) {
-                Object oleft = left.getItem(i);
-                Object oright = right.getItem(i);
-                if (!eqNode.executeBool(oleft, oright)) {
-                    return geNode.executeBool(oleft, oright);
-                }
-            }
-            return llen <= rlen;
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doOther(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
     }
 
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
