@@ -38,6 +38,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.LinkOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
@@ -51,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -282,11 +284,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "fd > 2")
         @TruffleBoundary
         Object fstat(int fd) {
-            return statNode.executeWith(getFilePath(fd).toString());
+            return statNode.executeWith(getFilePath(fd).toString(), PNone.NO_VALUE);
         }
     }
 
-    @Builtin(name = "stat", fixedNumOfArguments = 1)
+    @Builtin(name = "stat", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class StatNode extends PythonBuiltinNode {
         private static final int S_IFIFO = 0010000;
@@ -297,13 +299,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private static final int S_IFDIR = 0040000;
         private static final int S_IFREG = 0100000;
 
-        protected abstract Object executeWith(Object path);
+        protected abstract Object executeWith(Object path, Object followSymlinks);
 
         @Specialization
+        Object doStat(String path, boolean followSymlinks) {
+            return stat(path, followSymlinks);
+        }
+
+        @Specialization(guards = "isNoValue(followSymlinks)")
+        Object doStat(String path, @SuppressWarnings("unused") PNone followSymlinks) {
+            return stat(path, true);
+        }
+
         @TruffleBoundary
-        Object stat(String path) {
+        Object stat(String path, boolean followSymlinks) {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
-            if (!f.exists()) {
+            LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+            if (!f.exists(linkOptions)) {
                 throw raise(OSError, "No such file or directory: '%s'", path);
             }
             int mode = 0;
@@ -313,9 +325,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             long mtime = 0;
             int gid = 0;
             int uid = 0;
-            if (f.isRegularFile()) {
+            if (f.isRegularFile(linkOptions)) {
                 mode |= S_IFREG;
-            } else if (f.isDirectory()) {
+            } else if (f.isDirectory(linkOptions)) {
                 mode |= S_IFDIR;
             } else if (f.isSymbolicLink()) {
                 mode |= S_IFLNK;
@@ -324,24 +336,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
             }
             try {
-                mtime = f.getLastModifiedTime().toMillis();
+                mtime = f.getLastModifiedTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 mtime = 0;
             }
             try {
-                ctime = f.getCreationTime().toMillis();
+                ctime = f.getCreationTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 ctime = 0;
             }
             try {
-                atime = f.getLastAccessTime().toMillis();
+                atime = f.getLastAccessTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 atime = 0;
             }
             gid = 1;
             uid = 1;
             try {
-                final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions();
+                final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions(linkOptions);
                 if (posixFilePermissions.contains(PosixFilePermission.OTHERS_READ)) {
                     mode |= 0004;
                 }
@@ -387,7 +399,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
             try {
-                size = f.size();
+                size = f.size(linkOptions);
             } catch (IOException e) {
                 size = 0;
             }
