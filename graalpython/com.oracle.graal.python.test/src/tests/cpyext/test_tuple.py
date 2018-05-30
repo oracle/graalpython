@@ -47,12 +47,16 @@ def _reference_getslice(args):
 
 
 class MyStr(str):
+
     def __init__(self, s):
         self.s = s
+
     def __repr__(self):
         return self.s
 
+
 class TestPyTuple(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyTuple, self).compile_module(name)
@@ -62,7 +66,7 @@ class TestPyTuple(CPyExtTestCase):
         lambda args: len(args[0]),
         lambda: (
             (tuple(),),
-            ((1,2,3),),
+            ((1, 2, 3),),
             (("a", "b"),),
         ),
         resultspec="i",
@@ -75,10 +79,10 @@ class TestPyTuple(CPyExtTestCase):
         lambda args: len(args[0]),
         lambda: (
             (tuple(),),
-            ((1,2,3),),
+            ((1, 2, 3),),
             (("a", "b"),),
             # no type checking, also accepts different objects
-            ([1,2,3,4],),
+            ([1, 2, 3, 4],),
             ({"a": 1, "b":2},),
         ),
         resultspec="i",
@@ -90,23 +94,25 @@ class TestPyTuple(CPyExtTestCase):
     test_PyTuple_GetSlice = CPyExtFunctionOutVars(
         _reference_getslice,
         lambda: (
-            (tuple(),0,0),
-            ((1,2,3),0,2),
-            ((4,5,6),1,2),
-            ((7,8,9),2,2),
+            (tuple(), 0, 0),
+            ((1, 2, 3), 0, 2),
+            ((4, 5, 6), 1, 2),
+            ((7, 8, 9), 2, 2),
         ),
         resultspec="O",
         argspec='Onn',
         arguments=["PyObject* tuple", "Py_ssize_t start", "Py_ssize_t end"],
+        resulttype="PyObject*",
     )
 
     # PyTuple_Pack
     test_PyTuple_Pack = CPyExtFunctionOutVars(
         lambda vals: vals[1:],
-        lambda: ((3, MyStr("hello"),MyStr("beautiful"),MyStr("world")), ),
+        lambda: ((3, MyStr("hello"), MyStr("beautiful"), MyStr("world")),),
         resultspec="O",
         argspec='nOOO',
         arguments=["Py_ssize_t n", "PyObject* arg0", "PyObject* arg1", "PyObject* arg2"],
+         resulttype="PyObject*",
     )
 
     # PyTuple_Check
@@ -129,11 +135,11 @@ class TestPyTuple(CPyExtTestCase):
     test_PyTuple_CheckExact = CPyExtFunction(
         lambda args: type(args[0]) is tuple,
         lambda: (
-            (tuple(),), 
-            (("hello", "world"),), 
-            ((None,),), 
-            ([],), 
-            ({},), 
+            (tuple(),),
+            (("hello", "world"),),
+            ((None,),),
+            ([],),
+            ({},),
         ),
         resultspec="i",
         argspec='O',

@@ -76,7 +76,7 @@ def _reference_aslong_overflow(args):
 def _reference_fromvoidptr(args):
     n = args[0]
     if n < 0:
-        return ((~abs(n))& 0xffffffffffffffff) + 1
+        return ((~abs(n)) & 0xffffffffffffffff) + 1
     return n
 
 
@@ -90,31 +90,33 @@ class DummyNonInt():
 
 
 class DummyIntable():
+
     def __int__(self):
         return 0xCAFE
 
 
 class DummyIntSubclass(float):
+
     def __int__(self):
         return 0xBABE
 
 
 class TestPyLong(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyLong, self).compile_module(name)
 
-
     test_PyLong_AsLong = CPyExtFunction(
         lambda args: True,
         lambda: (
-            (0,0),
-            (-1,-1),
-            (0x7fffffff,0x7fffffff),
-            (0xffffffffffffffffffffffffffffffff,-1),
-            (DummyIntable(),0xCAFE),
-            (DummyIntSubclass(),0xBABE),
-            (DummyNonInt(),-1),
+            (0, 0),
+            (-1, -1),
+            (0x7fffffff, 0x7fffffff),
+            (0xffffffffffffffffffffffffffffffff, -1),
+            (DummyIntable(), 0xCAFE),
+            (DummyIntSubclass(), 0xBABE),
+            (DummyNonInt(), -1),
         ),
         code='''int wrap_PyLong_AsLong(PyObject* obj, long expected) {
             long res = PyLong_AsLong(obj);
@@ -148,6 +150,7 @@ class TestPyLong(CPyExtTestCase):
         resultspec="li",
         argspec='O',
         arguments=["PyObject* obj"],
+        resulttype="long",
         resultvars=["int overflow"],
         cmpfunc=unhandled_error_compare
     )
@@ -157,7 +160,7 @@ class TestPyLong(CPyExtTestCase):
         lambda: (
             (0,),
             # TODO disable because CPython 3.4.1 does not correctly catch exceptions from native
-            #(-1,),
+            # (-1,),
             (0x7fffffff,),
         ),
         resultspec="l",
