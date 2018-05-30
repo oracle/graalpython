@@ -52,8 +52,8 @@ public final class BytesUtils {
         return new byte[size];
     }
 
-    public static byte[] fromString(PythonCore core, String source) {
-        return decodeEscapeToBytes(core, source);
+    public static byte[] fromString(PythonCore core, String source, boolean raw) {
+        return decodeEscapeToBytes(core, source, raw);
     }
 
     @TruffleBoundary
@@ -120,7 +120,7 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary
-    public static byte[] decodeEscapeToBytes(PythonCore core, String string) {
+    public static byte[] decodeEscapeToBytes(PythonCore core, String string, boolean raw) {
         // see _PyBytes_DecodeEscape from
         // https://github.com/python/cpython/blob/master/Objects/bytesobject.c
         // TODO: for the moment we assume ASCII
@@ -128,7 +128,7 @@ public final class BytesUtils {
         int length = string.length();
         for (int i = 0; i < length; i++) {
             char chr = string.charAt(i);
-            if (chr != '\\') {
+            if (chr != '\\' || raw) {
                 byteList.add(chr);
                 continue;
             }

@@ -532,6 +532,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     private PNode parseString(String[] strings) {
         StringBuilder sb = new StringBuilder();
         Boolean stringIsBytes = null;
+        Boolean stringIsRaw = null;
 
         for (String text : strings) {
 
@@ -577,10 +578,15 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
             } else if (stringIsBytes != isBytes) {
                 throw core.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
             }
+            if (stringIsRaw == null) {
+                stringIsRaw = isRaw;
+            } else if (stringIsRaw != isRaw) {
+                throw core.raise(SyntaxError, "cannot mix raw and non-raw literals");
+            }
         }
 
         if (stringIsBytes != null && stringIsBytes) {
-            return factory.createBytesLiteral(sb.toString());
+            return factory.createBytesLiteral(sb.toString(), stringIsRaw != null ? stringIsRaw : false);
         }
         return factory.createStringLiteral(sb.toString());
     }

@@ -36,8 +36,8 @@ public final class BytesLiteralNode extends LiteralNode {
 
     @CompilationFinal(dimensions = 1) private final byte[] value;
 
-    public BytesLiteralNode(String value) {
-        this.value = BytesUtils.fromString(PythonLanguage.getCore(), value);
+    public BytesLiteralNode(String value, boolean raw) {
+        this.value = BytesUtils.fromString(PythonLanguage.getCore(), value, raw);
     }
 
     @Override
