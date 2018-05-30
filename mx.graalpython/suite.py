@@ -266,7 +266,8 @@ suite = {
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],
-                "GraalCE_Python_license_3rd_party_license.txt": "file:LICENSE",
+                "LICENSE_GRAALPYTHON" : "file:LICENSE",
+                "3rd_party_licenses_graalpython.txt" : "file:3rd_party_licenses.txt",
             }
         },
 
