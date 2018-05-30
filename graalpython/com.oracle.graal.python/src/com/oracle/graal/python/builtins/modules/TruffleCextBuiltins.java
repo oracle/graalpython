@@ -54,9 +54,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.AsPythonObjectNodeFactory;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.PNativeToPTypeNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.ToSulongNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -82,6 +80,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -150,7 +149,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
      */
     @Builtin(name = "to_char_pointer", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class TruffleString_AsString extends PythonBuiltinNode {
+    abstract static class TruffleString_AsString extends NativeBuiltin {
         @CompilationFinal TruffleObject truffle_string_to_cstr;
         @Child private Node executeNode;
 
@@ -183,6 +182,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 throw e.raise();
             }
         }
+
+        @Fallback
+        Object run(Object o) {
+            return raiseNative(PNone.NO_VALUE, PythonErrorType.SystemError, "Cannot convert object of type %p to C string.", o);
+        }
+
     }
 
     /**
@@ -347,13 +352,20 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateFunction", fixedNumOfArguments = 2)
+    @Builtin(name = "CreateFunction", minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
-    abstract static class AddFunctionNode extends PythonBuiltinNode {
-        @Specialization
+    abstract static class CreateFunctionNode extends PythonTernaryBuiltinNode {
+        @Specialization(guards = "isNoValue(cwrapper)")
         @TruffleBoundary
-        Object run(String name, TruffleObject callable) {
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, callable));
+        Object runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper) {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
+            return factory().createBuiltinFunction(name, createArity(name), callTarget);
+        }
+
+        @Specialization(guards = "!isNoValue(cwrapper)")
+        @TruffleBoundary
+        Object run(String name, TruffleObject callable, TruffleObject cwrapper) {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
             return factory().createBuiltinFunction(name, createArity(name), callTarget);
         }
 
@@ -361,9 +373,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return new Arity(name, 0, 0, true, true, new ArrayList<>(), new ArrayList<>());
         }
 
-        @Specialization
-        Object run(PString name, TruffleObject callable) {
-            return run(name.getValue(), callable);
+        @Specialization(guards = "!isNoValue(cwrapper)")
+        Object runWithoutCWrapper(PString name, TruffleObject callable, PNone cwrapper) {
+            return runWithoutCWrapper(name.getValue(), callable, cwrapper);
+        }
+
+        @Specialization(guards = "!isNoValue(cwrapper)")
+        Object run(PString name, TruffleObject callable, TruffleObject cwrapper) {
+            return run(name.getValue(), callable, cwrapper);
         }
     }
 
@@ -512,22 +529,28 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     static class ExternalFunctionNode extends RootNode {
+        private final TruffleObject cwrapper;
         private final TruffleObject callable;
         private final String name;
         @CompilationFinal PythonContext ctxt;
-        @Child private Node executeNode = Message.createExecute(0).createNode();
-        @Child ToSulongNode toSulongNode = ToSulongNodeFactory.create(null);
-        @Child AsPythonObjectNode asPythonObjectNode = AsPythonObjectNodeFactory.create(null);
+        @Child private Node executeNode;
+        @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
+        @Child CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
         @Child private Node isNullNode = Message.IS_NULL.createNode();
         @Child private PNativeToPTypeNode fromForeign = PNativeToPTypeNode.create();
 
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-        public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject callable) {
+        public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
             super(lang);
             this.name = name;
+            this.cwrapper = cwrapper;
             this.callable = callable;
-            this.executeNode = Message.createExecute(2).createNode();
+            if (cwrapper != null) {
+                this.executeNode = Message.createExecute(3).createNode();
+            } else {
+                this.executeNode = Message.createExecute(2).createNode();
+            }
         }
 
         public TruffleObject getCallable() {
@@ -537,12 +560,25 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public Object execute(VirtualFrame frame) {
             Object[] frameArgs = frame.getArguments();
-            Object[] arguments = new Object[frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
-            for (int i = 0; i < arguments.length; i++) {
-                arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
-            }
             try {
-                return fromNative(asPythonObjectNode.execute(checkFunctionResult(ForeignAccess.sendExecute(executeNode, callable, arguments))));
+                TruffleObject fun;
+                Object[] arguments;
+
+                if (cwrapper != null) {
+                    fun = cwrapper;
+                    arguments = new Object[1 + frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
+                    arguments[0] = callable;
+                    for (int i = 1; i < arguments.length; i++) {
+                        arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET - 1]);
+                    }
+                } else {
+                    fun = callable;
+                    arguments = new Object[frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
+                    for (int i = 0; i < arguments.length; i++) {
+                        arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
+                    }
+                }
+                return fromNative(asPythonObjectNode.execute(checkFunctionResult(ForeignAccess.sendExecute(executeNode, fun, arguments))));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException(e.toString());
@@ -1019,6 +1055,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 getClassNode = insert(GetClassNode.create());
             }
             return getClassNode;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Set_Ptr", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Set_Ptr extends NativeBuiltin {
+
+        @Specialization
+        PythonObjectNativeWrapper doPythonObject(PythonObjectNativeWrapper nativeWrapper, Object ptr) {
+            nativeWrapper.setNativePointer(ptr);
+            return nativeWrapper;
         }
     }
 }

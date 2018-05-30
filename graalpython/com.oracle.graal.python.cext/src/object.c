@@ -175,17 +175,18 @@ int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
 #define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, m.ml_meth, m.ml_flags, m.ml_doc)
 #define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, meth, flags, name)
-#define ADD_METHOD_OR_SLOT(name, meth, flags, doc)                      \
-    if (meth) {                                                         \
-        truffle_invoke(PY_TRUFFLE_CEXT,                                 \
-                       "AddFunction",                                   \
-                       javacls,                                         \
-                       truffle_read_string(name),                       \
-                       truffle_address_to_function(meth),               \
-                       get_method_flags_wrapper(flags),                 \
-                       truffle_read_string(doc),                        \
-                       (flags) > 0 && ((flags) & METH_CLASS) != 0,      \
-                       (flags) > 0 && ((flags) & METH_STATIC) != 0);    \
+#define ADD_METHOD_OR_SLOT(name, meth, flags, doc)                                          \
+    if (meth) {                                                                             \
+        truffle_invoke(PY_TRUFFLE_CEXT,                                                     \
+                       "AddFunction",                                                       \
+                       javacls,                                                             \
+                       truffle_read_string(name),                                           \
+                       truffle_address_to_function(meth),                                   \
+                       truffle_address_to_function(get_method_flags_cwrapper(flags)),       \
+                       get_method_flags_wrapper(flags),                                     \
+                       truffle_read_string(doc),                                            \
+                       (flags) > 0 && ((flags) & METH_CLASS) != 0,                          \
+                       (flags) > 0 && ((flags) & METH_STATIC) != 0);                        \
     }
 
     // https://docs.python.org/3/c-api/typeobj.html#Py_TPFLAGS_READY
@@ -392,7 +393,7 @@ int PyType_Ready(PyTypeObject* cls) {
     if (mappings) {
         ADD_SLOT("__len__", mappings->mp_length, -1);
         ADD_SLOT("__getitem__", mappings->mp_subscript, -2);
-        ADD_SLOT("__setitem__", mappings->mp_subscript, -3);
+        ADD_SLOT("__setitem__", mappings->mp_ass_subscript, -3);
     }
 
     PyAsyncMethods* async = cls->tp_as_async;

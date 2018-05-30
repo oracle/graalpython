@@ -56,7 +56,9 @@ def _reference_format(args):
     fmt_args = tuple(args[1:])
     return (fmt % fmt_args).encode()
 
+
 class TestPyBytes(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyBytes, self).compile_module(name)
@@ -84,7 +86,7 @@ class TestPyBytes(CPyExtTestCase):
     # PyBytes_AsString
     test_PyBytes_AsString = CPyExtFunction(
         lambda b: b[0].decode(),
-        lambda: ((b"hello", ), (b"world",)),
+        lambda: ((b"hello",), (b"world",)),
         resultspec="s",
         argspec="O",
         arguments=["PyObject* arg"],
@@ -98,12 +100,13 @@ class TestPyBytes(CPyExtTestCase):
         argspec="O",
         arguments=["PyObject* arg"],
         resultvars=("char* s", "Py_ssize_t sz"),
+        resulttype="int"
     )
 
     # PyBytes_Size
     test_PyBytes_Size = CPyExtFunction(
         lambda b: len(b[0]),
-        lambda: ((b"hello", ), (b"hello world",), (b"",)),
+        lambda: ((b"hello",), (b"hello world",), (b"",)),
         resultspec="n",
         argspec="O",
         arguments=["PyObject* arg"],
@@ -112,7 +115,7 @@ class TestPyBytes(CPyExtTestCase):
     # PyBytes_GET_SIZE
     test_PyBytes_GET_SIZE = CPyExtFunction(
         lambda b: len(b[0]),
-        lambda: ((b"hello", ), (b"hello world",), (b"",)),
+        lambda: ((b"hello",), (b"hello world",), (b"",)),
         resultspec="n",
         argspec="O",
         arguments=["PyObject* arg"],
@@ -122,7 +125,7 @@ class TestPyBytes(CPyExtTestCase):
     # PyBytes_FromFormat
     test_PyBytes_FromFormat = CPyExtFunction(
         _reference_format,
-        lambda: (("hello %s %s, %d times", "beautiful", "world", 3), ),
+        lambda: (("hello %s %s, %d times", "beautiful", "world", 3),),
         resultspec="O",
         argspec="sssi",
         arguments=["char* fmt", "char* arg0", "char* arg1", "int arg2"],
@@ -145,6 +148,7 @@ class TestPyBytes(CPyExtTestCase):
         resultspec="iO",
         argspec="OO",
         arguments=["PyObject* arg0", "PyObject* arg1"],
+        resulttype="int",
         argumentnames="&arg0, arg1",
         resultvarnames="arg0",
         callfunction="wrap_PyBytes_Concat"
@@ -167,6 +171,7 @@ class TestPyBytes(CPyExtTestCase):
         resultspec="iO",
         argspec="OO",
         arguments=["PyObject* arg0", "PyObject* arg1"],
+        resulttype="int",
         argumentnames="&arg0, arg1",
         resultvarnames="arg0",
         callfunction="wrap_PyBytes_ConcatAndDel"
@@ -206,9 +211,9 @@ class TestPyBytes(CPyExtTestCase):
     test_PyBytes_AS_STRING = CPyExtFunction(
         lambda b: b[0].decode("utf-8"),
         lambda: (
-            (b"hello", ), 
-            ("hellö".encode("utf-8"), ), 
-            (b"hello world",), 
+            (b"hello",),
+            ("hellö".encode("utf-8"),),
+            (b"hello world",),
             (b"",)
         ),
         resultspec="s",

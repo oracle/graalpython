@@ -39,6 +39,7 @@ from . import CPyExtTestCase, GRAALPYTHON
 
 
 class TestWiki(CPyExtTestCase):
+
     def test_noddy(self):
         from . import noddy
         assert type(noddy.Noddy) is type
@@ -53,10 +54,39 @@ class TestWiki(CPyExtTestCase):
         assert nd.last == "Last"
         assert nd.number == 42
 
+        nd.first = "Hello"
+        nd.last = "World"
+        nd.number = 1234
+        nd.n_short = 0x7fff
+        nd.n_long = 0x7fffffffffffffff
+        nd.n_float = 0.1234
+        nd.n_double = 0.123456789432634
+        nd.c = 'z'
+        nd.n_byte = 0x7f
+        nd.n_ubyte = 0xff
+        nd.n_ushort = 0xffff
+        nd.n_unumber = 0xffffffff
+        nd.n_ulong = 0xffffffffffffffff
+
+        assert nd.first == "Hello", ("%s != Hello" % nd.first)
+        assert nd.last == "World", ("%s != World" % nd.last)
+        assert nd.number == 1234, ("%s != 1234" % nd.number)
+        assert nd.n_short == 0x7fff, ("%s != 32767" % nd.n_short)
+        assert nd.n_long == 0x7fffffffffffffff, ("%s != 0x7fffffffffffffff" % nd.n_long)
+        assert 0.12341 - nd.n_float < 0.00001 , ("%s != 0.1234" % nd.n_float)
+        assert 0.123456789432634 - nd.n_double < 0.0000000000000001, ("%s != 0.123456789432634" % nd.n_double)
+        # assert nd.c == 'z', ("%s != 'z'" % nd.c)
+        assert nd.n_byte == 0x7f, ("%s != 127" % nd.n_byte)
+        assert nd.n_ubyte == 0xff, ("%s != 255" % nd.n_ubyte)
+        assert nd.n_ushort == 0xffff, ("%s != 65535" % nd.n_ushort)
+        assert nd.n_unumber == 0xffffffff, ("%s != 0xffffffff" % nd.n_unumber)
+        assert nd.n_ulong == 0xffffffffffffffff, ("%s != 0xffffffffffffffff" % nd.n_ulong)
+
     def test_noddy3(self):
         from . import noddy3
         nd = noddy3.Noddy(b"First", b"Last", 42)
         assert nd.name() == "b'First' b'Last'", nd.name()
         assert nd.first == b"First", ("%s != First" % nd.first)
         assert nd.last == b"Last"
+
         assert nd.number == 42

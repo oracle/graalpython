@@ -37,7 +37,7 @@
 
 import sys
 import warnings
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, CPyExtFunctionVoid, unhandled_error_compare, GRAALPYTHON
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionVoid, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -71,10 +71,10 @@ def gen_intern_args():
 
 
 class TestPyUnicode(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyUnicode, self).compile_module(name)
-
 
     test_PyUnicode_FromObject = CPyExtFunction(
         _reference_fromobject,
@@ -90,7 +90,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* v"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_FromStringAndSize = CPyExtFunction(
         lambda args: args[0][:args[1]],
         lambda: (
@@ -102,7 +102,7 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["char* v", "Py_ssize_t n"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_FromFormat0 = CPyExtFunction(
         lambda args: args[0] % tuple(args[1:]),
         lambda: (
@@ -118,7 +118,7 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_FromFormat0",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_FromFormat3 = CPyExtFunction(
         lambda args: args[0] % tuple(args[1:]),
         lambda: (
@@ -134,12 +134,12 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_FromFormat3",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_FromUnicode = CPyExtFunction(
         lambda args: args[0],
         lambda: (
-            ("hello", ),
-            ("hellö", ),
+            ("hello",),
+            ("hellö",),
         ),
         code="""#include <unicodeobject.h>
  
@@ -158,49 +158,49 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_FromUnicode",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_GetLength = CPyExtFunction(
         lambda args: len(args[0]),
         lambda: (
-            ("hello", ),
-            ("world", ),
-            ("this is a longer text also cöntaining weird Ümläuts", ),
+            ("hello",),
+            ("world",),
+            ("this is a longer text also cöntaining weird Ümläuts",),
         ),
         resultspec="n",
         argspec='O',
         arguments=["PyObject* v"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_Concat = CPyExtFunction(
         lambda args: args[0] + args[1],
         lambda: (
-            ("hello", ", world" ),
-            ("", "world" ),
-            ("this is a longer text also cöntaining weird Ümläuts", "" ),
+            ("hello", ", world"),
+            ("", "world"),
+            ("this is a longer text also cöntaining weird Ümläuts", ""),
         ),
         resultspec="O",
         argspec='OO',
         arguments=["PyObject* left", "PyObject* right"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_FromEncodedObject = CPyExtFunction(
         lambda args: args[0].decode(args[1], args[2]),
         lambda: (
-            (b"hello", "ascii", "strict" ),
-            ("hellö".encode(), "ascii", "strict" ),
-            ("hellö".encode(), "ascii", "ignore" ),
-            ("hellö".encode(), "ascii", "replace" ),
-            ("hellö".encode(), "utf-8", "strict" ),
-            ("hellö".encode(), "utf-8", "blah" ),
+            (b"hello", "ascii", "strict"),
+            ("hellö".encode(), "ascii", "strict"),
+            ("hellö".encode(), "ascii", "ignore"),
+            ("hellö".encode(), "ascii", "replace"),
+            ("hellö".encode(), "utf-8", "strict"),
+            ("hellö".encode(), "utf-8", "blah"),
         ),
         resultspec="O",
         argspec='Oss',
         arguments=["PyObject* o", "char* encoding", "char* errors"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_InternInPlace = CPyExtFunction(
         _reference_intern,
         gen_intern_args,
@@ -216,7 +216,7 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_InternInPlace",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_InternFromString = CPyExtFunction(
         _reference_intern,
         gen_intern_args,
@@ -225,38 +225,38 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["char* s"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_AsUTF8 = CPyExtFunction(
         lambda args: args[0],
         lambda: (
-            ("hello", ),
-            ("hellö", ),
+            ("hello",),
+            ("hellö",),
         ),
         resultspec="s",
         argspec='O',
         arguments=["PyObject* s"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_AsUTF8String = CPyExtFunction(
         lambda args: args[0].encode("utf-8"),
         lambda: (
-            ("hello", ),
-            ("hellö", ),
+            ("hello",),
+            ("hellö",),
         ),
         resultspec="O",
         argspec='O',
         arguments=["PyObject* s"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_DecodeUTF32 = CPyExtFunction(
         lambda args: args[1],
         lambda: (
             # UTF32-LE codepoint for 'hello'
-            (b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00", "hello" ),
+            (b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00", "hello"),
             # UTF-32 codepoint for 'hellö'
-            (b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\xf6\x00\x00\x00", "hellö" ),
+            (b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\xf6\x00\x00\x00", "hellö"),
         ),
         code="""PyObject* wrap_PyUnicode_DecodeUTF32(PyObject* bytesObj, PyObject* expected) {
             int byteorder = -1;
@@ -272,31 +272,31 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_DecodeUTF32",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_AsLatin1String = CPyExtFunction(
         lambda args: args[0].encode("iso-8859-1"),
         lambda: (
-            ("hello", ),
-            ("hellö", ),
+            ("hello",),
+            ("hellö",),
         ),
         resultspec="O",
         argspec='O',
         arguments=["PyObject* s"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_AsASCIIString = CPyExtFunction(
         lambda args: args[0].encode("ascii"),
         lambda: (
-            ("hello", ),
-            ("hellö", ),
+            ("hello",),
+            ("hellö",),
         ),
         resultspec="O",
         argspec='O',
         arguments=["PyObject* s"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_Format = CPyExtFunction(
         lambda args: args[0] % args[1],
         lambda: (
@@ -310,15 +310,15 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* format", "PyObject* fmt_args"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyUnicode_Check = CPyExtFunction(
         lambda args: isinstance(args[0], str),
         lambda: (
-            ("hello",), 
-            ("hellö",), 
-            (b"hello",), 
-            ("hellö",), 
-            (['a', 'b', 'c'],), 
+            ("hello",),
+            ("hellö",),
+            (b"hello",),
+            ("hellö",),
+            (['a', 'b', 'c'],),
         ),
         resultspec="i",
         argspec='O',
@@ -330,7 +330,7 @@ class TestPyUnicode(CPyExtTestCase):
     test_PyUnicode_GET_SIZE = CPyExtFunction(
         lambda args: len(args[0]),
         lambda: (
-            ("hello",), 
+            ("hello",),
         ),
         resultspec="n",
         argspec='O',

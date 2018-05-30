@@ -39,7 +39,14 @@
 #include "capi.h"
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    PyTypeObject* ptype = (PyTypeObject *)to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname)));
+	void *jtype = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname));
+    PyTypeObject* ptype = (PyTypeObject *)to_sulong(jtype);
+    PyTypeObject *nativePointer = PyObjectHandle_ForJavaType(jtype);
+
+    // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
+    // TODO Remove this as soon as this is properly supported.
+    truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", ptype, nativePointer);
+
     unsigned long original_flags = structure->tp_flags;
     PyTypeObject* type_handle = truffle_assign_managed(structure, polyglot_as__typeobject(ptype));
     // write flags as specified in the dummy to the PythonClass object
@@ -156,13 +163,17 @@ static inline PyObject* PyTruffle_Explicit_Cast(PyObject* cobj, unsigned long fl
 }
 
 
-PyObject* to_sulong(void *o) {
-    PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
+__attribute__((always_inline))
+static inline PyObject* _explicit_cast(PyObject* cobj) {
     if(polyglot_is_value(cobj)) {
         unsigned long flags = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetTpFlags", cobj));
         return PyTruffle_Explicit_Cast(cobj, flags);
     }
     return cobj;
+}
+
+PyObject* to_sulong(void *o) {
+    return _explicit_cast(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
 }
 
 void* get_ob_type(PyObject* obj) {
@@ -202,33 +213,33 @@ const char* PyTruffle_StringToCstr(void* jlString) {
     return truffle_string_to_cstr(jlString);
 }
 
-#define ReadMember(object, offset, T) ((T*)(((char*)object) + offset))[0]
+#define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
 
-short ReadShortMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, short);
+PyObject* ReadShortMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLong(ReadMember(object, offset, short));
 }
 
-int ReadIntMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, int);
+PyObject* ReadIntMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLong(ReadMember(object, offset, int));
 }
 
-long ReadLongMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, long);
+PyObject* ReadLongMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLong(ReadMember(object, offset, long));
 }
 
-float ReadFloatMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, float);
+PyObject* ReadFloatMember(PyObject* object, PyObject* offset) {
+	return PyFloat_FromDouble(ReadMember(object, offset, float));
 }
 
-double ReadDoubleMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, double);
+PyObject* ReadDoubleMember(PyObject* object, PyObject* offset) {
+	return PyFloat_FromDouble(ReadMember(object, offset, double));
 }
 
-void* ReadStringMember(PyObject* object, int offset) {
-    return truffle_read_string(ReadMember(object, offset, char*));
+PyObject* ReadStringMember(PyObject* object, PyObject* offset) {
+    return (PyObject*)polyglot_from_string(ReadMember(object, offset, char*), "utf-8");
 }
 
-PyObject* ReadObjectMember(PyObject* object, int offset) {
+PyObject* ReadObjectMember(PyObject* object, PyObject* offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
         return Py_None;
@@ -237,36 +248,36 @@ PyObject* ReadObjectMember(PyObject* object, int offset) {
     }
 }
 
-char ReadCharMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, char);
+PyObject* ReadCharMember(PyObject* object, PyObject* offset) {
+    return polyglot_from_string_n(&ReadMember(object, offset, char), 1, "utf-8");
 }
 
-char ReadByteMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, char);
+PyObject* ReadByteMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLong(ReadMember(object, offset, char));
 }
 
-unsigned char ReadUByteMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, unsigned char);
+PyObject* ReadUByteMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned char));
 }
 
-unsigned short ReadUShortMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, unsigned short);
+PyObject* ReadUShortMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned short));
 }
 
-unsigned int ReadUIntMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, unsigned int);
+PyObject* ReadUIntMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned int));
 }
 
-unsigned long ReadULongMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, unsigned long);
+PyObject* ReadULongMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned long));
 }
 
-char ReadBoolMember(PyObject* object, int offset) {
+PyObject* ReadBoolMember(PyObject* object, PyObject* offset) {
     char flag = ReadMember(object, offset, char);
     return flag ? Py_True : Py_False;
 }
 
-PyObject* ReadObjectExMember(PyObject* object, int offset) {
+PyObject* ReadObjectExMember(PyObject* object, PyObject* offset) {
     PyObject* member = ReadMember(object, offset, PyObject*);
     if (member == NULL) {
         PyErr_SetString(PyExc_ValueError, "member must not be NULL");
@@ -276,99 +287,118 @@ PyObject* ReadObjectExMember(PyObject* object, int offset) {
     }
 }
 
-long long ReadLongLongMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, long long);
+PyObject* ReadLongLongMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromLongLong(ReadMember(object, offset, long long));
 }
 
-unsigned long long ReadULongLongMember(PyObject* object, int offset) {
-    return ReadMember(object, offset, unsigned long long);
+PyObject* ReadULongLongMember(PyObject* object, PyObject* offset) {
+	return PyLong_FromUnsignedLongLong(ReadMember(object, offset, unsigned long long));
 }
 
-Py_ssize_t ReadPySSizeT(PyObject* object, int offset) {
-    return ReadMember(object, offset, Py_ssize_t);
+PyObject* ReadPySSizeT(PyObject* object, PyObject* offset) {
+	return PyLong_FromSsize_t(ReadMember(object, offset, Py_ssize_t));
 }
 
 #undef ReadMember
 
-#define WriteMember(object, offset, value, T) *(T*)(((char*)object) + offset) = value;
+#define WriteMember(object, offset, value, T) *(T*)(((char*)object) + PyLong_AsSsize_t(offset)) = (T)(value)
 
-void WriteShortMember(PyObject* object, int offset, short value) {
-    WriteMember(object, offset, value, short);
+PyObject* WriteShortMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyLong_AsLong(value), short);
+    return value;
 }
 
-void WriteIntMember(PyObject* object, int offset, int value) {
-    WriteMember(object, offset, value, int);
+PyObject* WriteIntMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyLong_AsLong(value), int);
+    return value;
 }
 
-void WriteLongMember(PyObject* object, int offset, long value) {
-    WriteMember(object, offset, value, long);
+PyObject* WriteLongMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyLong_AsLong(value), long);
+    return value;
 }
 
-void WriteFloatMember(PyObject* object, int offset, float value) {
-    WriteMember(object, offset, value, float);
+PyObject* WriteFloatMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyFloat_AsDouble(value), float);
+    return value;
 }
 
-void WriteDoubleMember(PyObject* object, int offset, double value) {
-    WriteMember(object, offset, value, double);
+PyObject* WriteDoubleMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyFloat_AsDouble(value), double);
+    return value;
 }
 
-void WriteStringMember(PyObject* object, int offset, PyObject* value) {
+PyObject* WriteStringMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, as_char_pointer(value), char*);
+    return value;
 }
 
-void WriteObjectMember(PyObject* object, int offset, PyObject* value) {
+PyObject* WriteObjectMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, value, PyObject*);
+    return value;
 }
 
-void WriteCharMember(PyObject* object, int offset, PyObject* value) {
+PyObject* WriteCharMember(PyObject* object, PyObject* offset, PyObject* value) {
     const char* ptr = as_char_pointer(value);
     const char c = ptr[0];
     truffle_free_cstr(ptr);
     WriteMember(object, offset, c, char);
+    return value;
 }
 
-void WriteByteMember(PyObject* object, int offset, PyObject* value) {
-    WriteCharMember(object, offset, value);
+PyObject* WriteByteMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyLong_AsLong(value), char);
+    return value;
 }
 
-void WriteUByteMember(PyObject* object, int offset, PyObject* value) {
-    WriteCharMember(object, offset, value);
+PyObject* WriteUByteMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyLong_AsLong(value), uint8_t);
+    return value;
 }
 
-void WriteUShortMember(PyObject* object, int offset, unsigned short value) {
-    WriteMember(object, offset, value, unsigned short);
+PyObject* WriteUShortMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyLong_AsUnsignedLong(value), unsigned short);
+    return value;
 }
 
-void WriteUIntMember(PyObject* object, int offset, unsigned int value) {
-    WriteMember(object, offset, value, unsigned int);
+PyObject* WriteUIntMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyLong_AsUnsignedLong(value), unsigned int);
+    return value;
 }
 
-void WriteULongMember(PyObject* object, int offset, unsigned long value) {
-    WriteMember(object, offset, value, unsigned long);
+PyObject* WriteULongMember(PyObject* object, PyObject* offset, PyObject* value) {
+    WriteMember(object, offset, PyLong_AsUnsignedLong(value), unsigned long);
+    return value;
 }
 
-void WriteBoolMember(PyObject* object, int offset, PyObject* value) {
+PyObject* WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, truffle_invoke(to_java(value), "__bool__") == Py_True ? (char)1 : (char)0, char);
+    return value;
 }
 
-void WriteObjectExMember(PyObject* object, int offset, PyObject* value) {
+PyObject* WriteObjectExMember(PyObject* object, PyObject* offset, PyObject* value) {
     if (value == NULL) {
         PyErr_SetString(PyExc_ValueError, "member must not be NULL");
+        return NULL;
     } else {
         WriteMember(object, offset, value, PyObject*);
+        return value;
     }
 }
 
-void WriteLongLongMember(PyObject* object, int offset, long long value) {
+PyObject* WriteLongLongMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, value, long long);
+    return value;
 }
 
-void WriteULongLongMember(PyObject* object, int offset, unsigned long long value) {
+PyObject* WriteULongLongMember(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, value, unsigned long long);
+    return value;
 }
 
-void WritePySSizeT(PyObject* object, int offset, Py_ssize_t value) {
+PyObject* WritePySSizeT(PyObject* object, PyObject* offset, PyObject* value) {
     WriteMember(object, offset, value, Py_ssize_t);
+    return value;
 }
 
 PyObject marker_struct = {
@@ -381,4 +411,104 @@ PyObject marker_struct = {
 int PyTruffle_Debug(void *arg) {
 	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
 	return 0;
+}
+
+typedef PyObject* (*f0)();
+typedef PyObject* (*f1)(PyObject*);
+typedef PyObject* (*f2)(PyObject*, PyObject*);
+typedef PyObject* (*f3)(PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f4)(PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f5)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f6)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f7)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f8)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f9)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f10)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f11)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f12)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f13)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f14)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f15)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f16)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f17)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f18)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f19)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+typedef PyObject* (*f20)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, PyObject*);
+
+#define _PICK_FUN_CAST(DUMMY, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, NAME, ...) NAME
+#define _CALL_ARITY(FUN, ...) ( (_PICK_FUN_CAST(NULL, ##__VA_ARGS__, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0))(FUN))(__VA_ARGS__)
+#define ARG(__n) _explicit_cast((PyObject*)polyglot_get_arg((__n)))
+
+PyObject *wrap_direct(PyCFunction fun, ...) {
+	PyObject *res = NULL;
+	switch(polyglot_get_arg_count()-1) {
+	case 0:
+		return _CALL_ARITY(fun);
+	case 1:
+		return _CALL_ARITY(fun, ARG(1));
+	case 2:
+		return _CALL_ARITY(fun, ARG(1), ARG(2));
+	case 3:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
+	case 4:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4));
+	case 5:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+	case 6:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
+	case 7:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7));
+	case 8:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8));
+	case 9:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9));
+	case 10:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10));
+	case 11:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11));
+	case 12:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12));
+	case 13:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13));
+	case 14:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14));
+	case 15:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15));
+	case 16:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16));
+	case 17:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17));
+	case 18:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18));
+	case 19:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
+	case 20:
+		return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19), ARG(20));
+	}
+	_PyErr_BadInternalCall(__FILE__, __LINE__);
+	return NULL;
+}
+
+PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs) {
+	return fun(module, _explicit_cast(varargs));
+}
+
+PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs) {
+	return fun(module, _explicit_cast(varargs), _explicit_cast(kwargs));
+}
+
+PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
+	return fun(module, pnone);
+}
+
+PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames) {
+	Py_ssize_t i;
+    for (i=0; i < nargs; i++) {
+    	args[i] = _explicit_cast(args[i]);
+    }
+	return fun(self, args, nargs, _explicit_cast(kwnames));
+}
+
+PyObject *wrap_unsupported(void *fun, ...) {
+	return NULL;
 }
