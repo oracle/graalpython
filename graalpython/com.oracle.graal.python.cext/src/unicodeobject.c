@@ -76,7 +76,6 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
     case 9: v9 = value; break;                  \
     }
 
-    TDEBUG;
     char* fmtcpy = strdup(fmt);
     char* c = fmtcpy;
     char* allocated;
