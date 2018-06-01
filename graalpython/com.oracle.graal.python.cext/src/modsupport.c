@@ -580,3 +580,14 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         return PyList_AsTuple(v->list);
     }
 }
+
+// taken from CPython "Python/modsupport.c"
+int PyModule_AddStringConstant(PyObject *m, const char *name, const char *value) {
+    PyObject *o = PyUnicode_FromString(value);
+    if (!o)
+        return -1;
+    if (PyModule_AddObject(m, name, o) == 0)
+        return 0;
+    Py_DECREF(o);
+    return -1;
+}
