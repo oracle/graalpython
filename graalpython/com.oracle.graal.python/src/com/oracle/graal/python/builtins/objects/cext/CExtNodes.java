@@ -251,4 +251,38 @@ public abstract class CExtNodes {
         }
     }
 
+    public static class FromCharPointerNode extends PBaseNode {
+
+        @CompilationFinal TruffleObject truffle_cstr_to_string;
+        @Child private Node executeNode;
+
+        TruffleObject getTruffleStringToCstr() {
+            if (truffle_cstr_to_string == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                truffle_cstr_to_string = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING);
+            }
+            return truffle_cstr_to_string;
+        }
+
+        private Node getExecuteNode() {
+            if (executeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                executeNode = insert(Message.createExecute(1).createNode());
+            }
+            return executeNode;
+        }
+
+        public String execute(Object charPtr) {
+            try {
+                return (String) ForeignAccess.sendExecute(getExecuteNode(), getTruffleStringToCstr(), charPtr);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+
+        public static FromCharPointerNode create() {
+            return new FromCharPointerNode();
+        }
+    }
+
 }

@@ -85,6 +85,8 @@ static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
 }
 
+typedef void* (*dynamic_cast_fun)(void*);
+
 __attribute__((constructor))
 static void initialize_capi() {
     // initialize base types
@@ -113,6 +115,9 @@ static void initialize_capi() {
     initialize_type_structure(&PySet_Type, "set");
     initialize_type_structure(&PyEllipsis_Type, "ellipsis");
     initialize_type_structure(&PyBuffer_Type, "buffer");
+
+    // XXX remove as soon as we have proper support
+    polyglot_register_dynamic_cast(to_sulong(PY_TRUFFLE_CEXT), (dynamic_cast_fun)explicit_cast);
 
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
@@ -233,6 +238,10 @@ void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
 
 const char* PyTruffle_StringToCstr(void* jlString) {
     return truffle_string_to_cstr(jlString);
+}
+
+void* PyTruffle_CstrToString(const char* o) {
+    return polyglot_from_string(o, "utf-8");
 }
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]

@@ -38,15 +38,50 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-public abstract class NativeCAPISymbols {
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-    public static final String FUN_NATIVE_TO_JAVA = "native_to_java";
-    public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE = "PyObjectHandle_ForJavaType";
-    public static final String FUN_NATIVE_HANDLE_FOR_ARRAY = "NativeHandle_ForArray";
-    public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
-    public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
-    public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
+public abstract class PyAttributeProcsWrapper implements TruffleObject {
 
+    private final Object delegate;
+
+    public PyAttributeProcsWrapper(Object delegate) {
+        this.delegate = delegate;
+    }
+
+    public Object getDelegate() {
+        return delegate;
+    }
+
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PyAttributeProcsWrapper;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return PyAttributeProcsWrapperMRForeign.ACCESS;
+    }
+
+    static class GetAttrWrapper extends PyAttributeProcsWrapper {
+
+        public GetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+    }
+
+    static class SetAttrWrapper extends PyAttributeProcsWrapper {
+
+        public SetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+    }
+
+    public static GetAttrWrapper createGetAttrWrapper(Object getAttrMethod) {
+        return new GetAttrWrapper(getAttrMethod);
+    }
+
+    public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
+        return new SetAttrWrapper(setAttrMethod);
+    }
 }

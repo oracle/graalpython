@@ -38,6 +38,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -58,6 +61,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -230,6 +234,30 @@ public class PythonObjectNativeWrapperMR {
         Object doTpSubclasses(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
             // TODO create dict view on subclasses set
             return PythonObjectNativeWrapper.wrap(factory().createDict());
+        }
+
+        @Specialization(guards = "eq(TP_GETATTR, key)")
+        Object doTpGetattr(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+            // we do not provide 'tp_getattr'; code will usually then use 'tp_getattro'
+            return getToSulongNode().execute(PNone.NO_VALUE);
+        }
+
+        @Specialization(guards = "eq(TP_SETATTR, key)")
+        Object doTpSetattr(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+            // we do not provide 'tp_setattr'; code will usually then use 'tp_setattro'
+            return getToSulongNode().execute(PNone.NO_VALUE);
+        }
+
+        @Specialization(guards = "eq(TP_GETATTRO, key)")
+        Object doTpGetattro(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") LookupInheritedAttributeNode lookupAttrNode) {
+            return PyAttributeProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object, __GETATTRIBUTE__));
+        }
+
+        @Specialization(guards = "eq(TP_SETATTRO, key)")
+        Object doTpSetattro(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") LookupInheritedAttributeNode lookupAttrNode) {
+            return PyAttributeProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object, __SETATTR__));
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")

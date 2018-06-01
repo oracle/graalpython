@@ -177,11 +177,13 @@ static PyObject* wrap_allocfunc(allocfunc f, PyTypeObject* klass, PyObject* n) {
 	return f(explicit_cast(klass), PyLong_AsSsize_t(n));
 }
 
+/* Wrapper around a native function to be called by Python code. */
 static PyObject* wrap_getattrfunc(getattrfunc f, PyObject* obj, PyObject* unicode) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
 	return f(explicit_cast(obj), as_char_pointer(unicode));
 }
 
+/* Wrapper around the native function to be called by Python code. */
 static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicode, PyObject* value) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
 	return f(explicit_cast(obj), as_char_pointer(unicode), explicit_cast(value));
