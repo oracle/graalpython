@@ -63,5 +63,6 @@ public enum PythonErrorType {
     ValueError,
     Warning,
     ZeroDivisionError,
-    BufferError;
+    BufferError,
+    FileNotFoundError;
 }

@@ -39,7 +39,10 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -75,6 +78,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -251,11 +255,32 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getcwd", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class CwdNode extends PythonBuiltinNode {
+        @TruffleBoundary
         @Specialization
         String cwd() {
+            // TODO(fa) that should actually be retrieved from native code
             return System.getProperty("user.dir");
         }
 
+    }
+
+    @Builtin(name = "chdir", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ChdirNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        PNone chdir(String spath) {
+            // TODO(fa) that should actually be set via native code
+            try {
+                if (Files.exists(Paths.get(spath))) {
+                    System.setProperty("user.dir", spath);
+                    return PNone.NONE;
+                }
+            } catch (InvalidPathException e) {
+                // fall through
+            }
+            throw raise(PythonErrorType.FileNotFoundError, "No such file or directory: '%s'", spath);
+        }
     }
 
     @Builtin(name = "getpid", fixedNumOfArguments = 0)
