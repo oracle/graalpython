@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -67,6 +68,9 @@ public class PythonContext {
     @CompilationFinal private boolean capiWasLoaded = false;
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
+
+    /** A thread-local dictionary for custom user state. */
+    private ThreadLocal<PDict> customThreadState;
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, PythonCore core) {
         this.language = language;
@@ -209,4 +213,15 @@ public class PythonContext {
             f.call();
         }
     }
+
+    @TruffleBoundary
+    public PDict getCustomThreadState() {
+        if (customThreadState == null) {
+            ThreadLocal<PDict> threadLocal = new ThreadLocal<>();
+            threadLocal.set(PythonObjectFactory.create().createDict());
+            customThreadState = threadLocal;
+        }
+        return customThreadState.get();
+    }
+
 }
