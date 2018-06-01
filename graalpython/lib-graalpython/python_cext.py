@@ -374,6 +374,8 @@ def PyNumber_UnaryOp(v, unaryop, name):
         return +v
     elif unaryop == 1:
         return -v
+    elif unaryop == 2:
+        return ~v
     else:
         raise SystemError("unknown unary operator %s" % name)
 
@@ -401,6 +403,16 @@ def PyNumber_Float(v):
 @may_raise
 def PyNumber_Long(v):
     return int(v)
+
+
+@may_raise
+def PyNumber_Absolute(v):
+    return abs(v)
+
+
+@may_raise
+def PyNumber_Divmod(a, b):
+    return divmod(a, b)
 
 
 @may_raise
