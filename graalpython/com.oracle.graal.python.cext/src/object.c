@@ -674,3 +674,7 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     _Py_NewReference(op);
     return op;
 }
+
+int PyCallable_Check(PyObject *x) {
+    return polyglot_as_i32(polyglot_invoke(PY_BUILTIN, "callable", to_java(x)));
+}

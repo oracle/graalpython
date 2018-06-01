@@ -43,6 +43,7 @@ __dir__ = __file__.rpartition("/")[0]
 
 
 class TestPyObject(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyObject, self).compile_module(name)
@@ -77,12 +78,12 @@ class TestPyObject(CPyExtTestCase):
 
     test_PyObject_Length = CPyExtFunction(
         forgiving_len,
-        lambda: ([], [1,2,3,4], (1,), sys.modules),
+        lambda: ([], [1, 2, 3, 4], (1,), sys.modules),
         resultspec="i",
     )
     test_PyObject_Size = CPyExtFunction(
         forgiving_len,
-        lambda: ([], [1,2,3,4], (1,), sys.modules),
+        lambda: ([], [1, 2, 3, 4], (1,), sys.modules),
         resultspec="i",
     )
     # PyObject_MALLOC
@@ -100,9 +101,9 @@ class TestPyObject(CPyExtTestCase):
         resultspec="i",
     )
     __PyObject_Call_ARGS = (
-            ( len, ((1,2,3),), {} ),
-            ( sum, ((0,1,2),), {} ),
-            ( format, (object(),), {"format_spec": ""} ),
+            (len, ((1, 2, 3),), {}),
+            (sum, ((0, 1, 2),), {}),
+            (format, (object(),), {"format_spec": ""}),
         )
 
     test_PyObject_Call = CPyExtFunction(
@@ -114,8 +115,8 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_CallObject = CPyExtFunction(
         lambda args: args[0](*args[1]),
         lambda: (
-            ( len, ((1,2,3),) ),
-            ( sum, ((0,1,2),) ),
+            (len, ((1, 2, 3),)),
+            (sum, ((0, 1, 2),)),
         ),
         arguments=["PyObject* callable", "PyObject* callargs"],
         argspec="OO",
@@ -123,13 +124,14 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_CallFunction = CPyExtFunction(
         lambda args: args[0](args[2], args[3]),
         lambda: (
-            ( sum, "Oi", [], 10 ),
+            (sum, "Oi", [], 10),
         ),
         arguments=["PyObject* callable", "const char* fmt", "PyObject* list", "int initial"],
         argspec="OsOi",
     )
 
     class MyObject():
+
         def foo(self, *args, **kwargs):
             return sum(*args, **kwargs)
 
@@ -141,7 +143,7 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_CallMethod = CPyExtFunction(
         lambda args: getattr(args[0], args[1])(args[3], args[4]),
         lambda: (
-            ( TestPyObject.MyObject(), "foo", "Oi", [], 10 ),
+            (TestPyObject.MyObject(), "foo", "Oi", [], 10),
         ),
         arguments=["PyObject* rcvr", "const char* method", "const char* fmt", "PyObject* list", "int initial"],
         argspec="OssOi",
@@ -155,7 +157,7 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_GetItem = CPyExtFunction(
         lambda args: args[0][args[1]],
         lambda: (
-            ( [1, 2, 3], 1 ),
+            ([1, 2, 3], 1),
             # ( {"a": 42}, "b" ),
         ),
         arguments=["PyObject* primary", "PyObject* item"],
@@ -175,12 +177,12 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_SetItem = CPyExtFunction(
         forgiving_set_item,
         lambda: (
-            ( [1, 2, 3], 1, 12 ),
-            ( {"a": 32}, "b", 42 ),
-            ( (1,2), 0, 1 ),
-            ( [], 0, 1 ),
-            ( [], "a", 1 ),
-            ( {}, CPyExtFunction(1,2), "hello" ),
+            ([1, 2, 3], 1, 12),
+            ({"a": 32}, "b", 42),
+            ((1, 2), 0, 1),
+            ([], 0, 1),
+            ([], "a", 1),
+            ({}, CPyExtFunction(1, 2), "hello"),
         ),
         arguments=["PyObject* primary", "PyObject* key", "PyObject* value"],
         argspec="OOO",
@@ -193,9 +195,9 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_Format = CPyExtFunction(
         lambda args: args[0].__format__(args[1]),
         lambda: (
-            ( [], "" ),
-            ( {}, "" ),
-            ( 1, "" ),
+            ([], ""),
+            ({}, ""),
+            (1, ""),
         ),
         arguments=["PyObject* object", "PyObject* format_spec"],
         argspec="OO",
@@ -203,14 +205,14 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_GetIter = CPyExtFunction(
         iter,
         lambda: ([], {}, (0,)),
-        cmpfunc=(lambda x,y: type(x) == type(y))
+        cmpfunc=(lambda x, y: type(x) == type(y))
     )
     test_PyObject_IsInstance = CPyExtFunction(
         lambda args: 1 if isinstance(*args) else 0,
         lambda: (
-            ( [1,2], list ),
-            ( 1, int ),
-            ( 1, list ),
+            ([1, 2], list),
+            (1, int),
+            (1, list),
         ),
         arguments=["PyObject* object", "PyObject* type"],
         argspec="OO",
@@ -273,8 +275,8 @@ class TestPyObject(CPyExtTestCase):
     #     resultspec="i",
     # )
     __PyObject_GetAttrString_ARGS = (
-            ( MyObject(), "foo" ),
-            ( [], "__len__" ),
+            (MyObject(), "foo"),
+            ([], "__len__"),
         )
     test_PyObject_GetAttrString = CPyExtFunction(
         lambda args: getattr(*args),
@@ -296,8 +298,8 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_SetAttrString = CPyExtFunction(
         setattrstring,
         lambda: (
-            ( TestPyObject.MyObject, "x", 42 ),
-            ( [], "x", 42 ),
+            (TestPyObject.MyObject, "x", 42),
+            ([], "x", 42),
         ),
         arguments=["PyObject* object", "const char* attr", "PyObject* value"],
         argspec="OsO",
@@ -307,17 +309,17 @@ class TestPyObject(CPyExtTestCase):
     test_PyObject_HasAttrString = CPyExtFunction(
         lambda args: 1 if hasattr(*args) else 0,
         lambda: (
-            ( TestPyObject.MyObject, "foo" ),
-            ( [], "__len__" ),
-            ( [], "foobar" ),
+            (TestPyObject.MyObject, "foo"),
+            ([], "__len__"),
+            ([], "foobar"),
         ),
         arguments=["PyObject* object", "const char* attr"],
         argspec="Os",
         resultspec="i",
     )
     __PyObject_GetAttr_ARGS = (
-            ( MyObject(), "foo" ),
-            ( [], "__len__" ),
+            (MyObject(), "foo"),
+            ([], "__len__"),
         )
     test_PyObject_GetAttr = CPyExtFunction(
         lambda args: getattr(*args),
@@ -356,3 +358,18 @@ class TestPyObject(CPyExtTestCase):
     # )
     # test_PyObject_Init = CPyExtFunction(
     # )
+
+    test_PyCallable_Check = CPyExtFunction(
+        lambda args: callable(args[0]),
+        lambda: (
+            (len,),
+            (sum,),
+            (int,),
+            ("hello",),
+            (3,),
+            (None,),
+        ),
+        arguments=["PyObject* callable"],
+        resultspec="i",
+        argspec="O",
+    )
