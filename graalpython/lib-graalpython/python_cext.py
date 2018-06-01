@@ -1102,8 +1102,16 @@ def initialize_member_accessors():
 
 @may_raise
 def PyImport_ImportModule(name):
-    return __import__(name)
+    res = __import__(name)
+    if res.__name__ == name:
+        return res
+    else:
+        return sys.modules[name]
 
+
+@may_raise
+def PyImport_GetModuleDict():
+    return sys.modules
 
 @may_raise
 def PyRun_String(source, typ, globals, locals):
