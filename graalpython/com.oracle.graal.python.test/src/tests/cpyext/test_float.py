@@ -41,10 +41,11 @@ __dir__ = __file__.rpartition("/")[0]
 
 
 def _float_compare(x, y):
+
     def isNan(x):
         return isinstance(x, float) and x != x
 
-    if (isinstance(x,BaseException) and isinstance(y,BaseException)):
+    if (isinstance(x, BaseException) and isinstance(y, BaseException)):
         return type(x) == type(y)
     else:
         # either equal or both are NaN
@@ -69,31 +70,33 @@ class DummyNonFloat():
 
 
 class DummyFloatable():
+
     def __float__(self):
         return 3.14159
 
 
 class DummyFloatSubclass(float):
+
     def __float__(self):
         return 2.71828
 
 
 class TestPyFloat(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyFloat, self).compile_module(name)
-
 
     test_PyFloat_AsDouble = CPyExtFunctionOutVars(
         lambda args: True,
         lambda: (
             (float(0.0), 0.0),
-            (float(-1.0),-1.0),
-            (float(0xffffffffffffffffffffffff),0xffffffffffffffffffffffff),
-            (float('nan'),float('nan')),
-            (DummyFloatable(),3.14159),
-            (DummyFloatSubclass(),0.0),
-            (DummyNonFloat(),-1.0),
+            (float(-1.0), -1.0),
+            (float(0xffffffffffffffffffffffff), 0xffffffffffffffffffffffff),
+            (float('nan'), float('nan')),
+            (DummyFloatable(), 3.14159),
+            (DummyFloatSubclass(), 0.0),
+            (DummyNonFloat(), -1.0),
         ),
         code='''int wrap_PyFloat_AsDouble(PyObject* obj, double expected) {
             double res = PyFloat_AsDouble(obj);
@@ -113,6 +116,7 @@ class TestPyFloat(CPyExtTestCase):
         resultspec="i",
         argspec='Od',
         arguments=["PyObject* obj", "double expected"],
+        resulttype="int",
         callfunction="wrap_PyFloat_AsDouble",
     )
 

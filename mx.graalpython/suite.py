@@ -25,14 +25,14 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "ffe18be79b4f489a83e6c44c1f16bd9af218212c",
+                "version": "e9a54877f8b43c3fb4fd164386fede8a68dc8c03",
                 "urls": [
                     {"url": "https://github.com/graalvm/sulong", "kind": "git"},
                 ]
             },
             {
                 "name": "regex",
-                "version": "695f1d020bf41121dd41dd02ce59266ce5c7010f",
+                "version": "7159b91744d7b9e04a0aeccdbbff961611e620ec",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -266,7 +266,8 @@ suite = {
                     "extracted-dependency:graalpython:GRAALPYTHON_PYTHON_LIB",
                     "file:mx.graalpython/native-image.properties",
                 ],
-                "GraalCE_Python_license_3rd_party_license.txt": "file:LICENSE",
+                "LICENSE_GRAALPYTHON" : "file:LICENSE",
+                "3rd_party_licenses_graalpython.txt" : "file:3rd_party_licenses.txt",
             }
         },
 
