@@ -284,18 +284,6 @@ PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
 	return to_sulong(result);
 }
 
-PyObject* PyNumber_Absolute(PyObject* o) {
-    return to_sulong(polyglot_invoke(PY_BUILTIN, "abs", o));
-}
-
-PyObject* PyNumber_Divmod(PyObject* a, PyObject* b) {
-    return to_sulong(polyglot_invoke(PY_BUILTIN, "divmod", a, b));
-}
-
-PyObject* PyNumber_Invert(PyObject* o) {
-    return to_sulong(polyglot_invoke(o, "__invert__"));
-}
-
 // taken from CPython "Objects/abstract.c"
 int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
     PyBufferProcs *pb = obj->ob_type->tp_as_buffer;
