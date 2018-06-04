@@ -98,7 +98,7 @@ public abstract class TupleNodes {
         }
 
         @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(getClass(iterable))"})
-        public PTuple tuple(PythonClass cls, PTuple iterable) {
+        public PTuple tuple(@SuppressWarnings("unused") PythonClass cls, PTuple iterable) {
             return iterable;
         }
 
