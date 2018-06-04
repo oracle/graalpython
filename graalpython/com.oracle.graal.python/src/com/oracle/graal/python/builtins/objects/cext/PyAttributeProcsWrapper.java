@@ -36,18 +36,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cext;
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
+public abstract class PyAttributeProcsWrapper implements TruffleObject {
 
-/* Dicts */
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyDictProxy_New", to_java(mapping));
+    private final Object delegate;
+
+    public PyAttributeProcsWrapper(Object delegate) {
+        this.delegate = delegate;
+    }
+
+    public Object getDelegate() {
+        return delegate;
+    }
+
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PyAttributeProcsWrapper;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return PyAttributeProcsWrapperMRForeign.ACCESS;
+    }
+
+    static class GetAttrWrapper extends PyAttributeProcsWrapper {
+
+        public GetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+    }
+
+    static class SetAttrWrapper extends PyAttributeProcsWrapper {
+
+        public SetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+    }
+
+    public static GetAttrWrapper createGetAttrWrapper(Object getAttrMethod) {
+        return new GetAttrWrapper(getAttrMethod);
+    }
+
+    public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
+        return new SetAttrWrapper(setAttrMethod);
+    }
 }
-

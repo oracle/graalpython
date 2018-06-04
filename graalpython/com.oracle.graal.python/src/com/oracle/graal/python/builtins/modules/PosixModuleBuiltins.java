@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -38,6 +39,11 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
@@ -51,30 +57,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ConvertPathlikeObjectNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
@@ -101,6 +116,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int F_OK = 0;
     private static final int X_OK = 1;
 
+    // TODO(fa): should that live in the context ?
     private static ArrayList<SeekableByteChannel> files = new ArrayList<>(Arrays.asList(new SeekableByteChannel[]{null, null, null}));
     private static ArrayList<String> filePaths = new ArrayList<>(Arrays.asList(new String[]{"stdin", "stdout", "stderr"}));
 
@@ -239,11 +255,32 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getcwd", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class CwdNode extends PythonBuiltinNode {
+        @TruffleBoundary
         @Specialization
         String cwd() {
+            // TODO(fa) that should actually be retrieved from native code
             return System.getProperty("user.dir");
         }
 
+    }
+
+    @Builtin(name = "chdir", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ChdirNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        PNone chdir(String spath) {
+            // TODO(fa) that should actually be set via native code
+            try {
+                if (Files.exists(Paths.get(spath))) {
+                    System.setProperty("user.dir", spath);
+                    return PNone.NONE;
+                }
+            } catch (InvalidPathException e) {
+                // fall through
+            }
+            throw raise(PythonErrorType.FileNotFoundError, "No such file or directory: '%s'", spath);
+        }
     }
 
     @Builtin(name = "getpid", fixedNumOfArguments = 0)
@@ -282,11 +319,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "fd > 2")
         @TruffleBoundary
         Object fstat(int fd) {
-            return statNode.executeWith(getFilePath(fd).toString());
+            return statNode.executeWith(getFilePath(fd).toString(), PNone.NO_VALUE);
         }
     }
 
-    @Builtin(name = "stat", fixedNumOfArguments = 1)
+    @Builtin(name = "stat", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class StatNode extends PythonBuiltinNode {
         private static final int S_IFIFO = 0010000;
@@ -297,13 +334,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private static final int S_IFDIR = 0040000;
         private static final int S_IFREG = 0100000;
 
-        protected abstract Object executeWith(Object path);
+        protected abstract Object executeWith(Object path, Object followSymlinks);
 
         @Specialization
+        Object doStat(String path, boolean followSymlinks) {
+            return stat(path, followSymlinks);
+        }
+
+        @Specialization(guards = "isNoValue(followSymlinks)")
+        Object doStat(String path, @SuppressWarnings("unused") PNone followSymlinks) {
+            return stat(path, true);
+        }
+
         @TruffleBoundary
-        Object stat(String path) {
+        Object stat(String path, boolean followSymlinks) {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
-            if (!f.exists()) {
+            LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+            if (!f.exists(linkOptions)) {
                 throw raise(OSError, "No such file or directory: '%s'", path);
             }
             int mode = 0;
@@ -313,9 +360,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             long mtime = 0;
             int gid = 0;
             int uid = 0;
-            if (f.isRegularFile()) {
+            if (f.isRegularFile(linkOptions)) {
                 mode |= S_IFREG;
-            } else if (f.isDirectory()) {
+            } else if (f.isDirectory(linkOptions)) {
                 mode |= S_IFDIR;
             } else if (f.isSymbolicLink()) {
                 mode |= S_IFLNK;
@@ -324,24 +371,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
             }
             try {
-                mtime = f.getLastModifiedTime().toMillis();
+                mtime = f.getLastModifiedTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 mtime = 0;
             }
             try {
-                ctime = f.getCreationTime().toMillis();
+                ctime = f.getCreationTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 ctime = 0;
             }
             try {
-                atime = f.getLastAccessTime().toMillis();
+                atime = f.getLastAccessTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 atime = 0;
             }
             gid = 1;
             uid = 1;
             try {
-                final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions();
+                final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions(linkOptions);
                 if (posixFilePermissions.contains(PosixFilePermission.OTHERS_READ)) {
                     mode |= 0004;
                 }
@@ -387,7 +434,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
             try {
-                size = f.size();
+                size = f.size(linkOptions);
             } catch (IOException e) {
                 size = 0;
             }
@@ -894,4 +941,101 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    abstract static class ConvertPathlikeObjectNode extends PBaseNode {
+        @Child private LookupAndCallUnaryNode callFspathNode;
+        @CompilationFinal private ValueProfile resultTypeProfile;
+
+        public abstract String execute(Object o);
+
+        @Specialization
+        String doPString(String obj) {
+            return obj;
+        }
+
+        @Specialization
+        String doPString(PString obj) {
+            return obj.getValue();
+        }
+
+        @Fallback
+        String doGeneric(Object obj) {
+            if (callFspathNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFspathNode = insert(LookupAndCallUnaryNode.create(__FSPATH__));
+            }
+            if (resultTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                resultTypeProfile = ValueProfile.createClassProfile();
+            }
+            Object profiled = resultTypeProfile.profile(callFspathNode.executeObject(obj));
+            if (profiled instanceof String) {
+                return (String) profiled;
+            } else if (profiled instanceof PString) {
+                return doPString((PString) profiled);
+            }
+            throw raise(TypeError, "invalid type %p return from path-like object", profiled);
+        }
+
+        public static ConvertPathlikeObjectNode create() {
+            return ConvertPathlikeObjectNodeGen.create();
+        }
+
+    }
+
+    @Builtin(name = "rename", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @GenerateNodeFactory
+    public abstract static class RenameNode extends PythonFileNode {
+        @Specialization
+        Object rename(Object src, Object dst, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PNone kwargs,
+                        @Cached("create()") ConvertPathlikeObjectNode convertSrcNode,
+                        @Cached("create()") ConvertPathlikeObjectNode convertDstNode) {
+            return rename(convertSrcNode.execute(src), convertDstNode.execute(dst));
+        }
+
+        @Specialization
+        Object rename(Object src, Object dst, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
+                        @Cached("create()") ConvertPathlikeObjectNode convertSrcNode,
+                        @Cached("create()") ConvertPathlikeObjectNode convertDstNode) {
+
+            Object effectiveSrc = src;
+            Object effectiveDst = dst;
+            for (int i = 0; i < kwargs.length; i++) {
+                Object value = kwargs[i].getValue();
+                if ("src_dir_fd".equals(kwargs[i].getName())) {
+                    if (!(value instanceof Integer)) {
+                        throw raise(OSError, "invalid file descriptor provided");
+                    }
+                    effectiveSrc = getFilePath((int) value);
+                } else if ("dst_dir_fd".equals(kwargs[i].getName())) {
+                    if (!(value instanceof Integer)) {
+                        throw raise(OSError, "invalid file descriptor provided");
+                    }
+                    effectiveDst = getFilePath((int) value);
+                }
+            }
+            return rename(convertSrcNode.execute(effectiveSrc), convertDstNode.execute(effectiveDst));
+        }
+
+        @TruffleBoundary
+        private Object rename(String src, String dst) {
+            try {
+                TruffleFile dstFile = getContext().getEnv().getTruffleFile(dst);
+                if (dstFile.isDirectory()) {
+                    throw raise(OSError, "%s is a directory", dst);
+                }
+                TruffleFile file = getContext().getEnv().getTruffleFile(src);
+                file.move(dstFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                return PNone.NONE;
+            } catch (IOException e) {
+                throw raise(OSError, "cannot rename %s to %s", src, dst);
+            }
+        }
+    }
+
+    @Builtin(name = "replace", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @GenerateNodeFactory
+    public abstract static class ReplaceNode extends RenameNode {
+    }
+
 }

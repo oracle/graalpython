@@ -62,9 +62,17 @@ typedef struct {
     PyCapsule_Destructor destructor;
 } PyCapsule;
 
+typedef struct {
+    PyObject_VAR_HEAD
+    void *buf_delegate;
+} PyBufferDecorator;
+
+PyAPI_DATA(PyTypeObject) PyBuffer_Type;
+
 /* Declare Python structs/types for explicit polyglot typecasts. */
 /* NOTE: Also add an appropriate case in 'PyTruffle_Explicit_Cast' ! */
 POLYGLOT_DECLARE_STRUCT(_object);
+POLYGLOT_DECLARE_TYPE(PyBaseExceptionObject);
 POLYGLOT_DECLARE_TYPE(PyModuleObject);
 POLYGLOT_DECLARE_TYPE(PyVarObject);
 POLYGLOT_DECLARE_STRUCT(_typeobject);
@@ -77,13 +85,17 @@ POLYGLOT_DECLARE_STRUCT(_longobject);
 POLYGLOT_DECLARE_TYPE(PyCapsule);
 POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
 POLYGLOT_DECLARE_TYPE(PySetObject);
+POLYGLOT_DECLARE_TYPE(PyBufferDecorator);
 
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
+extern PyObject* explicit_cast(PyObject* cobj);
 #define as_char_pointer(obj) polyglot_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
+#define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long long), polyglot_from_string("long long", "utf-8"))))
+#define as_unsigned_long_long(obj) ((unsigned long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 0, sizeof(unsigned long long), polyglot_from_string("unsigned long long", "utf-8"))))
 #define as_int(obj) ((int)as_long(obj))
 #define as_short(obj) ((short)as_long(obj))
 #define as_uchar(obj) ((unsigned char)as_long(obj))
@@ -97,12 +109,12 @@ void initialize_exceptions();
 void initialize_hashes();
 
 // prototype of C landing function
-PyObject *wrap_direct(PyCFunction fun, ...);
-PyObject *wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
-PyObject *wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
-PyObject *wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
-PyObject *wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames);
-PyObject *wrap_unsupported(void *fun, ...);
+void* wrap_direct(PyCFunction fun, ...);
+void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
+void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
+void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames);
+void* wrap_unsupported(void *fun, ...);
 
 #define write_struct_field(object, struct, fieldname, value)            \
     truffle_write(to_java(object),                                      \
@@ -130,7 +142,7 @@ PyObject *wrap_unsupported(void *fun, ...);
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
 #define get_method_flags_cwrapper(flags)                                \
-    (void*)((((flags) < 0) ?                                                    \
+    (void*)((((flags) < 0) ?                                            \
      wrap_direct :                                                      \
      (((flags) & METH_KEYWORDS) ?                                       \
       wrap_keywords :                                                   \
@@ -144,11 +156,10 @@ PyObject *wrap_unsupported(void *fun, ...);
           wrap_fastcall :                                               \
           wrap_unsupported)))))))
 
-
-#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__) {\
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
-    0,                                          /* tp_basicsize */\
+    (__SIZE__),                                 /* tp_basicsize */\
     0,                                          /* tp_itemsize */\
     0,                                          /* tp_dealloc */\
     0,                                          /* tp_print */\
@@ -236,11 +247,15 @@ extern PyObject marker_struct;
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
 /* UNICODE */
-
 void* PyTruffle_Unicode_FromString(const char* o);
 
 /* DICT */
-
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
+
+/* BYTES */
+int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+
+/* MEMORYVIEW, BUFFERDECORATOR */
+int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
 
 #endif

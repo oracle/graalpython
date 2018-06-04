@@ -88,5 +88,4 @@ class TestWiki(CPyExtTestCase):
         assert nd.name() == "b'First' b'Last'", nd.name()
         assert nd.first == b"First", ("%s != First" % nd.first)
         assert nd.last == b"Last"
-
         assert nd.number == 42

@@ -47,11 +47,17 @@ public abstract class NativeMemberNames {
     public static final String TP_FLAGS = "tp_flags";
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
+    public static final String TP_BASICSIZE = "tp_basicsize";
+    public static final String TP_ALLOC = "tp_alloc";
     public static final String TP_AS_NUMBER = "tp_as_number";
     public static final String TP_HASH = "tp_hash";
     public static final String TP_RICHCOMPARE = "tp_richcompare";
     public static final String TP_SUBCLASSES = "tp_subclasses";
+    public static final String TP_AS_BUFFER = "tp_as_buffer";
     public static final String TP_GETATTR = "tp_getattr";
+    public static final String TP_SETATTR = "tp_setattr";
+    public static final String TP_GETATTRO = "tp_getattro";
+    public static final String TP_SETATTRO = "tp_setattro";
     public static final String _BASE = "_base";
     public static final String OB_ITEM = "ob_item";
     public static final String MA_USED = "ma_used";
@@ -64,6 +70,7 @@ public abstract class NativeMemberNames {
     public static final String UNICODE_STATE_ASCII = "ascii";
     public static final String UNICODE_STATE_READY = "ready";
     public static final String MD_DICT = "md_dict";
+    public static final String BUF_DELEGATE = "buf_delegate";
 
     public static boolean isValid(String key) {
         switch (key) {
@@ -75,11 +82,17 @@ public abstract class NativeMemberNames {
             case TP_FLAGS:
             case TP_NAME:
             case TP_BASE:
+            case TP_BASICSIZE:
+            case TP_ALLOC:
             case TP_AS_NUMBER:
             case TP_HASH:
             case TP_RICHCOMPARE:
             case TP_SUBCLASSES:
+            case TP_AS_BUFFER:
             case TP_GETATTR:
+            case TP_SETATTR:
+            case TP_GETATTRO:
+            case TP_SETATTRO:
             case _BASE:
             case OB_ITEM:
             case MA_USED:

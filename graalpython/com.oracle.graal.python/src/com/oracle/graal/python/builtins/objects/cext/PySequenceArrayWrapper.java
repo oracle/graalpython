@@ -44,7 +44,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 /**
  * Wraps a sequence object (like a list) such that it behaves like a bare C array.
  */
-public class PySequenceArrayWrapper implements TruffleObject {
+public class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     private final Object delegate;
 

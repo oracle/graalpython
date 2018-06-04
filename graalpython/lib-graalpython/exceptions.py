@@ -149,8 +149,6 @@ class IOError(Exception):
     pass
 
 
-# TODO all the OS errors
-
 class ReferenceError(Exception):
     pass
 
@@ -202,6 +200,11 @@ class UnicodeEncodeError(UnicodeError):
 class UnicodeTranslateError(UnicodeError):
     pass
 
+
+# TODO all the OS errors
+
+class FileNotFoundError(OSError):
+    pass
 
 # ----------------------------------------------------------------------------------------------------------------------
 #

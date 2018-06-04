@@ -38,7 +38,7 @@
  */
 #include "capi.h"
 
-PyTypeObject PyModule_Type = PY_TRUFFLE_TYPE("module", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE);
+PyTypeObject PyModule_Type = PY_TRUFFLE_TYPE("module", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyModuleObject));
 
 /* Modules */
 int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
@@ -123,9 +123,4 @@ PyObject* PyModule_GetDict(PyObject* o) {
         return NULL;
     }
     return ((PyModuleObject*)polyglot_as_PyModuleObject(o))->md_dict;
-}
-
-int PyModule_AddStringConstant(PyObject* m, const char* k, const char* constant) {
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyModule_AddObject", to_java(m), truffle_read_string(k), truffle_read_string(constant));
-    return 0;
 }

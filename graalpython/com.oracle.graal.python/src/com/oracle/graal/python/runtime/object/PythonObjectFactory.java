@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -650,5 +651,13 @@ public abstract class PythonObjectFactory extends Node {
 
     public PForeignArrayIterator createForeignArrayIterator(TruffleObject iterable, int size) {
         return trace(new PForeignArrayIterator(lookupClass(PythonBuiltinClassType.PForeignArrayIterator), iterable, size));
+    }
+
+    public PBuffer createBuffer(PythonClass cls, Object iterable) {
+        return trace(new PBuffer(cls, iterable));
+    }
+
+    public PBuffer createBuffer(Object iterable) {
+        return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable));
     }
 }

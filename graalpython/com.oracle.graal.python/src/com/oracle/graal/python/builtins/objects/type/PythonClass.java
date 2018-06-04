@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -87,16 +88,19 @@ public class PythonClass extends PythonObject {
 
         // do not inherit layout from the TypeClass.
         storage = freshShape().newInstance();
+        setAttribute(__NAME__, getBaseName(name));
         setAttribute(__QUALNAME__, className);
-        int lastDot = className.lastIndexOf('.');
-        if (lastDot < 0) {
-            setAttribute(__NAME__, className);
-        } else {
-            setAttribute(__NAME__, className.substring(lastDot + 1));
-        }
         setAttribute(__DOC__, PNone.NONE);
         // provide our instances with a fresh shape tree
         instanceShape = freshShape();
+    }
+
+    private static String getBaseName(String qname) {
+        int lastDot = qname.lastIndexOf('.');
+        if (lastDot != -1) {
+            return qname.substring(lastDot + 1);
+        }
+        return qname;
     }
 
     public Assumption getLookupStableAssumption() {
@@ -311,5 +315,10 @@ public class PythonClass extends PythonObject {
             }
             this.flags = flags;
         }
+    }
+
+    @Override
+    public PythonClassNativeWrapper getNativeWrapper() {
+        return (PythonClassNativeWrapper) super.getNativeWrapper();
     }
 }

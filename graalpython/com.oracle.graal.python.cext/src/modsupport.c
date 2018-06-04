@@ -53,13 +53,15 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
         if (p->argnum < l) {
             out = PyTuple_GetItem(p->argv, p->argnum);
         }
-    } else if (out == NULL && p->prev == NULL && kwdnames != NULL) { // only the bottom argstack can have keyword names
+    }
+    if (out == NULL && p->prev == NULL && kwdnames != NULL) { // only the bottom argstack can have keyword names
         const char* kwdname = kwdnames[p->argnum];
         if (kwdname != NULL) {
-            out = PyDict_GetItem(kwds, to_sulong(truffle_read_string(kwdname)));
+            PyObject *nameobj = to_sulong(truffle_read_string(kwdname));
+            out = PyDict_GetItem(kwds, nameobj);
         }
     }
-    p->argnum++;
+    (p->argnum)++;
     return out;
 }
 
@@ -239,11 +241,15 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
             PyTruffle_WriteOut(output_idx, unsigned long, as_long(arg));
             break;
         case 'L':
-            PyErr_Format(PyExc_TypeError, "long long argument parsing not yet supported");
-            return 0;
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_WriteOut(output_idx, long long, as_long_long(arg));
+            break;
         case 'K':
-            PyErr_Format(PyExc_TypeError, "long long argument parsing not yet supported");
-            return 0;
+            arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
+            PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
+            PyTruffle_WriteOut(output_idx, unsigned long long, as_unsigned_long_long(arg));
+            break;
         case 'n':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
@@ -253,11 +259,11 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
             if (!(PyBytes_Check(arg) || PyByteArray_Check(arg))) {
-                PyErr_Format(PyExc_TypeError, "expted bytes or bytearray, got %R", Py_TYPE(arg));
+                PyErr_Format(PyExc_TypeError, "expected bytes or bytearray, got %R", Py_TYPE(arg));
                 return 0;
             }
             if (Py_SIZE(arg) != 1) {
-                PyErr_Format(PyExc_TypeError, "expted bytes or bytearray of length 1, was length %d", Py_SIZE(arg));
+                PyErr_Format(PyExc_TypeError, "expected bytes or bytearray of length 1, was length %d", Py_SIZE(arg));
                 return 0;
             }
             PyTruffle_WriteOut(output_idx, char, as_char(polyglot_invoke(to_java(arg), "__getitem__", 0)));
@@ -266,11 +272,11 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
             if (!PyUnicode_Check(arg)) {
-                PyErr_Format(PyExc_TypeError, "expted bytes or bytearray, got %R", Py_TYPE(arg));
+                PyErr_Format(PyExc_TypeError, "expected bytes or bytearray, got %R", Py_TYPE(arg));
                 return 0;
             }
             if (Py_SIZE(arg) != 1) {
-                PyErr_Format(PyExc_TypeError, "expted str of length 1, was length %d", Py_SIZE(arg));
+                PyErr_Format(PyExc_TypeError, "expected str of length 1, was length %d", Py_SIZE(arg));
                 return 0;
             }
             PyTruffle_WriteOut(output_idx, int, as_int(polyglot_invoke(to_java(arg), "__getitem__", 0)));
@@ -292,9 +298,9 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             if (format[format_idx + 1] == '!') {
                 format_idx++;
+                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
                 PyTypeObject* typeobject = (PyTypeObject*)PyTruffle_ArgN(output_idx);
                 output_idx++;
-                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
                 if (!PyType_IsSubtype(Py_TYPE(arg), typeobject)) {
                     PyErr_Format(PyExc_TypeError, "expected object of type %R, got %R", typeobject, Py_TYPE(arg));
                     return 0;
@@ -304,9 +310,9 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                 format_idx++;
                 void* (*converter)(PyObject*,void*) = PyTruffle_ArgN(output_idx);
                 output_idx++;
+                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
                 void* output = PyTruffle_ArgN(output_idx);
                 output_idx++;
-                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
                 int status = converter(arg, output);
                 if (!status) {
                     if (!PyErr_Occurred()) {
@@ -573,4 +579,15 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
     default:
         return PyList_AsTuple(v->list);
     }
+}
+
+// taken from CPython "Python/modsupport.c"
+int PyModule_AddStringConstant(PyObject *m, const char *name, const char *value) {
+    PyObject *o = PyUnicode_FromString(value);
+    if (!o)
+        return -1;
+    if (PyModule_AddObject(m, name, o) == 0)
+        return 0;
+    Py_DECREF(o);
+    return -1;
 }

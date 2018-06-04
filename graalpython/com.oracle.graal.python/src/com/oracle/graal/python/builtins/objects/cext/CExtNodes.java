@@ -41,8 +41,10 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -52,7 +54,13 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtNodes {
@@ -102,7 +110,12 @@ public abstract class CExtNodes {
             return object.object;
         }
 
-        @Specialization(guards = {"!isNativeClass(object)", "!isNativeObject(object)", "!isNoValue(object)"})
+        @Specialization(guards = "!isNativeClass(object)")
+        Object runNativeObject(PythonClass object) {
+            return PythonClassNativeWrapper.wrap(object);
+        }
+
+        @Specialization(guards = {"!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"})
         Object runNativeObject(PythonAbstractObject object) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object);
@@ -110,11 +123,16 @@ public abstract class CExtNodes {
 
         @Fallback
         Object run(Object obj) {
+            assert obj != null : "Java 'null' cannot be a Sulong value";
             return obj;
         }
 
         protected static boolean isNativeClass(PythonAbstractObject o) {
             return o instanceof PythonNativeClass;
+        }
+
+        protected static boolean isPythonClass(PythonAbstractObject o) {
+            return o instanceof PythonClass;
         }
 
         protected static boolean isNativeObject(PythonAbstractObject o) {
@@ -194,6 +212,77 @@ public abstract class CExtNodes {
             return new ToJavaNode();
         }
 
+    }
+
+    public abstract static class AsCharPointer extends PBaseNode {
+
+        @CompilationFinal TruffleObject truffle_string_to_cstr;
+        @Child private Node executeNode;
+
+        public abstract Object execute(String s);
+
+        TruffleObject getTruffleStringToCstr() {
+            if (truffle_string_to_cstr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                truffle_string_to_cstr = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR);
+            }
+            return truffle_string_to_cstr;
+        }
+
+        private Node getExecuteNode() {
+            if (executeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                executeNode = insert(Message.createExecute(1).createNode());
+            }
+            return executeNode;
+        }
+
+        @Specialization
+        Object doString(String str) {
+            try {
+                return ForeignAccess.sendExecute(getExecuteNode(), getTruffleStringToCstr(), str);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+
+        public static AsCharPointer create() {
+            return AsCharPointerNodeGen.create();
+        }
+    }
+
+    public static class FromCharPointerNode extends PBaseNode {
+
+        @CompilationFinal TruffleObject truffle_cstr_to_string;
+        @Child private Node executeNode;
+
+        TruffleObject getTruffleStringToCstr() {
+            if (truffle_cstr_to_string == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                truffle_cstr_to_string = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING);
+            }
+            return truffle_cstr_to_string;
+        }
+
+        private Node getExecuteNode() {
+            if (executeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                executeNode = insert(Message.createExecute(1).createNode());
+            }
+            return executeNode;
+        }
+
+        public String execute(Object charPtr) {
+            try {
+                return (String) ForeignAccess.sendExecute(getExecuteNode(), getTruffleStringToCstr(), charPtr);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+
+        public static FromCharPointerNode create() {
+            return new FromCharPointerNode();
+        }
     }
 
 }

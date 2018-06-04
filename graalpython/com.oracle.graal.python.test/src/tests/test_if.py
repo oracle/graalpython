@@ -23,6 +23,7 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # if and elif
 
+
 def test_if():
     sum = 0
     for i in range(10):
@@ -52,3 +53,44 @@ def test_yes_long():
         assert True
     else:
         assert False
+
+
+def test_yes_container():
+    assert not[], "empty list must yield False"
+    assert not dict(), "empty dict must yield False"
+    assert not set(), "empty set must yield False"
+    assert not tuple(), "empty tuple must yield False"
+
+    class CustomEmptyContainer:
+
+        def __len__(self):
+            return 0
+
+        def __bool__(self):
+            return False
+
+    class CustomContainerInvalid:
+
+        def __len__(self):
+            return "hello"
+
+    class CustomBoolableTrue:
+
+        def __bool__(self):
+            return True
+
+    class CustomBoolableFalse:
+
+        def __bool__(self):
+            return False
+
+    assert not CustomEmptyContainer(), "custom empty container must yield False"
+    assert CustomBoolableTrue(), "custom boolable true container must yield True"
+    assert not CustomBoolableFalse(), "custom boolable false container must yield False"
+    try:
+        assert not CustomContainerInvalid(), "custom container invalid must yield False"
+    except TypeError as e:
+        assert True
+    else:
+        assert False, "exception expected"
+

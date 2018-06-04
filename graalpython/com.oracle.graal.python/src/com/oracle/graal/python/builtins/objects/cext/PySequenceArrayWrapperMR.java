@@ -45,18 +45,26 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
@@ -68,6 +76,7 @@ public class PySequenceArrayWrapperMR {
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceArrayWrapper object, Object key) {
+            System.out.println(object.getDelegate().toString() + "[" + key + "]");
             return getToSulongNode().execute(getReadArrayItemNode().execute(object.getDelegate(), key));
         }
 
@@ -140,12 +149,26 @@ public class PySequenceArrayWrapperMR {
             return tuple.getInternalByteArray()[(int) idx];
         }
 
+        @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
+        Object doGeneric(PythonObject object, long idx,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
+            return getItemNode.executeObject(object, idx);
+        }
+
         protected static ListBuiltins.GetItemNode createListGetItem() {
             return ListBuiltinsFactory.GetItemNodeFactory.create(null);
         }
 
         protected static TupleBuiltins.GetItemNode createTupleGetItem() {
             return TupleBuiltinsFactory.GetItemNodeFactory.create(null);
+        }
+
+        protected boolean isTuple(Object object) {
+            return object instanceof PTuple;
+        }
+
+        protected boolean isList(Object object) {
+            return object instanceof PList;
         }
 
         public static ReadArrayItemNode create() {
@@ -186,4 +209,82 @@ public class PySequenceArrayWrapperMR {
             return WriteArrayItemNodeGen.create();
         }
     }
+
+    @Resolve(message = "TO_NATIVE")
+    abstract static class ToNativeNode extends Node {
+        @Child private ToNativeArrayNode toPyObjectNode = ToNativeArrayNode.create();
+
+        Object access(PySequenceArrayWrapper obj) {
+            if (!obj.isNative()) {
+                // TODO
+                Object ptr = toPyObjectNode.execute(obj);
+                obj.setNativePointer(ptr);
+            }
+            return obj;
+        }
+    }
+
+    static class ToNativeArrayNode extends TransformToNativeNode {
+        @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
+        @Child private PCallNativeNode callNativeBinary;
+
+        public Object execute(PySequenceArrayWrapper object) {
+            // TODO correct element size
+            return ensureIsPointer(callBinaryIntoCapi(getNativeHandleForArray(), object, 8L));
+        }
+
+        private TruffleObject getNativeHandleForArray() {
+            if (PyObjectHandle_FromJavaObject == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY);
+            }
+            return PyObjectHandle_FromJavaObject;
+        }
+
+        protected boolean isNonNative(PythonClass klass) {
+            return !(klass instanceof PythonNativeClass);
+        }
+
+        private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, Object arg1) {
+            if (callNativeBinary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeBinary = insert(PCallNativeNode.create(1));
+            }
+            return callNativeBinary.execute(fun, new Object[]{arg0, arg1});
+        }
+
+        public static ToNativeArrayNode create() {
+            return new ToNativeArrayNode();
+        }
+    }
+
+    @Resolve(message = "IS_POINTER")
+    abstract static class IsPointerNode extends Node {
+        Object access(PySequenceArrayWrapper obj) {
+            return obj.isNative();
+        }
+    }
+
+    @Resolve(message = "AS_POINTER")
+    abstract static class AsPointerNode extends Node {
+        @Child private Node asPointerNode;
+
+        long access(PySequenceArrayWrapper obj) {
+            // the native pointer object must either be a TruffleObject or a primitive
+            Object nativePointer = obj.getNativePointer();
+            if (nativePointer instanceof TruffleObject) {
+                if (asPointerNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    asPointerNode = insert(Message.AS_POINTER.createNode());
+                }
+                try {
+                    return ForeignAccess.sendAsPointer(asPointerNode, (TruffleObject) nativePointer);
+                } catch (UnsupportedMessageException e) {
+                    throw e.raise();
+                }
+            }
+            return (long) nativePointer;
+        }
+    }
+
 }

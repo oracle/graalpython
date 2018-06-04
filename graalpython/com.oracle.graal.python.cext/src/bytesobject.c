@@ -39,8 +39,12 @@
 #include "capi.h"
 
 #include <stdarg.h>
+#include <stddef.h>
 
-PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS);
+// taken from CPython "Objects/bytesobject.c"
+#define PyBytesObject_SIZE (offsetof(PyBytesObject, ob_sval) + 1)
+
+PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BYTES_SUBCLASS, PyBytesObject_SIZE);
 
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
     setlocale(LC_ALL, NULL);
@@ -268,4 +272,8 @@ void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart) {
 
 Py_ssize_t PyBytes_Size(PyObject *bytes) {
 	return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyBytes_Size", to_java(bytes));
+}
+
+int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags) {
+    return PyBuffer_FillInfo(view, (PyObject*)self, (void *)self->ob_sval, Py_SIZE(self), 1, flags);
 }

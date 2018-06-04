@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -1466,4 +1467,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createSlice(first, second, third);
         }
     }
+
+    // buffer([iterable])
+    @Builtin(name = "buffer", fixedNumOfArguments = 2, constructsClass = PBuffer.class)
+    @GenerateNodeFactory
+    public abstract static class BufferNode extends PythonBuiltinNode {
+
+        @Specialization
+        protected PBuffer construct(PythonClass cls, Object value) {
+            return factory().createBuffer(cls, value);
+        }
+
+        @Fallback
+        public PBuffer listObject(@SuppressWarnings("unused") Object cls, Object arg) {
+            CompilerAsserts.neverPartOfCompilation();
+            throw new RuntimeException("buffer does not support iterable object " + arg);
+        }
+    }
+
 }

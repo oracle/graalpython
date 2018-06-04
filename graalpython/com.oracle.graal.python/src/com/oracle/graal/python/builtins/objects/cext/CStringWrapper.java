@@ -36,18 +36,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cext;
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
+/**
+ * Unlike a {@link PythonObjectNativeWrapper} object that wraps a Python unicode object, this
+ * wrapper let's a Java String look like a {@code char*}.
+ */
+public class CStringWrapper implements TruffleObject {
 
-/* Dicts */
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyDictProxy_New", to_java(mapping));
+    private final String delegate;
+    private Object nativePointer;
+
+    public CStringWrapper(String delegate) {
+        this.delegate = delegate;
+    }
+
+    public String getDelegate() {
+        return delegate;
+    }
+
+    public Object getNativePointer() {
+        return nativePointer;
+    }
+
+    public void setNativePointer(Object nativePointer) {
+        assert this.nativePointer == null;
+        this.nativePointer = nativePointer;
+    }
+
+    public boolean isNative() {
+        return nativePointer != null;
+    }
+
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof CStringWrapper;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return CStringWrapperMRForeign.ACCESS;
+    }
 }
-

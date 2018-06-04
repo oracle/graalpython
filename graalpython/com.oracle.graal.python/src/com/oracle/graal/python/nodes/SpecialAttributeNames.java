@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.nodes;
 
+import com.oracle.truffle.api.object.HiddenKey;
+
 public abstract class SpecialAttributeNames {
     public static final String __DOC__ = "__doc__";
     public static final String __DEFAULTS__ = "__defaults__";
@@ -62,4 +64,9 @@ public abstract class SpecialAttributeNames {
     public static final String __FILE__ = "__file__";
     public static final String __CACHED__ = "__cached__";
     public static final String __TRACEBACK__ = "__traceback__";
+    public static final String __BASICSIZE__ = "__basicsize__";
+
+    /* hidden keys */
+    public static final HiddenKey __GET_BUFFER__ = new HiddenKey("__get_buffer__");
+    public static final HiddenKey __RELEASE_BUFFER__ = new HiddenKey("__release_buffer__");
 }

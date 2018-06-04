@@ -43,7 +43,7 @@ typedef enum e_binop {
 } BinOp;
 
 typedef enum e_unaryop {
-	POS=0, NEG
+	POS=0, NEG, INVERT
 } UnaryOp;
 
 static PyObject* null_error(void) {
@@ -129,6 +129,10 @@ PyObject * PyNumber_Negative(PyObject *o) {
 	return do_unaryop(o, NEG, "-");
 }
 
+PyObject * PyNumber_Invert(PyObject *o) {
+	return do_unaryop(o, INVERT, "~");
+}
+
 PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {
         return null_error();
@@ -199,6 +203,23 @@ PyObject * PyNumber_Float(PyObject *o) {
     }
     return to_sulong(result);
 }
+
+PyObject * PyNumber_Absolute(PyObject *o) {
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyNumber_Absolute", to_java(o));
+    if (result == ERROR_MARKER) {
+    	return NULL;
+    }
+    return to_sulong(result);
+}
+
+PyObject * PyNumber_Divmod(PyObject *a, PyObject *b) {
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyNumber_Divmod", to_java(a), to_java(b));
+    if (result == ERROR_MARKER) {
+    	return NULL;
+    }
+    return to_sulong(result);
+}
+
 
 PyObject * PyIter_Next(PyObject *iter) {
 	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyIter_Next", to_java(iter));
@@ -273,4 +294,68 @@ PyObject* PyNumber_Divmod(PyObject* a, PyObject* b) {
 
 PyObject* PyNumber_Invert(PyObject* o) {
     return to_sulong(polyglot_invoke(o, "__invert__"));
+}
+
+// taken from CPython "Objects/abstract.c"
+int PyObject_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
+    PyBufferProcs *pb = obj->ob_type->tp_as_buffer;
+
+    if (pb == NULL || pb->bf_getbuffer == NULL) {
+        PyErr_Format(PyExc_TypeError,
+                     "a bytes-like object is required, not '%.100s'",
+                     Py_TYPE(obj)->tp_name);
+        return -1;
+    }
+    return (*pb->bf_getbuffer)(obj, view, flags);
+}
+
+// taken from CPython "Objects/abstract.c"
+void PyBuffer_Release(Py_buffer *view) {
+    PyObject *obj = view->obj;
+    PyBufferProcs *pb;
+    if (obj == NULL)
+        return;
+    pb = Py_TYPE(obj)->tp_as_buffer;
+    if (pb && pb->bf_releasebuffer)
+        pb->bf_releasebuffer(obj, view);
+    view->obj = NULL;
+    Py_DECREF(obj);
+}
+
+// taken from CPython "Objects/abstract.c"
+/* we do this in native code since we need to fill in the values in a given 'Py_buffer' struct */
+int PyBuffer_FillInfo(Py_buffer *view, PyObject *obj, void *buf, Py_ssize_t len, int readonly, int flags) {
+    if (view == NULL) {
+        PyErr_SetString(PyExc_BufferError,
+            "PyBuffer_FillInfo: view==NULL argument is obsolete");
+        return -1;
+    }
+
+    if (((flags & PyBUF_WRITABLE) == PyBUF_WRITABLE) &&
+        (readonly == 1)) {
+        PyErr_SetString(PyExc_BufferError,
+                        "Object is not writable.");
+        return -1;
+    }
+
+    view->obj = obj;
+    if (obj)
+        Py_INCREF(obj);
+    view->buf = buf;
+    view->len = len;
+    view->readonly = readonly;
+    view->itemsize = 1;
+    view->format = NULL;
+    if ((flags & PyBUF_FORMAT) == PyBUF_FORMAT)
+        view->format = "B";
+    view->ndim = 1;
+    view->shape = NULL;
+    if ((flags & PyBUF_ND) == PyBUF_ND)
+        view->shape = &(view->len);
+    view->strides = NULL;
+    if ((flags & PyBUF_STRIDES) == PyBUF_STRIDES)
+        view->strides = &(view->itemsize);
+    view->suboffsets = NULL;
+    view->internal = NULL;
+    return 0;
 }
