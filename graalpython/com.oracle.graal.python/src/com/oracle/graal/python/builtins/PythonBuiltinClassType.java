@@ -73,6 +73,7 @@ public enum PythonBuiltinClassType {
     PMethod(com.oracle.graal.python.builtins.objects.method.PMethod.class, "method"),
     PNone(com.oracle.graal.python.builtins.objects.PNone.class, "NoneType"),
     PNotImplemented(com.oracle.graal.python.builtins.objects.PNotImplemented.class, "NotImplementedType"),
+    PRandom(com.oracle.graal.python.builtins.objects.random.PRandom.class, "random"),
     PRange(com.oracle.graal.python.builtins.objects.range.PRange.class, "range"),
     PRangeIterator(com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.class, "iterator"),
     PRangeReverseIterator(com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator.class, "iterator"),
