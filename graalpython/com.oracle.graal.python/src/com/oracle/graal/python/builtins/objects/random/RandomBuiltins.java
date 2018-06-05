@@ -69,10 +69,9 @@ public class RandomBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SeedNode extends PythonBuiltinNode {
 
-        @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        public PNone seed(PRandom random, PNone none) {
+        public PNone seed(PRandom random, @SuppressWarnings("unused") PNone none) {
             random.setSeed(System.currentTimeMillis());
             return PNone.NONE;
         }
