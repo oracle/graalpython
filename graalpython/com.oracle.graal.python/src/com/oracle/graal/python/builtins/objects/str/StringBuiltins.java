@@ -608,6 +608,18 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = "translate", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class TranslateNode extends PythonBuiltinNode {
+        @Specialization
+        public String translate(String self, String table) {
+            char[] translatedChars = new char[self.length()];
+
+            for (int i = 0; i < self.length(); i++) {
+                char original = self.charAt(i);
+                char translation = table.charAt(original);
+                translatedChars[i] = translation;
+            }
+
+            return new String(translatedChars);
+        }
 
         @Specialization
         public String translate(String self, PDict table,
