@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.reversed.PSequenceReverseIterator;
@@ -305,6 +306,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PSlice createSlice(int start, int stop, int step) {
         return trace(new PSlice(lookupClass(PythonBuiltinClassType.PSlice), start, stop, step));
+    }
+
+    public PRandom createRandom(PythonClass cls) {
+        return trace(new PRandom(cls));
     }
 
     /*

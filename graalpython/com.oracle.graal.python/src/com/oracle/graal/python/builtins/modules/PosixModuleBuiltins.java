@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
@@ -50,6 +51,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -892,6 +894,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException | InterruptedException e) {
                 return -1;
             }
+        }
+    }
+
+    @Builtin(name = "urandom", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class URandomNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        PBytes urandom(int size) {
+            // size is in bytes
+            BigInteger bigInteger = new BigInteger(size * 8, new Random());
+            // sign may introduce an extra byte
+            byte[] range = Arrays.copyOfRange(bigInteger.toByteArray(), 0, size);
+            return factory().createBytes(range);
         }
     }
 }

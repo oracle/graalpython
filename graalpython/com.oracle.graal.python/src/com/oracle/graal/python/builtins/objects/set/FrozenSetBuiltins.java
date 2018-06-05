@@ -96,7 +96,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __LE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
-        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
+        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode = HashingStorageNodes.ContainsKeyNode.create();
 
         @Specialization
         Object run(PBaseSet self, PBaseSet other) {

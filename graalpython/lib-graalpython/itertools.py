@@ -305,3 +305,30 @@ class product():
             self.indices[i] = index
             lst.append(gear[index])
         self.lst = lst
+
+
+class accumulate(object):
+    """
+    "accumulate(iterable) --> accumulate object
+
+    Return series of accumulated sums."""
+
+    def __init__(self, iterable, func=None):
+        self.iterable = iter(iterable)
+        self.func = func
+        self.total = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        value = next(self.iterable)
+        if self.total is None:
+            self.total = value
+            return value
+
+        if self.func is None:
+            self.total += value
+        else:
+            self.total = self.func(total, value)
+        return self.total
