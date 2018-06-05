@@ -442,6 +442,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         Object dict(Object self) {
             throw raise(AttributeError, "'%p' object has no attribute '__dict__'", self);
         }
+
     }
 
     @Builtin(name = __FORMAT__, fixedNumOfArguments = 2)

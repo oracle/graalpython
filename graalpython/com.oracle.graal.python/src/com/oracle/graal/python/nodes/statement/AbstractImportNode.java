@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
@@ -55,6 +56,7 @@ import com.oracle.truffle.api.instrumentation.Tag;
 public abstract class AbstractImportNode extends StatementNode {
 
     @Child private InvokeNode invokeNode;
+    @Child private GetDictNode getDictNode;
 
     public AbstractImportNode() {
         super();
@@ -72,6 +74,14 @@ public abstract class AbstractImportNode extends StatementNode {
         return invokeNode;
     }
 
+    private GetDictNode getGetDictNode() {
+        if (getDictNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getDictNode = insert(GetDictNode.create());
+        }
+        return getDictNode;
+    }
+
     protected Object importModule(String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         if (!getCore().isInitialized()) {
@@ -87,7 +97,7 @@ public abstract class AbstractImportNode extends StatementNode {
         assert fromList != null;
         assert globals != null;
         return getInvokeNode(builtinImport).invoke(importArguments, new PKeyword[]{
-                        new PKeyword(GLOBALS, globals),
+                        new PKeyword(GLOBALS, getGetDictNode().execute(globals)),
                         new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
                                                           // can always be None
                         new PKeyword("fromlist", factory().createTuple(fromList)),
