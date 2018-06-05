@@ -133,6 +133,10 @@ class TestBasicOps:
         self.assertRaises(TypeError, self.gen.sample, dict.fromkeys('abcdef'), 2)
 
     def test_choices(self):
+        import sys
+        if sys.version_info.minor < 6:
+            return
+
         choices = self.gen.choices
         data = ['red', 'green', 'blue', 'yellow']
         str_data = 'abcd'
