@@ -21,6 +21,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+import _codecs
+
+
 def partition(self, sep):
     l = self.split(sep, 1)
     if len(l) == 1:
@@ -328,3 +331,21 @@ def strcount(self, sub, start=0, end=-1):
 
 
 str.count = strcount
+
+
+def encode(self, encoding="utf-8", errors="strict"):
+    """Decode the bytes using the codec registered for encoding.
+
+    encoding
+      The encoding with which to decode the bytes.
+    errors
+      The error handling scheme to use for the handling of decoding errors.
+      The default is 'strict' meaning that decoding errors raise a
+      UnicodeDecodeError. Other possible values are 'ignore' and 'replace'
+      as well as any other name registered with codecs.register_error that
+      can handle UnicodeDecodeErrors.
+    """
+    return _codecs.encode(self, encoding=encoding, errors=errors)
+
+
+str.encode = encode

@@ -53,8 +53,8 @@ public interface PIBytesLike extends PLenSupplier {
         return Arrays.copyOf(internalBytesArray, len);
     }
 
-    default ByteBuffer getBytes() {
-        return ByteBuffer.wrap(getInternalByteArray());
+    default ByteBuffer getBytesBuffer() {
+        return ByteBuffer.wrap(getInternalByteArray(), 0, this.len());
     }
 
     default PIBytesLike createFromBytes(PythonObjectFactory factory, ByteBuffer bytes) {

@@ -70,10 +70,12 @@ def lookup(encoding):
         if result:
             if not (isinstance(result, tuple) and len(result) == 4):
                 raise TypeError("codec search functions must return 4-tuples %r")
-            else:
-                # Cache and return the result
-                __codec_search_cache__[normalized_encoding] = result
-                return result
+            break
+
+    if result:
+        # Cache and return the result
+        __codec_search_cache__[normalized_encoding] = result
+        return result
 
     raise LookupError("unknown encoding: %s" % encoding)
 
