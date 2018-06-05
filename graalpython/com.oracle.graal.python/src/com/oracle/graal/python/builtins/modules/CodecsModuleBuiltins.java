@@ -212,7 +212,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "encode", minNumOfArguments = 1, maxNumOfArguments = 1, keywordArguments = {
+    @Builtin(name = "__truffle_encode", minNumOfArguments = 1, maxNumOfArguments = 1, keywordArguments = {
                     "encoding", "errors"})
     @GenerateNodeFactory
     abstract static class PythonEncodeNode extends PythonBuiltinNode {
@@ -241,7 +241,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "decode", minNumOfArguments = 1, maxNumOfArguments = 1, keywordArguments = {
+    @Builtin(name = "__truffle_decode", minNumOfArguments = 1, maxNumOfArguments = 1, keywordArguments = {
                     "encoding", "errors"})
     @GenerateNodeFactory
     abstract static class PythonDecodeNode extends PythonBuiltinNode {
@@ -269,18 +269,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // _codecs.lookup_error(name)
-    @Builtin(name = "lookup_error", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    abstract static class PythonLookupErrorNode extends PythonBuiltinNode {
-        @Specialization
-        Object lookupError(String name) {
-            throw raise(LookupError, "unknown error handler name '%s'", name);
-        }
-    }
-
     // _codecs.lookup(name)
-    @Builtin(name = "lookup", fixedNumOfArguments = 1)
+    @Builtin(name = "__truffle_lookup", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class LookupNode extends PythonBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality
