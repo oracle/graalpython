@@ -244,7 +244,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected static DelItemNode create() {
-            return ListBuiltinsFactory.DelItemNodeFactory.create(new PNode[0]);
+            return ListBuiltinsFactory.DelItemNodeFactory.create();
         }
 
         @Specialization
@@ -334,7 +334,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected static GetItemNode create() {
-            return ListBuiltinsFactory.GetItemNodeFactory.create(new PNode[0]);
+            return ListBuiltinsFactory.GetItemNodeFactory.create();
         }
 
         @Specialization
@@ -420,7 +420,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected static SetItemNode create() {
-            return ListBuiltinsFactory.SetItemNodeFactory.create(new PNode[0]);
+            return ListBuiltinsFactory.SetItemNodeFactory.create();
         }
 
         @Specialization

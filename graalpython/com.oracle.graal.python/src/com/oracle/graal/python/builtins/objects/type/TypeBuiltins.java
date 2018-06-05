@@ -423,7 +423,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SUBCLASSES__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    static abstract class SubclassesNode extends PythonBinaryBuiltinNode {
+    static abstract class SubclassesNode extends PythonUnaryBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
 
         @Specialization

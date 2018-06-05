@@ -80,7 +80,7 @@ import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -373,7 +373,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "stat", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class StatNode extends PythonUnaryBuiltinNode {
+    public abstract static class StatNode extends PythonBinaryBuiltinNode {
         private static final int S_IFIFO = 0010000;
         private static final int S_IFCHR = 0020000;
         private static final int S_IFBLK = 0060000;
@@ -501,7 +501,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         protected static StatNode create() {
-            return StatNodeFactory.create(null);
+            return StatNodeFactory.create();
         }
     }
 

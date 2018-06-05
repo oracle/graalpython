@@ -94,6 +94,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -111,6 +112,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -866,15 +868,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "TrufflePFloat_AsPrimitive", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class TrufflePFloat_AsPrimitive extends NativeBuiltin {
         @Specialization
         double doDouble(double d) {
             return d;
-        }
-
-        @Specialization
-        double doPFloat(PFloat obj) {
-            return obj.getValue();
         }
 
         @Fallback
@@ -886,6 +884,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_FromWchar", fixedNumOfArguments = 3)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
         @Specialization(guards = "isByteArray(o)")
         @TruffleBoundary
@@ -905,6 +904,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return raiseNative(errorMarker, PythonErrorType.UnicodeError, e.getMessage());
             } catch (IllegalArgumentException e) {
                 return raiseNative(errorMarker, PythonErrorType.LookupError, e.getMessage());
+            }
+        }
+
+        @Specialization(guards = "isByteArray(o)")
+        @TruffleBoundary
+        Object doBytes(TruffleObject o, PInt elementSize, Object errorMarker) {
+            try {
+                return doBytes(o, elementSize.longValueExact(), errorMarker);
+            } catch (ArithmeticException e) {
+                return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
         }
     }
@@ -1081,22 +1090,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_Unicode_AsWideChar", fixedNumOfArguments = 4)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTruffle_Unicode_AsWideChar extends NativeUnicodeBuiltin {
         @Child private UnicodeAsWideCharNode asWideCharNode;
 
         @Specialization
-        Object doUnicode(PString s, long elementSize, PNone elements, Object errorMarker) {
-            return doUnicode(s.getValue(), elementSize, elements, errorMarker);
-        }
-
-        @Specialization
         Object doUnicode(String s, long elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
             return doUnicode(s, elementSize, -1, errorMarker);
-        }
-
-        @Specialization
-        Object doUnicode(PString s, long elementSize, long elements, Object errorMarker) {
-            return doUnicode(s.getValue(), elementSize, elements, errorMarker);
         }
 
         @Specialization
@@ -1117,6 +1117,24 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 // TODO
                 return raiseNative(errorMarker, PythonErrorType.LookupError, e.getMessage());
+            }
+        }
+
+        @Specialization
+        Object doUnicode(String s, PInt elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
+            try {
+                return doUnicode(s, elementSize.longValueExact(), -1, errorMarker);
+            } catch (ArithmeticException e) {
+                return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
+            }
+        }
+
+        @Specialization
+        Object doUnicode(String s, PInt elementSize, PInt elements, Object errorMarker) {
+            try {
+                return doUnicode(s, elementSize.longValueExact(), elements.longValueExact(), errorMarker);
+            } catch (ArithmeticException e) {
+                return raiseNative(errorMarker, PythonErrorType.ValueError, "invalid parameters");
             }
         }
     }

@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -36,6 +36,7 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class AssertNode extends StatementNode {
@@ -43,7 +44,7 @@ public class AssertNode extends StatementNode {
     @Child private CastToBooleanNode condition;
     @Child private PNode message;
     @Child private LookupAndCallUnaryNode callNode;
-    @CompilerDirectives.CompilationFinal private Boolean assertionsEnabled = null;
+    @CompilationFinal private Boolean assertionsEnabled = null;
 
     public AssertNode(CastToBooleanNode condition, PNode message) {
         this.condition = condition;
