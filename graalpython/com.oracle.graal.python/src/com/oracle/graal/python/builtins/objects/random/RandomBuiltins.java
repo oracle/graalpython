@@ -2,7 +2,6 @@ package com.oracle.graal.python.builtins.objects.random;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Random;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -73,7 +72,8 @@ public class RandomBuiltins extends PythonBuiltins {
             if (arr.length == 1) {
                 Object object = arr[0];
                 if (object instanceof Long) {
-                    random.setJavaRandom(new Random((Long) object));
+                    random.resetJavaRandom();
+                    random.setSeed((Long) object);
                     return PNone.NONE;
                 }
             }
@@ -88,7 +88,7 @@ public class RandomBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PTuple getstate(PRandom random) {
-            return factory().createTuple(new Object[]{random.nextLong()});
+            return factory().createTuple(new Object[]{random.getSeed()});
         }
     }
 

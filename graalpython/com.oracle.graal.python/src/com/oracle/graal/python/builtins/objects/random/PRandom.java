@@ -6,7 +6,17 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public class PRandom extends PythonBuiltinObject {
-    private Random javaRandom = new Random();
+    private static class PythonRandom extends Random {
+        private static final long serialVersionUID = 1L;
+
+        long getSeed() {
+            int nextseed = this.next(48); // 48 magic number of bits shifted away in superclass
+            this.setSeed(nextseed);
+            return nextseed;
+        }
+    }
+
+    private PythonRandom javaRandom = new PythonRandom();
 
     public PRandom(PythonClass cls) {
         super(cls);
@@ -14,6 +24,10 @@ public class PRandom extends PythonBuiltinObject {
 
     public void setSeed(long seed) {
         javaRandom.setSeed(seed);
+    }
+
+    public long getSeed() {
+        return javaRandom.getSeed();
     }
 
     public long nextLong() {
@@ -28,7 +42,7 @@ public class PRandom extends PythonBuiltinObject {
         return javaRandom;
     }
 
-    public void setJavaRandom(Random random) {
-        javaRandom = random;
+    public void resetJavaRandom() {
+        javaRandom = new PythonRandom();
     }
 }
