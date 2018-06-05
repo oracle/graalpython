@@ -88,10 +88,10 @@ public final class BytesUtils {
                     long integer = ((PInt) item).intValueExact();
                     if (integer >= 0 && integer < 256) {
                         bytes[i] = (byte) integer;
+                        continue;
                     }
                 } catch (ArithmeticException e) {
                 }
-                continue;
             } else {
                 throw core.raise(TypeError, "'%s' object cannot be interpreted as an integer", core.lookupType(item.getClass()));
             }
