@@ -81,6 +81,7 @@ graalpython/com.oracle.graal.python.cext/include/boolobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/bytearrayobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/bytesobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/ceval.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/code.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/complexobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/datetime.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/descrobject.h,python.copyright
@@ -91,6 +92,7 @@ graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/listobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/longintrepr.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/longobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/memoryobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/methodobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/modsupport.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/moduleobject.h,python.copyright
@@ -102,7 +104,10 @@ graalpython/com.oracle.graal.python.cext/include/pyarena.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pycapsule.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyconfig.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyctype.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/pydebug.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyerrors.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/pyfpe.h,pyfpe.copyright
+graalpython/com.oracle.graal.python.cext/include/pylifecycle.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pymacro.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pymath.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pymem.h,python.copyright
@@ -119,11 +124,6 @@ graalpython/com.oracle.graal.python.cext/include/truffle.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/unicodeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/warnings.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/code.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/pydebug.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/pylifecycle.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/memoryobject.h,python.copyright
-graalpython/com.oracle.graal.python.cext/include/pyfpe.h,pyfpe.copyright
 graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
 graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonMain.java,zippy.copyright
@@ -189,7 +189,6 @@ graalpython/com.oracle.graal.python.test/src/tests/cpyext/clinic/posixmodule.c.h
 graalpython/com.oracle.graal.python.test/src/tests/cpyext/posixmodule.c,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/cpyext/posixmodule.h,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/list_tests.py,python.copyright
-graalpython/com.oracle.graal.python.test/src/tests/test_list.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/mandelbrot3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/nbody3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/relative_import.py,zippy.copyright
@@ -232,11 +231,13 @@ graalpython/com.oracle.graal.python.test/src/tests/test_getattribute-bimorphic-i
 graalpython/com.oracle.graal.python.test/src/tests/test_getattribute-bimorphic-inobject.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_if-class-none.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_if.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_list.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mandelbrot3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_math.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mm2d_naive.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_mm2d_random_naive_5.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_raise-try.py,zippy.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_random.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_re.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_sorted.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_string.py,python.copyright
