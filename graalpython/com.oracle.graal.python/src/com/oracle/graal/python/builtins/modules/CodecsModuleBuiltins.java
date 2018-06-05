@@ -39,6 +39,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 
 import java.nio.ByteBuffer;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -225,7 +227,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
-            return encodeString(profiledStr.toString(), "utf-8", "strict");
+            PBytes bytes = encodeString(profiledStr.toString(), "utf-8", "strict");
+            return factory().createTuple(new Object[]{bytes, bytes.len()});
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)"})
@@ -234,7 +237,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            return encodeString(profiledStr.toString(), profiledEncoding.toString(), "strict");
+            PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), "strict");
+            return factory().createTuple(new Object[]{bytes, bytes.len()});
         }
 
         @Specialization(guards = {"isString(str)", "isString(errors)"})
@@ -243,7 +247,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            return encodeString(profiledStr.toString(), "utf-8", profiledErrors.toString());
+            PBytes bytes = encodeString(profiledStr.toString(), "utf-8", profiledErrors.toString());
+            return factory().createTuple(new Object[]{bytes, bytes.len()});
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)", "isString(errors)"})
@@ -254,11 +259,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             Object profiledStr = strTypeProfile.profile(str);
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            return encodeString(profiledStr.toString(), profiledEncoding.toString(), profiledErrors.toString());
+            PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), profiledErrors.toString());
+            return factory().createTuple(new Object[]{bytes, bytes.len()});
+        }
+
+        @Fallback
+        Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+            throw raise(TypeError, "Can't convert '%p' object to str implicitly", str);
         }
 
         @TruffleBoundary
-        private Object encodeString(String self, String encoding, String errors) {
+        private PBytes encodeString(String self, String encoding, String errors) {
             CodingErrorAction errorAction;
             switch (errors) {
                 case "ignore":
@@ -273,13 +284,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
 
             try {
-                Charset cs = getCharset(encoding);
-                ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
+                Charset charset = getCharset(encoding);
+                ByteBuffer encoded = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
                 int n = encoded.remaining();
                 byte[] data = new byte[n];
                 encoded.get(data);
-                PBytes bytes = factory().createBytes(data);
-                return factory().createTuple(new Object[]{bytes, bytes.len()});
+                return factory().createBytes(data);
             } catch (IllegalArgumentException e) {
                 throw raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
@@ -292,27 +302,67 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__truffle_decode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends PythonBuiltinNode {
+        @Specialization
+        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            String string = decodeBytes(bytes.getBytesBuffer(), "utf-8", "strict");
+            return factory().createTuple(new Object[]{string, string.length()});
+        }
+
+        @Specialization(guards = {"isString(encoding)"})
+        Object decode(PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
+            Object profiledEncoding = encodingTypeProfile.profile(encoding);
+            String string = decodeBytes(bytes.getBytesBuffer(), profiledEncoding.toString(), "strict");
+            return factory().createTuple(new Object[]{string, string.length()});
+        }
+
+        @Specialization(guards = {"isString(errors)"})
+        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
+                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
+            Object profiledErrors = errorsTypeProfile.profile(errors);
+            String string = decodeBytes(bytes.getBytesBuffer(), "utf-8", profiledErrors.toString());
+            return factory().createTuple(new Object[]{string, string.length()});
+        }
+
+        @Specialization(guards = {"isString(encoding)", "isString(errors)"})
+        Object decode(PIBytesLike bytes, Object encoding, Object errors,
+                        @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
+                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
+            Object profiledEncoding = encodingTypeProfile.profile(encoding);
+            Object profiledErrors = errorsTypeProfile.profile(errors);
+            String string = decodeBytes(bytes.getBytesBuffer(), profiledEncoding.toString(), profiledErrors.toString());
+            return factory().createTuple(new Object[]{string, string.length()});
+        }
+
+        @Fallback
+        Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+            throw raise(TypeError, "a bytes-like object is required, not '%p'", bytes);
+        }
+
         @TruffleBoundary
-        String decode(ByteBuffer bytes, String encoding) {
+        String decodeBytes(ByteBuffer bytes, String encoding, String errors) {
+            CodingErrorAction errorAction;
+            switch (errors) {
+                case "ignore":
+                    errorAction = CodingErrorAction.IGNORE;
+                    break;
+                case "replace":
+                    errorAction = CodingErrorAction.REPLACE;
+                    break;
+                default:
+                    errorAction = CodingErrorAction.REPORT;
+                    break;
+            }
+
             try {
-                return String.valueOf(getCharset(encoding).decode(bytes));
+                Charset charset = getCharset(encoding);
+                CharBuffer decoded = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).decode(bytes);
+                return String.valueOf(decoded);
             } catch (IllegalArgumentException e) {
                 throw this.getCore().raise(LookupError, "unknown encoding: %s", encoding);
+            } catch (CharacterCodingException e) {
+                throw raise(UnicodeEncodeError, "%s", e.getMessage());
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object decode(PIBytesLike obj, PNone encoding, PNone errors) {
-            String string = decode(obj.getBytesBuffer(), DEFAULT_ENCODING);
-            return factory().createTuple(new Object[]{string, string.length()});
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object decode(PIBytesLike obj, String encoding, Object errors) {
-            String string = decode(obj.getBytesBuffer(), encoding);
-            return factory().createTuple(new Object[]{string, string.length()});
         }
     }
 

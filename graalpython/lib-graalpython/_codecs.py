@@ -129,7 +129,7 @@ def lookup_error(errors='strict'):
 
 
 def __codec_registry_init__():
-    # TODO: the error methods should be also handled on the truffle side for the truffle specific encoders / decoders
+    # TODO: error method handlers setup
     try:
         import encodings
     except Exception:
