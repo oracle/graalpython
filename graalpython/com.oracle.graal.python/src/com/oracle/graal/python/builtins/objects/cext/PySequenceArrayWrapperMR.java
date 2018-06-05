@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -77,7 +76,6 @@ public class PySequenceArrayWrapperMR {
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceArrayWrapper object, Object key) {
-            System.out.println(object.getDelegate().toString() + "[" + key + "]");
             return getToSulongNode().execute(getReadArrayItemNode().execute(object.getDelegate(), key));
         }
 
