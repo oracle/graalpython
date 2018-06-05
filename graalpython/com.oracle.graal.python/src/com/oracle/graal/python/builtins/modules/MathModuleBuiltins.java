@@ -872,18 +872,23 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "log", fixedNumOfArguments = 1)
+    @Builtin(name = "log", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class LogNode extends PythonBuiltinNode {
 
         @Specialization
-        public double log(int value) {
+        public double log(int value, @SuppressWarnings("unused") PNone novalue) {
             return Math.log(value);
         }
 
         @Specialization
-        public double log(double value) {
+        public double log(double value, @SuppressWarnings("unused") PNone novalue) {
             return Math.log(value);
+        }
+
+        @Specialization
+        public double log(int value, int base) {
+            return Math.log(value) / Math.log(base);
         }
     }
 
