@@ -55,10 +55,11 @@ public class PRandom extends PythonBuiltinObject {
         }
     }
 
-    private PythonRandom javaRandom = new PythonRandom();
+    private PythonRandom javaRandom;
 
     public PRandom(PythonClass cls) {
         super(cls);
+        resetJavaRandom();
     }
 
     @TruffleBoundary
@@ -83,6 +84,7 @@ public class PRandom extends PythonBuiltinObject {
         return javaRandom;
     }
 
+    @TruffleBoundary
     public void resetJavaRandom() {
         javaRandom = new PythonRandom();
     }
