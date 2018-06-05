@@ -42,6 +42,9 @@ __codec_error_registry__ = {}
 
 
 def register(search_function):
+    if not __codec_search_path__:
+        __codec_registry_init__()
+
     if not hasattr(search_function, "__call__"):
         raise TypeError("argument must be callable")
     __codec_search_path__.append(search_function)
@@ -52,6 +55,9 @@ def __normalizestring(string):
 
 
 def lookup(encoding):
+    if not __codec_search_path__:
+        __codec_registry_init__()
+
     normalized_encoding = __normalizestring(encoding)
     # First, try to lookup the name in the registry dictionary
     result = __codec_search_cache__.get(normalized_encoding)
@@ -91,7 +97,7 @@ def __decoder(encoding):
 
 def encode(obj, encoding='utf-8', errors='strict'):
     encoder = __encoder(encoding)
-    if not encoder:
+    if encoder:
         result = encoder(obj, errors)
         if not (isinstance(result, tuple) and len(result) == 2):
             raise TypeError('encoder must return a tuple (object, integer)')
@@ -100,7 +106,7 @@ def encode(obj, encoding='utf-8', errors='strict'):
 
 def decode(obj, encoding='utf-8', errors='strict'):
     decoder = __decoder(encoding)
-    if not decoder:
+    if decoder:
         result = decoder(obj, errors)
         if not (isinstance(result, tuple) and len(result) == 2):
             raise TypeError('decoder must return a tuple (object, integer)')
@@ -121,7 +127,7 @@ def lookup_error(errors='strict'):
 
 
 def __codec_registry_init__():
-    # TODO: register error methods
+    # TODO: the error methods should be also handled on the truffle side for the truffle specific encoders / decoders
     try:
         import encodings
     except Exception:
@@ -141,7 +147,7 @@ def utf_8_encode(string, errors):
     return __truffle_encode(string, "utf-8", errors)
 
 
-def utf_8_decode(string, errors):
+def utf_8_decode(string, errors, final):
     return __truffle_decode(string, "utf-8", errors)
 
 
@@ -149,7 +155,7 @@ def utf_7_encode(string, errors):
     return __truffle_encode(string, "utf-7", errors)
 
 
-def utf_7_decode(string, errors):
+def utf_7_decode(string, errors, final):
     return __truffle_decode(string, "utf-7", errors)
 
 
@@ -157,7 +163,7 @@ def utf_16_encode(string, errors, byteorder):
     return __truffle_encode(string, "utf-16", errors)
 
 
-def utf_16_decode(string, errors, byteorder):
+def utf_16_decode(string, errors, final):
     return __truffle_decode(string, "utf-16", errors)
 
 
@@ -165,7 +171,7 @@ def utf_16_le_encode(string, errors):
     return __truffle_encode(string, "utf-16-le", errors)
 
 
-def utf_16_le_decode(string, errors):
+def utf_16_le_decode(string, errors, final):
     return __truffle_decode(string, "utf-16-le", errors)
 
 
@@ -173,7 +179,7 @@ def utf_16_be_encode(string, errors):
     return __truffle_encode(string, "utf-16-be", errors)
 
 
-def utf_16_be_decode(string, errors):
+def utf_16_be_decode(string, errors, final):
     return __truffle_decode(string, "utf-16-be", errors)
 
 
@@ -185,7 +191,7 @@ def utf_32_encode(string, errors, byteorder):
     return __truffle_encode(string, "utf-32", errors)
 
 
-def utf_32_decode(string, errors, byteorder):
+def utf_32_decode(string, errors, final):
     return __truffle_decode(string, "utf-32", errors)
 
 
@@ -193,7 +199,7 @@ def utf_32_le_encode(string, errors):
     return __truffle_encode(string, "utf-32-le", errors)
 
 
-def utf_32_le_decode(string, errors):
+def utf_32_le_decode(string, errors, final):
     return __truffle_decode(string, "utf-32-le", errors)
 
 
@@ -201,7 +207,7 @@ def utf_32_be_encode(string, errors):
     return __truffle_encode(string, "utf-32-be", errors)
 
 
-def utf_32_be_decode(string, errors):
+def utf_32_be_decode(string, errors, final):
     return __truffle_decode(string, "utf-32-be", errors)
 
 
@@ -269,7 +275,7 @@ def mbcs_encode(string, errors):
     raise NotImplementedError()
 
 
-def mbcs_decode(string, errors):
+def mbcs_decode(string, errors, final):
     raise NotImplementedError()
 
 
@@ -277,7 +283,7 @@ def oem_encode(string, errors):
     raise NotImplementedError()
 
 
-def oem_decode(string, errors):
+def oem_decode(string, errors, final):
     raise NotImplementedError()
 
 
@@ -285,9 +291,5 @@ def code_page_encode(code_page, string, errors):
     raise NotImplementedError()
 
 
-def code_page_decode(code_page, string, errors):
+def code_page_decode(code_page, string, errors, final):
     raise NotImplementedError()
-
-
-# initialize the codecs registry
-__codec_registry_init__()
