@@ -132,7 +132,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             this.node = node;
             this.arg1 = arg1;
             this.arg2 = arg2;
-            this.arg2 = arg3;
+            this.arg3 = arg3;
         }
 
         @Override
@@ -204,17 +204,22 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             PNode[] argumentsList = createArgumentsList(builtin);
             if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
-                body = new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList));
+                body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList)));
             } else {
                 PythonBuiltinBaseNode node = factory.createNode();
                 if (node instanceof PythonUnaryBuiltinNode) {
-                    body = new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]);
+                    assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getSimpleName();
+                    body = insert(new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]));
                 } else if (node instanceof PythonBinaryBuiltinNode) {
-                    body = new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]);
+                    assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getSimpleName();
+                    body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]));
                 } else if (node instanceof PythonTernaryBuiltinNode) {
-                    body = new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
+                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getSimpleName();
+                    body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
                 } else if (node instanceof PythonVarargsBuiltinNode) {
-                    body = new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]);
+                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getSimpleName();
+                    assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
+                    body = insert(new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
                 } else {
                     throw new RuntimeException("unexpected builtin node type: " + node.getClass());
                 }
