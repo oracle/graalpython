@@ -89,6 +89,11 @@ public abstract class SliceLiteralNode extends PNode {
     }
 
     @Specialization
+    public PSlice doSlice(@SuppressWarnings("unused") PNone start, long stop, @SuppressWarnings("unused") PNone step) {
+        return factory().createSlice(MISSING_INDEX, (int) stop, MISSING_INDEX);
+    }
+
+    @Specialization
     public PSlice doSlice(@SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop, int step) {
         return factory().createSlice(MISSING_INDEX, MISSING_INDEX, step);
     }
