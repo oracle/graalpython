@@ -9,12 +9,17 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @CoreFunctions(extendClasses = PRandom.class)
 public class RandomBuiltins extends PythonBuiltins {
@@ -53,10 +58,25 @@ public class RandomBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization
-        @TruffleBoundary
-        public PNone seed(PRandom random, Object inputSeed) {
-            random.setSeed(System.identityHashCode(inputSeed));
+        @Specialization(rewriteOn = UnexpectedResultException.class)
+        public PNone seedObject(PRandom random, Object inputSeed,
+                        @Cached("create(__HASH__)") LookupAndCallUnaryNode callHash) throws UnexpectedResultException {
+            long hash = callHash.executeLong(inputSeed);
+            random.setSeed(hash);
+            return PNone.NONE;
+        }
+
+        @Specialization(replaces = "seedObject")
+        public PNone seedNonLong(PRandom random, Object inputSeed,
+                        @Cached("create(__HASH__)") LookupAndCallUnaryNode callHash) {
+            Object object = callHash.executeObject(inputSeed);
+            if (PGuards.isInteger(object)) {
+                random.setSeed(((Number) object).intValue());
+            } else if (PGuards.isPInt(object)) {
+                random.setSeed(((PInt) object).intValue());
+            } else {
+                throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");
+            }
             return PNone.NONE;
         }
     }

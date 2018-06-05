@@ -4,6 +4,7 @@ import java.util.Random;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PRandom extends PythonBuiltinObject {
     private static class PythonRandom extends Random {
@@ -22,10 +23,12 @@ public class PRandom extends PythonBuiltinObject {
         super(cls);
     }
 
+    @TruffleBoundary
     public void setSeed(long seed) {
         javaRandom.setSeed(seed);
     }
 
+    @TruffleBoundary
     public long getSeed() {
         return javaRandom.getSeed();
     }
