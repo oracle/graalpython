@@ -191,6 +191,10 @@ static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObj
 	return f(explicit_cast(a), explicit_cast(b), (int)PyLong_AsLong(n));
 }
 
+static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* size, PyObject* b) {
+	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size), explicit_cast(b)));
+}
+
 int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
 #define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, get_method_flags_cwrapper(m.ml_flags), m.ml_meth, m.ml_flags, m.ml_doc)
@@ -414,7 +418,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__add__", sequences->sq_concat, -2);
         ADD_SLOT("__mul__", sequences->sq_repeat, -2);
         ADD_SLOT("__getitem__", sequences->sq_item, -2);
-        ADD_SLOT("__setitem__", sequences->sq_ass_item, -3);
+        ADD_SLOT_CONV("__setitem__", wrap_ssizeobjargproc, sequences->sq_ass_item, -3);
         ADD_SLOT("__contains__", sequences->sq_contains, -2);
         ADD_SLOT("__iadd__", sequences->sq_inplace_concat, -2);
         ADD_SLOT("__imul__", sequences->sq_inplace_repeat, -2);
