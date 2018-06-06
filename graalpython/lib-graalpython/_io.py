@@ -672,6 +672,9 @@ class TextIOWrapper(_TextIOBase):
 
 def open(*args, **kwargs):
     import _pyio
+    import builtins
+    setattr(builtins, 'open', _pyio.open)
+    setattr(globals(), 'open', _pyio.open)
     return _pyio.open(*args, **kwargs)
 
 
