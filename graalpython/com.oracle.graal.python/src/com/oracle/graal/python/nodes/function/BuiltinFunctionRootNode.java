@@ -208,16 +208,16 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             } else {
                 PythonBuiltinBaseNode node = factory.createNode();
                 if (node instanceof PythonUnaryBuiltinNode) {
-                    assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getSimpleName();
+                    assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
                     body = insert(new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]));
                 } else if (node instanceof PythonBinaryBuiltinNode) {
-                    assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getSimpleName();
+                    assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
                     body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]));
                 } else if (node instanceof PythonTernaryBuiltinNode) {
-                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getSimpleName();
+                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
                     body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
                 } else if (node instanceof PythonVarargsBuiltinNode) {
-                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getSimpleName();
+                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
                     assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
                     body = insert(new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
                 } else {

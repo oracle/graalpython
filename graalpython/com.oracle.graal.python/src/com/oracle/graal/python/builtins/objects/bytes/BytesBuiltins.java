@@ -254,7 +254,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ITER__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class IterNode extends PythonBinaryBuiltinNode {
+    abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         PSequenceIterator contains(PBytes self) {
             return factory().createSequenceIterator(self);
