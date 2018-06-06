@@ -678,3 +678,4 @@ def open(*args, **kwargs):
 # set the builtins open method
 import builtins
 setattr(builtins, 'open', open)
+setattr(globals(), 'open', open)

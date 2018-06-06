@@ -26,8 +26,7 @@ def _copy_file_contents(src, dst, buffer_size=16*1024):
     fdst = None
     try:
         try:
-            # fsrc = open(src, 'rb')
-            fsrc = open(src, buffering=0, mode='rb') # TODO: Truffle revert-me
+            fsrc = open(src, 'rb')
         except OSError as e:
             raise DistutilsFileError("could not open '%s': %s" % (src, e.strerror))
 
@@ -39,8 +38,7 @@ def _copy_file_contents(src, dst, buffer_size=16*1024):
                       "could not delete '%s': %s" % (dst, e.strerror))
 
         try:
-            # fdst = open(dst, 'wb')
-            fdst = open(dst, buffering=0, mode='wb') # TODO: Truffle revert-me
+            fdst = open(dst, 'wb')
         except OSError as e:
             raise DistutilsFileError(
                   "could not create '%s': %s" % (dst, e.strerror))

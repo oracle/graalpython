@@ -40,6 +40,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 
 import java.nio.ByteBuffer;
@@ -272,10 +273,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         private PBytes encodeString(String self, String encoding, String errors) {
             CodingErrorAction errorAction;
             switch (errors) {
+                // TODO: see [GR-10256] to implement the correct handling mechanics
                 case "ignore":
+                case "surrogatepass":
                     errorAction = CodingErrorAction.IGNORE;
                     break;
                 case "replace":
+                case "surrogateescape":
+                case "namereplace":
+                case "backslashreplace":
+                case "xmlcharrefreplace":
                     errorAction = CodingErrorAction.REPLACE;
                     break;
                 default:
@@ -343,10 +350,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         String decodeBytes(ByteBuffer bytes, String encoding, String errors) {
             CodingErrorAction errorAction;
             switch (errors) {
+                // TODO: see [GR-10256] to implement the correct handling mechanics
                 case "ignore":
+                case "surrogatepass":
                     errorAction = CodingErrorAction.IGNORE;
                     break;
                 case "replace":
+                case "surrogateescape":
+                case "namereplace":
+                case "backslashreplace":
+                case "xmlcharrefreplace":
                     errorAction = CodingErrorAction.REPLACE;
                     break;
                 default:
@@ -361,7 +374,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             } catch (IllegalArgumentException e) {
                 throw this.getCore().raise(LookupError, "unknown encoding: %s", encoding);
             } catch (CharacterCodingException e) {
-                throw raise(UnicodeEncodeError, "%s", e.getMessage());
+                throw raise(UnicodeDecodeError, "%s", e.getMessage());
             }
         }
     }
