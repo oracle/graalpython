@@ -21,7 +21,6 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-import json
 import os
 import platform
 import re
@@ -30,17 +29,15 @@ import subprocess
 import sys
 import tempfile
 
-import mx_sdk
-
 import mx
 import mx_benchmark
 import mx_gate
+import mx_sdk
 import mx_subst
 from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
 from mx_unittest import unittest
-from mx_urlrewrites import _urlrewrites
 
 _suite = mx.suite('graalpython')
 _mx_graal = mx.suite("compiler", fatalIfMissing=False)
@@ -239,6 +236,11 @@ def punittest(args):
 
 def nativebuild(args):
     mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON"])
+
+
+def nativeclean(args):
+    mx.run(['find', './graalpython/com.oracle.graal.python.test/src/tests/cpyext', '-name', '*.bc', '-delete'])
+
 
 # mx gate --tags pythonbenchmarktest
 # mx gate --tags pythontest
@@ -749,5 +751,6 @@ mx.update_commands(_suite, {
     'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
     'nativebuild': [nativebuild, ''],
+    'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],
 })
