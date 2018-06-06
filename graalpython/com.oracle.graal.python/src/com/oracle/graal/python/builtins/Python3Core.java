@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.reversed.ReversedBuiltins;
@@ -241,6 +242,7 @@ public final class Python3Core implements PythonCore {
                     new MathModuleBuiltins(),
                     new MarshalModuleBuiltins(),
                     new RandomModuleBuiltins(),
+                    new RandomBuiltins(),
                     new TruffleCextBuiltins(),
                     new WeakRefModuleBuiltins(),
                     new ReferenceTypeBuiltins(),

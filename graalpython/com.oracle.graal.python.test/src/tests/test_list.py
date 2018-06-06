@@ -10,6 +10,7 @@ import sys
 LONG_NUMBER = 6227020800;
 
 import list_tests
+from compare import CompareTest
 
 
 class ListTest(list_tests.CommonTest):
@@ -532,4 +533,97 @@ class ListTest(list_tests.CommonTest):
         ob = My(10)
         self.assertRaises(TypeError, l.__imul__, ob)
 
+class ListCompareTest(CompareTest):
+    
+    def test_compare(self):
+        l1 = [1, 2, 3]
+        l2 = [1,2,3,0]
+        l3 = [1,2,3,4]
 
+        self.comp_eq(l1, l1)
+
+        self.comp_ne(l1, l2)
+        self.comp_ne(l2, l3)
+
+        self.comp_ge(l1, l1, True)
+        self.comp_ge(l2, l1, False)
+        self.comp_ge(l3, l2, False)
+        self.comp_ge(l3, l1, False)
+
+        self.comp_le(l1, l1, True)
+        self.comp_le(l1, l2, False)
+        self.comp_le(l2, l3, False)
+        self.comp_le(l1, l3, False)
+
+        self.comp_lt(l1, l2)
+        self.comp_lt(l2, l3)
+        self.comp_lt(l1, l3)
+
+        self.comp_gt(l2, l1)
+        self.comp_gt(l3, l2)
+        self.comp_gt(l3, l1)
+
+    def test_equal_other(self):
+        def tryWithOtherType(left, right):
+            self.assertFalse(left == right, "Operation {} == {} should be False".format(left, right))
+            self.assertTrue(left != right, "Operation {} != {} should be True".format(left, right))
+
+        l1 = [1, 2, 3]
+        tryWithOtherType(l1, 1)
+        tryWithOtherType(l1, 'hello')
+        tryWithOtherType(l1, False)
+        tryWithOtherType(l1, (1, 2, 3))
+        tryWithOtherType(l1, {1, 2, 3})
+        tryWithOtherType(l1, {'one':1, 'two':2, 'three':3})
+
+    def test_raiseTypeError(self):
+        def tryWithOtherType(left, right):
+            def raiseTypeError(left, op, right):
+                try:
+                    if op == "<":
+                        left < right
+                    elif op == ">":
+                        left > right
+                    elif op == "<=":
+                        left <= right
+                    elif op == ">=":
+                        left >= right
+                    self.assertTrue(False, "Operation {} {} {} should raise TypeError".format(left, op, right))
+                except TypeError:
+                    pass
+
+            raiseTypeError(left, "<", right)
+            raiseTypeError(left, ">", right)
+            raiseTypeError(left, "<=", right)
+            raiseTypeError(left, ">=", right)
+
+        l1 = [1, 2, 3]
+        tryWithOtherType(l1, 1)
+        tryWithOtherType(l1, True)
+        tryWithOtherType(l1, 'hello')
+
+    def test_extendingClass(self):
+        class MyList(list):
+            def __eq__(self, value):
+                return 'eq'
+            def __ne__(self, value):
+                return value;
+            def __gt__(self, value):
+                return 10
+            def __lt__(self, value):
+                return 11.11
+            def __ge__(self, value):
+                return value + 5
+            def __le__(self, value):
+                r = super().__le__(value)
+                return "OK:" + str(r)
+
+        l1 = MyList([1, 10])
+        self.assertEqual(l1 == 1, 'eq')
+        self.assertEqual(l1 != 'ne', 'ne')
+        self.assertEqual(l1 > 'ne', 10)
+        self.assertEqual(l1 < 1, 11.11)
+        self.assertEqual(l1 >= 6, 11)
+        self.assertEqual(l1 <= [1, 1], 'OK:False')
+        self.assertEqual(l1 <= [1, 10], 'OK:True')
+        self.assertEqual(l1 <= [1, 10, 0], 'OK:True')

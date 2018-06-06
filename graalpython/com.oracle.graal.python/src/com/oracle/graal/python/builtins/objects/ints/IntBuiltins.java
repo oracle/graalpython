@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -1746,6 +1747,13 @@ public class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public Object frombytes(String str, String byteorder, Object[] args, PNone keywordArg) {
             byte[] bytes = littleToBig(str.getBytes(), byteorder);
+            return factory().createInt(new BigInteger(bytes));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public Object fromPBytes(PBytes str, String byteorder, Object[] args, PNone keywordArg) {
+            byte[] bytes = littleToBig(str.getInternalByteArray(), byteorder);
             return factory().createInt(new BigInteger(bytes));
         }
     }

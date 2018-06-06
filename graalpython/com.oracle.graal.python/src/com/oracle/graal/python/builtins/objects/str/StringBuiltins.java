@@ -611,12 +611,11 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         public String translate(String self, String table) {
             char[] translatedChars = new char[self.length()];
-            byte[] tableBytes = table.getBytes();
 
             for (int i = 0; i < self.length(); i++) {
                 char original = self.charAt(i);
-                byte translated = tableBytes[original];
-                translatedChars[i] = (char) translated;
+                char translation = table.charAt(original);
+                translatedChars[i] = translation;
             }
 
             return new String(translatedChars);

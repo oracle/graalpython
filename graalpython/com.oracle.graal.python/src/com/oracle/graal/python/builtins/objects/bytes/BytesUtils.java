@@ -34,6 +34,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -74,12 +75,27 @@ public final class BytesUtils {
                 Integer integer = (Integer) item;
                 if (integer >= 0 && integer < 256) {
                     bytes[i] = integer.byteValue();
-                } else {
-                    throw core.raise(ValueError, "byte must be in range(0, 256)");
+                    continue;
+                }
+            } else if (item instanceof Long) {
+                Long integer = (Long) item;
+                if (integer >= 0 && integer < 256) {
+                    bytes[i] = integer.byteValue();
+                    continue;
+                }
+            } else if (item instanceof PInt) {
+                try {
+                    long integer = ((PInt) item).intValueExact();
+                    if (integer >= 0 && integer < 256) {
+                        bytes[i] = (byte) integer;
+                        continue;
+                    }
+                } catch (ArithmeticException e) {
                 }
             } else {
                 throw core.raise(TypeError, "'%s' object cannot be interpreted as an integer", core.lookupType(item.getClass()));
             }
+            throw core.raise(ValueError, "byte must be in range(0, 256)");
         }
         return bytes;
     }
