@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.ArithmeticUtil;
@@ -805,11 +806,11 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__POW__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__POW__, minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
-    abstract static class PowNode extends PythonBinaryBuiltinNode {
+    abstract static class PowNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        int doIntegerFast(int left, int right) {
+        int doIntegerFast(int left, int right, @SuppressWarnings("unused") PNone none) {
             int result = 1;
             int exponent = right;
             int base = left;
@@ -824,32 +825,32 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0")
-        PInt doInteger(int left, int right) {
+        PInt doInteger(int left, int right, @SuppressWarnings("unused") PNone none) {
             return factory().createInt(op(BigInteger.valueOf(left), right));
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doLongFast(long left, int right) {
-            return doLongFast(left, (long) right);
+        long doLongFast(long left, int right, PNone none) {
+            return doLongFast(left, (long) right, none);
         }
 
         @Specialization(guards = "right >= 0")
-        PInt doLong(long left, int right) {
-            return doLong(left, (long) right);
+        PInt doLong(long left, int right, PNone none) {
+            return doLong(left, (long) right, none);
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doLongFast(int left, long right) {
-            return doLongFast((long) left, right);
+        long doLongFast(int left, long right, PNone none) {
+            return doLongFast((long) left, right, none);
         }
 
         @Specialization(guards = "right >= 0")
-        PInt doLong(int left, long right) {
-            return doLong((long) left, right);
+        PInt doLong(int left, long right, PNone none) {
+            return doLong((long) left, right, none);
         }
 
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
-        long doLongFast(long left, long right) {
+        long doLongFast(long left, long right, @SuppressWarnings("unused") PNone none) {
             long result = 1;
             long exponent = right;
             long base = left;
@@ -864,22 +865,22 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right >= 0")
-        PInt doLong(long left, long right) {
+        PInt doLong(long left, long right, @SuppressWarnings("unused") PNone none) {
             return factory().createInt(op(BigInteger.valueOf(left), right));
         }
 
         @Specialization
-        double doInt(long left, long right) {
+        double doInt(long left, long right, @SuppressWarnings("unused") PNone none) {
             return Math.pow(left, right);
         }
 
         @Specialization
-        double doInt(long left, double right) {
+        double doInt(long left, double right, @SuppressWarnings("unused") PNone none) {
             return Math.pow(left, right);
         }
 
         @Specialization
-        PInt doPInt(PInt left, PInt right) {
+        PInt doPInt(PInt left, PInt right, @SuppressWarnings("unused") PNone none) {
             try {
                 return factory().createInt(op(left.getValue(), right.getValue().longValueExact()));
             } catch (ArithmeticException e) {

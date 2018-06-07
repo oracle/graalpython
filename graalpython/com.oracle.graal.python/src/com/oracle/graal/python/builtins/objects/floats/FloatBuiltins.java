@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
@@ -295,28 +296,73 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __POW__, fixedNumOfArguments = 2)
+    @Builtin(name = __POW__, minNumOfArguments = 2, maxNumOfArguments = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class PowerNode extends PythonBinaryBuiltinNode {
+    abstract static class PowerNode extends PythonTernaryBuiltinNode {
         @Specialization
-        double doDL(double left, long right) {
+        double doDL(double left, long right, @SuppressWarnings("unused") PNone none) {
             return Math.pow(left, right);
         }
 
         @Specialization
-        double doDPi(double left, PInt right) {
+        double doDPi(double left, PInt right, @SuppressWarnings("unused") PNone none) {
             return Math.pow(left, right.doubleValue());
         }
 
         @Specialization
-        double doDD(double left, double right) {
+        double doDD(double left, double right, @SuppressWarnings("unused") PNone none) {
             return Math.pow(left, right);
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDL(double left, long right, long mod) {
+            return Math.pow(left, right) % mod;
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDPi(double left, PInt right, long mod) {
+            return Math.pow(left, right.doubleValue()) % mod;
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDD(double left, double right, long mod) {
+            return Math.pow(left, right) % mod;
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDL(double left, long right, PInt mod) {
+            return Math.pow(left, right) % mod.doubleValue();
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDPi(double left, PInt right, PInt mod) {
+            return Math.pow(left, right.doubleValue()) % mod.doubleValue();
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDD(double left, double right, PInt mod) {
+            return Math.pow(left, right) % mod.doubleValue();
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDL(double left, long right, double mod) {
+            return Math.pow(left, right) % mod;
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDPi(double left, PInt right, double mod) {
+            return Math.pow(left, right.doubleValue()) % mod;
+        }
+
+        @Specialization(guards = "!isNone(mod)")
+        double doDD(double left, double right, double mod) {
+            return Math.pow(left, right) % mod;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        Object doGeneric(Object left, Object right, Object none) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
