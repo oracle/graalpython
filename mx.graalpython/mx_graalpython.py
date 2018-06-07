@@ -239,7 +239,7 @@ def nativebuild(args):
 
 
 def nativeclean(args):
-    mx.run(['find', './graalpython/com.oracle.graal.python.test/src/tests/cpyext', '-name', '*.bc', '-delete'])
+    mx.run(['find', '.', '-name', '*.bc', '-delete'])
 
 
 # mx gate --tags pythonbenchmarktest

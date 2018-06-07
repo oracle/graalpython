@@ -674,9 +674,11 @@ def open(*args, **kwargs):
     import _pyio
     import builtins
     setattr(builtins, 'open', _pyio.open)
+    globals()['open'] = _pyio.open
     return _pyio.open(*args, **kwargs)
 
 
 # set the builtins open method
 import builtins
 setattr(builtins, 'open', open)
+globals()['open'] = open
