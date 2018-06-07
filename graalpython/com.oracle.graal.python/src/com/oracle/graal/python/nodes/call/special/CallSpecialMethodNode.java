@@ -39,6 +39,7 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -52,35 +53,28 @@ import com.oracle.truffle.api.nodes.Node;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
 abstract class CallSpecialMethodNode extends Node {
-    protected static boolean isUnary(PBuiltinFunction func) {
-        return PythonUnaryBuiltinNode.class.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass());
-    }
 
-    protected static boolean isBinary(PBuiltinFunction func) {
-        return PythonBinaryBuiltinNode.class.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass());
-    }
-
-    protected static boolean isTernary(PBuiltinFunction func) {
-        return PythonTernaryBuiltinNode.class.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass());
-    }
-
-    protected static boolean isVarargs(PBuiltinFunction func) {
-        return PythonVarargsBuiltinNode.class.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass());
+    /**
+     * Returns a new instanceof the builtin if it's a subclass of the given class, and null
+     * otherwise.
+     */
+    private static <T extends PythonBuiltinBaseNode> T getBuiltin(PBuiltinFunction func, Class<T> clazz) {
+        return clazz.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass()) ? clazz.cast(func.getBuiltinNodeFactory().createNode()) : null;
     }
 
     protected static PythonUnaryBuiltinNode getUnary(PBuiltinFunction func) {
-        return (PythonUnaryBuiltinNode) func.getBuiltinNodeFactory().createNode();
+        return getBuiltin(func, PythonUnaryBuiltinNode.class);
     }
 
     protected static PythonBinaryBuiltinNode getBinary(PBuiltinFunction func) {
-        return (PythonBinaryBuiltinNode) func.getBuiltinNodeFactory().createNode();
+        return getBuiltin(func, PythonBinaryBuiltinNode.class);
     }
 
     protected static PythonTernaryBuiltinNode getTernary(PBuiltinFunction func) {
-        return (PythonTernaryBuiltinNode) func.getBuiltinNodeFactory().createNode();
+        return getBuiltin(func, PythonTernaryBuiltinNode.class);
     }
 
     protected static PythonVarargsBuiltinNode getVarargs(PBuiltinFunction func) {
-        return (PythonVarargsBuiltinNode) func.getBuiltinNodeFactory().createNode();
+        return getBuiltin(func, PythonVarargsBuiltinNode.class);
     }
 }

@@ -53,7 +53,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
 
     public abstract Object execute(Object callable, Object[] arguments, PKeyword[] keywords);
 
-    @Specialization(guards = {"isVarargs(func)", "func == cachedFunc"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
     Object call(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getVarargs(func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
