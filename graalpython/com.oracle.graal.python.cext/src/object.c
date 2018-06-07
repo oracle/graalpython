@@ -532,8 +532,9 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
 }
 
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
-    PyObject* args = PyTuple_New(polyglot_get_arg_count() - 1);
-    for (int i = 1; i < polyglot_get_arg_count(); i++) {
+    // the arguments are given as a variable list followed by NULL
+    PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
+    for (int i = 1; i < polyglot_get_arg_count() - 1; i++) {
         PyTuple_SetItem(args, i - 1, polyglot_get_arg(i));
     }
     return PyObject_CallObject(callable, args);
