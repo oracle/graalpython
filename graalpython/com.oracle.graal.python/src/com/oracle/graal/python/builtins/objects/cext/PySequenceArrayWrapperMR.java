@@ -76,7 +76,6 @@ public class PySequenceArrayWrapperMR {
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceArrayWrapper object, Object key) {
-            System.out.println(object.getDelegate().toString() + "[" + key + "]");
             return getToSulongNode().execute(getReadArrayItemNode().execute(object.getDelegate(), key));
         }
 
