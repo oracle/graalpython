@@ -197,6 +197,20 @@ static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* 
 	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size), explicit_cast(b)));
 }
 
+/* very special case: operator '**' has an optional third arg */
+static PyObject* wrap_pow(ternaryfunc f, ...) {
+    int nargs = polyglot_get_arg_count();
+    switch(nargs) {
+    case 3:
+        // TODO use 'native_to_java' on result
+        return f(explicit_cast(polyglot_get_arg(1)), explicit_cast(polyglot_get_arg(2)), Py_None);
+    case 4:
+        // TODO use 'native_to_java' on result
+        return f(explicit_cast(polyglot_get_arg(1)), explicit_cast(polyglot_get_arg(2)), explicit_cast(polyglot_get_arg(3)));
+    }
+	return native_to_java(NULL);
+}
+
 int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
 #define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, get_method_flags_cwrapper(m.ml_flags), m.ml_meth, m.ml_flags, m.ml_doc)
@@ -382,7 +396,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
         ADD_SLOT("__rem__", numbers->nb_remainder, -2);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
-        ADD_SLOT("__pow__", numbers->nb_power, -2);
+        ADD_SLOT_CONV("__pow__", wrap_pow, numbers->nb_power, -3);
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
