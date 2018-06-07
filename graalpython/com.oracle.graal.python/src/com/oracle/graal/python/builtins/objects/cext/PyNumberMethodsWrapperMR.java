@@ -38,6 +38,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
+
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -65,10 +69,12 @@ public class PyNumberMethodsWrapperMR {
 
         private static String toAttributeName(String numberMethodsMember) {
             switch (numberMethodsMember) {
-                case "nb_add":
+                case NB_ADD:
                     return SpecialMethodNames.__ADD__;
-                case "nb_index":
+                case NB_INDEX:
                     return SpecialMethodNames.__INDEX__;
+                case NB_POW:
+                    return SpecialMethodNames.__POW__;
                 default:
                     // TODO extend list
                     throw UnknownIdentifierException.raise(numberMethodsMember);

@@ -71,6 +71,9 @@ public abstract class NativeMemberNames {
     public static final String UNICODE_STATE_READY = "ready";
     public static final String MD_DICT = "md_dict";
     public static final String BUF_DELEGATE = "buf_delegate";
+    public static final String NB_ADD = "nb_add";
+    public static final String NB_INDEX = "nb_index";
+    public static final String NB_POW = "nb_power";
 
     public static boolean isValid(String key) {
         switch (key) {
@@ -105,6 +108,9 @@ public abstract class NativeMemberNames {
             case UNICODE_STATE_ASCII:
             case UNICODE_STATE_READY:
             case MD_DICT:
+            case NB_ADD:
+            case NB_INDEX:
+            case NB_POW:
                 return true;
         }
         return false;
