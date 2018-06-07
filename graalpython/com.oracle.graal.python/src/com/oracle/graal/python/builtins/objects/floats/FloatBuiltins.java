@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -872,6 +873,50 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double neg(PFloat operand) {
             return -operand.getValue();
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true)
+    static abstract class RealNode extends PythonBuiltinNode {
+        @Specialization
+        float get(float self) {
+            return self;
+        }
+
+        @Specialization
+        double get(double self) {
+            return self;
+        }
+
+        @Specialization
+        PFloat get(PFloat self,
+                        @Cached("create()") GetClassNode clazzNode) {
+            PythonClass clazz = clazzNode.execute(self);
+            if (clazz.isBuiltin()) {
+                return self;
+            }
+            return factory().createFloat(self.getValue());
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true)
+    static abstract class ImagNode extends PythonBuiltinNode {
+
+        @Specialization
+        float get(@SuppressWarnings("unused") float self) {
+            return 0;
+        }
+
+        @Specialization
+        double get(@SuppressWarnings("unused") double self) {
+            return 0;
+        }
+
+        @Specialization
+        double get(@SuppressWarnings("unused") PFloat self) {
+            return 0;
         }
     }
 

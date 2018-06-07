@@ -575,3 +575,43 @@ class HexFloatTests(unittest.TestCase):
         f = F.fromhex('1', '1')
         self.assertEqual(17.0, f)
         self.assertEqual(F, type(f))
+
+class RealImagTests(unittest.TestCase):
+    def test_real_imag(self):
+        def builtinTest(number):
+            a = float(number)
+            b = a.real
+            c = a.imag
+            assert a == b
+            assert a is b
+            assert c == 0
+            assert type(a) == float
+            assert type(b) == float
+            assert type(c) == float
+
+        builtinTest(-9.1)
+        builtinTest(0.0)
+        builtinTest(9.2)
+        builtinTest(6227020800.90)
+        builtinTest(9999992432902008176640000999999.1)
+
+    def test_real_imag_subclass(self):
+        class MyFloat(float):
+            pass
+    
+        def subclassTest(number):
+            a = MyFloat(number)
+            b = a.real
+            c = a.imag
+            assert a == b
+            assert a is not b
+            assert c == 0.0
+            assert type(a) == MyFloat
+            assert type(b) == float
+            assert type(c) == float
+
+        subclassTest(-9.0)
+        subclassTest(0.0)
+        subclassTest(9.1)
+        subclassTest(6227020800.2)
+        subclassTest(9999992432902008176640000999999.33)

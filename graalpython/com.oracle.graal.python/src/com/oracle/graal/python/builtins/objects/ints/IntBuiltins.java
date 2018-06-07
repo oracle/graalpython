@@ -47,14 +47,17 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.ArithmeticUtil;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -1846,6 +1849,59 @@ public class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         int bitLength(PInt argument) {
             return argument.getValue().abs().bitLength();
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true)
+    static abstract class RealNode extends PythonBuiltinNode {
+        @Specialization
+        int get(boolean self) {
+            return self ? 1 : 0;
+        }
+
+        @Specialization
+        int get(int self) {
+            return self;
+        }
+
+        @Specialization
+        long get(long self) {
+            return self;
+        }
+
+        @Specialization
+        PInt get(PInt self,
+                        @Cached("create()") GetClassNode clazzNode) {
+            PythonClass clazz = clazzNode.execute(self);
+            if (clazz.isBuiltin()) {
+                return self;
+            }
+            return factory().createInt(self.getValue());
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true)
+    static abstract class ImagNode extends PythonBuiltinNode {
+        @Specialization
+        int get(@SuppressWarnings("unused") boolean self) {
+            return 0;
+        }
+
+        @Specialization
+        int get(@SuppressWarnings("unused") int self) {
+            return 0;
+        }
+
+        @Specialization
+        int get(@SuppressWarnings("unused") long self) {
+            return 0;
+        }
+
+        @Specialization
+        int get(@SuppressWarnings("unused") PInt self) {
+            return 0;
         }
     }
 

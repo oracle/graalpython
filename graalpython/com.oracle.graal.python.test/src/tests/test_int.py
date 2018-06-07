@@ -97,3 +97,47 @@ def test_int_bit_length():
     assert (int(-2432902008176640000)).bit_length() == 62
     assert (int(9999992432902008176640000999999)).bit_length() == 103
     assert (int(-9999992432902008176640000999999)).bit_length() == 103
+
+def test_real_imag():
+    def builtinTest(number):
+        a = int(number)
+        b = a.real
+        c = a.imag
+        assert a == b
+        assert a is b
+        assert c == 0
+        assert type(a) == int
+        assert type(b) == int
+        assert type(c) == int
+
+    builtinTest(-9)
+    builtinTest(0)
+    builtinTest(9)
+    builtinTest(6227020800)
+    builtinTest(9999992432902008176640000999999)
+    
+    assert True.real == 1
+    assert False.real == 0
+    assert True.imag == 0
+    assert False.imag == 0
+
+def test_real_imag_subclass():
+    class MyInt(int):
+        pass
+    
+    def subclassTest(number):
+        a = MyInt(number)
+        b = a.real
+        c = a.imag
+        assert a == b
+        assert a is not b
+        assert c == 0
+        assert type(a) == MyInt
+        assert type(b) == int
+        assert type(c) == int
+
+    subclassTest(-9)
+    subclassTest(0)
+    subclassTest(9)
+    subclassTest(6227020800)
+    subclassTest(9999992432902008176640000999999)
