@@ -679,7 +679,9 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
     if setter:
         setter_w = CreateFunction(name, setter, setter_wrapper)
         def member_setter(self, value):
-            setter_w(self, value, closure)
+            result = setter_w(self, value, closure)
+            if result != 0:
+                raise
             return None
         getset.setter(member_setter)
     else:

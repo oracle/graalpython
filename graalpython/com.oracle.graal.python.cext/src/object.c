@@ -333,7 +333,7 @@ int PyType_Ready(PyTypeObject* cls) {
                            getter_fun != NULL ? getter_fun : to_java(Py_None),
                            wrap_direct,
                            setter_fun != NULL ? setter_fun : to_java(Py_None),
-                           wrap_direct,
+                           wrap_setter,
                            getset.doc ? truffle_read_string(getset.doc) : truffle_read_string(""),
                            // do not convert the closure, it is handed to the
                            // getter and setter as-is
