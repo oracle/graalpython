@@ -38,13 +38,25 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.dsl.NodeFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
@@ -52,4 +64,41 @@ public class SREModuleBuiltins extends PythonBuiltins {
     protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
         return new ArrayList<>();
     }
+
+    /**
+     * Called from C when they actually want a {@code const char*} for a Python string
+     */
+    @Builtin(name = "tregex_preprocess", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class TregexPreprocessNode extends PythonUnaryBuiltinNode {
+        @CompilationFinal private Pattern pattern;
+
+        @Specialization
+        Object run(PString str) {
+            return run(str.getValue());
+        }
+
+        @Specialization
+        Object run(String str) {
+            str.replaceAll("[^\\[]?#[^\\]]*\n", "");
+            if (pattern == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                pattern = Pattern.compile("(?<CMT>#[^\\]]*\n)");
+            }
+            return replaceAll(str);
+        }
+
+        @TruffleBoundary
+        private String replaceAll(String r) {
+            Matcher matcher = pattern.matcher(r);
+            return matcher.replaceAll("");
+        }
+
+        @Fallback
+        Object run(Object o) {
+            throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
+        }
+
+    }
+
 }
