@@ -38,33 +38,14 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.ImportStatic;
 
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
 public abstract class PythonBuiltinBaseNode extends PBaseNode {
-    @TruffleBoundary
-    public static String callAttributeSlowPath(PythonObject obj, String attributeId) {
-        Object object = obj.getPythonClass().getAttribute(attributeId);
-        PythonCallable callable;
-        if (object instanceof PythonCallable) {
-            callable = (PythonCallable) object;
-        } else {
-            callable = PythonCallable.require(obj.getAttribute(attributeId));
-        }
-        Object[] arguments = PArguments.create(1);
-        PArguments.setArgument(arguments, 0, obj);
-        InvokeNode invokeNode = InvokeNode.create(callable);
-        return invokeNode.invoke(arguments).toString();
-    }
 }

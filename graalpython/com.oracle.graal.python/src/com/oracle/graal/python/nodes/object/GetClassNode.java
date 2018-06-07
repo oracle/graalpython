@@ -39,6 +39,7 @@
 package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -51,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -198,5 +200,13 @@ public abstract class GetClassNode extends PNode {
             return PythonLanguage.getCore().getForeignClass();
         }
         return PythonLanguage.getCore().lookupType(o.getClass());
+    }
+
+    @TruffleBoundary
+    public static String getNameSlowPath(Object o) {
+        if (PGuards.isForeignObject(o)) {
+            return BuiltinNames.FOREIGN;
+        }
+        return PythonBuiltinClassType.fromClass(o.getClass()).name();
     }
 }

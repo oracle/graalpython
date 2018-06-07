@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -82,6 +83,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -166,17 +168,14 @@ public class ObjectBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object repr(PythonNativeObject self,
+        @TruffleBoundary
+        Object repr(Object self,
                         @Cached("create()") GetClassNode getClass) {
-            return "<" + getClass.execute(self).getName() + " object at 0x" + self.hashCode() + ">";
-        }
-
-        @Fallback
-        public Object repr(Object self) {
-            return self.toString();
+            return String.format("<%s object at 0x%x>", getClass.execute(self).getName(), self.hashCode());
         }
     }
 
