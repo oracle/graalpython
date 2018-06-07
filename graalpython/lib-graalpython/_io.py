@@ -639,35 +639,52 @@ class BytesIO(_BufferedIOBase):
 
 
 class _TextIOBase(_IOBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(_TextIOBase, self).__init__(*args, **kwargs)
 
 
 class StringIO(_TextIOBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(StringIO, self).__init__(*args, **kwargs)
 
 
 class BufferedReader(_BufferedIOBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(BufferedReader, self).__init__(*args, **kwargs)
+
+    def _check_init(self):
+        pass
 
 
 class BufferedWriter(_BufferedIOBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(BufferedWriter, self).__init__(*args, **kwargs)
 
+    def _check_init(self):
+        pass
 
 class BufferedRWPair(_BufferedIOBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(BufferedRWPair, self).__init__(*args, **kwargs)
+
+    def _check_init(self):
+        pass
 
 
 class BufferedRandom(_BufferedIOBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(BufferedRandom, self).__init__(*args, **kwargs)
 
+    def _check_init(self):
+        pass
 
 class IncrementalNewlineDecoder(object):
     pass
 
 
 class TextIOWrapper(_TextIOBase):
-    pass
+    def __init__(self, *args, **kwargs):
+        super(TextIOWrapper, self).__init__(*args, **kwargs)
 
 
 def open(*args, **kwargs):
