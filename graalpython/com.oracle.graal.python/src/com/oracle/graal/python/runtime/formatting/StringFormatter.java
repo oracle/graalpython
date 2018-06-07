@@ -20,6 +20,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -90,6 +91,8 @@ public class StringFormatter {
                 return ((Long) o).intValue();
             } else if (o instanceof Integer) {
                 return (int) o;
+            } else if (o instanceof PInt) {
+                return ((PInt) o).intValue();
             } else if (o instanceof Double) {
                 return ((Double) o).intValue();
             }
@@ -109,7 +112,7 @@ public class StringFormatter {
     }
 
     private static Object asNumber(Object arg, CallDispatchNode callNode, LookupInheritedAttributeNode lookupAttrNode) {
-        if (arg instanceof Integer || arg instanceof Long) {
+        if (arg instanceof Integer || arg instanceof Long || arg instanceof PInt) {
             // arg is already acceptable
             return arg;
         } else if (arg instanceof Double) {
@@ -383,6 +386,8 @@ public class StringFormatter {
                         fi.format((Integer) argAsNumber);
                     } else if (argAsNumber instanceof Long) {
                         fi.format(((Long) argAsNumber).intValue());
+                    } else if (argAsNumber instanceof PInt) {
+                        fi.format(((PInt) argAsNumber).intValue());
                     } else {
                         // It couldn't be converted, raise the error here
                         throw core.raise(TypeError, "%%%c format: a number is required, not %p", spec.type, arg);
