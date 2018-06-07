@@ -38,7 +38,7 @@ class UnsupportedOperation(OSError, ValueError):
 
 
 class _IOBase(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.__IOBase_closed = False
 
     def __enter__(self):
@@ -639,52 +639,35 @@ class BytesIO(_BufferedIOBase):
 
 
 class _TextIOBase(_IOBase):
-    def __init__(self, *args, **kwargs):
-        super(_TextIOBase, self).__init__(*args, **kwargs)
+    pass
 
 
 class StringIO(_TextIOBase):
-    def __init__(self, *args, **kwargs):
-        super(StringIO, self).__init__(*args, **kwargs)
+    pass
 
 
 class BufferedReader(_BufferedIOBase):
-    def __init__(self, *args, **kwargs):
-        super(BufferedReader, self).__init__(*args, **kwargs)
-
-    def _check_init(self):
-        pass
+    pass
 
 
 class BufferedWriter(_BufferedIOBase):
-    def __init__(self, *args, **kwargs):
-        super(BufferedWriter, self).__init__(*args, **kwargs)
+    pass
 
-    def _check_init(self):
-        pass
 
 class BufferedRWPair(_BufferedIOBase):
-    def __init__(self, *args, **kwargs):
-        super(BufferedRWPair, self).__init__(*args, **kwargs)
-
-    def _check_init(self):
-        pass
+    pass
 
 
 class BufferedRandom(_BufferedIOBase):
-    def __init__(self, *args, **kwargs):
-        super(BufferedRandom, self).__init__(*args, **kwargs)
+    pass
 
-    def _check_init(self):
-        pass
 
 class IncrementalNewlineDecoder(object):
     pass
 
 
 class TextIOWrapper(_TextIOBase):
-    def __init__(self, *args, **kwargs):
-        super(TextIOWrapper, self).__init__(*args, **kwargs)
+    pass
 
 
 def open(*args, **kwargs):
