@@ -103,7 +103,7 @@ class SRE_Match():
 
 class SRE_Pattern():
     def __init__(self, pattern, flags, code, groups=0, groupindex=None, indexgroup=None):
-        self.pattern = self._decode_string(pattern)
+        self.pattern = self._decode_string(pattern, flags)
         self.flags = flags
         self.code = code
         self.num_groups = groups
@@ -115,7 +115,7 @@ class SRE_Pattern():
                 jsflags.append(jsflag)
         self.jsflags = "".join(jsflags)
 
-    def _decode_string(self, string):
+    def _decode_string(self, string, flags):
         if isinstance(string, str):
             pattern = string
         elif isinstance(string, bytes):
@@ -123,7 +123,14 @@ class SRE_Pattern():
         else:
             raise TypeError("invalid search pattern {!r}".format(string))
         # TODO: fix this in the regex engine
-        return pattern.replace(r'\"', '"').replace(r"\'", "'")
+        pattern = pattern.replace(r'\"', '"').replace(r"\'", "'")
+
+        # TODO: that's not nearly complete but should be sufficient for now
+        from sre_compile import SRE_FLAG_VERBOSE
+        if flags & SRE_FLAG_VERBOSE:
+            pattern = _sre.tregex_preprocess(pattern)
+        return pattern
+
 
     def __repr__(self):
         flags = self.flags
