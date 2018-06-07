@@ -239,6 +239,7 @@ public class PythonClass extends PythonObject {
     }
 
     @Override
+    @TruffleBoundary
     public Object getAttribute(String name) {
         for (PythonClass o : methodResolutionOrder) {
             if (o.getStorage().containsKey(name)) {

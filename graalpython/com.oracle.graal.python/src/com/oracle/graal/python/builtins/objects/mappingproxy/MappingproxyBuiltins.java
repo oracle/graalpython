@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -52,6 +53,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -103,7 +105,13 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class KeysNode extends PythonBuiltinNode {
         @Specialization
         public Object keys(PMappingproxy self) {
-            return factory().createList(self.getObject().getAttributeNames().toArray());
+            PythonObject object = self.getObject();
+            return factory().createList(createKeys(object));
+        }
+
+        @TruffleBoundary
+        private static Object[] createKeys(PythonObject object) {
+            return object.getAttributeNames().toArray();
         }
     }
 
