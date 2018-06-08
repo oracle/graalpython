@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
@@ -220,7 +221,7 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(TP_NEW, key)")
         Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetAttributeNode getAttrNode) {
-            return getToSulongNode().execute(getAttrNode.execute(object, SpecialAttributeNames.__NEW__));
+            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object, SpecialAttributeNames.__NEW__));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
@@ -419,6 +420,7 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "EXECUTE")
     abstract static class ExecuteNode extends Node {
         @Child PythonMessageResolution.ExecuteNode executeNode;
+        @Child private ToJavaNode toJavaNode;
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PythonObjectNativeWrapper object, Object[] arguments) {
@@ -426,7 +428,20 @@ public class PythonObjectNativeWrapperMR {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 executeNode = insert(new PythonMessageResolution.ExecuteNode());
             }
-            return getToSulongNode().execute(executeNode.execute(object.getPythonObject(), arguments));
+            // convert args
+            Object[] converted = new Object[arguments.length];
+            for (int i = 0; i < arguments.length; i++) {
+                converted[i] = getToJavaNode().execute(arguments[i]);
+            }
+            return getToSulongNode().execute(executeNode.execute(object.getPythonObject(), converted));
+        }
+
+        private ToJavaNode getToJavaNode() {
+            if (toJavaNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaNode = insert(ToJavaNode.create());
+            }
+            return toJavaNode;
         }
 
         private ToSulongNode getToSulongNode() {

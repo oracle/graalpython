@@ -53,8 +53,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @NodeChildren({@NodeChild(value = "splat", type = PNode.class)})
-abstract class ExecutePositionalStarargsNode extends Node {
+public abstract class ExecutePositionalStarargsNode extends Node {
     public abstract Object[] execute(VirtualFrame frame);
+
+    public abstract Object[] executeWith(Object starargs);
 
     @Specialization
     Object[] starargs(Object[] starargs) {
@@ -104,5 +106,13 @@ abstract class ExecutePositionalStarargsNode extends Node {
     @Specialization
     Object[] starargs(PNone none) {
         return new Object[0];
+    }
+
+    public static ExecutePositionalStarargsNode create() {
+        return ExecutePositionalStarargsNodeGen.create();
+    }
+
+    public static ExecutePositionalStarargsNode create(PNone splat) {
+        return ExecutePositionalStarargsNodeGen.create(splat);
     }
 }
