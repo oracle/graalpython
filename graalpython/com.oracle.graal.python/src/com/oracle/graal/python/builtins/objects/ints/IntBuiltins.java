@@ -1855,9 +1855,9 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends PythonBuiltinNode {
-        
+
         @Child private GetClassNode getClassNode;
-        
+
         protected PythonClass getClass(Object value) {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1865,7 +1865,7 @@ public class IntBuiltins extends PythonBuiltins {
             }
             return getClassNode.execute(value);
         }
-        
+
         @Specialization
         int get(boolean self) {
             return self ? 1 : 0;
@@ -1881,12 +1881,12 @@ public class IntBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards ="cannotBeOverridden(getClass(self))")
+        @Specialization(guards = "cannotBeOverridden(getClass(self))")
         PInt getPInt(PInt self) {
             return self;
         }
-        
-        @Specialization(guards ="!cannotBeOverridden(getClass(self))")
+
+        @Specialization(guards = "!cannotBeOverridden(getClass(self))")
         PInt getPIntOverriden(PInt self) {
             return factory().createInt(self.getValue());
         }
@@ -1904,9 +1904,9 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = "numerator", fixedNumOfArguments = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
     static abstract class NumeratorNode extends RealNode {
-        
+
     }
-    
+
     @GenerateNodeFactory
     @Builtin(name = "denominator", fixedNumOfArguments = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
     static abstract class DenominatorNode extends PythonBuiltinNode {
@@ -1915,7 +1915,7 @@ public class IntBuiltins extends PythonBuiltins {
             return 1;
         }
     }
-    
+
     @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class IntNode extends PythonBuiltinNode {

@@ -880,9 +880,9 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends PythonBuiltinNode {
-        
+
         @Child private GetClassNode getClassNode;
-        
+
         protected PythonClass getClass(Object value) {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -890,18 +890,18 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
             return getClassNode.execute(value);
         }
-        
+
         @Specialization
         double get(double self) {
             return self;
         }
 
-        @Specialization (guards ="cannotBeOverridden(getClass(self))")
+        @Specialization(guards = "cannotBeOverridden(getClass(self))")
         PFloat getPFloat(PFloat self) {
             return self;
         }
-        
-        @Specialization (guards ="!cannotBeOverridden(getClass(self))")
+
+        @Specialization(guards = "!cannotBeOverridden(getClass(self))")
         PFloat getPFloatOverriden(PFloat self) {
             return factory().createFloat(self.getValue());
         }
@@ -915,7 +915,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         double get(@SuppressWarnings("unused") Object self) {
             return 0;
         }
-        
+
     }
 
     @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)
