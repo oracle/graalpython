@@ -41,6 +41,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -90,12 +91,16 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonObjectNativeWrapper.class)
 public class PythonObjectNativeWrapperMR {
+    protected static String GP_OBJECT = "gp_object";
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         @Child private ReadNativeMemberNode readNativeMemberNode;
 
         public Object access(Object object, Object key) {
+            if (key.equals(GP_OBJECT)) {
+                return ((PythonObjectNativeWrapper) object).getPythonObject();
+            }
             if (readNativeMemberNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readNativeMemberNode = insert(ReadNativeMemberNode.create());
@@ -438,7 +443,9 @@ public class PythonObjectNativeWrapperMR {
         public int access(Object object, Object fieldName) {
             assert object instanceof PythonObjectNativeWrapper;
             int info = KeyInfo.NONE;
-            if (fieldName instanceof String && NativeMemberNames.isValid((String) fieldName)) {
+            if (fieldName.equals(GP_OBJECT)) {
+                info |= KeyInfo.READABLE;
+            } else if (fieldName instanceof String && NativeMemberNames.isValid((String) fieldName)) {
                 info |= KeyInfo.READABLE;
 
                 // TODO be more specific
@@ -457,8 +464,14 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "KEYS")
     abstract static class PForeignKeysNode extends Node {
-        public Object access(@SuppressWarnings("unused") Object object) {
-            return null;
+        @Child Node objKeys = Message.KEYS.createNode();
+
+        public Object access(Object object) {
+            if (object instanceof PythonObjectNativeWrapper) {
+                return PythonLanguage.getContext().getEnv().asGuestValue(new String[]{GP_OBJECT});
+            } else {
+                throw UnsupportedMessageException.raise(Message.KEYS);
+            }
         }
     }
 

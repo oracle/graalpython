@@ -340,11 +340,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             scopes.add(s);
         }
         if (frame != null) {
-            PythonObject globals = PArguments.getGlobals(frame);
+            PythonObject globals = PArguments.getGlobalsSafe(frame);
             if (globals != null) {
                 scopes.add(Scope.newBuilder("globals()", globals).build());
             }
-            Frame generatorFrame = PArguments.getGeneratorFrame(frame);
+            Frame generatorFrame = PArguments.getGeneratorFrameSafe(frame);
             if (generatorFrame != null) {
                 for (Scope s : super.findLocalScopes(context, node, generatorFrame)) {
                     scopes.add(s);
