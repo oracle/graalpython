@@ -294,6 +294,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             @TruffleBoundary
             private Object parseAndEval(PythonContext context, MaterializedFrame frame) {
+                context.getCore().runPostInit();
                 PNode fragment = parseInline(source, context, frame);
                 return fragment.execute(frame);
             }
@@ -303,7 +304,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     protected static PNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
-        return context.getCore().getParser().parseInline(context.getCore(), code, lexicalContextFrame);
+        PythonCore pythonCore = context.getCore();
+        return pythonCore.getParser().parseInline(pythonCore, code, lexicalContextFrame);
     }
 
     @Override

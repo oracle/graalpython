@@ -364,7 +364,7 @@ public final class Python3Core implements PythonCore {
         if (initialized) {
             String coreHome = PythonCore.getCoreHomeOrFail();
             loadFile(POST_INIT_MODULE_NAME, coreHome);
-        } 
+        }
     }
 
     public Object duplicate(Map<Object, Object> replacements, Object value) {
