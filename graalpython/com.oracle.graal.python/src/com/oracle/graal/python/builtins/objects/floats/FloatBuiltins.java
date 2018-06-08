@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -879,23 +880,29 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends PythonBuiltinNode {
-        @Specialization
-        float get(float self) {
-            return self;
+        
+        @Child private GetClassNode getClassNode;
+        
+        protected PythonClass getClass(Object value) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(value);
         }
-
+        
         @Specialization
         double get(double self) {
             return self;
         }
 
-        @Specialization
-        PFloat get(PFloat self,
-                        @Cached("create()") GetClassNode clazzNode) {
-            PythonClass clazz = clazzNode.execute(self);
-            if (clazz.isBuiltin()) {
-                return self;
-            }
+        @Specialization (guards ="cannotBeOverridden(getClass(self))")
+        PFloat getPFloat(PFloat self) {
+            return self;
+        }
+        
+        @Specialization (guards ="!cannotBeOverridden(getClass(self))")
+        PFloat getPFloatOverriden(PFloat self) {
             return factory().createFloat(self.getValue());
         }
     }
@@ -905,19 +912,10 @@ public final class FloatBuiltins extends PythonBuiltins {
     static abstract class ImagNode extends PythonBuiltinNode {
 
         @Specialization
-        float get(@SuppressWarnings("unused") float self) {
+        double get(@SuppressWarnings("unused") Object self) {
             return 0;
         }
-
-        @Specialization
-        double get(@SuppressWarnings("unused") double self) {
-            return 0;
-        }
-
-        @Specialization
-        double get(@SuppressWarnings("unused") PFloat self) {
-            return 0;
-        }
+        
     }
 
     @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)

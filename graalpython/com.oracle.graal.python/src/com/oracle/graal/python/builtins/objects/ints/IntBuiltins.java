@@ -56,8 +56,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.ArithmeticUtil;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -1855,6 +1855,17 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends PythonBuiltinNode {
+        
+        @Child private GetClassNode getClassNode;
+        
+        protected PythonClass getClass(Object value) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(value);
+        }
+        
         @Specialization
         int get(boolean self) {
             return self ? 1 : 0;
@@ -1870,13 +1881,13 @@ public class IntBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization
-        PInt get(PInt self,
-                        @Cached("create()") GetClassNode clazzNode) {
-            PythonClass clazz = clazzNode.execute(self);
-            if (clazz.isBuiltin()) {
-                return self;
-            }
+        @Specialization(guards ="cannotBeOverridden(getClass(self))")
+        PInt getPInt(PInt self) {
+            return self;
+        }
+        
+        @Specialization(guards ="!cannotBeOverridden(getClass(self))")
+        PInt getPIntOverriden(PInt self) {
             return factory().createInt(self.getValue());
         }
     }
@@ -1885,22 +1896,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true, doc = "the imaginary part of a complex number")
     static abstract class ImagNode extends PythonBuiltinNode {
         @Specialization
-        int get(@SuppressWarnings("unused") boolean self) {
-            return 0;
-        }
-
-        @Specialization
-        int get(@SuppressWarnings("unused") int self) {
-            return 0;
-        }
-
-        @Specialization
-        int get(@SuppressWarnings("unused") long self) {
-            return 0;
-        }
-
-        @Specialization
-        int get(@SuppressWarnings("unused") PInt self) {
+        int get(@SuppressWarnings("unused") Object self) {
             return 0;
         }
     }
@@ -1915,26 +1911,10 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = "denominator", fixedNumOfArguments = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
     static abstract class DenominatorNode extends PythonBuiltinNode {
         @Specialization
-        int get(@SuppressWarnings("unused") boolean self) {
-            return 1;
-        }
-
-        @Specialization
-        int get(@SuppressWarnings("unused") int self) {
-            return 1;
-        }
-
-        @Specialization
-        int get(@SuppressWarnings("unused") long self) {
-            return 1;
-        }
-
-        @Specialization
-        int get(@SuppressWarnings("unused") PInt self) {
+        int get(@SuppressWarnings("unused") Object self) {
             return 1;
         }
     }
-    
     
     @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
