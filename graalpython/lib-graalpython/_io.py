@@ -672,7 +672,7 @@ class TextIOWrapper(_TextIOBase):
 
 def open(*args, **kwargs):
     # this method will be overwritten in _patches
-    pass
+    raise NotImplementedError
 
 
 # set the builtins open method
