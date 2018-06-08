@@ -175,6 +175,9 @@ public class ObjectBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object repr(Object self,
                         @Cached("create()") GetClassNode getClass) {
+            if (self == PNone.NONE) {
+                return "None";
+            }
             return String.format("<%s object at 0x%x>", getClass.execute(self).getName(), self.hashCode());
         }
     }

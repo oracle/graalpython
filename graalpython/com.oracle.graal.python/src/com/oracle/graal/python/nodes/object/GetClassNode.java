@@ -207,6 +207,6 @@ public abstract class GetClassNode extends PNode {
         if (PGuards.isForeignObject(o)) {
             return BuiltinNames.FOREIGN;
         }
-        return PythonBuiltinClassType.fromClass(o.getClass()).name();
+        return PythonBuiltinClassType.fromClass(o.getClass()).toString();
     }
 }
