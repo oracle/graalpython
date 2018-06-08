@@ -877,7 +877,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends PythonBuiltinNode {
         @Specialization
         float get(float self) {
@@ -901,7 +901,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true, doc = "the imaginary part of a complex number")
     static abstract class ImagNode extends PythonBuiltinNode {
 
         @Specialization

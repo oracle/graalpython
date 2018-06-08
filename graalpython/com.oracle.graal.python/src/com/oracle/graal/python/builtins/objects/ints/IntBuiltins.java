@@ -1853,7 +1853,7 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends PythonBuiltinNode {
         @Specialization
         int get(boolean self) {
@@ -1882,7 +1882,7 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true, doc = "the imaginary part of a complex number")
     static abstract class ImagNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") boolean self) {
