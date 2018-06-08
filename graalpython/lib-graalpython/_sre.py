@@ -128,7 +128,7 @@ class SRE_Pattern():
         # TODO: that's not nearly complete but should be sufficient for now
         from sre_compile import SRE_FLAG_VERBOSE
         if flags & SRE_FLAG_VERBOSE:
-            pattern = _sre.tregex_preprocess(pattern)
+            pattern = tregex_preprocess(pattern)
         return pattern
 
 

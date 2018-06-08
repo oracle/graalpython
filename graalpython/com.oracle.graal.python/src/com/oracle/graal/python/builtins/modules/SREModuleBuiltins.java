@@ -38,7 +38,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,7 +61,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public class SREModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return SREModuleBuiltinsFactory.getFactories();
     }
 
     /**
@@ -71,7 +70,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_preprocess", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class TregexPreprocessNode extends PythonUnaryBuiltinNode {
-        @CompilationFinal private Pattern pattern;
+        @CompilationFinal private Pattern commentPattern;
 
         @Specialization
         Object run(PString str) {
@@ -80,18 +79,31 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(String str) {
-            str.replaceAll("[^\\[]?#[^\\]]*\n", "");
-            if (pattern == null) {
+            if (commentPattern == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                pattern = Pattern.compile("(?<CMT>#[^\\]]*\n)");
+                commentPattern = Pattern.compile("(#[^\\]]*\n)");
             }
             return replaceAll(str);
         }
 
         @TruffleBoundary
         private String replaceAll(String r) {
-            Matcher matcher = pattern.matcher(r);
-            return matcher.replaceAll("");
+            Matcher matcher = commentPattern.matcher(r);
+            String res = matcher.replaceAll("");
+            StringBuilder sb = new StringBuilder();
+            int charclassNestingLevel = 0;
+            for (int i = 0; i < res.length(); i++) {
+                char c = res.charAt(i);
+                if (c == '[') {
+                    charclassNestingLevel++;
+                } else if (c == ']') {
+                    charclassNestingLevel--;
+                }
+                if (!Character.isWhitespace(c) || charclassNestingLevel != 0) {
+                    sb.append(res.charAt(i));
+                }
+            }
+            return sb.toString();
         }
 
         @Fallback
