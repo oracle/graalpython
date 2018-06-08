@@ -123,6 +123,10 @@ public interface PythonCore {
 
     public PythonContext getContext();
 
+    default void runPostInit() {
+
+    }
+
     static void writeWarning(TruffleLanguage.Env env, String warning) {
         if (!LIBPOLYGLOT || env.getOptions().get(PythonOptions.VerboseFlag)) {
             write(env, "WARNING: " + warning);

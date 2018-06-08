@@ -357,10 +357,14 @@ public final class Python3Core implements PythonCore {
         exportCInterface(getContext());
         currentException = null;
         initialized = true;
+    }
 
-        // apply the patches after initialization is done (we need to lookup modules that are mostly
-        // in stdlib)
-        loadFile(POST_INIT_MODULE_NAME, coreHome);
+    @Override
+    public void runPostInit() {
+        if (initialized) {
+            String coreHome = PythonCore.getCoreHomeOrFail();
+            loadFile(POST_INIT_MODULE_NAME, coreHome);
+        } 
     }
 
     public Object duplicate(Map<Object, Object> replacements, Object value) {
