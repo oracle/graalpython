@@ -70,7 +70,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "tregex_preprocess", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class TregexPreprocessNode extends PythonUnaryBuiltinNode {
-        @CompilationFinal private Pattern commentPattern;
+        @CompilationFinal private Pattern namedCaptGroupPattern;
 
         @Specialization
         Object run(PString str) {
@@ -79,30 +79,51 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(String str) {
-            if (commentPattern == null) {
+            if (namedCaptGroupPattern == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                commentPattern = Pattern.compile("(#[^\\]]*\n)");
+                namedCaptGroupPattern = Pattern.compile("\\?P\\<(?<GRPNAME>\\w*)\\>");
             }
             return replaceAll(str);
         }
 
-        @TruffleBoundary
+        /**
+         * replaces named capturing groups {@code ?P<name>} by {@code ?<name>}, removes comments and
+         * whitespaces if they are not in a character class, and replaces end-of-string {@code \Z}
+         * by {@code $}.
+         */
+        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
         private String replaceAll(String r) {
-            Matcher matcher = commentPattern.matcher(r);
-            String res = matcher.replaceAll("");
-            StringBuilder sb = new StringBuilder();
+            Matcher matcher0 = namedCaptGroupPattern.matcher(r);
+            StringBuffer sb = new StringBuffer();
+            while (matcher0.find()) {
+                matcher0.appendReplacement(sb, "?<" + matcher0.group("GRPNAME") + ">");
+            }
+            matcher0.appendTail(sb);
+
             int charclassNestingLevel = 0;
-            for (int i = 0; i < res.length(); i++) {
-                char c = res.charAt(i);
-                if (c == '[') {
+            boolean inComment = false;
+            for (int i = 0; i < sb.length();) {
+                char c = sb.charAt(i);
+                if (c == '[' && !inComment) {
                     charclassNestingLevel++;
-                } else if (c == ']') {
+                } else if (c == ']' && !inComment) {
                     charclassNestingLevel--;
+                } else if (c == '#' && charclassNestingLevel == 0) {
+                    inComment = true;
+                } else if (c == '\n' && inComment) {
+                    inComment = false;
                 }
-                if (!Character.isWhitespace(c) || charclassNestingLevel != 0) {
-                    sb.append(res.charAt(i));
+                if (inComment || (Character.isWhitespace(c) && charclassNestingLevel == 0)) {
+                    sb.deleteCharAt(i);
+                } else {
+                    i++;
                 }
             }
+
+            for (int idx = sb.indexOf("\\Z"); idx != -1; idx = sb.indexOf("\\Z", idx + 2)) {
+                sb.replace(idx, idx + 2, "$");
+            }
+
             return sb.toString();
         }
 

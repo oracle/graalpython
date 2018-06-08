@@ -115,7 +115,7 @@ class SRE_Pattern():
                 jsflags.append(jsflag)
         self.jsflags = "".join(jsflags)
 
-    def _decode_string(self, string, flags):
+    def _decode_string(self, string, flags=0):
         if isinstance(string, str):
             pattern = string
         elif isinstance(string, bytes):
