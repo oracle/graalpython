@@ -1854,42 +1854,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
-    static abstract class RealNode extends PythonBuiltinNode {
+    static abstract class RealNode extends IntNode {
 
-        @Child private GetClassNode getClassNode;
-
-        protected PythonClass getClass(Object value) {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
-            return getClassNode.execute(value);
-        }
-
-        @Specialization
-        int get(boolean self) {
-            return self ? 1 : 0;
-        }
-
-        @Specialization
-        int get(int self) {
-            return self;
-        }
-
-        @Specialization
-        long get(long self) {
-            return self;
-        }
-
-        @Specialization(guards = "cannotBeOverridden(getClass(self))")
-        PInt getPInt(PInt self) {
-            return self;
-        }
-
-        @Specialization(guards = "!cannotBeOverridden(getClass(self))")
-        PInt getPIntOverriden(PInt self) {
-            return factory().createInt(self.getValue());
-        }
     }
 
     @GenerateNodeFactory
@@ -1903,13 +1869,13 @@ public class IntBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = "numerator", fixedNumOfArguments = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
-    static abstract class NumeratorNode extends RealNode {
+    static abstract class NumeratorNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
     @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any int.")
-    static abstract class ConjugateNode extends RealNode {
+    static abstract class ConjugateNode extends IntNode {
 
     }
 
@@ -1925,6 +1891,21 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class IntNode extends PythonBuiltinNode {
+        @Child private GetClassNode getClassNode;
+
+        protected PythonClass getClass(Object value) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(value);
+        }
+
+        @Specialization
+        int doB(boolean self) {
+            return self ? 1 : 0;
+        }
+
         @Specialization
         int doI(int self) {
             return self;
@@ -1935,8 +1916,13 @@ public class IntBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization
-        PInt doPi(PInt self) {
+        @Specialization(guards = "cannotBeOverridden(getClass(self))")
+        PInt doPInt(PInt self) {
+            return self;
+        }
+
+        @Specialization(guards = "!cannotBeOverridden(getClass(self))")
+        PInt doPIntOverriden(PInt self) {
             return factory().createInt(self.getValue());
         }
     }

@@ -101,6 +101,40 @@ def test_int_bit_length():
 class MyInt(int):
     pass
 
+def test_int():
+    def builtinTest(number):
+        a = int(number)
+        b = a.__int__()
+        assert a == b
+        assert a is b
+        assert type(a) == int
+        assert type(b) == int
+
+    builtinTest(-9)
+    builtinTest(0)
+    builtinTest(9)
+    builtinTest(6227020800)
+    builtinTest(9999992432902008176640000999999)
+    
+    assert True.__int__() == 1
+    assert False.__int__() == 0
+
+
+def test_int_subclass():
+    def subclassTest(number):
+        a = MyInt(number)
+        b = a.__int__()
+        assert a == b
+        assert a is not b
+        assert type(a) == MyInt
+        assert type(b) == int
+
+    subclassTest(-9)
+    subclassTest(0)
+    subclassTest(9)
+    subclassTest(6227020800)
+    subclassTest(9999992432902008176640000999999)
+
 def test_real_imag():
     def builtinTest(number):
         a = int(number)
