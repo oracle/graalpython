@@ -318,6 +318,7 @@ class BufferedIncrementalDecoder(IncrementalDecoder):
     def decode(self, input, final=False):
         # decode input (taking the buffer into account)
         data = self.buffer + input
+        __breakpoint__()
         (result, consumed) = self._buffer_decode(data, self.errors, final)
         # keep undecoded input until the next call
         self.buffer = data[consumed:]

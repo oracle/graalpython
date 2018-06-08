@@ -35,12 +35,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class staticmethod(object):
-    def __init__(self, func):
-        self.__func__ = func
+import sys
+import builtins
 
-    def __get__(self, instance, owner=None):
-        return self.__func__
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# patch _io
+#
+# ----------------------------------------------------------------------------------------------------------------------
 
-    def __call__(self, *args, **kwargs):
-        return self.__func__(*args, **kwargs)
+import _io
+import _pyio
+import io
+
+for module in [_io, io]:
+    setattr(module, 'open', _pyio.open)
+    setattr(module, 'TextIOWrapper', _pyio.TextIOWrapper)
+    setattr(module, 'IncrementalNewlineDecoder', _pyio.IncrementalNewlineDecoder)
+    setattr(module, 'BufferedRandom', _pyio.BufferedRandom)
+    setattr(module, 'BufferedRWPair', _pyio.BufferedRWPair)
+    setattr(module, 'BufferedWriter', _pyio.BufferedWriter)
+    setattr(module, 'BufferedReader', _pyio.BufferedReader)
+    setattr(module, 'StringIO', _pyio.StringIO)
+    setattr(module, '_IOBase', _pyio.IOBase)
+    setattr(module, 'RawIOBase', _pyio.RawIOBase)
+    setattr(module, 'BytesIO', _pyio.BytesIO)
+    setattr(module, '_TextIOBase', _pyio.TextIOBase)
+
+setattr(builtins, 'open', _pyio.open)
+globals()['open'] = _pyio.open

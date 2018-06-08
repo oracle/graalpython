@@ -316,6 +316,8 @@ str.__iter__ = __iter__
 
 
 def strcount(self, sub, start=0, end=-1):
+    if len(self) == 0:
+        return 0
     if end < 0:
         end = (len(self) + end) % len(self)
     cnt = 0
