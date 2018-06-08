@@ -354,8 +354,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
         @Specialization
-        public PythonObject reversed(@SuppressWarnings("unused") PythonClass cls, PRange range) {
-            return factory().createRangeReverseIterator(range);
+        public PythonObject reversed(@SuppressWarnings("unused") PythonClass cls, PRange range,
+                        @Cached("createBinaryProfile()") ConditionProfile stepOneProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile stepMinusOneProfile) {
+            int stop;
+            int start;
+            int step = range.getStep();
+            if (stepOneProfile.profile(step == 1)) {
+                start = range.getStop() - 1;
+                stop = range.getStart() - 1;
+                step = -1;
+            } else if (stepMinusOneProfile.profile(step == -1)) {
+                start = range.getStop() + 1;
+                stop = range.getStart() + 1;
+                step = 1;
+            } else {
+                assert step != 0;
+                long delta = (range.getStop() - (long) range.getStart() - (step > 0 ? -1 : 1)) / step * step;
+                start = (int) (range.getStart() + delta);
+                stop = range.getStart() - step;
+                step = -step;
+            }
+            return factory().createRangeIterator(start, stop, step);
         }
 
         @Specialization
