@@ -212,6 +212,12 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
+        @Specialization(guards = "eq(TP_NEW, key)")
+        Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getAttrNode) {
+            return getToSulongNode().execute(getAttrNode.execute(object, SpecialAttributeNames.__NEW__));
+        }
+
         @Specialization(guards = "eq(TP_HASH, key)")
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetAttributeNode getHashNode) {

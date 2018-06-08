@@ -58,6 +58,7 @@ public abstract class NativeMemberNames {
     public static final String TP_SETATTR = "tp_setattr";
     public static final String TP_GETATTRO = "tp_getattro";
     public static final String TP_SETATTRO = "tp_setattro";
+    public static final String TP_NEW = "tp_new";
     public static final String _BASE = "_base";
     public static final String OB_ITEM = "ob_item";
     public static final String MA_USED = "ma_used";
@@ -96,6 +97,7 @@ public abstract class NativeMemberNames {
             case TP_SETATTR:
             case TP_GETATTRO:
             case TP_SETATTRO:
+            case TP_NEW:
             case _BASE:
             case OB_ITEM:
             case MA_USED:
