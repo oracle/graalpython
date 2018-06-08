@@ -98,6 +98,9 @@ def test_int_bit_length():
     assert (int(9999992432902008176640000999999)).bit_length() == 103
     assert (int(-9999992432902008176640000999999)).bit_length() == 103
 
+class MyInt(int):
+    pass
+
 def test_real_imag():
     def builtinTest(number):
         a = int(number)
@@ -121,10 +124,7 @@ def test_real_imag():
     assert True.imag == 0
     assert False.imag == 0
 
-def test_real_imag_subclass():
-    class MyInt(int):
-        pass
-    
+def test_real_imag_subclass():    
     def subclassTest(number):
         a = MyInt(number)
         b = a.real
@@ -132,6 +132,50 @@ def test_real_imag_subclass():
         assert a == b
         assert a is not b
         assert c == 0
+        assert type(a) == MyInt
+        assert type(b) == int
+        assert type(c) == int
+
+    subclassTest(-9)
+    subclassTest(0)
+    subclassTest(9)
+    subclassTest(6227020800)
+    subclassTest(9999992432902008176640000999999)
+
+def test_numerator_denominator():
+    def builtinTest(number):
+        a = int(number)
+        b = a.numerator
+        c = a.denominator
+        assert a == b
+        assert a is b
+        assert c == 1
+        assert type(a) == int
+        assert type(b) == int
+        assert type(c) == int
+
+    builtinTest(-9)
+    builtinTest(0)
+    builtinTest(9)
+    builtinTest(6227020800)
+    builtinTest(9999992432902008176640000999999)
+    
+    assert True.numerator == 1
+    assert False.numerator == 0
+    assert True.denominator == 1
+    assert False.denominator == 1
+
+def test_mumerator_denominator_subclass():
+    class MyInt(int):
+        pass
+    
+    def subclassTest(number):
+        a = MyInt(number)
+        b = a.numerator
+        c = a.denominator
+        assert a == b
+        assert a is not b
+        assert c == 1
         assert type(a) == MyInt
         assert type(b) == int
         assert type(c) == int

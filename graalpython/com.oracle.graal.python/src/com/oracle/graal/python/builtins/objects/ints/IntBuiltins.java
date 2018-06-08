@@ -1905,6 +1905,37 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateNodeFactory
+    @Builtin(name = "numerator", fixedNumOfArguments = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
+    static abstract class NumeratorNode extends RealNode {
+        
+    }
+    
+    @GenerateNodeFactory
+    @Builtin(name = "denominator", fixedNumOfArguments = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
+    static abstract class DenominatorNode extends PythonBuiltinNode {
+        @Specialization
+        int get(@SuppressWarnings("unused") boolean self) {
+            return 1;
+        }
+
+        @Specialization
+        int get(@SuppressWarnings("unused") int self) {
+            return 1;
+        }
+
+        @Specialization
+        int get(@SuppressWarnings("unused") long self) {
+            return 1;
+        }
+
+        @Specialization
+        int get(@SuppressWarnings("unused") PInt self) {
+            return 1;
+        }
+    }
+    
+    
     @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class IntNode extends PythonBuiltinNode {
