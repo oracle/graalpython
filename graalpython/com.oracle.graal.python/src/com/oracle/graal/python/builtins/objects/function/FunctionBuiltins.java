@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -60,13 +61,16 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 @CoreFunctions(extendClasses = PFunction.class)
 public class FunctionBuiltins extends PythonBuiltins {
@@ -74,6 +78,23 @@ public class FunctionBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FunctionBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object repr(PFunction self) {
+            return self.toString();
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object repr(PBuiltinFunction self) {
+            return self.toString();
+        }
     }
 
     @Builtin(name = __CALL__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)

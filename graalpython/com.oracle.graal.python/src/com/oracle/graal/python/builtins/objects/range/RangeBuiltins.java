@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
@@ -42,6 +43,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -53,6 +55,16 @@ public class RangeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RangeBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public String repr(PRange self) {
+            return self.toString();
+        }
     }
 
     @Builtin(name = __LEN__, fixedNumOfArguments = 1)

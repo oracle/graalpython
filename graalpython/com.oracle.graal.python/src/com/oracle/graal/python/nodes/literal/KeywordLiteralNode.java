@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class KeywordLiteralNode extends LiteralNode {
@@ -55,6 +56,7 @@ public class KeywordLiteralNode extends LiteralNode {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return "keyword( value: " + value + ", name: " + name + ")";
     }
 }

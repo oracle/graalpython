@@ -104,7 +104,7 @@ public final class PList extends PSequence {
 
         for (int i = 0; i < store.length(); i++) {
             Object item = store.getItemNormalized(i);
-            buf.append(toString(item));
+            buf.append(item.toString());
 
             if (i < store.length() - 1) {
                 buf.append(", ");

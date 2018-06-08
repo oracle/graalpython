@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -138,8 +139,8 @@ public final class PBaseException extends PythonObject {
     }
 
     @Override
-    @TruffleBoundary
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
                 return getPythonClass().getName() + ": " + FORMATTER.format(messageFormat, messageArgs);

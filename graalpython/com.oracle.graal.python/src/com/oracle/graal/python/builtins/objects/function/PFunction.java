@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -111,8 +112,12 @@ public class PFunction extends PythonObject implements PythonCallable {
     }
 
     @Override
-    public String toString() {
-        String fullName = enclosingClassName == null ? name : enclosingClassName + '.' + name;
-        return "<function " + fullName + " at " + hashCode() + ">";
+    public final String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        if (enclosingClassName == null) {
+            return String.format("<function %s at 0x%x>", name, hashCode());
+        } else {
+            return String.format("<function %s.%s at 0x%x>", enclosingClassName, name, hashCode());
+        }
     }
 }

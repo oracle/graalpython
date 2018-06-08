@@ -31,6 +31,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -88,6 +89,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Pytho
 
     @Override
     public String toString() {
-        return "<built-in function " + name + ">";
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("<built-in function %s>", name);
     }
 }

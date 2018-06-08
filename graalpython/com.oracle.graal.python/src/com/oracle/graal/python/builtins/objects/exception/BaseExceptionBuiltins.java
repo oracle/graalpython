@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.IllegalFormatException;
 import java.util.List;
@@ -41,6 +42,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -66,6 +68,16 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         Object init(PBaseException self, Object[] args) {
             self.setArgs(factory().createTuple(args));
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public Object repr(PBaseException self) {
+            return self.toString();
         }
     }
 

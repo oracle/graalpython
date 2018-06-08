@@ -72,6 +72,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -263,6 +264,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object repr(PByteArray self) {
             return self.toString();
         }

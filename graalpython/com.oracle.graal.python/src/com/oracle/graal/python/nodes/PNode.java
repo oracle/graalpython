@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -51,10 +52,12 @@ public abstract class PNode extends PBaseNode implements InstrumentableNode {
 
     @Override
     public String toString() {
-        if (getSourceSection() != null)
+        CompilerAsserts.neverPartOfCompilation();
+        if (getSourceSection() != null) {
             return getSourceSection().getSource().getName() + ":" + getSourceSection().getStartLine();
-        else
+        } else {
             return super.toString();
+        }
     }
 
     @Override

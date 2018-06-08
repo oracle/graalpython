@@ -133,6 +133,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return name;
     }
 }

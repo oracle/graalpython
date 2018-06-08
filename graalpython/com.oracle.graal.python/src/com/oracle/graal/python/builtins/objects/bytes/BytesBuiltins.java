@@ -38,7 +38,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.nio.charset.CodingErrorAction;
@@ -179,19 +178,11 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __STR__, fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class StrNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object str(PBytes self) {
-            return self.toString();
-        }
-    }
-
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object repr(PBytes self) {
             return self.toString();
         }

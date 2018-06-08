@@ -41,6 +41,7 @@ package com.oracle.graal.python.runtime.exception;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.nodes.Node;
@@ -82,6 +83,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return getMessage();
     }
 

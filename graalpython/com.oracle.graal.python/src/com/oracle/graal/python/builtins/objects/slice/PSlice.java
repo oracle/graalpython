@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.sequence.SequenceUtil.MISSING_INDE
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public class PSlice extends PythonBuiltinObject {
@@ -48,6 +49,7 @@ public class PSlice extends PythonBuiltinObject {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         StringBuilder str = new StringBuilder("slice(");
         if (start == MISSING_INDEX) {
             str.append("None");

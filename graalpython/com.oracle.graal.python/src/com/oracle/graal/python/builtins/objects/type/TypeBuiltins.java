@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -88,6 +90,17 @@ public class TypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TypeBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public String repr(PythonClass self) {
+            return self.toString();
+        }
     }
 
     @Builtin(name = __MRO__, fixedNumOfArguments = 1, isGetter = true)

@@ -184,6 +184,14 @@ public class PythonObject extends PythonAbstractObject {
         return this.equals(o) ? 0 : 1;
     }
 
+    /**
+     * Important: toString can be called from arbitrary locations, so it cannot do anything that may
+     * execute Python code or rely on a context being available.
+     *
+     * The Python-level string representation functionality always needs to be implemented as
+     * __repr__/__str__ builtins (which in turn can call toString if this already implements the
+     * correct behavior).
+     */
     @Override
     public String toString() {
         return "<" + pythonClass.getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";

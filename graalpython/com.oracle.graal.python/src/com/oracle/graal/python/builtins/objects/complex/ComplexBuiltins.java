@@ -456,6 +456,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)
     static abstract class ReprNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         String repr(PComplex self) {
             return self.toString();
         }

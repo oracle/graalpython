@@ -42,6 +42,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -238,6 +239,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return "<builtin function " + builtin.name() + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
