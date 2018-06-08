@@ -576,7 +576,11 @@ class HexFloatTests(unittest.TestCase):
         self.assertEqual(17.0, f)
         self.assertEqual(F, type(f))
 
-class RealImagTests(unittest.TestCase):
+class MyFloat(float):
+    pass
+
+class RealImagConjugateTests(unittest.TestCase):
+    
     def test_real_imag(self):
         def builtinTest(number):
             a = float(number)
@@ -596,9 +600,6 @@ class RealImagTests(unittest.TestCase):
         builtinTest(9999992432902008176640000999999.1)
 
     def test_real_imag_subclass(self):
-        class MyFloat(float):
-            pass
-    
         def subclassTest(number):
             a = MyFloat(number)
             b = a.real
@@ -609,6 +610,36 @@ class RealImagTests(unittest.TestCase):
             assert type(a) == MyFloat
             assert type(b) == float
             assert type(c) == float
+
+        subclassTest(-9.0)
+        subclassTest(0.0)
+        subclassTest(9.1)
+        subclassTest(6227020800.2)
+        subclassTest(9999992432902008176640000999999.33)
+
+    def test_conjugate(self):
+        def builtinTest(number):
+            a = float(number)
+            b = a.conjugate()
+            assert a == b
+            assert a is b
+            assert type(a) == float
+            assert type(b) == float
+
+        builtinTest(-9.1)
+        builtinTest(0.0)
+        builtinTest(9.2)
+        builtinTest(6227020800.90)
+        builtinTest(9999992432902008176640000999999.1)
+
+    def test_conjugate_subclass(self):
+        def subclassTest(number):
+            a = MyFloat(number)
+            b = a.conjugate()
+            assert a == b
+            assert a is not b
+            assert type(a) == MyFloat
+            assert type(b) == float
 
         subclassTest(-9.0)
         subclassTest(0.0)

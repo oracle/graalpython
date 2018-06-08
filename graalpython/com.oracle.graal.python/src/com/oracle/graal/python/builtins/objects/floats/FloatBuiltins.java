@@ -918,6 +918,12 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     }
 
+    @GenerateNodeFactory
+    @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any float.")
+    static abstract class ConjugateNode extends RealNode {
+
+    }
+
     @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class GetFormatNode extends PythonUnaryBuiltinNode {

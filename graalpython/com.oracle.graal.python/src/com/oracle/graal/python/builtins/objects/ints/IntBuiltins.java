@@ -1908,6 +1908,12 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
+    @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any int.")
+    static abstract class ConjugateNode extends RealNode {
+
+    }
+
+    @GenerateNodeFactory
     @Builtin(name = "denominator", fixedNumOfArguments = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
     static abstract class DenominatorNode extends PythonBuiltinNode {
         @Specialization
