@@ -269,4 +269,67 @@ public final class BytesUtils {
 
         return joinedBytes;
     }
+
+    private static int normalizeIndex(int index, int length) {
+        int idx = index;
+        if (idx < 0) {
+            idx += length;
+        }
+        return idx;
+    }
+
+    public static int find(PIBytesLike primary, PIBytesLike sub, int starting, int ending) {
+        byte[] haystack = primary.getInternalByteArray();
+        int len1 = primary.len();
+        byte[] needle = sub.getInternalByteArray();
+        int len2 = sub.len();
+
+        int start = normalizeIndex(starting, len1);
+        int end = normalizeIndex(ending, len1);
+
+        if (start >= len1 || len1 < len2) {
+            return -1;
+        } else if (end > len1) {
+            end = len1;
+        }
+
+        outer: for (int i = start; i < end; i++) {
+            for (int j = 0; j < len2; j++) {
+                if (needle[j] != haystack[i + j] || i + j >= end) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+
+    public static int find(PIBytesLike primary, int sub, int starting, @SuppressWarnings("unused") int ending) {
+        byte[] haystack = primary.getInternalByteArray();
+        int len1 = primary.len();
+
+        int start = normalizeIndex(starting, len1);
+        if (start >= len1) {
+            return -1;
+        }
+
+        for (int i = start; i < len1; i++) {
+            if (haystack[i] == sub) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static boolean startsWith(PIBytesLike primary, PIBytesLike prefix, int start, int ending) {
+        return find(primary, prefix, start, ending) != -1;
+    }
+
+    public static boolean startsWith(PIBytesLike primary, PIBytesLike prefix) {
+        return find(primary, prefix, 0, primary.len()) != -1;
+    }
+
+    public static boolean endsWith(PIBytesLike primary, PIBytesLike suffix) {
+        return find(primary, suffix, primary.len() - suffix.len(), primary.len()) != -1;
+    }
 }

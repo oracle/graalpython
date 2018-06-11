@@ -35,33 +35,4 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# ankitv 10/10/13
-# Iterating by Sequence Index
-
-
-def test_set_or():
-    s1 = {1, 2, 3}
-    s2 = {4, 5, 6}
-    s3 = {1, 2, 4}
-    s4 = {1, 2, 3}
-
-    union = s1 | s2
-    assert union == {1, 2, 3, 4, 5, 6}
-
-    union = s1 | s3
-    assert union == {1, 2, 3, 4}
-
-    union = s1 | s4
-    assert union == {1, 2, 3}
-
-
-def test_set_remove():
-    s = {1, 2, 3}
-    assert s == {1, 2, 3}
-    s.remove(3)
-    assert s == {1, 2}
-
-
-def test_set_le():
-    assert set("a") <= set("abc")
-
+# an empty file for now

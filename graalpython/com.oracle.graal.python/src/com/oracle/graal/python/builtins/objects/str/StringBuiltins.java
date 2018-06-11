@@ -25,21 +25,26 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -76,7 +81,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PString.class)
 public final class StringBuiltins extends PythonBuiltins {
@@ -181,7 +185,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -191,7 +195,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -221,7 +225,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -251,7 +255,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -267,7 +271,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -283,7 +287,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -299,7 +303,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -315,7 +319,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -350,7 +354,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __RADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class RAddNode extends AddNode {
     }
@@ -1059,76 +1063,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "encode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
-    @GenerateNodeFactory
-    public abstract static class EncodeNode extends PythonBuiltinNode {
-        @Specialization(guards = "isString(self)")
-        Object encode(Object self, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("createClassProfile()") ValueProfile strTypeProfile) {
-            Object profiledStr = strTypeProfile.profile(self);
-            return encodeString(profiledStr.toString(), "utf-8", "strict");
-        }
-
-        @Specialization(guards = {"isString(self)", "isString(encoding)"})
-        Object encode(Object self, Object encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("createClassProfile()") ValueProfile strTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
-            Object profiledStr = strTypeProfile.profile(self);
-            Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            return encodeString(profiledStr.toString(), profiledEncoding.toString(), "strict");
-        }
-
-        @Specialization(guards = {"isString(self)", "isString(errors)"})
-        Object encode(Object self, @SuppressWarnings("unused") PNone encoding, Object errors,
-                        @Cached("createClassProfile()") ValueProfile strTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
-            Object profiledStr = strTypeProfile.profile(self);
-            Object profiledErrors = errorsTypeProfile.profile(errors);
-            return encodeString(profiledStr.toString(), "utf-8", profiledErrors.toString());
-        }
-
-        @Specialization(guards = {"isString(self)", "isString(encoding)", "isString(errors)"})
-        Object encode(Object self, Object encoding, Object errors,
-                        @Cached("createClassProfile()") ValueProfile strTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
-                        @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
-            Object profiledStr = strTypeProfile.profile(self);
-            Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            Object profiledErrors = errorsTypeProfile.profile(errors);
-            return encodeString(profiledStr.toString(), profiledEncoding.toString(), profiledErrors.toString());
-        }
-
-        @TruffleBoundary
-        private Object encodeString(String self, String encoding, String errors) {
-            CodingErrorAction errorAction;
-            switch (errors) {
-                case "ignore":
-                    errorAction = CodingErrorAction.IGNORE;
-                    break;
-                case "replace":
-                    errorAction = CodingErrorAction.REPLACE;
-                    break;
-                default:
-                    errorAction = CodingErrorAction.REPORT;
-                    break;
-            }
-
-            try {
-                Charset cs = Charset.forName(encoding);
-                ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
-                int n = encoded.remaining();
-                byte[] data = new byte[n];
-                encoded.get(data);
-                return factory().createBytes(data);
-            } catch (IllegalArgumentException e) {
-                throw raise(LookupError, "unknown encoding: %s", encoding);
-            } catch (CharacterCodingException e) {
-                throw raise(UnicodeEncodeError, "%s", e.getMessage());
-            }
-        }
-    }
-
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -1209,12 +1144,12 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__MOD__, fixedNumOfArguments = 2)
+    @Builtin(name = __MOD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ModNode extends PythonBinaryBuiltinNode {

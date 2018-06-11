@@ -45,8 +45,13 @@ def assert_raises(err, fn, *args, **kwargs):
 
 
 def test_import():
-    import collections
-    from collections import namedtuple, Counter, OrderedDict, _count_elements
-    from collections import UserDict, UserString, UserList
-    from collections import ChainMap
-    # from collections import deque
+    imported = True
+    try:
+        import collections
+        from collections import namedtuple, Counter, OrderedDict, _count_elements
+        from collections import UserDict, UserString, UserList
+        from collections import ChainMap
+        # from collections import deque
+    except ImportError:
+        imported = False
+    assert imported

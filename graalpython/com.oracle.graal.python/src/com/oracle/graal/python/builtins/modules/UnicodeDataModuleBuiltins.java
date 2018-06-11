@@ -36,51 +36,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.bytes;
+package com.oracle.graal.python.builtins.modules;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PLenSupplier;
+import java.text.Normalizer;
+import java.util.List;
 
-public interface PIBytesLike extends PLenSupplier {
-    byte[] getInternalByteArray();
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
-    default byte[] getBytesExact() {
-        byte[] internalBytesArray = getInternalByteArray();
-        int len = this.len();
-        return Arrays.copyOf(internalBytesArray, len);
+@CoreFunctions(defineModule = "unicodedata")
+public class UnicodeDataModuleBuiltins extends PythonBuiltins {
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+        return UnicodeDataModuleBuiltinsFactory.getFactories();
     }
 
-    default ByteBuffer getBytesBuffer() {
-        return ByteBuffer.wrap(getInternalByteArray(), 0, this.len());
-    }
-
-    default PIBytesLike createFromBytes(PythonObjectFactory factory, ByteBuffer bytes) {
-        return createFromBytes(factory, bytes.array());
-    }
-
-    PIBytesLike createFromBytes(PythonObjectFactory factory, byte[] bytes);
-
-    default PIBytesLike concat(PythonObjectFactory factory, PIBytesLike other) {
-        byte[] arr1 = this.getInternalByteArray();
-        int len1 = this.len();
-        byte[] arr2 = other.getInternalByteArray();
-        int len2 = other.len();
-        byte[] bytes = new byte[len1 + len2];
-        System.arraycopy(arr1, 0, bytes, 0, len1);
-        System.arraycopy(arr2, 0, bytes, len1, len2);
-        return createFromBytes(factory, bytes);
-    }
-
-    default PIBytesLike __mul__(PythonObjectFactory factory, int times) {
-        byte[] arr1 = this.getInternalByteArray();
-        int len1 = this.len();
-        byte[] bytes = new byte[len1 * times];
-        for (int i = 0; i < times; i++) {
-            System.arraycopy(arr1, 0, bytes, i * len1, len1);
+    // unicodedata.normalize(form, unistr)
+    @Builtin(name = "normalize", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class NormalizeNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        protected Normalizer.Form getForm(String form) {
+            try {
+                return Normalizer.Form.valueOf(form);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
         }
-        return createFromBytes(factory, bytes);
+
+        @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
+        @TruffleBoundary
+        public String normalize(@SuppressWarnings("unused") String form, String unistr,
+                        @SuppressWarnings("unused") @Cached("form") String cachedForm,
+                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
+            if (cachedNormForm == null) {
+                throw raise(ValueError, "invalid normalization form");
+            }
+            return Normalizer.normalize(unistr, cachedNormForm);
+        }
     }
 }

@@ -237,8 +237,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) throws Exception {
         PythonContext context = this.getContextReference().get();
-        if (!context.getCore().isInitialized()) {
-            context.getCore().initialize();
+        PythonCore pythonCore = context.getCore();
+        if (!pythonCore.isInitialized()) {
+            pythonCore.initialize();
         }
         context.getOrCreateMainModule(request.getSource().getPath());
 
@@ -248,7 +249,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // no frame required
             new ImportNode("site").execute(null);
         }
-        PythonParseResult parseResult = context.getCore().getParser().parse(context.getCore(), request.getSource());
+        PythonParseResult parseResult = pythonCore.getParser().parse(pythonCore, request.getSource());
         RootNode root = parseResult.getRootNode();
         root = new TopLevelExceptionHandler(this, root);
         return Truffle.getRuntime().createCallTarget(root);
@@ -301,7 +302,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     protected static PNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
-        return context.getCore().getParser().parseInline(context.getCore(), code, lexicalContextFrame);
+        PythonCore pythonCore = context.getCore();
+        return pythonCore.getParser().parseInline(pythonCore, code, lexicalContextFrame);
     }
 
     @Override

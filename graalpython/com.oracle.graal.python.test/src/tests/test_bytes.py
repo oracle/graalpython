@@ -35,6 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:
@@ -327,3 +328,91 @@ def test_contains():
     assert b"/" in b"/", "b'/' was not in b'/'"
     assert bytearray([32]) in b" ", "bytearray([32]) was not in b' '"
     assert_raises(TypeError, lambda: "/" in b"/")
+
+
+def test_extend():
+    orig = b'hello'
+    a = bytearray(orig)
+    a.extend(a)
+
+    assert a == orig + orig
+    assert a[5:] == orig
+
+    a = bytearray(b'')
+    # Test iterators that don't have a __length_hint__
+    a.extend(map(int, orig * 25))
+    a.extend(int(x) for x in orig * 25)
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    a.extend(iter(map(int, orig * 50)))
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    a.extend(list(map(int, orig * 50)))
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    assert_raises(ValueError, a.extend, [0, 1, 2, 256])
+    assert_raises(ValueError, a.extend, [0, 1, 2, -1])
+    assert len(a) == 0
+
+
+def test_startswith():
+    b = b'hello'
+    assert not b.startswith(b"anything")
+    assert b.startswith(b"hello")
+    assert b.startswith(b"hel")
+    assert b.startswith(b"h")
+    assert not b.startswith(b"hellow")
+    assert not b.startswith(b"ha")
+
+    b = bytearray(b'hello')
+    assert not b.startswith(b"anything")
+    assert b.startswith(b"hello")
+    assert b.startswith(b"hel")
+    assert b.startswith(b"h")
+    assert not b.startswith(b"hellow")
+    assert not b.startswith(b"ha")
+
+
+def test_endswith():
+    b = b'hello'
+    assert not b.endswith(b"anything")
+    assert b.endswith(b"hello")
+    assert b.endswith(b"llo")
+    assert b.endswith(b"o")
+    assert not b.endswith(b"whello")
+    assert not b.endswith(b"no")
+
+    b = bytearray(b'hello')
+    assert not b.endswith(b"anything")
+    assert b.endswith(b"hello")
+    assert b.endswith(b"llo")
+    assert b.endswith(b"o")
+    assert not b.endswith(b"whello")
+    assert not b.endswith(b"no")
+
+
+def test_find():
+    b = b'mississippi'
+    i = 105
+    w = 119
+
+    assert b.find(b'ss') == 2
+    assert b.find(b'w') == -1
+    assert b.find(b'mississippian') == -1
+
+    assert b.find(i) == 1
+    assert b.find(w) == -1
+
+    assert b.find(b'ss', 3) == 5
+    assert b.find(b'ss', 1, 7) == 2
+    assert b.find(b'ss', 1, 3) == -1
+
+    assert b.find(i, 6) == 7
+    assert b.find(i, 1, 3) == 1
+    assert b.find(w, 1, 3) == -1

@@ -542,7 +542,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PByteArray(cls, array));
     }
 
-    public Object createByteArray(PythonClass cls, SequenceStorage storage) {
+    public PByteArray createByteArray(SequenceStorage storage) {
+        return createByteArray(lookupClass(PythonBuiltinClassType.PByteArray), storage);
+    }
+
+    public PByteArray createByteArray(PythonClass cls, SequenceStorage storage) {
         return trace(new PByteArray(cls, storage));
     }
 

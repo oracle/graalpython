@@ -36,8 +36,9 @@
 # SOFTWARE.
 
 import sys
-import warnings
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionVoid, unhandled_error_compare, GRAALPYTHON
+
+from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare, GRAALPYTHON
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -326,7 +327,6 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    # TODO enable once supported
     test_PyUnicode_GET_SIZE = CPyExtFunction(
         lambda args: len(args[0]),
         lambda: (

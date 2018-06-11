@@ -38,7 +38,7 @@ class UnsupportedOperation(OSError, ValueError):
 
 
 class _IOBase(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.__IOBase_closed = False
 
     def __enter__(self):
@@ -543,99 +543,17 @@ sys.stderr = FileIO(2, mode='w', closefd=False)
 sys.__stderr__ = sys.stderr
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# following definitions: patched in the __builtins_patches__ module
+#
+# ----------------------------------------------------------------------------------------------------------------------
 class _BufferedIOBase(_IOBase):
-    """Base class for buffered IO objects.
-
-The main difference with RawIOBase is that the read() method
-supports omitting the size argument, and does not have a default
-implementation that defers to readinto().
-
-In addition, read(), readinto() and write() may raise
-BlockingIOError if the underlying raw stream is in non-blocking
-mode and not ready; unlike their raw counterparts, they will never
-return None.
-
-A typical implementation should not inherit from a RawIOBase
-implementation, but wrap one.
-"""
-
-    def _check_init(self):
-        raise NotImplementedError
-
-    def read(self, size=None):
-        """Read and return up to n bytes.
-
-If the argument is omitted, None, or negative, reads and
-returns all data until EOF.
-
-If the argument is positive, and the underlying raw stream is
-not 'interactive', multiple raw reads may be issued to satisfy
-the byte count (unless EOF is reached first).  But for
-interactive raw streams (as well as sockets and pipes), at most
-one raw read will be issued, and a short result does not imply
-that EOF is imminent.
-
-Returns an empty bytes object on EOF.
-
-Returns None if the underlying raw stream was open in non-blocking
-mode and no data is available at the moment."""
-        raise UnsupportedOperation("read")
-
-    def read1(self, size):
-        """Read and return up to n bytes, with at most one read() call
-to the underlying raw stream. A short result does not imply
-that EOF is imminent.
-
-Returns an empty bytes object on EOF."""
-        raise UnsupportedOperation("read1")
-
-    def write(self, data):
-        """Write the given buffer to the IO stream.
-
-Returns the number of bytes written, which is always the length of b
-in bytes.
-
-Raises BlockingIOError if the buffer is full and the
-underlying raw stream cannot accept more data at the moment."""
-        raise UnsupportedOperation("write")
-
-    def detach(self):
-        """Disconnect this buffer from its underlying raw stream and return it.
-
-After the raw stream has been detached, the buffer is in an unusable
-state."""
-        raise UnsupportedOperation("detach")
-
-    def readinto(self, space, buffer):
-        length = len(buffer)
-        data = self.read(length)
-        if not isinstance(data, bytes):
-            raise TypeError("read() should return bytes")
-        ldata = len(data)
-        if ldata > length:
-            raise ValueError("read() returned too much data: "
-                             "%d bytes requested, %d returned" % (length, ldata))
-        buffer[0:ldata] = data
-        return ldata
-
-    def readinto1(self, buffer):
-        length = len(buffer)
-        data = self.read1(length)
-        if not isinstance(data, bytes):
-            raise TypeError("read1() should return bytes")
-        ldata = len(data)
-        if ldata > length:
-            raise ValueError("read1() returned too much data: "
-                             "%d bytes requested, %d returned" % (length, ldata))
-        buffer[0:ldata] = data
-        return ldata
+    pass
 
 
 class BytesIO(_BufferedIOBase):
-    def __init__(self, inital_bytes=None):
-        if inital_bytes:
-            self.write(inital_bytes)
-            self.seek(0)
+    pass
 
 
 class _TextIOBase(_IOBase):
@@ -670,130 +588,15 @@ class TextIOWrapper(_TextIOBase):
     pass
 
 
-def open(file, mode="r", buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None):
-    if not isinstance(file, (str, int, bytes)):
-        raise TypeError("invalid file: %r" % file)
-
-    if not isinstance(mode, str):
-        raise TypeError("invalid mode: %r" % mode)
-
-    if not isinstance(buffering, int):
-        raise TypeError("invalid buffering: %r" % buffering)
-
-    if encoding is not None and not isinstance(encoding, str):
-        raise TypeError("invalid encoding: %r" % encoding)
-
-    if errors is not None and not isinstance(errors, str):
-        raise TypeError("invalid errors: %r" % errors)
-
-    modes = set(mode)
-    if modes - {'x', 'r', 'w', 'a', '+', 't', 'b', 'U'} or len(mode) > len(modes):
-        raise ValueError("invalid mode: %r" % mode)
-
-    # decode mode
-    creating = "x" in modes
-    reading = "r" in modes
-    writing = "w" in modes
-    appending = "a" in modes
-    updating = "+" in modes
-    text = "t" in modes
-    binary = "b" in modes
-    if 'U' in modes:
-        if writing or appending:
-            raise ValueError("can't use U and writing mode at once")
-        universal = True
-        reading = True
-    else:
-        universal = False
-
-    # raw mode
-    raw_mode = '%s%s%s%s%s' % (
-        'x' if creating else '',
-        'r' if reading else '',
-        'w' if writing else '',
-        'a' if appending else '',
-        '+' if updating else ''
-    )
-
-    raw_mode = (reading and "r" or "") + (writing and "w" or "") + (appending and "a" or "") + (updating and "+" or "")
-
-    # parameters validation
-    if universal:
-        if creating or writing or appending or updating:
-            raise ValueError("mode U cannot be combined with x', 'w', 'a', or '+'")
-        _warn("'U' mode is deprecated", DeprecationWarning)
-        reading = True
-
-    if text and binary:
-        raise ValueError("can't have text and binary mode at once")
-
-    if creating + reading + writing + appending > 1:
-        raise ValueError("must have exactly one of create/read/write/append mode")
-
-    if binary and encoding is not None:
-        raise ValueError("binary mode doesn't take an encoding argument")
-
-    if binary and errors is not None:
-        raise ValueError("binary mode doesn't take an errors argument")
-
-    if binary and newline is not None:
-        raise ValueError("binary mode doesn't take a newline argument")
-
-    # create the raw file stream
-    # TODO: if ms windows type: RawIO_class = (PyObject *)&PyWindowsConsoleIO_Type and encoding = "utf-8"
-
-    raw = FileIO(file, mode=raw_mode, closefd=closefd, opener=opener)
-    result = raw
-
-    try:
-        # buffering
-        if buffering == 1 or buffering < 0 and raw.isatty():
-            buffering = -1
-            line_buffering = True
-        else:
-            line_buffering = False
-
-        if buffering < 0:
-            buffering = DEFAULT_BUFFER_SIZE
-            try:
-                bs = _os.fstat(raw.fileno()).st_blksize
-            except (OSError, AttributeError):
-                pass
-            else:
-                if bs > 1:
-                    buffering = bs
-
-        if buffering < 0:
-            raise ValueError("invalid buffering size")
-
-        if buffering == 0:
-            if binary:
-                return result
-            raise ValueError("can't have unbuffered text I/O")
-
-        if updating:
-            buffer = BufferedRandom(raw, buffering)
-        elif creating or writing or appending:
-            buffer = BufferedWriter(raw, buffering)
-        elif reading:
-            buffer = BufferedReader(raw, buffering)
-        else:
-            raise ValueError("unknown mode: %r" % mode)
-        result = buffer
-
-        if binary:
-            return result
-
-        text = TextIOWrapper(buffer, encoding, errors, newline, line_buffering)
-        result = text
-
-        text.mode = mode
-        return result
-    except:
-        result.close()
-        raise
+def open(*args, **kwargs):
+    raise NotImplementedError
 
 
-# set the builtins open method
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# needed for imports will be patched in the __builtins_patches__ module
+#
+# ----------------------------------------------------------------------------------------------------------------------
 import builtins
 setattr(builtins, 'open', open)
+globals()['open'] = open

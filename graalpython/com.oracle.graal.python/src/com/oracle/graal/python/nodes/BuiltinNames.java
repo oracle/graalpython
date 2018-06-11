@@ -39,12 +39,16 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class BuiltinNames {
+    // graalpython internals
+    public static final String __BREAKPOINT__ = "__breakpoint__";
+    public static final String __BUILTINS_PATCHES__ = "__builtins_patches__";
+
+    // cpython internals
     public static final String MODULE = "module";
     public static final String __BUILD_CLASS__ = "__build_class__";
     public static final String __MAIN__ = "__main__";
     public static final String __BUILTINS__ = "__builtins__";
     public static final String __DEBUG__ = "__debug__";
-    public static final String __BREAKPOINT__ = "__breakpoint__";
 
     // sys
     public static final String EXCEPTHOOK = "excepthook";

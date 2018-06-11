@@ -35,33 +35,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# ankitv 10/10/13
-# Iterating by Sequence Index
+
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
 
 
-def test_set_or():
-    s1 = {1, 2, 3}
-    s2 = {4, 5, 6}
-    s3 = {1, 2, 4}
-    s4 = {1, 2, 3}
-
-    union = s1 | s2
-    assert union == {1, 2, 3, 4, 5, 6}
-
-    union = s1 | s3
-    assert union == {1, 2, 3, 4}
-
-    union = s1 | s4
-    assert union == {1, 2, 3}
+def test_import():
+    imported = True
+    try:
+        import array
+    except ImportError:
+        imported = False
+    assert imported
 
 
-def test_set_remove():
-    s = {1, 2, 3}
-    assert s == {1, 2, 3}
-    s.remove(3)
-    assert s == {1, 2}
-
-
-def test_set_le():
-    assert set("a") <= set("abc")
-
+def test_create():
+    from array import array
+    a = array('b', b'x'*10)
+    assert str(a) == "array('b', [120, 120, 120, 120, 120, 120, 120, 120, 120, 120])"
