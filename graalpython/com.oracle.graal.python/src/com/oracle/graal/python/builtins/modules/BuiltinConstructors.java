@@ -719,6 +719,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     return createInt(cls, (int) result, keywordArg);
                 } else if (result instanceof Long) {
                     return createInt(cls, (long) result, keywordArg, isIntProfile);
+                } else if (result instanceof Boolean) {
+                    return createInt(cls, (boolean) result ? 1 : 0, keywordArg, isIntProfile);
                 } else if (result instanceof PInt) {
                     // TODO warn if 'result' not of exact Python type 'int'
                     return isPrimitiveInt(cls) ? result : factory().createInt(cls, ((PInt) result).getValue());

@@ -298,3 +298,15 @@ def test_trunc_subclass():
     assert MyInt(MyTrunc()) == 1972
     assert MyInt(MyIntTrunc()) == 66
 
+def test_create_int_from_bool():
+
+    class SpecInt1:
+        def __int__(self):
+            return True
+
+    class SpecInt0:
+        def __int__(self):
+            return False
+
+    assert int(SpecInt1()) == 1
+    assert int(SpecInt0()) == 0
