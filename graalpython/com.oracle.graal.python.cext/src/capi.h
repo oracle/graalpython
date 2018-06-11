@@ -43,6 +43,8 @@
 
 #include "Python.h"
 
+#define SRC_CS "utf-8"
+
 /* Private types are defined here because we need to declare the type cast. */
 typedef struct {
     PyObject_HEAD
@@ -87,7 +89,19 @@ POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
 POLYGLOT_DECLARE_TYPE(PySetObject);
 POLYGLOT_DECLARE_TYPE(PyBufferDecorator);
 
+PyObject* handle_exception(void* val);
 
+// TODO cache landing function ?
+#define PY_TRUFFLE_LANDING ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)))
+#define PY_TRUFFLE_CEXT_LANDING ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall", SRC_CS)))
+#define PY_TRUFFLE_CEXT_LANDING_L ((uint64_t (*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)))
+#define UPCALL_O(__recv__, __name__, ...) handle_exception(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), __VA_ARGS__))
+#define UPCALL_CEXT_O(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), __VA_ARGS__))
+#define UPCALL_CEXT_P(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_L(polyglot_from_string((__name__), SRC_CS), __VA_ARGS__))
+#define UPCALL_CEXT_I(__name__, ...) UPCALL_CEXT_P(__name__, __VA_ARGS__)
+#define UPCALL_CEXT_L(__name__, ...) UPCALL_CEXT_P(__name__, __VA_ARGS__)
+
+void* native_to_java(PyObject* obj);
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 void* native_to_java(PyObject* obj);
@@ -103,6 +117,7 @@ extern PyObject* explicit_cast(PyObject* cobj);
 #define as_char(obj) ((char)as_long(obj))
 #define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
+
 
 // defined in 'exceptions.c'
 void initialize_exceptions();
