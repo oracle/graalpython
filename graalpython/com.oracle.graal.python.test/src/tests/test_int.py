@@ -249,3 +249,52 @@ def test_conjugate_subclass():
     subclassTest(9)
     subclassTest(6227020800)
     subclassTest(9999992432902008176640000999999)
+
+class MyTrunc:
+    def __trunc__(self):
+        return 1972
+class MyIntTrunc:
+    def __trunc__(self):
+        return 1972
+    def __int__(self):
+        return 66
+
+def test_trunc():
+    def builtinTest(number):
+        a = int(number)
+        b = a.__trunc__()
+        assert a == b
+        assert a is b
+        assert type(a) == int
+        assert type(b) == int
+
+    builtinTest(-9)
+    builtinTest(0)
+    builtinTest(9)
+    builtinTest(6227020800)
+    builtinTest(9999992432902008176640000999999)
+    
+    assert True.__trunc__() == 1
+    assert False.__trunc__() == 0
+
+    assert int(MyTrunc()) == 1972
+    assert int(MyIntTrunc()) == 66
+
+def test_trunc_subclass():
+    def subclassTest(number):
+        a = MyInt(number)
+        b = a.__trunc__()
+        assert a == b
+        assert a is not b
+        assert type(a) == MyInt
+        assert type(b) == int
+
+    subclassTest(-9)
+    subclassTest(0)
+    subclassTest(9)
+    subclassTest(6227020800)
+    subclassTest(9999992432902008176640000999999)
+
+    assert MyInt(MyTrunc()) == 1972
+    assert MyInt(MyIntTrunc()) == 66
+

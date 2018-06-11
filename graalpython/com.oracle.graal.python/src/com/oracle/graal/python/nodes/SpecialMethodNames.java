@@ -89,6 +89,7 @@ public abstract class SpecialMethodNames {
     public static final String __DIV__ = "__div__";
     public static final String __MATMUL__ = "__matmul__";
     public static final String __TRUEDIV__ = "__truediv__";
+    public static final String __TRUNC__ = "__trunc__";
     public static final String __FLOORDIV__ = "__floordiv__";
     public static final String __MOD__ = "__mod__";
     public static final String __DIVMOD__ = "__divmod__";

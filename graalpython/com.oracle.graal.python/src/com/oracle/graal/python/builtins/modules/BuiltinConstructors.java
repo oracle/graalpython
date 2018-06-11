@@ -698,11 +698,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(keywordArg)")
         public Object createInt(PythonClass cls, PythonObject obj, PNone keywordArg,
                         @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
+                        @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
             try {
+                // at first try __int__ method
                 return createInt(cls, callIntNode.executeLong(obj), keywordArg, isIntProfile);
             } catch (UnexpectedResultException e) {
                 Object result = e.getResult();
+                if (result == PNone.NO_VALUE) {
+                    try {
+                        // now try __trunc__ method
+                        return createInt(cls, callTruncNode.executeLong(obj), keywordArg, isIntProfile);
+                    } catch (UnexpectedResultException ee) {
+                        result = ee.getResult();
+                    }
+                }
                 if (result == PNone.NO_VALUE) {
                     throw raise(TypeError, "an integer is required (got type %p)", obj);
                 } else if (result instanceof Integer) {

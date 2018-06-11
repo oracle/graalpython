@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -922,6 +923,31 @@ public final class FloatBuiltins extends PythonBuiltins {
     @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any float.")
     static abstract class ConjugateNode extends RealNode {
 
+    }
+
+    @Builtin(name = __TRUNC__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class TruncNode extends PythonUnaryBuiltinNode {
+
+        private int truncate(double value) {
+            return (int) (value < 0 ? Math.ceil(value) : Math.floor(value));
+        }
+
+        @Specialization
+        int trunc(double value) {
+            return truncate(value);
+        }
+
+        @Specialization
+        int trunc(PFloat pValue) {
+            double value = pValue.getValue();
+            if (value == Double.NaN) {
+                raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+            } else if (value == Double.NEGATIVE_INFINITY || value == Double.POSITIVE_INFINITY) {
+                raise(PythonErrorType.OverflowError, "cannot convert float infinity to integer");
+            }
+            return truncate(value);
+        }
     }
 
     @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)

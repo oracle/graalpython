@@ -955,6 +955,21 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "trunc", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class TruncNode extends PythonBuiltinNode {
+
+        @Specialization
+        Object trunc(Object obj,
+                        @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTrunc) {
+            Object result = callTrunc.executeObject(obj);
+            if (result == PNone.NO_VALUE) {
+                raise(TypeError, "type %p doesn't define __trunc__ method", obj);
+            }
+            return result;
+        }
+    }
+
     @Builtin(name = "atan2", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class Atan2Node extends PythonBuiltinNode {
