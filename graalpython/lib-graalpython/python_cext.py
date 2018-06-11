@@ -656,19 +656,28 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
     object.__setattr__(primary, name, member)
 
 
-def AddGetSet(primary, name, getter, setter, doc, closure):
+def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
     getset = property()
-    getter_w = CreateFunction(name, getter)
-    def member_getter(self):
-        return capi_to_java(getter_w(self, closure))
-    getset.getter(member_getter)
-    setter_w = CreateFunction(name, setter)
-    def member_setter(self, value):
-        setter_w(self, value, closure)
-        return None
-    getset.setter(member_setter)
+    if getter:
+        getter_w = CreateFunction(name, getter, getter_wrapper)
+        def member_getter(self):
+            return capi_to_java(getter_w(self, closure))
+
+        getset.getter(member_getter)
+    if setter:
+        setter_w = CreateFunction(name, setter, setter_wrapper)
+        def member_setter(self, value):
+            setter_w(self, value, closure)
+            return None
+        getset.setter(member_setter)
+    else:
+        getset.setter(lambda self, value: GetSet_SetNotWritable(self, value, name))
     getset.__doc__ = doc
     object.__setattr__(primary, name, getset)
+
+
+def GetSet_SetNotWritable(self, value, attr):
+    raise AttributeError("attribute '%s' of '%s' objects is not writable" % (attr, type(self).__name__))
 
 
 def PyObject_Str(o):
@@ -680,7 +689,7 @@ def PyObject_Repr(o):
 
 
 def PyType_IsSubtype(a, b):
-    return b in a.mro()
+    return 1 if b in a.mro() else 0
 
 
 @may_raise
@@ -776,6 +785,11 @@ def PyObject_AsFileDescriptor(obj):
     if result < 0:
         raise ValueError("file descriptor cannot be a negative integer (%d)" % result)
     return int(result)
+
+
+@may_raise
+def PyObject_GetAttr(obj, attr):
+    return getattr(obj, attr)
 
 
 @may_raise(-1)

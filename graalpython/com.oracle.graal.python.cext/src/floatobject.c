@@ -39,7 +39,7 @@
 #include "capi.h"
 
 
-PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE);
+PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyFloatObject));
 
 double PyFloat_AsDouble(PyObject *op) {
     if (op == NULL) {

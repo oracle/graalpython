@@ -40,6 +40,7 @@ package com.oracle.graal.python.nodes;
 
 public abstract class SpecialMethodNames {
     public static final String __NEW__ = "__new__";
+    public static final String __ALLOC__ = "__alloc__";
     public static final String __INIT__ = "__init__";
     public static final String __CEIL__ = "__ceil__";
     public static final String __DEL__ = "__del__";

@@ -122,14 +122,14 @@ static PyNumberMethods none_as_number = {
     0,                          /* nb_index */
 };
 
-PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT);
+PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
 PyObject _Py_NoneStruct = {
   _PyObject_EXTRA_INIT
   1, &_PyNone_Type
 };
 
-PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT);
+PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
 PyObject _Py_NotImplementedStruct = {
     _PyObject_EXTRA_INIT
@@ -171,18 +171,47 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
 	return 0;
 }
 
+/* Special C landing functions that convert some arguments to primitives. */
+
+static PyObject* wrap_allocfunc(allocfunc f, PyTypeObject* klass, PyObject* n) {
+	return f(explicit_cast(klass), PyLong_AsSsize_t(n));
+}
+
+static PyObject* wrap_getattrfunc(getattrfunc f, PyObject* obj, PyObject* unicode) {
+	// we really need to provide 'char *' since this often runs non-Sulong code
+	return f(explicit_cast(obj), as_char_pointer(unicode));
+}
+
+static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicode, PyObject* value) {
+	// we really need to provide 'char *' since this often runs non-Sulong code
+	return f(explicit_cast(obj), as_char_pointer(unicode), explicit_cast(value));
+}
+
+static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObject* n) {
+	return f(explicit_cast(a), explicit_cast(b), (int)PyLong_AsLong(n));
+}
+
+static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* size, PyObject* b) {
+	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size), explicit_cast(b)));
+}
+
+static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c) {
+	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+}
+
 int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
-#define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, m.ml_meth, m.ml_flags, m.ml_doc)
-#define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, meth, flags, name)
-#define ADD_METHOD_OR_SLOT(name, meth, flags, doc)                                          \
+#define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, get_method_flags_cwrapper(m.ml_flags), m.ml_meth, m.ml_flags, m.ml_doc)
+#define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, get_method_flags_cwrapper(flags), meth, flags, name)
+#define ADD_SLOT_CONV(name, clanding, meth, flags) ADD_METHOD_OR_SLOT(name, clanding, meth, flags, name)
+#define ADD_METHOD_OR_SLOT(name, clanding, meth, flags, doc)                                \
     if (meth) {                                                                             \
         truffle_invoke(PY_TRUFFLE_CEXT,                                                     \
                        "AddFunction",                                                       \
                        javacls,                                                             \
                        truffle_read_string(name),                                           \
                        truffle_address_to_function(meth),                                   \
-                       truffle_address_to_function(get_method_flags_cwrapper(flags)),       \
+                       truffle_address_to_function(clanding),                               \
                        get_method_flags_wrapper(flags),                                     \
                        truffle_read_string(doc),                                            \
                        (flags) > 0 && ((flags) & METH_CLASS) != 0,                          \
@@ -230,6 +259,10 @@ int PyType_Ready(PyTypeObject* cls) {
         cls->tp_bases = bases;
     }
 
+    PyObject* native_members = PyDict_New();
+    PyDict_SetItemString(native_members, "tp_name", polyglot_from_string(cls->tp_name, "utf-8"));
+    PyDict_SetItemString(native_members, "tp_doc", polyglot_from_string(cls->tp_doc ? cls->tp_doc : "", "utf-8"));
+    PyDict_SetItemString(native_members, "tp_basicsize", PyLong_FromSsize_t(cls->tp_basicsize));
 
     PyTypeObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
                                            "PyType_Ready",
@@ -238,8 +271,7 @@ int PyType_Ready(PyTypeObject* cls) {
                                            cls,
                                            to_java_type(metaclass),
                                            to_java(bases),
-                                           truffle_read_string(cls->tp_name),
-                                           truffle_read_string(cls->tp_doc ? cls->tp_doc : ""));
+                                           to_java(native_members));
     if (polyglot_is_value(javacls)) {
     	javacls = polyglot_as__typeobject(javacls);
     }
@@ -294,12 +326,16 @@ int PyType_Ready(PyTypeObject* cls) {
         int i = 0;
         PyGetSetDef getset = getsets[i];
         while (getset.name != NULL) {
+            getter getter_fun = getset.get;
+            setter setter_fun = getset.set;
             truffle_invoke(PY_TRUFFLE_CEXT,
                            "AddGetSet",
                            javacls,
                            truffle_read_string(getset.name),
-                           truffle_address_to_function(getset.get),
-                           truffle_address_to_function(getset.set),
+                           getter_fun != NULL ? getter_fun : to_java(Py_None),
+                           wrap_direct,
+                           setter_fun != NULL ? setter_fun : to_java(Py_None),
+                           wrap_direct,
                            getset.doc ? truffle_read_string(getset.doc) : truffle_read_string(""),
                            // do not convert the closure, it is handed to the
                            // getter and setter as-is
@@ -317,8 +353,11 @@ int PyType_Ready(PyTypeObject* cls) {
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
     // tp_getattr and tp_setattr are deprecated, and should be the same as
     // tp_getattro and tp_setattro
-    ADD_SLOT("__getattr__", cls->tp_getattr, -2);
-    ADD_SLOT("__setattr__", cls->tp_setattr, -3);
+
+    // NOTE: The slots may be called from managed code, i.e., we need to wrap the functions
+    // and convert arguments that should be C primitives.
+    ADD_SLOT_CONV("__getattr__", wrap_getattrfunc, cls->tp_getattr, -2);
+    ADD_SLOT_CONV("__setattr__", wrap_setattrfunc, cls->tp_setattr, -3);
     ADD_SLOT("__repr__", cls->tp_repr, -1);
     ADD_SLOT("__hash__", cls->tp_hash, -1);
     ADD_SLOT("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS);
@@ -326,13 +365,13 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT("__getattr__", cls->tp_getattro, -2);
     ADD_SLOT("__setattr__", cls->tp_getattro, -3);
     ADD_SLOT("__clear__", cls->tp_clear, -1);
-    ADD_SLOT("__compare__", cls->tp_richcompare, -3);
+    ADD_SLOT_CONV("__compare__", wrap_richcmpfunc, cls->tp_richcompare, -3);
     ADD_SLOT("__iter__", cls->tp_iter, -1);
     ADD_SLOT("__next__", cls->tp_iternext, -1);
     ADD_SLOT("__get__", cls->tp_descr_get, -3);
     ADD_SLOT("__set__", cls->tp_descr_set, -3);
-    ADD_SLOT("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS);
-    ADD_SLOT("__alloc__", cls->tp_alloc, -2);
+    ADD_SLOT_CONV("__init__", wrap_initproc, cls->tp_init, METH_KEYWORDS | METH_VARARGS);
+    ADD_SLOT_CONV("__alloc__", wrap_allocfunc, cls->tp_alloc, -2);
     ADD_SLOT("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS);
     ADD_SLOT("__free__", cls->tp_free, -1);
     ADD_SLOT("__del__", cls->tp_del, -1);
@@ -383,7 +422,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__add__", sequences->sq_concat, -2);
         ADD_SLOT("__mul__", sequences->sq_repeat, -2);
         ADD_SLOT("__getitem__", sequences->sq_item, -2);
-        ADD_SLOT("__setitem__", sequences->sq_ass_item, -3);
+        ADD_SLOT_CONV("__setitem__", wrap_ssizeobjargproc, sequences->sq_ass_item, -3);
         ADD_SLOT("__contains__", sequences->sq_contains, -2);
         ADD_SLOT("__iadd__", sequences->sq_inplace_concat, -2);
         ADD_SLOT("__imul__", sequences->sq_inplace_repeat, -2);
@@ -561,7 +600,11 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
 }
 
 PyObject* PyObject_GetAttrString(PyObject* obj, const char* attr) {
-    return to_sulong(truffle_read(to_java(obj), truffle_read_string(attr)));
+    void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetAttr", to_java(obj), polyglot_from_string(attr, "utf-8"));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return to_sulong(result);
 }
 
 int PyObject_SetAttrString(PyObject* obj, const char* attr, PyObject* value) {

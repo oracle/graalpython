@@ -38,4 +38,17 @@
  */
 #include "capi.h"
 
-PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC);
+PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE("memoryview", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, offsetof(PyMemoryViewObject, ob_array));
+PyTypeObject PyBuffer_Type = PY_TRUFFLE_TYPE("buffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyBufferDecorator));
+
+PyObject* PyMemoryView_FromObject(PyObject *v) {
+
+	// TODO implement
+
+    PyErr_Format(PyExc_TypeError, "memoryview: a bytes-like object is required, not '%.200s'", Py_TYPE(v)->tp_name);
+    return NULL;
+}
+
+int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags) {
+    return PyBuffer_FillInfo(view, (PyObject*)self, polyglot_get_member(self, "buf_delegate"), PyObject_Size((PyObject *)self), 1, flags);
+}

@@ -36,18 +36,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cext;
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
+/**
+ * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
+ * correct shape of the corresponding native type {@code struct _object}.
+ */
+public class PythonClassNativeWrapper extends PythonObjectNativeWrapper {
+    private final CStringWrapper nameWrapper;
+    private Object getBufferProc;
+    private Object releaseBufferProc;
 
-/* Dicts */
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyDictProxy_New", to_java(mapping));
+    public PythonClassNativeWrapper(PythonClass object) {
+        super(object);
+        this.nameWrapper = new CStringWrapper(object.getName());
+    }
+
+    public CStringWrapper getNameWrapper() {
+        return nameWrapper;
+    }
+
+    public Object getGetBufferProc() {
+        return getBufferProc;
+    }
+
+    public void setGetBufferProc(Object getBufferProc) {
+        this.getBufferProc = getBufferProc;
+    }
+
+    public Object getReleaseBufferProc() {
+        return releaseBufferProc;
+    }
+
+    public void setReleaseBufferProc(Object releaseBufferProc) {
+        this.releaseBufferProc = releaseBufferProc;
+    }
+
+    public static PythonClassNativeWrapper wrap(PythonClass obj) {
+        // important: native wrappers are cached
+        PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        if (nativeWrapper == null) {
+            nativeWrapper = new PythonClassNativeWrapper(obj);
+            obj.setNativeWrapper(nativeWrapper);
+        }
+        return nativeWrapper;
+    }
+
 }
-

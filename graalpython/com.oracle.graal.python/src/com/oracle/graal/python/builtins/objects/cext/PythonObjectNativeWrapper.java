@@ -46,26 +46,11 @@ import com.oracle.truffle.api.interop.TruffleObject;
  * Used to wrap {@link PythonAbstractObject} when used in native code. This wrapper mimics the
  * correct shape of the corresponding native type {@code struct _object}.
  */
-public class PythonObjectNativeWrapper implements TruffleObject {
+public class PythonObjectNativeWrapper extends PythonNativeWrapper {
     private final PythonAbstractObject pythonObject;
-    private Object nativePointer;
 
     public PythonObjectNativeWrapper(PythonAbstractObject object) {
         this.pythonObject = object;
-    }
-
-    public boolean isNative() {
-        return nativePointer != null;
-    }
-
-    public Object getNativePointer() {
-        return nativePointer;
-    }
-
-    public void setNativePointer(Object nativePointer) {
-        // we should set the pointer just once
-        assert this.nativePointer == null || this.nativePointer.equals(nativePointer);
-        this.nativePointer = nativePointer;
     }
 
     public PythonAbstractObject getPythonObject() {
@@ -76,6 +61,7 @@ public class PythonObjectNativeWrapper implements TruffleObject {
         return o instanceof PythonObjectNativeWrapper;
     }
 
+    @Override
     public ForeignAccess getForeignAccess() {
         return PythonObjectNativeWrapperMRForeign.ACCESS;
     }
@@ -89,5 +75,4 @@ public class PythonObjectNativeWrapper implements TruffleObject {
         }
         return nativeWrapper;
     }
-
 }

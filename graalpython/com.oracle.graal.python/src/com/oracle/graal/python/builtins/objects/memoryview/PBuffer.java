@@ -36,18 +36,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.memoryview;
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
+public class PBuffer extends PythonBuiltinObject {
 
-/* Dicts */
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyDictProxy_New", to_java(mapping));
+    private final Object delegate;
+
+    public PBuffer(PythonClass cls, Object iterable) {
+        super(cls);
+        this.delegate = iterable;
+    }
+
+    public Object getDelegate() {
+        return delegate;
+    }
+
 }
-

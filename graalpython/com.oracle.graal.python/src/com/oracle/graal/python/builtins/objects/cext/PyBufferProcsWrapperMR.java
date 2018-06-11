@@ -36,18 +36,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cext;
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.MessageResolution;
+import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.nodes.Node;
 
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
+@MessageResolution(receiverType = PyBufferProcsWrapper.class)
+public class PyBufferProcsWrapperMR {
 
-/* Dicts */
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyDictProxy_New", to_java(mapping));
+    @Resolve(message = "READ")
+    abstract static class ReadNode extends Node {
+        @Child private ToSulongNode toSulongNode;
+
+        public Object access(PyBufferProcsWrapper object, String key) {
+            // translate key to attribute name
+            PythonClassNativeWrapper nativeWrapper = object.getDelegate().getNativeWrapper();
+            // TODO handle case if nativeWrapper does not exist yet
+            Object result;
+            switch (key) {
+                case "bf_getbuffer":
+                    result = nativeWrapper.getGetBufferProc();
+                    break;
+                case "bf_releasebuffer":
+                    // TODO
+                    result = nativeWrapper.getReleaseBufferProc();
+                    break;
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.raise(key);
+            }
+            // use NO_VALUE for NULL
+            return getToSulongNode().execute(result == null ? PNone.NO_VALUE : result);
+        }
+
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
+    }
 }
-

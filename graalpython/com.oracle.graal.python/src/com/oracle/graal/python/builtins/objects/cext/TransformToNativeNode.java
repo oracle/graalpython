@@ -36,18 +36,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.builtins.objects.cext;
 
-// taken from CPython "Objects/descrobject.c"
-typedef struct {
-    PyObject_HEAD
-    PyObject *mapping;
-} mappingproxyobject;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 
-PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
+abstract class TransformToNativeNode extends PBaseNode {
+    @Child private Node isPointerNode;
+    @Child private Node toNativeNode;
 
-/* Dicts */
-PyObject* PyDictProxy_New(PyObject *mapping) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyDictProxy_New", to_java(mapping));
+    protected Object ensureIsPointer(Object value) {
+        if (value instanceof TruffleObject) {
+            TruffleObject truffleObject = (TruffleObject) value;
+            if (isPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isPointerNode = insert(Message.IS_POINTER.createNode());
+            }
+            if (!ForeignAccess.sendIsPointer(isPointerNode, truffleObject)) {
+                if (toNativeNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    toNativeNode = insert(Message.TO_NATIVE.createNode());
+                }
+                try {
+                    return ForeignAccess.sendToNative(toNativeNode, truffleObject);
+                } catch (UnsupportedMessageException e) {
+                    throw e.raise();
+                }
+            }
+        }
+        return value;
+    }
+
 }
-

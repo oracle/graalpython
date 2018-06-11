@@ -107,6 +107,7 @@ import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltin
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -261,6 +262,7 @@ public final class Python3Core implements PythonCore {
                     new AtexitModuleBuiltins(),
                     new FaulthandlerModuleBuiltins(),
                     new SysModuleBuiltins(),
+                    new BufferBuiltins(),
     };
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
