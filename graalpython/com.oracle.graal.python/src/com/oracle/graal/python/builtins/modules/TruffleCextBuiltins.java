@@ -136,17 +136,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_python_object", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    abstract static class IsPythonObjectNode extends PythonBuiltinNode {
-        public abstract boolean execute(Object value);
-
-        @Specialization
-        boolean run(Object value) {
-            return value instanceof PythonAbstractObject;
-        }
-    }
-
     /**
      * Called from C when they actually want a {@code const char*} for a Python string
      */
