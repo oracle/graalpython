@@ -287,6 +287,7 @@ public final class Python3Core implements PythonCore {
     private final PythonParser parser;
 
     @CompilationFinal private boolean initialized;
+    @CompilationFinal private boolean builtinsPatchesLoaded;
 
     // used in case PythonOptions.SharedCore is false
     @CompilationFinal private PythonContext singletonContext;
@@ -360,9 +361,10 @@ public final class Python3Core implements PythonCore {
 
     @Override
     public void loadBuiltinsPatches() {
-        if (initialized) {
+        if (initialized && !builtinsPatchesLoaded) {
             String coreHome = PythonCore.getCoreHomeOrFail();
             loadFile(__BUILTINS_PATCHES__, coreHome);
+            builtinsPatchesLoaded = true;
         }
     }
 
