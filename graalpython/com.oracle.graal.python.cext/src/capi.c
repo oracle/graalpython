@@ -122,6 +122,13 @@ static void initialize_capi() {
     initialize_bufferprocs();
 }
 
+__attribute__((always_inline))
+inline void* handle_exception(void* val) {
+    return val == ERROR_MARKER ? NULL : val;
+}
+
+#define UPCALL_O(__recv__, __name__, ...) handle_exception(polyglot_invoke((__recv__), (__name__), __VA_ARGS__))
+
 void* native_to_java(PyObject* obj) {
     if (obj == Py_None) {
         return Py_None;
