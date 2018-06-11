@@ -54,7 +54,7 @@ def unlink(file_name):
 
 
 def test_read_write_file():
-    import _pyio as pyio # Python implementation.
+    import _pyio as pyio  # Python implementation.
 
     file_name = "dump.txt"
 
@@ -88,7 +88,7 @@ def test_read_write_file():
 
 
 def test_file():
-    import _pyio as pyio # Python implementation.
+    import _pyio as pyio  # Python implementation.
     file_name = "dump.txt"
 
     unlink(file_name)
@@ -153,3 +153,22 @@ def test_file():
         assert f.closed
     finally:
         unlink(file_name)
+
+
+def test_builtin_open():
+    import _pyio as pyio  # Python implementation.
+    file_name = "mymodule.py"
+
+    f = pyio.open(file_name, "w")
+    f.write('print(42)\n')
+    f.close()
+
+    success = True
+    try:
+        exec(open(file_name).read())
+        exec(compile(open(file_name, "r").read(), file_name, "eval"))
+    except Exception as e:
+        print(e)
+        success = False
+
+    assert success
