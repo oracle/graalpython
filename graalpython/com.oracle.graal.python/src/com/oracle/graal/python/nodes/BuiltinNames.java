@@ -43,7 +43,6 @@ public abstract class BuiltinNames {
     public static final String __BREAKPOINT__ = "__breakpoint__";
     public static final String __BUILTINS_PATCHES__ = "__builtins_patches__";
 
-
     // cpython internals
     public static final String MODULE = "module";
     public static final String __BUILD_CLASS__ = "__build_class__";
