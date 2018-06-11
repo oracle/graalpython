@@ -213,6 +213,8 @@ public final class PythonParserImpl implements PythonParser {
     }
 
     private static PythonParseResult translateParseResult(PythonCore core, String name, ParserRuleContext input, Source source, Frame frame) {
+        // ensure builtins patches are loaded before parsing
+        core.loadBuiltinsPatches();
         TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
         ScopeTranslator.accept(input, environment,
                         (env, trackCells) -> new ScopeTranslator<>(core, env, source.isInteractive(), trackCells),
@@ -223,6 +225,8 @@ public final class PythonParserImpl implements PythonParser {
     }
 
     private static PNode translateInlineParseResult(PythonCore core, String name, ParserRuleContext input, Source source, Frame currentFrame) {
+        // ensure builtins patches are loaded before parsing
+        core.loadBuiltinsPatches();
         TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
         ScopeTranslator.accept(input, environment,
                         (env, trackCells) -> new InlineScopeTranslator<>(core, env, currentFrame.getFrameDescriptor(), trackCells),

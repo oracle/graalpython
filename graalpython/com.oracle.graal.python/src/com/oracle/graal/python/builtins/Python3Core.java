@@ -362,9 +362,9 @@ public final class Python3Core implements PythonCore {
     @Override
     public void loadBuiltinsPatches() {
         if (initialized && !builtinsPatchesLoaded) {
+            builtinsPatchesLoaded = true;
             String coreHome = PythonCore.getCoreHomeOrFail();
             loadFile(__BUILTINS_PATCHES__, coreHome);
-            builtinsPatchesLoaded = true;
         }
     }
 
