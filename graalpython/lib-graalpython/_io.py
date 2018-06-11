@@ -543,99 +543,17 @@ sys.stderr = FileIO(2, mode='w', closefd=False)
 sys.__stderr__ = sys.stderr
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# following definitions: patched in the __builtins_patches__ module
+#
+# ----------------------------------------------------------------------------------------------------------------------
 class _BufferedIOBase(_IOBase):
-    """Base class for buffered IO objects.
-
-The main difference with RawIOBase is that the read() method
-supports omitting the size argument, and does not have a default
-implementation that defers to readinto().
-
-In addition, read(), readinto() and write() may raise
-BlockingIOError if the underlying raw stream is in non-blocking
-mode and not ready; unlike their raw counterparts, they will never
-return None.
-
-A typical implementation should not inherit from a RawIOBase
-implementation, but wrap one.
-"""
-
-    def _check_init(self):
-        raise NotImplementedError
-
-    def read(self, size=None):
-        """Read and return up to n bytes.
-
-If the argument is omitted, None, or negative, reads and
-returns all data until EOF.
-
-If the argument is positive, and the underlying raw stream is
-not 'interactive', multiple raw reads may be issued to satisfy
-the byte count (unless EOF is reached first).  But for
-interactive raw streams (as well as sockets and pipes), at most
-one raw read will be issued, and a short result does not imply
-that EOF is imminent.
-
-Returns an empty bytes object on EOF.
-
-Returns None if the underlying raw stream was open in non-blocking
-mode and no data is available at the moment."""
-        raise UnsupportedOperation("read")
-
-    def read1(self, size):
-        """Read and return up to n bytes, with at most one read() call
-to the underlying raw stream. A short result does not imply
-that EOF is imminent.
-
-Returns an empty bytes object on EOF."""
-        raise UnsupportedOperation("read1")
-
-    def write(self, data):
-        """Write the given buffer to the IO stream.
-
-Returns the number of bytes written, which is always the length of b
-in bytes.
-
-Raises BlockingIOError if the buffer is full and the
-underlying raw stream cannot accept more data at the moment."""
-        raise UnsupportedOperation("write")
-
-    def detach(self):
-        """Disconnect this buffer from its underlying raw stream and return it.
-
-After the raw stream has been detached, the buffer is in an unusable
-state."""
-        raise UnsupportedOperation("detach")
-
-    def readinto(self, space, buffer):
-        length = len(buffer)
-        data = self.read(length)
-        if not isinstance(data, bytes):
-            raise TypeError("read() should return bytes")
-        ldata = len(data)
-        if ldata > length:
-            raise ValueError("read() returned too much data: "
-                             "%d bytes requested, %d returned" % (length, ldata))
-        buffer[0:ldata] = data
-        return ldata
-
-    def readinto1(self, buffer):
-        length = len(buffer)
-        data = self.read1(length)
-        if not isinstance(data, bytes):
-            raise TypeError("read1() should return bytes")
-        ldata = len(data)
-        if ldata > length:
-            raise ValueError("read1() returned too much data: "
-                             "%d bytes requested, %d returned" % (length, ldata))
-        buffer[0:ldata] = data
-        return ldata
+    pass
 
 
 class BytesIO(_BufferedIOBase):
-    def __init__(self, inital_bytes=None):
-        if inital_bytes:
-            self.write(inital_bytes)
-            self.seek(0)
+    pass
 
 
 class _TextIOBase(_IOBase):
@@ -671,11 +589,14 @@ class TextIOWrapper(_TextIOBase):
 
 
 def open(*args, **kwargs):
-    # this method will be overwritten in _patches
     raise NotImplementedError
 
 
-# set the builtins open method
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# needed for imports will be patched in the __builtins_patches__ module
+#
+# ----------------------------------------------------------------------------------------------------------------------
 import builtins
 setattr(builtins, 'open', open)
 globals()['open'] = open
