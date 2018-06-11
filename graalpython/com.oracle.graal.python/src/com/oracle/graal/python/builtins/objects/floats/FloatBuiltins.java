@@ -84,6 +84,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PFloat.class)
 public final class FloatBuiltins extends PythonBuiltins {
@@ -929,25 +930,38 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TruncNode extends PythonUnaryBuiltinNode {
 
-        private int truncate(double value) {
+        @TruffleBoundary
+        protected static int truncate(double value) {
             return (int) (value < 0 ? Math.ceil(value) : Math.floor(value));
         }
 
         @Specialization
-        int trunc(double value) {
+        int trunc(double value,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+            if (nanProfile.profile(Double.isNaN(value))) {
+                throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+            }
+            if (infProfile.profile(Double.isInfinite(value))) {
+                throw raise(PythonErrorType.OverflowError, "cannot convert float infinity to integer");
+            }
             return truncate(value);
         }
 
         @Specialization
-        int trunc(PFloat pValue) {
+        int trunc(PFloat pValue,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
             double value = pValue.getValue();
-            if (value == Double.NaN) {
-                raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
-            } else if (value == Double.NEGATIVE_INFINITY || value == Double.POSITIVE_INFINITY) {
-                raise(PythonErrorType.OverflowError, "cannot convert float infinity to integer");
+            if (nanProfile.profile(Double.isNaN(value))) {
+                throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+            }
+            if (infProfile.profile(Double.isInfinite(value))) {
+                throw raise(PythonErrorType.OverflowError, "cannot convert float infinity to integer");
             }
             return truncate(value);
         }
+
     }
 
     @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)
