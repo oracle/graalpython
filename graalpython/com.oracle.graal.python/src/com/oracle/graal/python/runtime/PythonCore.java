@@ -123,7 +123,7 @@ public interface PythonCore {
 
     public PythonContext getContext();
 
-    default void runPostInit() {
+    default void loadBuiltinsPatches() {
 
     }
 

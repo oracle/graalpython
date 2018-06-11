@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
 import java.io.IOException;
@@ -153,8 +154,6 @@ import com.oracle.truffle.api.source.Source;
  * {@link PythonContext} has its own core.
  */
 public final class Python3Core implements PythonCore {
-    private static final String POST_INIT_MODULE_NAME = "_post_init";
-
     // Order matters!
     private static final String[] CORE_FILES = new String[]{
                     "_descriptor",
@@ -360,10 +359,10 @@ public final class Python3Core implements PythonCore {
     }
 
     @Override
-    public void runPostInit() {
+    public void loadBuiltinsPatches() {
         if (initialized) {
             String coreHome = PythonCore.getCoreHomeOrFail();
-            loadFile(POST_INIT_MODULE_NAME, coreHome);
+            loadFile(__BUILTINS_PATCHES__, coreHome);
         }
     }
 

@@ -241,7 +241,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (!pythonCore.isInitialized()) {
             pythonCore.initialize();
         }
-        pythonCore.runPostInit();
+        pythonCore.loadBuiltinsPatches();
         context.getOrCreateMainModule(request.getSource().getPath());
 
         // if we are running the interpreter, module 'site' is automatically imported
@@ -294,7 +294,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             @TruffleBoundary
             private Object parseAndEval(PythonContext context, MaterializedFrame frame) {
-                context.getCore().runPostInit();
+                context.getCore().loadBuiltinsPatches();
                 PNode fragment = parseInline(source, context, frame);
                 return fragment.execute(frame);
             }
