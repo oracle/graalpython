@@ -39,9 +39,9 @@
 #include "capi.h"
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-	void *jtype = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname));
-    PyTypeObject* ptype = (PyTypeObject *)to_sulong(jtype);
-    PyTypeObject *nativePointer = PyObjectHandle_ForJavaType(jtype);
+    // explicit type cast is required because the type flags are not yet initialized !
+    PyTypeObject* ptype = polyglot_as__typeobject(UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(typname, SRC_CS)));
+    PyTypeObject *nativePointer = truffle_is_handle_to_managed(ptype) ? ptype : truffle_deref_handle_for_managed(ptype);
 
     // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
     // TODO Remove this as soon as this is properly supported.
@@ -49,7 +49,7 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
-    PyTypeObject* type_handle = truffle_assign_managed(structure, polyglot_as__typeobject(ptype));
+    PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
@@ -203,25 +203,22 @@ uint64_t PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;
 }
 
-PyObject* PyObjectHandle_ForJavaObject(PyObject* jobj, unsigned long flags) {
-	if (!truffle_is_handle_to_managed(jobj)) {
-		PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", jobj);
+void* PyObjectHandle_ForJavaObject(void* cobj, unsigned long flags) {
+	if (!truffle_is_handle_to_managed(cobj)) {
 		if(polyglot_is_value(cobj)) {
 			cobj = PyTruffle_Explicit_Cast(cobj, flags);
 		}
 		return truffle_deref_handle_for_managed(cobj);
 	}
-	return jobj;
+	return cobj;
 }
 
 /** to be used from Java code only; only creates the deref handle */
-PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
-	if (!truffle_is_handle_to_managed(jobj)) {
-		PyTypeObject* jtypeobj = polyglot_as__typeobject(to_sulong(jobj));
-		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jtypeobj);
-		return deref_handle;
+void* PyObjectHandle_ForJavaType(void* ptype) {
+	if (!truffle_is_handle_to_managed(ptype)) {
+		return truffle_deref_handle_for_managed(ptype);
 	}
-	return jobj;
+	return ptype;
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */

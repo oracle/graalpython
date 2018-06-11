@@ -543,6 +543,7 @@ public class PythonObjectNativeWrapperMR {
         @Child private PCallNativeNode callNativeUnary;
         @Child private PCallNativeNode callNativeBinary;
         @Child private GetClassNode getClassNode;
+        @Child private CExtNodes.ToSulongNode toSulongNode;
 
         public abstract Object execute(Object value);
 
@@ -562,15 +563,15 @@ public class PythonObjectNativeWrapperMR {
             return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, clazz.getFlags()));
         }
 
-        @Specialization(guards = "isNonNative(object)")
+        @Specialization(guards = "isManagedPythonClass(object)")
         Object runClass(PythonClass object) {
-            return ensureIsPointer(callUnaryIntoCapi(object, getPyObjectHandle_ForJavaType()));
+            return ensureIsPointer(callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), getToSulongNode().execute(object)));
         }
 
         @Fallback
         Object runObject(Object object) {
             PythonClass clazz = getClassNode().execute(object);
-            return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, clazz.getFlags()));
+            return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), getToSulongNode().execute(object), clazz.getFlags()));
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {
@@ -589,11 +590,11 @@ public class PythonObjectNativeWrapperMR {
             return PyObjectHandle_FromJavaObject;
         }
 
-        protected boolean isNonNative(PythonClass klass) {
-            return !(klass instanceof PythonNativeClass);
+        protected boolean isManagedPythonClass(PythonAbstractObject klass) {
+            return klass instanceof PythonClass && !(klass instanceof PythonNativeClass);
         }
 
-        private Object callUnaryIntoCapi(PythonAbstractObject arg, TruffleObject fun) {
+        private Object callUnaryIntoCapi(TruffleObject fun, Object arg) {
             if (callNativeUnary == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callNativeUnary = insert(PCallNativeNode.create(1));
@@ -615,6 +616,14 @@ public class PythonObjectNativeWrapperMR {
                 getClassNode = insert(GetClassNode.create());
             }
             return getClassNode;
+        }
+
+        private CExtNodes.ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(CExtNodes.ToSulongNode.create());
+            }
+            return toSulongNode;
         }
     }
 }
