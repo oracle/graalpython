@@ -46,6 +46,7 @@ PyObject* PyTuple_New(Py_ssize_t size) {
 }
 
 int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
+//    return UPCALL_CEXT_I("PyTuple_SetItem", native_to_java(tuple), position, native_to_java(item));
     return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyTuple_SetItem", to_java(tuple), position, to_java(item));
 }
 

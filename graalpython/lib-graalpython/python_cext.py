@@ -195,6 +195,10 @@ def PyObject_LEN(obj):
     return len(obj)
 
 
+def PyTruffle_Object_LEN(obj):
+    return len(to_java(obj))
+
+
 ##################### BYTES
 
 def PyBytes_FromStringAndSize(string, encoding):
@@ -219,6 +223,7 @@ def PyBytes_Check(obj):
     return isinstance(obj, bytes)
 
 
+@may_raise
 def PyBytes_Concat(original, newpart):
     return original + newpart
 
@@ -1126,3 +1131,27 @@ def PyImport_GetModuleDict():
 @may_raise
 def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
+
+
+@may_raise
+def PyTruffle_Upcall(rcv, name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_sulong(getattr(rcv, name)(*converted))
+
+def PyTruffle_Cext_Upcall(name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_sulong(globals()[name](*converted))
+
+
+def PyTruffle_Cext_Upcall_l(name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return globals()[name](*converted)

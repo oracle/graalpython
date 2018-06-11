@@ -42,17 +42,9 @@ PyTypeObject PySet_Type = PY_TRUFFLE_TYPE("set", &PyType_Type, Py_TPFLAGS_DEFAUL
 PyTypeObject PyFrozenSet_Type = PY_TRUFFLE_TYPE("frozenset", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PySetObject));
 
 PyObject * PySet_New(PyObject *iterable) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySet_New", to_java(iterable));
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-	return to_sulong(result);
+    return UPCALL_CEXT_O("PySet_New", native_to_java(iterable));
 }
 
 PyObject * PyFrozenSet_New(PyObject *iterable) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyFrozenSet_New", to_java(iterable));
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-	return to_sulong(result);
+    return UPCALL_CEXT_O("PyFrozenSet_New", native_to_java(iterable));
 }
