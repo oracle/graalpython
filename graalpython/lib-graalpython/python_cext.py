@@ -202,7 +202,9 @@ def PyTruffle_Object_LEN(obj):
 ##################### BYTES
 
 def PyBytes_FromStringAndSize(string, encoding):
-    return bytes(string, encoding)
+    if string is not None:
+        return bytes(string, encoding)
+    return bytes()
 
 
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
