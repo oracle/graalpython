@@ -562,12 +562,8 @@ void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
 	return native_to_java(fun(explicit_cast(module), explicit_cast(pnone)));
 }
 
-void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames) {
-	Py_ssize_t i;
-    for (i=0; i < nargs; i++) {
-    	args[i] = explicit_cast(args[i]);
-    }
-	return native_to_java(fun(explicit_cast(self), args, nargs, explicit_cast(kwnames)));
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
+	return native_to_java(fun(explicit_cast(self), PySequence_Fast_ITEMS(explicit_cast((PyObject*)args)), PyLong_AsSsize_t(nargs), explicit_cast(kwnames)));
 }
 
 void* wrap_unsupported(void *fun, ...) {

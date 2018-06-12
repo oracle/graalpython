@@ -38,6 +38,13 @@
  */
 #include "capi.h"
 
+void* PyMem_Malloc(size_t size) {
+    if (size > (size_t)PY_SSIZE_T_MAX) {
+        return NULL;
+    }
+    return malloc(size);
+}
+
 void* PyMem_RawMalloc(size_t size) {
     return malloc(size);
 }

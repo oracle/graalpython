@@ -57,7 +57,7 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
     return result;
 }
 
-long long PyLong_AsLonglong(PyObject *obj) {
+long long PyLong_AsLongLong(PyObject *obj) {
     return as_long_long(obj);
 }
 
