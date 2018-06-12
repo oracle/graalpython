@@ -124,8 +124,13 @@ static void initialize_capi() {
 
 
 __attribute__((always_inline))
-inline PyObject* handle_exception(void* val) {
+inline PyObject* handle_exception_and_cast(void* val) {
     return val == ERROR_MARKER ? NULL : explicit_cast(val);
+}
+
+__attribute__((always_inline))
+inline void* handle_exception(void* val) {
+    return val == ERROR_MARKER ? NULL : val;
 }
 
 void* native_to_java(PyObject* obj) {
@@ -227,12 +232,19 @@ void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
     return truffle_deref_handle_for_managed(jobj);
 }
 
-const char* PyTruffle_StringToCstr(void* jlString) {
-    return truffle_string_to_cstr(jlString);
+const char* PyTruffle_StringToCstr(void* o) {
+    return polyglot_from_string(o, SRC_CS);
 }
 
-void* PyTruffle_CstrToString(const char* o) {
-    return polyglot_from_string(o, "utf-8");
+const char* PyTruffle_ByteArrayToNative(const void* jbyteArray, int len) {
+    int i;
+    char* barr = (const char*) malloc(len * sizeof(char));
+
+    for(i=0; i < len; i++) {
+        barr[i] = (char) polyglot_get_array_element(jbyteArray, i);
+    }
+
+    return (const char*) barr;
 }
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]

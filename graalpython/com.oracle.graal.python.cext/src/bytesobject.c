@@ -58,14 +58,8 @@ PyObject * PyBytes_FromString(const char *str) {
 	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", polyglot_from_string(str, SRC_CS), polyglot_from_string(encoding, SRC_CS));
 }
 
-// taken from CPython "Objects/bytesobject.c"
 char* PyBytes_AsString(PyObject *obj) {
-    if (!PyBytes_Check(obj)) {
-        PyErr_Format(PyExc_TypeError,
-             "expected bytes, %.200s found", Py_TYPE(obj)->tp_name);
-        return NULL;
-    }
-    return ((PyBytesObject *)obj)->ob_sval;
+    return UPCALL_CEXT_PTR("PyTruffle_Bytes_AsString", native_to_java(obj), ERROR_MARKER);
 }
 
 int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {

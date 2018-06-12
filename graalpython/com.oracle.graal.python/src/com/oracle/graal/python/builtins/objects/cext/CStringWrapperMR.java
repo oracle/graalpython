@@ -38,6 +38,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
@@ -48,26 +51,58 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
-@MessageResolution(receiverType = PyNumberMethodsWrapper.class)
+@MessageResolution(receiverType = CArrayWrapper.class)
 public class CStringWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
 
-        public Object access(CStringWrapper object, int idx) {
+        public char access(CStringWrapper object, int idx) {
             String s = object.getDelegate();
             if (idx >= 0 && idx < s.length()) {
                 return s.charAt(idx);
             } else if (idx == s.length()) {
-                return 0;
+                return '\0';
+            }
+            throw UnknownIdentifierException.raise(Integer.toString(idx));
+        }
+
+        public byte access(CByteArrayWrapper object, long idx) {
+            return access(object, (int) idx);
+        }
+
+        public byte access(CByteArrayWrapper object, int idx) {
+            byte[] arr = object.getDelegate();
+            if (idx >= 0 && idx < arr.length) {
+                return arr[idx];
+            } else if (idx == arr.length) {
+                return (byte) 0;
             }
             throw UnknownIdentifierException.raise(Integer.toString(idx));
         }
     }
 
+    @Resolve(message = "HAS_SIZE")
+    abstract static class HashSizeNode extends Node {
+        boolean access(@SuppressWarnings("unused") CArrayWrapper<?> obj) {
+            return true;
+        }
+    }
+
+    @Resolve(message = "GET_SIZE")
+    abstract static class GetSizeNode extends Node {
+        long access(CStringWrapper obj) {
+            return obj.getDelegate().length();
+        }
+
+        int access(CByteArrayWrapper obj) {
+            return obj.getDelegate().length;
+        }
+    }
+
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        boolean access(CStringWrapper obj) {
+        boolean access(CArrayWrapper<?> obj) {
             return obj.isNative();
         }
     }
@@ -76,7 +111,7 @@ public class CStringWrapperMR {
     abstract static class AsPointerNode extends Node {
         @Child private Node asPointerNode;
 
-        long access(CStringWrapper obj) {
+        long access(CArrayWrapper<?> obj) {
             // the native pointer object must either be a TruffleObject or a primitive
             Object nativePointer = obj.getNativePointer();
             if (nativePointer instanceof TruffleObject) {
@@ -99,7 +134,7 @@ public class CStringWrapperMR {
     abstract static class ToNativeNode extends Node {
         @Child private CExtNodes.AsCharPointer asCharPointerNode;
 
-        Object access(CStringWrapper obj) {
+        Object access(CArrayWrapper<?> obj) {
             if (!obj.isNative()) {
                 if (asCharPointerNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

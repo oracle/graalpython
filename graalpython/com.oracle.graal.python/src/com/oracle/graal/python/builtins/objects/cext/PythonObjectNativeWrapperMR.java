@@ -91,7 +91,6 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonObjectNativeWrapper.class)
 public class PythonObjectNativeWrapperMR {
@@ -169,13 +168,8 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_SVAL, key)")
-        Object doObSval(PythonObject object, @SuppressWarnings("unused") String key,
-                        @Cached("createClassProfile()") ValueProfile profile) {
-            Object profiled = profile.profile(object);
-            if (profiled instanceof PBytes) {
-                return new PySequenceArrayWrapper(profiled);
-            }
-            throw UnsupportedMessageException.raise(Message.READ);
+        Object doObSval(PBytes object, @SuppressWarnings("unused") String key) {
+            return new PySequenceArrayWrapper(object);
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")

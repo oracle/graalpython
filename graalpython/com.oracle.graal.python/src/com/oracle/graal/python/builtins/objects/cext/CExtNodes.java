@@ -57,6 +57,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -282,9 +283,29 @@ public abstract class CExtNodes {
     public abstract static class AsCharPointer extends PBaseNode {
 
         @CompilationFinal TruffleObject truffle_string_to_cstr;
-        @Child private Node executeNode;
+        @CompilationFinal TruffleObject truffle_byte_array_to_native;
 
-        public abstract Object execute(String s);
+        public abstract Object execute(Object obj);
+
+        @Specialization
+        Object doString(String str,
+                        @Cached("createExecute(1)") Node executeNode) {
+            try {
+                return ForeignAccess.sendExecute(executeNode, getTruffleStringToCstr(), str);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+
+        @Specialization
+        Object doByteArray(byte[] arr,
+                        @Cached("createExecute(2)") Node executeNode) {
+            try {
+                return ForeignAccess.sendExecute(executeNode, getTruffleByteArrayToNative(), getContext().getEnv().asGuestValue(arr), arr.length);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
 
         TruffleObject getTruffleStringToCstr() {
             if (truffle_string_to_cstr == null) {
@@ -294,21 +315,16 @@ public abstract class CExtNodes {
             return truffle_string_to_cstr;
         }
 
-        private Node getExecuteNode() {
-            if (executeNode == null) {
+        TruffleObject getTruffleByteArrayToNative() {
+            if (truffle_byte_array_to_native == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(1).createNode());
+                truffle_byte_array_to_native = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE);
             }
-            return executeNode;
+            return truffle_byte_array_to_native;
         }
 
-        @Specialization
-        Object doString(String str) {
-            try {
-                return ForeignAccess.sendExecute(getExecuteNode(), getTruffleStringToCstr(), str);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw e.raise();
-            }
+        protected Node createExecute(int arity) {
+            return Message.createExecute(arity).createNode();
         }
 
         public static AsCharPointer create() {
