@@ -102,6 +102,39 @@ class MathTests(unittest.TestCase):
         if failure is not None:
             self.fail("{}: {}".format(name, failure))
 
+    def testAcos(self):
+        self.assertRaises(TypeError, math.acos)
+        self.ftest('acos(-1)', math.acos(-1), math.pi)
+        self.ftest('acos(0)', math.acos(0), math.pi/2)
+        self.ftest('acos(1)', math.acos(1), 0)
+        self.assertRaises(ValueError, math.acos, INF)
+        self.assertRaises(ValueError, math.acos, NINF)
+        self.assertRaises(ValueError, math.acos, 1 + eps)
+        self.assertRaises(ValueError, math.acos, -1 - eps)
+        self.assertTrue(math.isnan(math.acos(NAN)))
+
+        self.assertEqual(math.acos(True), 0.0)
+        self.assertRaises(ValueError, math.acos, 10)
+        self.assertRaises(ValueError, math.acos, -10)
+        self.assertRaises(TypeError, math.acos, 'ahoj')
+
+        self.assertRaises(ValueError, math.acos, 9999992432902008176640000999999)
+
+        class MyFloat:
+            def __float__(self):
+                return 0.6
+        self.ftest('acos(MyFloat())', math.acos(MyFloat()), 0.9272952180016123)
+
+        class MyFloat2:
+            def __float__(self):
+                return 1.6
+        self.assertRaises(ValueError, math.acos, MyFloat2())        
+
+        class MyFloat3:
+            def __float__(self):
+                return 'ahoj'
+        self.assertRaises(TypeError, math.acos, MyFloat3())
+
     def test_ceil_basic(self):
         self.assertEqual(math.ceil(10), 10)
         self.assertEqual(math.ceil(-10), -10)

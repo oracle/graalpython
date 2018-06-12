@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -827,18 +828,51 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "acos", fixedNumOfArguments = 1)
+    @Builtin(name = "acos", fixedNumOfArguments = 1, doc = "Return the arc cosine (measured in radians) of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class AcosNode extends PythonBuiltinNode {
 
+        public abstract double execute(Object value);
+
         @Specialization
-        public double acos(int value) {
+        public double acos(int value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(value > 1 || value < -1)) {
+                throw raise(ValueError, "math domain error");
+            }
             return Math.acos(value);
         }
 
         @Specialization
-        public double acos(double value) {
+        public double acos(PInt value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return acos(value.intValue(), doNotFit);
+        }
+
+        @Specialization
+        public double acos(double value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(Double.isInfinite(value) || -1 > value || value > 1)) {
+                throw raise(ValueError, "math domain error");
+            }
             return Math.acos(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double acos(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AcosNode acosNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return acosNode.execute(result);
+        }
+
+        protected AcosNode create() {
+            return MathModuleBuiltinsFactory.AcosNodeFactory.create(new PNode[0]);
         }
     }
 
