@@ -40,12 +40,8 @@
 
 PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS, sizeof(PyUnicodeObject));
 
-void* PyTruffle_Unicode_FromString(const char* o) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromString", polyglot_from_string(o, "utf-8"));
-}
-
 PyObject* PyUnicode_FromString(const char* o) {
-    return to_sulong(PyTruffle_Unicode_FromString(o));
+    return to_sulong(polyglot_from_string(o, SRC_CS));
 }
 
 static PyObject* _PyUnicode_FromUTF8(const char* o) {
@@ -57,7 +53,7 @@ PyObject * PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size) {
         PyErr_SetString(PyExc_SystemError, "Negative size passed to PyUnicode_FromStringAndSize");
         return NULL;
     }
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromString", truffle_read_n_string(u, size)));
+    return to_sulong(polyglot_from_string_n(u, size, SRC_CS));
 }
 
 PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
@@ -140,13 +136,14 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
 
 
 PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
-    PyObject *result;
-    int i;
-    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_FromWchar", truffle_read_n_bytes((char *)u, size * Py_UNICODE_SIZE), Py_UNICODE_SIZE, ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-    	return NULL;
+//    return UPCALL_CEXT_O("PyTruffle_Unicode_FromWchar", truffle_read_n_bytes((char *)u, size * Py_UNICODE_SIZE), Py_UNICODE_SIZE, ERROR_MARKER);
+    switch(Py_UNICODE_SIZE) {
+    case 2:
+        return to_sulong(polyglot_from_string_n((const char*)u, size, "utf-16be"));
+    case 4:
+        return to_sulong(polyglot_from_string_n((const char*)u, size, "utf-32"));
     }
-    return to_sulong(result);
+    return NULL;
 }
 
 PyObject* PyUnicode_FromObject(PyObject* o) {
