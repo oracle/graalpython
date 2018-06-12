@@ -425,7 +425,7 @@ def save_as_html(report_name, rows, missing_modules, current_date):
         </div>
     '''.format(title='missing modules', content='\n'.join([
         '<li class="list-group-item"><b>{}</b>&nbsp;<span class="text-muted">count: {}</span></li>'.format(name, cnt)
-        for cnt, name in sorted(((cnt, name) for name, cnt in missing_modules.items()))
+        for cnt, name in sorted(((cnt, name) for name, cnt in missing_modules.items()), reverse=True)
     ]))
 
     content = modules_info + table('stats', CSV_HEADER, rows)

@@ -239,7 +239,7 @@ def nativebuild(args):
 
 
 def nativeclean(args):
-    mx.run(['find', '.', '-name', '*.bc', '-delete'])
+    mx.run(['find', _suite.dir, '-name', '*.bc', '-delete'])
 
 
 def python3_unittests(args):
