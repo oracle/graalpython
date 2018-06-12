@@ -68,6 +68,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         // Add constant values
         builtinConstants.put("pi", Math.PI);
         builtinConstants.put("e", Math.E);
+        builtinConstants.put("tau", 2*Math.PI);
     }
 
     // math.sqrt

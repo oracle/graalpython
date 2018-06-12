@@ -102,6 +102,12 @@ class MathTests(unittest.TestCase):
         if failure is not None:
             self.fail("{}: {}".format(name, failure))
 
+    def testConstants(self):
+        # Ref: Abramowitz & Stegun (Dover, 1965)
+        self.ftest('pi', math.pi, 3.141592653589793238462643)
+        self.ftest('e', math.e, 2.718281828459045235360287)
+        self.assertEqual(math.tau, 2*math.pi)
+
     def test_ceil_basic(self):
         self.assertEqual(math.ceil(10), 10)
         self.assertEqual(math.ceil(-10), -10)
