@@ -10,6 +10,8 @@ eps = 1E-05
 INF = float('inf')
 NINF = float('-inf')
 NAN = float('nan')
+LONG_INT = 6227020800
+BIG_INT = 9999992432902008176640000999999
 
 """ The next three methods are needed for testing factorials
 """
@@ -87,6 +89,10 @@ def result_check(expected, got, ulp_tol=5, abs_tol=0.0):
     else:
         return None
 
+class MyFloat:
+            def __float__(self):
+                return 0.6
+
 class MathTests(unittest.TestCase):
 
     def ftest(self, name, got, expected, ulp_tol=5, abs_tol=0.0):
@@ -116,13 +122,12 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.acos(True), 0.0)
         self.assertRaises(ValueError, math.acos, 10)
         self.assertRaises(ValueError, math.acos, -10)
+        self.assertRaises(ValueError, math.acos, LONG_INT)
+        self.assertRaises(ValueError, math.acos, BIG_INT)
         self.assertRaises(TypeError, math.acos, 'ahoj')
 
         self.assertRaises(ValueError, math.acos, 9999992432902008176640000999999)
 
-        class MyFloat:
-            def __float__(self):
-                return 0.6
         self.ftest('acos(MyFloat())', math.acos(MyFloat()), 0.9272952180016123)
 
         class MyFloat2:
@@ -135,6 +140,36 @@ class MathTests(unittest.TestCase):
                 return 'ahoj'
         self.assertRaises(TypeError, math.acos, MyFloat3())
 
+    def testIsfinite(self):
+        self.assertTrue(math.isfinite(0.0))
+        self.assertTrue(math.isfinite(-0.0))
+        self.assertTrue(math.isfinite(1.0))
+        self.assertTrue(math.isfinite(-1.0))
+        self.assertFalse(math.isfinite(float("nan")))
+        self.assertFalse(math.isfinite(float("inf")))
+        self.assertFalse(math.isfinite(float("-inf")))
+
+        self.assertTrue(math.isfinite(True))
+        self.assertTrue(math.isfinite(LONG_INT))
+        self.assertTrue(math.isfinite(BIG_INT))
+        self.assertRaises(TypeError, math.isfinite, 'ahoj')
+        self.assertTrue(math.isfinite(MyFloat()))
+
+    def testIsinf(self):
+        self.assertTrue(math.isinf(float("inf")))
+        self.assertTrue(math.isinf(float("-inf")))
+        self.assertTrue(math.isinf(1E400))
+        self.assertTrue(math.isinf(-1E400))
+        self.assertFalse(math.isinf(float("nan")))
+        self.assertFalse(math.isinf(0.))
+        self.assertFalse(math.isinf(1.))
+        
+        self.assertFalse(math.isinf(True))
+        self.assertFalse(math.isinf(LONG_INT))
+        self.assertFalse(math.isinf(BIG_INT))
+        self.assertRaises(TypeError, math.isinf, 'ahoj')
+        self.assertFalse(math.isinf(MyFloat()))
+        
     def test_ceil_basic(self):
         self.assertEqual(math.ceil(10), 10)
         self.assertEqual(math.ceil(-10), -10)
@@ -261,6 +296,7 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.isnan, 'hello')
 
         self.assertFalse(math.isnan(False))
+        self.assertFalse(math.isnan(MyFloat()))
 
     def test_fabs(self):
         self.assertEqual(math.fabs(-1), 1)

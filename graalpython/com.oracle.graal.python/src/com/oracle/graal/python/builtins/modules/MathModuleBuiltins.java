@@ -641,17 +641,20 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isnan", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
     public abstract static class IsNanNode extends PythonBuiltinNode {
 
+        public abstract boolean execute(Object value);
+
         @Specialization
-        public boolean isNan(int value) {
+        public boolean isNan(@SuppressWarnings("unused") long value) {
             return false;
         }
 
         @Specialization
-        public boolean isNan(long value) {
+        public boolean isNan(@SuppressWarnings("unused") PInt value) {
             return false;
         }
 
@@ -660,24 +663,19 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return Double.isNaN(value);
         }
 
-        @Specialization
-        public boolean isNan(PInt value) {
-            return false;
+        @Specialization(guards = "!isNumber(value)")
+        public boolean isinf(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") IsNanNode isNanNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return isNanNode.execute(result);
         }
 
-        @Specialization
-        public boolean isNan(PFloat value) {
-            return Double.isNaN(value.getValue());
-        }
-
-        @Specialization
-        public boolean isNan(boolean value) {
-            return false;
-        }
-
-        @Fallback
-        public boolean isNan(Object value) {
-            throw raise(TypeError, "must be real number, not %p", value);
+        protected IsNanNode create() {
+            return MathModuleBuiltinsFactory.IsNanNodeFactory.create(new PNode[0]);
         }
     }
 
@@ -837,7 +835,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public abstract double execute(Object value);
 
         @Specialization
-        public double acos(int value,
+        public double acos(long value,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
             if (doNotFit.profile(value > 1 || value < -1)) {
                 throw raise(ValueError, "math domain error");
@@ -903,6 +901,84 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         public double sin(double value) {
             return Math.sin(value);
+        }
+    }
+
+    @Builtin(name = "isfinite", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class IsFiniteNode extends PythonBuiltinNode {
+
+        public abstract boolean execute(Object value);
+
+        @Specialization
+        public boolean isfinite(@SuppressWarnings("unused") long value) {
+            return true;
+        }
+
+        @Specialization
+        public boolean isfinite(@SuppressWarnings("unused") PInt value) {
+            return true;
+        }
+
+        @Specialization
+        public boolean isfinite(double value) {
+            return Double.isFinite(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public boolean isinf(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") IsFiniteNode isFiniteNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return isFiniteNode.execute(result);
+        }
+
+        protected IsFiniteNode create() {
+            return MathModuleBuiltinsFactory.IsFiniteNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "isinf", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class IsInfNode extends PythonBuiltinNode {
+
+        public abstract boolean execute(Object value);
+
+        @Specialization
+        public boolean isinf(@SuppressWarnings("unused") long value) {
+            return false;
+        }
+
+        @Specialization
+        public boolean isfinite(@SuppressWarnings("unused") PInt value) {
+            return false;
+        }
+
+        @Specialization
+        public boolean isinf(double value) {
+            return Double.isInfinite(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public boolean isinf(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") IsInfNode isInfNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return isInfNode.execute(result);
+        }
+
+        protected IsInfNode create() {
+            return MathModuleBuiltinsFactory.IsInfNodeFactory.create(new PNode[0]);
         }
     }
 
