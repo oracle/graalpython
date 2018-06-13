@@ -162,7 +162,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // abs(x)
     @Builtin(name = ABS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class AbsNode extends PythonBuiltinNode {
+    public abstract static class AbsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public boolean absInt(boolean arg) {
+            return arg;
+        }
 
         @Specialization
         public int absInt(int arg) {
@@ -170,13 +174,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public double absDouble(double arg) {
+        public long absInt(long arg) {
             return Math.abs(arg);
         }
 
         @Specialization
-        public int absBoolean(boolean arg) {
-            return arg ? 1 : 0;
+        public double absDouble(double arg) {
+            return Math.abs(arg);
         }
 
         @Specialization
