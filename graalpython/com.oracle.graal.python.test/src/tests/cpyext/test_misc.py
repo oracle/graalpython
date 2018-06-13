@@ -41,11 +41,7 @@ __dir__ = __file__.rpartition("/")[0]
 
 
 def _reference_importmodule(args):
-    res = __import__(args[0])
-    if res.__name__ == args[0]:
-        return res
-    else:
-        return sys.modules[args[0]]
+    return __import__(args[0], fromlist=["*"])
 
 
 class TestMisc(CPyExtTestCase):
@@ -91,10 +87,26 @@ class TestMisc(CPyExtTestCase):
         lambda: (
             ("os",),
             ("os.path",),
+            ("distutils.core",),
             ("nonexisting",),
         ),
         resultspec="O",
         argspec="s",
         arguments=["char* module_name"],
         cmpfunc=unhandled_error_compare
+    )
+
+    test_PyImport_GetModuleDict = CPyExtFunction(
+        lambda args: sys.modules,
+        lambda: (
+            tuple(),
+        ),
+        code='''PyObject* wrap_PyImport_GetModuleDict(PyObject* ignored) {
+            return PyImport_GetModuleDict();
+        }
+        ''',
+        resultspec="O",
+        argspec="",
+        arguments=["PyObject* ignored"],
+        callfunction="wrap_PyImport_GetModuleDict",
     )

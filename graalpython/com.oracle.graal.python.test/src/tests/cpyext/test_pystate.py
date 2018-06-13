@@ -40,59 +40,22 @@ from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_e
 __dir__ = __file__.rpartition("/")[0]
 
 
-class TestPyCapsule(CPyExtTestCase):
-
+class TestPystate(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
-        super(TestPyCapsule, self).compile_module(name)
+        super().compile_module(name)
 
-    test_PyCapsule_CheckExact = CPyExtFunction(
-        lambda args: True,
+    test_PyThreadState_GetDict = CPyExtFunction(
+        lambda args: type({}),
         lambda: (
-            ("hello", 0xDEADBEEF),
+            tuple(),
         ),
-        code='''int wrap_PyCapsule_Check(char * name, Py_ssize_t ptr) {
-            PyObject* capsule = PyCapsule_New((void *)ptr, name, NULL);
-            return PyCapsule_CheckExact(capsule);
+        code='''PyObject* wrap_PyThreadState_GetDict(PyObject* ignored) {
+            return (PyObject*)Py_TYPE(PyThreadState_GetDict());
         }
         ''',
-        resultspec="i",
-        argspec='sn',
-        arguments=["char* name", "Py_ssize_t ptr"],
-        callfunction="wrap_PyCapsule_Check",
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyCapsule_GetPointer = CPyExtFunction(
-        lambda args: True,
-        lambda: (
-            ("hello", 0xDEADBEEF),
-        ),
-        code='''int wrap_PyCapsule_Check(char * name, Py_ssize_t ptr) {
-            PyObject* capsule = PyCapsule_New((void *)ptr, name, NULL);
-            return PyCapsule_GetPointer(capsule, name) == (void*)ptr;
-        }
-        ''',
-        resultspec="i",
-        argspec='sn',
-        arguments=["char* name", "Py_ssize_t ptr"],
-        callfunction="wrap_PyCapsule_Check",
-        cmpfunc=unhandled_error_compare
-    )
-
-    test_PyCapsule_GetContext = CPyExtFunction(
-        lambda args: True,
-        lambda: (
-            ("hello", 0xDEADBEEF),
-        ),
-        code='''int wrap_PyCapsule_Check(char * name, Py_ssize_t ptr) {
-            PyObject* capsule = PyCapsule_New((void *)ptr, name, NULL);
-            return PyCapsule_GetContext(capsule) == NULL;
-        }
-        ''',
-        resultspec="i",
-        argspec='sn',
-        arguments=["char* name", "Py_ssize_t ptr"],
-        callfunction="wrap_PyCapsule_Check",
-        cmpfunc=unhandled_error_compare
+        resultspec="O",
+        argspec="",
+        arguments=["PyObject* ignored"],
+        callfunction="wrap_PyThreadState_GetDict",
     )

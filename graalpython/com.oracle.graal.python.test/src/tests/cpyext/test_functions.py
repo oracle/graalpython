@@ -358,18 +358,3 @@ class TestPyObject(CPyExtTestCase):
     # )
     # test_PyObject_Init = CPyExtFunction(
     # )
-
-    test_PyCallable_Check = CPyExtFunction(
-        lambda args: callable(args[0]),
-        lambda: (
-            (len,),
-            (sum,),
-            (int,),
-            ("hello",),
-            (3,),
-            (None,),
-        ),
-        arguments=["PyObject* callable"],
-        resultspec="i",
-        argspec="O",
-    )
