@@ -210,6 +210,50 @@ class MathTests(unittest.TestCase):
         self.assertRaises(ValueError, math.asin, BIG_INT)
         self.assertRaises(TypeError, math.asin, 'ahoj')
 
+    def testSqrt(self):
+        self.assertRaises(TypeError, math.sqrt)
+        self.ftest('sqrt(0)', math.sqrt(0), 0)
+        self.ftest('sqrt(1)', math.sqrt(1), 1)
+        self.ftest('sqrt(4)', math.sqrt(4), 2)
+        self.assertEqual(math.sqrt(INF), INF)
+        self.assertRaises(ValueError, math.sqrt, -1)
+        self.assertRaises(ValueError, math.sqrt, NINF)
+        self.assertTrue(math.isnan(math.sqrt(NAN)))
+        
+        math.sqrt(MyFloat())
+        math.sqrt(BIG_INT)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
+    def testLog(self):
+        self.assertRaises(TypeError, math.log)
+        self.ftest('log(1/e)', math.log(1/math.e), -1)
+        self.ftest('log(1)', math.log(1), 0)
+        self.ftest('log(e)', math.log(math.e), 1)
+        self.ftest('log(32,2)', math.log(32,2), 5)
+        self.ftest('log(10**40, 10)', math.log(10**40, 10), 40)
+        self.ftest('log(10**40, 10**20)', math.log(10**40, 10**20), 2)
+        #self.ftest('log(10**1000)', math.log(10**1000), 2302.5850929940457)
+        self.assertRaises(ValueError, math.log, -1.5)
+        self.assertRaises(ValueError, math.log, -10**1000)
+        self.assertRaises(ValueError, math.log, NINF)
+        self.assertEqual(math.log(INF), INF)
+        self.assertTrue(math.isnan(math.log(NAN)))
+
+        math.log(MyFloat())
+        self.assertRaises(ZeroDivisionError, math.log, MyFloat(), True)
+        self.ftest('log(True, 1.1)', math.log(True, 1.1), 0)
+        math.log(BIG_INT)
+        math.log(BIG_INT, 4.6)
+        self.ftest('log(BIG_INT, BIG_INT)', math.log(BIG_INT, BIG_INT), 1)
+        self.assertRaises(ZeroDivisionError, math.log, BIG_INT, True)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
+        math.log(MyFloat(), 10)
+        math.log(MyFloat(), BIG_INT)
+        math.log(MyFloat(), 7.4)
+        self.ftest('log(MyFloat(), MyFloat())', math.log(MyFloat(), MyFloat()), 1)
+        math.log(10, MyFloat())
+
     def testIsfinite(self):
         self.assertTrue(math.isfinite(0.0))
         self.assertTrue(math.isfinite(-0.0))
