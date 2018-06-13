@@ -914,6 +914,52 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
     
+    @Builtin(name = "asin", fixedNumOfArguments = 1, doc = "Return the arc sine (measured in radians) of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AsinNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+        
+        @Specialization
+        public double asinInt(long value,
+                @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return asinDouble(value, doNotFit);
+        }
+        
+        @Specialization
+        @TruffleBoundary
+        public double asinPInt(PInt value,
+                @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return asinDouble(value.intValue(), doNotFit);
+        }
+        
+        @Specialization
+        public double asinDouble(double value,
+                @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(value < -1 || value > 1 )) {
+                throw raise(ValueError, "math domain error");
+            }
+            return Math.asin(value);
+        }
+        
+        @Specialization(guards = "!isNumber(value)")
+        public double acosh(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AsinNode asinNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return asinNode.executeObject(result);
+        }
+
+        protected AsinNode create() {
+            return MathModuleBuiltinsFactory.AsinNodeFactory.create(new PNode[0]);
+        }
+    }
+    
     @Builtin(name = "cos", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class CosNode extends PythonBuiltinNode {

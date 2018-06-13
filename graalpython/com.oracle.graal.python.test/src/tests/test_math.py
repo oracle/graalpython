@@ -193,6 +193,23 @@ class MathTests(unittest.TestCase):
         #self.ftest('acos(MyFloat())', math.acosh(MyFF()), 0.9272952180016123)
         self.assertRaises(ValueError, math.acosh, MyFloat())
 
+    def testAsin(self):
+        self.assertRaises(TypeError, math.asin)
+        self.ftest('asin(-1)', math.asin(-1), -math.pi/2)
+        self.ftest('asin(0)', math.asin(0), 0)
+        self.ftest('asin(1)', math.asin(1), math.pi/2)
+        self.assertRaises(ValueError, math.asin, INF)
+        self.assertRaises(ValueError, math.asin, NINF)
+        self.assertRaises(ValueError, math.asin, 1 + eps)
+        self.assertRaises(ValueError, math.asin, -1 - eps)
+        self.assertTrue(math.isnan(math.asin(NAN)))
+
+        self.assertRaises(ValueError, math.asin, 10)
+        self.assertRaises(ValueError, math.asin, -10)
+        self.assertRaises(ValueError, math.asin, LONG_INT)
+        self.assertRaises(ValueError, math.asin, BIG_INT)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
     def testIsfinite(self):
         self.assertTrue(math.isfinite(0.0))
         self.assertTrue(math.isfinite(-0.0))
