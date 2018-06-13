@@ -247,6 +247,32 @@ class TemplateFormatter(object):
                 raise ValueError("Only '[' and '.' may follow ']'")
         return obj
 
+    def formatter_field_name_split(self):
+        name = self.template
+        i = 0
+        end = len(name)
+        while i < end:
+            c = name[i]
+            if c == "[" or c == ".":
+                break
+            i += 1
+        if i == 0:
+            index = -1
+        else:
+            try:
+                index = int(name[0:i])
+            except ValueError:
+                index = -1
+        if index >= 0:
+            first = int(index)
+        else:
+            first = name[:i]
+        #
+        self.parser_list = []
+        self._resolve_lookups(None, name, i, end)
+        #
+        return (first, iter(self.parser_list))
+
     def _convert(self, obj, conversion):
         conv = conversion[0]
         if conv == "r":
@@ -267,7 +293,7 @@ class TemplateFormatter(object):
             if level == 1:    # ignore recursive calls
                 startm1 = start - 1
                 assert startm1 >= self.last_end
-                self.parser_list_w.append((
+                self.parser_list.append((
                     self.template[self.last_end:startm1],
                     name,
                     spec,
@@ -292,9 +318,9 @@ class TemplateFormatter(object):
         if self.last_end < len(self.template):
             lastentry = (
                 self.template[self.last_end:],
-                space.w_None,
-                space.w_None,
-                space.w_None
+                None,
+                None,
+                None
             )
             self.parser_list.append(lastentry)
         return iter(self.parser_list)
@@ -351,3 +377,16 @@ def encode(self, encoding="utf-8", errors="strict"):
 
 
 str.encode = encode
+
+
+def formatter_parser(string):
+    return TemplateFormatter(string).formatter_parser()
+
+
+def formatter_field_name_split(string):
+    return TemplateFormatter(string).formatter_field_name_split()
+
+
+import _string
+_string.formatter_parser = formatter_parser
+_string.formatter_field_name_split = formatter_field_name_split
