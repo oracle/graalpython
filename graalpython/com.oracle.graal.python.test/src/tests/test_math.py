@@ -5,6 +5,7 @@
 import math
 import unittest
 import sys
+import struct
 
 eps = 1E-05
 INF = float('inf')
@@ -43,6 +44,40 @@ def py_factorial(n):
         inner *= partial_product((n >> i + 1) + 1 | 1, (n >> i) + 1 | 1)
         outer *= inner
     return outer << (n - count_set_bits(n))
+
+def to_ulps(x):
+    """Convert a non-NaN float x to an integer, in such a way that
+    adjacent floats are converted to adjacent integers.  Then
+    abs(ulps(x) - ulps(y)) gives the difference in ulps between two
+    floats.
+
+    The results from this function will only make sense on platforms
+    where native doubles are represented in IEEE 754 binary64 format.
+
+    Note: 0.0 and -0.0 are converted to 0 and -1, respectively.
+    """
+    n = struct.unpack('<q', struct.pack('<d', x))[0]
+    if n < 0:
+        n = ~(n+2**63)
+    return n
+
+def ulp_abs_check(expected, got, ulp_tol, abs_tol):
+    """Given finite floats `expected` and `got`, check that they're
+    approximately equal to within the given number of ulps or the
+    given absolute tolerance, whichever is bigger.
+
+    Returns None on success and an error message on failure.
+    """
+    ulp_error = abs(to_ulps(expected) - to_ulps(got))
+    abs_error = abs(expected - got)
+
+    # Succeed if either abs_error <= abs_tol or ulp_error <= ulp_tol.
+    if abs_error <= abs_tol or ulp_error <= ulp_tol:
+        return None
+    else:
+        fmt = ("error = {:.3g} ({:d} ulps); "
+               "permitted error = {:.3g} or {:d} ulps")
+        return fmt.format(abs_error, ulp_error, abs_tol, ulp_tol)
 
 def result_check(expected, got, ulp_tol=5, abs_tol=0.0):
     # Common logic of MathTests.(ftest, test_testcases, test_mtestcases)
@@ -139,6 +174,24 @@ class MathTests(unittest.TestCase):
             def __float__(self):
                 return 'ahoj'
         self.assertRaises(TypeError, math.acos, MyFloat3())
+
+    def testAcosh(self):
+        self.assertRaises(TypeError, math.acosh)
+        self.ftest('acosh(1)', math.acosh(1), 0)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('acosh(2)', math.acosh(2), 1.3169578969248168)
+        self.assertRaises(ValueError, math.acosh, 0)
+        self.assertRaises(ValueError, math.acosh, -1)
+        self.assertEqual(math.acosh(INF), INF)
+        self.assertRaises(ValueError, math.acosh, NINF)
+        self.assertTrue(math.isnan(math.acosh(NAN)))
+
+        class MyFF:
+            def __float__(self):
+                return 6
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('acos(MyFloat())', math.acosh(MyFF()), 0.9272952180016123)
+        self.assertRaises(ValueError, math.acosh, MyFloat())
 
     def testIsfinite(self):
         self.assertTrue(math.isfinite(0.0))

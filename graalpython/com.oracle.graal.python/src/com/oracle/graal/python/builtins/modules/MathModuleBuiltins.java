@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -874,6 +875,45 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "acosh", fixedNumOfArguments = 1, doc = "Return the inverse hyperbolic cosine of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AcoshNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+        
+        @Specialization
+        public double acoshInt(long value,
+                @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return acoshDouble(value, doNotFit);
+        }
+        
+        @Specialization
+        public double acoshDouble(double value,
+                @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(value < 1 )) {
+                throw raise(ValueError, "math domain error");
+            }
+            return Math.log(value + Math.sqrt(value*value - 1.0));
+        }
+        
+        @Specialization(guards = "!isNumber(value)")
+        public double acosh(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AcoshNode acoshNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return acoshNode.executeObject(result);
+        }
+
+        protected AcoshNode create() {
+            return MathModuleBuiltinsFactory.AcoshNodeFactory.create(new PNode[0]);
+        }
+    }
+    
     @Builtin(name = "cos", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class CosNode extends PythonBuiltinNode {
