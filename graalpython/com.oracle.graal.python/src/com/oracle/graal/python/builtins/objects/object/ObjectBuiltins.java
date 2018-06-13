@@ -135,6 +135,11 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
+        public boolean eq(PythonNativeObject self, PythonNativeObject other) {
+            return self.object.equals(other.object);
+        }
+
+        @Specialization
         public boolean eq(Object self, Object other) {
             return self == other;
         }

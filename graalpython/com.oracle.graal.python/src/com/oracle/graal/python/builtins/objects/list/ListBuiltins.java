@@ -355,7 +355,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected boolean isValidIndexType(Object idx) {
-            return PGuards.isInteger(idx) || idx instanceof PSlice;
+            return PGuards.isInteger(idx) || idx instanceof PSlice || idx instanceof PInt;
         }
     }
 
