@@ -329,14 +329,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DivModNode extends PythonBuiltinNode {
-
-        @Specialization
-        public PTuple doInt(int a, int b) {
+        @Specialization(guards = "b != 0")
+        public PTuple doLong(long a, long b) {
             return factory().createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
         }
 
-        @Specialization
-        public PTuple doInt(long a, long b) {
+        @Specialization(replaces = "doLong")
+        public PTuple doLongZero(long a, long b) {
+            if (b == 0) {
+                throw raise(PythonErrorType.ZeroDivisionError, "ZeroDivisionError: integer division or modulo by zero");
+            }
             return factory().createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
         }
 
