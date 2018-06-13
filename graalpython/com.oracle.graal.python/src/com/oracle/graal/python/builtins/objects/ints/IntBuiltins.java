@@ -919,6 +919,11 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean pos(boolean arg) {
+            return arg;
+        }
+
         @Specialization(rewriteOn = ArithmeticException.class)
         int pos(int arg) {
             int result = Math.abs(arg);
@@ -1068,6 +1073,11 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__INVERT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int neg(boolean arg) {
+            return ~(arg ? 1 : 0);
+        }
+
         @Specialization
         int neg(int arg) {
             return ~arg;
