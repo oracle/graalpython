@@ -83,7 +83,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         public abstract double executeObject(Object value);
 
-        private static BigDecimal sqrtBigNumber(BigInteger value) {
+        protected static BigDecimal sqrtBigNumber(BigInteger value) {
             BigDecimal number = new BigDecimal(value);
             BigDecimal result = BigDecimal.ZERO;
             BigDecimal guess = BigDecimal.ONE;
@@ -147,7 +147,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return sqrtNode.executeObject(result);
         }
 
-        protected SqrtNode create() {
+        public static SqrtNode create() {
             return MathModuleBuiltinsFactory.SqrtNodeFactory.create(new PNode[0]);
         }
     }
@@ -709,9 +709,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class IsNanNode extends PythonBuiltinNode {
+    public abstract static class IsNanNode extends PythonUnaryBuiltinNode {
 
-        public abstract boolean execute(Object value);
+        public abstract boolean executeObject(Object value);
 
         @Specialization
         public boolean isNan(@SuppressWarnings("unused") long value) {
@@ -736,10 +736,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
             if (result == PNone.NO_VALUE) {
                 throw raise(TypeError, "must be real number, not %p", value);
             }
-            return isNanNode.execute(result);
+            return isNanNode.executeObject(result);
         }
 
-        protected IsNanNode create() {
+        protected static IsNanNode create() {
             return MathModuleBuiltinsFactory.IsNanNodeFactory.create(new PNode[0]);
         }
     }
@@ -895,9 +895,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class AcosNode extends PythonBuiltinNode {
+    public abstract static class AcosNode extends PythonUnaryBuiltinNode {
 
-        public abstract double execute(Object value);
+        public abstract double executeObject(Object value);
 
         @Specialization
         public double acos(long value,
@@ -931,10 +931,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
             if (result == PNone.NO_VALUE) {
                 throw raise(TypeError, "must be real number, not %p", value);
             }
-            return acosNode.execute(result);
+            return acosNode.executeObject(result);
         }
 
-        protected AcosNode create() {
+        protected static AcosNode create() {
             return MathModuleBuiltinsFactory.AcosNodeFactory.create(new PNode[0]);
         }
     }
@@ -962,6 +962,20 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return Math.log(value + Math.sqrt(value * value - 1.0));
         }
 
+        @Specialization
+        @TruffleBoundary
+        public double acoshDouble(PInt value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            BigInteger bValue = value.getValue();
+            if (doNotFit.profile(bValue.compareTo(BigInteger.ONE) == -1)) {
+                throw raise(ValueError, "math domain error");
+            }
+
+            BigDecimal sqrt = SqrtNode.sqrtBigNumber(bValue.multiply(bValue).subtract(BigInteger.ONE));
+            BigDecimal bd = new BigDecimal(bValue);
+            return Math.log(bd.add(sqrt).doubleValue());
+        }
+
         @Specialization(guards = "!isNumber(value)")
         public double acosh(Object value,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
@@ -973,7 +987,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return acoshNode.executeObject(result);
         }
 
-        protected AcoshNode create() {
+        protected static AcoshNode create() {
             return MathModuleBuiltinsFactory.AcoshNodeFactory.create(new PNode[0]);
         }
     }
@@ -1019,7 +1033,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return asinNode.executeObject(result);
         }
 
-        protected AsinNode create() {
+        protected static AsinNode create() {
             return MathModuleBuiltinsFactory.AsinNodeFactory.create(new PNode[0]);
         }
     }
@@ -1058,9 +1072,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class IsFiniteNode extends PythonBuiltinNode {
+    public abstract static class IsFiniteNode extends PythonUnaryBuiltinNode {
 
-        public abstract boolean execute(Object value);
+        public abstract boolean executeObject(Object value);
 
         @Specialization
         public boolean isfinite(@SuppressWarnings("unused") long value) {
@@ -1085,10 +1099,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
             if (result == PNone.NO_VALUE) {
                 throw raise(TypeError, "must be real number, not %p", value);
             }
-            return isFiniteNode.execute(result);
+            return isFiniteNode.executeObject(result);
         }
 
-        protected IsFiniteNode create() {
+        protected static IsFiniteNode create() {
             return MathModuleBuiltinsFactory.IsFiniteNodeFactory.create(new PNode[0]);
         }
     }
@@ -1097,9 +1111,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class IsInfNode extends PythonBuiltinNode {
+    public abstract static class IsInfNode extends PythonUnaryBuiltinNode {
 
-        public abstract boolean execute(Object value);
+        public abstract boolean executeObject(Object value);
 
         @Specialization
         public boolean isinf(@SuppressWarnings("unused") long value) {
@@ -1124,10 +1138,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
             if (result == PNone.NO_VALUE) {
                 throw raise(TypeError, "must be real number, not %p", value);
             }
-            return isInfNode.execute(result);
+            return isInfNode.executeObject(result);
         }
 
-        protected IsInfNode create() {
+        protected static IsInfNode create() {
             return MathModuleBuiltinsFactory.IsInfNodeFactory.create(new PNode[0]);
         }
     }
@@ -1366,7 +1380,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return logNode.executeObject(value, resultBase);
         }
 
-        protected LogNode create() {
+        public static LogNode create() {
             return MathModuleBuiltinsFactory.LogNodeFactory.create(new PNode[0]);
         }
     }

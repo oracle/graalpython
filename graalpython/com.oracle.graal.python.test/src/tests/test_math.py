@@ -192,6 +192,8 @@ class MathTests(unittest.TestCase):
         # TODO uncomment when GR-10346 will be fixed
         #self.ftest('acos(MyFloat())', math.acosh(MyFF()), 0.9272952180016123)
         self.assertRaises(ValueError, math.acosh, MyFloat())
+        math.acosh(BIG_INT)
+        self.assertRaises(TypeError, math.acosh, 'ahoj')
 
     def testAsin(self):
         self.assertRaises(TypeError, math.asin)
