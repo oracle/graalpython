@@ -239,7 +239,11 @@ def nativebuild(args):
 
 
 def nativeclean(args):
-    mx.run(['find', '.', '-name', '*.bc', '-delete'])
+    mx.run(['find', _suite.dir, '-name', '*.bc', '-delete'])
+
+
+def python3_unittests(args):
+    mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
 
 
 # mx gate --tags pythonbenchmarktest
@@ -750,6 +754,8 @@ mx.update_commands(_suite, {
     'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
     'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
+    'python3-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
+    'python-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],
