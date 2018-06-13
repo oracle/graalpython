@@ -36,49 +36,302 @@
 # SOFTWARE.
 
 
-__codecs_registry__ = []
+__codec_search_path__ = []
+__codec_search_cache__ = {}
+__codec_error_registry__ = {}
 
 
 def register(search_function):
+    if not __codec_search_path__:
+        __codec_registry_init__()
+
     if not hasattr(search_function, "__call__"):
         raise TypeError("argument must be callable")
-    __codecs_registry__.append(search_function)
+    __codec_search_path__.append(search_function)
 
 
-def make_base_search_function():
-    base_lookup = lookup
-    base_encode = encode
-    base_decode = decode
-    def search_function(encoding):
-        if base_lookup(encoding):
-            return (
-                lambda data, errors=None: base_encode(data, encoding, errors),
-                lambda data, errors=None: base_decode(data, encoding, errors),
-                None, # TODO: stream_reader
-                None, # TODO: stream_write
-            )
-    return search_function
-
-
-register(make_base_search_function())
-del make_base_search_function
+def __normalizestring(string):
+    return string.replace(' ', '-').lower()
 
 
 def lookup(encoding):
-    normalized_encoding = encoding.replace(" ", "-").lower()
-    for r in __codecs_registry__:
-        result = r(normalized_encoding)
+    if not __codec_search_path__:
+        __codec_registry_init__()
+
+    normalized_encoding = __normalizestring(encoding)
+    # First, try to lookup the name in the registry dictionary
+    result = __codec_search_cache__.get(normalized_encoding)
+    if result:
+        return result
+
+    # Next, scan the search functions in order of registration
+    for func in __codec_search_path__:
+        result = func(normalized_encoding)
         if result:
             if not (isinstance(result, tuple) and len(result) == 4):
                 raise TypeError("codec search functions must return 4-tuples %r")
-            else:
-                return result
+            break
+
+    if result:
+        # Cache and return the result
+        __codec_search_cache__[normalized_encoding] = result
+        return result
+
     raise LookupError("unknown encoding: %s" % encoding)
 
 
+def _forget_codec(encoding):
+    normalized_encoding = __normalizestring(encoding)
+    return __codec_search_cache__.pop(normalized_encoding)
+
+
+def __codec_getitem(encoding, index):
+    return lookup(encoding)[index]
+
+
+def __encoder(encoding):
+    return __codec_getitem(encoding, 0)
+
+
+def __decoder(encoding):
+    return __codec_getitem(encoding, 1)
+
+
 def encode(obj, encoding='utf-8', errors='strict'):
-    return lookup(encoding)[0](obj, errors)[0]
+    encoder = __encoder(encoding)
+    if encoder:
+        result = encoder(obj, errors)
+        if not (isinstance(result, tuple) and len(result) == 2):
+            raise TypeError('encoder must return a tuple (object, integer)')
+        return result[0]
 
 
 def decode(obj, encoding='utf-8', errors='strict'):
-    return lookup(encoding)[1](obj, errors)[0]
+    decoder = __decoder(encoding)
+    if decoder:
+        result = decoder(obj, errors)
+        if not (isinstance(result, tuple) and len(result) == 2):
+            raise TypeError('decoder must return a tuple (object, integer)')
+        return result[0]
+
+
+def register_error(errors, handler):
+    if not hasattr(handler, '__call__'):
+        raise TypeError('handler must be callable')
+    __codec_error_registry__[errors] = handler
+
+
+def lookup_error(errors='strict'):
+    handler = __codec_error_registry__.get(errors)
+    if handler is None:
+        raise LookupError('unknown error handler name %s'.format(errors))
+    return handler
+
+
+def __codec_registry_init__():
+    # TODO: error method handlers setup
+    try:
+        import encodings
+    except Exception:
+        raise RuntimeError("can't initialize codec registry")
+
+
+# TODO implement the encode / decode methods
+@staticmethod
+def escape_encode(data, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def escape_decode(data, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def utf_8_encode(string, errors=None):
+    return __truffle_encode(string, "utf-8", errors)
+
+
+@staticmethod
+def utf_8_decode(string, errors=None, final=False):
+    return __truffle_decode(string, "utf-8", errors)
+
+
+@staticmethod
+def utf_7_encode(string, errors=None):
+    return __truffle_encode(string, "utf-7", errors)
+
+
+@staticmethod
+def utf_7_decode(string, errors=None, final=False):
+    return __truffle_decode(string, "utf-7", errors)
+
+
+@staticmethod
+def utf_16_encode(string, errors=None, byteorder=0):
+    return __truffle_encode(string, "utf-16", errors)
+
+
+@staticmethod
+def utf_16_decode(string, errors=None, final=False):
+    return __truffle_decode(string, "utf-16", errors)
+
+
+@staticmethod
+def utf_16_le_encode(string, errors=None):
+    return __truffle_encode(string, "utf-16-le", errors)
+
+
+@staticmethod
+def utf_16_le_decode(string, errors=None, final=False):
+    return __truffle_decode(string, "utf-16-le", errors)
+
+
+@staticmethod
+def utf_16_be_encode(string, errors=None):
+    return __truffle_encode(string, "utf-16-be", errors)
+
+
+@staticmethod
+def utf_16_be_decode(string, errors=None, final=False):
+    return __truffle_decode(string, "utf-16-be", errors)
+
+
+@staticmethod
+def utf_16_ex_decode(data, errors=None, byteorder=0, final=False):
+    raise NotImplementedError()
+
+
+@staticmethod
+def utf_32_encode(string, errors=None, byteorder=0):
+    return __truffle_encode(string, "utf-32", errors)
+
+
+@staticmethod
+def utf_32_decode(string, errors=None, final=False):
+    return __truffle_decode(string, "utf-32", errors)
+
+
+@staticmethod
+def utf_32_le_encode(string, errors=None):
+    return __truffle_encode(string, "utf-32-le", errors)
+
+
+@staticmethod
+def utf_32_le_decode(string, errors=None, final=False):
+    return __truffle_decode(string, "utf-32-le", errors)
+
+
+@staticmethod
+def utf_32_be_encode(string, errors=None):
+    return __truffle_encode(string, "utf-32-be", errors)
+
+
+@staticmethod
+def utf_32_be_decode(string, errors=None, final=False):
+    return __truffle_decode(string, "utf-32-be", errors)
+
+
+@staticmethod
+def utf_32_ex_decode(data, errors=None, byteorder=0, final=False):
+    raise NotImplementedError()
+
+
+@staticmethod
+def unicode_escape_encode(string, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def unicode_escape_decode(string, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def unicode_internal_encode(obj, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def unicode_internal_decode(obj, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def raw_unicode_escape_encode(string, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def raw_unicode_escape_decode(string, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def latin_1_encode(string, errors=None):
+    return __truffle_encode(string, "latin-1", errors)
+
+
+@staticmethod
+def latin_1_decode(string, errors=None):
+    return __truffle_decode(string, "latin-1", errors)
+
+
+@staticmethod
+def ascii_encode(string, errors=None):
+    return __truffle_encode(string, "ascii", errors)
+
+
+@staticmethod
+def ascii_decode(string, errors=None):
+    return __truffle_decode(string, "ascii", errors)
+
+
+@staticmethod
+def charmap_encode(string, errors=None, mapping=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def charmap_decode(string, errors=None, mapping=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def charmap_build(mapping):
+    raise NotImplementedError()
+
+
+@staticmethod
+def readbuffer_encode(data, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def mbcs_encode(string, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def mbcs_decode(string, errors=None, final=False):
+    raise NotImplementedError()
+
+
+@staticmethod
+def oem_encode(string, errors):
+    raise NotImplementedError()
+
+
+@staticmethod
+def oem_decode(string, errors=None, final=False):
+    raise NotImplementedError()
+
+
+@staticmethod
+def code_page_encode(code_page, string, errors=None):
+    raise NotImplementedError()
+
+
+@staticmethod
+def code_page_decode(code_page, string, errors=None, final=False):
+    raise NotImplementedError()

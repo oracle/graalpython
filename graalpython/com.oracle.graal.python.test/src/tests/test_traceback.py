@@ -59,6 +59,10 @@ def test_traceback_dir():
         assert set(dir(tb)) == {'tb_frame', 'tb_next', 'tb_lasti', 'tb_lineno'}
 
 
-# def test_import():
-#     import traceback
-
+def test_import():
+    imported = True
+    try:
+        import traceback
+    except ImportError:
+        imported = False
+    assert imported

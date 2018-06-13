@@ -35,33 +35,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# ankitv 10/10/13
-# Iterating by Sequence Index
+import sys
+import builtins
 
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# patch _io
+#
+# ----------------------------------------------------------------------------------------------------------------------
 
-def test_set_or():
-    s1 = {1, 2, 3}
-    s2 = {4, 5, 6}
-    s3 = {1, 2, 4}
-    s4 = {1, 2, 3}
+import _io
+import _pyio
+import io
 
-    union = s1 | s2
-    assert union == {1, 2, 3, 4, 5, 6}
+for module in [_io, io]:
+    setattr(module, 'open', _pyio.open)
+    setattr(module, 'TextIOWrapper', _pyio.TextIOWrapper)
+    setattr(module, 'IncrementalNewlineDecoder', _pyio.IncrementalNewlineDecoder)
+    setattr(module, 'BufferedRandom', _pyio.BufferedRandom)
+    setattr(module, 'BufferedRWPair', _pyio.BufferedRWPair)
+    setattr(module, 'BufferedWriter', _pyio.BufferedWriter)
+    setattr(module, 'BufferedReader', _pyio.BufferedReader)
+    setattr(module, 'StringIO', _pyio.StringIO)
+    setattr(module, '_IOBase', _pyio.IOBase)
+    setattr(module, 'RawIOBase', _pyio.RawIOBase)
+    setattr(module, 'BytesIO', _pyio.BytesIO)
+    setattr(module, '_TextIOBase', _pyio.TextIOBase)
 
-    union = s1 | s3
-    assert union == {1, 2, 3, 4}
-
-    union = s1 | s4
-    assert union == {1, 2, 3}
-
-
-def test_set_remove():
-    s = {1, 2, 3}
-    assert s == {1, 2, 3}
-    s.remove(3)
-    assert s == {1, 2}
-
-
-def test_set_le():
-    assert set("a") <= set("abc")
-
+setattr(builtins, 'open', _pyio.open)
+globals()['open'] = _pyio.open

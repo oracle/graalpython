@@ -94,6 +94,10 @@ public class SequenceUtil {
             return execute(index, length, ARRAY_OUT_OF_BOUNDS);
         }
 
+        public int forArray(PInt index, int length) {
+            return execute(index, length, ARRAY_OUT_OF_BOUNDS);
+        }
+
         public int forArrayAssign(int index, int length) {
             return execute(index, length, ARRAY_ASSIGN_OUT_OF_BOUNDS);
         }
@@ -242,7 +246,7 @@ public class SequenceUtil {
         if (idx < 0) {
             idx += length;
         }
-        if (idx < 0 || idx >= length) {
+        if (idx < 0 || idx > length) {
             throw PythonLanguage.getCore().raise(PythonErrorType.IndexError, outOfBoundsMessage);
         }
         return idx;

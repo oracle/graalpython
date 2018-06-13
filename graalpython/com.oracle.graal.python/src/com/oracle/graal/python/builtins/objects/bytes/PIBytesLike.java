@@ -42,17 +42,19 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PLenSupplier;
 
-public interface PIBytesLike {
+public interface PIBytesLike extends PLenSupplier {
     byte[] getInternalByteArray();
 
-    default byte[] getInternalBytesArrayCopy() {
+    default byte[] getBytesExact() {
         byte[] internalBytesArray = getInternalByteArray();
-        return Arrays.copyOf(internalBytesArray, internalBytesArray.length);
+        int len = this.len();
+        return Arrays.copyOf(internalBytesArray, len);
     }
 
-    default ByteBuffer getBytes() {
-        return ByteBuffer.wrap(getInternalByteArray());
+    default ByteBuffer getBytesBuffer() {
+        return ByteBuffer.wrap(getInternalByteArray(), 0, this.len());
     }
 
     default PIBytesLike createFromBytes(PythonObjectFactory factory, ByteBuffer bytes) {
@@ -63,18 +65,21 @@ public interface PIBytesLike {
 
     default PIBytesLike concat(PythonObjectFactory factory, PIBytesLike other) {
         byte[] arr1 = this.getInternalByteArray();
+        int len1 = this.len();
         byte[] arr2 = other.getInternalByteArray();
-        byte[] bytes = new byte[arr1.length + arr2.length];
-        System.arraycopy(arr1, 0, bytes, 0, arr1.length);
-        System.arraycopy(arr2, 0, bytes, arr1.length, arr2.length);
+        int len2 = other.len();
+        byte[] bytes = new byte[len1 + len2];
+        System.arraycopy(arr1, 0, bytes, 0, len1);
+        System.arraycopy(arr2, 0, bytes, len1, len2);
         return createFromBytes(factory, bytes);
     }
 
     default PIBytesLike __mul__(PythonObjectFactory factory, int times) {
         byte[] arr1 = this.getInternalByteArray();
-        byte[] bytes = new byte[arr1.length * times];
+        int len1 = this.len();
+        byte[] bytes = new byte[len1 * times];
         for (int i = 0; i < times; i++) {
-            System.arraycopy(arr1, 0, bytes, i * arr1.length, arr1.length);
+            System.arraycopy(arr1, 0, bytes, i * len1, len1);
         }
         return createFromBytes(factory, bytes);
     }

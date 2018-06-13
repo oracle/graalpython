@@ -72,9 +72,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -919,6 +921,53 @@ public final class FloatBuiltins extends PythonBuiltins {
         double neg(PFloat operand) {
             return -operand.getValue();
         }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
+    static abstract class RealNode extends PythonBuiltinNode {
+
+        @Child private GetClassNode getClassNode;
+
+        protected PythonClass getClass(Object value) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(value);
+        }
+
+        @Specialization
+        double get(double self) {
+            return self;
+        }
+
+        @Specialization(guards = "cannotBeOverridden(getClass(self))")
+        PFloat getPFloat(PFloat self) {
+            return self;
+        }
+
+        @Specialization(guards = "!cannotBeOverridden(getClass(self))")
+        PFloat getPFloatOverriden(PFloat self) {
+            return factory().createFloat(self.getValue());
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true, doc = "the imaginary part of a complex number")
+    static abstract class ImagNode extends PythonBuiltinNode {
+
+        @Specialization
+        double get(@SuppressWarnings("unused") Object self) {
+            return 0;
+        }
+
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any float.")
+    static abstract class ConjugateNode extends RealNode {
+
     }
 
     @Builtin(name = __GETFORMAT__, fixedNumOfArguments = 2)

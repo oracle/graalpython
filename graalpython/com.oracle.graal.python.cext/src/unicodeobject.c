@@ -74,6 +74,16 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
     case 7: v7 = value; break;                  \
     case 8: v8 = value; break;                  \
     case 9: v9 = value; break;                  \
+    case 10: v10 = value; break;                \
+    case 11: v11 = value; break;                \
+    case 12: v12 = value; break;                \
+    case 13: v13 = value; break;                \
+    case 14: v14 = value; break;                \
+    case 15: v15 = value; break;                \
+    case 16: v16 = value; break;                \
+    case 17: v17 = value; break;                \
+    case 18: v18 = value; break;                \
+    case 19: v19 = value; break;                \
     }
 
     char* fmtcpy = strdup(fmt);

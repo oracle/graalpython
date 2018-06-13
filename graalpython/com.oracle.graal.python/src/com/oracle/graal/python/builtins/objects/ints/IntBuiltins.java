@@ -47,14 +47,17 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.ArithmeticUtil;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -1850,9 +1853,60 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateNodeFactory
+    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
+    static abstract class RealNode extends IntNode {
+
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true, doc = "the imaginary part of a complex number")
+    static abstract class ImagNode extends PythonBuiltinNode {
+        @Specialization
+        int get(@SuppressWarnings("unused") Object self) {
+            return 0;
+        }
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "numerator", fixedNumOfArguments = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
+    static abstract class NumeratorNode extends IntNode {
+
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any int.")
+    static abstract class ConjugateNode extends IntNode {
+
+    }
+
+    @GenerateNodeFactory
+    @Builtin(name = "denominator", fixedNumOfArguments = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
+    static abstract class DenominatorNode extends PythonBuiltinNode {
+        @Specialization
+        int get(@SuppressWarnings("unused") Object self) {
+            return 1;
+        }
+    }
+
     @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class IntNode extends PythonBuiltinNode {
+        @Child private GetClassNode getClassNode;
+
+        protected PythonClass getClass(Object value) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(value);
+        }
+
+        @Specialization
+        int doB(boolean self) {
+            return self ? 1 : 0;
+        }
+
         @Specialization
         int doI(int self) {
             return self;
@@ -1863,8 +1917,13 @@ public class IntBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization
-        PInt doPi(PInt self) {
+        @Specialization(guards = "cannotBeOverridden(getClass(self))")
+        PInt doPInt(PInt self) {
+            return self;
+        }
+
+        @Specialization(guards = "!cannotBeOverridden(getClass(self))")
+        PInt doPIntOverriden(PInt self) {
             return factory().createInt(self.getValue());
         }
     }

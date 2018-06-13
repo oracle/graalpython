@@ -332,5 +332,4 @@ public abstract class CExtNodes {
             return new FromCharPointerNode();
         }
     }
-
 }

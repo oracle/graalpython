@@ -5,7 +5,7 @@
 
 import seq_tests
 import sys
-#import pickle
+# import pickle
 
 LONG_NUMBER = 6227020800;
 
@@ -49,7 +49,7 @@ class ListTest(list_tests.CommonTest):
         x = []
         x.extend(-y for y in x)
         self.assertEqual(x, [])
-  
+
     def test_truth(self):
         super().test_truth()
         self.assertTrue(not [])
@@ -66,23 +66,29 @@ class ListTest(list_tests.CommonTest):
 
     def test_overflow(self):
         lst = [4, 5, 6, 7]
-        n = int((sys.maxsize*2+2) // len(lst))
+        n = int((sys.maxsize * 2 + 2) // len(lst))
+
         def mul(a, b): return a * b
+
         def imul(a, b): a *= b
+
         self.assertRaises((MemoryError, OverflowError), mul, lst, n)
         self.assertRaises((MemoryError, OverflowError), imul, lst, n)
 
     def test_repr_large(self):
+
         # Check the repr of large list objects
         def check(n):
             l = [0] * n
             s = repr(l)
             self.assertEqual(s,
                 '[' + ', '.join(['0'] * n) + ']')
-        check(10)       # check our checking code
+
+        check(10)  # check our checking code
         check(1000000)
-        
-    # TODO currently sulong crashes when pickle.dumps is used. 
+
+    # TODO currently sulong crashes when pickle.dumps is used.
+
     '''
     def test_iterator_pickle(self):
         # Userlist iterators don't support pickling yet since
@@ -112,13 +118,16 @@ class ListTest(list_tests.CommonTest):
         d = pickle.dumps(it)
         self.assertEqual(self.type2test(it), self.type2test(reversed(data))[1:])
     '''
+
     def test_no_comdat_folding(self):
+
         # Issue 8847: In the PGO build, the MSVC linker's COMDAT folding
         # optimization causes failures in code that relies on distinct
         # function addresses.
         class L(list): pass
+
         with self.assertRaises(TypeError):
-            (3,) + L([1,2])
+            (3,) + L([1, 2])
 
     # ======== Specific test for Graal Python ======
 
@@ -129,7 +138,7 @@ class ListTest(list_tests.CommonTest):
     def pop_all_list(self, list):
         size = len(list)
         self.assertRaises(IndexError, list.pop, size)
-        self.assertRaises(IndexError, list.pop, 0 - size -1)
+        self.assertRaises(IndexError, list.pop, 0 - size - 1)
         for i in range (size - 1, -1, -1):
             self.assertEqual(list[i], list.pop())
         self.assertRaises(IndexError, list.pop)
@@ -142,10 +151,10 @@ class ListTest(list_tests.CommonTest):
         self.pop_all_list(l)
 
     def test_pop_long(self):
-        l = [LONG_NUMBER + 1, LONG_NUMBER +2, LONG_NUMBER +3, LONG_NUMBER +4]
+        l = [LONG_NUMBER + 1, LONG_NUMBER + 2, LONG_NUMBER + 3, LONG_NUMBER + 4]
         self.pop_all_list(l)
 
-        l = list([LONG_NUMBER +1, LONG_NUMBER +2, LONG_NUMBER +3, LONG_NUMBER +4])
+        l = list([LONG_NUMBER + 1, LONG_NUMBER + 2, LONG_NUMBER + 3, LONG_NUMBER + 4])
         self.pop_all_list(l)
 
     def test_pop_double(self):
@@ -214,28 +223,28 @@ class ListTest(list_tests.CommonTest):
             result2 = l[s.start:s.stop:s.step]
         self.assertEqual(result, result2, "list[s] and list[s.start:s.stop:s.step] has to be same. Fails with [{}:{}:{}]".format(s.start, s.stop, s.step))
         self.assertEqual(result, expected, "list[{}:{}:{}] should be {}, but is {}".format(s.start, s.stop, s.step, expected, result))
-    
+
     def test_slice(self):
-        self.slice_test(list(range(0,20)), slice(1,5), [1, 2, 3, 4])
-        self.slice_test(list(range(0,20)), slice(0,5), [0,1, 2, 3, 4])
-        self.slice_test(list(range(0,20)), slice(-1,5), [])
-        self.slice_test(list(range(0,20)), slice(-15,5), [])
-        self.slice_test(list(range(0,20)), slice(-16,5), [4])
-        self.slice_test(list(range(0,20)), slice(-22,5), [0,1, 2, 3, 4])
-        #self.slice_test(list(range(0,20)), slice(-LONG_NUMBER,5), [0,1, 2, 3, 4])
+        self.slice_test(list(range(0, 20)), slice(1, 5), [1, 2, 3, 4])
+        self.slice_test(list(range(0, 20)), slice(0, 5), [0, 1, 2, 3, 4])
+        self.slice_test(list(range(0, 20)), slice(-1, 5), [])
+        self.slice_test(list(range(0, 20)), slice(-15, 5), [])
+        self.slice_test(list(range(0, 20)), slice(-16, 5), [4])
+        self.slice_test(list(range(0, 20)), slice(-22, 5), [0, 1, 2, 3, 4])
+        # self.slice_test(list(range(0,20)), slice(-LONG_NUMBER,5), [0,1, 2, 3, 4])
 
-        self.slice_test(list(range(0,20)), slice(15,20), [15, 16, 17, 18, 19])
-        self.slice_test(list(range(0,20)), slice(15,20), [15, 16, 17, 18, 19])
-        self.slice_test(list(range(0,20)), slice(-15,7), [5, 6])
-        self.slice_test(list(range(0,20)), slice(18,70), [18, 19])
+        self.slice_test(list(range(0, 20)), slice(15, 20), [15, 16, 17, 18, 19])
+        self.slice_test(list(range(0, 20)), slice(15, 20), [15, 16, 17, 18, 19])
+        self.slice_test(list(range(0, 20)), slice(-15, 7), [5, 6])
+        self.slice_test(list(range(0, 20)), slice(18, 70), [18, 19])
 
-        self.slice_test(list(range(0,20)), slice(2,70,5), [2, 7, 12, 17])
-        self.slice_test(list(range(0,20)), slice(2,70,-5), [])
-        self.slice_test(list(range(0,20)), slice(15,6,-5), [15, 10])
-        self.slice_test(list(range(0,20)), slice(15,6,5), [])
-        self.slice_test(list(range(0,20)), slice(-15,6,5), [5])
-        self.slice_test(list(range(0,20)), slice(-15,6,-5), [])
-        self.slice_test(list(range(0,20)), slice(-2, -21, -4), [18, 14, 10, 6, 2])
+        self.slice_test(list(range(0, 20)), slice(2, 70, 5), [2, 7, 12, 17])
+        self.slice_test(list(range(0, 20)), slice(2, 70, -5), [])
+        self.slice_test(list(range(0, 20)), slice(15, 6, -5), [15, 10])
+        self.slice_test(list(range(0, 20)), slice(15, 6, 5), [])
+        self.slice_test(list(range(0, 20)), slice(-15, 6, 5), [5])
+        self.slice_test(list(range(0, 20)), slice(-15, 6, -5), [])
+        self.slice_test(list(range(0, 20)), slice(-2, -21, -4), [18, 14, 10, 6, 2])
 
     def del_slice(self, l, s, expected):
         tmplist = list(l)
@@ -247,7 +256,7 @@ class ListTest(list_tests.CommonTest):
         else:
             del(tmplist[s.start:s.stop:s.step])
         self.assertEqual(tmplist, expected, "del(list( slice({}, {}, {}))) expected: {}, get: {}".format(s.start, s.stop, s.step, expected, tmplist))
-        
+
     def test_del_slice(self):
         self.del_slice(list(range(0, 20)), slice(1, 19), [0, 19])
         self.del_slice(list(range(0, 20)), slice(0, 19), [19])
@@ -257,7 +266,6 @@ class ListTest(list_tests.CommonTest):
         self.del_slice(list(range(0, 20)), slice(-10, 5), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
         self.del_slice(list(range(0, 20)), slice(-5, -1), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19])
         self.del_slice(list(range(0, 20)), slice(-30, -1), [19])
-        
 
     def test_del_slice_step(self):
         self.del_slice(list(range(0, 20)), slice(0, 20, 2), [1, 3, 5, 7, 9, 11, 13, 15, 17, 19])
@@ -279,39 +287,43 @@ class ListTest(list_tests.CommonTest):
 
     def test_ininicialization_with_slice(self):
         r = []
-        l = [1,2,3,4]
+        l = [1, 2, 3, 4]
         r[:] = l
         self.assertEqual(l, r)
-    
+
     def test_set_slice(self):
-        a = [1,2]
-        a[1:2] = [7,6,5,4]
+        a = [1, 2]
+        a[1:2] = [7, 6, 5, 4]
         self.assertEqual([1, 7, 6, 5, 4], a)
         a = [1, 2, 3, 4]
         a[1:8] = [33]
         self.assertEqual([1, 33], a)
-        a = [1,2,3,4]
-        a[1:8] = [33,34,35,36,37,38]
-        self.assertEqual([1, 33,34,35,36,37,38], a)
+        a = [1, 2, 3, 4]
+        a[1:8] = [33, 34, 35, 36, 37, 38]
+        self.assertEqual([1, 33, 34, 35, 36, 37, 38], a)
         a = list(range(20))
         a[1:19] = [55, 55]
-        self.assertEqual([0,55,55,19],a)
-        a = [1,2,3,4]
-        a[1:3] =[11] 
+        self.assertEqual([0, 55, 55, 19], a)
+        a = [1, 2, 3, 4]
+        a[1:3] = [11]
         self.assertEqual([1, 11, 4], a)
-        a = [1,2,3,4]
-        a[1:3] =[11,12,13,14,15,16] 
-        self.assertEqual([1, 11,12,13,14,15,16, 4], a)
-        a = [1,2]
+        a = [1, 2, 3, 4]
+        a[1:3] = [11, 12, 13, 14, 15, 16]
+        self.assertEqual([1, 11, 12, 13, 14, 15, 16, 4], a)
+        a = [1, 2]
         a[:] = (1, 2, 4, 5)
-        self.assertEqual([1,2,4,5], a)
+        self.assertEqual([1, 2, 4, 5], a)
 
     def test_set_slice_class_iter(self):
+
         class MyIter():
+
             def __init__(self, base):
                 self.itera = iter(base)
+
             def __next__(self):
                 return next(self.itera)
+
             def __iter__(self):
                 return self
 
@@ -320,72 +332,75 @@ class ListTest(list_tests.CommonTest):
         self.assertEqual([0, 1, 1, 3, 2, 5, 3, 7, 4, 9], a)
 
     def test_set_slice_class_getitem(self):
+
         class MyIter2():
+
             def __init__(self, base):
                 self.base = base
+
             def __getitem__(self, key):
                 return self.base[key]
 
-        a = [1,2,3,4]
-        a[2:] = MyIter2([33,44,55,66])
-        self.assertEqual([1,2,33,44,55,66], a)
+        a = [1, 2, 3, 4]
+        a[2:] = MyIter2([33, 44, 55, 66])
+        self.assertEqual([1, 2, 33, 44, 55, 66], a)
 
     def test_set_strange_slice(self):
         a = list(range(20))
-        a[18:2] = [4,3,5]
+        a[18:2] = [4, 3, 5]
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 4, 3, 5, 18, 19], a)
         a = list(range(20))
-        a[18:0:-2] = [11,22,33,44,55,66,77,88,99]
+        a[18:0:-2] = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         self.assertEqual([0, 1, 99, 3, 88, 5, 77, 7, 66, 9, 55, 11, 44, 13, 33, 15, 22, 17, 11, 19], a)
         a = list(range(20))
-        a[18:-5] = [11,22,33,44,55,66,77,88,99]
+        a[18:-5] = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 11, 22, 33, 44, 55, 66, 77, 88, 99, 18, 19], a)
         a = list(range(20))
-        a[-2:-20:-2] = [11,22,33,44,55,66,77,88,99]
+        a[-2:-20:-2] = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         self.assertEqual([0, 1, 99, 3, 88, 5, 77, 7, 66, 9, 55, 11, 44, 13, 33, 15, 22, 17, 11, 19], a)
         a = list(range(20))
-        a[20:-20] = [11,22,33,44,55,66,77,88,99]
+        a[20:-20] = [11, 22, 33, 44, 55, 66, 77, 88, 99]
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 11, 22, 33, 44, 55, 66, 77, 88, 99], a)
 
     def test_set_slice_generalize_storage(self):
-        a = [1,2]
+        a = [1, 2]
         a[:] = 'ahoj'
         self.assertEqual(['a', 'h', 'o', 'j'], a)
-        a = [1,2]
+        a = [1, 2]
         a[1:5] = [1.1, 2.2, 3.3]
-        self.assertEqual([1,1.1, 2.2, 3.3], a)
+        self.assertEqual([1, 1.1, 2.2, 3.3], a)
 
     def test_extend_spec(self):
-        a = [1,2]
+        a = [1, 2]
         a.extend(a)
-        self.assertEqual([1,2,1,2], a)
+        self.assertEqual([1, 2, 1, 2], a)
         a = [923123123123]
         a.extend(a)
-        self.assertEqual([923123123123,923123123123], a)
+        self.assertEqual([923123123123, 923123123123], a)
         a = [1.1, 2.1]
         a.extend(a)
         self.assertEqual([1.1, 2.1, 1.1, 2.1], a)
 
         a = []
-        a.extend(range(1,4))
-        self.assertEqual([1,2,3], a)
+        a.extend(range(1, 4))
+        self.assertEqual([1, 2, 3], a)
 
         a = []
         a.extend('ahoj')
-        self.assertEqual(['a','h','o','j'], a)
+        self.assertEqual(['a', 'h', 'o', 'j'], a)
 
     def test_remove_spec(self):
-        a = [1,2]
+        a = [1, 2]
         a.remove(2);
         self.assertEqual([1], a)
         a.remove(1)
         self.assertEqual([], a)
 
-        a = [0,1,0,1,2]
+        a = [0, 1, 0, 1, 2]
         a.remove(True)
-        self.assertEqual([0,0,1,2], a)
+        self.assertEqual([0, 0, 1, 2], a)
         a.remove(False)
-        self.assertEqual([0,1,2], a)
+        self.assertEqual([0, 1, 2], a)
 
         a = list([LONG_NUMBER, LONG_NUMBER + 1])
         a.remove(LONG_NUMBER + 1)
@@ -394,42 +409,44 @@ class ListTest(list_tests.CommonTest):
         class MyInt(int):
             pass
 
-        a = [1,2,3]
+        a = [1, 2, 3]
         a.remove(MyInt(2))
-        self.assertEqual([1,3], a)
+        self.assertEqual([1, 3], a)
 
     def test_insert_spec(self):
-        a = [1,2]
-        self.assertRaises(TypeError, a.insert, [1,2,3], 1)
+        a = [1, 2]
+        self.assertRaises(TypeError, a.insert, [1, 2, 3], 1)
 
         class MyInt(int):
             pass
 
-        a = [2,4]
-        a.insert(MyInt(1),3)
-        self.assertEqual([2,3,4], a)
+        a = [2, 4]
+        a.insert(MyInt(1), 3)
+        self.assertEqual([2, 3, 4], a)
 
         class MyIndex():
+
             def __index__(self):
                 return 2
 
         a.insert(MyIndex(), 7)
-        self.assertEqual([2,3,7,4], a)
+        self.assertEqual([2, 3, 7, 4], a)
 
         class SecondIndex(int):
+
             def __index__(self):
                 return self + 3;
 
-        a = [0,0,0,0,0]
+        a = [0, 0, 0, 0, 0]
         a.insert(SecondIndex(1), 1)
-        self.assertEqual([0,1,0,0,0,0], a)
+        self.assertEqual([0, 1, 0, 0, 0, 0], a)
 
         a = [0]
         a.insert(LONG_NUMBER, 1)
-        self.assertEqual([0,1], a)
+        self.assertEqual([0, 1], a)
 
         a.insert(False, -1)
-        self.assertEqual([-1,0,1], a)
+        self.assertEqual([-1, 0, 1], a)
 
     def test_StopIteration(self):
         l = [1.0]
@@ -458,28 +475,30 @@ class ListTest(list_tests.CommonTest):
 
     def test_iadd_special(self):
         a = [1]
-        a += (2,3)
-        self.assertEqual([1,2,3], a)
+        a += (2, 3)
+        self.assertEqual([1, 2, 3], a)
 
         a += {'a' : 1, 'b' : 2}
-        self.assertEqual([1,2,3,'a','b'], a)
-        
+        # we need to compare sets since order is not guaranteed
+        self.assertEqual({1, 2, 3, 'a', 'b'}, set(a))
+
         a = [1]
-        a += range(2,5)
-        self.assertEqual([1,2,3,4], a)
+        a += range(2, 5)
+        self.assertEqual([1, 2, 3, 4], a)
         self.assertRaises(TypeError, a.__iadd__, 1)
 
         class MyList(list):
+
             def __iadd__(self, value):
                 return super().__iadd__([100])
 
-        mya = MyList([1,2])
+        mya = MyList([1, 2])
         mya += [3]
-        self.assertEqual([1,2,100], mya)
-        
-        a = [1,2]
-        a += a 
-        self.assertEqual([1,2,1,2], a)
+        self.assertEqual([1, 2, 100], mya)
+
+        a = [1, 2]
+        a += a
+        self.assertEqual([1, 2, 1, 2], a)
 
     def test_imul_len(self):
         a = [1]
@@ -489,7 +508,7 @@ class ListTest(list_tests.CommonTest):
         a = [1]
         a *= 1
         self.assertEqual(1, len(a))
-        
+
         a = [1]
         a *= -11
         self.assertEqual(0, len(a))
@@ -498,47 +517,60 @@ class ListTest(list_tests.CommonTest):
         a *= 10
         self.assertEqual(10, len(a))
 
-        a = [1,2]
+        a = [1, 2]
         a *= 4
         self.assertEqual(8, len(a))
 
     def test_imul_01(self):
+
         class My():
+
             def __init__(self, value):
                 self.value = value
+
             def __index__(self):
                 return self.value + 1;
+
         l = [1]
         ob = My(10)
         l *= ob
         self.assertEqual(11, len(l))
 
     def test_imul_02(self):
+
         class My():
+
             def __init__(self, value):
                 self.value = value
+
             def __index__(self):
-                return LONG_NUMBER*LONG_NUMBER
+                return LONG_NUMBER * LONG_NUMBER
+
         l = [1]
         ob = My(10)
         self.assertRaises(OverflowError, l.__imul__, ob)
 
     def test_imul_03(self):
+
         class My():
+
             def __init__(self, value):
                 self.value = value
+
             def __index__(self):
                 return 'Ahoj'
+
         l = [1]
         ob = My(10)
         self.assertRaises(TypeError, l.__imul__, ob)
 
+
 class ListCompareTest(CompareTest):
-    
+
     def test_compare(self):
         l1 = [1, 2, 3]
-        l2 = [1,2,3,0]
-        l3 = [1,2,3,4]
+        l2 = [1, 2, 3, 0]
+        l3 = [1, 2, 3, 4]
 
         self.comp_eq(l1, l1)
 
@@ -564,6 +596,7 @@ class ListCompareTest(CompareTest):
         self.comp_gt(l3, l1)
 
     def test_equal_other(self):
+
         def tryWithOtherType(left, right):
             self.assertFalse(left == right, "Operation {} == {} should be False".format(left, right))
             self.assertTrue(left != right, "Operation {} != {} should be True".format(left, right))
@@ -577,7 +610,9 @@ class ListCompareTest(CompareTest):
         tryWithOtherType(l1, {'one':1, 'two':2, 'three':3})
 
     def test_raiseTypeError(self):
+
         def tryWithOtherType(left, right):
+
             def raiseTypeError(left, op, right):
                 try:
                     if op == "<":
@@ -603,17 +638,24 @@ class ListCompareTest(CompareTest):
         tryWithOtherType(l1, 'hello')
 
     def test_extendingClass(self):
+
         class MyList(list):
+
             def __eq__(self, value):
                 return 'eq'
+
             def __ne__(self, value):
                 return value;
+
             def __gt__(self, value):
                 return 10
+
             def __lt__(self, value):
                 return 11.11
+
             def __ge__(self, value):
                 return value + 5
+
             def __le__(self, value):
                 r = super().__le__(value)
                 return "OK:" + str(r)

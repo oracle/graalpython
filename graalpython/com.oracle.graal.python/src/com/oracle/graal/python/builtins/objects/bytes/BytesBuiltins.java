@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -52,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -119,7 +119,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -263,55 +263,40 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "startswith", minNumOfArguments = 2, maxNumOfArguments = 4)
     @GenerateNodeFactory
     abstract static class StartsWithNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        boolean startswith(PBytes self, String prefix, PNone start, PNone end) {
+        boolean startswith(PBytes self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return new String(self.getInternalByteArray()).startsWith(prefix);
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, PNone start, PNone end) {
-            byte[] bytes = self.getInternalByteArray();
-            byte[] other = prefix.getInternalByteArray();
-            if (bytes.length < other.length) {
-                return false;
-            }
-            for (int i = 0; i < other.length; i++) {
-                if (bytes[i] != other[i]) {
-                    return false;
-                }
-            }
-            return true;
+        boolean startswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.startsWith(self, prefix);
+        }
+
+        @Specialization
+        boolean startswith(PBytes self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.startsWith(self, prefix, start, -1);
+        }
+
+        @Specialization
+        boolean startswith(PBytes self, PIBytesLike prefix, int start, int end) {
+            return BytesUtils.startsWith(self, prefix, start, end);
         }
     }
 
     @Builtin(name = "endswith", minNumOfArguments = 2, maxNumOfArguments = 4)
     @GenerateNodeFactory
     abstract static class EndsWithNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        boolean startswith(PBytes self, String prefix, PNone start, PNone end) {
+        boolean endswith(PBytes self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return new String(self.getInternalByteArray()).endsWith(prefix);
         }
 
-        @SuppressWarnings("unused")
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, PNone start, PNone end) {
-            byte[] bytes = self.getInternalByteArray();
-            byte[] other = prefix.getInternalByteArray();
-            int offset = bytes.length - other.length;
-            if (offset < 0) {
-                return false;
-            }
-            for (int i = 0; i < other.length; i++) {
-                if (bytes[i + offset] != other[i]) {
-                    return false;
-                }
-            }
-            return true;
+        boolean endswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.endsWith(self, prefix);
         }
     }
 
@@ -322,6 +307,41 @@ public class BytesBuiltins extends PythonBuiltins {
         @TruffleBoundary
         PBytes strip(PBytes self, @SuppressWarnings("unused") PNone bytes) {
             return factory().createBytes(new String(self.getInternalByteArray()).trim().getBytes());
+        }
+    }
+
+    // bytes.find(bytes[, start[, end]])
+    @Builtin(name = "find", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class FindNode extends PythonBuiltinNode {
+        @Specialization
+        int find(PBytes self, int sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return find(self, sub, 0, self.len());
+        }
+
+        @Specialization
+        int find(PBytes self, int sub, int start, @SuppressWarnings("unused") PNone end) {
+            return find(self, sub, start, self.len());
+        }
+
+        @Specialization
+        int find(PBytes self, int sub, int start, int ending) {
+            return BytesUtils.find(self, sub, start, ending);
+        }
+
+        @Specialization
+        int find(PBytes self, PIBytesLike sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return find(self, sub, 0, self.len());
+        }
+
+        @Specialization
+        int find(PBytes self, PIBytesLike sub, int start, @SuppressWarnings("unused") PNone end) {
+            return find(self, sub, start, self.len());
+        }
+
+        @Specialization
+        int find(PBytes self, PIBytesLike sub, int start, int ending) {
+            return BytesUtils.find(self, sub, start, ending);
         }
     }
 

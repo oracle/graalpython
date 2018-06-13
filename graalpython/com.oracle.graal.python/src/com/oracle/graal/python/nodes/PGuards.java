@@ -119,12 +119,20 @@ public abstract class PGuards {
         return list.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
+    public static boolean isIntStorage(PByteArray byteArray) {
+        return byteArray.getSequenceStorage() instanceof IntSequenceStorage;
+    }
+
     public static boolean isByteStorage(PByteArray byteArray) {
         return byteArray.getSequenceStorage() instanceof ByteSequenceStorage;
     }
 
-    public static boolean areBothIntStorage(PList first, PList second) {
+    public static boolean areBothIntStorage(PSequence first, PSequence second) {
         return first.getSequenceStorage() instanceof IntSequenceStorage && second.getSequenceStorage() instanceof IntSequenceStorage;
+    }
+
+    public static boolean areBothByteStorage(PSequence first, PSequence second) {
+        return first.getSequenceStorage() instanceof ByteSequenceStorage && second.getSequenceStorage() instanceof ByteSequenceStorage;
     }
 
     public static boolean isLongStorage(PList list) {

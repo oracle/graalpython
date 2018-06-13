@@ -57,6 +57,7 @@ public enum PythonErrorType {
     TypeError,
     UnboundLocalError,
     UnicodeEncodeError,
+    UnicodeDecodeError,
     UnicodeError,
     UnicodeWarning,
     UserWarning,

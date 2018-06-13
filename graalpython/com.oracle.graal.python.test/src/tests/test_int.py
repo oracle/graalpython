@@ -97,3 +97,155 @@ def test_int_bit_length():
     assert (int(-2432902008176640000)).bit_length() == 62
     assert (int(9999992432902008176640000999999)).bit_length() == 103
     assert (int(-9999992432902008176640000999999)).bit_length() == 103
+
+class MyInt(int):
+    pass
+
+def test_int():
+    def builtinTest(number):
+        a = int(number)
+        b = a.__int__()
+        assert a == b
+        assert a is b
+        assert type(a) == int
+        assert type(b) == int
+
+    builtinTest(-9)
+    builtinTest(0)
+    builtinTest(9)
+    builtinTest(6227020800)
+    builtinTest(9999992432902008176640000999999)
+    
+    assert True.__int__() == 1
+    assert False.__int__() == 0
+
+
+def test_int_subclass():
+    def subclassTest(number):
+        a = MyInt(number)
+        b = a.__int__()
+        assert a == b
+        assert a is not b
+        assert type(a) == MyInt
+        assert type(b) == int
+
+    subclassTest(-9)
+    subclassTest(0)
+    subclassTest(9)
+    subclassTest(6227020800)
+    subclassTest(9999992432902008176640000999999)
+
+def test_real_imag():
+    def builtinTest(number):
+        a = int(number)
+        b = a.real
+        c = a.imag
+        assert a == b
+        assert a is b
+        assert c == 0
+        assert type(a) == int
+        assert type(b) == int
+        assert type(c) == int
+
+    builtinTest(-9)
+    builtinTest(0)
+    builtinTest(9)
+    builtinTest(6227020800)
+    builtinTest(9999992432902008176640000999999)
+    
+    assert True.real == 1
+    assert False.real == 0
+    assert True.imag == 0
+    assert False.imag == 0
+
+def test_real_imag_subclass():    
+    def subclassTest(number):
+        a = MyInt(number)
+        b = a.real
+        c = a.imag
+        assert a == b
+        assert a is not b
+        assert c == 0
+        assert type(a) == MyInt
+        assert type(b) == int
+        assert type(c) == int
+
+    subclassTest(-9)
+    subclassTest(0)
+    subclassTest(9)
+    subclassTest(6227020800)
+    subclassTest(9999992432902008176640000999999)
+
+def test_numerator_denominator():
+    def builtinTest(number):
+        a = int(number)
+        b = a.numerator
+        c = a.denominator
+        assert a == b
+        assert a is b
+        assert c == 1
+        assert type(a) == int
+        assert type(b) == int
+        assert type(c) == int
+
+    builtinTest(-9)
+    builtinTest(0)
+    builtinTest(9)
+    builtinTest(6227020800)
+    builtinTest(9999992432902008176640000999999)
+    
+    assert True.numerator == 1
+    assert False.numerator == 0
+    assert True.denominator == 1
+    assert False.denominator == 1
+
+def test_mumerator_denominator_subclass():
+    def subclassTest(number):
+        a = MyInt(number)
+        b = a.numerator
+        c = a.denominator
+        assert a == b
+        assert a is not b
+        assert c == 1
+        assert type(a) == MyInt
+        assert type(b) == int
+        assert type(c) == int
+
+    subclassTest(-9)
+    subclassTest(0)
+    subclassTest(9)
+    subclassTest(6227020800)
+    subclassTest(9999992432902008176640000999999)
+
+def test_conjugate():
+    def builtinTest(number):
+        a = int(number)
+        b = a.conjugate()
+        assert a == b
+        assert a is b
+        assert type(a) == int
+        assert type(b) == int
+
+    builtinTest(-9)
+    builtinTest(0)
+    builtinTest(9)
+    builtinTest(6227020800)
+    builtinTest(9999992432902008176640000999999)
+    
+    assert True.conjugate() == 1
+    assert False.conjugate() == 0
+
+def test_conjugate_subclass():
+    def subclassTest(number):
+        a = MyInt(number)
+        b = a.conjugate()
+        assert a == b
+        assert a is not b
+        assert type(a) == MyInt
+        assert type(b) == int
+
+    subclassTest(-9)
+    subclassTest(0)
+    subclassTest(9)
+    subclassTest(6227020800)
+    subclassTest(9999992432902008176640000999999)

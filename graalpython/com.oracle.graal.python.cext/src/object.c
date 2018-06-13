@@ -197,6 +197,10 @@ static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* 
 	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size), explicit_cast(b)));
 }
 
+static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c) {
+	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+}
+
 /* very special case: operator '**' has an optional third arg */
 static PyObject* wrap_pow(ternaryfunc f, ...) {
     int nargs = polyglot_get_arg_count();
@@ -382,7 +386,7 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT("__next__", cls->tp_iternext, -1);
     ADD_SLOT("__get__", cls->tp_descr_get, -3);
     ADD_SLOT("__set__", cls->tp_descr_set, -3);
-    ADD_SLOT("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS);
+    ADD_SLOT_CONV("__init__", wrap_initproc, cls->tp_init, METH_KEYWORDS | METH_VARARGS);
     ADD_SLOT_CONV("__alloc__", wrap_allocfunc, cls->tp_alloc, -2);
     ADD_SLOT("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS);
     ADD_SLOT("__free__", cls->tp_free, -1);
@@ -613,7 +617,11 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
 }
 
 PyObject* PyObject_GetAttrString(PyObject* obj, const char* attr) {
-    return PyObject_GetAttr(obj, PyUnicode_FromString(attr));
+    void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetAttr", to_java(obj), polyglot_from_string(attr, "utf-8"));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return to_sulong(result);
 }
 
 int PyObject_SetAttrString(PyObject* obj, const char* attr, PyObject* value) {

@@ -36,26 +36,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.truffle.api.interop.TruffleObject;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-abstract class PythonNativeWrapper implements TruffleObject {
+import java.text.Normalizer;
+import java.util.List;
 
-    private Object nativePointer;
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
 
-    public Object getNativePointer() {
-        return nativePointer;
+@CoreFunctions(defineModule = "unicodedata")
+public class UnicodeDataModuleBuiltins extends PythonBuiltins {
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+        return UnicodeDataModuleBuiltinsFactory.getFactories();
     }
 
-    public void setNativePointer(Object nativePointer) {
-        // we should set the pointer just once
-        assert this.nativePointer == null || this.nativePointer.equals(nativePointer);
-        this.nativePointer = nativePointer;
-    }
+    // unicodedata.normalize(form, unistr)
+    @Builtin(name = "normalize", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class NormalizeNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        protected Normalizer.Form getForm(String form) {
+            try {
+                return Normalizer.Form.valueOf(form);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
 
-    public boolean isNative() {
-        return nativePointer != null;
+        @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
+        @TruffleBoundary
+        public String normalize(@SuppressWarnings("unused") String form, String unistr,
+                        @SuppressWarnings("unused") @Cached("form") String cachedForm,
+                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
+            if (cachedNormForm == null) {
+                throw raise(ValueError, "invalid normalization form");
+            }
+            return Normalizer.normalize(unistr, cachedNormForm);
+        }
     }
-
 }
