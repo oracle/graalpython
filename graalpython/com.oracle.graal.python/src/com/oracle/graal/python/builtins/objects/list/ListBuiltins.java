@@ -26,21 +26,21 @@
 package com.oracle.graal.python.builtins.objects.list;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -72,6 +73,7 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -327,13 +329,29 @@ public class ListBuiltins extends PythonBuiltins {
             return self.getSlice(factory(), slice);
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        protected Object doGeneric(Object self, Object idx) {
-            if (!isValidIndexType(idx)) {
+        protected static final Supplier<NoAttributeHandler> NO_INDEX = () -> new NoAttributeHandler() {
+            @Override
+            public Object execute(Object receiver) {
+                throw raise(TypeError, "list indices must be integers or slices, not %p", receiver);
+            }
+        };
+
+        @Specialization
+        protected Object doObjectIndex(PList self, Object objectIdx,
+                        @Cached("create(__INDEX__, NO_INDEX)") LookupAndCallUnaryNode getIndexNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getRecursiveNode) {
+            Object idx = getIndexNode.executeObject(objectIdx);
+            if (isValidIndexType(idx)) {
+                return getRecursiveNode.executeObject(self, idx);
+            } else {
                 throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
             }
-            throw raise(TypeError, "descriptor '__getitem__' requires a 'list' object but received a '%p'", idx);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        protected Object doGeneric(Object self, Object objectIdx) {
+            throw raise(TypeError, "descriptor '__getitem__' requires a 'list' object but received a '%p'", self);
         }
 
         protected boolean isValidIndexType(Object idx) {
