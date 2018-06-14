@@ -96,3 +96,7 @@ def test_iter():
     zip_iterator = type(iter(zip()))
     assert str(zip_iterator) == "<class 'zip'>"
     # <class 'zip'>
+
+
+def test_zip_no_args():
+    assert list(zip(*[])) == []
