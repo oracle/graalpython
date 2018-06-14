@@ -125,8 +125,8 @@ def result_check(expected, got, ulp_tol=5, abs_tol=0.0):
         return None
 
 class MyFloat:
-            def __float__(self):
-                return 0.6
+    def __float__(self):
+        return 0.6
 
 class MathTests(unittest.TestCase):
 
@@ -142,6 +142,14 @@ class MathTests(unittest.TestCase):
         failure = result_check(expected, got, ulp_tol, abs_tol)
         if failure is not None:
             self.fail("{}: {}".format(name, failure))
+
+    def testConstants(self):
+        # Ref: Abramowitz & Stegun (Dover, 1965)
+        self.ftest('pi', math.pi, 3.141592653589793238462643)
+        self.ftest('e', math.e, 2.718281828459045235360287)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            # math.tau since 3.6
+            self.assertEqual(math.tau, 2*math.pi)
 
     def testAcos(self):
         self.assertRaises(TypeError, math.acos)
@@ -285,14 +293,6 @@ class MathTests(unittest.TestCase):
         self.assertFalse(math.isinf(BIG_INT))
         self.assertRaises(TypeError, math.isinf, 'ahoj')
         self.assertFalse(math.isinf(MyFloat()))
-        
-    def testConstants(self):
-        # Ref: Abramowitz & Stegun (Dover, 1965)
-        self.ftest('pi', math.pi, 3.141592653589793238462643)
-        self.ftest('e', math.e, 2.718281828459045235360287)
-        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
-            # math.tau since 3.6
-            self.assertEqual(math.tau, 2*math.pi)
 
     def test_ceil_basic(self):
         self.assertEqual(math.ceil(10), 10)

@@ -1158,7 +1158,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode valueDispatchNode;
         @Child private LookupAndCallUnaryNode baseDispatchNode;
         @Child private LogNode recLogNode;
-        
+
         private LookupAndCallUnaryNode getValueDispatchNode() {
             if (valueDispatchNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1166,7 +1166,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             }
             return valueDispatchNode;
         }
-        
+
         private LookupAndCallUnaryNode getBaseDispatchNode() {
             if (baseDispatchNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1174,7 +1174,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             }
             return baseDispatchNode;
         }
-        
+
         private double executeRecursiveLogNode(Object value, Object base) {
             if (recLogNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1182,7 +1182,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             }
             return recLogNode.executeObject(value, base);
         }
-        
+
         public abstract double executeObject(Object value, Object base);
 
         private static final double LOG2 = Math.log(2.0);
@@ -1210,7 +1210,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             }
             return logBase;
         }
-   
+
         @Specialization
         public double log(long value, @SuppressWarnings("unused") PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
@@ -1345,18 +1345,18 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logPIO(PInt value, Object base, 
+        public double logPIO(PInt value, Object base,
                         @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
             Object resultBase = getRealNumber(base, getBaseDispatchNode(), notNumberBase);
             return executeRecursiveLogNode(value, resultBase);
         }
-        
+
         private void raiseMathError(ConditionProfile doNotFit, boolean con) {
             if (doNotFit.profile(con)) {
                 throw raise(ValueError, "math domain error");
             }
         }
-        
+
         private Object getRealNumber(Object object, LookupAndCallUnaryNode dispatchNode, ConditionProfile isNotRealNumber) {
             Object result = dispatchNode.executeObject(object);
             if (result == PNone.NO_VALUE) {
