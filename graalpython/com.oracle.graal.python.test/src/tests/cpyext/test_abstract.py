@@ -79,7 +79,7 @@ def _reference_next(args):
     iterObj = args[0]
     n = args[1]
     try:
-        for i in range(n-1):
+        for i in range(n - 1):
             next(iterObj)
         return next(iterObj)
     except BaseException:
@@ -125,26 +125,31 @@ class NoNumber():
 
 
 class DummyIntable():
+
     def __int__(self):
         return 0xCAFE
 
 
 class DummyIntSubclass(int):
+
     def __int__(self):
         return 0xBABE
 
 
 class DummyFloatable():
+
     def __float__(self):
         return 3.14159
 
 
 class DummyFloatSubclass(float):
+
     def __float__(self):
         return 2.71828
 
 
 class DummySequence():
+
     def __getitem__(self, idx):
         return idx * 10
 
@@ -155,28 +160,28 @@ class DummyListSubclass(list):
 
 def _default_bin_arith_args():
     return (
-        (0,0),
-        (0,-1),
-        (3,2),
-        (10,5),
-        (29.3,4.7),
-        (0.3,-1.5),
-        (False,1),
-        (False,1.3),
-        (True,1),
-        (True,1.3),
+        (0, 0),
+        (0, -1),
+        (3, 2),
+        (10, 5),
+        (29.3, 4.7),
+        (0.3, -1.5),
+        (False, 1),
+        (False, 1.3),
+        (True, 1),
+        (True, 1.3),
         ("hello, ", "world"),
         ("hello, ", 3),
-        ((1,2,3), (4,5,6)),
-        ((1,2,3), 2),
-        (0x7fffffff,0x7fffffff),
-        (0xffffffffffffffffffffffffffffffff,-1),
-        (DummyIntable(),0xBABE),
+        ((1, 2, 3), (4, 5, 6)),
+        ((1, 2, 3), 2),
+        (0x7fffffff, 0x7fffffff),
+        (0xffffffffffffffffffffffffffffffff, -1),
+        (DummyIntable(), 0xBABE),
         (0xBABE, DummyIntable()),
-        (DummyIntSubclass(),0xCAFE),
+        (DummyIntSubclass(), 0xCAFE),
         (0xCAFE, DummyIntSubclass()),
-        (NoNumber(),1),
-        (4,NoNumber()),
+        (NoNumber(), 1),
+        (4, NoNumber()),
     )
 
 
@@ -189,7 +194,7 @@ def _default_unarop_args():
         (False,),
         (True,),
         ("hello",),
-        ((1,2,3),),
+        ((1, 2, 3),),
         (0x7fffffff,),
         (0xffffffffffffffffffffffffffffffff,),
         (DummyIntable(),),
@@ -201,6 +206,7 @@ def _default_unarop_args():
 
 
 class TestAbstract(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestAbstract, self).compile_module(name)
@@ -215,7 +221,7 @@ class TestAbstract(CPyExtTestCase):
     )
 
     test_PyNumber_Invert = CPyExtFunction(
-        lambda args: ~(args[0]),
+        lambda args:~(args[0]),
         _default_unarop_args,
         resultspec="O",
         argspec='O',
@@ -235,21 +241,21 @@ class TestAbstract(CPyExtTestCase):
     test_PyNumber_Add = CPyExtFunction(
         lambda args: args[0] + args[1],
         lambda: (
-            (0,0),
-            (0,-1),
-            (0.1,0.0),
-            (0.3,-1.5),
-            (False,1),
-            (False,1.3),
-            (True,1),
-            (True,1.3),
+            (0, 0),
+            (0, -1),
+            (0.1, 0.0),
+            (0.3, -1.5),
+            (False, 1),
+            (False, 1.3),
+            (True, 1),
+            (True, 1.3),
             ("hello, ", "world"),
-            ((1,2,3), (4,5,6)),
-            (0x7fffffff,0x7fffffff),
-            (0xffffffffffffffffffffffffffffffff,-1),
-            (DummyIntable(),0xCAFE),
-            (DummyIntSubclass(),0xBABE),
-            (NoNumber(),1),
+            ((1, 2, 3), (4, 5, 6)),
+            (0x7fffffff, 0x7fffffff),
+            (0xffffffffffffffffffffffffffffffff, -1),
+            (DummyIntable(), 0xCAFE),
+            (DummyIntSubclass(), 0xBABE),
+            (NoNumber(), 1),
         ),
         resultspec="O",
         argspec='OO',
@@ -260,21 +266,21 @@ class TestAbstract(CPyExtTestCase):
     test_PyNumber_Subtract = CPyExtFunction(
         lambda args: args[0] - args[1],
         lambda: (
-            (0,0),
-            (0,-1),
-            (0.1,0.0),
-            (0.3,-1.5),
-            (False,1),
-            (False,1.3),
-            (True,1),
-            (True,1.3),
+            (0, 0),
+            (0, -1),
+            (0.1, 0.0),
+            (0.3, -1.5),
+            (False, 1),
+            (False, 1.3),
+            (True, 1),
+            (True, 1.3),
             ("hello, ", "world"),
-            ((1,2,3), (4,5,6)),
-            (0x7fffffff,0x7fffffff),
-            (0xffffffffffffffffffffffffffffffff,-1),
-            (DummyIntable(),0xCAFE),
-            (DummyIntSubclass(),0xBABE),
-            (NoNumber(),1),
+            ((1, 2, 3), (4, 5, 6)),
+            (0x7fffffff, 0x7fffffff),
+            (0xffffffffffffffffffffffffffffffff, -1),
+            (DummyIntable(), 0xCAFE),
+            (DummyIntSubclass(), 0xBABE),
+            (NoNumber(), 1),
         ),
         resultspec="O",
         argspec='OO',
@@ -285,25 +291,25 @@ class TestAbstract(CPyExtTestCase):
     test_PyNumber_Multiply = CPyExtFunction(
         lambda args: args[0] * args[1],
         lambda: (
-            (0,0),
-            (0,-1),
-            (0.1,0.0),
-            (0.3,-1.5),
-            (False,1),
-            (False,1.3),
-            (True,1),
-            (True,1.3),
+            (0, 0),
+            (0, -1),
+            (0.1, 0.0),
+            (0.3, -1.5),
+            (False, 1),
+            (False, 1.3),
+            (True, 1),
+            (True, 1.3),
             ("hello, ", "world"),
             ("hello, ", 3),
             ("hello, ", 0),
-            ((1,2,3), (4,5,6)),
-            ((1,2,3), 2),
-            ((1,2,3), 0),
-            (0x7fffffff,0x7fffffff),
-            (0xffffffffffffffffffffffffffffffff,-1),
-            (DummyIntable(),2.3),
-            (DummyIntSubclass(),2.3),
-            (NoNumber(),2),
+            ((1, 2, 3), (4, 5, 6)),
+            ((1, 2, 3), 2),
+            ((1, 2, 3), 0),
+            (0x7fffffff, 0x7fffffff),
+            (0xffffffffffffffffffffffffffffffff, -1),
+            (DummyIntable(), 2.3),
+            (DummyIntSubclass(), 2.3),
+            (NoNumber(), 2),
         ),
         resultspec="O",
         argspec='OO',
@@ -393,7 +399,7 @@ class TestAbstract(CPyExtTestCase):
     )
 
     test_PyNumber_Positive = CPyExtFunction(
-        lambda args: +args[0],
+        lambda args:+args[0],
         lambda: (
             (0,),
             (1,),
@@ -410,7 +416,7 @@ class TestAbstract(CPyExtTestCase):
     )
 
     test_PyNumber_Negative = CPyExtFunction(
-        lambda args: -args[0],
+        lambda args:-args[0],
         lambda: (
             (0,),
             (1,),
@@ -448,17 +454,17 @@ class TestAbstract(CPyExtTestCase):
     test_PyNumber_AsSsize_t = CPyExtFunction(
         _reference_asssize_t,
         lambda: (
-            (0,OverflowError),
-            (1,ValueError),
-            (1,OverflowError),
-            (-1,OverflowError),
-            (1.0,OverflowError),
-            (0x7FFFFFFF,OverflowError),
-            (0x7FFFFFFFFFFFFFFF,OverflowError),
-            (DummyIntable(),OverflowError),
-            (DummyIntSubclass(),OverflowError),
-            (NoNumber(),OverflowError),
-            (NoNumber(),ValueError),
+            (0, OverflowError),
+            (1, ValueError),
+            (1, OverflowError),
+            (-1, OverflowError),
+            (1.0, OverflowError),
+            (0x7FFFFFFF, OverflowError),
+            (0x7FFFFFFFFFFFFFFF, OverflowError),
+            (DummyIntable(), OverflowError),
+            (DummyIntSubclass(), OverflowError),
+            (NoNumber(), OverflowError),
+            (NoNumber(), ValueError),
         ),
         resultspec="n",
         argspec='OO',
@@ -509,7 +515,7 @@ class TestAbstract(CPyExtTestCase):
         lambda: (
             (tuple(),),
             (list(),),
-            ((1,2,3),),
+            ((1, 2, 3),),
             (("a", "b"),),
         ),
         resultspec="n",
@@ -520,12 +526,12 @@ class TestAbstract(CPyExtTestCase):
     test_PySequence_Fast_GET_ITEM = CPyExtFunction(
         lambda args: args[0][args[1]],
         lambda: (
-            ((1,2,3),0),
-            ((1,2,3),1),
-            ((1,2,3),2),
-            (['a','b','c'],0),
-            (['a','b','c'],1),
-            (['a','b','c'],2),
+            ((1, 2, 3), 0),
+            ((1, 2, 3), 1),
+            ((1, 2, 3), 2),
+            (['a', 'b', 'c'], 0),
+            (['a', 'b', 'c'], 1),
+            (['a', 'b', 'c'], 2),
         ),
         resultspec="O",
         argspec='On',
@@ -536,10 +542,10 @@ class TestAbstract(CPyExtTestCase):
         lambda args: len(args[0]),
         lambda: (
             (tuple(),),
-            ((1,2,3),),
+            ((1, 2, 3),),
             ((None,),),
             ([],),
-            (['a','b','c'],),
+            (['a', 'b', 'c'],),
             ([None],),
         ),
         resultspec="n",
@@ -551,10 +557,10 @@ class TestAbstract(CPyExtTestCase):
         lambda args: list(args[0]),
         lambda: (
             (tuple(),),
-            ((1,2,3),),
+            ((1, 2, 3),),
             ((None,),),
             ([],),
-            (['a','b','c'],),
+            (['a', 'b', 'c'],),
             ([None],),
         ),
         code='''PyObject* wrap_PySequence_Fast_ITEMS(PyObject* sequence) {
@@ -577,12 +583,12 @@ class TestAbstract(CPyExtTestCase):
     test_PyIter_Next = CPyExtFunction(
         _reference_next,
         lambda: (
-            (iter((1,2,3)),0),
-            (iter((1,2,3)),3),
-            (iter((None,)),1),
-            (iter([]),1),
-            (iter(['a','b','c']),2),
-            (iter({'a':0,'b':1,'c':2}),2)
+            (iter((1, 2, 3)), 0),
+            (iter((1, 2, 3)), 3),
+            (iter((None,)), 1),
+            (iter([]), 1),
+            (iter(['a', 'b', 'c']), 2),
+            (iter({'a':0, 'b':1, 'c':2}), 2)
         ),
         code='''PyObject* wrap_PyIter_Next(PyObject* iter, int n) {
             int i;
@@ -603,10 +609,10 @@ class TestAbstract(CPyExtTestCase):
         lambda args: not isinstance(args[0], dict) and hasattr(args[0], '__getitem__'),
         lambda: (
             (tuple(),),
-            ((1,2,3),),
+            ((1, 2, 3),),
             ((None,),),
             ([],),
-            (['a','b','c'],),
+            (['a', 'b', 'c'],),
             ([None],),
             (dict(),),
             (set(),),
@@ -624,10 +630,10 @@ class TestAbstract(CPyExtTestCase):
         _reference_size,
         lambda: (
             (tuple(),),
-            ((1,2,3),),
+            ((1, 2, 3),),
             ((None,),),
             ([],),
-            (['a','b','c'],),
+            (['a', 'b', 'c'],),
             ([None],),
             (set(),),
             (DummyListSubclass(),),
@@ -645,10 +651,10 @@ class TestAbstract(CPyExtTestCase):
         _reference_getitem,
         lambda: (
             (tuple(), 10),
-            ((1,2,3), 2),
+            ((1, 2, 3), 2),
             ((None,), 0),
             ([], 10),
-            (['a','b','c'], 2),
+            (['a', 'b', 'c'], 2),
             ([None], 0),
             (set(), 0),
             ({'a', 'b'}, 0),
@@ -664,10 +670,10 @@ class TestAbstract(CPyExtTestCase):
         _reference_setitem,
         lambda: (
             (tuple(), 0, 'a'),
-            ((1,2,3), 2, 99),
+            ((1, 2, 3), 2, 99),
             ((None,), 1, None),
             ([], 10, 1),
-            (['a','b','c'], 2, 'z'),
+            (['a', 'b', 'c'], 2, 'z'),
         ),
         code=''' PyObject* wrap_PySequence_SetItem(PyObject* sequence, Py_ssize_t idx, PyObject* value) {
             if (PySequence_SetItem(sequence, idx, value) < 0) {
@@ -686,13 +692,13 @@ class TestAbstract(CPyExtTestCase):
     test_PySequence_Tuple = CPyExtFunction(
         lambda args: tuple(args[0]),
         lambda: (
-            (tuple(), ),
-            ((1,2,3), ),
-            ((None,), ),
-            ([], ),
-            (['a','b','c'],),
-            ({'a','b','c'},),
-            ({'a': 0,'b': 1,'c': 2},),
+            (tuple(),),
+            ((1, 2, 3),),
+            ((None,),),
+            ([],),
+            (['a', 'b', 'c'],),
+            ({'a', 'b', 'c'},),
+            ({'a': 0, 'b': 1, 'c': 2},),
             (None,),
             (0,),
         ),
@@ -706,12 +712,12 @@ class TestAbstract(CPyExtTestCase):
         _reference_fast,
         lambda: (
             (tuple(), "should not be an error"),
-            ((1,2,3), "should not be an error"),
+            ((1, 2, 3), "should not be an error"),
             ((None,), "should not be an error"),
             ([], "should not be an error"),
-            (['a','b','c'],"should not be an error"),
-            ({'a','b','c'}, "should not be an error"),
-            ({'a': 0,'b': 1,'c': 2}, "should not be an error"),
+            (['a', 'b', 'c'], "should not be an error"),
+            ({'a', 'b', 'c'}, "should not be an error"),
+            ({'a': 0, 'b': 1, 'c': 2}, "should not be an error"),
             (None, "None cannot be a sequence"),
             (0, "int cannot be a sequence"),
         ),
@@ -725,11 +731,11 @@ class TestAbstract(CPyExtTestCase):
         lambda args: args[0][args[1]],
         lambda: (
             (tuple(), "hello"),
-            ((1,2,3), "1"),
-            (['a','b','c'],"nothing"),
-            ({'a','b','c'}, "a"),
-            ({'a': 0,'b': 1,'c': 2}, "nothing"),
-            ({'a': 0,'b': 1,'c': 2}, "c"),
+            ((1, 2, 3), "1"),
+            (['a', 'b', 'c'], "nothing"),
+            ({'a', 'b', 'c'}, "a"),
+            ({'a': 0, 'b': 1, 'c': 2}, "nothing"),
+            ({'a': 0, 'b': 1, 'c': 2}, "c"),
         ),
         resultspec="O",
         argspec='Os',
@@ -740,16 +746,16 @@ class TestAbstract(CPyExtTestCase):
     test_PyIndex_Check = CPyExtFunction(
         lambda args: hasattr(args[0], "__index__"),
         lambda: (
-            (1, ),
-            ("not a number", ),
-            (tuple(), ),
-            (dict(), ),
-            (list(), ),
-            (DummyFloatable(), ),
-            (DummyFloatSubclass(), ),
-            (DummyIntable(), ),
-            (DummyIntSubclass(), ),
-            (NoNumber(), ),
+            (1,),
+            ("not a number",),
+            (tuple(),),
+            (dict(),),
+            (list(),),
+            (DummyFloatable(),),
+            (DummyFloatSubclass(),),
+            (DummyIntable(),),
+            (DummyIntSubclass(),),
+            (NoNumber(),),
         ),
         resultspec="i",
         argspec='O',

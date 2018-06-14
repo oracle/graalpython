@@ -442,7 +442,11 @@ def PyNumber_Divmod(a, b):
 
 @may_raise
 def PyIter_Next(itObj):
-    return next(itObj)
+    try:
+        return next(itObj)
+    except StopIteration:
+        PyErr_Restore(None, None, None)
+        return error_handler
 
 
 ##################### SEQUENCE

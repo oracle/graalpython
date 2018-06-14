@@ -54,7 +54,7 @@ static PyObject* null_error(void) {
 }
 
 int PyNumber_Check(PyObject *o) {
-    PyObject *result = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Check", to_java(o)));
+    PyObject *result = UPCALL_CEXT_O("PyNumber_Check", native_to_java(o));
     if(result == Py_True) {
     	return 1;
     }
@@ -62,19 +62,11 @@ int PyNumber_Check(PyObject *o) {
 }
 
 static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop, char *unaryop_name) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_UnaryOp", to_java(v), unaryop, truffle_read_string(unaryop_name));
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyNumber_UnaryOp", native_to_java(v), unaryop, polyglot_from_string(unaryop_name, SRC_CS));
 }
 
 static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop, char *binop_name) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_BinOp", to_java(v), to_java(w), binop, truffle_read_string(binop_name));
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyNumber_BinOp", native_to_java(v), native_to_java(w), binop, polyglot_from_string(binop_name, SRC_CS));
 }
 
 PyObject * PyNumber_Add(PyObject *o1, PyObject *o2) {
@@ -137,11 +129,7 @@ PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {
         return null_error();
     }
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Index", to_java(o));
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyNumber_Index", to_java(o));
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
@@ -179,9 +167,7 @@ Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
     }
     else {
         /* Otherwise replace the error with caller's error object. */
-    	PyObject* t = PyTuple_New(1);
-    	PyTuple_SetItem(t, 0, PyObject_Type(item));
-    	truffle_invoke(PY_TRUFFLE_CEXT, "PyErr_Format", to_java(err), truffle_read_string("cannot fit '%s' into an index-sized integer"), to_java(t));
+    	PyErr_Format(err, "cannot fit '%s' into an index-sized integer", PyObject_Type(item));
     }
 
     Py_DECREF(value);
@@ -189,19 +175,11 @@ Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
 }
 
 PyObject * PyNumber_Long(PyObject *o) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Long", to_java(o));
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyNumber_Long", native_to_java(o));
 }
 
 PyObject * PyNumber_Float(PyObject *o) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyNumber_Float", to_java(o));
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyNumber_Float", native_to_java(o));
 }
 
 PyObject * PyNumber_Absolute(PyObject *o) {
@@ -222,12 +200,7 @@ PyObject * PyNumber_Divmod(PyObject *a, PyObject *b) {
 
 
 PyObject * PyIter_Next(PyObject *iter) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyIter_Next", to_java(iter));
-	if (result == ERROR_MARKER && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_StopIteration)) {
-        PyErr_Clear();
-		return NULL;
-	}
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyIter_Next", native_to_java(iter));
 }
 
 int PySequence_Check(PyObject *s) {
@@ -249,39 +222,23 @@ Py_ssize_t PySequence_Length(PyObject *s) {
 #define PySequence_Length PySequence_Size
 
 PyObject* PySequence_GetItem(PyObject *s, Py_ssize_t i) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_GetItem", to_java(s), i);
-	if(result == ERROR_MARKER) {
-		return NULL;
-	}
-	return to_sulong(result);
+    return UPCALL_CEXT_O("PySequence_GetItem", native_to_java(s), i);
 }
 
 int PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o) {
-	return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_SetItem", to_java(s), i, to_java(o)));
+    return UPCALL_CEXT_I("PySequence_SetItem", native_to_java(s), i, native_to_java(o));
 }
 
 PyObject* PySequence_Tuple(PyObject *v) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Tuple", to_java(v));
-	if(result == ERROR_MARKER) {
-		return NULL;
-	}
-	return to_sulong(result);
+    return UPCALL_CEXT_O("PySequence_Tuple", native_to_java(v));
 }
 
 PyObject * PySequence_Fast(PyObject *v, const char *m) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Fast", to_java(v), polyglot_from_string(m, "ascii"));
-	if(result == ERROR_MARKER) {
-		return NULL;
-	}
-	return to_sulong(result);
+    return UPCALL_CEXT_O("PySequence_Fast", native_to_java(v), polyglot_from_string(m, SRC_CS));
 }
 
 PyObject * PyMapping_GetItemString(PyObject *o, const char *key) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetItem", to_java(o), polyglot_from_string(key, "utf-8"));
-	if(result == ERROR_MARKER) {
-		return NULL;
-	}
-	return to_sulong(result);
+    return UPCALL_CEXT_O("PyObject_GetItem", native_to_java(o), polyglot_from_string(key, SRC_CS));
 }
 
 // taken from CPython "Objects/abstract.c"
