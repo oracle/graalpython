@@ -203,8 +203,9 @@ PyObject* to_sulong(void *o) {
     return explicit_cast(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
 }
 
+/** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
-    return to_java_type(obj->ob_type);
+    return native_to_java(obj->ob_type);
 }
 
 typedef struct PyObjectHandle {

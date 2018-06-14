@@ -493,8 +493,7 @@ public class PythonObjectNativeWrapperMR {
 
         Object access(PythonNativeWrapper obj) {
             if (!obj.isNative()) {
-                Object ptr = toPyObjectNode.execute(obj.getDelegate());
-                obj.setNativePointer(ptr);
+                obj.setNativePointer(toPyObjectNode.execute(obj.getDelegate()));
             }
             return obj;
         }
@@ -502,8 +501,18 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        Object access(PythonNativeWrapper obj) {
-            return obj.isNative();
+        @Child private Node isPointerNode;
+
+        Object access(PythonObjectNativeWrapper obj) {
+            return obj.isNative() && (!(obj.getNativePointer() instanceof TruffleObject) || ForeignAccess.sendIsPointer(getIsPointerNode(), (TruffleObject) obj.getNativePointer()));
+        }
+
+        private Node getIsPointerNode() {
+            if (isPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isPointerNode = insert(Message.IS_POINTER.createNode());
+            }
+            return isPointerNode;
         }
     }
 

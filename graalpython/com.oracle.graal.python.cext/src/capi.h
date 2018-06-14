@@ -96,10 +96,16 @@ void* handle_exception(void* val);
 
 // TODO cache landing function ?
 #define PY_TRUFFLE_LANDING ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)))
+#define PY_TRUFFLE_LANDING_L ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)))
+#define PY_TRUFFLE_LANDING_D ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)))
 #define PY_TRUFFLE_CEXT_LANDING ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall", SRC_CS)))
 #define PY_TRUFFLE_CEXT_LANDING_L ((uint64_t (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)))
 #define PY_TRUFFLE_CEXT_LANDING_D ((double (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)))
-#define UPCALL_O(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), __VA_ARGS__))
+#define UPCALL_O(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+#define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+#define UPCALL_I(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+#define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+#define UPCALL_D(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING_D((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 #define UPCALL_CEXT_O(__name__, ...) handle_exception_and_cast(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 #define UPCALL_CEXT_VOID(__name__, ...) (PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 #define UPCALL_CEXT_PTR(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
@@ -114,7 +120,7 @@ extern void* to_java_type(PyTypeObject* cls);
 void* native_to_java(PyObject* obj);
 extern PyObject* to_sulong(void *o);
 extern PyObject* explicit_cast(PyObject* cobj);
-#define as_char_pointer(obj) polyglot_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
+#define as_char_pointer(obj) UPCALL_CEXT_O("to_char_pointer", native_to_java(obj))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
 #define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long long), polyglot_from_string("long long", "utf-8"))))
 #define as_unsigned_long_long(obj) ((unsigned long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 0, sizeof(unsigned long long), polyglot_from_string("unsigned long long", "utf-8"))))

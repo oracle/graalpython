@@ -47,7 +47,7 @@ long _PyHASH_NAN;
 long _PyHASH_IMAG;
 
 void initialize_hashes() {
-    _PyHASH_INF = truffle_invoke_l(PY_BUILTIN, "hash", INFINITY);
-    _PyHASH_NAN = truffle_invoke_l(PY_BUILTIN, "hash", NAN);
-    _PyHASH_IMAG = truffle_invoke_l(PY_TRUFFLE_CEXT, "PyHash_Imag");
+    _PyHASH_INF = UPCALL_L(PY_BUILTIN, "hash", INFINITY);
+    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, "hash", NAN);
+    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, "PyHash_Imag");
 }

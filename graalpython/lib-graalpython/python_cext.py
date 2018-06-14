@@ -683,21 +683,23 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
 
 
 def AddMember(primary, name, memberType, offset, canSet, doc):
+    pclass = to_java(primary)
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
         return getter(self, offset)
     member.getter(member_getter)
-    if canSet:
+    if to_java(canSet):
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
             setter(self, offset, value)
         member.setter(member_setter)
     member.__doc__ = doc
-    object.__setattr__(primary, name, member)
+    object.__setattr__(pclass, name, member)
 
 
 def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
+    pclass = to_java(primary)
     getset = property()
     if getter:
         getter_w = CreateFunction(name, getter, getter_wrapper)
@@ -716,7 +718,7 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
     else:
         getset.setter(lambda self, value: GetSet_SetNotWritable(self, value, name))
     getset.__doc__ = doc
-    object.__setattr__(primary, name, getset)
+    object.__setattr__(pclass, name, getset)
 
 
 def GetSet_SetNotWritable(self, value, attr):
@@ -1031,6 +1033,10 @@ def PyTruffle_Debug(*args):
     __tdebug__(*args)
 
 
+def PyTruffle_GetBuiltin(name):
+    return getattr(sys.modules["builtins"], name)
+
+
 def PyTruffle_Type(type_name):
     if type_name == "mappingproxy":
         return type(dict().keys())
@@ -1163,7 +1169,23 @@ def PyTruffle_Upcall(rcv, name, *args):
     converted = [None] * nargs
     for i in range(nargs):
         converted[i] = to_java(args[i])
-    return to_sulong(getattr(rcv, name)(*converted))
+    return to_sulong(getattr(to_java(rcv), name)(*converted))
+
+@may_raise(to_long(-1))
+def PyTruffle_Upcall_l(rcv, name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_long(getattr(rcv, name)(*converted))
+
+@may_raise(to_double(-1.0))
+def PyTruffle_Upcall_d(rcv, name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_double(getattr(rcv, name)(*converted))
 
 def PyTruffle_Cext_Upcall(name, *args):
     nargs = len(args)

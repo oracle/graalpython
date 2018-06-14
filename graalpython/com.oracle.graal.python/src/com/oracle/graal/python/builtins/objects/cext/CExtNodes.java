@@ -365,4 +365,54 @@ public abstract class CExtNodes {
             return new FromCharPointerNode();
         }
     }
+
+    public static class GetNativeClassNode extends PBaseNode {
+
+        @Child PCallNativeNode callGetObTypeNode;
+        @Child ToSulongNode toSulongNode;
+        @Child ToJavaNode toJavaNode;
+
+        @CompilationFinal private TruffleObject func;
+
+        public PythonClass execute(PythonNativeObject object) {
+            Object[] args = new Object[]{getToSulongNode().execute(object.object)};
+            return (PythonClass) getToJavaNode().execute(getCallGetObTypeNode().execute(getObTypeFunction(), args));
+        }
+
+        private ToJavaNode getToJavaNode() {
+            if (toJavaNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaNode = insert(ToJavaNode.create());
+            }
+            return toJavaNode;
+        }
+
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
+
+        private PCallNativeNode getCallGetObTypeNode() {
+            if (callGetObTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callGetObTypeNode = insert(PCallNativeNode.create(1));
+            }
+            return callGetObTypeNode;
+        }
+
+        TruffleObject getObTypeFunction() {
+            if (func == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                func = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_GET_OB_TYPE);
+            }
+            return func;
+        }
+
+        public static GetNativeClassNode create() {
+            return new GetNativeClassNode();
+        }
+    }
 }

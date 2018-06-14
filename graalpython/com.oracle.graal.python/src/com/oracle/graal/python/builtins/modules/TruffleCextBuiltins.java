@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -499,7 +500,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PythonClass run(TruffleObject typestruct, PythonClass metaClass, PTuple baseClasses, PDict nativeMembers) {
+        Object run(Object typestruct, PythonObjectNativeWrapper metaClass, PythonObjectNativeWrapper baseClasses, PythonObjectNativeWrapper nativeMembers,
+                        @Cached("create()") CExtNodes.ToJavaNode toJavaNode) {
+            // TODO(fa) use recursive node
+            return run(typestruct, (PythonClass) toJavaNode.execute(metaClass), (PTuple) toJavaNode.execute(baseClasses), (PDict) toJavaNode.execute(nativeMembers));
+        }
+
+        @Specialization
+        Object run(Object typestruct, PythonClass metaClass, PTuple baseClasses, PDict nativeMembers) {
             Object[] array = baseClasses.getArray();
             PythonClass[] bases = new PythonClass[array.length];
             for (int i = 0; i < array.length; i++) {
@@ -508,10 +516,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
             String name = getStringItem(nativeMembers, "tp_name");
             String doc = getStringItem(nativeMembers, "tp_doc");
-            PythonClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, bases);
+            String module = getStringItem(nativeMembers, SpecialAttributeNames.__MODULE__);
+            PythonNativeClass cclass = factory().createNativeClassWrapper(typestruct, metaClass, name, bases);
             writeNode.execute(cclass, SpecialAttributeNames.__DOC__, doc);
             writeNode.execute(cclass, SpecialAttributeNames.__BASICSIZE__, getLongItem(nativeMembers, "tp_basicsize"));
-            return cclass;
+            if (module != null) {
+                writeNode.execute(cclass, SpecialAttributeNames.__MODULE__, module);
+            }
+            return PythonClassNativeWrapper.wrap(cclass);
         }
 
         private String getStringItem(PDict nativeMembers, String key) {
@@ -1176,7 +1188,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Set_Ptr extends NativeBuiltin {
 
         @Specialization
-        PythonObjectNativeWrapper doPythonObject(PythonObjectNativeWrapper nativeWrapper, Object ptr) {
+        PythonObjectNativeWrapper doPythonObject(PythonObjectNativeWrapper nativeWrapper, TruffleObject ptr) {
             nativeWrapper.setNativePointer(ptr);
             return nativeWrapper;
         }
