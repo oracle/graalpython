@@ -54,8 +54,11 @@ flags = None
 # constants
 PATH_UNITTESTS = "graalpython/lib-python/3/test/"
 
-CSV_RESULTS_NAME = "unittests.csv"
-HTML_RESULTS_NAME = "unittests.html"
+_BASE_NAME = "unittests"
+TXT_RESULTS_NAME = "{}.txt".format(_BASE_NAME)
+CSV_RESULTS_NAME = "{}.csv".format(_BASE_NAME)
+HTML_RESULTS_NAME = "{}.html".format(_BASE_NAME)
+
 
 PTRN_ERROR = re.compile(r'^(?P<error>[A-Z][a-z][a-zA-Z]+):(?P<message>.*)$')
 PTRN_UNITTEST = re.compile(r'^#### running: graalpython/lib-python/3/test/(?P<unittest>.*)$')
@@ -117,7 +120,7 @@ def scp(results_file_path, destination_path, destination_name=None):
 
 
 def _run_unittest(test_path):
-    cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path]
+    cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
     success, output = _run_cmd(cmd)
     output = '''
 ##############################################################
@@ -276,6 +279,13 @@ class Stat(object):
     TEST_RUNS = "test_runs"  # total number of tests that could be loaded and run even with failures
     TEST_PASS = "test_pass"  # number of tests which ran
     TEST_PERCENT_PASS = "test_percent_pass"  # percentage of tests which pass from all running tests (all unittests)
+
+
+def save_as_txt(report_path, results):
+    with open(report_path, 'w') as TXT:
+        output = '\n'.join(results)
+        TXT.write(output)
+        return output
 
 
 def save_as_csv(report_path, unittests, error_messages, stats, current_date):
@@ -595,7 +605,10 @@ def main(prog, args):
         unittests = get_unittests(flags.tests_path, limit=flags.limit)
 
     results = run_unittests(unittests)
-    unittests, error_messages, stats = process_output('\n'.join(results))
+    txt_report_path = file_name(TXT_RESULTS_NAME, current_date)
+    output = save_as_txt(txt_report_path, results)
+
+    unittests, error_messages, stats = process_output(output)
 
     csv_report_path = file_name(CSV_RESULTS_NAME, current_date)
     rows, totals = save_as_csv(csv_report_path, unittests, error_messages, stats, current_date)
@@ -608,6 +621,7 @@ def main(prog, args):
 
     if flags.path:
         log("[SAVE] saving results to {} ... ", flags.path)
+        scp(txt_report_path, flags.path)
         scp(csv_report_path, flags.path)
         scp(html_report_path, flags.path)
 
