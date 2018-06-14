@@ -38,14 +38,15 @@
  */
 #include "capi.h"
 
+#define FORCE_TO_NATIVE(__obj__) (polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", (__obj__), truffle_is_handle_to_managed((__obj__)) ? (__obj__) : truffle_deref_handle_for_managed(__obj__)))
+
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
     // explicit type cast is required because the type flags are not yet initialized !
     PyTypeObject* ptype = polyglot_as__typeobject(UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(typname, SRC_CS)));
-    PyTypeObject *nativePointer = truffle_is_handle_to_managed(ptype) ? ptype : truffle_deref_handle_for_managed(ptype);
 
     // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
     // TODO Remove this as soon as this is properly supported.
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", ptype, nativePointer);
+    FORCE_TO_NATIVE(ptype);
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
@@ -58,24 +59,30 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 static void initialize_globals() {
     // None
     PyObject* jnone = UPCALL_CEXT_O("Py_None");
+    FORCE_TO_NATIVE(jnone);
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented
     void *jnotimpl = UPCALL_CEXT_O("Py_NotImplemented");
+    FORCE_TO_NATIVE(jnotimpl);
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
     // Ellipsis
     void *jellipsis = UPCALL_CEXT_O("Py_Ellipsis");
+    FORCE_TO_NATIVE(jellipsis);
     truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
 
     // True, False
     void *jtrue = UPCALL_CEXT_O("Py_True");
-    truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(to_sulong(jtrue)));
+    FORCE_TO_NATIVE(jtrue);
+    truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(jtrue));
     void *jfalse = UPCALL_CEXT_O("Py_False");
-    truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(to_sulong(jfalse)));
+    FORCE_TO_NATIVE(jfalse);
+    truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(jfalse));
 
     // error marker
-    void *jerrormarker = polyglot_as__object(polyglot_get_member(PY_TRUFFLE_CEXT, "error_handler"));
+    void *jerrormarker = UPCALL_CEXT_O("Py_ErrorHandler");
+    FORCE_TO_NATIVE(jerrormarker);
     truffle_assign_managed(&marker_struct, jerrormarker);
 }
 

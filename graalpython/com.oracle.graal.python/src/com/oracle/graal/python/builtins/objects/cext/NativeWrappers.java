@@ -39,6 +39,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -103,6 +104,11 @@ public abstract class NativeWrappers {
         public Object getDelegate() {
             return pythonObject;
         }
+
+        @Override
+        public String toString() {
+            return String.format("PythonObjectNativeWrapper(%s, isNative=%s)", pythonObject, isNative());
+        }
     }
 
     /**
@@ -149,6 +155,10 @@ public abstract class NativeWrappers {
             return nativeWrapper;
         }
 
+        @Override
+        public String toString() {
+            return String.format("PythonClassNativeWrapper(%s, isNative=%s)", getPythonObject(), isNative());
+        }
     }
 
     /**
