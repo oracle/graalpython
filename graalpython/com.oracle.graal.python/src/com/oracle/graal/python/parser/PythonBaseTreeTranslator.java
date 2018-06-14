@@ -72,7 +72,6 @@ import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
-import com.oracle.graal.python.nodes.control.StopIterationTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
@@ -1320,16 +1319,6 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
                 continue;
             }
             assert false;
-        }
-
-        /**
-         * Specialize except StopIteration to StopIterationTargetNode.
-         */
-        if (exceptClauses.size() == 1 && EmptyNode.isEmpty(elseNode) && EmptyNode.isEmpty(finallyNode) && ctx.except_clause(0).test() != null) {
-            if (ctx.except_clause(0).test().getText().equals("StopIteration")) {
-                PNode exceptBody = (PNode) ctx.except_clause(0).accept(this);
-                return new StopIterationTargetNode(tryNode, exceptBody);
-            }
         }
 
         return factory.createTryExceptElseFinallyNode(tryNode, exceptClauses.toArray(new ExceptNode[0]), elseNode, finallyNode);

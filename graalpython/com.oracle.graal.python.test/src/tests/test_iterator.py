@@ -100,3 +100,16 @@ def test_iter():
 
 def test_zip_no_args():
     assert list(zip(*[])) == []
+
+
+def test_iter_try_except():
+    it = iter(range(3))
+    exit_via_break = False
+    while 1:
+        try:
+            next(it)
+        except StopIteration:
+            exit_via_break = True
+            break
+
+    assert exit_via_break
