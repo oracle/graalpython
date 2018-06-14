@@ -46,14 +46,9 @@ double PyFloat_AsDouble(PyObject *op) {
         PyErr_BadArgument();
         return -1.0;
     }
-
-    return truffle_invoke_d(PY_TRUFFLE_CEXT, "PyFloat_AsPrimitive", to_java(op));
+    return UPCALL_CEXT_D("PyFloat_AsPrimitive", native_to_java(op));
 }
 
 PyObject* PyFloat_FromDouble(double fval) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyFloat_FromDouble", fval);
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return polyglot_as_PyFloatObject(UPCALL_CEXT_O("PyFloat_FromDouble", fval));
 }
