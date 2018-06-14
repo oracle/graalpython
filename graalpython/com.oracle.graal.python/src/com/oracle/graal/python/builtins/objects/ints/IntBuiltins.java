@@ -1888,6 +1888,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
+    @GenerateNodeFactory
+    @Builtin(name = SpecialMethodNames.__TRUNC__, fixedNumOfArguments = 1, doc = "Truncating an Integral returns itself.")
+    static abstract class TruncNode extends IntNode {
+
+    }
+
     @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class IntNode extends PythonBuiltinNode {

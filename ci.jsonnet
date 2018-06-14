@@ -1,5 +1,5 @@
 {
-  overlay: "4c51f4dae2d670a4895aaafbe47780ac2541c008",
+  overlay: "2081dc054251c6658f7ce8f4b6671a474edbf2f6",
 
   // ======================================================================================================
   // 
@@ -23,7 +23,10 @@
     "2h": "2:00:00",
     "3h": "3:00:00",
     "4h": "4:00:00",
-    "10h": "10:00:00"
+    "8h": "8:00:00",
+    "10h": "10:00:00",
+    "16h": "16:00:00",
+    "20h": "20:00:00",
   },
   TIME_LIMIT: TIME_LIMIT,
 
@@ -142,6 +145,7 @@
       HOST_VM_CONFIG: "graal-core",
     },
   },
+  graalCoreMixin:  graalCoreMixin,
 
   local sulongMixin = labsjdk8Mixin + {
     environment +: {

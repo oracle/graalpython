@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -83,6 +84,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PFloat.class)
 public final class FloatBuiltins extends PythonBuiltins {
@@ -921,6 +923,44 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any float.")
     static abstract class ConjugateNode extends RealNode {
+
+    }
+
+    @Builtin(name = __TRUNC__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class TruncNode extends PythonUnaryBuiltinNode {
+
+        @TruffleBoundary
+        protected static int truncate(double value) {
+            return (int) (value < 0 ? Math.ceil(value) : Math.floor(value));
+        }
+
+        @Specialization
+        int trunc(double value,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+            if (nanProfile.profile(Double.isNaN(value))) {
+                throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+            }
+            if (infProfile.profile(Double.isInfinite(value))) {
+                throw raise(PythonErrorType.OverflowError, "cannot convert float infinity to integer");
+            }
+            return truncate(value);
+        }
+
+        @Specialization
+        int trunc(PFloat pValue,
+                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile) {
+            double value = pValue.getValue();
+            if (nanProfile.profile(Double.isNaN(value))) {
+                throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
+            }
+            if (infProfile.profile(Double.isInfinite(value))) {
+                throw raise(PythonErrorType.OverflowError, "cannot convert float infinity to integer");
+            }
+            return truncate(value);
+        }
 
     }
 

@@ -646,3 +646,20 @@ class RealImagConjugateTests(unittest.TestCase):
         subclassTest(9.1)
         subclassTest(6227020800.2)
         subclassTest(9999992432902008176640000999999.33)
+
+    def test_trunc(self):
+        self.assertEqual(float(1).__trunc__(), 1)
+        self.assertEqual(float(1.99).__trunc__(), 1)
+        self.assertEqual(float(-1.99).__trunc__(), -1)
+
+        self.assertRaises(ValueError, float('nan').__trunc__)
+        self.assertRaises(OverflowError, float('inf').__trunc__)
+        self.assertRaises(OverflowError, float('-inf').__trunc__)
+
+        self.assertEqual(MyFloat(1).__trunc__(), 1)
+        self.assertEqual(MyFloat(1.99).__trunc__(), 1)
+        self.assertEqual(MyFloat(-1.99).__trunc__(), -1)
+
+        self.assertRaises(ValueError, MyFloat('nan').__trunc__)
+        self.assertRaises(OverflowError, MyFloat('inf').__trunc__)
+        self.assertRaises(OverflowError, MyFloat('-inf').__trunc__)
