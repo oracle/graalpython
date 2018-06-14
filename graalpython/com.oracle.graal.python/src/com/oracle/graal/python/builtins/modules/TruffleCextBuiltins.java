@@ -387,17 +387,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyErr_Occurred", fixedNumOfArguments = 0)
+    @Builtin(name = "PyErr_Occurred", minNumOfArguments = 0, maxNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class PyErrOccurred extends PythonBuiltinNode {
+    abstract static class PyErrOccurred extends PythonUnaryBuiltinNode {
         @Specialization
-        Object run() {
+        Object run(Object errorMarker) {
             PException currentException = getContext().getCurrentException();
             if (currentException != null) {
                 currentException.getExceptionObject().reifyException();
                 return currentException.getType();
             }
-            return PNone.NO_VALUE;
+            return errorMarker;
         }
     }
 
