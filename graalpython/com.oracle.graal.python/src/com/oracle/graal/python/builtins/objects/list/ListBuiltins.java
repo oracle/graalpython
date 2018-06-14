@@ -51,7 +51,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -71,9 +70,9 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -243,17 +242,21 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        protected Object doGeneric(Object self, Object idx) {
-            if (!isValidIndexType(idx)) {
-                throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
-            }
-            throw raise(TypeError, "descriptor '__delitem__' requires a 'list' object but received a '%p'", idx);
+        protected static DelItemNode create() {
+            return ListBuiltinsFactory.DelItemNodeFactory.create(new PNode[0]);
         }
 
-        protected boolean isValidIndexType(Object idx) {
-            return PGuards.isInteger(idx) || idx instanceof PSlice;
+        @Specialization
+        protected Object doObjectIndex(PList self, Object objectIdx,
+                        @Cached("create()") IndexNode getIndexNode,
+                        @Cached("create()") DelItemNode getRecursiveNode) {
+            return getRecursiveNode.execute(self, getIndexNode.execute(objectIdx));
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        protected Object doGeneric(Object self, Object objectIdx) {
+            throw raise(TypeError, "descriptor '__delitem__' requires a 'list' object but received a '%p'", self);
         }
     }
 
@@ -329,33 +332,21 @@ public class ListBuiltins extends PythonBuiltins {
             return self.getSlice(factory(), slice);
         }
 
-        protected static final Supplier<NoAttributeHandler> NO_INDEX = () -> new NoAttributeHandler() {
-            @Override
-            public Object execute(Object receiver) {
-                throw raise(TypeError, "list indices must be integers or slices, not %p", receiver);
-            }
-        };
+        protected static GetItemNode create() {
+            return ListBuiltinsFactory.GetItemNodeFactory.create(new PNode[0]);
+        }
 
         @Specialization
         protected Object doObjectIndex(PList self, Object objectIdx,
-                        @Cached("create(__INDEX__, NO_INDEX)") LookupAndCallUnaryNode getIndexNode,
-                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getRecursiveNode) {
-            Object idx = getIndexNode.executeObject(objectIdx);
-            if (isValidIndexType(idx)) {
-                return getRecursiveNode.executeObject(self, idx);
-            } else {
-                throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
-            }
+                        @Cached("create()") IndexNode getIndexNode,
+                        @Cached("create()") GetItemNode getRecursiveNode) {
+            return getRecursiveNode.execute(self, getIndexNode.execute(objectIdx));
         }
 
         @SuppressWarnings("unused")
         @Fallback
         protected Object doGeneric(Object self, Object objectIdx) {
             throw raise(TypeError, "descriptor '__getitem__' requires a 'list' object but received a '%p'", self);
-        }
-
-        protected boolean isValidIndexType(Object idx) {
-            return PGuards.isInteger(idx) || idx instanceof PSlice || idx instanceof PInt;
         }
     }
 
@@ -427,17 +418,21 @@ public class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        protected Object doGeneric(Object self, Object idx, Object value) {
-            if (!isValidIndexType(idx)) {
-                throw raise(TypeError, "list indices must be integers or slices, not %p", idx);
-            }
-            throw raise(TypeError, "descriptor '__setitem__' requires a 'list' object but received a '%p'", idx);
+        protected static SetItemNode create() {
+            return ListBuiltinsFactory.SetItemNodeFactory.create(new PNode[0]);
         }
 
-        protected boolean isValidIndexType(Object idx) {
-            return PGuards.isInteger(idx) || idx instanceof PSlice;
+        @Specialization
+        protected Object doObjectIndex(PList self, Object objectIdx, Object value,
+                        @Cached("create()") IndexNode getIndexNode,
+                        @Cached("create()") SetItemNode getRecursiveNode) {
+            return getRecursiveNode.execute(self, getIndexNode.execute(objectIdx), value);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        protected Object doGeneric(Object self, Object objectIdx, Object value) {
+            throw raise(TypeError, "descriptor '__setitem__' requires a 'list' object but received a '%p'", self);
         }
     }
 
@@ -568,6 +563,7 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = "insert", fixedNumOfArguments = 3)
     @GenerateNodeFactory
     public abstract static class ListInsertNode extends PythonBuiltinNode {
+        protected static final String ERROR_MSG = "'%p' object cannot be interpreted as an integer";
 
         public abstract PNone execute(PList list, Object index, Object value);
 
@@ -623,12 +619,9 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isIntegerOrPInt(i)"})
         public PNone insert(PList list, Object i, Object value,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode indexNode,
+                        @Cached("createInteger(ERROR_MSG)") IndexNode indexNode,
                         @Cached("createListInsertNode()") ListInsertNode insertNode) {
-            Object indexValue = indexNode.executeObject(i);
-            if (PNone.NO_VALUE == indexValue) {
-                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", i);
-            }
+            Object indexValue = indexNode.execute(i);
             return insertNode.execute(list, indexValue, value);
         }
 
@@ -845,7 +838,7 @@ public class ListBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class ListIndexNode extends PythonBuiltinNode {
-        private final static String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
+        protected final static String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
 
         public abstract int execute(Object arg1, Object arg2, Object arg3, Object arg4);
 
@@ -939,42 +932,27 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(start)")
         int indexO(PTuple self, Object value, Object start, PNone end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
+                        @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode startNode,
                         @Cached("createIndexNode()") ListIndexNode indexNode) {
-
-            Object startValue = startNode.executeObject(start);
-            if (PNone.NO_VALUE == startValue || !MathGuards.isNumber(startValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
+            Object startValue = startNode.execute(start);
             return indexNode.execute(self, value, startValue, end);
         }
 
         @Specialization(guards = {"!isNumber(end)",})
         int indexLO(PTuple self, Object value, long start, Object end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
+                        @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode endNode,
                         @Cached("createIndexNode()") ListIndexNode indexNode) {
-
-            Object endValue = endNode.executeObject(end);
-            if (PNone.NO_VALUE == endValue || !MathGuards.isNumber(endValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
+            Object endValue = endNode.execute(end);
             return indexNode.execute(self, value, start, endValue);
         }
 
         @Specialization(guards = {"!isNumber(start) || !isNumber(end)",})
         int indexOO(PTuple self, Object value, Object start, Object end,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode startNode,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode endNode,
+                        @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode startNode,
+                        @Cached("createNumber(ERROR_TYPE_MESSAGE)") IndexNode endNode,
                         @Cached("createIndexNode()") ListIndexNode indexNode) {
-
-            Object startValue = startNode.executeObject(start);
-            if (PNone.NO_VALUE == startValue || !MathGuards.isNumber(startValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
-            Object endValue = endNode.executeObject(end);
-            if (PNone.NO_VALUE == endValue || !MathGuards.isNumber(endValue)) {
-                throw raise(TypeError, ERROR_TYPE_MESSAGE);
-            }
+            Object startValue = startNode.execute(start);
+            Object endValue = endNode.execute(end);
             return indexNode.execute(self, value, startValue, endValue);
         }
 
@@ -1232,6 +1210,7 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __IMUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBuiltinNode {
+        protected static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
 
         public abstract PList execute(PList list, Object value);
 
@@ -1439,36 +1418,29 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isInt(right)"})
         Object doGeneric(PList list, Object right,
-                        @Cached("create(__INDEX__)") LookupAndCallUnaryNode dispatchIndex,
+                        @Cached("createInteger(ERROR_MSG)") IndexNode dispatchIndex,
                         @Cached("createIMulNode()") IMulNode imulNode) {
-            Object index = dispatchIndex.executeObject(right);
-            if (index != PNone.NO_VALUE) {
-                int iIndex;
-                try {
-                    iIndex = convertToInt(index);
-                } catch (ArithmeticException e) {
-                    throw raise(OverflowError, "cannot fit '%p' into an index-sized integer", index);
-                }
-
-                return imulNode.execute(list, iIndex);
+            Object index = dispatchIndex.execute(right);
+            int iIndex;
+            try {
+                iIndex = convertToInt(index);
+            } catch (ArithmeticException e) {
+                throw raise(OverflowError, "cannot fit '%p' into an index-sized integer", index);
             }
-            throw raise(TypeError, "can't multiply sequence by non-int of type '%p'", right);
+            return imulNode.execute(list, iIndex);
         }
 
-        private int convertToInt(Object value) throws ArithmeticException {
+        private static int convertToInt(Object value) throws ArithmeticException {
             if (value instanceof Integer) {
                 return (Integer) value;
-            }
-            if (value instanceof Boolean) {
+            } else if (value instanceof Boolean) {
                 return (Boolean) value ? 0 : 1;
-            }
-            if (value instanceof Long) {
+            } else if (value instanceof Long) {
                 return PInt.intValueExact((Long) value);
-            }
-            if (value instanceof PInt) {
+            } else {
+                assert value instanceof PInt;
                 return ((PInt) value).intValueExact();
             }
-            throw raise(TypeError, "can't multiply sequence by non-int of type '%p'", value);
         }
 
         protected IMulNode createIMulNode() {

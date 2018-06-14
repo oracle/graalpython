@@ -51,6 +51,10 @@ public class MathGuards {
     }
 
     public static boolean isNumber(Object value) {
-        return value instanceof Integer || value instanceof Long || value instanceof Float || value instanceof Double || value instanceof PInt || value instanceof PFloat || value instanceof Boolean;
+        return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
+    }
+
+    public static boolean isInteger(Object value) {
+        return value instanceof Integer || value instanceof Long || value instanceof PInt || value instanceof Boolean;
     }
 }
