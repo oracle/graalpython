@@ -146,6 +146,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
         }
     }
 
+    public void expectAttributeError(PythonCore core, ConditionProfile profile) {
+        if (profile.profile(getType() != core.getErrorClass(PythonErrorType.AttributeError))) {
+            throw this;
+        }
+    }
+
     public void expect(PythonErrorType error, PythonCore core, ConditionProfile profile) {
         if (profile.profile(getType() != core.getErrorClass(error))) {
             throw this;

@@ -41,8 +41,8 @@ import os
 import sys
 
 
-MX = "/home/tim/.graalenv/mx/mx"
-GP = "/home/tim/Dev/graalpython/graalpython-open"
+MX = os.environ["MX"]
+GP = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 args = sys.argv[1:]
 

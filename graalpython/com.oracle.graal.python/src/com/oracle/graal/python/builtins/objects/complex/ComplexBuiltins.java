@@ -66,14 +66,18 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 @CoreFunctions(extendClasses = PComplex.class)
 public class ComplexBuiltins extends PythonBuiltins {
@@ -215,19 +219,18 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateNodeFactory
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
     static abstract class AddNode extends PythonBuiltinNode {
         @Specialization
-        PComplex doComplexBoolean(PComplex left, boolean right) {
-            final double rightDouble = right ? 1.0 : 0.0;
-            PComplex result = factory().createComplex(left.getReal() + rightDouble, left.getImag());
-            return result;
+        PComplex doComplexLong(PComplex left, long right) {
+            return factory().createComplex(left.getReal() + right, left.getImag());
         }
 
         @Specialization
-        PComplex doComplexInt(PComplex left, int right) {
-            return factory().createComplex(left.getReal() + right, left.getImag());
+        PComplex doComplexPInt(PComplex left, PInt right) {
+            return factory().createComplex(left.getReal() + right.doubleValue(), left.getImag());
         }
 
         @Specialization
@@ -255,7 +258,8 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __TRUEDIV__, fixedNumOfArguments = 2)
-    static abstract class DivNode extends PythonBuiltinNode {
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    static abstract class DivNode extends PythonBinaryBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
             double opNormSq = right * right;
@@ -271,11 +275,18 @@ public class ComplexBuiltins extends PythonBuiltins {
             double imagPart = left.getReal() * -right.getImag() + left.getImag() * right.getReal();
             return factory().createComplex(realPart / opNormSq, imagPart / opNormSq);
         }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doComplex(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __RTRUEDIV__, fixedNumOfArguments = 2)
-    static abstract class RDivNode extends PythonBuiltinNode {
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    static abstract class RDivNode extends PythonBinaryBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex right, double left) {
             double opNormSq = left * left;
@@ -283,11 +294,18 @@ public class ComplexBuiltins extends PythonBuiltins {
             double imagPart = right.getImag() * left;
             return factory().createComplex(opNormSq / realPart, opNormSq / imagPart);
         }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doComplex(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __MUL__, fixedNumOfArguments = 2)
-    static abstract class MulNode extends PythonBuiltinNode {
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    static abstract class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
             return factory().createComplex(left.getReal() * right, left.getImag() * right);
@@ -301,16 +319,13 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PComplex doComplexInt(PComplex left, int right) {
+        PComplex doComplexLong(PComplex left, long right) {
             return doComplexDouble(left, right);
         }
 
         @Specialization
-        PComplex doComplexBoolean(PComplex left, boolean right) {
-            if (right) {
-                return left;
-            }
-            return factory().createComplex(0.0, 0.0);
+        PComplex doComplexPInt(PComplex left, PInt right) {
+            return doComplexDouble(left, right.doubleValue());
         }
 
         @SuppressWarnings("unused")
@@ -327,7 +342,8 @@ public class ComplexBuiltins extends PythonBuiltins {
 
     @GenerateNodeFactory
     @Builtin(name = __SUB__, fixedNumOfArguments = 2)
-    static abstract class SubNode extends PythonBuiltinNode {
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    static abstract class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
         PComplex doComplexDouble(PComplex left, double right) {
             return factory().createComplex(left.getReal() - right, left.getImag());
@@ -337,95 +353,101 @@ public class ComplexBuiltins extends PythonBuiltins {
         PComplex doComplex(PComplex left, PComplex right) {
             return factory().createComplex(left.getReal() - right.getReal(), left.getImag() - right.getImag());
         }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doComplex(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
-    static abstract class EqNode extends PythonBuiltinNode {
+    static abstract class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
             return left.equals(right);
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        boolean doElse(Object left, Object right) {
-            return false;
+        @Fallback
+        Object doGeneric(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __GE__, fixedNumOfArguments = 2)
-    static abstract class GeNode extends PythonBuiltinNode {
+    static abstract class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
             return left.greaterEqual(right);
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        boolean doElse(Object left, Object right) {
-            return false;
+        @Fallback
+        Object doGeneric(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __GT__, fixedNumOfArguments = 2)
-    static abstract class GtNode extends PythonBuiltinNode {
+    static abstract class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
             return left.greaterThan(right);
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        boolean doElse(Object left, Object right) {
-            return false;
+        @Fallback
+        Object doGeneric(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
-    static abstract class LtNode extends PythonBuiltinNode {
+    static abstract class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
             return left.lessThan(right);
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        boolean doElse(Object left, Object right) {
-            return false;
+        @Fallback
+        Object doGeneric(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __LE__, fixedNumOfArguments = 2)
-    static abstract class LeNode extends PythonBuiltinNode {
+    static abstract class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
             return left.lessEqual(right);
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        boolean doElse(Object left, Object right) {
-            return false;
+        @Fallback
+        Object doGeneric(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @GenerateNodeFactory
     @Builtin(name = __NE__, fixedNumOfArguments = 2)
-    static abstract class NeNode extends PythonBuiltinNode {
+    static abstract class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
             return left.notEqual(right);
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        boolean doElse(Object left, Object right) {
-            return false;
+        @Fallback
+        Object doGeneric(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

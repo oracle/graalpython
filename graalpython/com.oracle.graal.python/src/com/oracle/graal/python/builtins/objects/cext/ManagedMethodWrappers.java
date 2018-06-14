@@ -36,25 +36,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * Specialization guards for Math module.
+ * Wrappers for methods used by native code.
  */
-public class MathGuards {
+public abstract class ManagedMethodWrappers {
 
-    public static boolean fitLong(double value) {
-        return Long.MIN_VALUE <= value && value <= Long.MAX_VALUE;
+    public abstract static class MethodWrapper implements TruffleObject {
+        private final Object method;
+
+        public MethodWrapper(Object method) {
+            this.method = method;
+        }
+
+        public Object getMethod() {
+            return method;
+        }
+
+        static boolean isInstance(TruffleObject o) {
+            return o instanceof MethodWrapper;
+        }
+
+        public ForeignAccess getForeignAccess() {
+            return ManagedMethodWrappersMRForeign.ACCESS;
+        }
     }
 
-    public static boolean isNumber(Object value) {
-        return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
+    static class MethKeywords extends MethodWrapper {
+
+        public MethKeywords(Object method) {
+            super(method);
+        }
     }
 
-    public static boolean isInteger(Object value) {
-        return value instanceof Integer || value instanceof Long || value instanceof PInt || value instanceof Boolean;
+    static class MethVarargs extends MethodWrapper {
+
+        public MethVarargs(Object method) {
+            super(method);
+        }
     }
+
+    /**
+     * Creates a wrapper for signature {@code meth(*args, **kwargs)}.
+     */
+    public static MethodWrapper createKeywords(Object method) {
+        return new MethKeywords(method);
+    }
+
+    /**
+     * Creates a wrapper for signature {@code meth(*args)}.
+     */
+    public static MethodWrapper createVarargs(Object method) {
+        return new MethVarargs(method);
+    }
+
 }

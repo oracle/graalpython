@@ -47,5 +47,6 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_NATIVE_HANDLE_FOR_ARRAY = "NativeHandle_ForArray";
     public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
     public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
+    public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
 
 }

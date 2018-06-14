@@ -1083,4 +1083,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return PNone.NO_VALUE;
         }
     }
+
+    @Builtin(name = "PyTruffle_ThreadState_GetDict", fixedNumOfArguments = 0)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_ThreadState_GetDict extends NativeBuiltin {
+
+        @Specialization
+        Object get() {
+            return getContext().getCustomThreadState();
+        }
+    }
 }

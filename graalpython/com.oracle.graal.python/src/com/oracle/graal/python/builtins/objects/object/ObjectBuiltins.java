@@ -38,6 +38,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
@@ -80,6 +81,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -133,6 +135,11 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
+        public boolean eq(PythonNativeObject self, PythonNativeObject other) {
+            return self.object.equals(other.object);
+        }
+
+        @Specialization
         public boolean eq(Object self, Object other) {
             return self == other;
         }
@@ -175,10 +182,40 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
+        @Child private LookupAndCallUnaryNode callLenNode;
+        @Child private LookupAndCallBinaryNode callEqNode;
+
         @Specialization
-        public boolean repr(Object self) {
+        public boolean doGeneric(Object self) {
             assert self != PNone.NO_VALUE;
-            return self != PNone.NONE;
+            if (self == PNone.NONE) {
+                return false;
+            }
+            Object len = getCallLenNode().executeObject(self);
+            if (len != PNone.NO_VALUE) {
+                try {
+                    return getCallEqNode().executeBool(0, len);
+                } catch (UnexpectedResultException e) {
+                    throw raise(TypeError, "'%p' object cannot be interpreted as an integer", len);
+                }
+            }
+            return true;
+        }
+
+        private LookupAndCallUnaryNode getCallLenNode() {
+            if (callLenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callLenNode = insert(LookupAndCallUnaryNode.create(__LEN__));
+            }
+            return callLenNode;
+        }
+
+        private LookupAndCallBinaryNode getCallEqNode() {
+            if (callEqNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callEqNode = insert(LookupAndCallBinaryNode.create(__NE__, __NE__));
+            }
+            return callEqNode;
         }
     }
 
@@ -410,6 +447,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         Object dict(Object self) {
             throw raise(AttributeError, "'%p' object has no attribute '__dict__'", self);
         }
+
     }
 
     @Builtin(name = __FORMAT__, fixedNumOfArguments = 2)

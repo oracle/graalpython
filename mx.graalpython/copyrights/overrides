@@ -124,6 +124,7 @@ graalpython/com.oracle.graal.python.cext/include/truffle.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/unicodeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/warnings.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
 graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonMain.java,zippy.copyright
@@ -373,7 +374,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/argument/p
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/CallDispatchNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/InvokeNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/PythonCallNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/call/special/LookupAndCallSpecialNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/cell/CellSupplier.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/cell/ReadLocalCellNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/cell/WriteCellVarNode.java,zippy.copyright

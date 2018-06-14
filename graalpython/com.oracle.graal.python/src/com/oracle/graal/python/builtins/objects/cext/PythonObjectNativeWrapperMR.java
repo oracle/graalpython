@@ -38,10 +38,15 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
@@ -58,6 +63,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -86,12 +92,16 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonObjectNativeWrapper.class)
 public class PythonObjectNativeWrapperMR {
+    protected static String GP_OBJECT = "gp_object";
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         @Child private ReadNativeMemberNode readNativeMemberNode;
 
         public Object access(Object object, Object key) {
+            if (key.equals(GP_OBJECT)) {
+                return ((PythonObjectNativeWrapper) object).getPythonObject();
+            }
             if (readNativeMemberNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readNativeMemberNode = insert(ReadNativeMemberNode.create());
@@ -208,6 +218,12 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
+        @Specialization(guards = "eq(TP_NEW, key)")
+        Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") GetAttributeNode getAttrNode) {
+            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object, SpecialAttributeNames.__NEW__));
+        }
+
         @Specialization(guards = "eq(TP_HASH, key)")
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetAttributeNode getHashNode) {
@@ -230,6 +246,30 @@ public class PythonObjectNativeWrapperMR {
         Object doTpSubclasses(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
             // TODO create dict view on subclasses set
             return PythonObjectNativeWrapper.wrap(factory().createDict());
+        }
+
+        @Specialization(guards = "eq(TP_GETATTR, key)")
+        Object doTpGetattr(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+            // we do not provide 'tp_getattr'; code will usually then use 'tp_getattro'
+            return getToSulongNode().execute(PNone.NO_VALUE);
+        }
+
+        @Specialization(guards = "eq(TP_SETATTR, key)")
+        Object doTpSetattr(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+            // we do not provide 'tp_setattr'; code will usually then use 'tp_setattro'
+            return getToSulongNode().execute(PNone.NO_VALUE);
+        }
+
+        @Specialization(guards = "eq(TP_GETATTRO, key)")
+        Object doTpGetattro(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") LookupInheritedAttributeNode lookupAttrNode) {
+            return PyAttributeProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object, __GETATTRIBUTE__));
+        }
+
+        @Specialization(guards = "eq(TP_SETATTRO, key)")
+        Object doTpSetattro(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") LookupInheritedAttributeNode lookupAttrNode) {
+            return PyAttributeProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object, __SETATTR__));
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")
@@ -380,6 +420,7 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "EXECUTE")
     abstract static class ExecuteNode extends Node {
         @Child PythonMessageResolution.ExecuteNode executeNode;
+        @Child private ToJavaNode toJavaNode;
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PythonObjectNativeWrapper object, Object[] arguments) {
@@ -387,7 +428,20 @@ public class PythonObjectNativeWrapperMR {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 executeNode = insert(new PythonMessageResolution.ExecuteNode());
             }
-            return getToSulongNode().execute(executeNode.execute(object.getPythonObject(), arguments));
+            // convert args
+            Object[] converted = new Object[arguments.length];
+            for (int i = 0; i < arguments.length; i++) {
+                converted[i] = getToJavaNode().execute(arguments[i]);
+            }
+            return getToSulongNode().execute(executeNode.execute(object.getPythonObject(), converted));
+        }
+
+        private ToJavaNode getToJavaNode() {
+            if (toJavaNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaNode = insert(ToJavaNode.create());
+            }
+            return toJavaNode;
         }
 
         private ToSulongNode getToSulongNode() {
@@ -404,7 +458,9 @@ public class PythonObjectNativeWrapperMR {
         public int access(Object object, Object fieldName) {
             assert object instanceof PythonObjectNativeWrapper;
             int info = KeyInfo.NONE;
-            if (fieldName instanceof String && NativeMemberNames.isValid((String) fieldName)) {
+            if (fieldName.equals(GP_OBJECT)) {
+                info |= KeyInfo.READABLE;
+            } else if (fieldName instanceof String && NativeMemberNames.isValid((String) fieldName)) {
                 info |= KeyInfo.READABLE;
 
                 // TODO be more specific
@@ -423,8 +479,14 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "KEYS")
     abstract static class PForeignKeysNode extends Node {
-        public Object access(@SuppressWarnings("unused") Object object) {
-            return null;
+        @Child Node objKeys = Message.KEYS.createNode();
+
+        public Object access(Object object) {
+            if (object instanceof PythonObjectNativeWrapper) {
+                return PythonLanguage.getContext().getEnv().asGuestValue(new String[]{GP_OBJECT});
+            } else {
+                throw UnsupportedMessageException.raise(Message.KEYS);
+            }
         }
     }
 

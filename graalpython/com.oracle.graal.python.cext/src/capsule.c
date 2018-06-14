@@ -49,15 +49,16 @@ void* PyCapsule_GetContext(PyObject *o) {
     if (result == ERROR_MARKER) {
         return NULL;
     }
-    return (void *)as_long(result);
+    return result;
 }
 
 void* PyCapsule_GetPointer(PyObject *o, const char *name) {
-    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), polyglot_from_string(name, "ascii"));
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), name ? polyglot_from_string(name, "ascii") : to_java(Py_None));
     if (result == ERROR_MARKER) {
         return NULL;
     }
-    return (void *)as_long(result);
+    // the capsule really stored the pointer object; so no conversion necessary
+    return result;
 }
 
 void* PyCapsule_Import(const char *name, int no_block) {
@@ -70,5 +71,5 @@ void* PyCapsule_Import(const char *name, int no_block) {
 }
 
 int PyCapsule_IsValid(PyObject *o, const char *name) {
-    return o != NULL && polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_IsValid", to_java(o), polyglot_from_string(name, "ascii"));
+    return o != NULL && polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_IsValid", to_java(o), name ? polyglot_from_string(name, "ascii") : to_java(Py_None));
 }

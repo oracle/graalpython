@@ -235,6 +235,10 @@ const char* PyTruffle_StringToCstr(void* jlString) {
     return truffle_string_to_cstr(jlString);
 }
 
+void* PyTruffle_CstrToString(const char* o) {
+    return polyglot_from_string(o, "utf-8");
+}
+
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
 
 PyObject* ReadShortMember(PyObject* object, PyObject* offset) {
@@ -460,6 +464,10 @@ typedef PyObject* (*f20)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, 
 #define _PICK_FUN_CAST(DUMMY, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, NAME, ...) NAME
 #define _CALL_ARITY(FUN, ...) ( (_PICK_FUN_CAST(NULL, ##__VA_ARGS__, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0))(FUN))(__VA_ARGS__)
 #define ARG(__n) explicit_cast((PyObject*)polyglot_get_arg((__n)))
+
+int wrap_setter(PyCFunction fun, PyObject* self, PyObject* value, PyObject* closure) {
+    return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
+}
 
 void* wrap_direct(PyCFunction fun, ...) {
 	PyObject *res = NULL;

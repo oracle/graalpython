@@ -61,6 +61,8 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class ExecuteKeywordStarargsNode extends Node {
     public abstract PKeyword[] execute(VirtualFrame frame);
 
+    public abstract PKeyword[] executeWith(Object starargs);
+
     @Specialization
     PKeyword[] doit(PKeyword[] starargs) {
         return starargs;
@@ -97,5 +99,9 @@ public abstract class ExecuteKeywordStarargsNode extends Node {
     @Specialization
     PKeyword[] generic(Object starargs) {
         return PKeyword.EMPTY_KEYWORDS;
+    }
+
+    public static ExecuteKeywordStarargsNode create() {
+        return ExecuteKeywordStarargsNodeGen.create(null);
     }
 }

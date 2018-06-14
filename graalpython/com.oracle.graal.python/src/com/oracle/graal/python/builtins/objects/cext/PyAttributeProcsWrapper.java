@@ -36,25 +36,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-/**
- * Specialization guards for Math module.
- */
-public class MathGuards {
+public abstract class PyAttributeProcsWrapper implements TruffleObject {
 
-    public static boolean fitLong(double value) {
-        return Long.MIN_VALUE <= value && value <= Long.MAX_VALUE;
+    private final Object delegate;
+
+    public PyAttributeProcsWrapper(Object delegate) {
+        this.delegate = delegate;
     }
 
-    public static boolean isNumber(Object value) {
-        return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
+    public Object getDelegate() {
+        return delegate;
     }
 
-    public static boolean isInteger(Object value) {
-        return value instanceof Integer || value instanceof Long || value instanceof PInt || value instanceof Boolean;
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PyAttributeProcsWrapper;
+    }
+
+    public ForeignAccess getForeignAccess() {
+        return PyAttributeProcsWrapperMRForeign.ACCESS;
+    }
+
+    static class GetAttrWrapper extends PyAttributeProcsWrapper {
+
+        public GetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+    }
+
+    static class SetAttrWrapper extends PyAttributeProcsWrapper {
+
+        public SetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+    }
+
+    public static GetAttrWrapper createGetAttrWrapper(Object getAttrMethod) {
+        return new GetAttrWrapper(getAttrMethod);
+    }
+
+    public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
+        return new SetAttrWrapper(setAttrMethod);
     }
 }

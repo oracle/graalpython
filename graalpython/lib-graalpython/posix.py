@@ -37,7 +37,6 @@
 
 from _descriptor import make_named_tuple_class
 
-
 stat_result = make_named_tuple_class("stat_result", [
     "st_mode", "st_ino", "st_dev", "st_nlink",
     "st_uid", "st_gid", "st_size", "st_atime",
@@ -45,13 +44,20 @@ stat_result = make_named_tuple_class("stat_result", [
 ])
 del make_named_tuple_class
 
-
 old_stat = stat
+
+
 def stat(filename):
     return stat_result(old_stat(filename))
 
 
+def lstat(filename):
+    return stat_result(old_stat(filename, False))
+
+
 old_fstat = fstat
+
+
 def fstat(fd):
     return stat_result(old_fstat(fd))
 
@@ -69,3 +75,18 @@ def fspath(path):
         return __fspath__()
     else:
         raise TypeError("expected str, bytes or os.PathLike object, not object")
+
+
+class ScandirIterator:
+    def __init__(self, it):
+        self.__delegate = it
+
+    def __iter__(self):
+        return self.__delegate.__iter__()
+
+    def __next__(self):
+        return self.__delegate.__next__()
+
+
+def scandir(path):
+    return ScandirIterator(iter(listdir(path)))

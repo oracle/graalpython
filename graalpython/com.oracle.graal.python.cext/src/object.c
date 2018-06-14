@@ -177,11 +177,13 @@ static PyObject* wrap_allocfunc(allocfunc f, PyTypeObject* klass, PyObject* n) {
 	return f(explicit_cast(klass), PyLong_AsSsize_t(n));
 }
 
+/* Wrapper around a native function to be called by Python code. */
 static PyObject* wrap_getattrfunc(getattrfunc f, PyObject* obj, PyObject* unicode) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
 	return f(explicit_cast(obj), as_char_pointer(unicode));
 }
 
+/* Wrapper around the native function to be called by Python code. */
 static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicode, PyObject* value) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
 	return f(explicit_cast(obj), as_char_pointer(unicode), explicit_cast(value));
@@ -197,6 +199,20 @@ static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* 
 
 static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c) {
 	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+}
+
+/* very special case: operator '**' has an optional third arg */
+static PyObject* wrap_pow(ternaryfunc f, ...) {
+    int nargs = polyglot_get_arg_count();
+    switch(nargs) {
+    case 3:
+        // TODO use 'native_to_java' on result
+        return f(explicit_cast(polyglot_get_arg(1)), explicit_cast(polyglot_get_arg(2)), Py_None);
+    case 4:
+        // TODO use 'native_to_java' on result
+        return f(explicit_cast(polyglot_get_arg(1)), explicit_cast(polyglot_get_arg(2)), explicit_cast(polyglot_get_arg(3)));
+    }
+	return native_to_java(NULL);
 }
 
 int PyType_Ready(PyTypeObject* cls) {
@@ -335,7 +351,7 @@ int PyType_Ready(PyTypeObject* cls) {
                            getter_fun != NULL ? getter_fun : to_java(Py_None),
                            wrap_direct,
                            setter_fun != NULL ? setter_fun : to_java(Py_None),
-                           wrap_direct,
+                           wrap_setter,
                            getset.doc ? truffle_read_string(getset.doc) : truffle_read_string(""),
                            // do not convert the closure, it is handed to the
                            // getter and setter as-is
@@ -384,7 +400,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
         ADD_SLOT("__rem__", numbers->nb_remainder, -2);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
-        ADD_SLOT("__pow__", numbers->nb_power, -2);
+        ADD_SLOT_CONV("__pow__", wrap_pow, numbers->nb_power, -3);
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
@@ -534,8 +550,9 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
 }
 
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
-    PyObject* args = PyTuple_New(polyglot_get_arg_count() - 1);
-    for (int i = 1; i < polyglot_get_arg_count(); i++) {
+    // the arguments are given as a variable list followed by NULL
+    PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
+    for (int i = 1; i < polyglot_get_arg_count() - 1; i++) {
         PyTuple_SetItem(args, i - 1, polyglot_get_arg(i));
     }
     return PyObject_CallObject(callable, args);
@@ -616,7 +633,11 @@ int PyObject_HasAttrString(PyObject* obj, const char* attr) {
 }
 
 PyObject* PyObject_GetAttr(PyObject* obj, PyObject* attr) {
-    return to_sulong(truffle_invoke(PY_BUILTIN, "getattr", to_java(obj), to_java(attr)));
+    PyObject* result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_GetAttr", to_java(obj), to_java(attr)));
+    if (result == ERROR_MARKER) {
+        return NULL;
+    }
+    return result;
 }
 
 PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
@@ -681,4 +702,8 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     Py_TYPE(op) = tp;
     _Py_NewReference(op);
     return op;
+}
+
+int PyCallable_Check(PyObject *x) {
+    return polyglot_as_i32(polyglot_invoke(PY_BUILTIN, "callable", to_java(x)));
 }

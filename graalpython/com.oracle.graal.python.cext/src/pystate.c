@@ -36,25 +36,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+#include "capi.h"
 
-/**
- * Specialization guards for Math module.
- */
-public class MathGuards {
-
-    public static boolean fitLong(double value) {
-        return Long.MIN_VALUE <= value && value <= Long.MAX_VALUE;
-    }
-
-    public static boolean isNumber(Object value) {
-        return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
-    }
-
-    public static boolean isInteger(Object value) {
-        return value instanceof Integer || value instanceof Long || value instanceof PInt || value instanceof Boolean;
-    }
+PyObject * PyThreadState_GetDict() {
+    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ThreadState_GetDict"));
 }

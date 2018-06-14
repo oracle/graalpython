@@ -43,7 +43,7 @@ typedef enum e_binop {
 } BinOp;
 
 typedef enum e_unaryop {
-	POS=0, NEG
+	POS=0, NEG, INVERT
 } UnaryOp;
 
 static PyObject* null_error(void) {
@@ -129,6 +129,10 @@ PyObject * PyNumber_Negative(PyObject *o) {
 	return do_unaryop(o, NEG, "-");
 }
 
+PyObject * PyNumber_Invert(PyObject *o) {
+	return do_unaryop(o, INVERT, "~");
+}
+
 PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {
         return null_error();
@@ -199,6 +203,23 @@ PyObject * PyNumber_Float(PyObject *o) {
     }
     return to_sulong(result);
 }
+
+PyObject * PyNumber_Absolute(PyObject *o) {
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyNumber_Absolute", to_java(o));
+    if (result == ERROR_MARKER) {
+    	return NULL;
+    }
+    return to_sulong(result);
+}
+
+PyObject * PyNumber_Divmod(PyObject *a, PyObject *b) {
+    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyNumber_Divmod", to_java(a), to_java(b));
+    if (result == ERROR_MARKER) {
+    	return NULL;
+    }
+    return to_sulong(result);
+}
+
 
 PyObject * PyIter_Next(PyObject *iter) {
 	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyIter_Next", to_java(iter));

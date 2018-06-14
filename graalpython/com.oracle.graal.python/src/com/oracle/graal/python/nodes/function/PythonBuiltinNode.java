@@ -33,7 +33,9 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeChild;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 
+@ReportPolymorphism
 @NodeChild(value = "arguments", type = PNode[].class)
 public abstract class PythonBuiltinNode extends PNode {
     /**

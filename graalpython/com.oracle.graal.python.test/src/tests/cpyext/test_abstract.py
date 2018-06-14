@@ -84,7 +84,7 @@ def _reference_next(args):
         return next(iterObj)
     except BaseException:
         raise SystemError
-        
+
 
 def _reference_size(args):
     seq = args[0]
@@ -180,31 +180,52 @@ def _default_bin_arith_args():
     )
 
 
+def _default_unarop_args():
+    return (
+        (0,),
+        (-1,),
+        (0.1,),
+        (-1.3,),
+        (False,),
+        (True,),
+        ("hello",),
+        ((1,2,3),),
+        (0x7fffffff,),
+        (0xffffffffffffffffffffffffffffffff,),
+        (DummyIntable(),),
+        (DummyIntSubclass(),),
+        (NoNumber(),),
+        (DummyFloatable(),),
+        (DummyFloatSubclass(),),
+    )
+
+
 class TestAbstract(CPyExtTestCase):
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestAbstract, self).compile_module(name)
 
+    test_PyNumber_Absolute = CPyExtFunction(
+        lambda args: abs(args[0]),
+        _default_unarop_args,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyNumber_Invert = CPyExtFunction(
+        lambda args: ~(args[0]),
+        _default_unarop_args,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* v"],
+        cmpfunc=unhandled_error_compare
+    )
 
     test_PyNumber_Check = CPyExtFunction(
         _reference_checknumber,
-        lambda: (
-            (0,),
-            (-1,),
-            (0.1,),
-            (-1.3,),
-            (False,),
-            (True,),
-            ("hello",),
-            ((1,2,3),),
-            (0x7fffffff,),
-            (0xffffffffffffffffffffffffffffffff,),
-            (DummyIntable(),),
-            (DummyIntSubclass(),),
-            (NoNumber(),),
-            (DummyFloatable(),),
-            (DummyFloatSubclass(),),
-        ),
+        _default_unarop_args,
         resultspec="i",
         argspec='O',
         arguments=["PyObject* v"],
@@ -301,6 +322,15 @@ class TestAbstract(CPyExtTestCase):
 
     test_PyNumber_FloorDivide = CPyExtFunction(
         lambda args: args[0] // args[1],
+        _default_bin_arith_args,
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* v", "PyObject* w"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyNumber_Divmod = CPyExtFunction(
+        lambda args: divmod(args[0], args[1]),
         _default_bin_arith_args,
         resultspec="O",
         argspec='OO',
@@ -534,7 +564,7 @@ class TestAbstract(CPyExtTestCase):
             PyObject* result = PyList_New(n);
             for (i = 0; i < n; i++) {
                 PyList_SetItem(result, i, items[i]);
-            } 
+            }
             return result;
         }
         ''',
@@ -558,7 +588,7 @@ class TestAbstract(CPyExtTestCase):
             int i;
             for (i = 0; i < n - 1; i++) {
                 PyIter_Next(iter);
-            } 
+            }
             return PyIter_Next(iter);
         }
         ''',
@@ -607,7 +637,7 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* sequence"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     # 'PySequence_Length' is just a redefinition of 'PySequence_Size'
     test_PySequence_Length = test_PySequence_Size
 
@@ -726,4 +756,3 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* obj"],
         cmpfunc=unhandled_error_compare
     )
-

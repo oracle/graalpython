@@ -95,7 +95,10 @@ public class ErrorMessageFormatter {
             }
 
             idx = m.end();
-            matchIdx++;
+            // '%%' is an escape sequence and does not consume an argument
+            if (!"%%".equals(group)) {
+                matchIdx++;
+            }
         }
         return String.format(sb.toString(), compact(args, removedCnt));
     }

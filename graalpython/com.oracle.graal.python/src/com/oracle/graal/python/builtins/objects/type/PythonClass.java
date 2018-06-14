@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,10 +88,19 @@ public class PythonClass extends PythonObject {
 
         // do not inherit layout from the TypeClass.
         storage = freshShape().newInstance();
-        setAttribute(__NAME__, className);
+        setAttribute(__NAME__, getBaseName(name));
+        setAttribute(__QUALNAME__, className);
         setAttribute(__DOC__, PNone.NONE);
         // provide our instances with a fresh shape tree
         instanceShape = freshShape();
+    }
+
+    private static String getBaseName(String qname) {
+        int lastDot = qname.lastIndexOf('.');
+        if (lastDot != -1) {
+            return qname.substring(lastDot + 1);
+        }
+        return qname;
     }
 
     public Assumption getLookupStableAssumption() {

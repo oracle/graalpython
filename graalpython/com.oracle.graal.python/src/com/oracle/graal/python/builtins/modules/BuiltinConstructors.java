@@ -696,7 +696,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(PythonClass cls, PythonObject obj, PNone keywordArg,
+        public Object createInt(PythonClass cls, Object obj, PNone keywordArg,
                         @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
                         @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {

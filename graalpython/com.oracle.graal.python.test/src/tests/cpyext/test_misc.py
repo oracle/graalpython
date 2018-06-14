@@ -39,7 +39,13 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
+
+def _reference_importmodule(args):
+    return __import__(args[0], fromlist=["*"])
+
+
 class TestMisc(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestMisc, self).compile_module(name)
@@ -74,4 +80,33 @@ class TestMisc(CPyExtTestCase):
         resultspec="i",
         argspec="O",
         arguments=["PyObject* ellipsis_singleton"],
+    )
+
+    test_PyImport_ImportModule = CPyExtFunction(
+        _reference_importmodule,
+        lambda: (
+            ("os",),
+            ("os.path",),
+            ("distutils.core",),
+            ("nonexisting",),
+        ),
+        resultspec="O",
+        argspec="s",
+        arguments=["char* module_name"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyImport_GetModuleDict = CPyExtFunction(
+        lambda args: sys.modules,
+        lambda: (
+            tuple(),
+        ),
+        code='''PyObject* wrap_PyImport_GetModuleDict(PyObject* ignored) {
+            return PyImport_GetModuleDict();
+        }
+        ''',
+        resultspec="O",
+        argspec="",
+        arguments=["PyObject* ignored"],
+        callfunction="wrap_PyImport_GetModuleDict",
     )

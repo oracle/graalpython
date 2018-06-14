@@ -374,6 +374,8 @@ def PyNumber_UnaryOp(v, unaryop, name):
         return +v
     elif unaryop == 1:
         return -v
+    elif unaryop == 2:
+        return ~v
     else:
         raise SystemError("unknown unary operator %s" % name)
 
@@ -401,6 +403,16 @@ def PyNumber_Float(v):
 @may_raise
 def PyNumber_Long(v):
     return int(v)
+
+
+@may_raise
+def PyNumber_Absolute(v):
+    return abs(v)
+
+
+@may_raise
+def PyNumber_Divmod(a, b):
+    return divmod(a, b)
 
 
 @may_raise
@@ -526,7 +538,7 @@ def PyCapsule_GetContext(obj):
 def PyCapsule_GetPointer(obj, name):
     if not isinstance(obj, PyCapsule) or obj.pointer is None:
         raise ValueError("PyCapsule_GetPointer called with invalid PyCapsule object")
-    if name != obj.name:
+    if name != None and name != obj.name:
         raise ValueError("PyCapsule_GetPointer called with incorrect name")
     return obj.pointer
 
@@ -667,7 +679,9 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
     if setter:
         setter_w = CreateFunction(name, setter, setter_wrapper)
         def member_setter(self, value):
-            setter_w(self, value, closure)
+            result = setter_w(self, value, closure)
+            if result != 0:
+                raise
             return None
         getset.setter(member_setter)
     else:
@@ -1102,8 +1116,12 @@ def initialize_member_accessors():
 
 @may_raise
 def PyImport_ImportModule(name):
-    return __import__(name)
+    return __import__(name, fromlist=["*"])
 
+
+@may_raise
+def PyImport_GetModuleDict():
+    return sys.modules
 
 @may_raise
 def PyRun_String(source, typ, globals, locals):

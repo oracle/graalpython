@@ -36,25 +36,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-/**
- * Specialization guards for Math module.
- */
-public class MathGuards {
+import java.util.function.Supplier;
 
-    public static boolean fitLong(double value) {
-        return Long.MIN_VALUE <= value && value <= Long.MAX_VALUE;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode.NotImplementedHandler;
+
+public enum TernaryArithmetic {
+    Pow(SpecialMethodNames.__POW__, "**", "pow()");
+
+    private final String methodName;
+    private final String operator;
+    private final Supplier<NotImplementedHandler> notImplementedHandler;
+
+    TernaryArithmetic(String methodName, String operator, String operatorFunction) {
+        this.methodName = methodName;
+        this.operator = operator;
+        this.notImplementedHandler = () -> new NotImplementedHandler() {
+            @Override
+            public Object execute(Object arg, Object arg2, Object arg3) {
+                if (arg3 instanceof PNone) {
+                    throw raise(TypeError, "unsupported operand type(s) for %s or %s(): '%p' and '%p'", operator, operatorFunction, arg, arg2);
+                } else {
+                    throw raise(TypeError, "unsupported operand type(s) for %s(): '%p', '%p', '%p'", operatorFunction, arg, arg2, arg3);
+                }
+            }
+        };
     }
 
-    public static boolean isNumber(Object value) {
-        return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
+    public String getMethodName() {
+        return methodName;
     }
 
-    public static boolean isInteger(Object value) {
-        return value instanceof Integer || value instanceof Long || value instanceof PInt || value instanceof Boolean;
+    public String getOperator() {
+        return operator;
+    }
+
+    public LookupAndCallTernaryNode create(PNode x, PNode y) {
+        return LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler, x, y);
+    }
+
+    public LookupAndCallTernaryNode create() {
+        return LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler);
     }
 }

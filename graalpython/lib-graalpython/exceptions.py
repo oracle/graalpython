@@ -264,6 +264,11 @@ class UnicodeTranslateError(UnicodeError):
     pass
 
 
+# TODO all the OS errors
+
+class FileNotFoundError(OSError):
+    pass
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # the warnings

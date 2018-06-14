@@ -110,6 +110,7 @@ void initialize_hashes();
 
 // prototype of C landing function
 void* wrap_direct(PyCFunction fun, ...);
+int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, PyObject *closure);
 void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
 void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
 void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
