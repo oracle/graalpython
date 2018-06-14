@@ -678,7 +678,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         protected boolean isByteArray(TruffleObject o) {
-            return true;
+            return o instanceof CByteArrayWrapper || ForeignAccess.sendHasSize(getHasSizeNode(), o);
         }
 
         protected byte[] getByteArray(TruffleObject o) {
@@ -729,6 +729,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         protected Object raiseBadArgument(Object errorMarker) {
             return raiseNative(errorMarker, PythonErrorType.TypeError, "bad argument type for built-in operation");
+        }
+
+        private Node getHasSizeNode() {
+            if (hasSizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hasSizeNode = insert(Message.HAS_SIZE.createNode());
+            }
+            return hasSizeNode;
         }
     }
 
