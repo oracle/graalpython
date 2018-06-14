@@ -41,35 +41,32 @@
 PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
 
 PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    return (PyObject *)polyglot_as_PyCapsule(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule", name ? polyglot_from_string(name, "ascii") : to_java(Py_None), pointer, destructor)));
+    return (PyObject *)polyglot_as_PyCapsule(UPCALL_CEXT_O("PyCapsule", name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None), pointer, destructor));
 }
 
 void* PyCapsule_GetContext(PyObject *o) {
-    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetContext", to_java(o));
-    if (result == ERROR_MARKER) {
+    void* result = UPCALL_CEXT_PTR("PyCapsule_GetContext", native_to_java(o));
+    if (result == NULL) {
         return NULL;
     }
+    // the capsule really stored the Sulong pointer object; so no conversion necessary
     return result;
 }
 
 void* PyCapsule_GetPointer(PyObject *o, const char *name) {
-    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_GetPointer", to_java(o), name ? polyglot_from_string(name, "ascii") : to_java(Py_None));
-    if (result == ERROR_MARKER) {
-        return NULL;
+    void* result = UPCALL_CEXT_PTR("PyCapsule_GetPointer", native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
+    if (result == NULL) {
+        return (void *)as_long(result);
     }
-    // the capsule really stored the pointer object; so no conversion necessary
+    // the capsule really stored the Sulong pointer object; so no conversion necessary
     return result;
 }
 
 void* PyCapsule_Import(const char *name, int no_block) {
     // TODO (tfel): no_block is currently ignored
-    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_Import", polyglot_from_string(name, "ascii"), no_block);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    }
-    return (void*)to_sulong(result);
+    return (void*) UPCALL_CEXT_PTR("PyCapsule_Import", polyglot_from_string(name, SRC_CS), no_block);
 }
 
 int PyCapsule_IsValid(PyObject *o, const char *name) {
-    return o != NULL && polyglot_invoke(PY_TRUFFLE_CEXT, "PyCapsule_IsValid", to_java(o), name ? polyglot_from_string(name, "ascii") : to_java(Py_None));
+    return o != NULL && UPCALL_CEXT_I("PyCapsule_IsValid", native_to_java(o), name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None));
 }
