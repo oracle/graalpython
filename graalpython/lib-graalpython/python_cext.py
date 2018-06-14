@@ -1178,4 +1178,12 @@ def PyTruffle_Cext_Upcall_l(name, *args):
     converted = [None] * nargs
     for i in range(nargs):
         converted[i] = to_java(args[i])
-    return globals()[name](*converted)
+    return to_long(globals()[name](*converted))
+
+
+def PyTruffle_Cext_Upcall_d(name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_double(globals()[name](*converted))

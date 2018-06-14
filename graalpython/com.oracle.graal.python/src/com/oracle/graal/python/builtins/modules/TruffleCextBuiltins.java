@@ -214,9 +214,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         long run(PInt value) {
-            return value.getValue().longValue();
+            // TODO(fa) longValueExact ?
+            return value.longValue();
         }
 
         @Specialization
@@ -227,7 +227,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object run(PythonNativeWrapper value,
                         @Cached("create()") AsLong recursive) {
+            // TODO(fa) this specialization should eventually go away
             return recursive.executeWith(value.getDelegate());
+        }
+
+        @Fallback
+        Object runGeneric(Object value) {
+            // TODO(fa) force primitive
+            return getIntNode().executeWith(getCore().lookupType(Integer.class), value, PNone.NONE);
         }
 
         private BuiltinConstructors.IntNode getIntNode() {
@@ -236,11 +243,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 intNode = BuiltinConstructorsFactory.IntNodeFactory.create(null);
             }
             return intNode;
-        }
-
-        @Fallback
-        Object runGeneric(Object value) {
-            return getIntNode().executeWith(getCore().lookupType(Integer.class), value, PNone.NONE);
         }
 
         static AsLong create() {
@@ -274,9 +276,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         double run(PInt value) {
-            return value.getValue().doubleValue();
+            return value.doubleValue();
         }
 
         @Specialization
