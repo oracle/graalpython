@@ -1239,6 +1239,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         public double logDD(double value, PInt base,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit,
                         @Cached("createBinaryProfile()") ConditionProfile divByZero) {
@@ -1258,6 +1259,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         public double logPID(PInt value, double base,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit,
                         @Cached("createBinaryProfile()") ConditionProfile divByZero) {
