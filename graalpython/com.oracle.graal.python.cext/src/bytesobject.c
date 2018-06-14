@@ -257,3 +257,11 @@ Py_ssize_t PyBytes_Size(PyObject *bytes) {
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags) {
     return PyBuffer_FillInfo(view, (PyObject*)self, (void *)self->ob_sval, Py_SIZE(self), 1, flags);
 }
+
+int bytes_copy2mem(char* target, char* source, size_t nbytes) {
+    size_t i;
+    for (i = 0; i < nbytes; i++) {
+        target[i] = source[i];
+    }
+    return 0;
+}

@@ -49,8 +49,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.management.RuntimeErrorException;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -1058,6 +1056,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private UnicodeAsWideCharNode asWideCharNode;
 
         @Specialization
+        Object doUnicode(PString s, long elementSize, PNone elements, Object errorMarker) {
+            return doUnicode(s.getValue(), elementSize, elements, errorMarker);
+        }
+
+        @Specialization
+        Object doUnicode(String s, long elementSize, @SuppressWarnings("unused") PNone elements, Object errorMarker) {
+            return doUnicode(s, elementSize, -1, errorMarker);
+        }
+
+        @Specialization
         Object doUnicode(PString s, long elementSize, long elements, Object errorMarker) {
             return doUnicode(s.getValue(), elementSize, elements, errorMarker);
         }
@@ -1068,7 +1076,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             try {
                 if (asWideCharNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    asWideCharNode = insert(UnicodeAsWideCharNode.create());
+                    asWideCharNode = insert(UnicodeAsWideCharNode.create(-1));
                 }
 
                 PBytes wchars = asWideCharNode.execute(s, elementSize, elements);

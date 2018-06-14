@@ -59,7 +59,7 @@ void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position) {
 }
 
 PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-	return to_sulong(PyTruffle_Tuple_GetItem(to_java(tuple), position));
+    return to_sulong(PyTruffle_Tuple_GetItem(to_java(tuple), position));
 }
 
 Py_ssize_t PyTuple_Size(PyObject *op) {

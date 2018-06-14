@@ -90,6 +90,12 @@ public abstract class UnicodeObjectNodes {
 
     public abstract static class UnicodeAsWideCharNode extends UnicodeBaseNode {
 
+        private final int byteOrder;
+
+        protected UnicodeAsWideCharNode(int byteOrder) {
+            this.byteOrder = byteOrder;
+        }
+
         public abstract PBytes execute(Object obj, long elementSize, long elements);
 
         @Specialization
@@ -101,7 +107,7 @@ public abstract class UnicodeObjectNodes {
         @TruffleBoundary
         PBytes doUnicode(String s, long elementSize, long elements) {
             // use native byte order
-            Charset utf32Charset = getUTF32Charset(0);
+            Charset utf32Charset = getUTF32Charset(-1);
 
             // elementSize == 2: Store String in 'wchar_t' of size == 2, i.e., use UCS2. This is
             // achieved by decoding to UTF32 (which is basically UCS4) and ignoring the two
@@ -109,9 +115,19 @@ public abstract class UnicodeObjectNodes {
             if (elementSize == 2L) {
                 ByteBuffer bytes = ByteBuffer.wrap(s.getBytes(utf32Charset));
                 // FIXME unsafe narrowing
-                ByteBuffer buf = ByteBuffer.allocate(Math.min(bytes.remaining() / 2, (int) (elements * elementSize)));
+                int size;
+                if (elements >= 0) {
+                    size = Math.min(bytes.remaining() / 2, (int) (elements * elementSize));
+                } else {
+                    size = bytes.remaining() / 2;
+                }
+                ByteBuffer buf = ByteBuffer.allocate(size);
                 while (bytes.remaining() >= 4) {
-                    buf.putChar((char) (bytes.getInt() & 0x0000FFFF));
+                    if (byteOrder < UnicodeBaseNode.NATIVE_ORDER) {
+                        buf.putChar((char) ((bytes.getInt() & 0xFFFF0000) >> 16));
+                    } else {
+                        buf.putChar((char) (bytes.getInt() & 0x0000FFFF));
+                    }
                 }
                 buf.flip();
                 byte[] barr = new byte[buf.remaining()];
@@ -124,8 +140,8 @@ public abstract class UnicodeObjectNodes {
             }
         }
 
-        public static UnicodeAsWideCharNode create() {
-            return UnicodeAsWideCharNodeGen.create();
+        public static UnicodeAsWideCharNode create(int byteOrder) {
+            return UnicodeAsWideCharNodeGen.create(byteOrder);
         }
     }
 

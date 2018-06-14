@@ -57,7 +57,7 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 
 static void initialize_globals() {
     // None
-    void *jnone = polyglot_as__object(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None")));
+    PyObject* jnone = UPCALL_CEXT_O("Py_None");
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented

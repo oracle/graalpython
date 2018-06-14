@@ -276,13 +276,13 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(UNICODE_WSTR, key)")
         Object doWstr(String object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") UnicodeAsWideCharNode asWideCharNode) {
+                        @Cached("create(0)") UnicodeAsWideCharNode asWideCharNode) {
             return new PySequenceArrayWrapper(asWideCharNode.execute(object, sizeofWchar(), object.length()));
         }
 
         @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
         long doWstrLength(String object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") UnicodeAsWideCharNode asWideCharNode) {
+                        @Cached("create(0)") UnicodeAsWideCharNode asWideCharNode) {
             long sizeofWchar = sizeofWchar();
             PBytes result = asWideCharNode.execute(object, sizeofWchar, object.length());
             return result.len() / sizeofWchar;
@@ -549,12 +549,6 @@ public class PythonObjectNativeWrapperMR {
         @Specialization
         Object runNativeObject(PythonNativeObject object) {
             return ensureIsPointer(object.object);
-        }
-
-        @Specialization
-        Object runNone(PNone object) {
-            PythonClass clazz = getClassNode().execute(object);
-            return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, clazz.getFlags()));
         }
 
         @Specialization(guards = "isManagedPythonClass(object)")

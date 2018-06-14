@@ -40,6 +40,29 @@
 
 PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS, sizeof(PyUnicodeObject));
 
+// partially taken vom CPython "Objects/unicodeobject.c"
+static Py_ssize_t unicode_aswidechar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
+    Py_ssize_t res;
+    const wchar_t *wstr;
+
+    wstr = PyUnicode_AsUnicodeAndSize(unicode, &res);
+    if (wstr == NULL) {
+        return -1;
+    }
+
+    if (w != NULL) {
+        if (size > res)
+            size = res + 1;
+        else
+            res = size;
+        bytes_copy2mem(w, wstr, size * SIZEOF_WCHAR_T);
+        return res;
+    }
+    else {
+        return res + 1;
+    }
+}
+
 PyObject* PyUnicode_FromString(const char* o) {
     return to_sulong(polyglot_from_string(o, SRC_CS));
 }
@@ -95,22 +118,23 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
                 break;
             case 'A':
                 c[1] = 's';
-                allocated_strings[cnt] = allocated = as_char_pointer(truffle_invoke(PY_TRUFFLE_CEXT, "builtin_ascii", to_java(truffle_get_arg(cnt + 2))));
+                ;
+                allocated_strings[cnt] = allocated = as_char_pointer(UPCALL_CEXT_PTR("builtin_ascii", native_to_java(polyglot_get_arg(cnt + 2))));
                 ASSIGN(cnt, allocated);
                 break;
             case 'U':
                 c[1] = 's';
-                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Str(truffle_get_arg(cnt + 2)));
+                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Str(polyglot_get_arg(cnt + 2)));
                 ASSIGN(cnt, allocated);
                 break;
             case 'S':
                 c[1] = 's';
-                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Str(truffle_get_arg(cnt + 2)));
+                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Str(polyglot_get_arg(cnt + 2)));
                 ASSIGN(cnt, allocated);
                 break;
             case 'R':
                 c[1] = 's';
-                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Repr(truffle_get_arg(cnt + 2)));
+                allocated_strings[cnt] = allocated = as_char_pointer(PyObject_Repr(polyglot_get_arg(cnt + 2)));
                 ASSIGN(cnt, allocated);
                 break;
             }
@@ -125,7 +149,7 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
 
     for (int i = 0; i < s; i++) {
         if (allocated_strings[i] != NULL) {
-            truffle_free_cstr(allocated_strings[i]);
+            free(allocated_strings[i]);
         }
     }
 
@@ -136,52 +160,34 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
 
 
 PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
-//    return UPCALL_CEXT_O("PyTruffle_Unicode_FromWchar", truffle_read_n_bytes((char *)u, size * Py_UNICODE_SIZE), Py_UNICODE_SIZE, ERROR_MARKER);
     switch(Py_UNICODE_SIZE) {
     case 2:
-        return to_sulong(polyglot_from_string_n((const char*)u, size, "utf-16be"));
+        return to_sulong(polyglot_from_string_n((const char*)u, size*2, "utf-16le"));
     case 4:
-        return to_sulong(polyglot_from_string_n((const char*)u, size, "utf-32"));
+        return to_sulong(polyglot_from_string_n((const char*)u, size*4, "utf-32le"));
     }
     return NULL;
 }
 
 PyObject* PyUnicode_FromObject(PyObject* o) {
-    PyObject *result;
-    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromObject", to_java(o));
-    if (result == ERROR_MARKER) {
-        return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyUnicode_FromObject", native_to_java(o));
 }
 
 Py_ssize_t PyUnicode_GetLength(PyObject *unicode) {
-    return truffle_invoke_l(PY_TRUFFLE_CEXT, "PyUnicode_GetLength", to_java(unicode));
+    return UPCALL_CEXT_L("PyUnicode_GetLength", native_to_java(unicode));
 }
 
 PyObject * PyUnicode_Concat(PyObject *left, PyObject *right) {
-    PyObject *result;
-    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_Concat", to_java(left), to_java(right));
-    if (result == ERROR_MARKER) {
-        return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyUnicode_Concat", native_to_java(left), native_to_java(right));
 }
 
 PyObject * PyUnicode_FromEncodedObject(PyObject *obj, const char *encoding, const char *errors) {
-    PyObject *result;
-    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_FromEncodedObject", to_java(obj), truffle_read_string(encoding), truffle_read_string(errors));
-    if (result == ERROR_MARKER) {
-        return NULL;
-    }
-
     // TODO buffer treatment
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyUnicode_FromEncodedObject", native_to_java(obj), polyglot_from_string(encoding, SRC_CS), polyglot_from_string(errors, SRC_CS));
 }
 
 void PyUnicode_InternInPlace(PyObject **s) {
-    PyObject *interned = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_InternInPlace", to_java(*s));
-    *s = to_sulong(interned);
+    *s = UPCALL_CEXT_O("PyUnicode_InternInPlace", native_to_java(*s));
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -209,16 +215,8 @@ char* PyUnicode_AsUTF8AndSize(PyObject *unicode, Py_ssize_t *psize) {
 }
 
 PyObject* _PyUnicode_AsUTF8String(PyObject *unicode, const char *errors) {
-    PyObject *result;
-    void *jerrors = NULL;
-    if (errors != NULL) {
-        jerrors = truffle_read_string(errors);
-    }
-    result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyUnicode_AsUTF8String", to_java(unicode), to_java(jerrors), ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    }
-    return to_sulong(result);
+    void *jerrors = errors != NULL ? polyglot_from_string(errors, SRC_CS) : NULL;
+    return UPCALL_CEXT_O("_PyUnicode_AsUTF8String", native_to_java(unicode), native_to_java(jerrors), ERROR_MARKER);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -234,36 +232,22 @@ PyObject * PyUnicode_DecodeUTF32(const char *s, Py_ssize_t size, const char *err
 }
 
 Py_ssize_t PyUnicode_AsWideChar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
-    PyObject* result;
     Py_ssize_t n;
     char* data;
     int i;
+    if (w == NULL) {
+        return PyObject_Size(unicode)+1;
+    }
     if (unicode == NULL) {
         PyErr_BadInternalCall();
         return -1;
     }
-    result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Unicode_AsWideChar", to_java(unicode), SIZEOF_WCHAR_T, size, ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-    	return -1;
-    }
-    PyObject* n_result = to_sulong(result);
-    data = PyBytes_AsString(n_result);
-    n = PyBytes_Size(n_result);
-    memcpy(w, data, n);
-    return n / SIZEOF_WCHAR_T;
+    return unicode_aswidechar(unicode, w, size);
 }
 
-PyObject * _PyUnicode_AsLatin1String(PyObject *unicode, const char *errors) {
-    PyObject *result;
-    void *jerrors = NULL;
-    if (errors != NULL) {
-        jerrors = truffle_read_string(errors);
-    }
-    result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyTruffle_Unicode_AsLatin1String", to_java(unicode), to_java(jerrors), ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    }
-    return to_sulong(result);
+PyObject* _PyUnicode_AsLatin1String(PyObject *unicode, const char *errors) {
+    void *jerrors = errors != NULL ? polyglot_from_string(errors, SRC_CS) : NULL;
+    return UPCALL_CEXT_O("_PyTruffle_Unicode_AsLatin1String", native_to_java(unicode), native_to_java(jerrors), ERROR_MARKER);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -271,32 +255,35 @@ PyObject* PyUnicode_AsLatin1String(PyObject *unicode) {
     return _PyUnicode_AsLatin1String(unicode, NULL);
 }
 
-PyObject * _PyUnicode_AsASCIIString(PyObject *unicode, const char *errors) {
-    PyObject *result;
-    void *jerrors = NULL;
-    if (errors != NULL) {
-        jerrors = truffle_read_string(errors);
-    }
-    result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyTruffle_Unicode_AsASCIIString", to_java(unicode), to_java(jerrors), ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    }
-    return to_sulong(result);
+PyObject* _PyUnicode_AsASCIIString(PyObject *unicode, const char *errors) {
+    void *jerrors = errors != NULL ? polyglot_from_string(errors, SRC_CS) : NULL;
+    return UPCALL_CEXT_O("_PyTruffle_Unicode_AsASCIIString", native_to_java(unicode), native_to_java(jerrors), ERROR_MARKER);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
-PyObject * PyUnicode_AsASCIIString(PyObject *unicode) {
+PyObject* PyUnicode_AsASCIIString(PyObject *unicode) {
     return _PyUnicode_AsASCIIString(unicode, NULL);
 }
 
-PyObject * PyUnicode_Format(PyObject *format, PyObject *args) {
+PyObject* PyUnicode_Format(PyObject *format, PyObject *args) {
     if (format == NULL || args == NULL) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyUnicode_Format", to_java(format), to_java(args));
-    if (result == ERROR_MARKER) {
-    	return NULL;
+    return UPCALL_CEXT_O("PyUnicode_Format", native_to_java(format), native_to_java(args));
+}
+
+Py_UNICODE* PyUnicode_AsUnicode(PyObject *unicode) {
+    Py_ssize_t size = 0;
+    return PyUnicode_AsUnicodeAndSize(unicode, &size);
+}
+
+Py_UNICODE* PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size) {
+    PyObject* bytes = UPCALL_CEXT_O("PyTruffle_Unicode_AsWideChar", native_to_java(unicode), Py_UNICODE_SIZE, native_to_java(Py_None), ERROR_MARKER);
+    if (bytes != NULL) {
+        // exclude null terminator at the end
+        *size = PyBytes_Size(bytes) / Py_UNICODE_SIZE;
+        return (Py_UNICODE*) PyBytes_AsString(bytes);
     }
-    return to_sulong(result);
+    return NULL;
 }
