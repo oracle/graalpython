@@ -110,16 +110,18 @@ def PyDict_New():
     return {}
 
 
+@may_raise
 def PyDict_Next(dictObj, pos):
-    if isinstance(dictObj, dict):
-        curPos = 0
-        max = len(dictObj)
-        if pos >= max:
-            return error_handler
-        for key in dictObj:
-            if curPos == pos:
-                return key, dictObj[key]
-            curPos = curPos + 1
+    if not isinstance(dictObj, dict):
+        return error_handler
+    curPos = 0
+    max = len(dictObj)
+    if pos >= max:
+        return error_handler
+    for key in dictObj:
+        if curPos == pos:
+            return key, dictObj[key]
+        curPos = curPos + 1
     return error_handler
 
 
@@ -158,6 +160,14 @@ def PyDict_DelItem(dictObj, key):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
     del dictObj[key]
     return 0
+
+
+@may_raise(-1)
+def PyDict_Contains(dictObj, key):
+    if not isinstance(dictObj, dict):
+        _PyErr_BadInternalCall(None, None, dictObj)
+    return key in dictObj
+
 
 
 ##################### SET, FROZENSET

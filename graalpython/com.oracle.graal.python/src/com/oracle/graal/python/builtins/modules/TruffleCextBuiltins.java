@@ -1027,7 +1027,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        byte[] doCArrayWrapper(CByteArrayWrapper o, long size) {
+        byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long size) {
             return o.getDelegate();
         }
 

@@ -38,35 +38,28 @@
  */
 #include "capi.h"
 
-/* Dicts */
-
 PyTypeObject PyDict_Type = PY_TRUFFLE_TYPE("dict", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS, sizeof(PyDictObject));
 
 PyObject* PyDict_New(void) {
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_New"));
+    return UPCALL_CEXT_O("PyDict_New");
 }
 
 int PyDict_SetItem(PyObject* d, PyObject* k, PyObject* v) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyDict_SetItem", to_java(d), to_java(k), to_java(v));
+    return UPCALL_CEXT_I("PyDict_SetItem", native_to_java(d), native_to_java(k), native_to_java(v));
 }
 
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
-    void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_GetItem", to_java(d), to_java(k));
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyDict_GetItem", native_to_java(d), native_to_java(k));
 }
 
-int PyDict_DelItem(PyObject *d, PyObject *key) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyDict_DelItem", to_java(d), to_java(key));
+int PyDict_DelItem(PyObject *d, PyObject *k) {
+    return UPCALL_CEXT_I("PyDict_DelItem", native_to_java(d), native_to_java(k));
 }
 
 
 int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
-    void *tresult = truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_Next", to_java(d), *ppos);
-    if (tresult == ERROR_MARKER) {
+    PyObject *tresult = UPCALL_CEXT_O("PyDict_Next", native_to_java(d), *ppos);
+    if (tresult == NULL) {
     	if(pkey != NULL) {
     		*pkey = NULL;
     	}
@@ -77,36 +70,36 @@ int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalu
     }
     (*ppos)++;
     if (pkey != NULL) {
-    	*pkey = to_sulong(PyTruffle_Tuple_GetItem(tresult, 0));
+    	*pkey = PyTuple_GetItem(tresult, 0);
     }
     if (pvalue != NULL) {
-    	*pvalue = to_sulong(PyTruffle_Tuple_GetItem(tresult, 1));
+    	*pvalue = PyTuple_GetItem(tresult, 1);
     }
     return 1;
 }
 
 Py_ssize_t PyDict_Size(PyObject *d) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyDict_Size", to_java(d));
+    return UPCALL_CEXT_L("PyDict_Size", native_to_java(d));
 }
 
 PyObject * PyDict_Copy(PyObject *d) {
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyDict_Copy", to_java(d)));
+    return UPCALL_CEXT_O("PyDict_Copy", native_to_java(d));
 }
 
 /* Return 1 if `key` is in dict `op`, 0 if not, and -1 on error. */
-int PyDict_Contains(PyObject *d, PyObject *key) {
-    return truffle_invoke_i(to_java(d), "__contains__", to_java(key));
+int PyDict_Contains(PyObject *d, PyObject *k) {
+    return UPCALL_CEXT_I("PyDict_Contains", native_to_java(d), native_to_java(k));
 }
 
-PyObject * PyDict_GetItemString(PyObject *v, const char *key) {
-    return PyDict_GetItem(v, PyUnicode_FromString(key));
+PyObject * PyDict_GetItemString(PyObject *d, const char *key) {
+    return UPCALL_CEXT_O("PyDict_GetItem", native_to_java(d), polyglot_from_string(key, SRC_CS));
 }
 
-int PyDict_SetItemString(PyObject *v, const char *key, PyObject *item) {
-    truffle_invoke(to_java(v), "__setitem__", to_java(PyUnicode_FromString(key)), to_java(item));
+int PyDict_SetItemString(PyObject *d, const char *key, PyObject *item) {
+    UPCALL_CEXT_I("PyDict_SetItem", native_to_java(d), polyglot_from_string(key, SRC_CS), native_to_java(item));
     return 0;
 }
 
 int PyDict_DelItemString(PyObject *d, const char *key) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyDict_DelItem", to_java(d), polyglot_from_string(key, "utf-8"));
+    return UPCALL_CEXT_I("PyDict_DelItem", native_to_java(d), polyglot_from_string(key, SRC_CS));
 }

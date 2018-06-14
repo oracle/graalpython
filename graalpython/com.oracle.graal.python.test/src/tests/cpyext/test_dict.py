@@ -88,6 +88,13 @@ def _reference_copy(args):
     return args[0].copy()
 
 
+def _reference_contains(args):
+    try:
+        return args[1] in args[0]
+    except:
+        raise SystemError
+
+
 class SubDict(dict):
     pass
 
@@ -231,11 +238,19 @@ class TestPyDict(CPyExtTestCase):
 
     # PyDict_Contains
     test_PyDict_Contains = CPyExtFunction(
-        lambda args: int(args[1] in args[0]),
-        lambda: (({}, "a"), ({'a': "hello"}, "a"), ({'a': "hello"}, "b")),
+        _reference_contains,
+        lambda: (
+            ({}, "a"),
+            ({'a': "hello"}, "a"),
+            ({'a': "hello"}, "b"),
+            ({'a': "hello"}, ("a", "b")),
+            ({'a': "hello"}, {"a", "b"}),
+            ({'a': "hello"}, ["a", "b"]),
+        ),
         resultspec="i",
         argspec='OO',
         arguments=["PyObject* dict", "PyObject* key"],
+        cmpfunc=unhandled_error_compare
     )
 
     test_PyDict_Check = CPyExtFunction(
