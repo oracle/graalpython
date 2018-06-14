@@ -529,7 +529,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class LseekNode extends PythonFileNode {
         @Specialization
         @TruffleBoundary
-        Object lseek(int fd, int pos, int how) {
+        Object lseek(int fd, long pos, int how) {
             SeekableByteChannel fc = getFileChannel(fd);
             if (fc == null) {
                 throw raise(OSError, "Illegal seek");
