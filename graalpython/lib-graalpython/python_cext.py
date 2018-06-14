@@ -67,6 +67,10 @@ def may_raise(error_result=error_handler):
         return decorator
 
 
+def Py_NotImplemented():
+    return NotImplemented
+
+
 def Py_True():
     return True
 

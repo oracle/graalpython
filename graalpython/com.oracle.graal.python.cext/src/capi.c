@@ -45,7 +45,7 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 
     // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
     // TODO Remove this as soon as this is properly supported.
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", ptype, nativePointer);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", ptype, nativePointer);
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
@@ -61,17 +61,17 @@ static void initialize_globals() {
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented
-    void *jnotimpl = polyglot_as__object(to_sulong(polyglot_get_member(PY_BUILTIN, "NotImplemented")));
+    void *jnotimpl = UPCALL_CEXT_O("Py_NotImplemented");
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
     // Ellipsis
-    void *jellipsis = polyglot_as__object(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_Ellipsis")));
+    void *jellipsis = UPCALL_CEXT_O("Py_Ellipsis");
     truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
 
     // True, False
-    void *jtrue = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_True");
+    void *jtrue = UPCALL_CEXT_O("Py_True");
     truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(to_sulong(jtrue)));
-    void *jfalse = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_False");
+    void *jfalse = UPCALL_CEXT_O("Py_False");
     truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(to_sulong(jfalse)));
 
     // error marker
