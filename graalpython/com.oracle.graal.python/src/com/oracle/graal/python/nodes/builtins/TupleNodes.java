@@ -102,7 +102,7 @@ public abstract class TupleNodes {
             return iterable;
         }
 
-        @Specialization(guards = {"createNewTuple(cls, iterable)"})
+        @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable)"})
         public PTuple tuple(PythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
