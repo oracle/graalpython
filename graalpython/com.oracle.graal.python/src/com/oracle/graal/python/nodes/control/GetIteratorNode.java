@@ -25,6 +25,9 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -41,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -162,16 +164,16 @@ public abstract class GetIteratorNode extends UnaryOpNode {
                     @Cached("create()") CreateArgumentsNode createArgs,
                     @Cached("create()") IsIteratorObjectNode isIteratorObjectNode) {
         PythonClass clazz = getClass(value);
-        Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz, SpecialMethodNames.__ITER__));
-        if (attrObj != PNone.NO_VALUE) {
-            Object iterObj = dispatchGetattribute.executeCall(attrObj, createArgs.execute(new Object[]{value}), PKeyword.EMPTY_KEYWORDS);
+        Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz, __ITER__));
+        if (attrObj != PNone.NO_VALUE && attrObj != PNone.NONE) {
+            Object iterObj = dispatchGetattribute.executeCall(attrObj, createArgs.execute(value), PKeyword.EMPTY_KEYWORDS);
             if (isIteratorObjectNode.execute(iterObj)) {
                 return iterObj;
             } else {
                 throw nonIterator(iterObj);
             }
         } else {
-            Object getItemAttrObj = lookupGetitemAttrMroNode.execute(clazz, SpecialMethodNames.__GETITEM__);
+            Object getItemAttrObj = lookupGetitemAttrMroNode.execute(clazz, __GETITEM__);
             if (getItemAttrObj != PNone.NO_VALUE) {
                 return factory().createSequenceIterator(value);
             }
@@ -206,7 +208,7 @@ public abstract class GetIteratorNode extends UnaryOpNode {
         boolean doPIterator(Object it,
                         @Cached("create()") GetClassNode getClassNode,
                         @Cached("create()") LookupAttributeInMRONode lookupAttributeNode) {
-            return lookupAttributeNode.execute(getClassNode.execute(it), SpecialMethodNames.__NEXT__) != PNone.NO_VALUE;
+            return lookupAttributeNode.execute(getClassNode.execute(it), __NEXT__) != PNone.NO_VALUE;
         }
 
         public static IsIteratorObjectNode create() {

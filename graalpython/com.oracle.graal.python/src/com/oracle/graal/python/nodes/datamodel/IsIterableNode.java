@@ -38,6 +38,7 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 
@@ -57,8 +58,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class IsIterableNode extends PDataModelEmulationNode {
     @Child private HasInheritedAttributeNode hasNextNode = HasInheritedAttributeNode.create(__NEXT__);
     @Child private LookupInheritedAttributeNode getIterNode = LookupInheritedAttributeNode.create();
+    @Child private LookupInheritedAttributeNode getGetItemNode = LookupInheritedAttributeNode.create();
+    @Child private IsCallableNode isCallableNode = IsCallableNode.create();
 
     private final ConditionProfile profileIter = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile profileGetItem = ConditionProfile.createBinaryProfile();
     private final ConditionProfile profileNext = ConditionProfile.createBinaryProfile();
 
     @Specialization
@@ -104,11 +108,17 @@ public abstract class IsIterableNode extends PDataModelEmulationNode {
     @Specialization
     public boolean isIterable(Object object) {
         Object iterMethod = getIterNode.execute(object, __ITER__);
-        if (profileIter.profile(iterMethod != PNone.NO_VALUE)) {
-            return iterMethod != PNone.NONE;
+        if (profileIter.profile(iterMethod != PNone.NO_VALUE && iterMethod != PNone.NONE)) {
+            return true;
         } else {
-            return profileNext.profile(hasNextNode.execute(object));
+            Object getItemMethod = getGetItemNode.execute(object, __GETITEM__);
+            if (profileGetItem.profile(getItemMethod != PNone.NO_VALUE)) {
+                return true;
+            } else if (isCallableNode.execute(object)) {
+                return profileNext.profile(hasNextNode.execute(object));
+            }
         }
+        return false;
     }
 
     public static IsIterableNode create() {
