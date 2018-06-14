@@ -42,6 +42,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -68,6 +69,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         // Add constant values
         builtinConstants.put("pi", Math.PI);
         builtinConstants.put("e", Math.E);
+        builtinConstants.put("tau", 2 * Math.PI);
     }
 
     // math.sqrt
@@ -952,6 +954,21 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         double pow(double left, double right) {
             return Math.pow(left, right);
+        }
+    }
+
+    @Builtin(name = "trunc", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class TruncNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object trunc(Object obj,
+                        @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTrunc) {
+            Object result = callTrunc.executeObject(obj);
+            if (result == PNone.NO_VALUE) {
+                raise(TypeError, "type %p doesn't define __trunc__ method", obj);
+            }
+            return result;
         }
     }
 

@@ -698,17 +698,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(keywordArg)")
         public Object createInt(PythonClass cls, PythonObject obj, PNone keywordArg,
                         @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
+                        @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
             try {
+                // at first try __int__ method
                 return createInt(cls, callIntNode.executeLong(obj), keywordArg, isIntProfile);
             } catch (UnexpectedResultException e) {
                 Object result = e.getResult();
+                if (result == PNone.NO_VALUE) {
+                    try {
+                        // now try __trunc__ method
+                        return createInt(cls, callTruncNode.executeLong(obj), keywordArg, isIntProfile);
+                    } catch (UnexpectedResultException ee) {
+                        result = ee.getResult();
+                    }
+                }
                 if (result == PNone.NO_VALUE) {
                     throw raise(TypeError, "an integer is required (got type %p)", obj);
                 } else if (result instanceof Integer) {
                     return createInt(cls, (int) result, keywordArg);
                 } else if (result instanceof Long) {
                     return createInt(cls, (long) result, keywordArg, isIntProfile);
+                } else if (result instanceof Boolean) {
+                    return createInt(cls, (boolean) result ? 1 : 0, keywordArg, isIntProfile);
                 } else if (result instanceof PInt) {
                     // TODO warn if 'result' not of exact Python type 'int'
                     return isPrimitiveInt(cls) ? result : factory().createInt(cls, ((PInt) result).getValue());

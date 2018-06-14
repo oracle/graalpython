@@ -102,6 +102,14 @@ class MathTests(unittest.TestCase):
         if failure is not None:
             self.fail("{}: {}".format(name, failure))
 
+    def testConstants(self):
+        # Ref: Abramowitz & Stegun (Dover, 1965)
+        self.ftest('pi', math.pi, 3.141592653589793238462643)
+        self.ftest('e', math.e, 2.718281828459045235360287)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            # math.tau since 3.6
+            self.assertEqual(math.tau, 2*math.pi)
+
     def test_ceil_basic(self):
         self.assertEqual(math.ceil(10), 10)
         self.assertEqual(math.ceil(-10), -10)
@@ -447,3 +455,29 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.ldexp(FF(10), II(12)), 40960.0)
         self.assertRaises(TypeError, math.ldexp, 'Hello', 1000000)
         self.assertRaises(TypeError, math.ldexp, 1, 'Hello')
+    
+    def test_trunc(self):
+        self.assertEqual(math.trunc(1), 1)
+        self.assertEqual(math.trunc(-1), -1)
+        self.assertEqual(type(math.trunc(1)), int)
+        self.assertEqual(type(math.trunc(1.5)), int)
+        self.assertEqual(math.trunc(1.5), 1)
+        self.assertEqual(math.trunc(-1.5), -1)
+        self.assertEqual(math.trunc(1.999999), 1)
+        self.assertEqual(math.trunc(-1.999999), -1)
+        self.assertEqual(math.trunc(-0.999999), -0)
+        self.assertEqual(math.trunc(-100.999), -100)
+
+        class TestTrunc(object):
+            def __trunc__(self):
+                return 23
+
+        class TestNoTrunc(object):
+            pass
+
+        self.assertEqual(math.trunc(TestTrunc()), 23)
+
+        self.assertRaises(TypeError, math.trunc)
+        self.assertRaises(TypeError, math.trunc, 1, 2)
+        self.assertRaises(TypeError, math.trunc, TestNoTrunc())
+
