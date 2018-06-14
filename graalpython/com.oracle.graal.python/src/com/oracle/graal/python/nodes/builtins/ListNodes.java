@@ -47,6 +47,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -58,10 +60,12 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.CreateListFromIteratorNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
+import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -72,6 +76,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ListNodes {
@@ -179,41 +184,78 @@ public abstract class ListNodes {
         }
     }
 
-    public static class IndexNode extends PBaseNode {
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class IndexNode extends PBaseNode {
         private static final String DEFAULT_ERROR_MSG = "list indices must be integers or slices, not %p";
         @Child LookupAndCallUnaryNode getIndexNode;
         private final CheckType checkType;
         private final String errorMessage;
 
-        private static enum CheckType {
+        protected static enum CheckType {
             SUBSCRIPT,
             INTEGER,
             NUMBER;
         }
 
-        private IndexNode(String message, CheckType type) {
+        protected IndexNode(String message, CheckType type) {
             checkType = type;
             getIndexNode = LookupAndCallUnaryNode.create(__INDEX__);
             errorMessage = message;
         }
 
         public static IndexNode create(String message) {
-            return new IndexNode(message, CheckType.SUBSCRIPT);
+            return IndexNodeGen.create(message, CheckType.SUBSCRIPT);
         }
 
         public static IndexNode create() {
-            return new IndexNode(DEFAULT_ERROR_MSG, CheckType.SUBSCRIPT);
+            return IndexNodeGen.create(DEFAULT_ERROR_MSG, CheckType.SUBSCRIPT);
         }
 
         public static IndexNode createInteger(String msg) {
-            return new IndexNode(msg, CheckType.INTEGER);
+            return IndexNodeGen.create(msg, CheckType.INTEGER);
         }
 
         public static IndexNode createNumber(String msg) {
-            return new IndexNode(msg, CheckType.NUMBER);
+            return IndexNodeGen.create(msg, CheckType.NUMBER);
         }
 
-        public Object execute(Object object) {
+        public abstract Object execute(Object object);
+
+        protected boolean isSubscript() {
+            return checkType == CheckType.SUBSCRIPT;
+        }
+
+        protected boolean isNumber() {
+            return checkType == CheckType.NUMBER;
+        }
+
+        @Specialization
+        long doLong(long slice) {
+            return slice;
+        }
+
+        @Specialization
+        PInt doPInt(PInt slice) {
+            return slice;
+        }
+
+        @Specialization(guards = "isSubscript()")
+        PSlice doSlice(PSlice slice) {
+            return slice;
+        }
+
+        @Specialization(guards = "isNumber()")
+        float doFloat(float slice) {
+            return slice;
+        }
+
+        @Specialization(guards = "isNumber()")
+        double doDouble(double slice) {
+            return slice;
+        }
+
+        @Fallback
+        Object doGeneric(Object object) {
             Object idx = getIndexNode.executeObject(object);
             boolean valid = false;
             switch (checkType) {
