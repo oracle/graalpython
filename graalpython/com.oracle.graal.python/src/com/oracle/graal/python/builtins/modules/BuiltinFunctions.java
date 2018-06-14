@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.MAX;
 import static com.oracle.graal.python.nodes.BuiltinNames.MIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.NEXT;
 import static com.oracle.graal.python.nodes.BuiltinNames.ORD;
+import static com.oracle.graal.python.nodes.BuiltinNames.POW;
 import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.nodes.BuiltinNames.REPR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
@@ -101,6 +102,7 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -109,6 +111,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -1053,6 +1056,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             stdout.flush();
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = POW, minNumOfArguments = 2, keywordArguments = {"z"})
+    @GenerateNodeFactory
+    public abstract static class PowNode extends PythonBuiltinNode {
+        @Child LookupAndCallTernaryNode powNode = TernaryArithmetic.Pow.create();
+
+        @Specialization
+        Object doIt(Object x, Object y, Object z) {
+            return powNode.execute(x, y, z);
         }
     }
 

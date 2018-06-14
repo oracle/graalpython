@@ -42,36 +42,30 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.function.Supplier;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode.NotImplementedHandler;
 
-public enum BinaryArithmetic {
-    Add(SpecialMethodNames.__ADD__, "+"),
-    Sub(SpecialMethodNames.__SUB__, "-"),
-    Mul(SpecialMethodNames.__MUL__, "*"),
-    TrueDiv(SpecialMethodNames.__TRUEDIV__, "/"),
-    FloorDiv(SpecialMethodNames.__FLOORDIV__, "//"),
-    Mod(SpecialMethodNames.__MOD__, "%"),
-    LShift(SpecialMethodNames.__LSHIFT__, "<<"),
-    RShift(SpecialMethodNames.__RSHIFT__, ">>"),
-    And(SpecialMethodNames.__AND__, "&"),
-    Or(SpecialMethodNames.__OR__, "|"),
-    Xor(SpecialMethodNames.__XOR__, "^"),
-    MatMul(SpecialMethodNames.__MATMUL__, "@");
+public enum TernaryArithmetic {
+    Pow(SpecialMethodNames.__POW__, "**", "pow()");
 
     private final String methodName;
     private final String operator;
     private final Supplier<NotImplementedHandler> notImplementedHandler;
 
-    BinaryArithmetic(String methodName, String operator) {
+    TernaryArithmetic(String methodName, String operator, String operatorFunction) {
         this.methodName = methodName;
         this.operator = operator;
         this.notImplementedHandler = () -> new NotImplementedHandler() {
             @Override
-            public Object execute(Object arg, Object arg2) {
-                throw raise(TypeError, "unsupported operand type(s) for %s: '%p' and '%p'", operator, arg, arg2);
+            public Object execute(Object arg, Object arg2, Object arg3) {
+                if (arg3 instanceof PNone) {
+                    throw raise(TypeError, "unsupported operand type(s) for %s or %s(): '%p' and '%p'", operator, operatorFunction, arg, arg2);
+                } else {
+                    throw raise(TypeError, "unsupported operand type(s) for %s(): '%p', '%p', '%p'", operatorFunction, arg, arg2, arg3);
+                }
             }
         };
     }
@@ -84,11 +78,11 @@ public enum BinaryArithmetic {
         return operator;
     }
 
-    public LookupAndCallBinaryNode create(PNode left, PNode right) {
-        return LookupAndCallBinaryNode.createReversible(methodName, left, right, notImplementedHandler);
+    public LookupAndCallTernaryNode create(PNode x, PNode y) {
+        return LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler, x, y);
     }
 
-    public LookupAndCallBinaryNode create() {
-        return LookupAndCallBinaryNode.createReversible(methodName, null, null, notImplementedHandler);
+    public LookupAndCallTernaryNode create() {
+        return LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler);
     }
 }

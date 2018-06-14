@@ -71,10 +71,10 @@ class TestObject(object):
                              nb_power="test_pow"
         )
         tester = TestPow()
-        assert tester ** 12 == (tester, 12, None)
-        assert 12 ** tester == (12, tester, None)
-        assert pow(tester, 48, 2) == (tester, 48, 2)
-        assert pow(48, tester, 2) == (48, tester, 2)
+        assert tester ** 12 == (tester, 12, None), tester ** 12
+        assert 12 ** tester == (12, tester, None), 12 ** tester
+        assert pow(tester, 48, 2) == (tester, 48, 2), pow(tester, 48, 2)
+        assert pow(48, tester, 2) == (48, tester, 2), pow(48, tester, 2)
 
     def test_int(self):
         TestInt = CPyExtType("TestInt",

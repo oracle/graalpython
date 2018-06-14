@@ -893,6 +893,12 @@ public class IntBuiltins extends PythonBuiltins {
             return factory().createInt((long) value);
         }
 
+        @Fallback
+        @SuppressWarnings("unused")
+        Object doFallback(Object x, Object y, Object z) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
         @TruffleBoundary
         private BigInteger op(BigInteger a, long b) {
             try {

@@ -38,38 +38,164 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
+import java.util.function.Supplier;
 
-public abstract class LookupAndCallTernaryNode extends LookupAndCallSpecialNode {
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.EmptyNode;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NodeChild;
+import com.oracle.truffle.api.dsl.NodeChildren;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.BranchProfile;
+
+@NodeChildren({@NodeChild("arg"), @NodeChild("arg2"), @NodeChild("arg3")})
+public abstract class LookupAndCallTernaryNode extends PNode {
+
+    public abstract static class NotImplementedHandler extends PBaseNode {
+        public abstract Object execute(Object arg, Object arg2, Object arg3);
+    }
+
     private final String name;
+    private final boolean isReversible;
     @Child private CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
+    @Child private CallTernaryMethodNode reverseDispatchNode;
+    @Child private CallTernaryMethodNode thirdDispatchNode;
+    @Child private LookupInheritedAttributeNode getThirdAttrNode;
+    @Child private NotImplementedHandler handler;
+    protected final Supplier<NotImplementedHandler> handlerFactory;
 
     public abstract Object execute(Object arg1, Object arg2, Object arg3);
 
     public abstract Object execute(Object arg1, int arg2, Object arg3);
 
     public static LookupAndCallTernaryNode create(String name) {
-        return LookupAndCallTernaryNodeGen.create(name);
+        return LookupAndCallTernaryNodeGen.create(name, false, null, null, null, null);
     }
 
-    LookupAndCallTernaryNode(String name) {
+    public static LookupAndCallTernaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory) {
+        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory, null, null, null);
+    }
+
+    public static LookupAndCallTernaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory, PNode x, PNode y) {
+        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory, x, y, EmptyNode.create());
+    }
+
+    LookupAndCallTernaryNode(String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory) {
         this.name = name;
+        this.isReversible = isReversible;
+        this.handlerFactory = handlerFactory;
     }
 
-    @Specialization
+    protected boolean isReversible() {
+        return isReversible;
+    }
+
+    @Specialization(guards = "!isReversible()")
     Object callObject(Object arg1, int arg2, Object arg3,
                     @Cached("create()") GetClassNode getclass,
                     @Cached("create()") GetAttributeNode getattr) {
         return dispatchNode.execute(getattr.execute(getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
-    @Specialization
+    @Specialization(guards = "!isReversible()")
     Object callObject(Object arg1, Object arg2, Object arg3,
                     @Cached("create()") GetClassNode getclass,
                     @Cached("create()") GetAttributeNode getattr) {
         return dispatchNode.execute(getattr.execute(getclass.execute(arg1), name), arg1, arg2, arg3);
+    }
+
+    private CallTernaryMethodNode ensureReverseDispatch() {
+        // this also serves as a branch profile
+        if (reverseDispatchNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            reverseDispatchNode = insert(CallTernaryMethodNode.create());
+        }
+        return reverseDispatchNode;
+    }
+
+    private LookupInheritedAttributeNode ensureGetAttrZ() {
+        // this also serves as a branch profile
+        if (getThirdAttrNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getThirdAttrNode = insert(LookupInheritedAttributeNode.create());
+        }
+        return getThirdAttrNode;
+    }
+
+    private CallTernaryMethodNode ensureThirdDispatch() {
+        // this also serves as a branch profile
+        if (thirdDispatchNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            thirdDispatchNode = insert(CallTernaryMethodNode.create());
+        }
+        return thirdDispatchNode;
+    }
+
+    @Specialization(guards = "isReversible()")
+    Object callObject(Object v, Object w, Object z,
+                    @Cached("create()") LookupInheritedAttributeNode getattr,
+                    @Cached("create()") LookupInheritedAttributeNode getattrR,
+                    @Cached("create()") GetClassNode getClass,
+                    @Cached("create()") GetClassNode getClassR,
+                    @Cached("create()") IsSubtypeNode isSubtype,
+                    @Cached("create()") BranchProfile notImplementedBranch) {
+        Object result = PNotImplemented.NOT_IMPLEMENTED;
+        Object leftCallable = getattr.execute(v, name);
+        Object rightCallable = PNone.NO_VALUE;
+
+        PythonClass leftClass = getClass.execute(v);
+        PythonClass rightClass = getClassR.execute(w);
+        if (leftClass != rightClass) {
+            rightCallable = getattrR.execute(w, name);
+            if (rightCallable == leftCallable) {
+                rightCallable = PNone.NO_VALUE;
+            }
+        }
+        if (leftCallable != PNone.NO_VALUE) {
+            if (rightCallable != PNone.NO_VALUE && isSubtype.execute(rightClass, leftClass)) {
+                result = ensureReverseDispatch().execute(rightCallable, v, w, z);
+                if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                    return result;
+                }
+                rightCallable = PNone.NO_VALUE;
+            }
+            result = dispatchNode.execute(leftCallable, v, w, z);
+            if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+        }
+        if (rightCallable != PNone.NO_VALUE) {
+            result = ensureReverseDispatch().execute(rightCallable, v, w, z);
+            if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+        }
+
+        Object zCallable = ensureGetAttrZ().execute(z, name);
+        if (zCallable != PNone.NO_VALUE && zCallable != leftCallable && zCallable != rightCallable) {
+            ensureThirdDispatch().execute(zCallable, v, w, z);
+            if (result != PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+        }
+
+        notImplementedBranch.enter();
+        if (handlerFactory != null) {
+            if (handler == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                handler = insert(handlerFactory.get());
+            }
+            return handler.execute(v, w, z);
+        }
+        return result;
     }
 }
