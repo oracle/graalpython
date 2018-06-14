@@ -109,10 +109,10 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     }
 
     public static ExecutePositionalStarargsNode create() {
-        return ExecutePositionalStarargsNodeGen.create();
+        return ExecutePositionalStarargsNodeGen.create(null);
     }
 
-    public static ExecutePositionalStarargsNode create(PNone splat) {
+    public static ExecutePositionalStarargsNode create(PNode splat) {
         return ExecutePositionalStarargsNodeGen.create(splat);
     }
 }

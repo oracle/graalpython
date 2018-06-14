@@ -40,11 +40,11 @@ public abstract class PositionalArgumentsNode extends PNode {
     @Children private final PNode[] arguments;
 
     public static PositionalArgumentsNode create(PNode[] arguments, PNode starargs) {
-        return PositionalArgumentsNodeGen.create(arguments, EmptyNode.create(), ExecutePositionalStarargsNodeGen.create(starargs == null ? EmptyNode.create() : starargs));
+        return PositionalArgumentsNodeGen.create(arguments, EmptyNode.create(), ExecutePositionalStarargsNode.create(starargs == null ? EmptyNode.create() : starargs));
     }
 
     public static PositionalArgumentsNode create() {
-        return PositionalArgumentsNodeGen.create(new PNode[0], EmptyNode.create(), ExecutePositionalStarargsNodeGen.create(EmptyNode.create()));
+        return PositionalArgumentsNodeGen.create(new PNode[0], EmptyNode.create(), ExecutePositionalStarargsNode.create(EmptyNode.create()));
     }
 
     PositionalArgumentsNode(PNode[] arguments) {

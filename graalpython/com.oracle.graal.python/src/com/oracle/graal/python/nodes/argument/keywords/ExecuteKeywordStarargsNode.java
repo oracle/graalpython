@@ -102,6 +102,6 @@ public abstract class ExecuteKeywordStarargsNode extends Node {
     }
 
     public static ExecuteKeywordStarargsNode create() {
-        return ExecuteKeywordStarargsNodeGen.create();
+        return ExecuteKeywordStarargsNodeGen.create(null);
     }
 }
