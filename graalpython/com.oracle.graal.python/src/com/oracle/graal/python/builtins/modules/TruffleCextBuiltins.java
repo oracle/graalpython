@@ -782,58 +782,73 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TrufflePInt_AsPrimitive extends NativeBuiltin {
 
-        @Specialization
-        Object doPInt(int obj, int signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
-            if (targetTypeSize == 4) {
+        @Specialization(guards = "targetTypeSize == 4")
+        int doInt4(int obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+            return obj;
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        long doInt8(int obj, int signed, @SuppressWarnings("unused") long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+            if (signed != 0) {
                 return obj;
-            } else if (targetTypeSize == 8) {
-                if (signed != 0) {
-                    return (long) obj;
-                } else {
-                    return obj & 0xFFFFFFFFL;
-                }
             } else {
-                return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+                return obj & 0xFFFFFFFFL;
             }
         }
 
-        @Specialization
-        Object doPInt(long obj, @SuppressWarnings("unused") int signed, long targetTypeSize, String targetTypeName) {
-            if (targetTypeSize == 4) {
-                return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
-            } else if (targetTypeSize == 8) {
-                return obj;
-            } else {
-                return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
-            }
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        int doIntOther(@SuppressWarnings("unused") int obj, @SuppressWarnings("unused") int signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+            return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
         }
 
-        @Specialization
-        Object doPInt(PInt obj, int signed, long targetTypeSize, String targetTypeName) {
+        @Specialization(guards = "targetTypeSize == 4")
+        int doLong4(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize, String targetTypeName) {
+            return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+            return obj;
+        }
+
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        int doPInt(@SuppressWarnings("unused") long obj, @SuppressWarnings("unused") int signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+            return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+        }
+
+        @Specialization(guards = "targetTypeSize == 4")
+        int doPInt4(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize, String targetTypeName) {
             try {
-                if (targetTypeSize == 4) {
-                    if (signed != 0) {
-                        return obj.intValueExact();
-                    } else if (obj.bitCount() <= 32) {
-                        return obj.intValue();
-                    } else {
-                        throw new ArithmeticException();
-                    }
-                } else if (targetTypeSize == 8) {
-                    if (signed != 0) {
-                        return obj.longValueExact();
-                    } else if (obj.bitCount() <= 64) {
-                        return obj.longValue();
-                    } else {
-                        throw new ArithmeticException();
-                    }
+                if (signed != 0) {
+                    return obj.intValueExact();
+                } else if (obj.bitCount() <= 32) {
+                    return obj.intValue();
                 } else {
-                    return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
+                    throw new ArithmeticException();
                 }
-
             } catch (ArithmeticException e) {
                 return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
             }
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
+        long doPInt8(PInt obj, int signed, @SuppressWarnings("unused") long targetTypeSize, String targetTypeName) {
+            try {
+                if (signed != 0) {
+                    return obj.longValueExact();
+                } else if (obj.bitCount() <= 64) {
+                    return obj.longValue();
+                } else {
+                    throw new ArithmeticException();
+                }
+            } catch (ArithmeticException e) {
+                return raiseNative(-1, PythonErrorType.OverflowError, "Python int too large to convert to C %s", targetTypeName);
+            }
+        }
+
+        @Specialization(guards = {"targetTypeSize != 4", "targetTypeSize != 8"})
+        int doPInt(@SuppressWarnings("unused") PInt obj, @SuppressWarnings("unused") int signed, long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+            return raiseNative(-1, PythonErrorType.SystemError, "Unsupported target size: %d", targetTypeSize);
         }
 
         @Specialization(guards = {"!isInteger(obj)", "!isPInt(obj)"})
