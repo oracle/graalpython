@@ -187,6 +187,35 @@ class TestPyNumber(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyErr_GivenExceptionMatchesNative = CPyExtFunction(
+        lambda args: args[2],
+        lambda: (
+            # ValueError = 0
+            # KeyError = 1
+            (ValueError, 0, True),
+            (ValueError, 1, False),
+            (KeyError, 0, False),
+            (KeyError, 1, True),
+            (Dummy, 0, False),
+            (Dummy, 1, False),
+        ),
+        code="""int PyErr_GivenExceptionMatchesNative(PyObject* exc, int selector, int unused) {
+            switch(selector) {
+            case 0:
+                return exc == PyExc_ValueError;
+            case 1:
+                return exc == PyExc_KeyError;
+            }
+            return 0;
+        }
+        """,
+        resultspec="i",
+        argspec='Oii',
+        arguments=["PyObject* exc", "int selector", "int unused"],
+        callfunction="PyErr_GivenExceptionMatchesNative",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyErr_Occurred = CPyExtFunction(
         lambda args: args[0] if _is_exception_class(args[0]) else SystemError,
         lambda: (
