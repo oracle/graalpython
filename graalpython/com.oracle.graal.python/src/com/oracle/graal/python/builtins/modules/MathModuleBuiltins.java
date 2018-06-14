@@ -1189,9 +1189,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private static double logBigInteger(BigInteger val) {
             int blex = val.bitLength() - 1022; // any value in 60..1023 is ok
-            if (blex > 0)
-                val = val.shiftRight(blex);
-            double res = Math.log(val.doubleValue());
+            BigInteger value = blex > 0 ? val.shiftRight(blex) : val;
+            double res = Math.log(value.doubleValue());
             return blex > 0 ? res + blex * LOG2 : res;
         }
 
@@ -1212,7 +1211,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double log(long value, @SuppressWarnings("unused") PNone novalue,
+        public double log(long value, PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
             return logDN(value, novalue, doNotFit);
         }
@@ -1316,7 +1315,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double logO(Object value, @SuppressWarnings("unused") PNone novalue,
+        public double logO(Object value, PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile notNumber) {
             Object result = getRealNumber(value, getValueDispatchNode(), notNumber);
             return executeRecursiveLogNode(result, novalue);
@@ -1359,7 +1358,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private Object getRealNumber(Object object, LookupAndCallUnaryNode dispatchNode, ConditionProfile isNotRealNumber) {
             Object result = dispatchNode.executeObject(object);
-            if (result == PNone.NO_VALUE) {
+            if (isNotRealNumber.profile(result == PNone.NO_VALUE)) {
                 throw raise(TypeError, "must be real number, not %p", object);
             }
             return result;

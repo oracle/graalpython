@@ -242,6 +242,7 @@ class MathTests(unittest.TestCase):
         self.ftest('log(32,2)', math.log(32,2), 5)
         self.ftest('log(10**40, 10)', math.log(10**40, 10), 40)
         self.ftest('log(10**40, 10**20)', math.log(10**40, 10**20), 2)
+        # TODO uncomment when GR-10346 will be fixed
         #self.ftest('log(10**1000)', math.log(10**1000), 2302.5850929940457)
         self.assertRaises(ValueError, math.log, -1.5)
         self.assertRaises(ValueError, math.log, -10**1000)
