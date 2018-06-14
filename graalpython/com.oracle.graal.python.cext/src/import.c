@@ -39,19 +39,9 @@
 #include "capi.h"
 
 PyObject* PyImport_ImportModule(const char *name) {
-    void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyImport_ImportModule", polyglot_from_string(name, "utf-8"));
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return polyglot_as_PyModuleObject(UPCALL_CEXT_O("PyImport_ImportModule", polyglot_from_string(name, SRC_CS)));
 }
 
 PyObject* PyImport_GetModuleDict() {
-    void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyImport_GetModuleDict");
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyImport_GetModuleDict");
 }
