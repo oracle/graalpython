@@ -4,7 +4,7 @@
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import seq_tests
 import unittest
-import pickle
+#import pickle
 from compare import CompareTest
 
 class TupleTest(seq_tests.CommonTest):
@@ -17,7 +17,7 @@ class TupleTest(seq_tests.CommonTest):
         self.assertEqual(tuple(), ())
         t0_3 = (0, 1, 2, 3)
         t0_3_bis = tuple(t0_3)
-        #self.assertTrue(t0_3 is t0_3_bis)
+        self.assertTrue(t0_3 is t0_3_bis)
         self.assertEqual(tuple([]), ())
         self.assertEqual(tuple([0, 1, 2, 3]), (0, 1, 2, 3))
         self.assertEqual(tuple(''), ())
@@ -221,6 +221,59 @@ class TupleTest(seq_tests.CommonTest):
 
         raiseTypeError(t, IndexF())
 
+# Tests for Truffle specializations
+    def test_lying_tuple(self):
+        class MyTuple(tuple):
+            def __iter__(self):
+                yield 1
+
+        t = (2,)
+        tt = tuple((2,))
+        self.assertEqual(t,tt)
+        self.assertFalse(t is tt)
+
+        ttt = tuple(t)
+        self.assertEqual(t,ttt)
+        self.assertEqual(tt,ttt)
+        self.assertFalse(ttt is tt)
+        self.assertTrue(ttt is t)
+
+        m = MyTuple((2,))
+        mt = MyTuple(t)
+        mm = MyTuple(m)
+        tm = tuple(m)
+
+        self.assertEqual(m,t)
+        self.assertEqual(m,mt)
+        self.assertNotEqual(m,mm)
+        self.assertNotEqual(tm, m)
+        self.assertNotEqual(tm, mt)
+        self.assertEqual(tm, mm)
+        self.assertFalse(m is t)
+        self.assertFalse(m is mt)
+        self.assertFalse(m is tm)
+        self.assertFalse(m is mm)
+
+    def test_creating_tuple(self):
+        class MyTuple(tuple):
+            pass
+
+        def maketuple(t):
+            return tuple(t)
+
+        a = MyTuple((1,2))
+        b = tuple(a)
+        self.assertFalse(a is b)
+
+        b = MyTuple(a)
+        self.assertFalse(a is b)
+
+        b = tuple((1,2))
+        self.assertFalse(maketuple(a) is maketuple(b))
+        self.assertTrue(maketuple(b) is maketuple(b))
+        self.assertTrue(tuple(b) is b)
+        self.assertFalse(tuple(a) is a)
+        
 
 class TupleCompareTest(CompareTest):
 
