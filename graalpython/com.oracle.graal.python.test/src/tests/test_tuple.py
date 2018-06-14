@@ -254,6 +254,27 @@ class TupleTest(seq_tests.CommonTest):
         self.assertFalse(m is tm)
         self.assertFalse(m is mm)
 
+    def test_creating_tuple(self):
+        class MyTuple(tuple):
+            pass
+
+        def maketuple(t):
+            return tuple(t)
+
+        a = MyTuple((1,2))
+        b = tuple(a)
+        self.assertFalse(a is b)
+
+        b = MyTuple(a)
+        self.assertFalse(a is b)
+
+        b = tuple((1,2))
+        self.assertFalse(maketuple(a) is maketuple(b))
+        self.assertTrue(maketuple(b) is maketuple(b))
+        self.assertTrue(tuple(b) is b)
+        self.assertFalse(tuple(a) is a)
+        
+
 class TupleCompareTest(CompareTest):
 
     def test_compare(self):

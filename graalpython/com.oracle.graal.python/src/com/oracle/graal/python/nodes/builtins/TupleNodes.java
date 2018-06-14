@@ -102,7 +102,7 @@ public abstract class TupleNodes {
             return iterable;
         }
 
-        @Specialization(guards = "!isNoValue(iterable)")
+        @Specialization(guards = {"createNewTuple(cls, iterable)"})
         public PTuple tuple(PythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
@@ -124,6 +124,13 @@ public abstract class TupleNodes {
         public PTuple tuple(@SuppressWarnings("unused") Object cls, Object value) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("list does not support iterable object " + value);
+        }
+
+        protected boolean createNewTuple(PythonClass cls, Object iterable) {
+            if (iterable instanceof PTuple) {
+                return !(PGuards.cannotBeOverridden(cls) && PGuards.cannotBeOverridden(getClass(iterable)));
+            }
+            return true;
         }
 
         public static ConstructTupleNode create() {
