@@ -146,15 +146,6 @@ void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
 void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames);
 void* wrap_unsupported(void *fun, ...);
 
-#define write_struct_field(object, struct, fieldname, value)            \
-    truffle_write(to_java(object),                                      \
-                  #fieldname ,                                          \
-                  to_java(value));                                      \
-    truffle_write(to_java(object),                                      \
-                  offsetof(struct, fieldname),                          \
-                  to_java(value));
-
-
 #define TDEBUG __asm__("int $3")
 #define get_method_flags_wrapper(flags)                                 \
     (((flags) < 0) ?                                                    \
