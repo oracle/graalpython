@@ -664,22 +664,23 @@ class cstaticmethod():
 
 
 def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+    mod_obj = to_java(primary)
     func = wrapper(CreateFunction(name, cfunc, cwrapper))
     if isclass:
         func = classmethod(func)
     elif isstatic:
         func = cstaticmethod(func)
-    elif isinstance(primary, moduletype):
-        func = modulemethod(primary, func)
+    elif isinstance(mod_obj, moduletype):
+        func = modulemethod(mod_obj, func)
     func.__name__ = name
     func.__doc__ = doc
     if name == "__init__":
         def __init__(self, *args, **kwargs):
             if func(self, *args, **kwargs) != 0:
                 raise TypeError("__init__ failed")
-        object.__setattr__(primary, name, __init__)
+        object.__setattr__(mod_obj, name, __init__)
     else:
-        object.__setattr__(primary, name, func)
+        object.__setattr__(mod_obj, name, func)
 
 
 def AddMember(primary, name, memberType, offset, canSet, doc):

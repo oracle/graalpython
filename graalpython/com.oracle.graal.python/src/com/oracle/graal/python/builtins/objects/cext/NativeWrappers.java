@@ -40,9 +40,13 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.object.Layout;
+import com.oracle.truffle.api.object.ObjectType;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class NativeWrappers {
     public abstract static class PythonNativeWrapper implements TruffleObject {
@@ -65,6 +69,10 @@ public abstract class NativeWrappers {
             return nativePointer != null;
         }
 
+        static boolean isInstance(TruffleObject o) {
+            return o instanceof PythonNativeWrapper;
+        }
+
         @Override
         public ForeignAccess getForeignAccess() {
             return PythonObjectNativeWrapperMRForeign.ACCESS;
@@ -76,7 +84,11 @@ public abstract class NativeWrappers {
      * correct shape of the corresponding native type {@code struct _object}.
      */
     public static class PythonObjectNativeWrapper extends PythonNativeWrapper {
+        private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
+        private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
+
         private final PythonAbstractObject pythonObject;
+        private PythonObjectDictStorage nativeMemberStore;
 
         public PythonObjectNativeWrapper(PythonAbstractObject object) {
             this.pythonObject = object;
@@ -103,6 +115,17 @@ public abstract class NativeWrappers {
         @Override
         public Object getDelegate() {
             return pythonObject;
+        }
+
+        public PythonObjectDictStorage createNativeMemberStore() {
+            if (nativeMemberStore == null) {
+                nativeMemberStore = new PythonObjectDictStorage(SHAPE.newInstance());
+            }
+            return nativeMemberStore;
+        }
+
+        public PythonObjectDictStorage getNativeMemberStore() {
+            return nativeMemberStore;
         }
 
         @Override

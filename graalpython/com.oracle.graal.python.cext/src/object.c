@@ -222,7 +222,8 @@ int PyType_Ready(PyTypeObject* cls) {
 #define ADD_SLOT_CONV(name, clanding, meth, flags) ADD_METHOD_OR_SLOT(name, clanding, meth, flags, name)
 #define ADD_METHOD_OR_SLOT(name, clanding, meth, flags, doc)                                \
     if (meth) {                                                                             \
-        UPCALL_CEXT_VOID("AddFunction",                                                     \
+        polyglot_invoke(PY_TRUFFLE_CEXT,                                                    \
+                       "AddFunction",                                                       \
                        javacls,                                                             \
                        polyglot_from_string((name), SRC_CS),                                \
                        (meth),                                                              \

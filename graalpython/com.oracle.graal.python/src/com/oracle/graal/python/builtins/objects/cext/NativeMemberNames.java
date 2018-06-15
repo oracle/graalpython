@@ -70,6 +70,8 @@ public abstract class NativeMemberNames {
     public static final String UNICODE_STATE_COMPACT = "compact";
     public static final String UNICODE_STATE_ASCII = "ascii";
     public static final String UNICODE_STATE_READY = "ready";
+    public static final String MD_STATE = "md_state";
+    public static final String MD_DEF = "md_def";
     public static final String MD_DICT = "md_dict";
     public static final String BUF_DELEGATE = "buf_delegate";
     public static final String NB_ADD = "nb_add";
@@ -109,6 +111,8 @@ public abstract class NativeMemberNames {
             case UNICODE_STATE_COMPACT:
             case UNICODE_STATE_ASCII:
             case UNICODE_STATE_READY:
+            case MD_STATE:
+            case MD_DEF:
             case MD_DICT:
             case NB_ADD:
             case NB_INDEX:
