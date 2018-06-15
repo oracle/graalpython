@@ -180,9 +180,11 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     public T visitImport_as_name(Python3Parser.Import_as_nameContext ctx) {
         List<TerminalNode> name = ctx.NAME();
         if (name.size() == 1) {
-            environment.createLocal(name.get(0).getText());
+            String asName = name.get(0).getText();
+            environment.createLocal(asName);
         } else if (name.size() == 2) {
-            environment.createLocal(name.get(1).getText());
+            String asName = name.get(1).getText();
+            environment.createLocal(asName);
         } else {
             throw new RuntimeException("Impossible case");
         }
@@ -369,7 +371,6 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             if (ctx.test() != null) {
                 String identifier = ctx.test().getText();
                 environment.registerCellVariable(identifier);
-                return null;
             }
         }
         return super.visitDefparameter(ctx);
