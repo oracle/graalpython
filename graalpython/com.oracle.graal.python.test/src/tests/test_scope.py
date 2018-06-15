@@ -812,3 +812,18 @@ def test_nonlocal_cell():
     assert not done
     a.method()
     assert done
+
+
+def test_import_name():
+    from os import environ
+
+    def func_1(a):
+        def func_2(x=environ):
+            x['my-key'] = a
+            return x
+        return func_2()
+
+    val = func_1('test-val')
+    assert 'my-key' in val
+    assert val['my-key'] == 'test-val'
+    del environ['my-key']

@@ -39,14 +39,14 @@ import csv
 import os
 import re
 import subprocess
+import sys
 from collections import defaultdict
 from json import dumps
 from multiprocessing import Pool
 from pprint import pformat
+from time import gmtime, strftime
 
 import argparse
-import sys
-from time import gmtime, strftime
 
 # global CLI flags
 flags = None
@@ -522,7 +522,7 @@ def save_as_html(report_name, rows, totals, missing_modules, current_date):
         '''
 
     missing_modules_info = ul('missing modules', [
-        '<b>{}</b>&nbsp;<span class="text-muted">count: {}</span>'.format(name, cnt)
+        '<b>{}</b>&nbsp;<span class="text-muted">imported by {} unittests</span>'.format(name, cnt)
         for cnt, name in sorted(((cnt, name) for name, cnt in missing_modules.items()), reverse=True)
     ])
 
