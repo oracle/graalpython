@@ -200,7 +200,7 @@ inline PyObject* explicit_cast(PyObject* cobj) {
 }
 
 PyObject* to_sulong(void *o) {
-    return explicit_cast(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
+    return explicit_cast(polyglot_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
 }
 
 /** to be used from Java code only; reads native 'ob_type' field */
@@ -414,7 +414,7 @@ PyObject* WriteULongMember(PyObject* object, PyObject* offset, PyObject* value) 
 }
 
 PyObject* WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value) {
-    WriteMember(object, offset, truffle_invoke(to_java(value), "__bool__") == Py_True ? (char)1 : (char)0, char);
+    WriteMember(object, offset, UPCALL_O(native_to_java(value), "__bool__") == Py_True ? (char)1 : (char)0, char);
     return value;
 }
 
@@ -451,7 +451,7 @@ PyObject marker_struct = {
 #undef WriteMember
 
 int PyTruffle_Debug(void *arg) {
-	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
+	polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
 	return 0;
 }
 

@@ -39,7 +39,7 @@
 #include "capi.h"
 
 Py_hash_t _Py_HashDouble(double value) {
-    return truffle_invoke_l(PY_BUILTIN, "hash", value);
+    return UPCALL_L(PY_BUILTIN, "hash", value);
 }
 
 long _PyHASH_INF;
