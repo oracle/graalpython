@@ -251,25 +251,25 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_NEW, key)")
         Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getAttrNode) {
+                        @Cached("create()") LookupInheritedAttributeNode getAttrNode) {
             return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object, SpecialAttributeNames.__NEW__));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getHashNode) {
+                        @Cached("create()") LookupInheritedAttributeNode getHashNode) {
             return getToSulongNode().execute(getHashNode.execute(object, SpecialMethodNames.__HASH__));
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         Object doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getAttrNode) {
+                        @Cached("create()") LookupInheritedAttributeNode getAttrNode) {
             return getAttrNode.execute(object, SpecialAttributeNames.__BASICSIZE__);
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
         Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getCmpNode) {
+                        @Cached("create()") LookupInheritedAttributeNode getCmpNode) {
             return getToSulongNode().execute(getCmpNode.execute(object, SpecialMethodNames.RICHCMP));
         }
 
