@@ -94,6 +94,37 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public class PythonObjectNativeWrapperMR {
     protected static String GP_OBJECT = "gp_object";
 
+    @Resolve(message = "com.oracle.truffle.llvm.runtime.interop.GetDynamicType")
+    abstract static class GetDynamicTypeNode extends Node {
+        @Child GetClassNode getClass = GetClassNode.create();
+
+        public Object access(Object object) {
+            PythonClass klass = getClass.execute(object);
+            Object sulongType = klass.getSulongType();
+            if (sulongType == null) {
+                CompilerDirectives.transferToInterpreter();
+                sulongType = findBuiltinClass(klass);
+                if (sulongType == null) {
+                    throw new IllegalStateException("sulong type for " + klass.getName() + " was not registered");
+                }
+            }
+            return sulongType;
+        }
+
+        private static Object findBuiltinClass(PythonClass klass) {
+            PythonClass[] mro = klass.getMethodResolutionOrder();
+            Object sulongType = null;
+            for (PythonClass superClass : mro) {
+                sulongType = superClass.getSulongType();
+                if (sulongType != null) {
+                    klass.setSulongType(sulongType);
+                    break;
+                }
+            }
+            return sulongType;
+        }
+    }
+
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         @Child private ReadNativeMemberNode readNativeMemberNode;
