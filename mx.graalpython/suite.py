@@ -163,7 +163,13 @@ suite = {
             "native": True,
             "vpath": True,
             "results" : ["graalpython/lib-graalpython"],
-            "output" : "."
+            "output" : ".",
+            "buildDependencies": [
+                "sulong:SULONG",
+            ],
+            "buildEnv": {
+                "POLYGLOT_INC": "<path:SULONG_LIBS>",
+            },
         },
 
         "python-lib": {
