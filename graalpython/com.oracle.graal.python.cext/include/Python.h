@@ -106,6 +106,8 @@
 #include "code.h"
 #include "pyfpe.h"
 #include "memoryobject.h"
+#include "pystrhex.h"
+#include "codecs.h"
 
 #undef Py_NoValue
 #define Py_NoValue truffle_invoke(PY_TRUFFLE_CEXT, "Py_NoValue")

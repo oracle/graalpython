@@ -51,3 +51,8 @@ void initialize_hashes() {
     _PyHASH_NAN = truffle_invoke_l(PY_BUILTIN, "hash", NAN);
     _PyHASH_IMAG = truffle_invoke_l(PY_TRUFFLE_CEXT, "PyHash_Imag");
 }
+
+
+Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
+    return polyglot_as_i64(polyglot_invoke(PY_BUILTIN, "hash", polyglot_from_string(src, "ascii")));
+}
