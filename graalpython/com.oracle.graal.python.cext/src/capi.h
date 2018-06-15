@@ -68,30 +68,12 @@ typedef struct {
 } PyBufferDecorator;
 
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
-
-/* Declare Python structs/types for explicit polyglot typecasts. */
-/* NOTE: Also add an appropriate case in 'PyTruffle_Explicit_Cast' ! */
-POLYGLOT_DECLARE_STRUCT(_object);
-POLYGLOT_DECLARE_TYPE(PyBaseExceptionObject);
-POLYGLOT_DECLARE_TYPE(PyModuleObject);
-POLYGLOT_DECLARE_TYPE(PyVarObject);
-POLYGLOT_DECLARE_STRUCT(_typeobject);
-POLYGLOT_DECLARE_TYPE(PyTupleObject);
-POLYGLOT_DECLARE_TYPE(PyListObject);
-POLYGLOT_DECLARE_TYPE(PyDictObject);
-POLYGLOT_DECLARE_TYPE(PyUnicodeObject);
-POLYGLOT_DECLARE_TYPE(PyBytesObject);
-POLYGLOT_DECLARE_STRUCT(_longobject);
-POLYGLOT_DECLARE_TYPE(PyCapsule);
-POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
-POLYGLOT_DECLARE_TYPE(PySetObject);
-POLYGLOT_DECLARE_TYPE(PyBufferDecorator);
+PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
-extern PyObject* explicit_cast(PyObject* cobj);
 #define as_char_pointer(obj) polyglot_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
 #define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long long), polyglot_from_string("long long", "utf-8"))))

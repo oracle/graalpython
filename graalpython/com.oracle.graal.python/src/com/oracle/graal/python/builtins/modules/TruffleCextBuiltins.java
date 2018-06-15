@@ -1071,6 +1071,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffle_Set_SulongType", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Set_SulongType extends NativeBuiltin {
+
+        @Specialization
+        Object doPythonObject(PythonClass klass, Object ptr) {
+            klass.setSulongType(ptr);
+            return ptr;
+        }
+    }
+
     @Builtin(name = "PyTruffle_SetBufferProcs", fixedNumOfArguments = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_SetBufferProcs extends NativeBuiltin {

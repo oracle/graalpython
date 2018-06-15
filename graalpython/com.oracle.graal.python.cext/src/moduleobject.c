@@ -122,5 +122,5 @@ PyObject* PyModule_GetDict(PyObject* o) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    return ((PyModuleObject*)polyglot_as_PyModuleObject(o))->md_dict;
+    return ((PyModuleObject*)o)->md_dict;
 }

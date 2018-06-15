@@ -40,7 +40,9 @@
 
 #include <pyerrors.h>
 
-#define PY_EXCEPTION(__EXC_NAME__) ((PyObject*)polyglot_as__object(to_sulong(truffle_import_cached("python_" __EXC_NAME__))))
+PyTypeObject _PyExc_BaseException = PY_TRUFFLE_TYPE("BaseException", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyBaseExceptionObject));
+
+#define PY_EXCEPTION(__EXC_NAME__) ((PyObject*)to_sulong(truffle_import_cached("python_" __EXC_NAME__)))
 
 PyObject * PyExc_BaseException = NULL;
 PyObject * PyExc_Exception = NULL;
