@@ -79,7 +79,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public PReferenceType refType(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused")  Object object, @SuppressWarnings("unused") Object callback) {
+        public PReferenceType refType(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object object, @SuppressWarnings("unused") Object callback) {
             throw raise(PythonErrorType.TypeError, "cannot create weak reference to '%p' object", object);
         }
     }

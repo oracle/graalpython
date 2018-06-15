@@ -25,11 +25,12 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -66,9 +67,9 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
     private Object handleNotImplemented(Object left, Object right) {
         // just like python, if no implementation is available, do something sensible for
         // == and !=
-        if (magicMethod == SpecialMethodNames.__EQ__) {
+        if (magicMethod == __EQ__) {
             return left == right;
-        } else if (magicMethod == SpecialMethodNames.__NE__) {
+        } else if (magicMethod == __NE__) {
             return left != right;
         } else {
             throw raise(TypeError, "'%s' not supported between instances of '%p' and '%p'", operation, left, right);

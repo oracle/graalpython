@@ -38,15 +38,27 @@
  */
 package com.oracle.graal.python.builtins.objects.referencetype;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALLBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -59,12 +71,12 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     }
 
     // ref.__callback__
-    @Builtin(name = "__callback__", fixedNumOfArguments = 1)
+    @Builtin(name = __CALLBACK__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeCallbackPropertyNode extends PythonBuiltinNode {
         @Specialization
-        public Object getCallback(PReferenceType referenceType) {
-            return referenceType.__callback__();
+        public Object getCallback(PReferenceType self) {
+            return self.getCallback();
         }
     }
 
@@ -73,8 +85,8 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RefTypeCallNode extends PythonBuiltinNode {
         @Specialization
-        public Object call(PReferenceType referenceType) {
-            return referenceType.__call__();
+        public Object call(PReferenceType self) {
+            return self.getPyObject();
         }
     }
 
@@ -82,9 +94,70 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
     @Builtin(name = __HASH__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class RefTypeHashNode extends PythonBuiltinNode {
-        @Specialization
-        public Object hash(PReferenceType referenceType) {
-            return referenceType.hashCode();
+        @Specialization(guards = "self.getObject() != null")
+        public int hash(PReferenceType self) {
+            return self.getHash();
+        }
+
+        @Fallback
+        public int hash(@SuppressWarnings("unused") Object self) {
+            throw raise(PythonErrorType.TypeError, "weak object has gone away");
+        }
+    }
+
+    // ref.__repr__
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class RefTypeReprNode extends PythonBuiltinNode {
+        @Specialization(guards = "self.getObject() == null")
+        @TruffleBoundary
+        public String repr(PReferenceType self) {
+            return String.format("<weakref at %s; dead>", self.hashCode());
+        }
+
+        @Specialization(guards = "self.getObject() != null")
+        @TruffleBoundary
+        public String repr(PReferenceType self,
+                        @Cached("create()") LookupInheritedAttributeNode getNameNode) {
+            Object object = self.getObject();
+            Object name = getNameNode.execute(object, __NAME__);
+            if (name == PNone.NO_VALUE) {
+                return String.format("<weakref at %s; to '%s' at %s>", self.hashCode(), object, object.hashCode());
+            } else {
+                return String.format("<weakref at %s; to '%s' at %s (%s)>", self.hashCode(), object, object.hashCode(), name);
+            }
+        }
+    }
+
+    // ref.__eq__
+    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class RefTypeEqNode extends PythonBuiltinNode {
+        @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
+        public boolean eq(PReferenceType self, PReferenceType other,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+            return eqNode.executeBool(self.getObject(), other.getObject());
+        }
+
+        @Specialization(guards = "self.getObject() == null || other.getObject() == null")
+        public boolean eq(PReferenceType self, PReferenceType other) {
+            return self == other;
+        }
+    }
+
+    // ref.__ne__
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class RefTypeNeNode extends PythonBuiltinNode {
+        @Specialization(guards = {"self.getObject() != null", "other.getObject() != null"})
+        public boolean ne(PReferenceType self, PReferenceType other,
+                        @Cached("create(__NE__, __NE__, __NE__)") BinaryComparisonNode neNode) {
+            return neNode.executeBool(self.getObject(), other.getObject());
+        }
+
+        @Specialization(guards = "self.getObject() == null || other.getObject() == null")
+        public boolean ne(PReferenceType self, PReferenceType other) {
+            return self != other;
         }
     }
 }
