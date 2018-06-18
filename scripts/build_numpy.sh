@@ -135,4 +135,32 @@ eval "llvm-link -o build/umath.bc \
 
 cp build/umath.bc numpy/core/
 
+eval "llvm-link -o build/_umath_linalg.bc \
+     build/temp.linux-x86_64-3.6/build/src.linux-x86_64-3.6/numpy/linalg/umath_linalg.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/python_xerbla.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_z_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_c_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_d_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_s_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_blas.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_config.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c.bc"
+
+cp build/_umath_linalg.bc numpy/linalg/
+
+eval "llvm-link -o build/lapack_lite.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_litemodule.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/python_xerbla.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_z_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_c_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_d_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_s_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_lapack.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_blas.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c_config.bc \
+     build/temp.linux-x86_64-3.6/numpy/linalg/lapack_lite/f2c.bc"
+
+cp build/lapack_lite.bc numpy/linalg/
+
 popd
