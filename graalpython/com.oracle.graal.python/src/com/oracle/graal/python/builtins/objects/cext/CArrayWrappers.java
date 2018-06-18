@@ -47,18 +47,10 @@ import com.oracle.truffle.api.interop.TruffleObject;
  * {@code TO_NATIVE}. This is primarily necessary for {@code char*} arrays.
  */
 public abstract class CArrayWrappers {
-    public static class CArrayWrapper<T> implements TruffleObject {
 
-        private final T delegate;
+    public abstract static class CArrayWrapper implements TruffleObject {
+
         private Object nativePointer;
-
-        public CArrayWrapper(T delegate) {
-            this.delegate = delegate;
-        }
-
-        public T getDelegate() {
-            return delegate;
-        }
 
         public Object getNativePointer() {
             return nativePointer;
@@ -73,12 +65,14 @@ public abstract class CArrayWrappers {
             return nativePointer != null;
         }
 
+        public abstract Object getDelegate();
+
         static boolean isInstance(TruffleObject o) {
             return o instanceof CArrayWrapper;
         }
 
         public ForeignAccess getForeignAccess() {
-            return CStringWrapperMRForeign.ACCESS;
+            return CArrayWrapperMRForeign.ACCESS;
         }
     }
 
@@ -88,21 +82,37 @@ public abstract class CArrayWrappers {
      * object that wraps a Python unicode object, this wrapper let's a Java String look like a
      * {@code char*}.
      */
-    public static class CStringWrapper extends CArrayWrapper<String> {
+    public static class CStringWrapper extends CArrayWrapper {
+
+        private final String delegate;
 
         public CStringWrapper(String delegate) {
-            super(delegate);
+            this.delegate = delegate;
         }
+
+        @Override
+        public String getDelegate() {
+            return delegate;
+        }
+
     }
 
     /**
      * A native wrapper for arbitrary byte arrays (i.e. the store of a Python Bytes object) to be
      * used like a {@code char*} pointer.
      */
-    public static class CByteArrayWrapper extends CArrayWrapper<byte[]> {
+    public static class CByteArrayWrapper extends CArrayWrapper {
+
+        private final byte[] delegate;
 
         public CByteArrayWrapper(byte[] delegate) {
-            super(delegate);
+            this.delegate = delegate;
         }
+
+        @Override
+        public byte[] getDelegate() {
+            return delegate;
+        }
+
     }
 }

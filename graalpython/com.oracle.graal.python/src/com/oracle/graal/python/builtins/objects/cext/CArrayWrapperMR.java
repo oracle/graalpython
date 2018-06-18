@@ -52,7 +52,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
 @MessageResolution(receiverType = CArrayWrapper.class)
-public class CStringWrapperMR {
+public class CArrayWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
@@ -83,8 +83,8 @@ public class CStringWrapperMR {
     }
 
     @Resolve(message = "HAS_SIZE")
-    abstract static class HashSizeNode extends Node {
-        boolean access(@SuppressWarnings("unused") CArrayWrapper<?> obj) {
+    abstract static class HasSizeNode extends Node {
+        boolean access(@SuppressWarnings("unused") CArrayWrapper obj) {
             return true;
         }
     }
@@ -102,7 +102,7 @@ public class CStringWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        boolean access(CArrayWrapper<?> obj) {
+        boolean access(CArrayWrapper obj) {
             return obj.isNative();
         }
     }
@@ -111,7 +111,7 @@ public class CStringWrapperMR {
     abstract static class AsPointerNode extends Node {
         @Child private Node asPointerNode;
 
-        long access(CArrayWrapper<?> obj) {
+        long access(CArrayWrapper obj) {
             // the native pointer object must either be a TruffleObject or a primitive
             Object nativePointer = obj.getNativePointer();
             if (nativePointer instanceof TruffleObject) {
@@ -134,7 +134,7 @@ public class CStringWrapperMR {
     abstract static class ToNativeNode extends Node {
         @Child private CExtNodes.AsCharPointer asCharPointerNode;
 
-        Object access(CArrayWrapper<?> obj) {
+        Object access(CArrayWrapper obj) {
             if (!obj.isNative()) {
                 if (asCharPointerNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
