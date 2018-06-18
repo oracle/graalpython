@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -202,6 +203,16 @@ public class PythonObjectNativeWrapperMR {
             Object profiled = profile.profile(object);
             if (profiled instanceof PBytes) {
                 return new PySequenceArrayWrapper(profiled);
+            }
+            throw UnsupportedMessageException.raise(Message.READ);
+        }
+
+        @Specialization(guards = "eq(OB_FVAL, key)")
+        Object doObFval(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("createClassProfile()") ValueProfile profile) {
+            Object profiled = profile.profile(object);
+            if (profiled instanceof PFloat) {
+                return ((PFloat) profiled).getValue();
             }
             throw UnsupportedMessageException.raise(Message.READ);
         }

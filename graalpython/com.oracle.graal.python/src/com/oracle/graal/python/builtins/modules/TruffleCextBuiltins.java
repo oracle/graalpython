@@ -795,26 +795,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "TrufflePFloat_AsPrimitive", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    abstract static class TrufflePFloat_AsPrimitive extends NativeBuiltin {
-        @Specialization
-        double doDouble(double d) {
-            return d;
-        }
-
-        @Specialization
-        double doPFloat(PFloat obj) {
-            return obj.getValue();
-        }
-
-        @Fallback
-        double doGeneric(Object obj) {
-            return raiseNative(-1.0, PythonErrorType.TypeError, "must be real number, not %p", obj);
-        }
-
-    }
-
     @Builtin(name = "PyTruffle_Unicode_FromWchar", fixedNumOfArguments = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {

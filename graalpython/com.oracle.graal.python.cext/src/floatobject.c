@@ -42,12 +42,11 @@
 PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyFloatObject));
 
 double PyFloat_AsDouble(PyObject *op) {
-    if (op == NULL) {
+    if (op == NULL || !PyFloat_Check(op)) {
         PyErr_BadArgument();
         return -1.0;
     }
-
-    return truffle_invoke_d(PY_TRUFFLE_CEXT, "PyFloat_AsPrimitive", to_java(op));
+    return ((PyFloatObject*)op)->ob_fval;
 }
 
 PyObject* PyFloat_FromDouble(double fval) {

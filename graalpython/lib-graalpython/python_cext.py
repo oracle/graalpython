@@ -319,14 +319,6 @@ def PyFloat_FromDouble(n):
     return float(n)
 
 
-@may_raise(-1.0)
-def PyFloat_AsPrimitive(n):
-    if isinstance(n, float):
-        return TrufflePFloat_AsPrimitive(n)
-    else:
-        return TrufflePFloat_AsPrimitive(float(n))
-
-
 ##################### NUMBER
 
 def _safe_check(v, type_check):
