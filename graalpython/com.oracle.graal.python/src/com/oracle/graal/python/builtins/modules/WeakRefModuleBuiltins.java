@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -74,6 +76,11 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
         @Specialization
         public PReferenceType refType(Object cls, PythonObject pythonObject, PFunction callback) {
             return factory().createReferenceType(pythonObject, callback);
+        }
+
+        @Fallback
+        public PReferenceType refType(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused")  Object object, @SuppressWarnings("unused") Object callback) {
+            throw raise(PythonErrorType.TypeError, "cannot create weak reference to '%p' object", object);
         }
     }
 
