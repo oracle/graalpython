@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -40,12 +41,15 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -56,6 +60,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.math.MathContext;
 
 @CoreFunctions(defineModule = "math")
 public class MathModuleBuiltins extends PythonBuiltins {
@@ -73,18 +78,80 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     // math.sqrt
-    @Builtin(name = "sqrt", fixedNumOfArguments = 1)
+    @Builtin(name = "sqrt", fixedNumOfArguments = 1, doc = "Return the square root of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class SqrtNode extends PythonBuiltinNode {
+    public abstract static class SqrtNode extends PythonUnaryBuiltinNode {
 
-        @Specialization
-        public double sqrt(int value) {
-            return Math.sqrt(value);
+        public abstract double executeObject(Object value);
+
+        protected static BigDecimal sqrtBigNumber(BigInteger value) {
+            BigDecimal number = new BigDecimal(value);
+            BigDecimal result = BigDecimal.ZERO;
+            BigDecimal guess = BigDecimal.ONE;
+            BigDecimal BigDecimalTWO = new BigDecimal(2);
+            BigDecimal flipA = result;
+            BigDecimal flipB = result;
+            boolean first = true;
+            while (result.compareTo(guess) != 0) {
+                if (!first) {
+                    guess = result;
+                } else {
+                    first = false;
+                }
+                // Do we need such precision?
+                result = number.divide(guess, MathContext.DECIMAL128).add(guess).divide(BigDecimalTWO, MathContext.DECIMAL128);
+                // handle flip flops
+                if (result.equals(flipB)) {
+                    return flipA;
+                }
+
+                flipB = flipA;
+                flipA = result;
+            }
+            return result;
         }
 
         @Specialization
-        public double sqrt(double value) {
+        public double sqrtLong(long value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return sqrtDouble(value, doNotFit);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double sqrtPInt(PInt value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            BigInteger bValue = value.getValue();
+            if (doNotFit.profile(bValue.compareTo(BigInteger.ZERO) == -1)) {
+                throw raise(ValueError, "math domain error");
+            }
+            return sqrtBigNumber(bValue).doubleValue();
+        }
+
+        @Specialization
+        public double sqrtDouble(double value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(value < 0)) {
+                throw raise(ValueError, "math domain error");
+            }
             return Math.sqrt(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double acosh(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") SqrtNode sqrtNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return sqrtNode.executeObject(result);
+        }
+
+        public static SqrtNode create() {
+            return MathModuleBuiltinsFactory.SqrtNodeFactory.create(new PNode[0]);
         }
     }
 
@@ -642,17 +709,20 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isnan", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
-    public abstract static class IsNanNode extends PythonBuiltinNode {
+    public abstract static class IsNanNode extends PythonUnaryBuiltinNode {
+
+        public abstract boolean executeObject(Object value);
 
         @Specialization
-        public boolean isNan(int value) {
+        public boolean isNan(@SuppressWarnings("unused") long value) {
             return false;
         }
 
         @Specialization
-        public boolean isNan(long value) {
+        public boolean isNan(@SuppressWarnings("unused") PInt value) {
             return false;
         }
 
@@ -661,24 +731,19 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return Double.isNaN(value);
         }
 
-        @Specialization
-        public boolean isNan(PInt value) {
-            return false;
+        @Specialization(guards = "!isNumber(value)")
+        public boolean isinf(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") IsNanNode isNanNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return isNanNode.executeObject(result);
         }
 
-        @Specialization
-        public boolean isNan(PFloat value) {
-            return Double.isNaN(value.getValue());
-        }
-
-        @Specialization
-        public boolean isNan(boolean value) {
-            return false;
-        }
-
-        @Fallback
-        public boolean isNan(Object value) {
-            throw raise(TypeError, "must be real number, not %p", value);
+        protected static IsNanNode create() {
+            return MathModuleBuiltinsFactory.IsNanNodeFactory.create(new PNode[0]);
         }
     }
 
@@ -829,18 +894,150 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "acos", fixedNumOfArguments = 1)
+    @Builtin(name = "acos", fixedNumOfArguments = 1, doc = "Return the arc cosine (measured in radians) of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class AcosNode extends PythonBuiltinNode {
+    public abstract static class AcosNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
 
         @Specialization
-        public double acos(int value) {
+        public double acos(long value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(value > 1 || value < -1)) {
+                throw raise(ValueError, "math domain error");
+            }
             return Math.acos(value);
         }
 
         @Specialization
-        public double acos(double value) {
+        public double acos(PInt value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return acos(value.intValue(), doNotFit);
+        }
+
+        @Specialization
+        public double acos(double value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(Double.isInfinite(value) || -1 > value || value > 1)) {
+                throw raise(ValueError, "math domain error");
+            }
             return Math.acos(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double acos(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AcosNode acosNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return acosNode.executeObject(result);
+        }
+
+        protected static AcosNode create() {
+            return MathModuleBuiltinsFactory.AcosNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "acosh", fixedNumOfArguments = 1, doc = "Return the inverse hyperbolic cosine of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AcoshNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double acoshInt(long value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return acoshDouble(value, doNotFit);
+        }
+
+        @Specialization
+        public double acoshDouble(double value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(value < 1)) {
+                throw raise(ValueError, "math domain error");
+            }
+            return Math.log(value + Math.sqrt(value * value - 1.0));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double acoshDouble(PInt value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            BigInteger bValue = value.getValue();
+            if (doNotFit.profile(bValue.compareTo(BigInteger.ONE) == -1)) {
+                throw raise(ValueError, "math domain error");
+            }
+
+            BigDecimal sqrt = SqrtNode.sqrtBigNumber(bValue.multiply(bValue).subtract(BigInteger.ONE));
+            BigDecimal bd = new BigDecimal(bValue);
+            return Math.log(bd.add(sqrt).doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double acosh(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AcoshNode acoshNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return acoshNode.executeObject(result);
+        }
+
+        protected static AcoshNode create() {
+            return MathModuleBuiltinsFactory.AcoshNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "asin", fixedNumOfArguments = 1, doc = "Return the arc sine (measured in radians) of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AsinNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double asinInt(long value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return asinDouble(value, doNotFit);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double asinPInt(PInt value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return asinDouble(value.intValue(), doNotFit);
+        }
+
+        @Specialization
+        public double asinDouble(double value,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            if (doNotFit.profile(value < -1 || value > 1)) {
+                throw raise(ValueError, "math domain error");
+            }
+            return Math.asin(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double acosh(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AsinNode asinNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return asinNode.executeObject(result);
+        }
+
+        protected static AsinNode create() {
+            return MathModuleBuiltinsFactory.AsinNodeFactory.create(new PNode[0]);
         }
     }
 
@@ -874,23 +1071,301 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "log", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "isfinite", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class LogNode extends PythonBuiltinNode {
+    public abstract static class IsFiniteNode extends PythonUnaryBuiltinNode {
+
+        public abstract boolean executeObject(Object value);
 
         @Specialization
-        public double log(int value, @SuppressWarnings("unused") PNone novalue) {
+        public boolean isfinite(@SuppressWarnings("unused") long value) {
+            return true;
+        }
+
+        @Specialization
+        public boolean isfinite(@SuppressWarnings("unused") PInt value) {
+            return true;
+        }
+
+        @Specialization
+        public boolean isfinite(double value) {
+            return Double.isFinite(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public boolean isinf(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") IsFiniteNode isFiniteNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return isFiniteNode.executeObject(result);
+        }
+
+        protected static IsFiniteNode create() {
+            return MathModuleBuiltinsFactory.IsFiniteNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "isinf", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class IsInfNode extends PythonUnaryBuiltinNode {
+
+        public abstract boolean executeObject(Object value);
+
+        @Specialization
+        public boolean isinf(@SuppressWarnings("unused") long value) {
+            return false;
+        }
+
+        @Specialization
+        public boolean isfinite(@SuppressWarnings("unused") PInt value) {
+            return false;
+        }
+
+        @Specialization
+        public boolean isinf(double value) {
+            return Double.isInfinite(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public boolean isinf(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") IsInfNode isInfNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return isInfNode.executeObject(result);
+        }
+
+        protected static IsInfNode create() {
+            return MathModuleBuiltinsFactory.IsInfNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "log", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class LogNode extends PythonUnaryBuiltinNode {
+
+        @Child private LookupAndCallUnaryNode valueDispatchNode;
+        @Child private LookupAndCallUnaryNode baseDispatchNode;
+        @Child private LogNode recLogNode;
+
+        private LookupAndCallUnaryNode getValueDispatchNode() {
+            if (valueDispatchNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                valueDispatchNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
+            }
+            return valueDispatchNode;
+        }
+
+        private LookupAndCallUnaryNode getBaseDispatchNode() {
+            if (baseDispatchNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                baseDispatchNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
+            }
+            return baseDispatchNode;
+        }
+
+        private double executeRecursiveLogNode(Object value, Object base) {
+            if (recLogNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recLogNode = insert(LogNode.create());
+            }
+            return recLogNode.executeObject(value, base);
+        }
+
+        public abstract double executeObject(Object value, Object base);
+
+        private static final double LOG2 = Math.log(2.0);
+
+        private static double logBigInteger(BigInteger val) {
+            int blex = val.bitLength() - 1022; // any value in 60..1023 is ok
+            BigInteger value = blex > 0 ? val.shiftRight(blex) : val;
+            double res = Math.log(value.doubleValue());
+            return blex > 0 ? res + blex * LOG2 : res;
+        }
+
+        private double countBase(double base, ConditionProfile divByZero) {
+            double logBase = Math.log(base);
+            if (divByZero.profile(logBase == 0)) {
+                throw raise(ZeroDivisionError, "float division by zero");
+            }
+            return logBase;
+        }
+
+        private double countBase(BigInteger base, ConditionProfile divByZero) {
+            double logBase = logBigInteger(base);
+            if (divByZero.profile(logBase == 0)) {
+                throw raise(ZeroDivisionError, "float division by zero");
+            }
+            return logBase;
+        }
+
+        @Specialization
+        public double log(long value, PNone novalue,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            return logDN(value, novalue, doNotFit);
+        }
+
+        @Specialization
+        public double logDN(double value, @SuppressWarnings("unused") PNone novalue,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            raiseMathError(doNotFit, value < 0);
             return Math.log(value);
         }
 
         @Specialization
-        public double log(double value, @SuppressWarnings("unused") PNone novalue) {
-            return Math.log(value);
+        @TruffleBoundary
+        public double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+            BigInteger bValue = value.getValue();
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1);
+            return logBigInteger(bValue);
         }
 
         @Specialization
-        public double log(int value, int base) {
-            return Math.log(value) / Math.log(base);
+        public double logLL(long value, long base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            return logDD(value, base, doNotFit, divByZero);
+        }
+
+        @Specialization
+        public double logDL(double value, long base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            return logDD(value, base, doNotFit, divByZero);
+        }
+
+        @Specialization
+        public double logLD(long value, double base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            return logDD(value, base, doNotFit, divByZero);
+        }
+
+        @Specialization
+        public double logDD(double value, double base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            raiseMathError(doNotFit, value < 0 || base <= 0);
+            double logBase = countBase(base, divByZero);
+            return Math.log(value) / logBase;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double logDPI(double value, PInt base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            BigInteger bBase = base.getValue();
+            raiseMathError(doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
+            double logBase = countBase(bBase, divByZero);
+            return Math.log(value) / logBase;
+        }
+
+        @Specialization
+        public double logPIL(PInt value, long base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            return logPID(value, base, doNotFit, divByZero);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double logPID(PInt value, double base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            BigInteger bValue = value.getValue();
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1 || base <= 0);
+            double logBase = countBase(base, divByZero);
+            return logBigInteger(bValue) / logBase;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double logLPI(long value, PInt base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            BigInteger bBase = base.getValue();
+            raiseMathError(doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
+            double logBase = countBase(bBase, divByZero);
+            return Math.log(value) / logBase;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double logPIPI(PInt value, PInt base,
+                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
+                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+            BigInteger bValue = value.getValue();
+            BigInteger bBase = base.getValue();
+            raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1 || bBase.compareTo(BigInteger.ZERO) <= 0);
+            double logBase = countBase(bBase, divByZero);
+            return logBigInteger(bValue) / logBase;
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double logO(Object value, PNone novalue,
+                        @Cached("createBinaryProfile()") ConditionProfile notNumber) {
+            Object result = getRealNumber(value, getValueDispatchNode(), notNumber);
+            return executeRecursiveLogNode(result, novalue);
+        }
+
+        @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
+        public double logOO(Object value, Object base,
+                        @Cached("createBinaryProfile()") ConditionProfile notNumberValue,
+                        @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
+            Object resultValue = getRealNumber(value, getValueDispatchNode(), notNumberValue);
+            Object resultBase = getRealNumber(base, getBaseDispatchNode(), notNumberBase);
+            return executeRecursiveLogNode(resultValue, resultBase);
+        }
+
+        @Specialization(guards = {"!isNumber(base)"})
+        public double logLO(long value, Object base,
+                        @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
+            return logDO(value, base, notNumberBase);
+        }
+
+        @Specialization(guards = {"!isNumber(base)"})
+        public double logDO(double value, Object base,
+                        @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
+            Object resultBase = getRealNumber(base, getBaseDispatchNode(), notNumberBase);
+            return executeRecursiveLogNode(value, resultBase);
+        }
+
+        @Specialization(guards = {"!isNumber(base)"})
+        public double logPIO(PInt value, Object base,
+                        @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
+            Object resultBase = getRealNumber(base, getBaseDispatchNode(), notNumberBase);
+            return executeRecursiveLogNode(value, resultBase);
+        }
+
+        private void raiseMathError(ConditionProfile doNotFit, boolean con) {
+            if (doNotFit.profile(con)) {
+                throw raise(ValueError, "math domain error");
+            }
+        }
+
+        private Object getRealNumber(Object object, LookupAndCallUnaryNode dispatchNode, ConditionProfile isNotRealNumber) {
+            Object result = dispatchNode.executeObject(object);
+            if (isNotRealNumber.profile(result == PNone.NO_VALUE)) {
+                throw raise(TypeError, "must be real number, not %p", object);
+            }
+            return result;
+        }
+
+        public static LogNode create() {
+            return MathModuleBuiltinsFactory.LogNodeFactory.create(new PNode[0]);
         }
     }
 

@@ -5,11 +5,14 @@
 import math
 import unittest
 import sys
+import struct
 
 eps = 1E-05
 INF = float('inf')
 NINF = float('-inf')
 NAN = float('nan')
+LONG_INT = 6227020800
+BIG_INT = 9999992432902008176640000999999
 
 """ The next three methods are needed for testing factorials
 """
@@ -41,6 +44,40 @@ def py_factorial(n):
         inner *= partial_product((n >> i + 1) + 1 | 1, (n >> i) + 1 | 1)
         outer *= inner
     return outer << (n - count_set_bits(n))
+
+def to_ulps(x):
+    """Convert a non-NaN float x to an integer, in such a way that
+    adjacent floats are converted to adjacent integers.  Then
+    abs(ulps(x) - ulps(y)) gives the difference in ulps between two
+    floats.
+
+    The results from this function will only make sense on platforms
+    where native doubles are represented in IEEE 754 binary64 format.
+
+    Note: 0.0 and -0.0 are converted to 0 and -1, respectively.
+    """
+    n = struct.unpack('<q', struct.pack('<d', x))[0]
+    if n < 0:
+        n = ~(n+2**63)
+    return n
+
+def ulp_abs_check(expected, got, ulp_tol, abs_tol):
+    """Given finite floats `expected` and `got`, check that they're
+    approximately equal to within the given number of ulps or the
+    given absolute tolerance, whichever is bigger.
+
+    Returns None on success and an error message on failure.
+    """
+    ulp_error = abs(to_ulps(expected) - to_ulps(got))
+    abs_error = abs(expected - got)
+
+    # Succeed if either abs_error <= abs_tol or ulp_error <= ulp_tol.
+    if abs_error <= abs_tol or ulp_error <= ulp_tol:
+        return None
+    else:
+        fmt = ("error = {:.3g} ({:d} ulps); "
+               "permitted error = {:.3g} or {:d} ulps")
+        return fmt.format(abs_error, ulp_error, abs_tol, ulp_tol)
 
 def result_check(expected, got, ulp_tol=5, abs_tol=0.0):
     # Common logic of MathTests.(ftest, test_testcases, test_mtestcases)
@@ -87,6 +124,10 @@ def result_check(expected, got, ulp_tol=5, abs_tol=0.0):
     else:
         return None
 
+class MyFloat:
+    def __float__(self):
+        return 0.6
+
 class MathTests(unittest.TestCase):
 
     def ftest(self, name, got, expected, ulp_tol=5, abs_tol=0.0):
@@ -109,6 +150,150 @@ class MathTests(unittest.TestCase):
         if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
             # math.tau since 3.6
             self.assertEqual(math.tau, 2*math.pi)
+
+    def testAcos(self):
+        self.assertRaises(TypeError, math.acos)
+        self.ftest('acos(-1)', math.acos(-1), math.pi)
+        self.ftest('acos(0)', math.acos(0), math.pi/2)
+        self.ftest('acos(1)', math.acos(1), 0)
+        self.assertRaises(ValueError, math.acos, INF)
+        self.assertRaises(ValueError, math.acos, NINF)
+        self.assertRaises(ValueError, math.acos, 1 + eps)
+        self.assertRaises(ValueError, math.acos, -1 - eps)
+        self.assertTrue(math.isnan(math.acos(NAN)))
+
+        self.assertEqual(math.acos(True), 0.0)
+        self.assertRaises(ValueError, math.acos, 10)
+        self.assertRaises(ValueError, math.acos, -10)
+        self.assertRaises(ValueError, math.acos, LONG_INT)
+        self.assertRaises(ValueError, math.acos, BIG_INT)
+        self.assertRaises(TypeError, math.acos, 'ahoj')
+
+        self.assertRaises(ValueError, math.acos, 9999992432902008176640000999999)
+
+        self.ftest('acos(MyFloat())', math.acos(MyFloat()), 0.9272952180016123)
+
+        class MyFloat2:
+            def __float__(self):
+                return 1.6
+        self.assertRaises(ValueError, math.acos, MyFloat2())        
+
+        class MyFloat3:
+            def __float__(self):
+                return 'ahoj'
+        self.assertRaises(TypeError, math.acos, MyFloat3())
+
+    def testAcosh(self):
+        self.assertRaises(TypeError, math.acosh)
+        self.ftest('acosh(1)', math.acosh(1), 0)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('acosh(2)', math.acosh(2), 1.3169578969248168)
+        self.assertRaises(ValueError, math.acosh, 0)
+        self.assertRaises(ValueError, math.acosh, -1)
+        self.assertEqual(math.acosh(INF), INF)
+        self.assertRaises(ValueError, math.acosh, NINF)
+        self.assertTrue(math.isnan(math.acosh(NAN)))
+
+        class MyFF:
+            def __float__(self):
+                return 6
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('acos(MyFloat())', math.acosh(MyFF()), 0.9272952180016123)
+        self.assertRaises(ValueError, math.acosh, MyFloat())
+        math.acosh(BIG_INT)
+        self.assertRaises(TypeError, math.acosh, 'ahoj')
+
+    def testAsin(self):
+        self.assertRaises(TypeError, math.asin)
+        self.ftest('asin(-1)', math.asin(-1), -math.pi/2)
+        self.ftest('asin(0)', math.asin(0), 0)
+        self.ftest('asin(1)', math.asin(1), math.pi/2)
+        self.assertRaises(ValueError, math.asin, INF)
+        self.assertRaises(ValueError, math.asin, NINF)
+        self.assertRaises(ValueError, math.asin, 1 + eps)
+        self.assertRaises(ValueError, math.asin, -1 - eps)
+        self.assertTrue(math.isnan(math.asin(NAN)))
+
+        self.assertRaises(ValueError, math.asin, 10)
+        self.assertRaises(ValueError, math.asin, -10)
+        self.assertRaises(ValueError, math.asin, LONG_INT)
+        self.assertRaises(ValueError, math.asin, BIG_INT)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
+    def testSqrt(self):
+        self.assertRaises(TypeError, math.sqrt)
+        self.ftest('sqrt(0)', math.sqrt(0), 0)
+        self.ftest('sqrt(1)', math.sqrt(1), 1)
+        self.ftest('sqrt(4)', math.sqrt(4), 2)
+        self.assertEqual(math.sqrt(INF), INF)
+        self.assertRaises(ValueError, math.sqrt, -1)
+        self.assertRaises(ValueError, math.sqrt, NINF)
+        self.assertTrue(math.isnan(math.sqrt(NAN)))
+        
+        math.sqrt(MyFloat())
+        math.sqrt(BIG_INT)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
+    def testLog(self):
+        self.assertRaises(TypeError, math.log)
+        self.ftest('log(1/e)', math.log(1/math.e), -1)
+        self.ftest('log(1)', math.log(1), 0)
+        self.ftest('log(e)', math.log(math.e), 1)
+        self.ftest('log(32,2)', math.log(32,2), 5)
+        self.ftest('log(10**40, 10)', math.log(10**40, 10), 40)
+        self.ftest('log(10**40, 10**20)', math.log(10**40, 10**20), 2)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('log(10**1000)', math.log(10**1000), 2302.5850929940457)
+        self.assertRaises(ValueError, math.log, -1.5)
+        self.assertRaises(ValueError, math.log, -10**1000)
+        self.assertRaises(ValueError, math.log, NINF)
+        self.assertEqual(math.log(INF), INF)
+        self.assertTrue(math.isnan(math.log(NAN)))
+
+        math.log(MyFloat())
+        self.assertRaises(ZeroDivisionError, math.log, MyFloat(), True)
+        self.ftest('log(True, 1.1)', math.log(True, 1.1), 0)
+        math.log(BIG_INT)
+        math.log(BIG_INT, 4.6)
+        self.ftest('log(BIG_INT, BIG_INT)', math.log(BIG_INT, BIG_INT), 1)
+        self.assertRaises(ZeroDivisionError, math.log, BIG_INT, True)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
+        math.log(MyFloat(), 10)
+        math.log(MyFloat(), BIG_INT)
+        math.log(MyFloat(), 7.4)
+        self.ftest('log(MyFloat(), MyFloat())', math.log(MyFloat(), MyFloat()), 1)
+        math.log(10, MyFloat())
+
+    def testIsfinite(self):
+        self.assertTrue(math.isfinite(0.0))
+        self.assertTrue(math.isfinite(-0.0))
+        self.assertTrue(math.isfinite(1.0))
+        self.assertTrue(math.isfinite(-1.0))
+        self.assertFalse(math.isfinite(float("nan")))
+        self.assertFalse(math.isfinite(float("inf")))
+        self.assertFalse(math.isfinite(float("-inf")))
+
+        self.assertTrue(math.isfinite(True))
+        self.assertTrue(math.isfinite(LONG_INT))
+        self.assertTrue(math.isfinite(BIG_INT))
+        self.assertRaises(TypeError, math.isfinite, 'ahoj')
+        self.assertTrue(math.isfinite(MyFloat()))
+
+    def testIsinf(self):
+        self.assertTrue(math.isinf(float("inf")))
+        self.assertTrue(math.isinf(float("-inf")))
+        self.assertTrue(math.isinf(1E400))
+        self.assertTrue(math.isinf(-1E400))
+        self.assertFalse(math.isinf(float("nan")))
+        self.assertFalse(math.isinf(0.))
+        self.assertFalse(math.isinf(1.))
+        
+        self.assertFalse(math.isinf(True))
+        self.assertFalse(math.isinf(LONG_INT))
+        self.assertFalse(math.isinf(BIG_INT))
+        self.assertRaises(TypeError, math.isinf, 'ahoj')
+        self.assertFalse(math.isinf(MyFloat()))
 
     def test_ceil_basic(self):
         self.assertEqual(math.ceil(10), 10)
@@ -236,6 +421,7 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.isnan, 'hello')
 
         self.assertFalse(math.isnan(False))
+        self.assertFalse(math.isnan(MyFloat()))
 
     def test_fabs(self):
         self.assertEqual(math.fabs(-1), 1)
