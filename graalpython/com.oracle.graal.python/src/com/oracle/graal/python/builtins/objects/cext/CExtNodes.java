@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassN
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.TruffleObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -288,10 +289,16 @@ public abstract class CExtNodes {
         public abstract Object execute(Object obj);
 
         @Specialization
+        Object doPString(PString str,
+                        @Cached("createExecute(1)") Node executeNode) {
+            return doString(str.getValue(), executeNode);
+        }
+
+        @Specialization
         Object doString(String str,
                         @Cached("createExecute(1)") Node executeNode) {
             try {
-                return ForeignAccess.sendExecute(executeNode, getTruffleStringToCstr(), str);
+                return ForeignAccess.sendExecute(executeNode, getTruffleStringToCstr(), str, str.length());
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 throw e.raise();
             }
