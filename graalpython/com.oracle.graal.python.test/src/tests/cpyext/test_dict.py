@@ -92,7 +92,10 @@ def _reference_contains(args):
     try:
         return args[1] in args[0]
     except:
-        raise SystemError
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            return -1
 
 
 class SubDict(dict):
