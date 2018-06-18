@@ -148,16 +148,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TruffleString_AsString extends NativeBuiltin {
 
-        @Specialization
-        Object run(PythonObjectNativeWrapper str,
-                        @Cached("create()") CExtNodes.AsCharPointer asCharPointerNode,
-                        @Cached("create()") CExtNodes.ToJavaNode toJavaNode) {
-            return asCharPointerNode.execute(toJavaNode.execute(str));
+        @Specialization(guards = "isString(str)")
+        Object run(Object str,
+                        @Cached("create()") CExtNodes.AsCharPointer asCharPointerNode) {
+            return asCharPointerNode.execute(str);
         }
 
         @Fallback
         Object run(Object o) {
-            return raiseNative(PNone.NO_VALUE, PythonErrorType.SystemError, "Cannot convert object of type %p to C string.", o);
+            return raiseNative(PNone.NO_VALUE, PythonErrorType.SystemError, "Cannot convert object of type %p to C string.", o, o.getClass().getName());
         }
     }
 

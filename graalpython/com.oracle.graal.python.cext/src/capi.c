@@ -240,8 +240,22 @@ void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
     return truffle_deref_handle_for_managed(jobj);
 }
 
-const char* PyTruffle_StringToCstr(void* o) {
-    return polyglot_from_string(o, SRC_CS);
+const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
+    const char *buffer;
+    const char *str;
+    uint64_t bufsize = 4 * (strLen + 1) * sizeof(char);
+    uint64_t written;
+
+    // we allocate 4 bytes for a char; this will in all cases be enough
+    buffer = (const char*) malloc(bufsize);
+
+    written = polyglot_as_string(o, buffer, bufsize, SRC_CS) + 1;
+
+    str = (const char*) malloc(written * sizeof(char));
+    memcpy(str, buffer, written * sizeof(char));
+    free(buffer);
+
+    return str;
 }
 
 const char* PyTruffle_ByteArrayToNative(const void* jbyteArray, int len) {

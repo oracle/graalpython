@@ -129,7 +129,7 @@ PyObject * PyNumber_Index(PyObject *o) {
     if (o == NULL) {
         return null_error();
     }
-    return UPCALL_CEXT_O("PyNumber_Index", to_java(o));
+    return UPCALL_CEXT_O("PyNumber_Index", native_to_java(o));
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {
@@ -183,19 +183,11 @@ PyObject * PyNumber_Float(PyObject *o) {
 }
 
 PyObject * PyNumber_Absolute(PyObject *o) {
-    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyNumber_Absolute", to_java(o));
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyNumber_Absolute", native_to_java(o));
 }
 
 PyObject * PyNumber_Divmod(PyObject *a, PyObject *b) {
-    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyNumber_Divmod", to_java(a), to_java(b));
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyNumber_Divmod", native_to_java(a), native_to_java(b));
 }
 
 
@@ -207,11 +199,11 @@ int PySequence_Check(PyObject *s) {
 	if (s == NULL) {
 		return 0;
 	}
-	return polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PySequence_Check", to_java(s)));
+	return UPCALL_CEXT_I("PySequence_Check", native_to_java(s));
 }
 
 Py_ssize_t PySequence_Size(PyObject *s) {
-	return polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyObject_Size", to_java(s)));
+    return UPCALL_CEXT_L("PyObject_Size", native_to_java(s));
 }
 
 // taken from CPython "Objects/abstract.c"
