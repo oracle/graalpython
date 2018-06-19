@@ -1398,41 +1398,22 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        boolean eqII(int a, int b) {
-            return a == b;
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqPiB(PInt a, boolean b) {
-            return a.longValueExact() == PInt.intValue(b);
-        }
-
-        @Specialization
-        boolean eqPiBOvf(PInt a, boolean b) {
-            try {
-                return a.longValueExact() == PInt.intValue(b);
-            } catch (ArithmeticException e) {
-                return false;
-            }
-        }
-
-        @Specialization
-        boolean eqLB(long a, boolean b) {
-            return a == PInt.intValue(b);
-        }
-
         @Specialization
         boolean eqLL(long a, long b) {
             return a == b;
         }
 
         @Specialization
-        boolean eqPiPi(PInt a, PInt b) {
-            return a.equals(b);
+        boolean eqPIntBoolean(PInt a, boolean b) {
+            return b ? a.isOne() : a.isZero();
+        }
+
+        @Specialization
+        boolean eqBooleanPInt(boolean a, PInt b) {
+            return a ? b.isOne() : b.isZero();
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
@@ -1450,17 +1431,22 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqLPi(long b, PInt a) {
+        boolean eqLP(long b, PInt a) {
             return a.longValueExact() == b;
         }
 
         @Specialization
-        boolean eqLPiOvf(long b, PInt a) {
+        boolean eqPiLOvf(long b, PInt a) {
             try {
                 return a.longValueExact() == b;
             } catch (ArithmeticException e) {
                 return false;
             }
+        }
+
+        @Specialization
+        boolean eqPiPi(PInt a, PInt b) {
+            return a.equals(b);
         }
 
         @SuppressWarnings("unused")
@@ -1471,13 +1457,9 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean eqII(int a, int b) {
-            return a != b;
-        }
-
         @Specialization
         boolean eqLL(long a, long b) {
             return a != b;
@@ -1502,8 +1484,18 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
-        boolean eqIB(long a, boolean b) {
-            return b ? a != 1 : a != 0;
+        @Specialization(rewriteOn = ArithmeticException.class)
+        boolean eqPiL(long b, PInt a) {
+            return a.longValueExact() != b;
+        }
+
+        @Specialization
+        boolean eqPiLOvf(long b, PInt a) {
+            try {
+                return a.longValueExact() != b;
+            } catch (ArithmeticException e) {
+                return true;
+            }
         }
 
         @SuppressWarnings("unused")
