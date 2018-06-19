@@ -1118,3 +1118,8 @@ def PyImport_GetModuleDict():
 @may_raise
 def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
+
+
+@may_raise
+def PySlice_GetIndicesEx(start, stop, step, length):
+    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)

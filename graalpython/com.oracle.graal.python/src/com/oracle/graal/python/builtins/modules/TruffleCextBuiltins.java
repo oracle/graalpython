@@ -71,6 +71,8 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -1082,6 +1084,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object get() {
             return getContext().getCustomThreadState();
+        }
+    }
+
+    @Builtin(name = "PyTruffleSlice_GetIndicesEx", fixedNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class PyTruffleSlice_GetIndicesEx extends NativeBuiltin {
+        @Specialization
+        Object doUnpack(int start, int stop, int step, long length) {
+            PSlice tmpSlice = factory().createSlice(start, stop, step);
+            SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+            return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
         }
     }
 }

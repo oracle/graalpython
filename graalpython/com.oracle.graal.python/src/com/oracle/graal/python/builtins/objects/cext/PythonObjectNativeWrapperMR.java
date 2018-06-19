@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -349,6 +350,21 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
         Object doObSval(PBuffer object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object.getDelegate());
+        }
+
+        @Specialization(guards = "eq(START, key)")
+        int doStart(PSlice object, @SuppressWarnings("unused") String key) {
+            return object.getStart();
+        }
+
+        @Specialization(guards = "eq(STOP, key)")
+        int doStop(PSlice object, @SuppressWarnings("unused") String key) {
+            return object.getStop();
+        }
+
+        @Specialization(guards = "eq(STEP, key)")
+        int doStep(PSlice object, @SuppressWarnings("unused") String key) {
+            return object.getStep();
         }
 
         @Fallback
