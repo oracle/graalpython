@@ -141,7 +141,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double acosh(Object value,
+        public double sqrt(Object value,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
                         @Cached("create()") SqrtNode sqrtNode) {
             Object result = dispatchFloat.executeObject(value);
@@ -1027,7 +1027,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double acosh(Object value,
+        public double asin(Object value,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
                         @Cached("create()") AsinNode asinNode) {
             Object result = dispatchFloat.executeObject(value);
@@ -1518,7 +1518,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             if (leftFloat == PNone.NO_VALUE) {
                 throw raise(TypeError, "must be real number, not %p", left);
             }
-            Object rightFloat = dispatchLeftFloat.executeObject(right);
+            Object rightFloat = dispatchRightFloat.executeObject(right);
             if (leftFloat == PNone.NO_VALUE) {
                 throw raise(TypeError, "must be real number, not %p", right);
             }
@@ -1556,17 +1556,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         double atan2(long left, long right) {
-            return atan2DD((double) left, (double) right);
+            return atan2DD(left, right);
         }
 
         @Specialization
         double atan2(long left, double right) {
-            return atan2DD((double) left, right);
+            return atan2DD(left, right);
         }
 
         @Specialization
         double atan2(double left, long right) {
-            return atan2DD(left, (double) right);
+            return atan2DD(left, right);
         }
 
         @Specialization
@@ -1576,7 +1576,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         double atan2(PInt left, long right) {
-            return atan2DD(left.doubleValue(), (double) right);
+            return atan2DD(left.doubleValue(), right);
         }
 
         @Specialization
@@ -1586,7 +1586,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         double atan2(long left, PInt right) {
-            return atan2DD((double) left, right.doubleValue());
+            return atan2DD(left, right.doubleValue());
         }
 
         @Specialization
@@ -1608,7 +1608,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
             if (leftFloat == PNone.NO_VALUE) {
                 throw raise(TypeError, "must be real number, not %p", left);
             }
-            Object rightFloat = dispatchLeftFloat.executeObject(right);
+            Object rightFloat = dispatchRightFloat.executeObject(right);
             if (leftFloat == PNone.NO_VALUE) {
                 throw raise(TypeError, "must be real number, not %p", right);
             }
