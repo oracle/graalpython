@@ -78,5 +78,7 @@ Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_
     if (result == ERROR_MARKER) {
         return -1;
     }
+    *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
+    *stop = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
     return PyLong_AsSsize_t(PyTuple_GetItem(result, 3)); // adjusted length
 }
