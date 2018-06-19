@@ -197,6 +197,10 @@ static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* 
 	return PyLong_FromLong(f(a, PyLong_AsSsize_t(size), b));
 }
 
+static PyObject* wrap_objobjargproc(ssizeobjargproc f, PyObject* a, PyObject* idx, PyObject* b) {
+	return PyLong_FromLong(f(a, idx, b));
+}
+
 static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c) {
 	return PyLong_FromLong(f(a, b,  c));
 }
@@ -445,7 +449,7 @@ int PyType_Ready(PyTypeObject* cls) {
     if (mappings) {
         ADD_SLOT("__len__", mappings->mp_length, -1);
         ADD_SLOT("__getitem__", mappings->mp_subscript, -2);
-        ADD_SLOT_CONV("__setitem__", wrap_ssizeobjargproc, mappings->mp_ass_subscript, -3);
+        ADD_SLOT_CONV("__setitem__", wrap_objobjargproc, mappings->mp_ass_subscript, -3);
     }
 
     PyAsyncMethods* async = cls->tp_as_async;
