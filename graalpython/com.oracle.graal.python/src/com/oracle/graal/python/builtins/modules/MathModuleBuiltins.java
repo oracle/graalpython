@@ -1547,12 +1547,77 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "atan2", fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class Atan2Node extends PythonBuiltinNode {
+    public abstract static class Atan2Node extends PythonBinaryBuiltinNode {
+
+        public abstract double executeObject(Object left, Object right);
 
         @Specialization
-        double atan2(double left, double right) {
+        double atan2(long left, long right) {
+            return atan2DD((double) left, (double) right);
+        }
+
+        @Specialization
+        double atan2(long left, double right) {
+            return atan2DD((double) left, right);
+        }
+
+        @Specialization
+        double atan2(double left, long right) {
+            return atan2DD(left, (double) right);
+        }
+
+        @Specialization
+        double atan2(PInt left, PInt right) {
+            return atan2DD(left.doubleValue(), right.doubleValue());
+        }
+
+        @Specialization
+        double atan2(PInt left, long right) {
+            return atan2DD(left.doubleValue(), (double) right);
+        }
+
+        @Specialization
+        double atan2(PInt left, double right) {
+            return atan2DD(left.doubleValue(), right);
+        }
+
+        @Specialization
+        double atan2(long left, PInt right) {
+            return atan2DD((double) left, right.doubleValue());
+        }
+
+        @Specialization
+        double atan2(double left, PInt right) {
+            return atan2DD(left, right.doubleValue());
+        }
+
+        @Specialization
+        double atan2DD(double left, double right) {
             return Math.atan2(left, right);
+        }
+
+        @Specialization(guards = "!isNumber(left) || !isNumber(right)")
+        double atan2(Object left, Object right,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchLeftFloat,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchRightFloat,
+                        @Cached("create()") Atan2Node recursiveNode) {
+            Object leftFloat = dispatchLeftFloat.executeObject(left);
+            if (leftFloat == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", left);
+            }
+            Object rightFloat = dispatchLeftFloat.executeObject(right);
+            if (leftFloat == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", right);
+            }
+
+            return recursiveNode.executeObject(leftFloat, rightFloat);
+        }
+
+        protected Atan2Node create() {
+            return MathModuleBuiltinsFactory.Atan2NodeFactory.create(new PNode[0]);
         }
     }
 }
