@@ -737,7 +737,7 @@ def dict_from_list(lst):
         raise SystemError("list cannot be converted to dict")
     d = {}
     for i in range(0, len(lst), 2):
-        d[l[i]] = d[l[i + 1]]
+        d[lst[i]] = lst[i + 1]
     return d
 
 
