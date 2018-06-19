@@ -1042,9 +1042,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cos", fixedNumOfArguments = 1)
+    @Builtin(name = "cos", fixedNumOfArguments = 1, doc = "Return the cosine of x (measured in radians).")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class CosNode extends PythonBuiltinNode {
+    public abstract static class CosNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
 
         @Specialization
         public double cos(int value) {
@@ -1055,20 +1059,367 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public double cos(double value) {
             return Math.cos(value);
         }
-    }
-
-    @Builtin(name = "sin", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class SinNode extends PythonBuiltinNode {
 
         @Specialization
-        public double sin(int value) {
+        @TruffleBoundary
+        public double cos(PInt value) {
+            return Math.cos(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double cosh(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") CosNode cosNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return cosNode.executeObject(result);
+        }
+
+        protected static CosNode create() {
+            return MathModuleBuiltinsFactory.CosNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "cosh", fixedNumOfArguments = 1, doc = "Return the hyperbolic cosine of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class CoshNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double coshL(long value) {
+            return coshD(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double coshD(double value) {
+            double result = Math.cosh(value);
+            if (Double.isInfinite(result) && Double.isFinite(value)) {
+                throw raise(OverflowError, "math range error");
+            }
+            return result;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double coshPI(PInt value) {
+            return coshD(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double coshO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") CoshNode coshNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return coshNode.executeObject(result);
+        }
+
+        protected static CoshNode create() {
+            return MathModuleBuiltinsFactory.CoshNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "sin", fixedNumOfArguments = 1, doc = "Return the sine of x (measured in radians).")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class SinNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double sinL(long value) {
             return Math.sin(value);
         }
 
         @Specialization
-        public double sin(double value) {
+        public double sinD(double value) {
             return Math.sin(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double sinPI(PInt value) {
+            return Math.sin(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double cosh(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") SinNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static SinNode create() {
+            return MathModuleBuiltinsFactory.SinNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "sinh", fixedNumOfArguments = 1, doc = "Return the hyperbolic sine of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class SinhNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double sinhL(long value) {
+            return sinhD(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double sinhD(double value) {
+            double result = Math.sinh(value);
+            if (Double.isInfinite(result) && Double.isFinite(value)) {
+                throw raise(OverflowError, "math range error");
+            }
+            return result;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double sinhPI(PInt value) {
+            return sinhD(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double sinhO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") SinhNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static SinhNode create() {
+            return MathModuleBuiltinsFactory.SinhNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "tan", fixedNumOfArguments = 1, doc = "Return the tangent of x (measured in radians).")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class TanNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double tanL(long value) {
+            return Math.tan(value);
+        }
+
+        @Specialization
+        public double tanD(double value) {
+            return Math.tan(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double tanPI(PInt value) {
+            return Math.tan(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double tanO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") TanNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static TanNode create() {
+            return MathModuleBuiltinsFactory.TanNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "tanh", fixedNumOfArguments = 1, doc = "Return the hyperbolic tangent of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class TanhNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double tanhL(long value) {
+            return Math.tanh(value);
+        }
+
+        @Specialization
+        public double tanhD(double value) {
+            return Math.tanh(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double tanhPI(PInt value) {
+            return Math.tanh(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double tanhO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") TanhNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static TanhNode create() {
+            return MathModuleBuiltinsFactory.TanhNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "atan", fixedNumOfArguments = 1, doc = "Return the arc tangent (measured in radians) of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AtanNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double atanL(long value) {
+            return Math.atan(value);
+        }
+
+        @Specialization
+        public double atanD(double value) {
+            return Math.atan(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double atanPI(PInt value) {
+            return Math.atan(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double atanO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AtanNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static AtanNode create() {
+            return MathModuleBuiltinsFactory.AtanNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "atanh", fixedNumOfArguments = 1, doc = "Return the inverse hyperbolic tangent of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AtanhNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double atanhL(long value) {
+            return atanhD(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double atanhD(double value) {
+            if (value == 0) {
+                return 0;
+            }
+            if (value <= -1 || value >= 1) {
+                throw raise(ValueError, "math domain error");
+            }
+            return Math.log((1 / value + 1) / (1 / value - 1)) / 2;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double atanhPI(PInt value) {
+            return atanhD(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double atanhO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AtanhNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static AtanhNode create() {
+            return MathModuleBuiltinsFactory.AtanhNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "asinh", fixedNumOfArguments = 1, doc = "Return the inverse hyperbolic sine of x.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class AsinhNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double asinhL(long value) {
+            return asinhD(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double asinhD(double value) {
+            if (Double.isInfinite(value)) {
+                return value;
+            }
+            return Math.log(value + Math.sqrt(value * value + 1.0));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double asinhPI(PInt value) {
+            return asinhD(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double asinhO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") AsinhNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static AsinhNode create() {
+            return MathModuleBuiltinsFactory.AsinhNodeFactory.create(new PNode[0]);
         }
     }
 
@@ -1220,7 +1571,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         public double logDN(double value, @SuppressWarnings("unused") PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
-            raiseMathError(doNotFit, value < 0);
+            raiseMathError(doNotFit, value <= 0);
             return Math.log(value);
         }
 
