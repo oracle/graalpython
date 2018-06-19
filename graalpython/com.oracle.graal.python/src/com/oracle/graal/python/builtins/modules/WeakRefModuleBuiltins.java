@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -67,19 +68,18 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "ReferenceType", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PReferenceType.class)
     @GenerateNodeFactory
     public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
-
         @Specialization
-        public PReferenceType refType(Object cls, PythonObject pythonObject, PNone none) {
-            return factory().createReferenceType(pythonObject, null);
+        public PReferenceType refType(PythonClass cls, PythonObject pythonObject, PNone none) {
+            return factory().createReferenceType(cls, pythonObject, null);
         }
 
         @Specialization
-        public PReferenceType refType(Object cls, PythonObject pythonObject, PFunction callback) {
-            return factory().createReferenceType(pythonObject, callback);
+        public PReferenceType refType(PythonClass cls, PythonObject pythonObject, PFunction callback) {
+            return factory().createReferenceType(cls, pythonObject, callback);
         }
 
         @Fallback
-        public PReferenceType refType(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object object, @SuppressWarnings("unused") Object callback) {
+        public PReferenceType refType(Object cls, Object object, Object callback) {
             throw raise(PythonErrorType.TypeError, "cannot create weak reference to '%p' object", object);
         }
     }

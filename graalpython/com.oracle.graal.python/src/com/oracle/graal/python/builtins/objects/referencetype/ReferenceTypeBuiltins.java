@@ -122,9 +122,9 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
             Object object = self.getObject();
             Object name = getNameNode.execute(object, __NAME__);
             if (name == PNone.NO_VALUE) {
-                return String.format("<weakref at %s; to '%s' at %s>", self.hashCode(), object, object.hashCode());
+                return String.format("<weakref at %s; to '%s' at %s>", self.hashCode(), object.hashCode(), object.hashCode());
             } else {
-                return String.format("<weakref at %s; to '%s' at %s (%s)>", self.hashCode(), object, object.hashCode(), name);
+                return String.format("<weakref at %s; to '%s' at %s (%s)>", self.hashCode(), name, object.hashCode(), object);
             }
         }
     }
