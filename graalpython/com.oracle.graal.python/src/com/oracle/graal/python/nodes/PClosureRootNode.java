@@ -49,21 +49,37 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public abstract class PClosureRootNode extends PRootNode {
     @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;
+    private final int length;
 
     protected PClosureRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, FrameSlot[] freeVarSlots) {
         super(language, frameDescriptor);
         this.freeVarSlots = freeVarSlots;
+        this.length = freeVarSlots != null ? freeVarSlots.length : 0;
     }
 
-    @ExplodeLoop
     protected void addClosureCellsToLocals(Frame frame) {
         PCell[] closure = PArguments.getClosure(frame);
         if (closure != null) {
             assert freeVarSlots != null : "closure root node: the free var slots cannot be null when the closure is not null";
             assert closure.length == freeVarSlots.length : "closure root node: the closure must have the same length as the free var slots array";
-            for (int i = 0; i < freeVarSlots.length; i++) {
-                frame.setObject(freeVarSlots[i], closure[i]);
+            if (freeVarSlots.length < 32) {
+                addClosureCellsToLocalsExploded(frame, closure);
+            } else {
+                addClosureCellsToLocalsLoop(frame, closure);
             }
+        }
+    }
+
+    protected void addClosureCellsToLocalsLoop(Frame frame, PCell[] closure) {
+        for (int i = 0; i < length; i++) {
+            frame.setObject(freeVarSlots[i], closure[i]);
+        }
+    }
+
+    @ExplodeLoop
+    protected void addClosureCellsToLocalsExploded(Frame frame, PCell[] closure) {
+        for (int i = 0; i < length; i++) {
+            frame.setObject(freeVarSlots[i], closure[i]);
         }
     }
 }
