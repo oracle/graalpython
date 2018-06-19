@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.FileNotFoundError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -333,6 +334,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return recursive.executeWith(fd.intValue());
         }
 
+        @Fallback
+        Object doGeneric(Object o) {
+            throw raise(TypeError, "an integer is required (got type %p)", o);
+        }
+
         protected static StatNode createStatNode() {
             return StatNode.create();
         }
@@ -392,7 +398,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
             if (!f.exists(linkOptions)) {
-                throw raise(OSError, "No such file or directory: '%s'", path);
+                throw raise(FileNotFoundError, "No such file or directory: '%s'", path);
             }
             int mode = 0;
             long size = 0;
@@ -969,6 +975,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
 
             @Override
+            @TruffleBoundary
             public void run() {
                 try {
                     InputStreamReader isr = new InputStreamReader(is);
