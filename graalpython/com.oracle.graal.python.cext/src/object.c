@@ -445,7 +445,7 @@ int PyType_Ready(PyTypeObject* cls) {
     if (mappings) {
         ADD_SLOT("__len__", mappings->mp_length, -1);
         ADD_SLOT("__getitem__", mappings->mp_subscript, -2);
-        ADD_SLOT("__setitem__", mappings->mp_ass_subscript, -3);
+        ADD_SLOT_CONV("__setitem__", wrap_ssizeobjargproc, mappings->mp_ass_subscript, -3);
     }
 
     PyAsyncMethods* async = cls->tp_as_async;
