@@ -75,6 +75,7 @@ public abstract class NativeMemberNames {
     public static final String NB_ADD = "nb_add";
     public static final String NB_INDEX = "nb_index";
     public static final String NB_POW = "nb_power";
+    public static final String NB_TRUE_DIVIDE = "nb_true_divide";
     public static final String OB_FVAL = "ob_fval";
 
     public static boolean isValid(String key) {
@@ -114,6 +115,7 @@ public abstract class NativeMemberNames {
             case NB_ADD:
             case NB_INDEX:
             case NB_POW:
+            case NB_TRUE_DIVIDE:
             case OB_FVAL:
                 return true;
         }
