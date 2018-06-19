@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -140,7 +141,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double acosh(Object value,
+        public double sqrt(Object value,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
                         @Cached("create()") SqrtNode sqrtNode) {
             Object result = dispatchFloat.executeObject(value);
@@ -1026,7 +1027,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double acosh(Object value,
+        public double asin(Object value,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
                         @Cached("create()") AsinNode asinNode) {
             Object result = dispatchFloat.executeObject(value);
@@ -1412,12 +1413,26 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "pow", fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class PowNode extends PythonBuiltinNode {
+    public abstract static class PowNode extends PythonBinaryBuiltinNode {
+
+        public abstract double executeObject(Object left, Object right);
 
         @Specialization
-        double pow(int left, int right) {
+        double pow(long left, long right) {
             return pow((double) left, (double) right);
+        }
+
+        @Specialization
+        double pow(double left, long right) {
+            return pow(left, (double) right);
+        }
+
+        @Specialization
+        double pow(long left, double right) {
+            return pow((double) left, right);
         }
 
         @Specialization
@@ -1425,10 +1440,94 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return pow(left.doubleValue(), right.doubleValue());
         }
 
+        @Specialization
+        double pow(long left, PInt right) {
+            return pow((double) left, right.doubleValue());
+        }
+
+        @Specialization
+        double pow(PInt left, long right) {
+            return pow(left.doubleValue(), (double) right);
+        }
+
+        @Specialization
+        double pow(double left, PInt right) {
+            return pow(left, right.doubleValue());
+        }
+
+        @Specialization
+        double pow(PInt left, double right) {
+            return pow(left.doubleValue(), right);
+        }
+
         @TruffleBoundary
         @Specialization
         double pow(double left, double right) {
-            return Math.pow(left, right);
+            double result = 0;
+            if (!Double.isFinite(left) || !Double.isFinite(right)) {
+                if (Double.isNaN(left)) {
+                    result = right == 0 ? 1 : left;
+                } else if (Double.isNaN(right)) {
+                    result = left == 1 ? 1 : right;
+                } else if (Double.isInfinite(left)) {
+                    boolean oddRight = Double.isFinite(right) && (Math.abs(right) % 2.0) == 1;
+                    if (right > 0) {
+                        result = oddRight ? left : Math.abs(left);
+                    } else if (right == 0) {
+                        result = 1;
+                    } else {
+                        result = oddRight ? Math.copySign(0., left) : 0;
+                    }
+                } else if (Double.isInfinite(right)) {
+                    if (Math.abs(left) == 1) {
+                        result = 1;
+                    } else if (right > 0 && Math.abs(left) > 1) {
+                        result = right;
+                    } else if (right < 0 && Math.abs(left) < 1) {
+                        result = -right;
+                        if (left == 0) {
+                            throw raise(ValueError, "math domain error");
+                        }
+                    } else {
+                        result = 0;
+                    }
+                }
+            } else {
+                result = Math.pow(left, right);
+                if (!Double.isFinite(result)) {
+                    if (Double.isNaN(result)) {
+                        throw raise(ValueError, "math domain error");
+                    } else if (Double.isInfinite(result)) {
+                        if (left == 0) {
+                            throw raise(ValueError, "math domain error");
+                        } else {
+                            throw raise(OverflowError, "math range error");
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        @Specialization(guards = {"!isNumber(left)||!isNumber(right)"})
+        double pow(Object left, Object right,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchLeftFloat,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchRightFloat,
+                        @Cached("create()") PowNode powNode) {
+            Object leftFloat = dispatchLeftFloat.executeObject(left);
+            if (leftFloat == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", left);
+            }
+            Object rightFloat = dispatchRightFloat.executeObject(right);
+            if (leftFloat == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", right);
+            }
+
+            return powNode.executeObject(leftFloat, rightFloat);
+        }
+
+        public static PowNode create() {
+            return MathModuleBuiltinsFactory.PowNodeFactory.create(new PNode[0]);
         }
     }
 
@@ -1448,12 +1547,77 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "atan2", fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class Atan2Node extends PythonBuiltinNode {
+    public abstract static class Atan2Node extends PythonBinaryBuiltinNode {
+
+        public abstract double executeObject(Object left, Object right);
 
         @Specialization
-        double atan2(double left, double right) {
+        double atan2(long left, long right) {
+            return atan2DD(left, right);
+        }
+
+        @Specialization
+        double atan2(long left, double right) {
+            return atan2DD(left, right);
+        }
+
+        @Specialization
+        double atan2(double left, long right) {
+            return atan2DD(left, right);
+        }
+
+        @Specialization
+        double atan2(PInt left, PInt right) {
+            return atan2DD(left.doubleValue(), right.doubleValue());
+        }
+
+        @Specialization
+        double atan2(PInt left, long right) {
+            return atan2DD(left.doubleValue(), right);
+        }
+
+        @Specialization
+        double atan2(PInt left, double right) {
+            return atan2DD(left.doubleValue(), right);
+        }
+
+        @Specialization
+        double atan2(long left, PInt right) {
+            return atan2DD(left, right.doubleValue());
+        }
+
+        @Specialization
+        double atan2(double left, PInt right) {
+            return atan2DD(left, right.doubleValue());
+        }
+
+        @Specialization
+        double atan2DD(double left, double right) {
             return Math.atan2(left, right);
+        }
+
+        @Specialization(guards = "!isNumber(left) || !isNumber(right)")
+        double atan2(Object left, Object right,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchLeftFloat,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchRightFloat,
+                        @Cached("create()") Atan2Node recursiveNode) {
+            Object leftFloat = dispatchLeftFloat.executeObject(left);
+            if (leftFloat == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", left);
+            }
+            Object rightFloat = dispatchRightFloat.executeObject(right);
+            if (leftFloat == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", right);
+            }
+
+            return recursiveNode.executeObject(leftFloat, rightFloat);
+        }
+
+        protected Atan2Node create() {
+            return MathModuleBuiltinsFactory.Atan2NodeFactory.create(new PNode[0]);
         }
     }
 }
