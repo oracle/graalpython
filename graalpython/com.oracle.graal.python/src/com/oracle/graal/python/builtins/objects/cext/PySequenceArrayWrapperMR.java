@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
@@ -149,7 +148,7 @@ public class PySequenceArrayWrapperMR {
         }
 
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
-        Object doGeneric(PythonObject object, long idx,
+        Object doGeneric(Object object, long idx,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
             return getItemNode.executeObject(object, idx);
         }
