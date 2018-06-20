@@ -500,11 +500,13 @@ def test_leaks():
             return x
         f2()
 
+        del x
+
     for i in range(100):
         f1()
 
     # TODO: in cpython the value for count is 0 since "x" is gced after each f1() call
-    assert Foo.count == 0 or Foo.count == 1
+    assert Foo.count == 0 or Foo.count == 100
 
 
 # def test_class_and_global():
@@ -827,3 +829,24 @@ def test_import_name():
     assert 'my-key' in val
     assert val['my-key'] == 'test-val'
     del environ['my-key']
+
+
+def test_class_attr():
+    class MyClass(object):
+        a_counter = 0
+
+    def register():
+        MyClass.a_counter += 1
+
+    MyClass.a_counter += 1
+    MyClass.a_counter += 1
+    MyClass.a_counter += 1
+    MyClass.a_counter += 1
+
+    for i in range(10):
+        MyClass.a_counter += 1
+
+    for i in range(10):
+        register()
+
+    assert MyClass.a_counter == 24
