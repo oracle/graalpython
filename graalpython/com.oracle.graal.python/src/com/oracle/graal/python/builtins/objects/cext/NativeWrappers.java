@@ -189,6 +189,7 @@ public abstract class NativeWrappers {
         }
 
         public static TruffleObjectNativeWrapper wrap(TruffleObject foreignObject) {
+            assert !(foreignObject instanceof PythonNativeWrapper) : "attempting to wrap a native wrapper";
             return new TruffleObjectNativeWrapper(foreignObject);
         }
 
