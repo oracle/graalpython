@@ -64,7 +64,7 @@ public abstract class LookupAttributeInMRONode extends PNode {
     public abstract Object execute(Object klass, Object key);
 
     @Specialization(guards = {"klass == cachedKlass", "key.equals(cachedKey)", "mroLength < 32"}, limit = "5", assumptions = "lookupStable")
-    @ExplodeLoop
+    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass, String key,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("key") @SuppressWarnings("unused") String cachedKey,
