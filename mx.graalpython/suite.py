@@ -121,7 +121,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "sdk:GRAAL_SDK",
                 "ANTLR4",
-                "sulong:SULONG",
+                "sulong:SULONG_SPI",
             ],
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "1.8",
@@ -165,7 +165,7 @@ suite = {
             "results" : ["graalpython/lib-graalpython"],
             "output" : ".",
             "buildDependencies": [
-                "sulong:SULONG",
+                "sulong:SULONG_LIBS",
             ],
             "buildEnv": {
                 "POLYGLOT_INC": "<path:SULONG_LIBS>",
@@ -227,7 +227,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
-                "sulong:SULONG",
+                "sulong:SULONG_SPI",
             ],
             "sourcesPath": "graalpython.src.zip",
         },
