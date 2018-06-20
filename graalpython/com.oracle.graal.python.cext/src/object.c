@@ -460,8 +460,14 @@ int PyType_Ready(PyTypeObject* cls) {
     Py_ssize_t n = PyTuple_GET_SIZE(bases);
     Py_ssize_t i;
     for (i = 0; i < n; i++) {
-        PyTypeObject *b = polyglot_as__typeobject(PyTuple_GetItem(bases, i));
-        if (PyType_Check(b) && add_subclass((PyTypeObject *)b, cls) < 0) {
+        PyObject* base_class_object = PyTuple_GetItem(bases, i);
+        PyTypeObject* b = NULL;
+        if (polyglot_is_value(base_class_object)) {
+            b = polyglot_as__typeobject(base_class_object);
+        }  else {
+            b = (PyTypeObject*) base_class_object;
+        }
+        if (PyType_Check(b) && add_subclass(b, cls) < 0) {
         	cls->tp_flags &= ~Py_TPFLAGS_READYING;
         	return -1;
         }
