@@ -38,12 +38,10 @@
  */
 package com.oracle.graal.python.builtins.objects.referencetype;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
 import java.lang.ref.WeakReference;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -89,6 +87,7 @@ public class PReferenceType extends PythonBuiltinObject {
     }
 
     private final WeakRefStorage store;
+    private int hash = -1;
 
     @TruffleBoundary
     public PReferenceType(PythonClass cls, PythonObject pythonObject, PFunction callback) {
@@ -96,7 +95,7 @@ public class PReferenceType extends PythonBuiltinObject {
         this.store = new WeakRefStorage(this, pythonObject, callback);
     }
 
-    public Object __callback__() {
+    public Object getCallback() {
         if (this.store.callback == null) {
             return PNone.NONE;
         }
@@ -104,39 +103,28 @@ public class PReferenceType extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    public Object __call__() {
-        Object referent = this.store.get();
-        return (referent == null) ? PNone.NONE : referent;
+    public PythonObject getObject() {
+        return this.store.get();
     }
 
-    @TruffleBoundary
+    public PythonAbstractObject getPyObject() {
+        PythonObject object = getObject();
+        return (object == null) ? PNone.NONE : object;
+    }
+
     public int getWeakRefCount() {
-        return (this.store.get() == null) ? 0 : 1;
+        return (this.getObject() == null) ? 0 : 1;
     }
 
-    @Override
-    public String toString() {
-        return "<" + pythonClass.getName() + " object at " + hashCode() + ">";
-    }
-
-    @Override
-    @TruffleBoundary
-    public int hashCode() {
-        PythonObject referent = store.get();
-        if (referent != null) {
-            return referent.hashCode();
+    public int getHash() {
+        if (this.hash != -1) {
+            return this.hash;
         }
-        throw PythonLanguage.getCore().raise(TypeError);
-    }
 
-    @Override
-    @TruffleBoundary
-    public boolean equals(Object obj) {
-        PythonObject referent = store.get();
-        if (referent != null) {
-            return referent.equals(obj);
+        PythonObject object = getObject();
+        if (object != null) {
+            this.hash = object.hashCode();
         }
-        throw PythonLanguage.getCore().raise(TypeError);
+        return this.hash;
     }
-
 }

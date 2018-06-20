@@ -170,5 +170,7 @@ def test_builtin_open():
     except Exception as e:
         print(e)
         success = False
+    finally:
+        unlink(file_name)
 
     assert success

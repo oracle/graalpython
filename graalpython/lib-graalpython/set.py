@@ -35,6 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 def update(self, *others):
     for seq in others:
         if not hasattr(seq, '__iter__'):
@@ -42,6 +43,26 @@ def update(self, *others):
         iterator = seq.__iter__()
         for el in iterator:
             self.add(el)
+
+
+def difference(self, *others):
+    diff_set = self
+    for seq in others:
+        diff_set = set(el for el in diff_set if el not in set(seq))
+    return diff_set
+
+
+def difference_update(self, *others):
+    for seq in others:
+        other_set = set(seq)
+        self_copy = set(self)
+        for el in self_copy:
+            if el in other_set:
+                self.remove(el)
+
+
+def frozenset_difference(self, *others):
+    return frozenset(difference(self, *others))
 
 
 def set_repr(self):
@@ -83,7 +104,11 @@ def frozenset_copy(self):
 
 
 set.update = update
+set.difference = difference
+set.difference_update = difference_update
 set.__repr__ = set_repr
 set.copy = set_copy
+
+frozenset.difference = frozenset_difference
 frozenset.__repr__ = frozenset_repr
 frozenset.copy = frozenset_copy
