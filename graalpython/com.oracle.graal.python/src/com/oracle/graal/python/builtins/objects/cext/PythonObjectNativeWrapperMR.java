@@ -97,7 +97,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public class PythonObjectNativeWrapperMR {
     protected static String GP_OBJECT = "gp_object";
 
-    @Resolve(message = "com.oracle.truffle.llvm.runtime.interop.GetDynamicType")
+    @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
     abstract static class GetDynamicTypeNode extends Node {
         @Child GetClassNode getClass = GetClassNode.create();
 
