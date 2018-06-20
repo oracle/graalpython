@@ -60,8 +60,9 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -231,9 +232,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(PythonObjectNativeWrapper value,
+        Object run(PythonNativeWrapper value,
                         @Cached("create()") AsLong recursive) {
-            return recursive.executeWith(value.getPythonObject());
+            return recursive.executeWith(value.getDelegate());
         }
 
         private BuiltinConstructors.IntNode getIntNode() {
@@ -634,8 +635,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PNativeToPTypeNode extends PForeignToPTypeNode {
 
         @Specialization
-        protected static PythonAbstractObject fromNativeNone(PythonObjectNativeWrapper nativeWrapper) {
-            return nativeWrapper.getPythonObject();
+        protected static Object fromNativeNone(PythonNativeWrapper nativeWrapper) {
+            return nativeWrapper.getDelegate();
         }
 
         public static PNativeToPTypeNode create() {
@@ -1040,8 +1041,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private GetClassNode getClassNode;
 
         @Specialization
-        long doPythonObject(PythonObjectNativeWrapper nativeWrapper) {
-            PythonClass pclass = getClassNode().execute(nativeWrapper.getPythonObject());
+        long doPythonObject(PythonNativeWrapper nativeWrapper) {
+            PythonClass pclass = getClassNode().execute(nativeWrapper.getDelegate());
             return pclass.getFlags();
         }
 

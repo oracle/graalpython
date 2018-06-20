@@ -40,6 +40,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ReadArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;

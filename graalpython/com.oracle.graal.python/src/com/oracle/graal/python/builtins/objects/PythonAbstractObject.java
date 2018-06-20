@@ -38,7 +38,7 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolutionForeign;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
