@@ -160,7 +160,7 @@ public abstract class CExtNodes {
             return object.getPythonObject();
         }
 
-        @Specialization(guards = "isForeignObject(object)")
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)"})
         PythonAbstractObject doNativeObject(TruffleObject object) {
             return factory().createNativeObjectWrapper(object);
         }
@@ -202,6 +202,10 @@ public abstract class CExtNodes {
                 getClassNode = insert(GetClassNode.create());
             }
             return getClassNode.execute(obj) == getCore().getForeignClass();
+        }
+
+        protected boolean isNativeWrapper(Object obj) {
+            return obj instanceof PythonNativeWrapper;
         }
 
         @TruffleBoundary
