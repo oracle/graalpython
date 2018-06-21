@@ -91,35 +91,60 @@ POLYGLOT_DECLARE_TYPE(PyBufferDecorator);
 POLYGLOT_DECLARE_TYPE(PyFloatObject);
 
 
-PyObject* handle_exception_and_cast(void* val);
-void* handle_exception(void* val);
-
 // TODO cache landing function ?
 #define PY_TRUFFLE_LANDING ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)))
 #define PY_TRUFFLE_LANDING_L ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)))
 #define PY_TRUFFLE_LANDING_D ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)))
+#define PY_TRUFFLE_LANDING_PTR ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_ptr", SRC_CS)))
 #define PY_TRUFFLE_CEXT_LANDING ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall", SRC_CS)))
 #define PY_TRUFFLE_CEXT_LANDING_L ((uint64_t (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)))
 #define PY_TRUFFLE_CEXT_LANDING_D ((double (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)))
+#define PY_TRUFFLE_CEXT_LANDING_PTR ((void* (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)))
+
+/* upcall macros for calling into Python */
+
+/* Call function with return type 'PyObject *'; does polyglot cast and error handling */
 #define UPCALL_O(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function with a primitive return; no polyglot cast but error handling */
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function with return type 'int'; no polyglot cast but error handling */
 #define UPCALL_I(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+
+/* Call function with return type 'long'; no polyglot cast but error handling */
 #define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+
+/* Call function with return type 'double'; no polyglot cast but error handling */
 #define UPCALL_D(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING_D((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function with return type 'void*'; no polyglot cast and no error handling */
+#define UPCALL_PTR(__name__, ...) (PY_TRUFFLE_LANDING_PTR(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
 #define UPCALL_CEXT_O(__name__, ...) handle_exception_and_cast(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call void function of 'python_cext' module; no polyglot cast and no error handling */
 #define UPCALL_CEXT_VOID(__name__, ...) (PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
-#define UPCALL_CEXT_PTR(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with return type 'PyObject*'; no polyglot cast but error handling */
+#define UPCALL_CEXT_NOCAST(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with return type 'void*'; no polyglot cast and no error handling */
+#define UPCALL_CEXT_PTR(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_PTR(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with a primitive return; no polyglot cast but error handling */
 #define UPCALL_CEXT_P(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_L(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with return type 'int'; no polyglot cast but error handling */
 #define UPCALL_CEXT_I(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+
+/* Call function of 'python_cext' module with return type 'long'; no polyglot cast but error handling */
 #define UPCALL_CEXT_L(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+
+/* Call function of 'python_cext' module with return type 'double'; no polyglot cast but error handling */
 #define UPCALL_CEXT_D(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_D(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
-void* native_to_java(PyObject* obj);
-extern void* to_java(PyObject* obj);
-extern void* to_java_type(PyTypeObject* cls);
-void* native_to_java(PyObject* obj);
-extern PyObject* to_sulong(void *o);
-extern PyObject* explicit_cast(PyObject* cobj);
 #define as_char_pointer(obj) ((const char*)UPCALL_CEXT_PTR("to_char_pointer", native_to_java(obj)))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
 #define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long long), polyglot_from_string("long long", "utf-8"))))
@@ -131,6 +156,14 @@ extern PyObject* explicit_cast(PyObject* cobj);
 #define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
 
+
+PyObject* handle_exception_and_cast(void* val);
+void* handle_exception(void* val);
+void* native_to_java(PyObject* obj);
+extern void* to_java(PyObject* obj);
+extern void* to_java_type(PyTypeObject* cls);
+extern PyObject* to_sulong(void *o);
+extern PyObject* explicit_cast(PyObject* cobj);
 
 // defined in 'exceptions.c'
 void initialize_exceptions();

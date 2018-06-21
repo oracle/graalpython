@@ -119,7 +119,7 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
             case 'A':
                 c[1] = 's';
                 ;
-                allocated_strings[cnt] = allocated = as_char_pointer(UPCALL_CEXT_PTR("builtin_ascii", native_to_java(polyglot_get_arg(cnt + 2))));
+                allocated_strings[cnt] = allocated = as_char_pointer(UPCALL_CEXT_NOCAST("builtin_ascii", native_to_java(polyglot_get_arg(cnt + 2))));
                 ASSIGN(cnt, allocated);
                 break;
             case 'U':

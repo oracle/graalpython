@@ -60,7 +60,7 @@ PyObject * PyBytes_FromString(const char *str) {
 }
 
 char* PyBytes_AsString(PyObject *obj) {
-    return UPCALL_CEXT_PTR("PyTruffle_Bytes_AsString", native_to_java(obj), ERROR_MARKER);
+    return UPCALL_CEXT_NOCAST("PyTruffle_Bytes_AsString", native_to_java(obj), ERROR_MARKER);
 }
 
 int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {

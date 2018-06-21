@@ -1172,6 +1172,7 @@ def PyTruffle_Upcall(rcv, name, *args):
         converted[i] = to_java(args[i])
     return to_sulong(getattr(to_java(rcv), name)(*converted))
 
+
 @may_raise(to_long(-1))
 def PyTruffle_Upcall_l(rcv, name, *args):
     nargs = len(args)
@@ -1180,6 +1181,7 @@ def PyTruffle_Upcall_l(rcv, name, *args):
         converted[i] = to_java(args[i])
     return to_long(getattr(rcv, name)(*converted))
 
+
 @may_raise(to_double(-1.0))
 def PyTruffle_Upcall_d(rcv, name, *args):
     nargs = len(args)
@@ -1187,6 +1189,17 @@ def PyTruffle_Upcall_d(rcv, name, *args):
     for i in range(nargs):
         converted[i] = to_java(args[i])
     return to_double(getattr(rcv, name)(*converted))
+
+
+@may_raise(0)
+def PyTruffle_Upcall_ptr(rcv, name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    # returns a pointer, i.e., we do no conversion since this can be any pointer object
+    return getattr(rcv, name)(*converted)
+
 
 def PyTruffle_Cext_Upcall(name, *args):
     nargs = len(args)
@@ -1210,3 +1223,12 @@ def PyTruffle_Cext_Upcall_d(name, *args):
     for i in range(nargs):
         converted[i] = to_java(args[i])
     return to_double(globals()[name](*converted))
+
+
+def PyTruffle_Cext_Upcall_ptr(name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    # returns a pointer, i.e., we do no conversion since this can be any pointer object
+    return globals()[name](*converted)
