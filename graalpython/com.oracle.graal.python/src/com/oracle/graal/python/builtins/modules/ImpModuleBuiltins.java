@@ -174,16 +174,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (SecurityException | IOException e) {
                 throw raise(ImportError, "cannot load %s: %s", path, e.getMessage());
             } catch (RuntimeException e) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(e.getMessage());
-                Throwable cause = e;
-                while ((cause = cause.getCause()) != null) {
-                    if (cause.getMessage() != null) {
-                        sb.append(", ");
-                        sb.append(cause.getMessage());
-                    }
-                }
-                throw raise(ImportError, "cannot load %s: %s", path, sb.toString());
+                throw reportImportError(e, path);
             }
             TruffleObject pyinitFunc;
             try {
@@ -207,6 +198,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 e.printStackTrace();
                 throw raise(ImportError, "cannot initialize %s with PyInit_%s", path, basename);
+            } catch (RuntimeException e) {
+                throw reportImportError(e, path);
             }
         }
 
@@ -236,6 +229,19 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 setItemNode = insert(SetItemNode.create());
             }
             return setItemNode;
+        }
+
+        private PException reportImportError(RuntimeException e, String path) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(e.getMessage());
+            Throwable cause = e;
+            while ((cause = cause.getCause()) != null) {
+                if (cause.getMessage() != null) {
+                    sb.append(", ");
+                    sb.append(cause.getMessage());
+                }
+            }
+            return raise(ImportError, "cannot load %s: %s", path, sb.toString());
         }
 
     }
