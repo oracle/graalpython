@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -1204,6 +1206,27 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object get() {
             return getContext().getCustomThreadState();
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Add_Subclass", fixedNumOfArguments = 3)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Add_Subclass extends NativeBuiltin {
+
+        @Specialization
+        int doManagedSubclass(PythonClassNativeWrapper base, @SuppressWarnings("unused") Object key, PythonClassNativeWrapper value) {
+            addToSet((PythonClass) base.getPythonObject(), (PythonClass) value.getPythonObject());
+            return 0;
+        }
+
+        @Fallback
+        int doGeneric(@SuppressWarnings("unused") Object base, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value) {
+            return raiseNative(-1, SystemError, "Builtin can only handle managed base class.");
+        }
+
+        @TruffleBoundary
+        private static void addToSet(PythonClass base, PythonClass value) {
+            base.getSubClasses().add(value);
         }
     }
 }

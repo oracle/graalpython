@@ -738,14 +738,6 @@ def PyType_IsSubtype(a, b):
     return 1 if b in a.mro() else 0
 
 
-@may_raise
-def PyTruffle_Add_Subclass(bases_dict, key, cls):
-    if not bases_dict:
-        bases_dict = dict()
-    bases_dict[key] = cls
-    return bases_dict
-
-
 def PyTuple_New(size):
     return (None,) * size
 

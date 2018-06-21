@@ -163,12 +163,24 @@ Py_ssize_t PyObject_Size(PyObject *o) {
 }
 
 static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
-	PyObject* result = UPCALL_CEXT_O("PyTruffle_Add_Subclass", native_to_java(base->tp_subclasses), native_to_java(PyLong_FromVoidPtr(type)), native_to_java((PyObject*)type));
-	if (result == NULL) {
-		return -1;
-	}
-	base->tp_subclasses = result;
-	return 0;
+    void* key = PyLong_FromVoidPtr((void *) type);
+    if (key == NULL) {
+        return -1;
+    }
+    if (polyglot_is_value(base)) {
+        return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", native_to_java(base), native_to_java(key), native_to_java(type)));
+    } else {
+        PyObject *dict = base->tp_subclasses;
+        if (dict == NULL) {
+            base->tp_subclasses = dict = PyDict_New();
+            if (dict == NULL) {
+                return -1;
+            }
+        }
+        // TODO value should be a weak reference !
+        return PyDict_SetItem(base->tp_subclasses, key, type);
+    }
+	return -1;
 }
 
 /* Special C landing functions that convert some arguments to primitives. */
