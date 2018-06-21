@@ -38,13 +38,14 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.NativeWrapper;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
  * Wraps a PythonObject to proviate a native view with a shape like {@code PyNumberMethods}.
  */
-public class PyNumberMethodsWrapper implements TruffleObject {
+public class PyNumberMethodsWrapper extends NativeWrapper {
 
     private final Object delegate;
 

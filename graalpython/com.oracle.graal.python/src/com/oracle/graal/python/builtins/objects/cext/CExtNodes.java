@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPoin
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.NativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
@@ -128,7 +129,7 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrap(object);
         }
 
-        @Specialization(guards = {"isForeignObject(object)"})
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)"})
         Object doPythonClass(TruffleObject object) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
@@ -151,8 +152,8 @@ public abstract class CExtNodes {
             return o instanceof PythonNativeObject;
         }
 
-        protected static boolean isForeignObject(Object o) {
-            return !(o instanceof PythonAbstractObject);
+        protected static boolean isNativeWrapper(Object o) {
+            return o instanceof NativeWrapper;
         }
 
         public static ToSulongNode create() {
@@ -220,7 +221,7 @@ public abstract class CExtNodes {
         }
 
         protected boolean isNativeWrapper(Object obj) {
-            return obj instanceof PythonNativeWrapper;
+            return obj instanceof NativeWrapper;
         }
 
         @TruffleBoundary
@@ -376,13 +377,13 @@ public abstract class CExtNodes {
     public static class GetNativeClassNode extends PBaseNode {
 
         @Child PCallNativeNode callGetObTypeNode;
-        @Child ToSulongNode toSulongNode;
         @Child ToJavaNode toJavaNode;
 
         @CompilationFinal private TruffleObject func;
 
         public PythonClass execute(PythonNativeObject object) {
-            Object[] args = new Object[]{getToSulongNode().execute(object.object)};
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            Object[] args = new Object[]{object.object};
             return (PythonClass) getToJavaNode().execute(getCallGetObTypeNode().execute(getObTypeFunction(), args));
         }
 
@@ -392,14 +393,6 @@ public abstract class CExtNodes {
                 toJavaNode = insert(ToJavaNode.create());
             }
             return toJavaNode;
-        }
-
-        private ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
-            }
-            return toSulongNode;
         }
 
         private PCallNativeNode getCallGetObTypeNode() {

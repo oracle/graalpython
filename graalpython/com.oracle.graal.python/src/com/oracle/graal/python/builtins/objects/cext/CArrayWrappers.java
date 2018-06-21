@@ -38,6 +38,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.NativeWrapper;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
@@ -48,7 +49,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public abstract class CArrayWrappers {
 
-    public abstract static class CArrayWrapper implements TruffleObject {
+    public abstract static class CArrayWrapper extends NativeWrapper {
 
         private Object nativePointer;
 
