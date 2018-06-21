@@ -157,18 +157,95 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "exp", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class ExpNode extends PythonBuiltinNode {
+    public abstract static class ExpNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
 
         @Specialization
-        public double exp(int value) {
-            return Math.exp(value);
+        public double expL(long value) {
+            return expD(value);
         }
 
         @Specialization
-        public double exp(double value) {
-            return Math.exp(value);
+        @TruffleBoundary
+        public double expD(double value) {
+            double result = Math.exp(value);
+            if (Double.isFinite(value) && Double.isInfinite(result)) {
+                throw raise(OverflowError, "math range error");
+            }
+            return result;
         }
+
+        @Specialization
+        @TruffleBoundary
+        public double expPI(PInt value) {
+            return expD(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double expO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") ExpNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static ExpNode create() {
+            return MathModuleBuiltinsFactory.ExpNodeFactory.create(new PNode[0]);
+        }
+
+    }
+
+    @Builtin(name = "expm1", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class Expm1Node extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double expm1L(long value) {
+            return expm1D(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double expm1D(double value) {
+            double result = Math.expm1(value);
+            if (Double.isFinite(value) && Double.isInfinite(result)) {
+                throw raise(OverflowError, "math range error");
+            }
+            return result;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double expm1PI(PInt value) {
+            return expm1D(value.getValue().doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double expm1O(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") Expm1Node recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static Expm1Node create() {
+            return MathModuleBuiltinsFactory.Expm1NodeFactory.create(new PNode[0]);
+        }
+
     }
 
     @Builtin(name = "ceil", fixedNumOfArguments = 1)
@@ -645,7 +722,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class FrexpNode extends PythonBuiltinNode {
+    public abstract static class FrexpNode extends PythonUnaryBuiltinNode {
+
+        public abstract PTuple executeObject(Object value);
 
         public static PTuple frexp(double value, PythonObjectFactory factory) {
             int exponent = 0;
@@ -695,17 +774,32 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PTuple frexpL(long value) {
-            return frexp(value, factory());
+            return frexpD(value);
         }
 
         @Specialization
+        @TruffleBoundary
         public PTuple frexpPI(PInt value) {
-            return frexp(value.getValue().doubleValue(), factory());
+            PTuple result = frexpD(value.getValue().doubleValue());
+            if (Double.isInfinite((double) result.getItem(0))) {
+                throw raise(OverflowError, "int too large to convert to float");
+            }
+            return result;
         }
 
-        @Fallback
-        public PTuple frexpO(Object value) {
-            throw raise(PythonErrorType.TypeError, "must be real number, not %p", value);
+        @Specialization(guards = "!isNumber(value)")
+        public PTuple frexpO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") FrexpNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static FrexpNode create() {
+            return MathModuleBuiltinsFactory.FrexpNodeFactory.create(new PNode[0]);
         }
     }
 
@@ -1539,7 +1633,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         private static final double LOG2 = Math.log(2.0);
 
-        private static double logBigInteger(BigInteger val) {
+        protected static double logBigInteger(BigInteger val) {
             int blex = val.bitLength() - 1022; // any value in 60..1023 is ok
             BigInteger value = blex > 0 ? val.shiftRight(blex) : val;
             double res = Math.log(value.doubleValue());
@@ -1718,6 +1812,180 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         public static LogNode create() {
             return MathModuleBuiltinsFactory.LogNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "log1p", fixedNumOfArguments = 1, doc = "Return the natural logarithm of 1+x (base e).\n\n" + "The result is computed in a way which is accurate for x near zero.")
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class Log1pNode extends PythonUnaryBuiltinNode {
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double log1pL(long value) {
+            return log1pD(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double log1pPI(PInt value) {
+            return log1pD(value.getValue().doubleValue());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double log1pD(double value) {
+            if (value == 0 || value == Double.POSITIVE_INFINITY || value == Double.NaN) {
+                return value;
+            }
+            double result = Math.log1p(value);
+            if (Double.isInfinite(result)) {
+                throw raise(ValueError, "math domain error");
+            }
+            return result;
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double log1pO(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") Log1pNode recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static Log1pNode create() {
+            return MathModuleBuiltinsFactory.Log1pNodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "log2", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class Log2Node extends PythonUnaryBuiltinNode {
+
+        private static final double LOG2 = Math.log(2);
+        private static final BigInteger TWO = BigInteger.valueOf(2);
+
+        public abstract double executeObject(Object value);
+
+        @Specialization
+        public double log2L(long value) {
+            return log2D(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double log2PI(PInt value) {
+            BigInteger bValue = value.getValue();
+            if (bValue.compareTo(BigInteger.ZERO) <= 0) {
+                throw raise(ValueError, "math domain error");
+            }
+            int e = bValue.bitLength() - 1;
+            if (bValue.compareTo(TWO.pow(e)) == 0) {
+                return e;
+            }
+            // this doesn't have to be as accured as should be
+            return LogNode.logBigInteger(bValue) / LOG2;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double log2D(double value) {
+            if (value <= 0) {
+                throw raise(ValueError, "math domain error");
+            }
+            PTuple frexpR = FrexpNode.frexp(value, factory());
+            double m = (double) frexpR.getItem(0);
+            int e = (int) frexpR.getItem(1);
+            if (value >= 1.0) {
+                return Math.log(2.0 * m) / LOG2 + (e - 1);
+            } else {
+                return Math.log(m) / LOG2 + e;
+            }
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double log2O(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") Log2Node recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static Log2Node create() {
+            return MathModuleBuiltinsFactory.Log2NodeFactory.create(new PNode[0]);
+        }
+    }
+
+    @Builtin(name = "log10", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class Log10Node extends PythonUnaryBuiltinNode {
+
+        private static final double LOG10 = Math.log(10);
+
+        public abstract double executeObject(Object value);
+
+        private static int getDigitCount(BigInteger number) {
+            double factor = Math.log(2) / Math.log(10);
+            int digitCount = (int) (factor * number.bitLength() + 1);
+            if (BigInteger.TEN.pow(digitCount - 1).compareTo(number) > 0) {
+                return digitCount - 1;
+            }
+            return digitCount;
+        }
+
+        @Specialization
+        public double log10L(long value) {
+            return log10D(value);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double log10PI(PInt value) {
+            BigInteger bValue = value.getValue();
+            if (bValue.compareTo(BigInteger.ZERO) <= 0) {
+                throw raise(ValueError, "math domain error");
+            }
+            int digitCount = getDigitCount(bValue) - 1;
+            if (bValue.compareTo(BigInteger.TEN.pow(digitCount)) == 0) {
+                return digitCount;
+            }
+            return LogNode.logBigInteger(bValue) / LOG10;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public double log10D(double value) {
+            if (value <= 0) {
+                throw raise(ValueError, "math domain error");
+            }
+            return Math.log10(value);
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public double log10O(Object value,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") Log10Node recursiveNode) {
+            Object result = dispatchFloat.executeObject(value);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", value);
+            }
+            return recursiveNode.executeObject(result);
+        }
+
+        protected static Log10Node create() {
+            return MathModuleBuiltinsFactory.Log10NodeFactory.create(new PNode[0]);
         }
     }
 

@@ -290,6 +290,66 @@ class MathTests(unittest.TestCase):
         math.log(10, MyFloat())
         self.assertRaises(ValueError, math.log, 0)
 
+    def testLog1p(self):
+        self.assertRaises(TypeError, math.log1p)
+        for n in [2, 2**90, 2**300]:
+            self.assertAlmostEqual(math.log1p(n), math.log1p(float(n)))
+        self.assertRaises(ValueError, math.log1p, -1)
+        self.assertEqual(math.log1p(INF), INF)
+        
+        # test of specializations
+        self.ftest('log1p(MyFloat())', math.log1p(MyFloat()), 0.4700036292457356)
+        self.assertRaises(TypeError, math.log1p, 'ahoj')
+        self.ftest('log1p(BIG_INT)', math.log1p(BIG_INT), 71.38013712610532)
+
+    #@requires_IEEE_754
+    def testLog2(self):
+        self.assertRaises(TypeError, math.log2)
+
+        # Check some integer values
+        self.assertEqual(math.log2(1), 0.0)
+        self.assertEqual(math.log2(2), 1.0)
+        self.assertEqual(math.log2(4), 2.0)
+
+        # Large integer values
+        self.assertEqual(math.log2(2**1023), 1023.0)
+        self.assertEqual(math.log2(2**1024), 1024.0)
+        self.assertEqual(math.log2(2**2000), 2000.0)
+
+        self.assertRaises(ValueError, math.log2, -1.5)
+        self.assertRaises(ValueError, math.log2, NINF)
+        self.assertTrue(math.isnan(math.log2(NAN)))
+
+        # test of specializations
+        self.ftest('log2(MyFloat())', math.log2(MyFloat()), -0.7369655941662062)
+        self.assertRaises(TypeError, math.log2, 'ahoj')
+        self.ftest('log2(BIG_INT)', math.log2(BIG_INT), 102.97976984980635)
+
+    def testLog2Exact(self):
+        # Check that we get exact equality for log2 of powers of 2.
+        actual = [math.log2(math.ldexp(1.0, n)) for n in range(-1074, 1024)]
+        expected = [float(n) for n in range(-1074, 1024)]
+        self.assertEqual(actual, expected)
+
+    def testLog10(self):
+        self.assertRaises(TypeError, math.log10)
+        self.ftest('log10(0.1)', math.log10(0.1), -1)
+        self.ftest('log10(1)', math.log10(1), 0)
+        self.ftest('log10(10)', math.log10(10), 1)
+        self.ftest('log10(10**1000)', math.log10(10**1000), 1000.0)
+        self.assertRaises(ValueError, math.log10, -1.5)
+        self.assertRaises(ValueError, math.log10, -10**1000)
+        self.assertRaises(ValueError, math.log10, NINF)
+        self.assertEqual(math.log(INF), INF)
+        self.assertTrue(math.isnan(math.log10(NAN)))
+
+        # test of specializations
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('log10(MyFloat())', math.log10(MyFloat()), -0.22184874961635637)
+        self.assertRaises(TypeError, math.log10, 'ahoj')
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('log10(BIG_INT)', math.log10(BIG_INT), 30.999999671364986)
+
     def testIsfinite(self):
         self.assertTrue(math.isfinite(0.0))
         self.assertTrue(math.isfinite(-0.0))
@@ -952,6 +1012,36 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.fmod(2432902008176640000999, 12.12), 10.396369527944033)
         self.assertEqual(math.fmod(-1e-100, 1e100), -1e-100)
 
+    def testExp(self):
+        self.assertRaises(TypeError, math.exp)
+        self.ftest('exp(-1)', math.exp(-1), 1/math.e)
+        self.ftest('exp(0)', math.exp(0), 1)
+        self.ftest('exp(1)', math.exp(1), math.e)
+        self.assertEqual(math.exp(INF), INF)
+        self.assertEqual(math.exp(NINF), 0.)
+        self.assertTrue(math.isnan(math.exp(NAN)))
+        self.assertRaises(OverflowError, math.exp, 1000000)
+        
+        # test of specializations
+        self.ftest('exp(MyFloat())', math.exp(MyFloat()), 1.8221188003905089)
+        self.assertRaises(TypeError, math.exp, 'ahoj')
+        self.assertRaises(OverflowError, math.exp, BIG_INT)
+
+    def testExpm1(self):
+        self.assertRaises(TypeError, math.exp)
+        self.ftest('expm1(-1)', math.expm1(-1), 1/math.e-1)
+        self.ftest('expm1(0)', math.expm1(0), 0)
+        self.ftest('expm1(1)', math.expm1(1), math.e-1)
+        self.assertEqual(math.expm1(INF), INF)
+        self.assertEqual(math.expm1(NINF), -1.)
+        self.assertTrue(math.isnan(math.expm1(NAN)))
+        self.assertRaises(OverflowError, math.expm1, 1000000)
+
+        # test of specializations
+        self.ftest('expm1(MyFloat())', math.expm1(MyFloat()), 0.8221188003905089)
+        self.assertRaises(TypeError, math.expm1, 'ahoj')
+        self.assertRaises(OverflowError, math.expm1, BIG_INT)
+
     def test_frexp(self):
         self.assertRaises(TypeError, math.frexp)
 
@@ -970,6 +1060,11 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.frexp(NINF)[0], NINF)
         self.assertTrue(math.isnan(math.frexp(NAN)[0]))
 
+        # test of specializations
+        testfrexp('frexp(MyFloat())', math.frexp(MyFloat()), (0.6, 0))
+        self.assertRaises(TypeError, math.log1p, 'ahoj')
+        testfrexp('log1p(BIG_INT)', math.frexp(BIG_INT), (0.9860753853527933, 103))
+
         testfrexp('frexp(True)', math.frexp(True), (0.5, 1))
         testfrexp('frexp(False)', math.frexp(False), (0.0, 0))
         testfrexp('frexp(6227020800)', math.frexp(6227020800), (0.7249206304550171, 33))
@@ -986,6 +1081,8 @@ class MathTests(unittest.TestCase):
 
         testfrexp('frexp(X(10))', math.frexp(X(10)), (0.625, 4))
         testfrexp('frexp(Y(11.11))', math.frexp(Y(11.11)), (0.694375, 4))
+        testfrexp('frexp(2**1023)', math.frexp(2**1023), (0.5, 1024))
+        self.assertRaises(OverflowError, math.frexp, 2**1024)
 
     def test_ldexp(self):
         self.assertRaises(TypeError, math.ldexp)
