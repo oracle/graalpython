@@ -1399,7 +1399,12 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        boolean eq(boolean left, boolean right) {
+            return left == right;
+        }
 
         @Specialization
         boolean eqII(int a, int b) {
@@ -1407,7 +1412,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqPiB(PInt a, boolean b) {
+        boolean eqPiB(PInt a, boolean b) throws ArithmeticException {
             return a.longValueExact() == PInt.intValue(b);
         }
 
@@ -1436,7 +1441,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqPiL(PInt a, long b) {
+        boolean eqPiL(PInt a, long b) throws ArithmeticException {
             return a.longValueExact() == b;
         }
 
@@ -1450,7 +1455,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        boolean eqLPi(long b, PInt a) {
+        boolean eqLPi(long b, PInt a) throws ArithmeticException {
             return a.longValueExact() == b;
         }
 
@@ -1959,18 +1964,28 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FloatNode extends PythonBuiltinNode {
         @Specialization
-        double bitLength(int self) {
+        double doBoolean(boolean self) {
+            return self ? 1.0 : 0.0;
+        }
+
+        @Specialization
+        double doInt(int self) {
             return self;
         }
 
         @Specialization
-        double bitLength(long self) {
+        double doLong(long self) {
             return self;
         }
 
         @Specialization
-        double bitLength(PInt self) {
+        double doPInt(PInt self) {
             return self.doubleValue();
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }

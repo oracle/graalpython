@@ -49,23 +49,25 @@ class SetSubclass(set):
 
 
 default_typecheck_args = lambda: (
-            (set(),), 
-            (set([1,2,3]),), 
-            (set({'a', 'b'}),), 
-            (set([None]),), 
-            (frozenset(),), 
-            (frozenset([1,2,3]),), 
-            (frozenset({'a', 'b'}),), 
-            (frozenset([None]),), 
-            (FrozenSetSubclass(),), 
-            (SetSubclass([None]),), 
+            (set(),),
+            (set([1, 2, 3]),),
+            (set({'a', 'b'}),),
+            (set([None]),),
+            (frozenset(),),
+            (frozenset([1, 2, 3]),),
+            (frozenset({'a', 'b'}),),
+            (frozenset([None]),),
+            (FrozenSetSubclass(),),
+            (SetSubclass([None]),),
             ({'a': "hello", 'b': "world"},),
             ('a',),
             (1,),
             (None,),
         )
 
+
 class TestPySet(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPySet, self).compile_module(name)
@@ -73,7 +75,7 @@ class TestPySet(CPyExtTestCase):
     test_PySet_New = CPyExtFunction(
         lambda args: set(args[0]),
         lambda: (
-            ([1, 2, 3],), 
+            ([1, 2, 3],),
             ({'a': "hello", 'b': "world"},),
             ({'a', 'b'},),
             ('a',),
@@ -88,7 +90,7 @@ class TestPySet(CPyExtTestCase):
     test_PyFrozenSet_New = CPyExtFunction(
         lambda args: frozenset(args[0]),
         lambda: (
-            ([1, 2, 3],), 
+            ([1, 2, 3],),
             ({'a': "hello", 'b': "world"},),
             ({'a', 'b'},),
             ('a',),
@@ -99,7 +101,7 @@ class TestPySet(CPyExtTestCase):
         arguments=["PyObject* iterable"],
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PyFrozenSet_Check = CPyExtFunction(
         lambda args: isinstance(args[0], frozenset),
         default_typecheck_args,
@@ -126,7 +128,7 @@ class TestPySet(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PyAnySet_Check = CPyExtFunction(
         lambda args: isinstance(args[0], set) or isinstance(args[0], frozenset),
         default_typecheck_args,
@@ -135,7 +137,7 @@ class TestPySet(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PySet_Check = CPyExtFunction(
         lambda args: isinstance(args[0], set),
         default_typecheck_args,

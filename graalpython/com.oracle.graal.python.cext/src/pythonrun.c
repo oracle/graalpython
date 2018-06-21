@@ -38,7 +38,7 @@
  */
 #include "capi.h"
 
-PyAPI_FUNC(PyObject *) PyRun_StringFlags(const char* source, int type, PyObject* globals, PyObject* locals, PyCompilerFlags* ignored) {
+PyObject* PyRun_StringFlags(const char* source, int type, PyObject* globals, PyObject* locals, PyCompilerFlags* ignored) {
     const char* stype;
     if (type == Py_single_input) {
         stype = "single";
@@ -49,13 +49,6 @@ PyAPI_FUNC(PyObject *) PyRun_StringFlags(const char* source, int type, PyObject*
     } else {
         return NULL;
     }
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyRun_String", truffle_read_string(source),
-                                      truffle_read_string(stype), to_java(globals), to_java(locals),
-                                      ERROR_MARKER);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyRun_String", polyglot_from_string(source, SRC_CS), polyglot_from_string(stype, SRC_CS), native_to_java(globals), native_to_java(locals));
 }
 

@@ -53,6 +53,13 @@ def _reference_format(args):
     raise args[0](args[1].lower() % args[2:])
 
 
+def _reference_fetch(args):
+    try:
+        raise args[0]
+    except:
+        return sys.exc_info()[0]
+
+
 def _is_exception_class(exc):
     return isinstance(exc, type) and issubclass(exc, BaseException)
 
@@ -81,10 +88,10 @@ class Dummy:
 
 
 class TestPyNumber(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyNumber, self).compile_module(name)
-
 
     test_PyErr_SetString = CPyExtFunctionVoid(
         _reference_setstring,
@@ -99,7 +106,7 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyErr_SetObject = CPyExtFunctionVoid(
         _reference_setstring,
         lambda: (
@@ -113,13 +120,13 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyErr_SetNone = CPyExtFunctionVoid(
         _reference_setnone,
         lambda: (
-            (ValueError, ),
-            (TypeError, ),
-            (KeyError, ),
+            (ValueError,),
+            (TypeError,),
+            (KeyError,),
         ),
         resultspec="O",
         argspec='O',
@@ -160,7 +167,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_PrintEx",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyErr_GivenExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
         lambda: (
@@ -179,7 +186,36 @@ class TestPyNumber(CPyExtTestCase):
         arguments=["PyObject* err", "PyObject* exc"],
         cmpfunc=unhandled_error_compare
     )
- 
+
+    test_PyErr_GivenExceptionMatchesNative = CPyExtFunction(
+        lambda args: args[2],
+        lambda: (
+            # ValueError = 0
+            # KeyError = 1
+            (ValueError, 0, True),
+            (ValueError, 1, False),
+            (KeyError, 0, False),
+            (KeyError, 1, True),
+            (Dummy, 0, False),
+            (Dummy, 1, False),
+        ),
+        code="""int PyErr_GivenExceptionMatchesNative(PyObject* exc, int selector, int unused) {
+            switch(selector) {
+            case 0:
+                return exc == PyExc_ValueError;
+            case 1:
+                return exc == PyExc_KeyError;
+            }
+            return 0;
+        }
+        """,
+        resultspec="i",
+        argspec='Oii',
+        arguments=["PyObject* exc", "int selector", "int unused"],
+        callfunction="PyErr_GivenExceptionMatchesNative",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyErr_Occurred = CPyExtFunction(
         lambda args: args[0] if _is_exception_class(args[0]) else SystemError,
         lambda: (
@@ -202,7 +238,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_Occurred",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyErr_ExceptionMatches = CPyExtFunction(
         _reference_givenexceptionmatches,
         lambda: (
@@ -227,7 +263,7 @@ class TestPyNumber(CPyExtTestCase):
         callfunction="wrap_PyErr_ExceptionMatches",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyErr_WarnEx = CPyExtFunctionVoid(
         lambda args: warnings.warn(args[1], args[0], args[2]),
         lambda: (
@@ -238,7 +274,7 @@ class TestPyNumber(CPyExtTestCase):
         arguments=["PyObject* category", "char* msg", "Py_ssize_t level"],
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyErr_NoMemory = CPyExtFunctionVoid(
         _reference_nomemory,
         lambda: (
@@ -251,7 +287,7 @@ class TestPyNumber(CPyExtTestCase):
         resultval="NULL",
         cmpfunc=unhandled_error_compare
     )
- 
+
     test_PyErr_WriteUnraisable = CPyExtFunctionVoid(
         lambda args: None,
         lambda: (
@@ -260,5 +296,29 @@ class TestPyNumber(CPyExtTestCase):
         resultspec="O",
         argspec='O',
         arguments=["PyObject* obj"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyErr_Fetch = CPyExtFunction(
+        _reference_fetch,
+        lambda: (
+            (ValueError,),
+            (TypeError,),
+            (KeyError,),
+        ),
+        code="""PyObject* wrap_PyErr_Fetch(PyObject* exception_type) {
+            PyObject* typ = NULL;
+            PyObject* val = NULL;
+            PyObject* tb = NULL;
+            Py_ssize_t size = 3;
+            PyErr_SetNone(exception_type);
+            PyErr_Fetch(&typ, &val, &tb);
+            return typ;
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* exception_type"],
+        callfunction="wrap_PyErr_Fetch",
         cmpfunc=unhandled_error_compare
     )

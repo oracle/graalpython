@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.FileNotFoundError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -78,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -299,7 +301,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "fstat", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class FstatNode extends PythonFileNode {
-        @Child private StatNode statNode = StatNodeFactory.create(null);
+
+        protected abstract Object executeWith(Object fd);
 
         @Specialization(guards = {"fd >= 0", "fd <= 2"})
         @TruffleBoundary
@@ -320,8 +323,28 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "fd > 2")
         @TruffleBoundary
-        Object fstat(int fd) {
+        Object fstat(int fd,
+                        @Cached("createStatNode()") StatNode statNode) {
             return statNode.executeWith(getFilePath(fd), PNone.NO_VALUE);
+        }
+
+        @Specialization
+        Object fstatPInt(PInt fd,
+                        @Cached("create()") FstatNode recursive) {
+            return recursive.executeWith(fd.intValue());
+        }
+
+        @Fallback
+        Object doGeneric(Object o) {
+            throw raise(TypeError, "an integer is required (got type %p)", o);
+        }
+
+        protected static StatNode createStatNode() {
+            return StatNode.create();
+        }
+
+        protected static FstatNode create() {
+            return PosixModuleBuiltinsFactory.FstatNodeFactory.create(null);
         }
     }
 
@@ -349,7 +372,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "stat", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class StatNode extends PythonBuiltinNode {
+    public abstract static class StatNode extends PythonUnaryBuiltinNode {
         private static final int S_IFIFO = 0010000;
         private static final int S_IFCHR = 0020000;
         private static final int S_IFBLK = 0060000;
@@ -375,7 +398,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
             LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
             if (!f.exists(linkOptions)) {
-                throw raise(OSError, "No such file or directory: '%s'", path);
+                throw raise(FileNotFoundError, "No such file or directory: '%s'", path);
             }
             int mode = 0;
             long size = 0;
@@ -474,6 +497,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                             mtime,
                             ctime,
             });
+        }
+
+        protected static StatNode create() {
+            return StatNodeFactory.create(null);
         }
     }
 
@@ -665,6 +692,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "write", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonFileNode {
+
+        public abstract Object executeWith(Object fd, Object data);
+
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, byte[] data) {
@@ -737,6 +767,16 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object writeStd(int fd, PByteArray data) {
             return writeStd(fd, data.getBytesExact());
+        }
+
+        @Specialization
+        Object writePInt(PInt fd, Object data,
+                        @Cached("create()") WriteNode recursive) {
+            return recursive.executeWith(fd.intValue(), data);
+        }
+
+        protected WriteNode create() {
+            return PosixModuleBuiltinsFactory.WriteNodeFactory.create(null);
         }
     }
 
@@ -935,6 +975,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
 
             @Override
+            @TruffleBoundary
             public void run() {
                 try {
                     InputStreamReader isr = new InputStreamReader(is);

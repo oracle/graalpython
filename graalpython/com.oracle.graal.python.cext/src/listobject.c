@@ -41,25 +41,15 @@
 PyTypeObject PyList_Type = PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS, sizeof(PyListObject));
 
 PyObject* PyList_New(Py_ssize_t size) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_New", size);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyList_New", size);
 }
 
 PyObject* PyList_GetItem(PyObject *op, Py_ssize_t i) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_GetItem", to_java(op), i);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyList_GetItem", native_to_java(op), i);
 }
 
 int PyList_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyList_SetItem", to_java(op), i, to_java(newitem));
+    return UPCALL_CEXT_I("PyList_SetItem", native_to_java(op), i, native_to_java(newitem));
 }
 
 int PyList_Append(PyObject *op, PyObject *newitem) {
@@ -67,7 +57,7 @@ int PyList_Append(PyObject *op, PyObject *newitem) {
 		PyErr_BadInternalCall();
 		return -1;
 	}
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyList_Append", to_java(op), to_java(newitem));
+    return UPCALL_CEXT_I("PyList_Append", native_to_java(op), native_to_java(newitem));
 }
 
 PyObject* PyList_AsTuple(PyObject *v) {
@@ -75,23 +65,13 @@ PyObject* PyList_AsTuple(PyObject *v) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_AsTuple", to_java(v));
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyList_AsTuple", native_to_java(v));
 }
 
 PyObject* PyList_GetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyList_GetSlice", to_java(a), ilow, ihigh);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyList_GetSlice", native_to_java(a), ilow, ihigh);
 }
 
 Py_ssize_t PyList_Size(PyObject *op) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyList_Size", to_java(op));
+    return UPCALL_CEXT_I("PyList_Size", native_to_java(op));
 }

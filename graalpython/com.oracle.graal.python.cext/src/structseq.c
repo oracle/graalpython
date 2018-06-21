@@ -40,5 +40,5 @@
 
 /* StructSequences */
 PyObject* PyStructSequence_New(PyTypeObject* o) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyStructSequence_New", to_java_type(o));
+    return UPCALL_CEXT_O("PyStructSequence_New", native_to_java(o));
 }

@@ -39,20 +39,18 @@
 #include "capi.h"
 
 // partially taken from CPython "Python/_warnings.c"
-static int warn_unicode(PyObject *category, PyObject *message, Py_ssize_t stack_level, PyObject *source) {
+MUST_INLINE static int warn_unicode(PyObject *category, PyObject *message, Py_ssize_t stack_level, PyObject *source) {
     PyObject *res;
 
     if (category == NULL) {
         category = PyExc_RuntimeWarning;
     }
 
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "_PyErr_Warn", to_java(message), to_java(category), stack_level, to_java(source));
-    if(result == ERROR_MARKER) {
+    PyObject* result = UPCALL_CEXT_O("_PyErr_Warn", native_to_java(message), native_to_java(category), stack_level, native_to_java(source));
+    if(result == NULL) {
     	return -1;
     }
-    res = to_sulong(result);
-    Py_DECREF(res);
-
+    Py_DECREF(result);
     return 0;
 }
 

@@ -38,18 +38,19 @@
  */
 #include "capi.h"
 
+#define FORCE_TO_NATIVE(__obj__) (polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", (__obj__), truffle_is_handle_to_managed((__obj__)) ? (__obj__) : truffle_deref_handle_for_managed(__obj__)))
+
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-	void *jtype = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Type", truffle_read_string(typname));
-    PyTypeObject* ptype = (PyTypeObject *)to_sulong(jtype);
-    PyTypeObject *nativePointer = PyObjectHandle_ForJavaType(jtype);
+    // explicit type cast is required because the type flags are not yet initialized !
+    PyTypeObject* ptype = polyglot_as__typeobject(UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(typname, SRC_CS)));
 
     // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
     // TODO Remove this as soon as this is properly supported.
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", ptype, nativePointer);
+    FORCE_TO_NATIVE(ptype);
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
-    PyTypeObject* type_handle = truffle_assign_managed(structure, polyglot_as__typeobject(ptype));
+    PyTypeObject* type_handle = truffle_assign_managed(structure, ptype);
     // write flags as specified in the dummy to the PythonClass object
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
@@ -57,25 +58,31 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 
 static void initialize_globals() {
     // None
-    void *jnone = polyglot_as__object(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_None")));
+    PyObject* jnone = UPCALL_CEXT_O("Py_None");
+    FORCE_TO_NATIVE(jnone);
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented
-    void *jnotimpl = polyglot_as__object(to_sulong(polyglot_get_member(PY_BUILTIN, "NotImplemented")));
+    void *jnotimpl = UPCALL_CEXT_O("Py_NotImplemented");
+    FORCE_TO_NATIVE(jnotimpl);
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
     // Ellipsis
-    void *jellipsis = polyglot_as__object(to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "Py_Ellipsis")));
+    void *jellipsis = UPCALL_CEXT_O("Py_Ellipsis");
+    FORCE_TO_NATIVE(jellipsis);
     truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
 
     // True, False
-    void *jtrue = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_True");
-    truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(to_sulong(jtrue)));
-    void *jfalse = polyglot_invoke(PY_TRUFFLE_CEXT, "Py_False");
-    truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(to_sulong(jfalse)));
+    void *jtrue = UPCALL_CEXT_O("Py_True");
+    FORCE_TO_NATIVE(jtrue);
+    truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(jtrue));
+    void *jfalse = UPCALL_CEXT_O("Py_False");
+    FORCE_TO_NATIVE(jfalse);
+    truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(jfalse));
 
     // error marker
-    void *jerrormarker = polyglot_as__object(polyglot_get_member(PY_TRUFFLE_CEXT, "error_handler"));
+    void *jerrormarker = UPCALL_CEXT_O("Py_ErrorHandler");
+    FORCE_TO_NATIVE(jerrormarker);
     truffle_assign_managed(&marker_struct, jerrormarker);
 }
 
@@ -122,6 +129,17 @@ static void initialize_capi() {
     initialize_bufferprocs();
 }
 
+
+__attribute__((always_inline))
+inline PyObject* handle_exception_and_cast(void* val) {
+    return val == ERROR_MARKER ? NULL : explicit_cast(val);
+}
+
+__attribute__((always_inline))
+inline void* handle_exception(void* val) {
+    return val == ERROR_MARKER ? NULL : val;
+}
+
 void* native_to_java(PyObject* obj) {
     if (obj == Py_None) {
         return Py_None;
@@ -137,16 +155,9 @@ void* native_to_java(PyObject* obj) {
     return obj;
 }
 
-void* to_java(PyObject* obj) {
-	PyObject* managed_obj = native_to_java(obj);
-
-	// Since Python object respond to 'IS_POINTER' with true if there has already
-	// been a 'TO_NATIVE' before, we need to first check if it is directly a Python
-	// object to avoid conversion to a pointer.
- 	if (truffle_invoke(PY_TRUFFLE_CEXT, "is_python_object", managed_obj)) {
-   		return managed_obj;
-   	}
-    return truffle_invoke(PY_TRUFFLE_CEXT, "to_java", managed_obj);
+__attribute__((always_inline))
+inline void* to_java(PyObject* obj) {
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "to_java", native_to_java(obj));
 }
 
 void* to_java_type(PyTypeObject* cls) {
@@ -189,11 +200,12 @@ inline PyObject* explicit_cast(PyObject* cobj) {
 }
 
 PyObject* to_sulong(void *o) {
-    return explicit_cast(truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
+    return explicit_cast(polyglot_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
 }
 
+/** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
-    return to_java_type(obj->ob_type);
+    return native_to_java(obj->ob_type);
 }
 
 typedef struct PyObjectHandle {
@@ -204,25 +216,22 @@ uint64_t PyTruffle_Wchar_Size() {
     return SIZEOF_WCHAR_T;
 }
 
-PyObject* PyObjectHandle_ForJavaObject(PyObject* jobj, unsigned long flags) {
-	if (!truffle_is_handle_to_managed(jobj)) {
-		PyObject* cobj = truffle_invoke(PY_TRUFFLE_CEXT, "to_sulong", jobj);
+void* PyObjectHandle_ForJavaObject(void* cobj, unsigned long flags) {
+	if (!truffle_is_handle_to_managed(cobj)) {
 		if(polyglot_is_value(cobj)) {
 			cobj = PyTruffle_Explicit_Cast(cobj, flags);
 		}
 		return truffle_deref_handle_for_managed(cobj);
 	}
-	return jobj;
+	return cobj;
 }
 
 /** to be used from Java code only; only creates the deref handle */
-PyTypeObject* PyObjectHandle_ForJavaType(void* jobj) {
-	if (!truffle_is_handle_to_managed(jobj)) {
-		PyTypeObject* jtypeobj = polyglot_as__typeobject(to_sulong(jobj));
-		PyTypeObject* deref_handle = truffle_deref_handle_for_managed(jtypeobj);
-		return deref_handle;
+void* PyObjectHandle_ForJavaType(void* ptype) {
+	if (!truffle_is_handle_to_managed(ptype)) {
+		return truffle_deref_handle_for_managed(ptype);
 	}
-	return jobj;
+	return ptype;
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
@@ -231,12 +240,33 @@ void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
     return truffle_deref_handle_for_managed(jobj);
 }
 
-const char* PyTruffle_StringToCstr(void* jlString) {
-    return truffle_string_to_cstr(jlString);
+const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
+    const char *buffer;
+    const char *str;
+    uint64_t bufsize = 4 * (strLen + 1) * sizeof(char);
+    uint64_t written;
+
+    // we allocate 4 bytes for a char; this will in all cases be enough
+    buffer = (const char*) malloc(bufsize);
+
+    written = polyglot_as_string(o, buffer, bufsize, SRC_CS) + 1;
+
+    str = (const char*) malloc(written * sizeof(char));
+    memcpy(str, buffer, written * sizeof(char));
+    free(buffer);
+
+    return str;
 }
 
-void* PyTruffle_CstrToString(const char* o) {
-    return polyglot_from_string(o, "utf-8");
+const char* PyTruffle_ByteArrayToNative(const void* jbyteArray, int len) {
+    int i;
+    char* barr = (const char*) malloc(len * sizeof(char));
+
+    for(i=0; i < len; i++) {
+        barr[i] = (char) polyglot_get_array_element(jbyteArray, i);
+    }
+
+    return (const char*) barr;
 }
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
@@ -398,7 +428,7 @@ PyObject* WriteULongMember(PyObject* object, PyObject* offset, PyObject* value) 
 }
 
 PyObject* WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value) {
-    WriteMember(object, offset, truffle_invoke(to_java(value), "__bool__") == Py_True ? (char)1 : (char)0, char);
+    WriteMember(object, offset, UPCALL_O(native_to_java(value), "__bool__") == Py_True ? (char)1 : (char)0, char);
     return value;
 }
 
@@ -435,7 +465,7 @@ PyObject marker_struct = {
 #undef WriteMember
 
 int PyTruffle_Debug(void *arg) {
-	truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
+	polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
 	return 0;
 }
 
@@ -554,12 +584,8 @@ void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
 	return native_to_java(fun(explicit_cast(module), explicit_cast(pnone)));
 }
 
-void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, Py_ssize_t nargs, PyObject *kwnames) {
-	Py_ssize_t i;
-    for (i=0; i < nargs; i++) {
-    	args[i] = explicit_cast(args[i]);
-    }
-	return native_to_java(fun(explicit_cast(self), args, nargs, explicit_cast(kwnames)));
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
+	return native_to_java(fun(explicit_cast(self), PySequence_Fast_ITEMS(explicit_cast((PyObject*)args)), PyLong_AsSsize_t(nargs), explicit_cast(kwnames)));
 }
 
 void* wrap_unsupported(void *fun, ...) {
