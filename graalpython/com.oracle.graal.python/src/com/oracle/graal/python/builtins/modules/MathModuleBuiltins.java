@@ -1837,7 +1837,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double log1pD(double value) {
-            if (value == 0 || value == Double.POSITIVE_INFINITY || value == Double.NaN) {
+            if (value == 0 || value == Double.POSITIVE_INFINITY || Double.isNaN(value)) {
                 return value;
             }
             double result = Math.log1p(value);
