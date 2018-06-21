@@ -117,6 +117,7 @@ public abstract class NativeMemberNames {
             case NB_ADD:
             case NB_INDEX:
             case NB_POW:
+            case BUF_DELEGATE:
                 return true;
         }
         return false;
