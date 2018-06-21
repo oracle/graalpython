@@ -38,12 +38,12 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.NativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
-public class PyBufferProcsWrapper extends NativeWrapper {
+public class PyBufferProcsWrapper extends PythonNativeWrapper {
 
     private final PythonClass delegate;
 
@@ -51,6 +51,7 @@ public class PyBufferProcsWrapper extends NativeWrapper {
         this.delegate = delegate;
     }
 
+    @Override
     public PythonClass getDelegate() {
         return delegate;
     }
@@ -59,6 +60,7 @@ public class PyBufferProcsWrapper extends NativeWrapper {
         return o instanceof PyBufferProcsWrapper;
     }
 
+    @Override
     public ForeignAccess getForeignAccess() {
         return PyBufferProcsWrapperMRForeign.ACCESS;
     }

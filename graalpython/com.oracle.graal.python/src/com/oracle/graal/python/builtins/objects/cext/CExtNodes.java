@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPoin
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.NativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
@@ -74,7 +73,15 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class CExtNodes {
 
     @ImportStatic(PGuards.class)
-    public abstract static class ToSulongNode extends PBaseNode {
+    abstract static class CExtBaseNode extends PBaseNode {
+
+        protected static boolean isNativeWrapper(Object obj) {
+            return obj instanceof PythonNativeWrapper;
+        }
+
+    }
+
+    public abstract static class ToSulongNode extends CExtBaseNode {
 
         public abstract Object execute(Object obj);
 
@@ -152,10 +159,6 @@ public abstract class CExtNodes {
             return o instanceof PythonNativeObject;
         }
 
-        protected static boolean isNativeWrapper(Object o) {
-            return o instanceof NativeWrapper;
-        }
-
         public static ToSulongNode create() {
             return ToSulongNodeGen.create();
         }
@@ -165,8 +168,7 @@ public abstract class CExtNodes {
      * Unwraps objects contained in {@link PythonObjectNativeWrapper} instances or wraps objects
      * allocated in native code for consumption in Java.
      */
-    @ImportStatic(PGuards.class)
-    public abstract static class AsPythonObjectNode extends PBaseNode {
+    public abstract static class AsPythonObjectNode extends CExtBaseNode {
         public abstract Object execute(Object value);
 
         @Child GetClassNode getClassNode;
@@ -220,10 +222,6 @@ public abstract class CExtNodes {
             return getClassNode.execute(obj) == getCore().getForeignClass();
         }
 
-        protected boolean isNativeWrapper(Object obj) {
-            return obj instanceof NativeWrapper;
-        }
-
         @TruffleBoundary
         public static Object doSlowPath(Object object) {
             if (object instanceof PythonNativeWrapper) {
@@ -243,7 +241,7 @@ public abstract class CExtNodes {
      * Does the same conversion as the native function {@code to_java}. The node tries to avoid
      * calling the native function for resolving native handles.
      */
-    public abstract static class ToJavaNode extends PBaseNode {
+    public abstract static class ToJavaNode extends CExtBaseNode {
         @Child private PCallNativeNode callNativeNode;
         @Child private AsPythonObjectNode toJavaNode = AsPythonObjectNode.create();
 
@@ -282,7 +280,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public abstract static class AsCharPointer extends PBaseNode {
+    public abstract static class AsCharPointer extends CExtBaseNode {
 
         @CompilationFinal TruffleObject truffle_string_to_cstr;
         @CompilationFinal TruffleObject truffle_byte_array_to_native;
@@ -340,7 +338,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class FromCharPointerNode extends PBaseNode {
+    public static class FromCharPointerNode extends CExtBaseNode {
 
         @CompilationFinal TruffleObject truffle_cstr_to_string;
         @Child private Node executeNode;
@@ -374,7 +372,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class GetNativeClassNode extends PBaseNode {
+    public static class GetNativeClassNode extends CExtBaseNode {
 
         @Child PCallNativeNode callGetObTypeNode;
         @Child ToJavaNode toJavaNode;

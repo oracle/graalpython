@@ -38,7 +38,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.NativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
@@ -47,14 +47,15 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public abstract class ManagedMethodWrappers {
 
-    public abstract static class MethodWrapper extends NativeWrapper {
+    public abstract static class MethodWrapper extends PythonNativeWrapper {
         private final Object method;
 
         public MethodWrapper(Object method) {
             this.method = method;
         }
 
-        public Object getMethod() {
+        @Override
+        public Object getDelegate() {
             return method;
         }
 
@@ -62,6 +63,7 @@ public abstract class ManagedMethodWrappers {
             return o instanceof MethodWrapper;
         }
 
+        @Override
         public ForeignAccess getForeignAccess() {
             return ManagedMethodWrappersMRForeign.ACCESS;
         }

@@ -49,10 +49,8 @@ import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class NativeWrappers {
-    public abstract static class NativeWrapper implements TruffleObject {
-    }
 
-    public abstract static class PythonNativeWrapper extends NativeWrapper {
+    public abstract static class PythonNativeWrapper implements TruffleObject {
 
         private Object nativePointer;
 

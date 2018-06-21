@@ -38,7 +38,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.NativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
@@ -49,29 +49,13 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 public abstract class CArrayWrappers {
 
-    public abstract static class CArrayWrapper extends NativeWrapper {
-
-        private Object nativePointer;
-
-        public Object getNativePointer() {
-            return nativePointer;
-        }
-
-        public void setNativePointer(Object nativePointer) {
-            assert this.nativePointer == null;
-            this.nativePointer = nativePointer;
-        }
-
-        public boolean isNative() {
-            return nativePointer != null;
-        }
-
-        public abstract Object getDelegate();
+    public abstract static class CArrayWrapper extends PythonNativeWrapper {
 
         static boolean isInstance(TruffleObject o) {
             return o instanceof CArrayWrapper;
         }
 
+        @Override
         public ForeignAccess getForeignAccess() {
             return CArrayWrapperMRForeign.ACCESS;
         }
