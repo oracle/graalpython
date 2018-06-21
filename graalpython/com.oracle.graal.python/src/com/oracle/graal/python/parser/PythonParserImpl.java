@@ -29,6 +29,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxEr
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.CharStreams;
@@ -52,7 +53,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PythonParserImpl implements PythonParser {
-    private static final Map<String, ParserRuleContext> cachedParseTrees = new HashMap<>();
+    private static final Map<String, ParserRuleContext> cachedParseTrees = new ConcurrentHashMap<>();
 
     private static Python3Parser getPython3Parser(CodePointCharStream fromString) {
         Python3Parser parser = new Builder.Parser(fromString).build();
