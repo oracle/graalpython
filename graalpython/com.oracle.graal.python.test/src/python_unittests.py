@@ -36,17 +36,18 @@
 # SOFTWARE.
 
 import csv
+import gzip
 import os
 import re
 import subprocess
+import sys
 from collections import defaultdict
 from json import dumps
 from multiprocessing import Pool
 from pprint import pformat
+from time import gmtime, strftime
 
 import argparse
-import sys
-from time import gmtime, strftime
 
 # global CLI flags
 flags = None
@@ -54,14 +55,19 @@ flags = None
 # constants
 PATH_UNITTESTS = "graalpython/lib-python/3/test/"
 
-CSV_RESULTS_NAME = "unittests.csv"
-HTML_RESULTS_NAME = "unittests.html"
+_BASE_NAME = "unittests"
+TXT_RESULTS_NAME = "{}.txt.gz".format(_BASE_NAME)
+CSV_RESULTS_NAME = "{}.csv".format(_BASE_NAME)
+HTML_RESULTS_NAME = "{}.html".format(_BASE_NAME)
+
 
 PTRN_ERROR = re.compile(r'^(?P<error>[A-Z][a-z][a-zA-Z]+):(?P<message>.*)$')
 PTRN_UNITTEST = re.compile(r'^#### running: graalpython/lib-python/3/test/(?P<unittest>.*)$')
 PTRN_NUM_TESTS = re.compile(r'^Ran (?P<num_tests>\d+) test.*$')
 PTRN_NUM_ERRORS = re.compile(
     r'^FAILED \((failures=(?P<failures>\d+))?(, )?(errors=(?P<errors>\d+))?(, )?(skipped=(?P<skipped>\d+))?\)$')
+PTRN_JAVA_EXCEPTION = re.compile(r'^(?P<exception>com\.oracle\.[^:]*):(?P<message>.*)')
+PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', re.DOTALL)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -79,7 +85,7 @@ def debug(msg, *args, **kwargs):
 
 
 def file_name(name, current_date_time):
-    idx = name.rindex('.')
+    idx = name.index('.')
     if idx > 0:
         return '{}-{}{}'.format(name[:idx], current_date_time, name[idx:])
     return '{}-{}'.format(name, current_date_time)
@@ -117,7 +123,7 @@ def scp(results_file_path, destination_path, destination_name=None):
 
 
 def _run_unittest(test_path):
-    cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path]
+    cmd = ["mx", "python3", "--python.CatchAllExceptions=true", test_path, "-v"]
     success, output = _run_cmd(cmd)
     output = '''
 ##############################################################
@@ -128,14 +134,17 @@ def _run_unittest(test_path):
 
 def run_unittests(unittests):
     assert isinstance(unittests, (list, tuple))
-    log("[EXEC] running {} unittests ... ".format(len(unittests)))
+    num_unittests = len(unittests)
+    log("[EXEC] running {} unittests ... ", num_unittests)
     results = []
+
     pool = Pool()
     for ut in unittests:
-        results.append(pool.apply_async(_run_unittest, args=(ut,)))
+        results.append(pool.apply_async(_run_unittest, args=(ut, )))
     pool.close()
     pool.join()
-    return [r.get()[1] for r in results]
+
+    return [res.get()[1] for res in results]
 
 
 def get_unittests(base_tests_path, limit=None, sort=True):
@@ -177,6 +186,7 @@ def process_output(output_lines):
 
     unittests = []
     error_messages = defaultdict(set)
+    java_exceptions = defaultdict(set)
     stats = defaultdict(StatEntry)
 
     for line in output_lines:
@@ -189,6 +199,12 @@ def process_output(output_lines):
         match = re.match(PTRN_ERROR, line)
         if match:
             error_messages[unittests[-1]].add((match.group('error'), match.group('message')))
+            continue
+
+        # extract java exceptions
+        match = re.match(PTRN_JAVA_EXCEPTION, line)
+        if match:
+            java_exceptions[unittests[-1]].add((match.group('exception'), match.group('message')))
             continue
 
         # stats
@@ -213,7 +229,7 @@ def process_output(output_lines):
             stats[unittests[-1]].num_errors = int(errs) if errs else 0
             stats[unittests[-1]].num_skipped = int(skipped) if skipped else 0
 
-    return unittests, error_messages, stats
+    return unittests, error_messages, java_exceptions, stats
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -221,17 +237,24 @@ def process_output(output_lines):
 # python  error processing
 #
 # ----------------------------------------------------------------------------------------------------------------------
-def process_errors(unittests, error_messages, error, msg_processor):
+def process_errors(unittests, error_messages, error=None, msg_processor=None):
+    def _err_filter(item):
+        if not error:
+            return True
+        return item[0] == error
+
+    def _processor(msg):
+        if not msg_processor:
+            return msg
+        return msg_processor(msg)
+
     missing_modules = defaultdict(lambda: 0)
     for ut in unittests:
         errors = error_messages[ut]
-        for name in map(msg_processor, (msg for err, msg in errors if err == error)):
+        for name in map(_processor, (msg for err, msg in filter(_err_filter, errors))):
             missing_modules[name] = missing_modules[name] + 1
 
     return missing_modules
-
-
-PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', re.DOTALL)
 
 
 def get_missing_module(msg):
@@ -278,7 +301,14 @@ class Stat(object):
     TEST_PERCENT_PASS = "test_percent_pass"  # percentage of tests which pass from all running tests (all unittests)
 
 
-def save_as_csv(report_path, unittests, error_messages, stats, current_date):
+def save_as_txt(report_path, results):
+    with gzip.open(report_path, 'wb') as TXT:
+        output = '\n'.join(results)
+        TXT.write(bytes(output, 'utf-8'))
+        return output
+
+
+def save_as_csv(report_path, unittests, error_messages, java_exceptions, stats):
     rows = []
     with open(report_path, 'w') as CSV:
         totals = {
@@ -294,6 +324,9 @@ def save_as_csv(report_path, unittests, error_messages, stats, current_date):
         for unittest in unittests:
             unittest_stats = stats[unittest]
             unittest_errmsg = error_messages[unittest]
+            if not unittest_errmsg:
+                unittest_errmsg = java_exceptions[unittest]
+
             rows.append({
                 Col.UNITTEST: unittest,
                 Col.NUM_TESTS: unittest_stats.num_tests,
@@ -424,7 +457,7 @@ HTML_TEMPLATE = '''
 '''
 
 
-def save_as_html(report_name, rows, totals, missing_modules, current_date):
+def save_as_html(report_name, rows, totals, missing_modules, java_issues, current_date):
     def grid(*components):
         def _fmt(cmp):
             if isinstance(cmp, tuple):
@@ -522,8 +555,13 @@ def save_as_html(report_name, rows, totals, missing_modules, current_date):
         '''
 
     missing_modules_info = ul('missing modules', [
-        '<b>{}</b>&nbsp;<span class="text-muted">count: {}</span>'.format(name, cnt)
+        '<b>{}</b>&nbsp;<span class="text-muted">imported by {} unittests</span>'.format(name, cnt)
         for cnt, name in sorted(((cnt, name) for name, cnt in missing_modules.items()), reverse=True)
+    ])
+
+    java_issues_info = ul('Java issues', [
+        '<b>{}</b>&nbsp;<span class="text-muted">caused by {} unittests</span>'.format(name, cnt)
+        for cnt, name in sorted(((cnt, name) for name, cnt in java_issues.items()), reverse=True)
     ])
 
     total_stats_info = ul("<b>Summary</b>", [
@@ -539,7 +577,7 @@ def save_as_html(report_name, rows, totals, missing_modules, current_date):
 
     table_stats = table('stats', CSV_HEADER, rows)
 
-    content = ' <br> '.join([total_stats_info, table_stats, missing_modules_info])
+    content = ' <br> '.join([total_stats_info, table_stats, missing_modules_info, java_issues_info])
 
     report = HTML_TEMPLATE.format(
         title='GraalPython Unittests Stats',
@@ -595,19 +633,27 @@ def main(prog, args):
         unittests = get_unittests(flags.tests_path, limit=flags.limit)
 
     results = run_unittests(unittests)
-    unittests, error_messages, stats = process_output('\n'.join(results))
+    txt_report_path = file_name(TXT_RESULTS_NAME, current_date)
+    output = save_as_txt(txt_report_path, results)
+
+    unittests, error_messages, java_exceptions, stats = process_output(output)
 
     csv_report_path = file_name(CSV_RESULTS_NAME, current_date)
-    rows, totals = save_as_csv(csv_report_path, unittests, error_messages, stats, current_date)
+    rows, totals = save_as_csv(csv_report_path, unittests, error_messages, java_exceptions, stats)
 
-    missing_modules = process_errors(unittests, error_messages, 'ModuleNotFoundError', get_missing_module)
+    missing_modules = process_errors(unittests, error_messages, error='ModuleNotFoundError',
+                                     msg_processor=get_missing_module)
     log("[MISSING MODULES] \n{}", pformat(dict(missing_modules)))
 
+    java_issues = process_errors(unittests, java_exceptions)
+    log("[JAVA ISSUES] \n{}", pformat(dict(java_issues)))
+
     html_report_path = file_name(HTML_RESULTS_NAME, current_date)
-    save_as_html(html_report_path, rows, totals, missing_modules, current_date)
+    save_as_html(html_report_path, rows, totals, missing_modules, java_issues, current_date)
 
     if flags.path:
         log("[SAVE] saving results to {} ... ", flags.path)
+        scp(txt_report_path, flags.path)
         scp(csv_report_path, flags.path)
         scp(html_report_path, flags.path)
 

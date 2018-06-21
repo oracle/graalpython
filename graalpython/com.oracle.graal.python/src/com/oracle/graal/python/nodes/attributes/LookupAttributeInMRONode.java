@@ -47,6 +47,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @NodeChildren({@NodeChild(value = "klass", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
 public abstract class LookupAttributeInMRONode extends PNode {
@@ -62,19 +63,37 @@ public abstract class LookupAttributeInMRONode extends PNode {
      */
     public abstract Object execute(Object klass, Object key);
 
-    @SuppressWarnings("unused")
-    @Specialization(guards = {"klass == cachedKlass", "key.equals(cachedKey)"}, limit = "5", assumptions = "lookupStable")
-    protected Object returnDirect(PythonClass klass, String key,
-                    @Cached("klass") PythonClass cachedKlass,
-                    @Cached("key") String cachedKey,
-                    @Cached("cachedKlass.getLookupStableAssumption()") Assumption lookupStable,
-                    @Cached("cachedKlass.getAttribute(cachedKey)") Object result) {
-        return result;
+    @Specialization(guards = {"klass == cachedKlass", "key.equals(cachedKey)", "mroLength < 32"}, limit = "5", assumptions = "lookupStable")
+    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
+    protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass, String key,
+                    @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
+                    @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                    @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
+                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
+                    @Cached(value = "cachedKlass.getMethodResolutionOrder()", dimensions = 1) PythonClass[] mro,
+                    @Cached("mro.length") @SuppressWarnings("unused") int mroLength) {
+        for (int i = 0; i < mro.length; i++) {
+            PythonClass kls = mro[i];
+            Object value = readAttrNode.execute(kls, key);
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+        }
+        return PNone.NO_VALUE;
     }
 
-    @Specialization(replaces = "returnDirect")
-    protected Object lookup(PythonClass klass, String key) {
-        return klass.getAttribute(key);
+    @Specialization
+    protected Object lookup(PythonClass klass, String key,
+                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+        PythonClass[] mro = klass.getMethodResolutionOrder();
+        for (int i = 0; i < mro.length; i++) {
+            PythonClass kls = mro[i];
+            Object value = readAttrNode.execute(kls, key);
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+        }
+        return PNone.NO_VALUE;
     }
 
     @SuppressWarnings("unused")

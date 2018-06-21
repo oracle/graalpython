@@ -40,6 +40,7 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -66,6 +67,10 @@ public abstract class SetNodes {
         @Child private SetItemNode setItemNode;
 
         public abstract PSet execute(Object cls, Object value);
+
+        public final PSet executeWith(Object value) {
+            return this.execute(lookupClass(PythonBuiltinClassType.PSet), value);
+        }
 
         @Specialization
         @TruffleBoundary

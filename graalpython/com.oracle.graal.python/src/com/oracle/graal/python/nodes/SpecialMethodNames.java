@@ -73,6 +73,7 @@ public abstract class SpecialMethodNames {
     public static final String __SUBCLASSES__ = "__subclasses__";
     public static final String __SUBCLASSHOOK__ = "__subclasshook__";
     public static final String __CALL__ = "__call__";
+    public static final String __CALLBACK__ = "__callback__";
     public static final String __LEN__ = "__len__";
     public static final String __LENGTH_HINT__ = "__length_hint__";
     public static final String __GETITEM__ = "__getitem__";

@@ -40,6 +40,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
@@ -70,8 +71,9 @@ public class PyBufferProcsWrapperMR {
                     // TODO extend list
                     throw UnknownIdentifierException.raise(key);
             }
+            // do not wrap result if exists since this is directly a native object
             // use NO_VALUE for NULL
-            return getToSulongNode().execute(result == null ? PNone.NO_VALUE : result);
+            return result == null ? getToSulongNode().execute(PNone.NO_VALUE) : result;
         }
 
         private ToSulongNode getToSulongNode() {

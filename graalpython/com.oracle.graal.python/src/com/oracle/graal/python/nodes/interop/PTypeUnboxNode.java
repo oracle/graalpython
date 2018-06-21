@@ -40,6 +40,7 @@ package com.oracle.graal.python.nodes.interop;
 
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -52,7 +53,12 @@ public abstract class PTypeUnboxNode extends Node {
     public abstract Object execute(Object value);
 
     @Specialization
-    Object access(PFloat obj) {
+    String access(PString obj) {
+        return obj.getValue();
+    }
+
+    @Specialization
+    double access(PFloat obj) {
         return obj.getValue();
     }
 

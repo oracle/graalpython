@@ -539,7 +539,6 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
-    args = to_sulong(args);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));

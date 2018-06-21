@@ -73,6 +73,7 @@ PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
+void* native_to_java(PyObject* obj);
 extern PyObject* to_sulong(void *o);
 #define as_char_pointer(obj) polyglot_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
 #define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))

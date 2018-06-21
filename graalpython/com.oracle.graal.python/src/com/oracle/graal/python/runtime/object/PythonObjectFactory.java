@@ -489,8 +489,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMappingproxy(cls, object));
     }
 
+    public PReferenceType createReferenceType(PythonClass cls, PythonObject object, PFunction callback) {
+        return trace(new PReferenceType(cls, object, callback));
+    }
+
     public PReferenceType createReferenceType(PythonObject object, PFunction callback) {
-        return trace(new PReferenceType(lookupClass(PythonBuiltinClassType.PReferenceType), object, callback));
+        return createReferenceType(lookupClass(PythonBuiltinClassType.PReferenceType), object, callback);
     }
 
     /*
