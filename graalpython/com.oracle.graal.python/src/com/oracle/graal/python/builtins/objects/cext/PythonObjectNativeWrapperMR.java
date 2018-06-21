@@ -48,6 +48,9 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
@@ -100,13 +103,13 @@ public class PythonObjectNativeWrapperMR {
 
         public Object access(Object object, Object key) {
             if (key.equals(GP_OBJECT)) {
-                return ((PythonObjectNativeWrapper) object).getPythonObject();
+                return ((PythonNativeWrapper) object).getDelegate();
             }
             if (readNativeMemberNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readNativeMemberNode = insert(ReadNativeMemberNode.create());
             }
-            return readNativeMemberNode.execute(((PythonObjectNativeWrapper) object).getPythonObject(), key);
+            return readNativeMemberNode.execute(((PythonNativeWrapper) object).getDelegate(), key);
         }
     }
 
@@ -121,7 +124,7 @@ public class PythonObjectNativeWrapperMR {
         abstract Object execute(Object receiver, Object key);
 
         @Specialization(guards = "eq(OB_BASE, key)")
-        Object doObBase(PythonAbstractObject o, @SuppressWarnings("unused") String key) {
+        Object doObBase(Object o, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(o);
         }
 
@@ -136,17 +139,17 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(OB_REFCNT, key)")
-        int doObRefcnt(@SuppressWarnings("unused") PythonAbstractObject o, @SuppressWarnings("unused") String key) {
+        int doObRefcnt(@SuppressWarnings("unused") Object o, @SuppressWarnings("unused") String key) {
             return 0;
         }
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(PythonAbstractObject object, @SuppressWarnings("unused") String key) {
+        Object doObType(Object object, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(getClass.execute(object));
         }
 
         @Specialization(guards = "eq(OB_SIZE, key)")
-        long doObSize(PythonObject object, @SuppressWarnings("unused") String key,
+        long doObSize(Object object, @SuppressWarnings("unused") String key,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
             try {
                 return callLenNode.executeInt(object);
@@ -353,7 +356,7 @@ public class PythonObjectNativeWrapperMR {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readNativeMemberNode = insert(WriteNativeMemberNode.create());
             }
-            return readNativeMemberNode.execute(((PythonObjectNativeWrapper) object).getPythonObject(), key, value);
+            return readNativeMemberNode.execute(((PythonNativeWrapper) object).getDelegate(), key, value);
         }
     }
 
@@ -423,7 +426,7 @@ public class PythonObjectNativeWrapperMR {
         @Child private ToJavaNode toJavaNode;
         @Child private ToSulongNode toSulongNode;
 
-        public Object access(PythonObjectNativeWrapper object, Object[] arguments) {
+        public Object access(PythonNativeWrapper object, Object[] arguments) {
             if (executeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 executeNode = insert(new PythonMessageResolution.ExecuteNode());
@@ -433,7 +436,7 @@ public class PythonObjectNativeWrapperMR {
             for (int i = 0; i < arguments.length; i++) {
                 converted[i] = getToJavaNode().execute(arguments[i]);
             }
-            return getToSulongNode().execute(executeNode.execute(object.getPythonObject(), converted));
+            return getToSulongNode().execute(executeNode.execute(object.getDelegate(), converted));
         }
 
         private ToJavaNode getToJavaNode() {
@@ -494,9 +497,9 @@ public class PythonObjectNativeWrapperMR {
     abstract static class ToNativeNode extends Node {
         @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNodeGen.create();
 
-        Object access(PythonObjectNativeWrapper obj) {
+        Object access(PythonNativeWrapper obj) {
             if (!obj.isNative()) {
-                Object ptr = toPyObjectNode.execute(obj.getPythonObject());
+                Object ptr = toPyObjectNode.execute(obj.getDelegate());
                 obj.setNativePointer(ptr);
             }
             return obj;
@@ -505,7 +508,7 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        Object access(PythonObjectNativeWrapper obj) {
+        Object access(PythonNativeWrapper obj) {
             return obj.isNative();
         }
     }
@@ -514,7 +517,7 @@ public class PythonObjectNativeWrapperMR {
     abstract static class AsPointerNode extends Node {
         @Child private Node asPointerNode;
 
-        long access(PythonObjectNativeWrapper obj) {
+        long access(PythonNativeWrapper obj) {
             // the native pointer object must either be a TruffleObject or a primitive
             Object nativePointer = obj.getNativePointer();
             if (nativePointer instanceof TruffleObject) {
@@ -541,7 +544,7 @@ public class PythonObjectNativeWrapperMR {
         @Child private PCallNativeNode callNativeBinary;
         @Child private GetClassNode getClassNode;
 
-        public abstract Object execute(PythonAbstractObject value);
+        public abstract Object execute(Object value);
 
         @Specialization
         Object runNativeClass(PythonNativeClass object) {
@@ -565,7 +568,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Fallback
-        Object runObject(PythonAbstractObject object) {
+        Object runObject(Object object) {
             PythonClass clazz = getClassNode().execute(object);
             return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, clazz.getFlags()));
         }

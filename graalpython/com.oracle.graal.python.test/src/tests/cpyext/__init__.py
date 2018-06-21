@@ -69,7 +69,8 @@ class CPyExtTestCase():
 
 def ccompile(self, name):
     from distutils.core import setup, Extension
-    module = Extension(name, sources=['%s/%s.c' % (__dir__, name)])
+    source_file = '%s/%s.c' % (__dir__, name)
+    module = Extension(name, sources=[source_file])
     args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
     setup(
         script_name='setup',
@@ -79,6 +80,13 @@ def ccompile(self, name):
         description='',
         ext_modules=[module]
     )
+    # ensure file was really written
+    try:
+        stat_result = os.stat(source_file)
+        if stat_result[6] == 0:
+            raise SystemError("empty source file %s" % (source_file,))
+    except FileNotFoundError:
+        raise SystemError("source file %s not available" % (source_file,))
 
 
 c_template = """
@@ -377,6 +385,7 @@ class CPyExtFunctionVoid(CPyExtFunction):
 
 
 class UnseenFormatter(Formatter):
+
     def get_value(self, key, args, kwds):
         if isinstance(key, str):
             try:

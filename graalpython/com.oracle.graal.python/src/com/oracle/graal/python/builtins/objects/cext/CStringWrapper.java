@@ -42,8 +42,10 @@ import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * Unlike a {@link PythonObjectNativeWrapper} object that wraps a Python unicode object, this
- * wrapper let's a Java String look like a {@code char*}.
+ * Unlike a
+ * {@link com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper}
+ * object that wraps a Python unicode object, this wrapper let's a Java String look like a
+ * {@code char*}.
  */
 public class CStringWrapper implements TruffleObject {
 

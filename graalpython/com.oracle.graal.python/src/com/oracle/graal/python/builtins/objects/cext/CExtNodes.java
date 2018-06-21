@@ -45,6 +45,10 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPoin
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -77,42 +81,42 @@ public abstract class CExtNodes {
          * passed from Python into C code need to wrap Strings into PStrings.
          */
         @Specialization
-        Object run(String str) {
+        Object doString(String str) {
             return PythonObjectNativeWrapper.wrap(factory().createString(str));
         }
 
         @Specialization
-        Object run(boolean b) {
+        Object doBoolean(boolean b) {
             return PythonObjectNativeWrapper.wrap(factory().createInt(b));
         }
 
         @Specialization
-        Object run(int integer) {
-            return PythonObjectNativeWrapper.wrap(factory().createInt(integer));
+        Object doInteger(int i) {
+            return PythonObjectNativeWrapper.wrap(factory().createInt(i));
         }
 
         @Specialization
-        Object run(long integer) {
-            return PythonObjectNativeWrapper.wrap(factory().createInt(integer));
+        Object doLong(long l) {
+            return PythonObjectNativeWrapper.wrap(factory().createInt(l));
         }
 
         @Specialization
-        Object run(double number) {
-            return PythonObjectNativeWrapper.wrap(factory().createFloat(number));
+        Object doDouble(double d) {
+            return PythonObjectNativeWrapper.wrap(factory().createFloat(d));
         }
 
         @Specialization
-        Object runNativeClass(PythonNativeClass object) {
-            return object.object;
+        Object doNativeClass(PythonNativeClass nativeClass) {
+            return nativeClass.object;
         }
 
         @Specialization
-        Object runNativeObject(PythonNativeObject object) {
-            return object.object;
+        Object doNativeObject(PythonNativeObject nativeObject) {
+            return nativeObject.object;
         }
 
         @Specialization(guards = "!isNativeClass(object)")
-        Object runNativeObject(PythonClass object) {
+        Object doPythonClass(PythonClass object) {
             return PythonClassNativeWrapper.wrap(object);
         }
 
@@ -120,6 +124,11 @@ public abstract class CExtNodes {
         Object runNativeObject(PythonAbstractObject object) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object);
+        }
+
+        @Specialization(guards = {"isForeignObject(object)"})
+        Object doPythonClass(TruffleObject object) {
+            return TruffleObjectNativeWrapper.wrap(object);
         }
 
         @Fallback
@@ -140,6 +149,10 @@ public abstract class CExtNodes {
             return o instanceof PythonNativeObject;
         }
 
+        protected static boolean isForeignObject(Object o) {
+            return !(o instanceof PythonAbstractObject);
+        }
+
         public static ToSulongNode create() {
             return ToSulongNodeGen.create();
         }
@@ -156,11 +169,11 @@ public abstract class CExtNodes {
         @Child GetClassNode getClassNode;
 
         @Specialization
-        PythonAbstractObject doNativeWrapper(PythonObjectNativeWrapper object) {
-            return object.getPythonObject();
+        Object doNativeWrapper(PythonNativeWrapper object) {
+            return object.getDelegate();
         }
 
-        @Specialization(guards = "isForeignObject(object)")
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)"})
         PythonAbstractObject doNativeObject(TruffleObject object) {
             return factory().createNativeObjectWrapper(object);
         }
@@ -204,10 +217,14 @@ public abstract class CExtNodes {
             return getClassNode.execute(obj) == getCore().getForeignClass();
         }
 
+        protected boolean isNativeWrapper(Object obj) {
+            return obj instanceof PythonNativeWrapper;
+        }
+
         @TruffleBoundary
         public static Object doSlowPath(Object object) {
-            if (object instanceof PythonObjectNativeWrapper) {
-                return ((PythonObjectNativeWrapper) object).getPythonObject();
+            if (object instanceof PythonNativeWrapper) {
+                return ((PythonNativeWrapper) object).getDelegate();
             } else if (GetClassNode.getItSlowPath(object) == PythonLanguage.getCore().getForeignClass()) {
                 throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
             }

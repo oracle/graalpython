@@ -90,6 +90,7 @@ POLYGLOT_DECLARE_TYPE(PyBufferDecorator);
 
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
+void* native_to_java(PyObject* obj);
 extern PyObject* to_sulong(void *o);
 extern PyObject* explicit_cast(PyObject* cobj);
 #define as_char_pointer(obj) polyglot_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
