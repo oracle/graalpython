@@ -64,7 +64,7 @@ public class AssertNode extends StatementNode {
             } catch (PException e) {
                 // Python exceptions just fall through
                 throw e;
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 // catch any other exception and convert to Python exception
                 throw assertionFailed(frame);
             }
@@ -86,7 +86,7 @@ public class AssertNode extends StatementNode {
             } catch (PException e) {
                 // again, Python exceptions just fall through
                 throw e;
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 assertionMessage = "internal exception occurred";
             }
         }

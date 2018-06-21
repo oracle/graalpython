@@ -55,7 +55,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         super.recover(recognizer, e);
     }
 
-    static int getLine(Throwable e) {
+    static int getLine(Exception e) {
         if (e instanceof RecognitionException) {
             return ((RecognitionException) e).getOffendingToken().getLine();
         } else {
