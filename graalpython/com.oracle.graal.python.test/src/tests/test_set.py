@@ -210,3 +210,8 @@ def test_intersection():
     #     assert id(s) == id(z)
     # else:
     #     assert id(s) != id(z)
+
+
+def test_same_id():
+    empty_ids = set([id(frozenset()) for i in range(100)])
+    assert len(empty_ids) == 1

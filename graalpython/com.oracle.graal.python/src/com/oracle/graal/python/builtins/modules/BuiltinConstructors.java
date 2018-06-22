@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
+import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -169,9 +170,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BytesNode extends PythonBuiltinNode {
 
-        @Specialization
-        public PBytes bytes(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, new byte[0]);
+        protected long getEmptyId() {
+            return getContext().getEmptyBytesId();
+        }
+
+        @Specialization(guards = "isNoValue(source)")
+        public PBytes bytes(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached("create()") WriteAttributeToObjectNode writeId,
+                        @Cached("getEmptyId()") long emptyId) {
+            PBytes emptyBytes = factory().createBytes(cls, new byte[0]);
+            writeId.execute(emptyBytes, ID_KEY, emptyId);
+            return emptyBytes;
         }
 
         @Specialization
@@ -553,9 +562,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Child private HashingStorageNodes.SetItemNode setItemNode;
 
+        protected long getEmptyId() {
+            return getContext().getEmptyFrozenSetId();
+        }
+
         @Specialization(guards = "isNoValue(arg)")
-        public PFrozenSet frozensetEmpty(PythonClass cls, @SuppressWarnings("unused") PNone arg) {
-            return factory().createFrozenSet(cls);
+        public PFrozenSet frozensetEmpty(PythonClass cls, @SuppressWarnings("unused") PNone arg,
+                        @Cached("create()") WriteAttributeToObjectNode writeId,
+                        @Cached("getEmptyId()") long emptyId) {
+            PFrozenSet frozenSet = factory().createFrozenSet(cls);
+            writeId.execute(frozenSet, ID_KEY, emptyId);
+            return frozenSet;
         }
 
         @Specialization
