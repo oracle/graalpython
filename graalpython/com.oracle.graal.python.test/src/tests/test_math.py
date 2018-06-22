@@ -444,6 +444,19 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.ceil(O()), 'cau')
         self.assertEqual(math.ceil(999.1), 1000)
 
+        self.assertEqual(math.ceil(MyFloat()),1)
+
+        class F1():
+            def __float__(self):
+                return 1.1
+            def __ceil__(self):
+                return 44
+        self.assertEqual(math.ceil(F1()), 44)
+
+        class F2():
+            def __float__(self):
+                return 1.1
+        self.assertEqual(math.ceil(F2()), 2)
 
     def test_basic_copysign(self):
         self.assertEqual(math.copysign(3, -0), 3.0)
