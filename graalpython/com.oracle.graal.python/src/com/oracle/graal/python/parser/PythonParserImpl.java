@@ -74,11 +74,7 @@ public final class PythonParserImpl implements PythonParser {
         Python3Parser parser = getPython3Parser(fromString);
         ParserRuleContext input;
         if (!core.isInitialized()) {
-            input = cachedParseTrees.get(fileDirAndName);
-            if (input == null) {
-                input = parser.file_input();
-                cachedParseTrees.put(fileDirAndName, input);
-            }
+            input = cachedParseTrees.computeIfAbsent(fileDirAndName, (key) -> parser.file_input());
         } else {
             try {
                 if (source.isInteractive()) {
