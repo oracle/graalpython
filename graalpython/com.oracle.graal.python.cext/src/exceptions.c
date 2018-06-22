@@ -42,7 +42,7 @@
 
 PyTypeObject _PyExc_BaseException = PY_TRUFFLE_TYPE("BaseException", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyBaseExceptionObject));
 
-#define PY_EXCEPTION(__EXC_NAME__) ((PyObject*)to_sulong(truffle_import_cached("python_" __EXC_NAME__)))
+#define PY_EXCEPTION(__EXC_NAME__) (UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(__EXC_NAME__, SRC_CS)))
 
 PyObject * PyExc_BaseException = NULL;
 PyObject * PyExc_Exception = NULL;

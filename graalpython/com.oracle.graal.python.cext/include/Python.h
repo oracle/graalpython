@@ -109,11 +109,11 @@
 #include "pystrhex.h"
 #include "codecs.h"
 
-#undef Py_NoValue
-#define Py_NoValue truffle_invoke(PY_TRUFFLE_CEXT, "Py_NoValue")
+#define PY_TRUFFLE_CEXT ((void*)polyglot_import("python_cext"))
+#define PY_BUILTIN ((void*)polyglot_import("python_builtins"))
 
-#define PY_TRUFFLE_CEXT ((void*)truffle_import_cached("python_cext"))
-#define PY_BUILTIN ((void*)truffle_import_cached("python_builtins"))
+#undef Py_NoValue
+#define Py_NoValue UPCALL_CEXT_O("Py_NoValue")
 
 // TODO: we must extend the refcounting behavior to support handles to managed objects
 #undef Py_DECREF

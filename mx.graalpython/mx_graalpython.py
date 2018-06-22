@@ -254,6 +254,7 @@ def python3_unittests(args):
 class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
+    cpyext = 'python-cpyext'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
@@ -331,17 +332,28 @@ def python_svm(args):
 
 
 def graalpython_gate_runner(args, tasks):
+    _graalpytest_driver = "graalpython/com.oracle.graal.python.test/src/graalpytest.py"
+    _test_project = "graalpython/com.oracle.graal.python.test/"
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
             punittest(['--verbose'])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v",
-                         "graalpython/com.oracle.graal.python.test/src/tests/"]
+            test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/"]
             mx.command_function("python")(test_args)
             if platform.system() != 'Darwin':
                 # TODO: re-enable when python3 is available on darwin
+                mx.log("Running tests with CPython")
+                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+
+    with Task('GraalPython C extension tests', tasks, tags=[GraalPythonTags.cpyext]) as task:
+        if task:
+            test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/cpyext/"]
+            mx.command_function("python")(test_args)
+            if platform.system() != 'Darwin':
+                # TODO: re-enable when python3 is available on darwin
+                mx.log("Running tests with CPython")
                 mx.run(["python3"] + test_args, nonZeroIsFatal=True)
 
     with Task('GraalPython downstream R tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.R]) as task:

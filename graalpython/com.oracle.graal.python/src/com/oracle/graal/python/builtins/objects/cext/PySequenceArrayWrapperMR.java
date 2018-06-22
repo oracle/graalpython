@@ -215,9 +215,7 @@ public class PySequenceArrayWrapperMR {
 
         Object access(PySequenceArrayWrapper obj) {
             if (!obj.isNative()) {
-                // TODO
-                Object ptr = toPyObjectNode.execute(obj);
-                obj.setNativePointer(ptr);
+                obj.setNativePointer(toPyObjectNode.execute(obj));
             }
             return obj;
         }

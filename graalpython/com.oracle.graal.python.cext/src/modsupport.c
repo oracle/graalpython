@@ -49,7 +49,7 @@ typedef struct _positional_argstack {
 PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnames, unsigned char keywords_only) {
     void* out = NULL;
     if (!keywords_only) {
-        int l = truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_LEN", to_java(p->argv));
+        int l = UPCALL_CEXT_I("PyObject_LEN", native_to_java(p->argv));
         if (p->argnum < l) {
             out = PyTuple_GetItem(p->argv, p->argnum);
         }
@@ -57,8 +57,7 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
     if (out == NULL && p->prev == NULL && kwdnames != NULL) { // only the bottom argstack can have keyword names
         const char* kwdname = kwdnames[p->argnum];
         if (kwdname != NULL) {
-            PyObject *nameobj = to_sulong(truffle_read_string(kwdname));
-            out = PyDict_GetItem(kwds, nameobj);
+            out = PyDict_GetItemString(kwds, kwdname);
         }
     }
     (p->argnum)++;
@@ -328,7 +327,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
         case 'p':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, int, as_int(truffle_invoke(to_java(arg), "__bool__")));
+            PyTruffle_WriteOut(output_idx, int, (UPCALL_I(native_to_java(arg), "__bool__")));
             break;
         case '(':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
@@ -389,7 +388,7 @@ typedef struct _build_stack {
 } build_stack;
 
 PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
-#   define ARG truffle_get_arg(value_idx)
+#   define ARG polyglot_get_arg(value_idx)
 #   define APPEND_VALUE(list, value) PyList_Append(list, value); value_idx++
 
     PyObject* (*converter)(void*) = NULL;
@@ -409,7 +408,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         case 'z':
         case 'U':
             if (format[format_idx + 1] == '#') {
-                int size = (int)truffle_get_arg(value_idx + 1);
+                int size = (int)polyglot_get_arg(value_idx + 1);
                 if (ARG == NULL) {
                     APPEND_VALUE(list, Py_None);
                 } else {
@@ -427,7 +426,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
             break;
         case 'y':
             if (format[format_idx + 1] == '#') {
-                int size = (int)truffle_get_arg(value_idx + 1);
+                int size = (int)polyglot_get_arg(value_idx + 1);
                 if (ARG == NULL) {
                     APPEND_VALUE(list, Py_None);
                 } else {
@@ -488,7 +487,7 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
             break;
         case 'O':
             if (format[format_idx + 1] == '&') {
-                converter = truffle_get_arg(value_idx + 1);
+                converter = polyglot_get_arg(value_idx + 1);
             }
         case 'S':
         case 'N':

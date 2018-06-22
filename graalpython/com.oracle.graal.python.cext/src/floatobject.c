@@ -50,9 +50,5 @@ double PyFloat_AsDouble(PyObject *op) {
 }
 
 PyObject* PyFloat_FromDouble(double fval) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyFloat_FromDouble", fval);
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyFloat_FromDouble", fval);
 }

@@ -325,7 +325,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(metaclass, name, bases));
     }
 
-    public PythonClass createNativeClassWrapper(Object object, PythonClass metaClass, String name, PythonClass[] pythonClasses) {
+    public PythonNativeClass createNativeClassWrapper(Object object, PythonClass metaClass, String name, PythonClass[] pythonClasses) {
         return trace(new PythonNativeClass(object, metaClass, name, pythonClasses));
     }
 

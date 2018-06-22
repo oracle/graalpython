@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -63,6 +64,7 @@ public abstract class JoinInternalNode extends PBaseNode {
     public abstract String execute(Object self, Object iterable, PythonClass iterableClass);
 
     @Specialization
+    @TruffleBoundary
     protected String join(String string, String arg, @SuppressWarnings("unused") PythonClass iterableClass) {
         if (arg.isEmpty()) {
             return "";
@@ -81,6 +83,7 @@ public abstract class JoinInternalNode extends PBaseNode {
     }
 
     @Specialization(guards = {"cannotBeOverridden(iterableClass)", "isObjectStorage(list)"})
+    @TruffleBoundary
     protected String join(String string, PList list, @SuppressWarnings("unused") PythonClass iterableClass) {
         if (list.len() == 0) {
             return "";
@@ -100,6 +103,7 @@ public abstract class JoinInternalNode extends PBaseNode {
     }
 
     @Specialization(guards = "cannotBeOverridden(iterableClass)")
+    @TruffleBoundary
     protected String join(String string, PCharArray array, @SuppressWarnings("unused") PythonClass iterableClass) {
         if (array.len() == 0) {
             return "";
@@ -118,6 +122,7 @@ public abstract class JoinInternalNode extends PBaseNode {
     }
 
     @Specialization(guards = "cannotBeOverridden(iterableClass)")
+    @TruffleBoundary
     protected String join(String string, PSequence seq, @SuppressWarnings("unused") PythonClass iterableClass) {
         if (seq.len() == 0) {
             return "";
@@ -145,6 +150,7 @@ public abstract class JoinInternalNode extends PBaseNode {
     }
 
     @Specialization
+    @TruffleBoundary
     protected String join(String string, PythonObject iterable, @SuppressWarnings("unused") PythonClass iterableClass,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,

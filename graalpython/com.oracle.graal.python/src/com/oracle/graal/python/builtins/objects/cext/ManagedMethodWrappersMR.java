@@ -103,7 +103,7 @@ public class ManagedMethodWrappersMR {
             Object[] userArgs = posArgsNode.executeWithArguments(converted[0], posStarargsNode.executeWith(converted[1]));
             Object[] pArgs = createArgs.execute(userArgs);
             PKeyword[] kwargs = expandKwargsNode.executeWith(converted[2]);
-            return getToSulongNode().execute(getDispatchNode().executeCall(object.getMethod(), pArgs, kwargs));
+            return getToSulongNode().execute(getDispatchNode().executeCall(object.getDelegate(), pArgs, kwargs));
         }
 
         @ExplodeLoop
@@ -117,7 +117,7 @@ public class ManagedMethodWrappersMR {
             }
 
             // convert args
-            return getToSulongNode().execute(executeNode.execute(object.getMethod(), new Object[]{getToJavaNode().execute(arguments[0])}));
+            return getToSulongNode().execute(executeNode.execute(object.getDelegate(), new Object[]{getToJavaNode().execute(arguments[0])}));
         }
 
         private ToJavaNode getToJavaNode() {

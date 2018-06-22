@@ -38,10 +38,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
-public abstract class PyAttributeProcsWrapper implements TruffleObject {
+public abstract class PyAttributeProcsWrapper extends PythonNativeWrapper {
 
     private final Object delegate;
 
@@ -49,6 +50,7 @@ public abstract class PyAttributeProcsWrapper implements TruffleObject {
         this.delegate = delegate;
     }
 
+    @Override
     public Object getDelegate() {
         return delegate;
     }
@@ -57,6 +59,7 @@ public abstract class PyAttributeProcsWrapper implements TruffleObject {
         return o instanceof PyAttributeProcsWrapper;
     }
 
+    @Override
     public ForeignAccess getForeignAccess() {
         return PyAttributeProcsWrapperMRForeign.ACCESS;
     }

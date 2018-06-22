@@ -38,8 +38,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.TransformToNativeNodeFactory.EnsureIsPointerNodeGen;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -47,12 +50,24 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
 abstract class TransformToNativeNode extends PBaseNode {
-    @Child private Node isPointerNode;
-    @Child private Node toNativeNode;
+    @Child private EnsureIsPointerNode ensureIsPointerNode;
 
     protected Object ensureIsPointer(Object value) {
-        if (value instanceof TruffleObject) {
-            TruffleObject truffleObject = (TruffleObject) value;
+        if (ensureIsPointerNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            ensureIsPointerNode = insert(EnsureIsPointerNode.create());
+        }
+        return value;
+    }
+
+    abstract static class EnsureIsPointerNode extends Node {
+        @Child private Node isPointerNode;
+        @Child private Node toNativeNode;
+
+        abstract Object execute(Object ptr);
+
+        @Specialization
+        protected Object doTruffleObject(TruffleObject truffleObject) {
             if (isPointerNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 isPointerNode = insert(Message.IS_POINTER.createNode());
@@ -68,8 +83,17 @@ abstract class TransformToNativeNode extends PBaseNode {
                     throw e.raise();
                 }
             }
+            return truffleObject;
         }
-        return value;
-    }
 
+        @Fallback
+        protected Object doObject(Object obj) {
+            // this is, for example, the case for 'LLVMPointer'
+            return obj;
+        }
+
+        public static EnsureIsPointerNode create() {
+            return EnsureIsPointerNodeGen.create();
+        }
+    }
 }

@@ -39,7 +39,7 @@
 #include "capi.h"
 
 int PyFile_WriteObject(PyObject* v, PyObject* f, int flags) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyFile_WriteObject", to_java(v), to_java(f != NULL ? f : Py_None), flags);
+    return UPCALL_CEXT_I("PyFile_WriteObject", native_to_java(v), native_to_java(f != NULL ? f : Py_None), flags);
 }
 
 int PyFile_WriteString(const char *s, PyObject *f) {
