@@ -637,7 +637,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * The next available global id. We reserve space for all integers to be their own id +
          * offset.
          */
-        private static long GLOBAL_ID = Integer.MAX_VALUE * 2 + 4L;
         private static HiddenKey idKey = new HiddenKey("object_id");
 
         @Child private ReadAttributeFromObjectNode readId = null;
@@ -708,7 +707,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object id = readId.execute(obj, idKey);
             if (id == NO_VALUE) {
-                id = GLOBAL_ID++;
+                id = getContext().getNextGlobalId();
                 writeId.execute(obj, idKey, id);
             }
             return id;
