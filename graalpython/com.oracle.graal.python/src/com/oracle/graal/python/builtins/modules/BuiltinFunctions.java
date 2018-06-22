@@ -53,6 +53,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BREAKPOINT__;
+import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -144,7 +145,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
@@ -637,7 +637,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * The next available global id. We reserve space for all integers to be their own id +
          * offset.
          */
-        private static HiddenKey idKey = new HiddenKey("object_id");
 
         @Child private ReadAttributeFromObjectNode readId = null;
         @Child private WriteAttributeToObjectNode writeId = null;
@@ -705,10 +704,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 readId = insert(ReadAttributeFromObjectNode.create());
                 writeId = insert(WriteAttributeToObjectNode.create());
             }
-            Object id = readId.execute(obj, idKey);
+            Object id = readId.execute(obj, ID_KEY);
             if (id == NO_VALUE) {
                 id = getContext().getNextGlobalId();
-                writeId.execute(obj, idKey, id);
+                writeId.execute(obj, ID_KEY, id);
             }
             return id;
         }

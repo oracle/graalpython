@@ -56,7 +56,16 @@ public class PythonContext {
     private PythonModule mainModule;
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
-    private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2 + 4L);
+    private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
+
+    enum PythonBuiltinImmutableType {
+        PFrozenSet,
+        PTuple,
+        PBytes,
+        PString
+    }
+
+    private final long[] emptyImmutableObjectsIdCache = new long[PythonBuiltinImmutableType.values().length];
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -89,6 +98,18 @@ public class PythonContext {
             this.out = env.out();
             this.err = env.err();
         }
+    }
+
+    public long getEmptyImmutableObjectGlobalId(PythonBuiltinImmutableType immutableType) {
+        int idx = immutableType.ordinal();
+        if (emptyImmutableObjectsIdCache[idx] == 0) {
+            synchronized (emptyImmutableObjectsIdCache) {
+                if (emptyImmutableObjectsIdCache[idx] == 0) {
+                    emptyImmutableObjectsIdCache[idx] = getNextGlobalId();
+                }
+            }
+        }
+        return emptyImmutableObjectsIdCache[idx];
     }
 
     public long getNextGlobalId() {
