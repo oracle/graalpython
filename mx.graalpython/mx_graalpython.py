@@ -666,6 +666,9 @@ def update_import_cmd(args):
             callback=lambda: shutil.copy(
                 join(_sulong.dir, "include", "truffle.h"),
                 join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
+            ) and shutil.copy(
+                join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
+                join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
             )
         # make sure that truffle and regex are the same version
         elif name == "regex":
