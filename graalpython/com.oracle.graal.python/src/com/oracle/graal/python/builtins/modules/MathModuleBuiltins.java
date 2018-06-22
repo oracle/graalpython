@@ -114,9 +114,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         public abstract double executeObject(Object value);
 
-        public double count(double value) {
+        public double count(@SuppressWarnings("unused") double value) {
             throw raise(NotImplementedError, "count function in Math");
-        };
+        }
 
         @Specialization
         public double doL(long value) {
@@ -174,6 +174,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
+        @Override
         public double doPI(PInt value) {
             BigInteger bValue = value.getValue();
             checkMathDomainError(bValue.compareTo(BigInteger.ZERO) == -1);
