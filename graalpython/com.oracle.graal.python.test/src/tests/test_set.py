@@ -126,7 +126,10 @@ def test_difference():
 def test_difference_update():
     word = 'simsalabim'
     otherword = 'madagascar'
+    letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     s = set(word)
+    d = dict.fromkeys(word)
+
 
     retval = s.difference_update(otherword)
     assert retval == None
@@ -176,3 +179,34 @@ def test_sub_and_super():
         assert set('abc').issuperset('a')
         assert not set('a').issubset('cbs')
         assert not set('cbs').issuperset('a')
+
+
+def test_intersection():
+    word = 'simsalabim'
+    otherword = 'madagascar'
+    letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    s = set(word)
+    d = dict.fromkeys(word)
+
+    i = s.intersection(otherword)
+    for c in letters:
+        assert (c in i) == (c in d and c in otherword)
+
+    assert s == set(word)
+    # assert type(i) == set
+    assert_raises(PassThru, s.intersection, check_pass_thru())
+
+    for C in set, frozenset, dict.fromkeys, str, list, tuple:
+        assert set('abcba').intersection(C('cdc')) == set('cc')
+        assert set('abcba').intersection(C('efgfe')) == set('')
+        assert set('abcba').intersection(C('ccb')) == set('bc')
+        assert set('abcba').intersection(C('ef')) == set('')
+        assert set('abcba').intersection(C('cbcf'), C('bag')) == set('b')
+
+    # TODO: currently the id function behaves a bit differently than the one in cPython
+    # s = set('abcba')
+    # z = s.intersection()
+    # if set == frozenset():
+    #     assert id(s) == id(z)
+    # else:
+    #     assert id(s) != id(z)

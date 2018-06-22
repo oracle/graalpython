@@ -67,6 +67,17 @@ def frozenset_difference(self, *others):
     return frozenset(difference(self, *others))
 
 
+def intersection(self, *others):
+    intersect_set = self
+    for seq in others:
+        intersect_set = set(el for el in intersect_set if el in set(seq))
+    return intersect_set
+
+
+def frozenset_intersection(self, *others):
+    return frozenset(intersection(self, *others))
+
+
 def set_repr(self):
     if len(self):
         s = "{"
@@ -108,9 +119,11 @@ def frozenset_copy(self):
 set.update = update
 set.difference = difference
 set.difference_update = difference_update
+set.intersection = intersection
 set.__repr__ = set_repr
 set.copy = set_copy
 
 frozenset.difference = frozenset_difference
+frozenset.intersection = frozenset_intersection
 frozenset.__repr__ = frozenset_repr
 frozenset.copy = frozenset_copy
