@@ -358,7 +358,7 @@ int PyType_Ready(PyTypeObject* cls) {
                             getter_fun != NULL ? (getter)getter_fun : native_to_java(Py_None),
                             wrap_direct,
                             setter_fun != NULL ? (setter)setter_fun : native_to_java(Py_None),
-                            wrap_direct,
+                            wrap_setter,
                             getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : polyglot_from_string("", SRC_CS),
                             // do not convert the closure, it is handed to the
                             // getter and setter as-is
