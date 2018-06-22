@@ -1173,8 +1173,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Set_SulongType extends NativeBuiltin {
 
         @Specialization
-        Object doPythonObject(PythonClass klass, Object ptr) {
-            klass.setSulongType(ptr);
+        Object doPythonObject(PythonClassNativeWrapper klass, Object ptr) {
+            ((PythonClass) klass.getPythonObject()).setSulongType(ptr);
             return ptr;
         }
     }
