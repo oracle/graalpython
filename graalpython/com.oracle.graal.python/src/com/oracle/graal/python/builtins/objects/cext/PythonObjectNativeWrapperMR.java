@@ -97,6 +97,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonNativeWrapper.class)
 public class PythonObjectNativeWrapperMR {
