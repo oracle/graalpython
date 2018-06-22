@@ -540,7 +540,7 @@ class PyCapsule:
 
     def __init__(self, name, pointer, destructor):
         self.name = name
-        self.pointer = pointer
+        self.pointer = to_sulong(pointer)
 
     def __repr__(self):
         name = "NULL" if self.name is None else self.name
