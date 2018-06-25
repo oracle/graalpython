@@ -102,6 +102,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
+        ensureSysExecutable(context);
         ensureHomeInOptions(newEnv);
         if (!optionsAllowPreInitializedContext(context, newEnv)) {
             // Incompatible options - cannot use pre-initialized context
@@ -112,6 +113,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.setErr(newEnv.err());
         context.initialize();
         return true;
+    }
+
+    private static void ensureSysExecutable(PythonContext context) {
+        PythonModule sys = context.getCore().lookupBuiltinModule("sys");
+        sys.setAttribute("executable", Compiler.command(new Object[]{"com.oracle.svm.core.posix.GetExecutableName"}));
     }
 
     private static boolean optionsAllowPreInitializedContext(PythonContext context, Env newEnv) {

@@ -99,7 +99,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("copyright", LICENSE);
         builtinConstants.put("dont_write_bytecode", true);
         if (TruffleOptions.AOT) {
-            builtinConstants.put("executable", Compiler.command(new Object[]{"com.oracle.svm.core.posix.GetExecutableName"}));
+            // cannot set the path at this time since the binary is not yet known; will be patched
+            // in the context
+            builtinConstants.put("executable", PNone.NONE);
         } else {
             StringBuilder sb = new StringBuilder();
             sb.append(System.getProperty("java.home")).append(PythonCore.FILE_SEPARATOR).append("bin").append(PythonCore.FILE_SEPARATOR).append("java ");
