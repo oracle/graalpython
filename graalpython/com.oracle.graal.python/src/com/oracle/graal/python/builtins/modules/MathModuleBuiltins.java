@@ -43,7 +43,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -1378,7 +1377,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         public static LogNode create() {
-            return MathModuleBuiltinsFactory.LogNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.LogNodeFactory.create();
         }
     }
 
