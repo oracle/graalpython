@@ -201,6 +201,10 @@ static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicod
 	return f(explicit_cast(obj), as_char_pointer(unicode), explicit_cast(value));
 }
 
+static PyObject* wrap_setattrofunc(setattrofunc f, PyObject* obj, PyObject* key, PyObject* item) {
+	return PyLong_FromLong(f(explicit_cast(obj), explicit_cast(key), explicit_cast(item)));
+}
+
 static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObject* n) {
 	return f(explicit_cast(a), explicit_cast(b), (int)PyLong_AsLong(n));
 }
@@ -209,8 +213,24 @@ static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* 
 	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size), explicit_cast(b)));
 }
 
+static PyObject* wrap_ssizeargfunc(ssizeargfunc f, PyObject* a, PyObject* size) {
+	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size)));
+}
+
 static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c) {
 	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+}
+
+static PyObject* wrap_objobjargproc(objobjargproc f, PyObject* a, PyObject* b, PyObject* c) {
+	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+}
+
+static PyObject* wrap_objobjproc(objobjproc f, PyObject* a, PyObject* b) {
+	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b)));
+}
+
+static PyObject* wrap_inquiry(inquiry f, PyObject* a) {
+	return PyLong_FromLong(f(explicit_cast(a)));
 }
 
 /* very special case: operator '**' has an optional third arg */
@@ -226,6 +246,15 @@ static PyObject* wrap_pow(ternaryfunc f, ...) {
     }
 	return native_to_java(NULL);
 }
+
+static PyObject* wrap_lenfunc(lenfunc f, PyObject* a) {
+    return PyLong_FromSsize_t(f(explicit_cast(a)));
+}
+
+static Py_hash_t wrap_hashfunc(hashfunc f, PyObject* a) {
+    return PyLong_FromSsize_t(f(explicit_cast(a)));
+}
+
 
 int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
@@ -378,11 +407,11 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT_CONV("__getattr__", wrap_getattrfunc, cls->tp_getattr, -2);
     ADD_SLOT_CONV("__setattr__", wrap_setattrfunc, cls->tp_setattr, -3);
     ADD_SLOT("__repr__", cls->tp_repr, -1);
-    ADD_SLOT("__hash__", cls->tp_hash, -1);
+    ADD_SLOT_CONV("__hash__", wrap_hashfunc, cls->tp_hash, -1);
     ADD_SLOT("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS);
     ADD_SLOT("__str__", cls->tp_str, -1);
     ADD_SLOT("__getattr__", cls->tp_getattro, -2);
-    ADD_SLOT("__setattr__", cls->tp_getattro, -3);
+    ADD_SLOT_CONV("__setattr__", wrap_setattrofunc, cls->tp_setattro, -3);
     ADD_SLOT("__clear__", cls->tp_clear, -1);
     ADD_SLOT_CONV("__compare__", wrap_richcmpfunc, cls->tp_richcompare, -3);
     ADD_SLOT("__iter__", cls->tp_iter, -1);
@@ -407,7 +436,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
-        ADD_SLOT("__bool__", numbers->nb_bool, -1);
+        ADD_SLOT_CONV("__bool__", wrap_inquiry, numbers->nb_bool, -1);
         ADD_SLOT("__invert__", numbers->nb_invert, -1);
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
@@ -437,21 +466,21 @@ int PyType_Ready(PyTypeObject* cls) {
 
     PySequenceMethods* sequences = cls->tp_as_sequence;
     if (sequences) {
-        ADD_SLOT("__len__", sequences->sq_length, -1);
+        ADD_SLOT_CONV("__len__", wrap_lenfunc, sequences->sq_length, -1);
         ADD_SLOT("__add__", sequences->sq_concat, -2);
-        ADD_SLOT("__mul__", sequences->sq_repeat, -2);
-        ADD_SLOT("__getitem__", sequences->sq_item, -2);
+        ADD_SLOT_CONV("__mul__", wrap_ssizeargfunc, sequences->sq_repeat, -2);
+        ADD_SLOT_CONV("__getitem__", wrap_ssizeargfunc, sequences->sq_item, -2);
         ADD_SLOT_CONV("__setitem__", wrap_ssizeobjargproc, sequences->sq_ass_item, -3);
-        ADD_SLOT("__contains__", sequences->sq_contains, -2);
+        ADD_SLOT_CONV("__contains__", wrap_objobjproc, sequences->sq_contains, -2);
         ADD_SLOT("__iadd__", sequences->sq_inplace_concat, -2);
-        ADD_SLOT("__imul__", sequences->sq_inplace_repeat, -2);
+        ADD_SLOT_CONV("__imul__", wrap_ssizeargfunc, sequences->sq_inplace_repeat, -2);
     }
 
     PyMappingMethods* mappings = cls->tp_as_mapping;
     if (mappings) {
-        ADD_SLOT("__len__", mappings->mp_length, -1);
+        ADD_SLOT_CONV("__len__", wrap_lenfunc, mappings->mp_length, -1);
         ADD_SLOT("__getitem__", mappings->mp_subscript, -2);
-        ADD_SLOT("__setitem__", mappings->mp_ass_subscript, -3);
+        ADD_SLOT_CONV("__setitem__", wrap_objobjargproc, mappings->mp_ass_subscript, -3);
     }
 
     PyAsyncMethods* async = cls->tp_as_async;
@@ -466,7 +495,6 @@ int PyType_Ready(PyTypeObject* cls) {
         // TODO ...
     }
 
-    // TODO link subclasses
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
     Py_ssize_t n = PyTuple_GET_SIZE(bases);
