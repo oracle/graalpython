@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -79,6 +80,53 @@ public class MathModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("tau", 2 * Math.PI);
     }
 
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    static abstract class ConvertToFloatNode extends PBaseNode {
+
+        @Child private LookupAndCallUnaryNode callFloatNode;
+
+        abstract double execute(Object x);
+
+        public static ConvertToFloatNode create() {
+            return MathModuleBuiltinsFactory.ConvertToFloatNodeGen.create();
+        }
+
+        @Specialization
+        public double toDouble(long x) {
+            return x;
+        }
+
+        @Specialization
+        public double toDouble(PInt x) {
+            return x.doubleValue();
+        }
+
+        @Specialization
+        public double toDouble(double x) {
+            return x;
+        }
+
+        @Specialization(guards = "!isNumber(x)")
+        public double toDouble(Object x) {
+            if (callFloatNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFloatNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
+            }
+            Object result = callFloatNode.executeObject(x);
+            if (result == PNone.NO_VALUE) {
+                throw raise(TypeError, "must be real number, not %p", x);
+            }
+            if (result instanceof PFloat) {
+                return ((PFloat) result).getValue();
+            }
+            if (result instanceof Float || result instanceof Double) {
+                return (double) result;
+            }
+            throw raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
+        }
+    }
+
     public abstract static class MathUnaryBuiltinNode extends PythonUnaryBuiltinNode {
 
         public void checkMathRangeError(boolean con) {
@@ -91,20 +139,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
             if (con) {
                 throw raise(ValueError, "math domain error");
             }
-        }
-
-        public double getFloat(Object value, LookupAndCallUnaryNode dispatchNode) {
-            Object result = dispatchNode.executeObject(value);
-            if (result == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", value);
-            }
-            if (result instanceof PFloat) {
-                return ((PFloat) result).getValue();
-            }
-            if (result instanceof Float || result instanceof Double) {
-                return (double) result;
-            }
-            throw raise(TypeError, "%p.__float__ returned non-float (type %p)", value, result);
         }
     }
 
@@ -135,8 +169,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public double doGeneral(Object value,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchNode) {
-            return count(getFloat(value, dispatchNode));
+                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+            return count(convertToFloat.execute(value));
         }
     }
 
@@ -272,11 +306,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNumber(value)"})
         public Object ceil(Object value,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
+                        @Cached("create()") ConvertToFloatNode convertToFloat,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
             Object result = dispatchCeil.executeObject(value);
             if (result == PNone.NO_VALUE) {
-                return ceil(getFloat(value, dispatchFloat));
+                return ceil(convertToFloat.execute(value));
             }
             return result;
         }
@@ -691,9 +725,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class FrexpNode extends PythonUnaryBuiltinNode {
-
-        public abstract PTuple executeObject(Object value);
-
         public static PTuple frexp(double value, PythonObjectFactory factory) {
             int exponent = 0;
             double mantissa = 0.0;
@@ -757,20 +788,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public PTuple frexpO(Object value,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
-                        @Cached("create()") FrexpNode recursiveNode) {
-            Object result = dispatchFloat.executeObject(value);
-            if (result == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", value);
-            }
-            if (!MathGuards.isNumber(result)) {
-                throw raise(TypeError, "%p.__float__ returned non-float (type %p)", value, result);
-            }
-            return recursiveNode.executeObject(result);
-        }
-
-        protected static FrexpNode create() {
-            return MathModuleBuiltinsFactory.FrexpNodeFactory.create(new PNode[0]);
+                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+            return frexpD(convertToFloat.execute(value));
         }
     }
 
@@ -779,9 +798,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class IsNanNode extends PythonUnaryBuiltinNode {
-
-        public abstract boolean executeObject(Object value);
-
         @Specialization
         public boolean isNan(@SuppressWarnings("unused") long value) {
             return false;
@@ -799,20 +815,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(Object value,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
-                        @Cached("create()") IsNanNode isNanNode) {
-            Object result = dispatchFloat.executeObject(value);
-            if (result == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", value);
-            }
-            if (!MathGuards.isNumber(result)) {
-                throw raise(TypeError, "%p.__float__ returned non-float (type %p)", value, result);
-            }
-            return isNanNode.executeObject(result);
-        }
-
-        protected static IsNanNode create() {
-            return MathModuleBuiltinsFactory.IsNanNodeFactory.create(new PNode[0]);
+                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+            return isNan(convertToFloat.execute(value));
         }
     }
 
@@ -1129,8 +1133,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsFiniteNode extends PythonUnaryBuiltinNode {
 
-        public abstract boolean executeObject(Object value);
-
         @Specialization
         public boolean isfinite(@SuppressWarnings("unused") long value) {
             return true;
@@ -1148,17 +1150,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(Object value,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
-                        @Cached("create()") IsFiniteNode isFiniteNode) {
-            Object result = dispatchFloat.executeObject(value);
-            if (result == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", value);
-            }
-            return isFiniteNode.executeObject(result);
-        }
-
-        protected static IsFiniteNode create() {
-            return MathModuleBuiltinsFactory.IsFiniteNodeFactory.create(new PNode[0]);
+                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+            return isfinite(convertToFloat.execute(value));
         }
     }
 
@@ -1168,15 +1161,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsInfNode extends PythonUnaryBuiltinNode {
 
-        public abstract boolean executeObject(Object value);
-
         @Specialization
         public boolean isinf(@SuppressWarnings("unused") long value) {
             return false;
         }
 
         @Specialization
-        public boolean isfinite(@SuppressWarnings("unused") PInt value) {
+        public boolean isinf(@SuppressWarnings("unused") PInt value) {
             return false;
         }
 
@@ -1187,17 +1178,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(Object value,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchFloat,
-                        @Cached("create()") IsInfNode isInfNode) {
-            Object result = dispatchFloat.executeObject(value);
-            if (result == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", value);
-            }
-            return isInfNode.executeObject(result);
-        }
-
-        protected static IsInfNode create() {
-            return MathModuleBuiltinsFactory.IsInfNodeFactory.create(new PNode[0]);
+                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+            return isinf(convertToFloat.execute(value));
         }
     }
 
@@ -1207,24 +1189,24 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LogNode extends PythonUnaryBuiltinNode {
 
-        @Child private LookupAndCallUnaryNode valueDispatchNode;
-        @Child private LookupAndCallUnaryNode baseDispatchNode;
+        @Child private ConvertToFloatNode valueConvertNode;
+        @Child private ConvertToFloatNode baseConvertNode;
         @Child private LogNode recLogNode;
 
-        private LookupAndCallUnaryNode getValueDispatchNode() {
-            if (valueDispatchNode == null) {
+        private ConvertToFloatNode getValueConvertNode() {
+            if (valueConvertNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                valueDispatchNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
+                valueConvertNode = insert(ConvertToFloatNode.create());
             }
-            return valueDispatchNode;
+            return valueConvertNode;
         }
 
-        private LookupAndCallUnaryNode getBaseDispatchNode() {
-            if (baseDispatchNode == null) {
+        private ConvertToFloatNode getBaseConvertNode() {
+            if (baseConvertNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                baseDispatchNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
+                baseConvertNode = insert(ConvertToFloatNode.create());
             }
-            return baseDispatchNode;
+            return baseConvertNode;
         }
 
         private double executeRecursiveLogNode(Object value, Object base) {
@@ -1367,53 +1349,34 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public double logO(Object value, PNone novalue,
-                        @Cached("createBinaryProfile()") ConditionProfile notNumber) {
-            Object result = getRealNumber(value, getValueDispatchNode(), notNumber);
-            return executeRecursiveLogNode(result, novalue);
+        public double logO(Object value, PNone novalue) {
+            return executeRecursiveLogNode(getValueConvertNode().execute(value), novalue);
         }
 
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
-        public double logOO(Object value, Object base,
-                        @Cached("createBinaryProfile()") ConditionProfile notNumberValue,
-                        @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
-            Object resultValue = getRealNumber(value, getValueDispatchNode(), notNumberValue);
-            Object resultBase = getRealNumber(base, getBaseDispatchNode(), notNumberBase);
-            return executeRecursiveLogNode(resultValue, resultBase);
+        public double logOO(Object value, Object base) {
+            return executeRecursiveLogNode(getValueConvertNode().execute(value), getBaseConvertNode().execute(base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logLO(long value, Object base,
-                        @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
-            return logDO(value, base, notNumberBase);
+        public double logLO(long value, Object base) {
+            return executeRecursiveLogNode(value, getBaseConvertNode().execute(base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logDO(double value, Object base,
-                        @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
-            Object resultBase = getRealNumber(base, getBaseDispatchNode(), notNumberBase);
-            return executeRecursiveLogNode(value, resultBase);
+        public double logDO(double value, Object base) {
+            return executeRecursiveLogNode(value, getBaseConvertNode().execute(base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
-        public double logPIO(PInt value, Object base,
-                        @Cached("createBinaryProfile()") ConditionProfile notNumberBase) {
-            Object resultBase = getRealNumber(base, getBaseDispatchNode(), notNumberBase);
-            return executeRecursiveLogNode(value, resultBase);
+        public double logPIO(PInt value, Object base) {
+            return executeRecursiveLogNode(value, getBaseConvertNode().execute(base));
         }
 
         private void raiseMathError(ConditionProfile doNotFit, boolean con) {
             if (doNotFit.profile(con)) {
                 throw raise(ValueError, "math domain error");
             }
-        }
-
-        private Object getRealNumber(Object object, LookupAndCallUnaryNode dispatchNode, ConditionProfile isNotRealNumber) {
-            Object result = dispatchNode.executeObject(object);
-            if (isNotRealNumber.profile(result == PNone.NO_VALUE)) {
-                throw raise(TypeError, "must be real number, not %p", object);
-            }
-            return result;
         }
 
         public static LogNode create() {
@@ -1557,8 +1520,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonBinaryBuiltinNode {
 
-        public abstract double executeObject(Object left, Object right);
-
         @Specialization
         double pow(long left, long right) {
             return pow((double) left, (double) right);
@@ -1650,23 +1611,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNumber(left)||!isNumber(right)"})
         double pow(Object left, Object right,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchLeftFloat,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchRightFloat,
-                        @Cached("create()") PowNode powNode) {
-            Object leftFloat = dispatchLeftFloat.executeObject(left);
-            if (leftFloat == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", left);
-            }
-            Object rightFloat = dispatchRightFloat.executeObject(right);
-            if (leftFloat == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", right);
-            }
-
-            return powNode.executeObject(leftFloat, rightFloat);
-        }
-
-        public static PowNode create() {
-            return MathModuleBuiltinsFactory.PowNodeFactory.create(new PNode[0]);
+                        @Cached("create()") ConvertToFloatNode convertLeftFloat,
+                        @Cached("create()") ConvertToFloatNode convertRightFloat) {
+            return pow(convertLeftFloat.execute(left), convertRightFloat.execute(right));
         }
     }
 
@@ -1690,8 +1637,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class Atan2Node extends PythonBinaryBuiltinNode {
-
-        public abstract double executeObject(Object left, Object right);
 
         @Specialization
         double atan2(long left, long right) {
@@ -1740,23 +1685,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(left) || !isNumber(right)")
         double atan2(Object left, Object right,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchLeftFloat,
-                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode dispatchRightFloat,
-                        @Cached("create()") Atan2Node recursiveNode) {
-            Object leftFloat = dispatchLeftFloat.executeObject(left);
-            if (leftFloat == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", left);
-            }
-            Object rightFloat = dispatchRightFloat.executeObject(right);
-            if (leftFloat == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", right);
-            }
-
-            return recursiveNode.executeObject(leftFloat, rightFloat);
-        }
-
-        protected Atan2Node create() {
-            return MathModuleBuiltinsFactory.Atan2NodeFactory.create(new PNode[0]);
+                        @Cached("create()") ConvertToFloatNode convertLeftFloat,
+                        @Cached("create()") ConvertToFloatNode convertRightFloat) {
+            return atan2DD(convertLeftFloat.execute(left), convertRightFloat.execute(right));
         }
     }
 }
