@@ -168,3 +168,13 @@ class ExceptionTest(unittest.TestCase):
 
 if sys.version_info.minor == 4 and sys.version_info.micro < 3:
     del ExceptionTest
+
+
+def test_generator_starargs():
+    def func(*args):
+        return set(args)
+
+    lst = [x for x in range(10)]
+    gen = (x for x in range(10))
+    assert func(*lst) == set(lst)
+    assert func(*gen) == set(lst)
