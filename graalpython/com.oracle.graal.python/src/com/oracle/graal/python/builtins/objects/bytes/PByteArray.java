@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -41,11 +42,12 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class PByteArray extends PSequence implements PIBytesLike {
+public final class PByteArray extends PArray implements PIBytesLike {
 
     @CompilationFinal private SequenceStorage store;
 
@@ -64,6 +66,7 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         return getItemNormalized(SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range"));
     }
 
+    @Override
     public Object getItemNormalized(int idx) {
         return store.getItemNormalized(idx);
     }
@@ -137,6 +140,10 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         return store;
     }
 
+    public final void setSequenceStorage(SequenceStorage newStorage) {
+        this.store = newStorage;
+    }
+
     @Override
     public boolean lessThan(PSequence sequence) {
         return false;
@@ -148,8 +155,8 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     }
 
     @Override
-    @TruffleBoundary
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return String.format("bytearray(%s)", __repr__(getInternalByteArray(), store.length()));
     }
 
@@ -182,20 +189,9 @@ public final class PByteArray extends PSequence implements PIBytesLike {
 
     public final void append(Object value) {
         if (store instanceof EmptySequenceStorage) {
-            store = store.generalizeFor(value);
+            store = new ByteSequenceStorage(1);
         }
-
-        try {
-            store.append(value);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value);
-
-            try {
-                store.append(value);
-            } catch (SequenceStoreException e1) {
-                throw new IllegalStateException();
-            }
-        }
+        store.append(value);
     }
 
     public PByteArray copy() {
@@ -224,7 +220,7 @@ public final class PByteArray extends PSequence implements PIBytesLike {
 
     @TruffleBoundary
     public byte[] join(PythonCore core, Object... values) {
-        return BytesUtils.join(core, getInternalByteArray(), values);
+        return BytesUtils.join(core, getBytesExact(), values);
     }
 
     @Override

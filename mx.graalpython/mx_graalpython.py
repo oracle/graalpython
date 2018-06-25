@@ -21,7 +21,6 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-import json
 import os
 import platform
 import re
@@ -30,17 +29,15 @@ import subprocess
 import sys
 import tempfile
 
-import mx_sdk
-
 import mx
 import mx_benchmark
 import mx_gate
+import mx_sdk
 import mx_subst
 from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
 from mx_unittest import unittest
-from mx_urlrewrites import _urlrewrites
 
 _suite = mx.suite('graalpython')
 _mx_graal = mx.suite("compiler", fatalIfMissing=False)
@@ -240,6 +237,15 @@ def punittest(args):
 def nativebuild(args):
     mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON"])
 
+
+def nativeclean(args):
+    mx.run(['find', _suite.dir, '-name', '*.bc', '-delete'])
+
+
+def python3_unittests(args):
+    mx.run(["python3", "graalpython/com.oracle.graal.python.test/src/python_unittests.py", "-v"] + args)
+
+
 # mx gate --tags pythonbenchmarktest
 # mx gate --tags pythontest
 # mx gate --tags fulltest
@@ -248,6 +254,7 @@ def nativebuild(args):
 class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
+    cpyext = 'python-cpyext'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
@@ -325,17 +332,28 @@ def python_svm(args):
 
 
 def graalpython_gate_runner(args, tasks):
+    _graalpytest_driver = "graalpython/com.oracle.graal.python.test/src/graalpytest.py"
+    _test_project = "graalpython/com.oracle.graal.python.test/"
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
             punittest(['--verbose'])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v",
-                         "graalpython/com.oracle.graal.python.test/src/tests/"]
+            test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/"]
             mx.command_function("python")(test_args)
             if platform.system() != 'Darwin':
                 # TODO: re-enable when python3 is available on darwin
+                mx.log("Running tests with CPython")
+                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+
+    with Task('GraalPython C extension tests', tasks, tags=[GraalPythonTags.cpyext]) as task:
+        if task:
+            test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/cpyext/"]
+            mx.command_function("python")(test_args)
+            if platform.system() != 'Darwin':
+                # TODO: re-enable when python3 is available on darwin
+                mx.log("Running tests with CPython")
                 mx.run(["python3"] + test_args, nonZeroIsFatal=True)
 
     with Task('GraalPython downstream R tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.R]) as task:
@@ -648,6 +666,9 @@ def update_import_cmd(args):
             callback=lambda: shutil.copy(
                 join(_sulong.dir, "include", "truffle.h"),
                 join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
+            ) and shutil.copy(
+                join(_sulong.dir, "projects", "com.oracle.truffle.llvm.libraries.bitcode", "inclue", "polyglot.h"),
+                join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
             )
         # make sure that truffle and regex are the same version
         elif name == "regex":
@@ -748,6 +769,9 @@ mx.update_commands(_suite, {
     'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
     'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
+    'python3-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
+    'python-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
     'nativebuild': [nativebuild, ''],
+    'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],
 })

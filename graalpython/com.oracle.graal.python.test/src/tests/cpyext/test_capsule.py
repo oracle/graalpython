@@ -39,7 +39,9 @@ import sys
 from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
 __dir__ = __file__.rpartition("/")[0]
 
+
 class TestPyCapsule(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyCapsule, self).compile_module(name)
@@ -47,11 +49,45 @@ class TestPyCapsule(CPyExtTestCase):
     test_PyCapsule_CheckExact = CPyExtFunction(
         lambda args: True,
         lambda: (
-            ("hello",0xDEADBEEF), 
+            ("hello", 0xDEADBEEF),
         ),
         code='''int wrap_PyCapsule_Check(char * name, Py_ssize_t ptr) {
-            PyObject* capsule = PyCapsule_New(ptr, name, NULL);
+            PyObject* capsule = PyCapsule_New((void *)ptr, name, NULL);
             return PyCapsule_CheckExact(capsule);
+        }
+        ''',
+        resultspec="i",
+        argspec='sn',
+        arguments=["char* name", "Py_ssize_t ptr"],
+        callfunction="wrap_PyCapsule_Check",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyCapsule_GetPointer = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            ("hello", 0xDEADBEEF),
+        ),
+        code='''int wrap_PyCapsule_Check(char * name, Py_ssize_t ptr) {
+            PyObject* capsule = PyCapsule_New((void *)ptr, name, NULL);
+            return PyCapsule_GetPointer(capsule, name) == (void*)ptr;
+        }
+        ''',
+        resultspec="i",
+        argspec='sn',
+        arguments=["char* name", "Py_ssize_t ptr"],
+        callfunction="wrap_PyCapsule_Check",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyCapsule_GetContext = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            ("hello", 0xDEADBEEF),
+        ),
+        code='''int wrap_PyCapsule_Check(char * name, Py_ssize_t ptr) {
+            PyObject* capsule = PyCapsule_New((void *)ptr, name, NULL);
+            return PyCapsule_GetContext(capsule) == NULL;
         }
         ''',
         resultspec="i",

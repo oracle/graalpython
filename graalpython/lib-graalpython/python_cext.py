@@ -67,6 +67,14 @@ def may_raise(error_result=error_handler):
         return decorator
 
 
+def Py_ErrorHandler():
+    return error_handler
+
+
+def Py_NotImplemented():
+    return NotImplemented
+
+
 def Py_True():
     return True
 
@@ -102,16 +110,18 @@ def PyDict_New():
     return {}
 
 
+@may_raise
 def PyDict_Next(dictObj, pos):
-    if isinstance(dictObj, dict):
-        curPos = 0
-        max = len(dictObj)
-        if pos >= max:
-            return error_handler
-        for key in dictObj:
-            if curPos == pos:
-                return key, dictObj[key]
-            curPos = curPos + 1
+    if not isinstance(dictObj, dict):
+        return error_handler
+    curPos = 0
+    max = len(dictObj)
+    if pos >= max:
+        return error_handler
+    for key in dictObj:
+        if curPos == pos:
+            return key, dictObj[key]
+        curPos = curPos + 1
     return error_handler
 
 
@@ -150,6 +160,14 @@ def PyDict_DelItem(dictObj, key):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
     del dictObj[key]
     return 0
+
+
+@may_raise(-1)
+def PyDict_Contains(dictObj, key):
+    if not isinstance(dictObj, dict):
+        _PyErr_BadInternalCall(None, None, dictObj)
+    return key in dictObj
+
 
 
 ##################### SET, FROZENSET
@@ -195,10 +213,16 @@ def PyObject_LEN(obj):
     return len(obj)
 
 
+def PyTruffle_Object_LEN(obj):
+    return len(to_java(obj))
+
+
 ##################### BYTES
 
 def PyBytes_FromStringAndSize(string, encoding):
-    return bytes(string, encoding)
+    if string is not None:
+        return bytes(string, encoding)
+    return bytes()
 
 
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
@@ -219,6 +243,7 @@ def PyBytes_Check(obj):
     return isinstance(obj, bytes)
 
 
+@may_raise
 def PyBytes_Concat(original, newpart):
     return original + newpart
 
@@ -374,6 +399,8 @@ def PyNumber_UnaryOp(v, unaryop, name):
         return +v
     elif unaryop == 1:
         return -v
+    elif unaryop == 2:
+        return ~v
     else:
         raise SystemError("unknown unary operator %s" % name)
 
@@ -404,8 +431,22 @@ def PyNumber_Long(v):
 
 
 @may_raise
+def PyNumber_Absolute(v):
+    return abs(v)
+
+
+@may_raise
+def PyNumber_Divmod(a, b):
+    return divmod(a, b)
+
+
+@may_raise
 def PyIter_Next(itObj):
-    return next(itObj)
+    try:
+        return next(itObj)
+    except StopIteration:
+        PyErr_Restore(None, None, None)
+        return error_handler
 
 
 ##################### SEQUENCE
@@ -526,7 +567,7 @@ def PyCapsule_GetContext(obj):
 def PyCapsule_GetPointer(obj, name):
     if not isinstance(obj, PyCapsule) or obj.pointer is None:
         raise ValueError("PyCapsule_GetPointer called with invalid PyCapsule object")
-    if name != obj.name:
+    if name != None and name != obj.name:
         raise ValueError("PyCapsule_GetPointer called with incorrect name")
     return obj.pointer
 
@@ -622,53 +663,67 @@ class cstaticmethod():
         return self.__func__(None, *args, **kwargs)
 
 
-def AddFunction(primary, name, cfunc, wrapper, doc, isclass=False, isstatic=False):
-    func = wrapper(CreateFunction(name, cfunc))
+def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+    mod_obj = to_java(primary)
+    func = wrapper(CreateFunction(name, cfunc, cwrapper))
     if isclass:
         func = classmethod(func)
     elif isstatic:
         func = cstaticmethod(func)
-    elif isinstance(primary, moduletype):
-        func = modulemethod(primary, func)
+    elif isinstance(mod_obj, moduletype):
+        func = modulemethod(mod_obj, func)
     func.__name__ = name
     func.__doc__ = doc
     if name == "__init__":
         def __init__(self, *args, **kwargs):
             if func(self, *args, **kwargs) != 0:
                 raise TypeError("__init__ failed")
-        object.__setattr__(primary, name, __init__)
+        object.__setattr__(mod_obj, name, __init__)
     else:
-        object.__setattr__(primary, name, func)
+        object.__setattr__(mod_obj, name, func)
 
 
 def AddMember(primary, name, memberType, offset, canSet, doc):
+    pclass = to_java(primary)
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
         return getter(self, offset)
     member.getter(member_getter)
-    if canSet:
+    if to_java(canSet):
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
             setter(self, offset, value)
         member.setter(member_setter)
     member.__doc__ = doc
-    object.__setattr__(primary, name, member)
+    object.__setattr__(pclass, name, member)
 
 
-def AddGetSet(primary, name, getter, setter, doc, closure):
+def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
+    pclass = to_java(primary)
     getset = property()
-    getter_w = CreateFunction(name, getter)
-    def member_getter(self):
-        return capi_to_java(getter_w(self, closure))
-    getset.getter(member_getter)
-    setter_w = CreateFunction(name, setter)
-    def member_setter(self, value):
-        setter_w(self, value, closure)
-        return None
-    getset.setter(member_setter)
+    if getter:
+        getter_w = CreateFunction(name, getter, getter_wrapper)
+        def member_getter(self):
+            return capi_to_java(getter_w(self, closure))
+
+        getset.getter(member_getter)
+    if setter:
+        setter_w = CreateFunction(name, setter, setter_wrapper)
+        def member_setter(self, value):
+            result = setter_w(self, value, closure)
+            if result != 0:
+                raise
+            return None
+        getset.setter(member_setter)
+    else:
+        getset.setter(lambda self, value: GetSet_SetNotWritable(self, value, name))
     getset.__doc__ = doc
-    object.__setattr__(primary, name, getset)
+    object.__setattr__(pclass, name, getset)
+
+
+def GetSet_SetNotWritable(self, value, attr):
+    raise AttributeError("attribute '%s' of '%s' objects is not writable" % (attr, type(self).__name__))
 
 
 def PyObject_Str(o):
@@ -680,15 +735,7 @@ def PyObject_Repr(o):
 
 
 def PyType_IsSubtype(a, b):
-    return b in a.mro()
-
-
-@may_raise
-def PyTruffle_Add_Subclass(bases_dict, key, cls):
-    if not bases_dict:
-        bases_dict = dict()
-    bases_dict[key] = cls
-    return bases_dict
+    return 1 if b in a.mro() else 0
 
 
 def PyTuple_New(size):
@@ -776,6 +823,11 @@ def PyObject_AsFileDescriptor(obj):
     if result < 0:
         raise ValueError("file descriptor cannot be a negative integer (%d)" % result)
     return int(result)
+
+
+@may_raise
+def PyObject_GetAttr(obj, attr):
+    return getattr(obj, attr)
 
 
 @may_raise(-1)
@@ -974,6 +1026,10 @@ def PyTruffle_Debug(*args):
     __tdebug__(*args)
 
 
+def PyTruffle_GetBuiltin(name):
+    return getattr(sys.modules["builtins"], name)
+
+
 def PyTruffle_Type(type_name):
     if type_name == "mappingproxy":
         return type(dict().keys())
@@ -1088,9 +1144,83 @@ def initialize_member_accessors():
 
 @may_raise
 def PyImport_ImportModule(name):
-    return __import__(name)
+    return __import__(name, fromlist=["*"])
 
+
+@may_raise
+def PyImport_GetModuleDict():
+    return sys.modules
 
 @may_raise
 def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
+
+
+@may_raise
+def PyTruffle_Upcall(rcv, name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_sulong(getattr(to_java(rcv), name)(*converted))
+
+
+@may_raise(to_long(-1))
+def PyTruffle_Upcall_l(rcv, name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_long(getattr(rcv, name)(*converted))
+
+
+@may_raise(to_double(-1.0))
+def PyTruffle_Upcall_d(rcv, name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_double(getattr(rcv, name)(*converted))
+
+
+@may_raise(0)
+def PyTruffle_Upcall_ptr(rcv, name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    # returns a pointer, i.e., we do no conversion since this can be any pointer object
+    return getattr(rcv, name)(*converted)
+
+
+def PyTruffle_Cext_Upcall(name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_sulong(globals()[name](*converted))
+
+
+def PyTruffle_Cext_Upcall_l(name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_long(globals()[name](*converted))
+
+
+def PyTruffle_Cext_Upcall_d(name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    return to_double(globals()[name](*converted))
+
+
+def PyTruffle_Cext_Upcall_ptr(name, *args):
+    nargs = len(args)
+    converted = [None] * nargs
+    for i in range(nargs):
+        converted[i] = to_java(args[i])
+    # returns a pointer, i.e., we do no conversion since this can be any pointer object
+    return globals()[name](*converted)

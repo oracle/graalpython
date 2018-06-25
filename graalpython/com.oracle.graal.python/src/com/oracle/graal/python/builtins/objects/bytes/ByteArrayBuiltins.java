@@ -27,11 +27,14 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -47,26 +50,42 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PByteArray.class)
 public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ByteArrayBuiltinsFactory.getFactories();
     }
 
@@ -79,6 +98,74 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             // TODO: tfel: throw an error if we get additional arguments and the __new__
             // method was the same as object.__new__
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __DELITEM__, fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
+        @Child private SequenceUtil.NormalizeIndexNode normalize = SequenceUtil.NormalizeIndexNode.create();
+
+        @Specialization(guards = "isByteStorage(primary)")
+        protected PNone doBytes(PByteArray primary, long idx) {
+            ByteSequenceStorage storage = (ByteSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isByteStorage(primary)")
+        protected PNone doBytes(PByteArray primary, PInt idx) {
+            ByteSequenceStorage storage = (ByteSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isIntStorage(primary)")
+        protected PNone doInt(PByteArray primary, long idx) {
+            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "isIntStorage(primary)")
+        protected PNone doInt(PByteArray primary, PInt idx) {
+            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization
+        protected PNone doArray(PByteArray byteArray, long idx) {
+            SequenceStorage storage = byteArray.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization
+        protected PNone doArray(PByteArray byteArray, PInt idx) {
+            SequenceStorage storage = byteArray.getSequenceStorage();
+            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            return PNone.NONE;
+        }
+
+        @Specialization
+        protected PNone doSlice(PByteArray self, PSlice slice) {
+            self.delSlice(slice);
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        protected Object doGeneric(Object self, Object idx) {
+            if (!isValidIndexType(idx)) {
+                throw raise(TypeError, "bytearray indices must be integers or slices, not %p", idx);
+            }
+            throw raise(TypeError, "descriptor '__delitem__' requires a 'bytearray' object but received a '%p'", idx);
+        }
+
+        protected boolean isValidIndexType(Object idx) {
+            return PGuards.isInteger(idx) || idx instanceof PSlice;
         }
     }
 
@@ -105,7 +192,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -177,6 +264,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object repr(PByteArray self) {
             return self.toString();
         }
@@ -196,7 +284,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "isByteStorage(byteArray)")
         public PByteArray appendInt(PByteArray byteArray, int arg) {
             ByteSequenceStorage store = (ByteSequenceStorage) byteArray.getSequenceStorage();
-            store.appendInt(arg);
+            try {
+                store.appendInt(arg);
+            } catch (SequenceStoreException e) {
+                throw raise(ValueError, "byte must be in range(0, 256)");
+            }
             return byteArray;
         }
 
@@ -206,6 +298,62 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             store.appendByte(arg);
             return byteArray;
         }
+    }
+
+    // bytearray.extend(L)
+    @Builtin(name = "extend", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class ByteArrayExtendNode extends PythonBuiltinNode {
+
+        @Specialization(guards = {"isPSequenceWithStorage(source)"}, rewriteOn = {SequenceStoreException.class})
+        public PNone extendSequenceStore(PByteArray byteArray, Object source) throws SequenceStoreException {
+            SequenceStorage target = byteArray.getSequenceStorage();
+            target.extend(((PSequence) source).getSequenceStorage());
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"isPSequenceWithStorage(source)"})
+        public PNone extendSequence(PByteArray byteArray, Object source) {
+            SequenceStorage eSource = ((PSequence) source).getSequenceStorage();
+            if (eSource.length() > 0) {
+                SequenceStorage target = byteArray.getSequenceStorage();
+                try {
+                    target.extend(eSource);
+                } catch (SequenceStoreException e) {
+                    throw raise(ValueError, "byte must be in range(0, 256)");
+                }
+            }
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPSequenceWithStorage(source)")
+        public PNone extend(PByteArray byteArray, Object source,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+            Object workSource = byteArray != source ? source : factory().createByteArray(((PSequence) source).getSequenceStorage().copy());
+            Object iterator = getIterator.executeWith(workSource);
+            while (true) {
+                Object value;
+                try {
+                    value = next.execute(iterator);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    return PNone.NONE;
+                }
+
+                try {
+                    byteArray.append(value);
+                } catch (SequenceStoreException e) {
+                    throw raise(ValueError, "byte must be in range(0, 256)");
+                }
+            }
+        }
+
+        protected boolean isPSequenceWithStorage(Object source) {
+            return (source instanceof PSequence && !(source instanceof PTuple || source instanceof PRange));
+        }
+
     }
 
     // bytearray.copy()
@@ -274,6 +422,46 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "startswith", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class StartsWithNode extends PythonBuiltinNode {
+        @Specialization
+        @CompilerDirectives.TruffleBoundary
+        boolean startswith(PByteArray self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return new String(self.getInternalByteArray()).startsWith(prefix);
+        }
+
+        @Specialization
+        boolean startswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.startsWith(self, prefix);
+        }
+
+        @Specialization
+        boolean startswith(PByteArray self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.startsWith(self, prefix, start, -1);
+        }
+
+        @Specialization
+        boolean startswith(PByteArray self, PIBytesLike prefix, int start, int end) {
+            return BytesUtils.startsWith(self, prefix, start, end);
+        }
+    }
+
+    @Builtin(name = "endswith", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class EndsWithNode extends PythonBuiltinNode {
+        @Specialization
+        @CompilerDirectives.TruffleBoundary
+        boolean endswith(PByteArray self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return new String(self.getInternalByteArray()).endsWith(prefix);
+        }
+
+        @Specialization
+        boolean endswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return BytesUtils.endsWith(self, prefix);
+        }
+    }
+
     // bytearray.join(iterable)
     @Builtin(name = "join", fixedNumOfArguments = 2)
     @GenerateNodeFactory
@@ -332,21 +520,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         int find(PByteArray self, int sub, int start, int ending) {
-            byte[] haystack = self.getInternalByteArray();
-            int end = ending;
-            if (start >= haystack.length) {
-                return -1;
-            } else if (end < 0) {
-                end = end % haystack.length + 1;
-            } else if (end > haystack.length) {
-                end = haystack.length;
-            }
-            for (int i = start; i < haystack.length; i++) {
-                if (haystack[i] == sub) {
-                    return i;
-                }
-            }
-            return -1;
+            return BytesUtils.find(self, sub, start, ending);
         }
 
         @Specialization
@@ -360,27 +534,8 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int find(PByteArray self, PIBytesLike sub, int start, int endIng) {
-            byte[] haystack = self.getInternalByteArray();
-            byte[] needle = sub.getInternalByteArray();
-            int end = endIng;
-            if (start >= haystack.length) {
-                return -1;
-            } else if (end < 0) {
-                end = end % haystack.length + 1;
-            } else if (end > haystack.length) {
-                end = haystack.length;
-            }
-            end = end - needle.length;
-            outer: for (int i = start; i < end; i++) {
-                for (int j = 0; j < needle.length; j++) {
-                    if (needle[j] != haystack[i + j]) {
-                        continue outer;
-                    }
-                }
-                return i;
-            }
-            return -1;
+        int find(PByteArray self, PIBytesLike sub, int start, int ending) {
+            return BytesUtils.find(self, sub, start, ending);
         }
     }
 
@@ -392,7 +547,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             if (table.getInternalByteArray().length != 256) {
                 throw raise(ValueError, "translation table must be 256 characters long");
             }
-            byte[] newBytes = self.getInternalBytesArrayCopy();
+            byte[] newBytes = self.getBytesExact();
             byte[] tableBytes = table.getInternalByteArray();
             for (int i = 0; i < newBytes.length; i++) {
                 byte b = newBytes[i];
@@ -413,6 +568,37 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         Object getitem(PByteArray self, PSlice slice) {
             return self.getSlice(factory(), slice);
+        }
+    }
+
+    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class BoolNode extends PythonBuiltinNode {
+        @Specialization(guards = "isEmptyStorage(byteArray)")
+        public boolean doEmpty(@SuppressWarnings("unused") PByteArray byteArray) {
+            return false;
+        }
+
+        @Specialization(guards = "isIntStorage(byteArray)")
+        public boolean doInt(PByteArray byteArray) {
+            IntSequenceStorage store = (IntSequenceStorage) byteArray.getSequenceStorage();
+            return store.length() != 0;
+        }
+
+        @Specialization(guards = "isByteStorage(byteArray)")
+        public boolean doByte(PByteArray byteArray) {
+            ByteSequenceStorage store = (ByteSequenceStorage) byteArray.getSequenceStorage();
+            return store.length() != 0;
+        }
+
+        @Specialization
+        boolean doLen(PByteArray operand) {
+            return operand.len() != 0;
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }

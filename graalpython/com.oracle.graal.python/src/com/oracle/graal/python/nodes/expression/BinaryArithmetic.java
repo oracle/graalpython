@@ -54,7 +54,6 @@ public enum BinaryArithmetic {
     TrueDiv(SpecialMethodNames.__TRUEDIV__, "/"),
     FloorDiv(SpecialMethodNames.__FLOORDIV__, "//"),
     Mod(SpecialMethodNames.__MOD__, "%"),
-    Pow(SpecialMethodNames.__POW__, "**"),
     LShift(SpecialMethodNames.__LSHIFT__, "<<"),
     RShift(SpecialMethodNames.__RSHIFT__, ">>"),
     And(SpecialMethodNames.__AND__, "&"),

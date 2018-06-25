@@ -39,10 +39,9 @@
 #include "capi.h"
 
 PyObject* PyImport_ImportModule(const char *name) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyImport_ImportModule", truffle_read_string(name));
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyImport_ImportModule", polyglot_from_string(name, SRC_CS));
+}
+
+PyObject* PyImport_GetModuleDict() {
+    return UPCALL_CEXT_O("PyImport_GetModuleDict");
 }

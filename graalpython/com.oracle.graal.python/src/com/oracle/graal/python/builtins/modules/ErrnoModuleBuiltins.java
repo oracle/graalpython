@@ -43,20 +43,20 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 @CoreFunctions(defineModule = "errno")
 public class ErrnoModuleBuiltins extends PythonBuiltins {
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return new ArrayList<>();
     }
 
     /**
      * Generated using the following:
-     * 
+     *
      * <pre>
      * grep -RPo "#define\s+([A-Z]+)\s+(\d+)" /usr/include/asm-generic/errno* | awk '{print "builtinConstants.put(\"" $2 "\", " $3 ");"}'
      * </pre>

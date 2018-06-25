@@ -122,14 +122,14 @@ static PyNumberMethods none_as_number = {
     0,                          /* nb_index */
 };
 
-PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT);
+PyTypeObject _PyNone_Type = PY_TRUFFLE_TYPE("NoneType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
 PyObject _Py_NoneStruct = {
   _PyObject_EXTRA_INIT
   1, &_PyNone_Type
 };
 
-PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT);
+PyTypeObject _PyNotImplemented_Type = PY_TRUFFLE_TYPE("NotImplementedType", &PyType_Type, Py_TPFLAGS_DEFAULT, 0);
 
 PyObject _Py_NotImplementedStruct = {
     _PyObject_EXTRA_INIT
@@ -159,33 +159,91 @@ void PyObject_Free(void* ptr) {
 }
 
 Py_ssize_t PyObject_Size(PyObject *o) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_Size", to_java(o));
+    return UPCALL_CEXT_L("PyObject_Size", native_to_java(o));
 }
 
 static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
-	void* result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", to_java(base->tp_subclasses), to_java(PyLong_FromVoidPtr(type)), to_java((PyObject*)type));
-	if (result == ERROR_MARKER) {
-		return -1;
-	}
-	base->tp_subclasses = to_sulong(result);
-	return 0;
+    void* key = PyLong_FromVoidPtr((void *) type);
+    if (key == NULL) {
+        return -1;
+    }
+    if (polyglot_is_value(base)) {
+        return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", native_to_java(base), native_to_java(key), native_to_java(type)));
+    } else {
+        PyObject *dict = base->tp_subclasses;
+        if (dict == NULL) {
+            base->tp_subclasses = dict = PyDict_New();
+            if (dict == NULL) {
+                return -1;
+            }
+        }
+        // TODO value should be a weak reference !
+        return PyDict_SetItem(base->tp_subclasses, key, type);
+    }
+	return -1;
+}
+
+/* Special C landing functions that convert some arguments to primitives. */
+
+static PyObject* wrap_allocfunc(allocfunc f, PyTypeObject* klass, PyObject* n) {
+	return f(explicit_cast(klass), PyLong_AsSsize_t(n));
+}
+
+/* Wrapper around a native function to be called by Python code. */
+static PyObject* wrap_getattrfunc(getattrfunc f, PyObject* obj, PyObject* unicode) {
+	// we really need to provide 'char *' since this often runs non-Sulong code
+	return f(explicit_cast(obj), as_char_pointer(unicode));
+}
+
+/* Wrapper around the native function to be called by Python code. */
+static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicode, PyObject* value) {
+	// we really need to provide 'char *' since this often runs non-Sulong code
+	return f(explicit_cast(obj), as_char_pointer(unicode), explicit_cast(value));
+}
+
+static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObject* n) {
+	return f(explicit_cast(a), explicit_cast(b), (int)PyLong_AsLong(n));
+}
+
+static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* size, PyObject* b) {
+	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size), explicit_cast(b)));
+}
+
+static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c) {
+	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+}
+
+/* very special case: operator '**' has an optional third arg */
+static PyObject* wrap_pow(ternaryfunc f, ...) {
+    int nargs = polyglot_get_arg_count();
+    switch(nargs) {
+    case 3:
+        // TODO use 'native_to_java' on result
+        return f(explicit_cast(polyglot_get_arg(1)), explicit_cast(polyglot_get_arg(2)), Py_None);
+    case 4:
+        // TODO use 'native_to_java' on result
+        return f(explicit_cast(polyglot_get_arg(1)), explicit_cast(polyglot_get_arg(2)), explicit_cast(polyglot_get_arg(3)));
+    }
+	return native_to_java(NULL);
 }
 
 int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
-#define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, m.ml_meth, m.ml_flags, m.ml_doc)
-#define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, meth, flags, name)
-#define ADD_METHOD_OR_SLOT(name, meth, flags, doc)                      \
-    if (meth) {                                                         \
-        truffle_invoke(PY_TRUFFLE_CEXT,                                 \
-                       "AddFunction",                                   \
-                       javacls,                                         \
-                       truffle_read_string(name),                       \
-                       truffle_address_to_function(meth),               \
-                       get_method_flags_wrapper(flags),                 \
-                       truffle_read_string(doc),                        \
-                       (flags) > 0 && ((flags) & METH_CLASS) != 0,      \
-                       (flags) > 0 && ((flags) & METH_STATIC) != 0);    \
+#define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, get_method_flags_cwrapper(m.ml_flags), m.ml_meth, m.ml_flags, m.ml_doc)
+#define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, get_method_flags_cwrapper(flags), meth, flags, name)
+#define ADD_SLOT_CONV(name, clanding, meth, flags) ADD_METHOD_OR_SLOT(name, clanding, meth, flags, name)
+#define ADD_METHOD_OR_SLOT(name, clanding, meth, flags, doc)                                \
+    if (meth) {                                                                             \
+        polyglot_invoke(PY_TRUFFLE_CEXT,                                                    \
+                       "AddFunction",                                                       \
+                       javacls,                                                             \
+                       polyglot_from_string((name), SRC_CS),                                \
+                       (meth),                                                              \
+                       (clanding),                                                          \
+                       get_method_flags_wrapper(flags),                                     \
+                       polyglot_from_string(doc, SRC_CS),                                   \
+                       (flags) > 0 && ((flags) & METH_CLASS) != 0,                          \
+                       (flags) > 0 && ((flags) & METH_STATIC) != 0);                        \
     }
 
     // https://docs.python.org/3/c-api/typeobj.html#Py_TPFLAGS_READY
@@ -229,33 +287,25 @@ int PyType_Ready(PyTypeObject* cls) {
         cls->tp_bases = bases;
     }
 
-
-    PyTypeObject* javacls = truffle_invoke(PY_TRUFFLE_CEXT,
-                                           "PyType_Ready",
-                                           // no conversion of cls here, because we
-                                           // store this into the PyTypeObject
-                                           cls,
-                                           to_java_type(metaclass),
-                                           to_java(bases),
-                                           truffle_read_string(cls->tp_name),
-                                           truffle_read_string(cls->tp_doc ? cls->tp_doc : ""));
-    if (polyglot_is_value(javacls)) {
-    	javacls = polyglot_as__typeobject(javacls);
+    PyObject* native_members = PyDict_New();
+    PyDict_SetItemString(native_members, "tp_name", polyglot_from_string(cls->tp_name, SRC_CS));
+    PyDict_SetItemString(native_members, "tp_doc", polyglot_from_string(cls->tp_doc ? cls->tp_doc : "", SRC_CS));
+    PyDict_SetItemString(native_members, "tp_basicsize", PyLong_FromSsize_t(cls->tp_basicsize));
+    const char* lastDot = strrchr(cls->tp_name, '.');
+    if (lastDot) {
+        PyDict_SetItemString(native_members, "__module__", polyglot_from_string(lastDot + 1, SRC_CS));
     }
+    PyTypeObject* javacls = polyglot_as__typeobject(polyglot_invoke(PY_TRUFFLE_CEXT,
+                                          "PyType_Ready",
+                                          // no conversion of cls here, because we
+                                          // store this into the PyTypeObject
+                                          cls,
+                                          native_to_java(metaclass),
+                                          native_to_java(bases),
+                                          native_to_java(native_members)));
 
     // remember the managed wrapper
     ((PyObject*)cls)->ob_refcnt = truffle_handle_for_managed(javacls);
-
-    // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_name
-    const char* lastDot = strrchr(cls->tp_name, '.');
-    if (lastDot) {
-        truffle_write(javacls, "__module__", truffle_read_string(lastDot + 1));
-    }
-
-    // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_doc
-    if (cls->tp_doc) {
-        truffle_write(javacls, "__doc__", truffle_read_string(cls->tp_doc));
-    }
 
     PyMethodDef* methods = cls->tp_methods;
     if (methods) {
@@ -275,15 +325,16 @@ int PyType_Ready(PyTypeObject* cls) {
         int i = 0;
         PyMemberDef member = members[i];
         while (member.name != NULL) {
-            truffle_invoke(PY_TRUFFLE_CEXT,
+            polyglot_invoke(PY_TRUFFLE_CEXT,
                            "AddMember",
+                           // TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
                            javacls,
-                           truffle_read_string(member.name),
+                           polyglot_from_string(member.name, SRC_CS),
                            member.type,
                            member.offset,
                            // TODO: support other flags
-                           ((member.flags & READONLY) == 0) ? Py_True : Py_False,
-                           truffle_read_string(member.doc ? member.doc : ""));
+                           native_to_java(((member.flags & READONLY) == 0) ? Py_True : Py_False),
+                           polyglot_from_string(member.doc ? member.doc : "", SRC_CS));
             member = members[++i];
         }
     }
@@ -293,16 +344,21 @@ int PyType_Ready(PyTypeObject* cls) {
         int i = 0;
         PyGetSetDef getset = getsets[i];
         while (getset.name != NULL) {
-            truffle_invoke(PY_TRUFFLE_CEXT,
-                           "AddGetSet",
-                           javacls,
-                           truffle_read_string(getset.name),
-                           truffle_address_to_function(getset.get),
-                           truffle_address_to_function(getset.set),
-                           getset.doc ? truffle_read_string(getset.doc) : truffle_read_string(""),
-                           // do not convert the closure, it is handed to the
-                           // getter and setter as-is
-                           getset.closure);
+            getter getter_fun = getset.get;
+            setter setter_fun = getset.set;
+            polyglot_invoke(PY_TRUFFLE_CEXT,
+                            "AddGetSet",
+                            // TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
+                            javacls,
+                            polyglot_from_string(getset.name, SRC_CS),
+                            getter_fun != NULL ? (getter)getter_fun : native_to_java(Py_None),
+                            wrap_direct,
+                            setter_fun != NULL ? (setter)setter_fun : native_to_java(Py_None),
+                            wrap_direct,
+                            getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : polyglot_from_string("", SRC_CS),
+                            // do not convert the closure, it is handed to the
+                            // getter and setter as-is
+                            getset.closure);
             getset = getsets[++i];
         }
     }
@@ -316,8 +372,11 @@ int PyType_Ready(PyTypeObject* cls) {
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
     // tp_getattr and tp_setattr are deprecated, and should be the same as
     // tp_getattro and tp_setattro
-    ADD_SLOT("__getattr__", cls->tp_getattr, -2);
-    ADD_SLOT("__setattr__", cls->tp_setattr, -3);
+
+    // NOTE: The slots may be called from managed code, i.e., we need to wrap the functions
+    // and convert arguments that should be C primitives.
+    ADD_SLOT_CONV("__getattr__", wrap_getattrfunc, cls->tp_getattr, -2);
+    ADD_SLOT_CONV("__setattr__", wrap_setattrfunc, cls->tp_setattr, -3);
     ADD_SLOT("__repr__", cls->tp_repr, -1);
     ADD_SLOT("__hash__", cls->tp_hash, -1);
     ADD_SLOT("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS);
@@ -325,13 +384,13 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT("__getattr__", cls->tp_getattro, -2);
     ADD_SLOT("__setattr__", cls->tp_getattro, -3);
     ADD_SLOT("__clear__", cls->tp_clear, -1);
-    ADD_SLOT("__compare__", cls->tp_richcompare, -3);
+    ADD_SLOT_CONV("__compare__", wrap_richcmpfunc, cls->tp_richcompare, -3);
     ADD_SLOT("__iter__", cls->tp_iter, -1);
     ADD_SLOT("__next__", cls->tp_iternext, -1);
     ADD_SLOT("__get__", cls->tp_descr_get, -3);
     ADD_SLOT("__set__", cls->tp_descr_set, -3);
-    ADD_SLOT("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS);
-    ADD_SLOT("__alloc__", cls->tp_alloc, -2);
+    ADD_SLOT_CONV("__init__", wrap_initproc, cls->tp_init, METH_KEYWORDS | METH_VARARGS);
+    ADD_SLOT_CONV("__alloc__", wrap_allocfunc, cls->tp_alloc, -2);
     ADD_SLOT("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS);
     ADD_SLOT("__free__", cls->tp_free, -1);
     ADD_SLOT("__del__", cls->tp_del, -1);
@@ -344,7 +403,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
         ADD_SLOT("__rem__", numbers->nb_remainder, -2);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
-        ADD_SLOT("__pow__", numbers->nb_power, -2);
+        ADD_SLOT_CONV("__pow__", wrap_pow, numbers->nb_power, -3);
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
@@ -382,7 +441,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__add__", sequences->sq_concat, -2);
         ADD_SLOT("__mul__", sequences->sq_repeat, -2);
         ADD_SLOT("__getitem__", sequences->sq_item, -2);
-        ADD_SLOT("__setitem__", sequences->sq_ass_item, -3);
+        ADD_SLOT_CONV("__setitem__", wrap_ssizeobjargproc, sequences->sq_ass_item, -3);
         ADD_SLOT("__contains__", sequences->sq_contains, -2);
         ADD_SLOT("__iadd__", sequences->sq_inplace_concat, -2);
         ADD_SLOT("__imul__", sequences->sq_inplace_repeat, -2);
@@ -392,7 +451,7 @@ int PyType_Ready(PyTypeObject* cls) {
     if (mappings) {
         ADD_SLOT("__len__", mappings->mp_length, -1);
         ADD_SLOT("__getitem__", mappings->mp_subscript, -2);
-        ADD_SLOT("__setitem__", mappings->mp_subscript, -3);
+        ADD_SLOT("__setitem__", mappings->mp_ass_subscript, -3);
     }
 
     PyAsyncMethods* async = cls->tp_as_async;
@@ -410,15 +469,21 @@ int PyType_Ready(PyTypeObject* cls) {
     // TODO link subclasses
     /* Link into each base class's list of subclasses */
     bases = cls->tp_bases;
-//    Py_ssize_t n = PyTuple_GET_SIZE(bases);
-//    Py_ssize_t i;
-//    for (i = 0; i < n; i++) {
-//        PyTypeObject *b = polyglot_as__typeobject(PyTuple_GetItem(bases, i));
-//        if (PyType_Check(b) && add_subclass((PyTypeObject *)b, cls) < 0) {
-//        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
-//        	return -1;
-//        }
-//    }
+    Py_ssize_t n = PyTuple_GET_SIZE(bases);
+    Py_ssize_t i;
+    for (i = 0; i < n; i++) {
+        PyObject* base_class_object = PyTuple_GetItem(bases, i);
+        PyTypeObject* b = NULL;
+        if (polyglot_is_value(base_class_object)) {
+            b = polyglot_as__typeobject(base_class_object);
+        }  else {
+            b = (PyTypeObject*) base_class_object;
+        }
+        if (PyType_Check(b) && add_subclass(b, cls) < 0) {
+        	cls->tp_flags &= ~Py_TPFLAGS_READYING;
+        	return -1;
+        }
+    }
 
     // done
     cls->tp_flags = cls->tp_flags & ~Py_TPFLAGS_READYING;
@@ -434,18 +499,18 @@ int PyType_Ready(PyTypeObject* cls) {
 
 
 PyObject* PyObject_Str(PyObject* o) {
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_Str", to_java(o)));
+    return UPCALL_CEXT_O("PyObject_Str", native_to_java(o));
 }
 
 PyObject* PyObject_Repr(PyObject* o) {
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_Repr", to_java(o)));
+    return UPCALL_CEXT_O("PyObject_Repr", native_to_java(o));
 }
 
 PyObject* PyObject_Call(PyObject* callable, PyObject* args, PyObject* kwargs) {
     if (kwargs == NULL) {
         kwargs = PyDict_New();
     }
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", to_java(callable), to_java(args), to_java(kwargs)));
+    return UPCALL_CEXT_O("PyObject_Call", native_to_java(callable), native_to_java(args), native_to_java(kwargs));
 }
 
 PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
@@ -482,7 +547,6 @@ PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
 PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 2, fmt);
-    args = to_sulong(args);
     if (strlen(fmt) < 2) {
         PyObject* singleArg = args;
         args = PyTuple_New(strlen(fmt));
@@ -494,8 +558,9 @@ PyObject* PyObject_CallFunction(PyObject* callable, const char* fmt, ...) {
 }
 
 PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
-    PyObject* args = PyTuple_New(polyglot_get_arg_count() - 1);
-    for (int i = 1; i < polyglot_get_arg_count(); i++) {
+    // the arguments are given as a variable list followed by NULL
+    PyObject* args = PyTuple_New(polyglot_get_arg_count() - 2);
+    for (int i = 1; i < polyglot_get_arg_count() - 1; i++) {
         PyTuple_SetItem(args, i - 1, polyglot_get_arg(i));
     }
     return PyObject_CallObject(callable, args);
@@ -504,35 +569,35 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_CallMethod", to_java(object), truffle_read_string(method), to_java(args)));
+    return UPCALL_CEXT_O("PyObject_CallMethod", native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
 PyObject* PyObject_Type(PyObject* obj) {
-    return to_sulong(truffle_invoke(PY_BUILTIN, "type", to_java(obj)));
+    return UPCALL_O(PY_BUILTIN, "type", native_to_java(obj));
 }
 
 PyObject* PyObject_GetItem(PyObject* obj, PyObject* key) {
-    return to_sulong(truffle_invoke(to_java(obj), "__getitem__", to_java(key)));
+    return UPCALL_O(native_to_java(obj), "__getitem__", native_to_java(key));
 }
 
 int PyObject_SetItem(PyObject* obj, PyObject* key, PyObject* value) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_SetItem", to_java(obj), to_java(key), to_java(value));
+    return UPCALL_CEXT_I("PyObject_SetItem", native_to_java(obj), native_to_java(key), native_to_java(value));
 }
 
 PyObject* PyObject_Format(PyObject* obj, PyObject* spec) {
-    return to_sulong(truffle_invoke(to_java(obj), "__format__", to_java(spec)));
+    return UPCALL_O(native_to_java(obj), "__format__", native_to_java(spec));
 }
 
 PyObject* PyObject_GetIter(PyObject* obj) {
-    return to_sulong(truffle_invoke(PY_BUILTIN, "iter", to_java(obj)));
+    return UPCALL_O(PY_BUILTIN, "iter", native_to_java(obj));
 }
 
 int PyObject_IsInstance(PyObject* obj, PyObject* typ) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_IsInstance", to_java(obj), to_java(typ));
+    return UPCALL_CEXT_I("PyObject_IsInstance", native_to_java(obj), native_to_java(typ));
 }
 
 int PyObject_AsFileDescriptor(PyObject* obj) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_AsFileDescriptor", to_java(obj));
+    return UPCALL_CEXT_I("PyObject_AsFileDescriptor", native_to_java(obj));
 }
 
 int PyObject_Print(PyObject* object, FILE* fd, int flags) {
@@ -540,39 +605,39 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
     void *printfunc, *printargs, *printkwargs;
     void *file;
 
-    openFunc = truffle_read(PY_BUILTIN, "open");
-    args = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_New", 1);
+    openFunc = UPCALL_CEXT_O("PyTruffle_GetBuiltin", polyglot_from_string("open", SRC_CS));
+    args = PyTuple_New(1);
     int f = fileno(fd);
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", args, 0, f);
-    kwargs = truffle_invoke(PY_BUILTIN, "dict");
+    PyTuple_SetItem(args, 0, PyLong_FromLong(f));
+    kwargs = PyDict_New();
     int buffering = 0;
-    truffle_invoke(kwargs, "__setitem__", truffle_read_string("buffering"), buffering);
-    truffle_write(kwargs, "mode", truffle_read_string("wb"));
-    file = truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", openFunc, args, kwargs);
+    PyDict_SetItemString(kwargs, "buffering", PyLong_FromLong(buffering));
+    PyDict_SetItemString(kwargs, "mode", polyglot_from_string("wb", SRC_CS));
+    file = PyObject_Call(openFunc, args, kwargs);
 
-    printfunc = truffle_read(PY_BUILTIN, "print");
-    printargs = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_New", 1);
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", printargs, 0, to_java(object));
-    printkwargs = truffle_invoke(PY_BUILTIN, "dict");
-    truffle_write(printkwargs, "file", file);
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_Call", printfunc, printargs, printkwargs);
+    printfunc = UPCALL_CEXT_O("PyTruffle_GetBuiltin", polyglot_from_string("print", SRC_CS));
+    printargs = PyTuple_New(1);
+    PyTuple_SetItem(printargs, 0, object);
+    printkwargs = PyDict_New();
+    PyDict_SetItemString(printkwargs, "file", file);
+    PyObject_Call(printfunc, printargs, printkwargs);
     return 0;
 }
 
 PyObject* PyObject_GetAttrString(PyObject* obj, const char* attr) {
-    return to_sulong(truffle_read(to_java(obj), truffle_read_string(attr)));
+    return UPCALL_CEXT_O("PyObject_GetAttr", native_to_java(obj), polyglot_from_string(attr, SRC_CS));
 }
 
 int PyObject_SetAttrString(PyObject* obj, const char* attr, PyObject* value) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_SetAttr", to_java(obj), truffle_read_string(attr), to_java(value));
+    return UPCALL_CEXT_I("PyObject_SetAttr", native_to_java(obj), polyglot_from_string(attr, SRC_CS), native_to_java(value));
 }
 
 int PyObject_HasAttrString(PyObject* obj, const char* attr) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_HasAttr", to_java(obj), truffle_read_string(attr));
+    return UPCALL_CEXT_I("PyObject_HasAttr", native_to_java(obj), polyglot_from_string(attr, SRC_CS));
 }
 
 PyObject* PyObject_GetAttr(PyObject* obj, PyObject* attr) {
-    return to_sulong(truffle_invoke(PY_BUILTIN, "getattr", to_java(obj), to_java(attr)));
+    return UPCALL_CEXT_O("PyObject_GetAttr", native_to_java(obj), native_to_java(attr));
 }
 
 PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
@@ -588,16 +653,16 @@ int PyObject_GenericSetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
 }
 
 Py_hash_t PyObject_Hash(PyObject* obj) {
-    return truffle_invoke_i(PY_BUILTIN, "hash", to_java(obj));
+    return UPCALL_I(PY_BUILTIN, "hash", native_to_java(obj));
 }
 
 Py_hash_t PyObject_HashNotImplemented(PyObject* obj) {
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_HashNotImplemented", to_java(obj));
+    UPCALL_CEXT_VOID("PyObject_HashNotImplemented", native_to_java(obj));
     return -1;
 }
 
 int PyObject_IsTrue(PyObject* obj) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_IsTrue", to_java(obj));
+    return UPCALL_CEXT_I("PyObject_IsTrue", native_to_java(obj));
 }
 
 int PyObject_Not(PyObject* obj) {
@@ -605,12 +670,7 @@ int PyObject_Not(PyObject* obj) {
 }
 
 PyObject * PyObject_RichCompare(PyObject *v, PyObject *w, int op) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyObject_RichCompare", to_java(v), to_java(w), op);
-    if (result == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return to_sulong(result);
-    }
+    return UPCALL_CEXT_O("PyObject_RichCompare", native_to_java(v), native_to_java(w), op);
 }
 
 int PyObject_RichCompareBool(PyObject *v, PyObject *w, int op) {
@@ -637,4 +697,8 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     Py_TYPE(op) = tp;
     _Py_NewReference(op);
     return op;
+}
+
+int PyCallable_Check(PyObject *x) {
+    return polyglot_as_i32(polyglot_invoke(PY_BUILTIN, "callable", to_java(x)));
 }

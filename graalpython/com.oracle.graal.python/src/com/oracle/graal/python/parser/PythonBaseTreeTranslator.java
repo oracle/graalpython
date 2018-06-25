@@ -53,6 +53,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ModuleRootNode;
@@ -71,7 +72,6 @@ import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
-import com.oracle.graal.python.nodes.control.StopIterationTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
@@ -528,13 +528,32 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         }
     }
 
+    private static class BytesBuilder {
+        List<byte[]> bytes = new ArrayList<>();
+        int len = 0;
+
+        void append(byte[] b) {
+            len += b.length;
+            bytes.add(b);
+        }
+
+        byte[] build() {
+            byte[] output = new byte[len];
+            int offset = 0;
+            for (byte[] bs : bytes) {
+                System.arraycopy(bs, 0, output, offset, bs.length);
+                offset += bs.length;
+            }
+            return output;
+        }
+    }
+
     @SuppressWarnings("unused")
     private PNode parseString(String[] strings) {
-        StringBuilder sb = new StringBuilder();
-        Boolean stringIsBytes = null;
+        StringBuilder sb = null;
+        BytesBuilder bb = null;
 
         for (String text : strings) {
-
             boolean isRaw = false;
             boolean isBytes = false;
             boolean isFormat = false;
@@ -559,30 +578,50 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
                 }
             }
 
+            if (isBytes) {
+                if (sb != null) {
+                    throw core.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
+                }
+                if (bb == null) {
+                    bb = new BytesBuilder();
+                }
+            } else {
+                if (bb != null) {
+                    throw core.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
+                }
+                if (sb == null) {
+                    sb = new StringBuilder();
+                }
+            }
+
             if (text.endsWith("'''") || text.endsWith("\"\"\"")) {
                 strStartIndex += 2;
                 strEndIndex -= 2;
             }
 
             text = text.substring(strStartIndex, strEndIndex);
-            if (isRaw || isBytes) {
-                // TODO: bytes need (some) of the escaping too!, but not all
-                sb.append(text);
+            if (isBytes) {
+                if (isRaw) {
+                    bb.append(text.getBytes());
+                } else {
+                    bb.append(BytesUtils.fromString(core, text));
+                }
             } else {
-                sb.append(unescapeJavaString(text));
-            }
-
-            if (stringIsBytes == null) {
-                stringIsBytes = isBytes;
-            } else if (stringIsBytes != isBytes) {
-                throw core.raise(SyntaxError, "cannot mix bytes and nonbytes literals");
+                if (isRaw) {
+                    sb.append(text);
+                } else {
+                    sb.append(unescapeJavaString(text));
+                }
             }
         }
 
-        if (stringIsBytes != null && stringIsBytes) {
-            return factory.createBytesLiteral(sb.toString());
+        if (bb != null) {
+            return factory.createBytesLiteral(bb.build());
+        } else if (sb != null) {
+            return factory.createStringLiteral(sb.toString());
+        } else {
+            return factory.createStringLiteral("");
         }
-        return factory.createStringLiteral(sb.toString());
     }
 
     private static String unescapeJavaString(String st) {
@@ -1280,16 +1319,6 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
                 continue;
             }
             assert false;
-        }
-
-        /**
-         * Specialize except StopIteration to StopIterationTargetNode.
-         */
-        if (exceptClauses.size() == 1 && EmptyNode.isEmpty(elseNode) && EmptyNode.isEmpty(finallyNode) && ctx.except_clause(0).test() != null) {
-            if (ctx.except_clause(0).test().getText().equals("StopIteration")) {
-                PNode exceptBody = (PNode) ctx.except_clause(0).accept(this);
-                return new StopIterationTargetNode(tryNode, exceptBody);
-            }
         }
 
         return factory.createTryExceptElseFinallyNode(tryNode, exceptClauses.toArray(new ExceptNode[0]), elseNode, finallyNode);

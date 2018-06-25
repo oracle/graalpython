@@ -35,6 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:
@@ -51,10 +52,10 @@ def test_empty_sequence():
     assert b.__class__ == bytes
     assert_raises(IndexError, lambda: b[0])
     assert_raises(IndexError, lambda: b[1])
-    assert_raises(IndexError, lambda: b[10**100])
+    assert_raises(IndexError, lambda: b[10 ** 100])
     assert_raises(IndexError, lambda: b[-1])
     assert_raises(IndexError, lambda: b[-2])
-    assert_raises(IndexError, lambda: b[-10**100])
+    assert_raises(IndexError, lambda: b[-10 ** 100])
 
 
 def test_from_list():
@@ -191,7 +192,9 @@ def test_delitem():
 
 
 def test_subclass():
+
     class MyByteArray(bytearray):
+
         def __str__(self):
             return "<<%s>>" % super(MyByteArray, self).__str__()
 
@@ -201,6 +204,7 @@ def test_subclass():
     assert "<<%s>>" % str(b1) == str(b2)
 
     class MyBytes(bytes):
+
         def __str__(self):
             return "[[%s]]" % super(MyBytes, self).__str__()
 
@@ -241,7 +245,6 @@ def _test_join(basetype, type2test):
 def test_join():
     _test_join(bytes, BytesSubclass)
     _test_join(bytearray, ByteArraySubclass)
-
 
 # def test_setslice():
 #     b = bytearray(range(10))
@@ -301,14 +304,14 @@ def test_concat():
     assert a + d == b'0\x01'
     assert c + d == bytearray([0, 1])
     assert c + b == bytearray([0, ord('1')])
-    assert_raises(TypeError, lambda x, y: x+y, a, 1)
-    assert_raises(TypeError, lambda x, y: x+y, a, "1")
-    assert_raises(TypeError, lambda x, y: x+y, a, [1])
-    assert_raises(TypeError, lambda x, y: x+y, a, object())
-    assert_raises(TypeError, lambda x, y: x+y, c, 1)
-    assert_raises(TypeError, lambda x, y: x+y, c, "1")
-    assert_raises(TypeError, lambda x, y: x+y, c, [1])
-    assert_raises(TypeError, lambda x, y: x+y, c, object())
+    assert_raises(TypeError, lambda x, y: x + y, a, 1)
+    assert_raises(TypeError, lambda x, y: x + y, a, "1")
+    assert_raises(TypeError, lambda x, y: x + y, a, [1])
+    assert_raises(TypeError, lambda x, y: x + y, a, object())
+    assert_raises(TypeError, lambda x, y: x + y, c, 1)
+    assert_raises(TypeError, lambda x, y: x + y, c, "1")
+    assert_raises(TypeError, lambda x, y: x + y, c, [1])
+    assert_raises(TypeError, lambda x, y: x + y, c, object())
 
 
 def test_mul():
@@ -327,3 +330,107 @@ def test_contains():
     assert b"/" in b"/", "b'/' was not in b'/'"
     assert bytearray([32]) in b" ", "bytearray([32]) was not in b' '"
     assert_raises(TypeError, lambda: "/" in b"/")
+
+
+def test_count():
+    assert b"hello".count(b"l") == 2, "1"
+    assert b"hello".count(b"h") == 1, "2"
+    assert b"hello".count(b"ll") == 1, "3"
+    assert b"hellohello".count(b"ll") == 2, "4"
+    assert b"hellohello".count(b"ll", 5) == 1, "5"
+
+
+def test_rfind():
+    assert b"".rfind(b"") == 0, "1"
+    assert b"hello".rfind(b"") == 5, "2"
+    assert b"hello".rfind(b"l") == 3, "3"
+    assert b"hello".rfind(b"x") == -1, "4"
+    assert b"hello".rfind(b"ll") == 2, "3"
+
+
+def test_extend():
+    orig = b'hello'
+    a = bytearray(orig)
+    a.extend(a)
+
+    assert a == orig + orig
+    assert a[5:] == orig
+
+    a = bytearray(b'')
+    # Test iterators that don't have a __length_hint__
+    a.extend(map(int, orig * 25))
+    a.extend(int(x) for x in orig * 25)
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    a.extend(iter(map(int, orig * 50)))
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    a.extend(list(map(int, orig * 50)))
+    assert a == orig * 50
+    assert a[-5:] == orig
+
+    a = bytearray(b'')
+    assert_raises(ValueError, a.extend, [0, 1, 2, 256])
+    assert_raises(ValueError, a.extend, [0, 1, 2, -1])
+    assert len(a) == 0
+
+
+def test_startswith():
+    b = b'hello'
+    assert not b.startswith(b"anything")
+    assert b.startswith(b"hello")
+    assert b.startswith(b"hel")
+    assert b.startswith(b"h")
+    assert not b.startswith(b"hellow")
+    assert not b.startswith(b"ha")
+
+    b = bytearray(b'hello')
+    assert not b.startswith(b"anything")
+    assert b.startswith(b"hello")
+    assert b.startswith(b"hel")
+    assert b.startswith(b"h")
+    assert not b.startswith(b"hellow")
+    assert not b.startswith(b"ha")
+
+
+def test_endswith():
+    b = b'hello'
+    assert not b.endswith(b"anything")
+    assert b.endswith(b"hello")
+    assert b.endswith(b"llo")
+    assert b.endswith(b"o")
+    assert not b.endswith(b"whello")
+    assert not b.endswith(b"no")
+
+    b = bytearray(b'hello')
+    assert not b.endswith(b"anything")
+    assert b.endswith(b"hello")
+    assert b.endswith(b"llo")
+    assert b.endswith(b"o")
+    assert not b.endswith(b"whello")
+    assert not b.endswith(b"no")
+
+
+def test_find():
+    b = b'mississippi'
+    i = 105
+    w = 119
+
+    assert b.find(b'ss') == 2
+    assert b.find(b'w') == -1
+    assert b.find(b'mississippian') == -1
+
+    assert b.find(i) == 1
+    assert b.find(w) == -1
+
+    assert b.find(b'ss', 3) == 5
+    assert b.find(b'ss', 1, 7) == 2
+    assert b.find(b'ss', 1, 3) == -1
+
+    assert b.find(i, 6) == 7
+    assert b.find(i, 1, 3) == 1
+    assert b.find(w, 1, 3) == -1

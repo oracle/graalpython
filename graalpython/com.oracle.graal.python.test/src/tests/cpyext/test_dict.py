@@ -40,7 +40,6 @@ from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_e
 __dir__ = __file__.rpartition("/")[0]
 
 
-
 def _reference_get_item(args):
     try:
         d = args[0]
@@ -89,10 +88,22 @@ def _reference_copy(args):
     return args[0].copy()
 
 
+def _reference_contains(args):
+    try:
+        return args[1] in args[0]
+    except:
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            return -1
+
+
 class SubDict(dict):
     pass
 
+
 class TestPyDict(CPyExtTestCase):
+
     def compile_module(self, name):
         type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
         super(TestPyDict, self).compile_module(name)
@@ -155,6 +166,7 @@ class TestPyDict(CPyExtTestCase):
         resultspec="O",
         argspec='OsO',
         arguments=("PyObject* dict", "char* key", "PyObject* defaultValue"),
+        resulttype="PyObject*",
         callfunction="wrap_PyDict_GetItemString",
         cmpfunc=unhandled_error_compare
     )
@@ -172,8 +184,8 @@ class TestPyDict(CPyExtTestCase):
     # PyDict_Next
     test_PyDict_Next = CPyExtFunctionOutVars(
         _reference_next,
-        #lambda: (({'a': "hello"}, 0), ({'a': "hello", 'b': 'world'}, 1), ({'a': "hello"}, 1)),
-        lambda: (({'a': "hello"}, 1), ),
+        # lambda: (({'a': "hello"}, 0), ({'a': "hello", 'b': 'world'}, 1), ({'a': "hello"}, 1)),
+        lambda: (({'a': "hello"}, 1),),
         code='''int wrap_PyDict_Next(PyObject* dict, Py_ssize_t* ppos, PyObject** key, PyObject** value) {
             int res = 0;
             Py_ssize_t iterations = *ppos;
@@ -196,6 +208,7 @@ class TestPyDict(CPyExtTestCase):
         resultspec="iOO",
         argspec='On',
         arguments=("PyObject* dict", "Py_ssize_t ppos"),
+        resulttype="int",
         argumentnames=("dict, &ppos"),
         resultvars=("PyObject* key", "PyObject* value"),
         callfunction="wrap_PyDict_Next",
@@ -228,18 +241,26 @@ class TestPyDict(CPyExtTestCase):
 
     # PyDict_Contains
     test_PyDict_Contains = CPyExtFunction(
-        lambda args: int(args[1] in args[0]),
-        lambda: (({},"a"), ({'a': "hello"},"a"), ({'a': "hello"},"b")),
+        _reference_contains,
+        lambda: (
+            ({}, "a"),
+            ({'a': "hello"}, "a"),
+            ({'a': "hello"}, "b"),
+            ({'a': "hello"}, ("a", "b")),
+            ({'a': "hello"}, {"a", "b"}),
+            ({'a': "hello"}, ["a", "b"]),
+        ),
         resultspec="i",
         argspec='OO',
         arguments=["PyObject* dict", "PyObject* key"],
+        cmpfunc=unhandled_error_compare
     )
 
     test_PyDict_Check = CPyExtFunction(
         lambda args: isinstance(args[0], dict),
         lambda: (
-            ({},), 
-            ({'a': "hello"},), 
+            ({},),
+            ({'a': "hello"},),
             (dict(),),
             ("not a dict",),
             (3,),
@@ -255,8 +276,8 @@ class TestPyDict(CPyExtTestCase):
     test_PyDict_CheckExact = CPyExtFunction(
         lambda args: type(args[0]) is dict,
         lambda: (
-            ({},), 
-            ({'a': "hello"},), 
+            ({},),
+            ({'a': "hello"},),
             (dict(),),
             ("not a dict",),
             (3,),

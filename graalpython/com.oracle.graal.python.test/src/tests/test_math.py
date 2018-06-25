@@ -5,11 +5,14 @@
 import math
 import unittest
 import sys
+import struct
 
 eps = 1E-05
 INF = float('inf')
 NINF = float('-inf')
 NAN = float('nan')
+LONG_INT = 6227020800
+BIG_INT = 9999992432902008176640000999999
 
 """ The next three methods are needed for testing factorials
 """
@@ -41,6 +44,64 @@ def py_factorial(n):
         inner *= partial_product((n >> i + 1) + 1 | 1, (n >> i) + 1 | 1)
         outer *= inner
     return outer << (n - count_set_bits(n))
+
+def ulp(x):
+    """Return the value of the least significant bit of a
+    float x, such that the first float bigger than x is x+ulp(x).
+    Then, given an expected result x and a tolerance of n ulps,
+    the result y should be such that abs(y-x) <= n * ulp(x).
+    The results from this function will only make sense on platforms
+    where native doubles are represented in IEEE 754 binary64 format.
+    """
+    x = abs(float(x))
+    if math.isnan(x) or math.isinf(x):
+        return x
+
+    # Find next float up from x.
+    n = struct.unpack('<q', struct.pack('<d', x))[0]
+    x_next = struct.unpack('<d', struct.pack('<q', n + 1))[0]
+    if math.isinf(x_next):
+        # Corner case: x was the largest finite float. Then it's
+        # not an exact power of two, so we can take the difference
+        # between x and the previous float.
+        x_prev = struct.unpack('<d', struct.pack('<q', n - 1))[0]
+        return x - x_prev
+    else:
+        return x_next - x
+
+def to_ulps(x):
+    """Convert a non-NaN float x to an integer, in such a way that
+    adjacent floats are converted to adjacent integers.  Then
+    abs(ulps(x) - ulps(y)) gives the difference in ulps between two
+    floats.
+
+    The results from this function will only make sense on platforms
+    where native doubles are represented in IEEE 754 binary64 format.
+
+    Note: 0.0 and -0.0 are converted to 0 and -1, respectively.
+    """
+    n = struct.unpack('<q', struct.pack('<d', x))[0]
+    if n < 0:
+        n = ~(n+2**63)
+    return n
+
+def ulp_abs_check(expected, got, ulp_tol, abs_tol):
+    """Given finite floats `expected` and `got`, check that they're
+    approximately equal to within the given number of ulps or the
+    given absolute tolerance, whichever is bigger.
+
+    Returns None on success and an error message on failure.
+    """
+    ulp_error = abs(to_ulps(expected) - to_ulps(got))
+    abs_error = abs(expected - got)
+
+    # Succeed if either abs_error <= abs_tol or ulp_error <= ulp_tol.
+    if abs_error <= abs_tol or ulp_error <= ulp_tol:
+        return None
+    else:
+        fmt = ("error = {:.3g} ({:d} ulps); "
+               "permitted error = {:.3g} or {:d} ulps")
+        return fmt.format(abs_error, ulp_error, abs_tol, ulp_tol)
 
 def result_check(expected, got, ulp_tol=5, abs_tol=0.0):
     # Common logic of MathTests.(ftest, test_testcases, test_mtestcases)
@@ -87,6 +148,10 @@ def result_check(expected, got, ulp_tol=5, abs_tol=0.0):
     else:
         return None
 
+class MyFloat:
+    def __float__(self):
+        return 0.6
+
 class MathTests(unittest.TestCase):
 
     def ftest(self, name, got, expected, ulp_tol=5, abs_tol=0.0):
@@ -101,6 +166,159 @@ class MathTests(unittest.TestCase):
         failure = result_check(expected, got, ulp_tol, abs_tol)
         if failure is not None:
             self.fail("{}: {}".format(name, failure))
+
+    def testConstants(self):
+        # Ref: Abramowitz & Stegun (Dover, 1965)
+        self.ftest('pi', math.pi, 3.141592653589793238462643)
+        self.ftest('e', math.e, 2.718281828459045235360287)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 6):
+            # math.tau since 3.6
+            self.assertEqual(math.tau, 2*math.pi)
+
+    def testAcos(self):
+        self.assertRaises(TypeError, math.acos)
+        self.ftest('acos(-1)', math.acos(-1), math.pi)
+        self.ftest('acos(0)', math.acos(0), math.pi/2)
+        self.ftest('acos(1)', math.acos(1), 0)
+        self.assertRaises(ValueError, math.acos, INF)
+        self.assertRaises(ValueError, math.acos, NINF)
+        self.assertRaises(ValueError, math.acos, 1 + eps)
+        self.assertRaises(ValueError, math.acos, -1 - eps)
+        self.assertTrue(math.isnan(math.acos(NAN)))
+
+        self.assertEqual(math.acos(True), 0.0)
+        self.assertRaises(ValueError, math.acos, 10)
+        self.assertRaises(ValueError, math.acos, -10)
+        self.assertRaises(ValueError, math.acos, LONG_INT)
+        self.assertRaises(ValueError, math.acos, BIG_INT)
+        self.assertRaises(TypeError, math.acos, 'ahoj')
+
+        self.assertRaises(ValueError, math.acos, 9999992432902008176640000999999)
+
+        self.ftest('acos(MyFloat())', math.acos(MyFloat()), 0.9272952180016123)
+
+        class MyFloat2:
+            def __float__(self):
+                return 1.6
+        self.assertRaises(ValueError, math.acos, MyFloat2())        
+
+        class MyFloat3:
+            def __float__(self):
+                return 'ahoj'
+        self.assertRaises(TypeError, math.acos, MyFloat3())
+
+    def testAcosh(self):
+        self.assertRaises(TypeError, math.acosh)
+        self.ftest('acosh(1)', math.acosh(1), 0)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('acosh(2)', math.acosh(2), 1.3169578969248168)
+        self.assertRaises(ValueError, math.acosh, 0)
+        self.assertRaises(ValueError, math.acosh, -1)
+        self.assertEqual(math.acosh(INF), INF)
+        self.assertRaises(ValueError, math.acosh, NINF)
+        self.assertTrue(math.isnan(math.acosh(NAN)))
+
+        class MyFF:
+            def __float__(self):
+                return 6
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('acos(MyFloat())', math.acosh(MyFF()), 0.9272952180016123)
+        self.assertRaises(ValueError, math.acosh, MyFloat())
+        math.acosh(BIG_INT)
+        self.assertRaises(TypeError, math.acosh, 'ahoj')
+
+    def testAsin(self):
+        self.assertRaises(TypeError, math.asin)
+        self.ftest('asin(-1)', math.asin(-1), -math.pi/2)
+        self.ftest('asin(0)', math.asin(0), 0)
+        self.ftest('asin(1)', math.asin(1), math.pi/2)
+        self.assertRaises(ValueError, math.asin, INF)
+        self.assertRaises(ValueError, math.asin, NINF)
+        self.assertRaises(ValueError, math.asin, 1 + eps)
+        self.assertRaises(ValueError, math.asin, -1 - eps)
+        self.assertTrue(math.isnan(math.asin(NAN)))
+
+        self.assertRaises(ValueError, math.asin, 10)
+        self.assertRaises(ValueError, math.asin, -10)
+        self.assertRaises(ValueError, math.asin, LONG_INT)
+        self.assertRaises(ValueError, math.asin, BIG_INT)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
+    def testSqrt(self):
+        self.assertRaises(TypeError, math.sqrt)
+        self.ftest('sqrt(0)', math.sqrt(0), 0)
+        self.ftest('sqrt(1)', math.sqrt(1), 1)
+        self.ftest('sqrt(4)', math.sqrt(4), 2)
+        self.assertEqual(math.sqrt(INF), INF)
+        self.assertRaises(ValueError, math.sqrt, -1)
+        self.assertRaises(ValueError, math.sqrt, NINF)
+        self.assertTrue(math.isnan(math.sqrt(NAN)))
+        
+        math.sqrt(MyFloat())
+        math.sqrt(BIG_INT)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
+    def testLog(self):
+        self.assertRaises(TypeError, math.log)
+        self.ftest('log(1/e)', math.log(1/math.e), -1)
+        self.ftest('log(1)', math.log(1), 0)
+        self.ftest('log(e)', math.log(math.e), 1)
+        self.ftest('log(32,2)', math.log(32,2), 5)
+        self.ftest('log(10**40, 10)', math.log(10**40, 10), 40)
+        self.ftest('log(10**40, 10**20)', math.log(10**40, 10**20), 2)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('log(10**1000)', math.log(10**1000), 2302.5850929940457)
+        self.assertRaises(ValueError, math.log, -1.5)
+        self.assertRaises(ValueError, math.log, -10**1000)
+        self.assertRaises(ValueError, math.log, NINF)
+        self.assertEqual(math.log(INF), INF)
+        self.assertTrue(math.isnan(math.log(NAN)))
+
+        math.log(MyFloat())
+        self.assertRaises(ZeroDivisionError, math.log, MyFloat(), True)
+        self.ftest('log(True, 1.1)', math.log(True, 1.1), 0)
+        math.log(BIG_INT)
+        math.log(BIG_INT, 4.6)
+        self.ftest('log(BIG_INT, BIG_INT)', math.log(BIG_INT, BIG_INT), 1)
+        self.assertRaises(ZeroDivisionError, math.log, BIG_INT, True)
+        self.assertRaises(TypeError, math.asin, 'ahoj')
+
+        math.log(MyFloat(), 10)
+        math.log(MyFloat(), BIG_INT)
+        math.log(MyFloat(), 7.4)
+        self.ftest('log(MyFloat(), MyFloat())', math.log(MyFloat(), MyFloat()), 1)
+        math.log(10, MyFloat())
+        self.assertRaises(ValueError, math.log, 0)
+
+    def testIsfinite(self):
+        self.assertTrue(math.isfinite(0.0))
+        self.assertTrue(math.isfinite(-0.0))
+        self.assertTrue(math.isfinite(1.0))
+        self.assertTrue(math.isfinite(-1.0))
+        self.assertFalse(math.isfinite(float("nan")))
+        self.assertFalse(math.isfinite(float("inf")))
+        self.assertFalse(math.isfinite(float("-inf")))
+
+        self.assertTrue(math.isfinite(True))
+        self.assertTrue(math.isfinite(LONG_INT))
+        self.assertTrue(math.isfinite(BIG_INT))
+        self.assertRaises(TypeError, math.isfinite, 'ahoj')
+        self.assertTrue(math.isfinite(MyFloat()))
+
+    def testIsinf(self):
+        self.assertTrue(math.isinf(float("inf")))
+        self.assertTrue(math.isinf(float("-inf")))
+        self.assertTrue(math.isinf(1E400))
+        self.assertTrue(math.isinf(-1E400))
+        self.assertFalse(math.isinf(float("nan")))
+        self.assertFalse(math.isinf(0.))
+        self.assertFalse(math.isinf(1.))
+        
+        self.assertFalse(math.isinf(True))
+        self.assertFalse(math.isinf(LONG_INT))
+        self.assertFalse(math.isinf(BIG_INT))
+        self.assertRaises(TypeError, math.isinf, 'ahoj')
+        self.assertFalse(math.isinf(MyFloat()))
 
     def test_ceil_basic(self):
         self.assertEqual(math.ceil(10), 10)
@@ -228,6 +446,374 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.isnan, 'hello')
 
         self.assertFalse(math.isnan(False))
+        self.assertFalse(math.isnan(MyFloat()))
+
+    def testPow(self):
+        self.assertRaises(TypeError, math.pow)
+        self.ftest('pow(0,1)', math.pow(0,1), 0)
+        self.ftest('pow(1,0)', math.pow(1,0), 1)
+        self.ftest('pow(2,1)', math.pow(2,1), 2)
+        self.ftest('pow(2,-1)', math.pow(2,-1), 0.5)
+        self.assertEqual(math.pow(INF, 1), INF)
+        self.assertEqual(math.pow(NINF, 1), NINF)
+        self.assertEqual((math.pow(1, INF)), 1.)
+        self.assertEqual((math.pow(1, NINF)), 1.)
+        self.assertTrue(math.isnan(math.pow(NAN, 1)))
+        self.assertTrue(math.isnan(math.pow(2, NAN)))
+        self.assertTrue(math.isnan(math.pow(0, NAN)))
+        self.assertEqual(math.pow(1, NAN), 1)
+
+        # pow(0., x)
+        self.assertEqual(math.pow(0., INF), 0.)
+        self.assertEqual(math.pow(0., 3.), 0.)
+        self.assertEqual(math.pow(0., 2.3), 0.)
+        self.assertEqual(math.pow(0., 2.), 0.)
+        self.assertEqual(math.pow(0., 0.), 1.)
+        self.assertEqual(math.pow(0., -0.), 1.)
+        self.assertRaises(ValueError, math.pow, 0., -2.)
+        self.assertRaises(ValueError, math.pow, 0., -2.3)
+        self.assertRaises(ValueError, math.pow, 0., -3.)
+        self.assertRaises(ValueError, math.pow, 0., NINF)
+        self.assertTrue(math.isnan(math.pow(0., NAN)))
+
+        # pow(INF, x)
+        self.assertEqual(math.pow(INF, INF), INF)
+        self.assertEqual(math.pow(INF, 3.), INF)
+        self.assertEqual(math.pow(INF, 2.3), INF)
+        self.assertEqual(math.pow(INF, 2.), INF)
+        self.assertEqual(math.pow(INF, 0.), 1.)
+        self.assertEqual(math.pow(INF, -0.), 1.)
+        self.assertEqual(math.pow(INF, -2.), 0.)
+        self.assertEqual(math.pow(INF, -2.3), 0.)
+        self.assertEqual(math.pow(INF, -3.), 0.)
+        self.assertEqual(math.pow(INF, NINF), 0.)
+        self.assertTrue(math.isnan(math.pow(INF, NAN)))
+
+        # pow(-0., x)
+        self.assertEqual(math.pow(-0., INF), 0.)
+        self.assertEqual(math.pow(-0., 3.), -0.)
+        self.assertEqual(math.pow(-0., 2.3), 0.)
+        self.assertEqual(math.pow(-0., 2.), 0.)
+        self.assertEqual(math.pow(-0., 0.), 1.)
+        self.assertEqual(math.pow(-0., -0.), 1.)
+        self.assertRaises(ValueError, math.pow, -0., -2.)
+        self.assertRaises(ValueError, math.pow, -0., -2.3)
+        self.assertRaises(ValueError, math.pow, -0., -3.)
+        self.assertRaises(ValueError, math.pow, -0., NINF)
+        self.assertTrue(math.isnan(math.pow(-0., NAN)))
+
+        # pow(NINF, x)
+        self.assertEqual(math.pow(NINF, INF), INF)
+        self.assertEqual(math.pow(NINF, 3.), NINF)
+        self.assertEqual(math.pow(NINF, 2.3), INF)
+        self.assertEqual(math.pow(NINF, 2.), INF)
+        self.assertEqual(math.pow(NINF, 0.), 1.)
+        self.assertEqual(math.pow(NINF, -0.), 1.)
+        self.assertEqual(math.pow(NINF, -2.), 0.)
+        self.assertEqual(math.pow(NINF, -2.3), 0.)
+        self.assertEqual(math.pow(NINF, -3.), -0.)
+        self.assertEqual(math.pow(NINF, NINF), 0.)
+        self.assertTrue(math.isnan(math.pow(NINF, NAN)))
+
+        # pow(-1, x)
+        self.assertEqual(math.pow(-1., INF), 1.)
+        self.assertEqual(math.pow(-1., 3.), -1.)
+        self.assertRaises(ValueError, math.pow, -1., 2.3)
+        self.assertEqual(math.pow(-1., 2.), 1.)
+        self.assertEqual(math.pow(-1., 0.), 1.)
+        self.assertEqual(math.pow(-1., -0.), 1.)
+        self.assertEqual(math.pow(-1., -2.), 1.)
+        self.assertRaises(ValueError, math.pow, -1., -2.3)
+        self.assertEqual(math.pow(-1., -3.), -1.)
+        self.assertEqual(math.pow(-1., NINF), 1.)
+        self.assertTrue(math.isnan(math.pow(-1., NAN)))
+
+        # pow(1, x)
+        self.assertEqual(math.pow(1., INF), 1.)
+        self.assertEqual(math.pow(1., 3.), 1.)
+        self.assertEqual(math.pow(1., 2.3), 1.)
+        self.assertEqual(math.pow(1., 2.), 1.)
+        self.assertEqual(math.pow(1., 0.), 1.)
+        self.assertEqual(math.pow(1., -0.), 1.)
+        self.assertEqual(math.pow(1., -2.), 1.)
+        self.assertEqual(math.pow(1., -2.3), 1.)
+        self.assertEqual(math.pow(1., -3.), 1.)
+        self.assertEqual(math.pow(1., NINF), 1.)
+        self.assertEqual(math.pow(1., NAN), 1.)
+
+        # pow(x, 0) should be 1 for any x
+        self.assertEqual(math.pow(2.3, 0.), 1.)
+        self.assertEqual(math.pow(-2.3, 0.), 1.)
+        self.assertEqual(math.pow(NAN, 0.), 1.)
+        self.assertEqual(math.pow(2.3, -0.), 1.)
+        self.assertEqual(math.pow(-2.3, -0.), 1.)
+        self.assertEqual(math.pow(NAN, -0.), 1.)
+
+        # pow(x, y) is invalid if x is negative and y is not integral
+        self.assertRaises(ValueError, math.pow, -1., 2.3)
+        self.assertRaises(ValueError, math.pow, -15., -3.1)
+
+        # pow(x, NINF)
+        self.assertEqual(math.pow(1.9, NINF), 0.)
+        self.assertEqual(math.pow(1.1, NINF), 0.)
+        self.assertEqual(math.pow(0.9, NINF), INF)
+        self.assertEqual(math.pow(0.1, NINF), INF)
+        self.assertEqual(math.pow(-0.1, NINF), INF)
+        self.assertEqual(math.pow(-0.9, NINF), INF)
+        self.assertEqual(math.pow(-1.1, NINF), 0.)
+        self.assertEqual(math.pow(-1.9, NINF), 0.)
+
+        # pow(x, INF)
+        self.assertEqual(math.pow(1.9, INF), INF)
+        self.assertEqual(math.pow(1.1, INF), INF)
+        self.assertEqual(math.pow(0.9, INF), 0.)
+        self.assertEqual(math.pow(0.1, INF), 0.)
+        self.assertEqual(math.pow(-0.1, INF), 0.)
+        self.assertEqual(math.pow(-0.9, INF), 0.)
+        self.assertEqual(math.pow(-1.1, INF), INF)
+        self.assertEqual(math.pow(-1.9, INF), INF)
+
+        # pow(x, y) should work for x negative, y an integer
+        self.ftest('(-2.)**3.', math.pow(-2.0, 3.0), -8.0)
+        self.ftest('(-2.)**2.', math.pow(-2.0, 2.0), 4.0)
+        self.ftest('(-2.)**1.', math.pow(-2.0, 1.0), -2.0)
+        self.ftest('(-2.)**0.', math.pow(-2.0, 0.0), 1.0)
+        self.ftest('(-2.)**-0.', math.pow(-2.0, -0.0), 1.0)
+        self.ftest('(-2.)**-1.', math.pow(-2.0, -1.0), -0.5)
+        self.ftest('(-2.)**-2.', math.pow(-2.0, -2.0), 0.25)
+        self.ftest('(-2.)**-3.', math.pow(-2.0, -3.0), -0.125)
+        self.assertRaises(ValueError, math.pow, -2.0, -0.5)
+        self.assertRaises(ValueError, math.pow, -2.0, 0.5)
+
+        self.assertRaises(OverflowError, math.pow, 999999999999999999999999999, 999999999999999999999999999)
+
+        # testing specializations
+        self.assertEqual(math.pow(0, 999999999999999999999999999), 0)
+        self.assertEqual(math.pow(999999999999999999999999999, 0), 1)
+        self.assertEqual(math.pow(0.0, 999999999999999999999999999), 0)
+        self.assertEqual(math.pow(999999999999999999999999999, 0.0), 1)
+        
+        class MyNumber():
+            def __float__(self):
+                return -2.;
+        self.ftest('MyFloat()**-3.', math.pow(MyNumber(), -3.0), -0.125)
+    
+    def testAtan2(self):
+        self.assertRaises(TypeError, math.atan2)
+        self.ftest('atan2(-1, 0)', math.atan2(-1, 0), -math.pi/2)
+        self.ftest('atan2(-1, 1)', math.atan2(-1, 1), -math.pi/4)
+        self.ftest('atan2(0, 1)', math.atan2(0, 1), 0)
+        self.ftest('atan2(1, 1)', math.atan2(1, 1), math.pi/4)
+        self.ftest('atan2(1, 0)', math.atan2(1, 0), math.pi/2)
+
+        # math.atan2(0, x)
+        self.ftest('atan2(0., -inf)', math.atan2(0., NINF), math.pi)
+        self.ftest('atan2(0., -2.3)', math.atan2(0., -2.3), math.pi)
+        self.ftest('atan2(0., -0.)', math.atan2(0., -0.), math.pi)
+        self.assertEqual(math.atan2(0., 0.), 0.)
+        self.assertEqual(math.atan2(0., 2.3), 0.)
+        self.assertEqual(math.atan2(0., INF), 0.)
+        self.assertTrue(math.isnan(math.atan2(0., NAN)))
+        # math.atan2(-0, x)
+        self.ftest('atan2(-0., -inf)', math.atan2(-0., NINF), -math.pi)
+        self.ftest('atan2(-0., -2.3)', math.atan2(-0., -2.3), -math.pi)
+        self.ftest('atan2(-0., -0.)', math.atan2(-0., -0.), -math.pi)
+        self.assertEqual(math.atan2(-0., 0.), -0.)
+        self.assertEqual(math.atan2(-0., 2.3), -0.)
+        self.assertEqual(math.atan2(-0., INF), -0.)
+        self.assertTrue(math.isnan(math.atan2(-0., NAN)))
+        # math.atan2(INF, x)
+        self.ftest('atan2(inf, -inf)', math.atan2(INF, NINF), math.pi*3/4)
+        self.ftest('atan2(inf, -2.3)', math.atan2(INF, -2.3), math.pi/2)
+        self.ftest('atan2(inf, -0.)', math.atan2(INF, -0.0), math.pi/2)
+        self.ftest('atan2(inf, 0.)', math.atan2(INF, 0.0), math.pi/2)
+        self.ftest('atan2(inf, 2.3)', math.atan2(INF, 2.3), math.pi/2)
+        self.ftest('atan2(inf, inf)', math.atan2(INF, INF), math.pi/4)
+        self.assertTrue(math.isnan(math.atan2(INF, NAN)))
+        # math.atan2(NINF, x)
+        self.ftest('atan2(-inf, -inf)', math.atan2(NINF, NINF), -math.pi*3/4)
+        self.ftest('atan2(-inf, -2.3)', math.atan2(NINF, -2.3), -math.pi/2)
+        self.ftest('atan2(-inf, -0.)', math.atan2(NINF, -0.0), -math.pi/2)
+        self.ftest('atan2(-inf, 0.)', math.atan2(NINF, 0.0), -math.pi/2)
+        self.ftest('atan2(-inf, 2.3)', math.atan2(NINF, 2.3), -math.pi/2)
+        self.ftest('atan2(-inf, inf)', math.atan2(NINF, INF), -math.pi/4)
+        self.assertTrue(math.isnan(math.atan2(NINF, NAN)))
+        # math.atan2(+finite, x)
+        self.ftest('atan2(2.3, -inf)', math.atan2(2.3, NINF), math.pi)
+        self.ftest('atan2(2.3, -0.)', math.atan2(2.3, -0.), math.pi/2)
+        self.ftest('atan2(2.3, 0.)', math.atan2(2.3, 0.), math.pi/2)
+        self.assertEqual(math.atan2(2.3, INF), 0.)
+        self.assertTrue(math.isnan(math.atan2(2.3, NAN)))
+        # math.atan2(-finite, x)
+        self.ftest('atan2(-2.3, -inf)', math.atan2(-2.3, NINF), -math.pi)
+        self.ftest('atan2(-2.3, -0.)', math.atan2(-2.3, -0.), -math.pi/2)
+        self.ftest('atan2(-2.3, 0.)', math.atan2(-2.3, 0.), -math.pi/2)
+        self.assertEqual(math.atan2(-2.3, INF), -0.)
+        self.assertTrue(math.isnan(math.atan2(-2.3, NAN)))
+        # math.atan2(NAN, x)
+        self.assertTrue(math.isnan(math.atan2(NAN, NINF)))
+        self.assertTrue(math.isnan(math.atan2(NAN, -2.3)))
+        self.assertTrue(math.isnan(math.atan2(NAN, -0.)))
+        self.assertTrue(math.isnan(math.atan2(NAN, 0.)))
+        self.assertTrue(math.isnan(math.atan2(NAN, 2.3)))
+        self.assertTrue(math.isnan(math.atan2(NAN, INF)))
+        self.assertTrue(math.isnan(math.atan2(NAN, NAN)))
+
+        # Testing specializations
+        self.ftest('atan2(0.5,1)', math.atan2(0.5,1), 0.4636476090008061)
+        self.ftest('atan2(1,0.5)', math.atan2(1,0.5), 1.1071487177940904)
+        self.ftest('atan2(BIG_INT,BIG_INT)', math.atan2(BIG_INT,BIG_INT), 0.7853981633974483)
+        self.ftest('atan2(BIG_INT,1)', math.atan2(BIG_INT,1), 1.5707963267948966)
+        self.ftest('atan2(BIG_INT,0.1)', math.atan2(BIG_INT,0.1), 1.5707963267948966)
+        self.ftest('atan2(MyFloat(),MyFloat())', math.atan2(MyFloat(),MyFloat()), 0.7853981633974483)
+        self.ftest('atan2(BIG_INT,MyFloat())', math.atan2(BIG_INT,MyFloat()), 1.5707963267948966)
+
+    def testCos(self):
+        self.assertRaises(TypeError, math.cos)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('cos(-pi/2)', math.cos(-math.pi/2), 0, abs_tol=ulp(1))
+        self.ftest('cos(0)', math.cos(0), 1)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('cos(pi/2)', math.cos(math.pi/2), 0, abs_tol=ulp(1))
+        self.ftest('cos(pi)', math.cos(math.pi), -1)
+        try:
+            self.assertTrue(math.isnan(math.cos(INF)))
+            self.assertTrue(math.isnan(math.cos(NINF)))
+        except ValueError:
+            self.assertRaises(ValueError, math.cos, INF)
+            self.assertRaises(ValueError, math.cos, NINF)
+        self.assertTrue(math.isnan(math.cos(NAN)))
+
+        #test of specializations
+        self.ftest('cos(BIG_INT)', math.cos(BIG_INT), 0.4145587418469303)
+        self.ftest('cos(MyFloat())', math.cos(MyFloat()), 0.8253356149096783)
+        self.assertRaises(TypeError, math.cos, 'ahoj')
+
+    def testCosh(self):
+        self.assertRaises(TypeError, math.cosh)
+        self.ftest('cosh(0)', math.cosh(0), 1)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('cosh(2)-2*cosh(1)**2', math.cosh(2)-2*math.cosh(1)**2, -1) # Thanks to Lambert
+        self.assertEqual(math.cosh(INF), INF)
+        self.assertEqual(math.cosh(NINF), INF)
+        self.assertTrue(math.isnan(math.cosh(NAN)))
+
+        # test of specializations
+        self.ftest('cosh(MyFloat())', math.cosh(MyFloat()), 1.1854652182422676)
+        self.assertRaises(TypeError, math.cosh, 'ahoj')
+        self.assertRaises(OverflowError, math.cosh, BIG_INT)
+        
+    def testSin(self):
+        self.assertRaises(TypeError, math.sin)
+        self.ftest('sin(0)', math.sin(0), 0)
+        self.ftest('sin(pi/2)', math.sin(math.pi/2), 1)
+        self.ftest('sin(-pi/2)', math.sin(-math.pi/2), -1)
+        try:
+            self.assertTrue(math.isnan(math.sin(INF)))
+            self.assertTrue(math.isnan(math.sin(NINF)))
+        except ValueError:
+            self.assertRaises(ValueError, math.sin, INF)
+            self.assertRaises(ValueError, math.sin, NINF)
+        self.assertTrue(math.isnan(math.sin(NAN)))
+
+        # test of specializations
+        self.ftest('sin(MyFloat())', math.sin(MyFloat()), 0.5646424733950354)
+        self.assertRaises(TypeError, math.sin, 'ahoj')
+        self.ftest('sin(MyFloat())', math.sin(BIG_INT), -0.9100225544228506)
+
+    def testSinh(self):
+        self.assertRaises(TypeError, math.sinh)
+        self.ftest('sinh(0)', math.sinh(0), 0)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('sinh(1)**2-cosh(1)**2', math.sinh(1)**2-math.cosh(1)**2, -1)
+        self.ftest('sinh(1)+sinh(-1)', math.sinh(1)+math.sinh(-1), 0)
+        self.assertEqual(math.sinh(INF), INF)
+        self.assertEqual(math.sinh(NINF), NINF)
+        self.assertTrue(math.isnan(math.sinh(NAN)))
+        
+        # test of specializations
+        self.ftest('sinh(MyFloat())', math.sinh(MyFloat()), 0.6366535821482412)
+        self.assertRaises(TypeError, math.sinh, 'ahoj')
+        self.assertRaises(OverflowError, math.sinh, BIG_INT)
+
+    def testTan(self):
+        self.assertRaises(TypeError, math.tan)
+        self.ftest('tan(0)', math.tan(0), 0)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('tan(pi/4)', math.tan(math.pi/4), 1)
+        #self.ftest('tan(-pi/4)', math.tan(-math.pi/4), -1)
+        try:
+            self.assertTrue(math.isnan(math.tan(INF)))
+            self.assertTrue(math.isnan(math.tan(NINF)))
+        except:
+            self.assertRaises(ValueError, math.tan, INF)
+            self.assertRaises(ValueError, math.tan, NINF)
+        self.assertTrue(math.isnan(math.tan(NAN)))
+
+        # test of specializations
+        self.ftest('tan(MyFloat())', math.tan(MyFloat()), 0.6841368083416923)
+        self.assertRaises(TypeError, math.tan, 'ahoj')
+        self.ftest('tan(BIG_INT)', math.tan(BIG_INT), -2.1951594854049974)
+
+    def testTanh(self):
+        self.assertRaises(TypeError, math.tanh)
+        self.ftest('tanh(0)', math.tanh(0), 0)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('tanh(1)+tanh(-1)', math.tanh(1)+math.tanh(-1), 0, abs_tol=ulp(1))
+        self.ftest('tanh(inf)', math.tanh(INF), 1)
+        self.ftest('tanh(-inf)', math.tanh(NINF), -1)
+        self.assertTrue(math.isnan(math.tanh(NAN)))
+
+        # test of specializations
+        self.ftest('tanh(MyFloat())', math.tanh(MyFloat()), 0.5370495669980353)
+        self.assertRaises(TypeError, math.tanh, 'ahoj')
+        self.ftest('tanh(BIG_INT)', math.tanh(BIG_INT), 1.0)
+
+    def testAsinh(self):
+        self.assertRaises(TypeError, math.asinh)
+        self.ftest('asinh(0)', math.asinh(0), 0)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('asinh(1)', math.asinh(1), 0.88137358701954305)
+        #self.ftest('asinh(-1)', math.asinh(-1), -0.88137358701954305)
+        self.assertEqual(math.asinh(INF), INF)
+        self.assertEqual(math.asinh(NINF), NINF)
+        self.assertTrue(math.isnan(math.asinh(NAN)))
+
+        # test of specializations
+        self.ftest('asinh(MyFloat())', math.asinh(MyFloat()), 0.5688248987322475)
+        self.assertRaises(TypeError, math.asinh, 'ahoj')
+        self.ftest('asinh(BIG_INT)', math.asinh(BIG_INT), 72.07328430666527)
+
+    def testAtan(self):
+        self.assertRaises(TypeError, math.atan)
+        self.ftest('atan(-1)', math.atan(-1), -math.pi/4)
+        self.ftest('atan(0)', math.atan(0), 0)
+        self.ftest('atan(1)', math.atan(1), math.pi/4)
+        self.ftest('atan(inf)', math.atan(INF), math.pi/2)
+        self.ftest('atan(-inf)', math.atan(NINF), -math.pi/2)
+        self.assertTrue(math.isnan(math.atan(NAN)))
+
+        # test of specializations
+        self.ftest('atan(MyFloat())', math.atan(MyFloat()), 0.5404195002705842)
+        self.assertRaises(TypeError, math.atan, 'ahoj')
+        self.ftest('atan(BIG_INT)', math.atan(BIG_INT), 1.5707963267948966)
+
+    def testAtanh(self):
+        self.assertRaises(TypeError, math.atan)
+        self.ftest('atanh(0)', math.atanh(0), 0)
+        # TODO uncomment when GR-10346 will be fixed
+        #self.ftest('atanh(0.5)', math.atanh(0.5), 0.54930614433405489)
+        #self.ftest('atanh(-0.5)', math.atanh(-0.5), -0.54930614433405489)
+        self.assertRaises(ValueError, math.atanh, 1)
+        self.assertRaises(ValueError, math.atanh, -1)
+        self.assertRaises(ValueError, math.atanh, INF)
+        self.assertRaises(ValueError, math.atanh, NINF)
+        self.assertTrue(math.isnan(math.atanh(NAN)))
+
+        # test of specializations
+        self.ftest('atanh(MyFloat())', math.atanh(MyFloat()), 0.6931471805599453)
+        self.assertRaises(TypeError, math.atanh, 'ahoj')
+        self.assertRaises(ValueError, math.atanh, BIG_INT)
 
     def test_fabs(self):
         self.assertEqual(math.fabs(-1), 1)
@@ -447,3 +1033,29 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.ldexp(FF(10), II(12)), 40960.0)
         self.assertRaises(TypeError, math.ldexp, 'Hello', 1000000)
         self.assertRaises(TypeError, math.ldexp, 1, 'Hello')
+    
+    def test_trunc(self):
+        self.assertEqual(math.trunc(1), 1)
+        self.assertEqual(math.trunc(-1), -1)
+        self.assertEqual(type(math.trunc(1)), int)
+        self.assertEqual(type(math.trunc(1.5)), int)
+        self.assertEqual(math.trunc(1.5), 1)
+        self.assertEqual(math.trunc(-1.5), -1)
+        self.assertEqual(math.trunc(1.999999), 1)
+        self.assertEqual(math.trunc(-1.999999), -1)
+        self.assertEqual(math.trunc(-0.999999), -0)
+        self.assertEqual(math.trunc(-100.999), -100)
+
+        class TestTrunc(object):
+            def __trunc__(self):
+                return 23
+
+        class TestNoTrunc(object):
+            pass
+
+        self.assertEqual(math.trunc(TestTrunc()), 23)
+
+        self.assertRaises(TypeError, math.trunc)
+        self.assertRaises(TypeError, math.trunc, 1, 2)
+        self.assertRaises(TypeError, math.trunc, TestNoTrunc())
+

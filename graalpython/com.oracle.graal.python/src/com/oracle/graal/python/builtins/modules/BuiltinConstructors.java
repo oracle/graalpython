@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -128,6 +129,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -151,7 +153,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class BuiltinConstructors extends PythonBuiltins {
 
     @Override
-    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BuiltinConstructorsFactory.getFactories();
     }
 
@@ -352,8 +354,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
         @Specialization
-        public PythonObject reversed(@SuppressWarnings("unused") PythonClass cls, PRange range) {
-            return factory().createRangeReverseIterator(range);
+        public PythonObject reversed(@SuppressWarnings("unused") PythonClass cls, PRange range,
+                        @Cached("createBinaryProfile()") ConditionProfile stepOneProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile stepMinusOneProfile) {
+            int stop;
+            int start;
+            int step = range.getStep();
+            if (stepOneProfile.profile(step == 1)) {
+                start = range.getStop() - 1;
+                stop = range.getStart() - 1;
+                step = -1;
+            } else if (stepMinusOneProfile.profile(step == -1)) {
+                start = range.getStop() + 1;
+                stop = range.getStart() + 1;
+                step = 1;
+            } else {
+                assert step != 0;
+                long delta = (range.getStop() - (long) range.getStart() - (step > 0 ? -1 : 1)) / step * step;
+                start = (int) (range.getStart() + delta);
+                stop = range.getStart() - step;
+                step = -step;
+            }
+            return factory().createRangeIterator(start, stop, step);
         }
 
         @Specialization
@@ -695,22 +717,34 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(keywordArg)")
-        public Object createInt(PythonClass cls, PythonObject obj, PNone keywordArg,
+        public Object createInt(PythonClass cls, Object obj, PNone keywordArg,
                         @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
+                        @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
                         @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
             try {
+                // at first try __int__ method
                 return createInt(cls, callIntNode.executeLong(obj), keywordArg, isIntProfile);
             } catch (UnexpectedResultException e) {
                 Object result = e.getResult();
+                if (result == PNone.NO_VALUE) {
+                    try {
+                        // now try __trunc__ method
+                        return createInt(cls, callTruncNode.executeLong(obj), keywordArg, isIntProfile);
+                    } catch (UnexpectedResultException ee) {
+                        result = ee.getResult();
+                    }
+                }
                 if (result == PNone.NO_VALUE) {
                     throw raise(TypeError, "an integer is required (got type %p)", obj);
                 } else if (result instanceof Integer) {
                     return createInt(cls, (int) result, keywordArg);
                 } else if (result instanceof Long) {
                     return createInt(cls, (long) result, keywordArg, isIntProfile);
+                } else if (result instanceof Boolean) {
+                    return createInt(cls, (boolean) result ? 1 : 0, keywordArg, isIntProfile);
                 } else if (result instanceof PInt) {
                     // TODO warn if 'result' not of exact Python type 'int'
-                    return result;
+                    return isPrimitiveInt(cls) ? result : factory().createInt(cls, ((PInt) result).getValue());
                 } else {
                     throw raise(TypeError, "__int__ returned non-int (type %p)", result);
                 }
@@ -785,7 +819,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
         @Override
-        public final Object execute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public final Object varArgExecute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return execute(PNone.NO_VALUE, arguments, keywords);
         }
 
@@ -1466,4 +1500,22 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createSlice(first, second, third);
         }
     }
+
+    // buffer([iterable])
+    @Builtin(name = "buffer", fixedNumOfArguments = 2, constructsClass = PBuffer.class)
+    @GenerateNodeFactory
+    public abstract static class BufferNode extends PythonBuiltinNode {
+
+        @Specialization
+        protected PBuffer construct(PythonClass cls, Object value) {
+            return factory().createBuffer(cls, value);
+        }
+
+        @Fallback
+        public PBuffer listObject(@SuppressWarnings("unused") Object cls, Object arg) {
+            CompilerAsserts.neverPartOfCompilation();
+            throw new RuntimeException("buffer does not support iterable object " + arg);
+        }
+    }
+
 }

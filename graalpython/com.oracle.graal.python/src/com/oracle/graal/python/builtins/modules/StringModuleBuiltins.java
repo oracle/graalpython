@@ -38,18 +38,18 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.dsl.NodeFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.truffle.api.dsl.NodeFactory;
 
 @CoreFunctions(defineModule = "_string")
 public class StringModuleBuiltins extends PythonBuiltins {
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return new ArrayList<>();
     }
 }

@@ -137,3 +137,33 @@ class ReTests(unittest.TestCase):
                          (chr(9)+chr(10)+chr(11)+chr(13)+chr(12)+chr(7)+chr(8)))
 
         # self.assertEqual(re.sub(r'^\s*', 'X', 'test'), 'Xtest')
+
+
+def test_escaping():
+    regex = None
+    try:
+        regex = re.compile(r"""        # A numeric string consists of:
+#    \s*
+    (?P<sign>[-+])?              # an optional sign, followed by either...
+    (
+        (?=\d|\.\d)              # ...a number (with at least one digit)
+        (?P<int>\d*)             # having a (possibly empty) integer part
+        (\.(?P<frac>\d*))?       # followed by an optional fractional part
+        (E(?P<exp>[-+]?\d+))?    # followed by an optional exponent, or...
+    |
+        Inf(inity)?              # ...an infinity, or...
+    |
+        (?P<signal>s)?           # ...an (optionally signaling)
+        NaN                      # NaN
+        (?P<diag>\d*)            # with (possibly empty) diagnostic info.
+    )
+#    \s*
+    \Z
+        """, re.VERBOSE)
+    except:
+        assert False
+
+    match = regex.search("  -12.1")
+    assert match
+    # assert "frac" in match.groupdict()
+    # assert match.groupdict()["frac"] == "1"

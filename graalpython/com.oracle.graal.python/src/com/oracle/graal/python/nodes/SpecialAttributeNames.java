@@ -62,4 +62,6 @@ public abstract class SpecialAttributeNames {
     public static final String __FILE__ = "__file__";
     public static final String __CACHED__ = "__cached__";
     public static final String __TRACEBACK__ = "__traceback__";
+    public static final String __BASICSIZE__ = "__basicsize__";
+    public static final String __NEW__ = "__new__";
 }

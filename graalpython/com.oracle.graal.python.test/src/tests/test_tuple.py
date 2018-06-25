@@ -4,7 +4,8 @@
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import seq_tests
 import unittest
-import pickle
+#import pickle
+from compare import CompareTest
 
 class TupleTest(seq_tests.CommonTest):
 
@@ -16,7 +17,7 @@ class TupleTest(seq_tests.CommonTest):
         self.assertEqual(tuple(), ())
         t0_3 = (0, 1, 2, 3)
         t0_3_bis = tuple(t0_3)
-        #self.assertTrue(t0_3 is t0_3_bis)
+        self.assertTrue(t0_3 is t0_3_bis)
         self.assertEqual(tuple([]), ())
         self.assertEqual(tuple([0, 1, 2, 3]), (0, 1, 2, 3))
         self.assertEqual(tuple(''), ())
@@ -220,65 +221,61 @@ class TupleTest(seq_tests.CommonTest):
 
         raiseTypeError(t, IndexF())
 
+# Tests for Truffle specializations
+    def test_lying_tuple(self):
+        class MyTuple(tuple):
+            def __iter__(self):
+                yield 1
 
-class TupleCompareTest(unittest.TestCase):
+        t = (2,)
+        tt = tuple((2,))
+        self.assertEqual(t,tt)
+        self.assertFalse(t is tt)
 
-    def comp_eq(self, left, right):
-        self.assertFalse(left < right)
-        self.assertTrue(left<=right)
-        self.assertTrue(left==right)
-        self.assertFalse(left!=right)
-        self.assertFalse(left>right)
-        self.assertTrue(left>=right)
+        ttt = tuple(t)
+        self.assertEqual(t,ttt)
+        self.assertEqual(tt,ttt)
+        self.assertFalse(ttt is tt)
+        self.assertTrue(ttt is t)
 
-    def comp_ne(self, left, right):
-        self.assertFalse(left==right)
-        self.assertTrue(left!=right)
+        m = MyTuple((2,))
+        mt = MyTuple(t)
+        mm = MyTuple(m)
+        tm = tuple(m)
 
-    def comp_gt(self, left, right):
-        self.assertFalse(left < right)
-        self.assertFalse(left <= right)
-        self.assertTrue(left>right)
-        self.assertTrue(left>=right)
-        self.assertFalse(left==right)
-        self.assertTrue(left!=right)
+        self.assertEqual(m,t)
+        self.assertEqual(m,mt)
+        self.assertNotEqual(m,mm)
+        self.assertNotEqual(tm, m)
+        self.assertNotEqual(tm, mt)
+        self.assertEqual(tm, mm)
+        self.assertFalse(m is t)
+        self.assertFalse(m is mt)
+        self.assertFalse(m is tm)
+        self.assertFalse(m is mm)
 
-    def comp_lt(self, left, right):
-        self.assertTrue(left < right)
-        self.assertTrue(left <= right)
-        self.assertFalse(left>right)
-        self.assertFalse(left>=right)
-        self.assertFalse(left==right)
-        self.assertTrue(left!=right)
+    def test_creating_tuple(self):
+        class MyTuple(tuple):
+            pass
 
-    def comp_ge(self, left, right, isEQ):
-        self.assertFalse(left < right)
-        self.assertTrue(left>=right)
-        if (isEQ):
-            self.assertTrue(left<=right)
-            self.assertTrue(left==right)
-            self.assertFalse(left!=right)
-            self.assertFalse(left>right)
-        else:
-            self.assertFalse(left<=right)
-            self.assertFalse(left==right)
-            self.assertTrue(left!=right)
-            self.assertTrue(left>right)
+        def maketuple(t):
+            return tuple(t)
 
-    def comp_le(self, left, right, isEQ):
-        self.assertFalse(left > right)
-        self.assertTrue(left<=right)
-        if (isEQ):
-            self.assertTrue(left==right)
-            self.assertFalse(left!=right)
-            self.assertFalse(left<right)
-            self.assertTrue(left>=right)
-        else:
-            self.assertFalse(left==right)
-            self.assertTrue(left!=right)
-            self.assertTrue(left<right)
-            self.assertFalse(left>=right)
+        a = MyTuple((1,2))
+        b = tuple(a)
+        self.assertFalse(a is b)
 
+        b = MyTuple(a)
+        self.assertFalse(a is b)
+
+        b = tuple((1,2))
+        self.assertFalse(maketuple(a) is maketuple(b))
+        self.assertTrue(maketuple(b) is maketuple(b))
+        self.assertTrue(tuple(b) is b)
+        self.assertFalse(tuple(a) is a)
+        
+
+class TupleCompareTest(CompareTest):
 
     def test_compare(self):
         t1 = (1, 2, 3)

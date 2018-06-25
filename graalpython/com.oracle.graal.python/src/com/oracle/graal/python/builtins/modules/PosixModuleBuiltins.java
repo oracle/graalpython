@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.FileNotFoundError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -35,9 +37,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
@@ -50,31 +58,45 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.ConvertPathlikeObjectNodeGen;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
@@ -101,6 +123,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     private static final int F_OK = 0;
     private static final int X_OK = 1;
 
+    // TODO(fa): should that live in the context ?
     private static ArrayList<SeekableByteChannel> files = new ArrayList<>(Arrays.asList(new SeekableByteChannel[]{null, null, null}));
     private static ArrayList<String> filePaths = new ArrayList<>(Arrays.asList(new String[]{"stdin", "stdout", "stderr"}));
 
@@ -136,7 +159,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     };
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PosixModuleBuiltinsFactory.getFactories();
     }
 
@@ -239,11 +262,32 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getcwd", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class CwdNode extends PythonBuiltinNode {
+        @TruffleBoundary
         @Specialization
         String cwd() {
+            // TODO(fa) that should actually be retrieved from native code
             return System.getProperty("user.dir");
         }
 
+    }
+
+    @Builtin(name = "chdir", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ChdirNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        PNone chdir(String spath) {
+            // TODO(fa) that should actually be set via native code
+            try {
+                if (Files.exists(Paths.get(spath))) {
+                    System.setProperty("user.dir", spath);
+                    return PNone.NONE;
+                }
+            } catch (InvalidPathException e) {
+                // fall through
+            }
+            throw raise(PythonErrorType.FileNotFoundError, "No such file or directory: '%s'", spath);
+        }
     }
 
     @Builtin(name = "getpid", fixedNumOfArguments = 0)
@@ -260,7 +304,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "fstat", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class FstatNode extends PythonFileNode {
-        @Child private StatNode statNode = StatNodeFactory.create(null);
+
+        protected abstract Object executeWith(Object fd);
 
         @Specialization(guards = {"fd >= 0", "fd <= 2"})
         @TruffleBoundary
@@ -281,14 +326,57 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "fd > 2")
         @TruffleBoundary
-        Object fstat(int fd) {
-            return statNode.executeWith(getFilePath(fd).toString());
+        Object fstat(int fd,
+                        @Cached("createStatNode()") StatNode statNode) {
+            return statNode.executeWith(getFilePath(fd), PNone.NO_VALUE);
+        }
+
+        @Specialization
+        Object fstatPInt(PInt fd,
+                        @Cached("create()") FstatNode recursive) {
+            return recursive.executeWith(fd.intValue());
+        }
+
+        @Fallback
+        Object doGeneric(Object o) {
+            throw raise(TypeError, "an integer is required (got type %p)", o);
+        }
+
+        protected static StatNode createStatNode() {
+            return StatNode.create();
+        }
+
+        protected static FstatNode create() {
+            return PosixModuleBuiltinsFactory.FstatNodeFactory.create(null);
         }
     }
 
-    @Builtin(name = "stat", fixedNumOfArguments = 1)
+    @Builtin(name = "set_inheritable", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class StatNode extends PythonBuiltinNode {
+    public abstract static class SetInheritableNode extends PythonFileNode {
+        @Specialization(guards = {"fd >= 0", "fd <= 2"})
+        Object setInheritableStd(@SuppressWarnings("unused") int fd, @SuppressWarnings("unused") Object inheritable) {
+            // TODO: investigate if for the stdout/in/err this flag can be set
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "fd > 2")
+        @TruffleBoundary
+        Object setInheritable(int fd, @SuppressWarnings("unused") Object inheritable) {
+            String path = getFilePath(fd);
+            TruffleFile f = getContext().getEnv().getTruffleFile(path);
+            if (!f.exists()) {
+                throw raise(OSError, "No such file or directory: '%s'", path);
+            }
+            // TODO: investigate how to map this to the truffle file api (if supported)
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "stat", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class StatNode extends PythonBinaryBuiltinNode {
         private static final int S_IFIFO = 0010000;
         private static final int S_IFCHR = 0020000;
         private static final int S_IFBLK = 0060000;
@@ -297,14 +385,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private static final int S_IFDIR = 0040000;
         private static final int S_IFREG = 0100000;
 
-        protected abstract Object executeWith(Object path);
+        protected abstract Object executeWith(Object path, Object followSymlinks);
 
         @Specialization
+        Object doStat(String path, boolean followSymlinks) {
+            return stat(path, followSymlinks);
+        }
+
+        @Specialization(guards = "isNoValue(followSymlinks)")
+        Object doStat(String path, @SuppressWarnings("unused") PNone followSymlinks) {
+            return stat(path, true);
+        }
+
         @TruffleBoundary
-        Object stat(String path) {
+        Object stat(String path, boolean followSymlinks) {
             TruffleFile f = getContext().getEnv().getTruffleFile(path);
-            if (!f.exists()) {
-                throw raise(OSError, "No such file or directory: '%s'", path);
+            LinkOption[] linkOptions = followSymlinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+            if (!f.exists(linkOptions)) {
+                throw raise(FileNotFoundError, "No such file or directory: '%s'", path);
             }
             int mode = 0;
             long size = 0;
@@ -313,9 +411,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             long mtime = 0;
             int gid = 0;
             int uid = 0;
-            if (f.isRegularFile()) {
+            if (f.isRegularFile(linkOptions)) {
                 mode |= S_IFREG;
-            } else if (f.isDirectory()) {
+            } else if (f.isDirectory(linkOptions)) {
                 mode |= S_IFDIR;
             } else if (f.isSymbolicLink()) {
                 mode |= S_IFLNK;
@@ -324,24 +422,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 mode |= S_IFSOCK | S_IFBLK | S_IFCHR | S_IFIFO;
             }
             try {
-                mtime = f.getLastModifiedTime().toMillis();
+                mtime = f.getLastModifiedTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 mtime = 0;
             }
             try {
-                ctime = f.getCreationTime().toMillis();
+                ctime = f.getCreationTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 ctime = 0;
             }
             try {
-                atime = f.getLastAccessTime().toMillis();
+                atime = f.getLastAccessTime(linkOptions).to(TimeUnit.SECONDS);
             } catch (IOException e1) {
                 atime = 0;
             }
             gid = 1;
             uid = 1;
             try {
-                final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions();
+                final Set<PosixFilePermission> posixFilePermissions = f.getPosixPermissions(linkOptions);
                 if (posixFilePermissions.contains(PosixFilePermission.OTHERS_READ)) {
                     mode |= 0004;
                 }
@@ -387,7 +485,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 }
             }
             try {
-                size = f.size();
+                size = f.size(linkOptions);
             } catch (IOException e) {
                 size = 0;
             }
@@ -404,10 +502,15 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                             ctime,
             });
         }
+
+        protected static StatNode create() {
+            return StatNodeFactory.create();
+        }
     }
 
     @Builtin(name = "listdir", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -434,16 +537,24 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "dup", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DupNode extends PythonFileNode {
         @Specialization
         @TruffleBoundary
         int dup(int fd) {
             return dupFile(fd);
         }
+
+        @Specialization
+        @TruffleBoundary
+        int dup(PInt fd) {
+            return dupFile(fd.intValue());
+        }
     }
 
     @Builtin(name = "open", minNumOfArguments = 2, maxNumOfArguments = 4, keywordArguments = {"mode", "dir_fd"})
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
         @Specialization(guards = {"isNoValue(mode)", "isNoValue(dir_fd)"})
         Object open(String pathname, int flags, @SuppressWarnings("unused") PNone mode, PNone dir_fd) {
@@ -502,10 +613,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "lseek", fixedNumOfArguments = 3)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LseekNode extends PythonFileNode {
         @Specialization
         @TruffleBoundary
-        Object lseek(int fd, int pos, int how) {
+        Object lseek(int fd, long pos, int how) {
             SeekableByteChannel fc = getFileChannel(fd);
             if (fc == null) {
                 throw raise(OSError, "Illegal seek");
@@ -548,6 +660,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "unlink", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UnlinkNode extends PythonFileNode {
         @Specialization
         @TruffleBoundary
@@ -573,6 +686,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "mkdir", fixedNumOfArguments = 1, keywordArguments = {"mode", "dir_fd"})
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MkdirNode extends PythonFileNode {
         @Specialization
         Object mkdir(String path, @SuppressWarnings("unused") PNone mode, PNone dirFd) {
@@ -593,7 +707,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "write", fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class WriteNode extends PythonFileNode {
+
+        public abstract Object executeWith(Object fd, Object data);
+
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, byte[] data) {
@@ -635,46 +753,47 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fd == 0 || fd > 2")
-        Object write(int fd, PString data) {
-            return write(fd, data.getValue());
-        }
-
-        @Specialization(guards = {"fd <= 2", "fd > 0"})
-        Object writeStd(int fd, PString data) {
-            return writeStd(fd, data.getValue());
-        }
-
-        @Specialization(guards = "fd == 0 || fd > 2")
         @TruffleBoundary
         Object write(int fd, PBytes data) {
-            return write(fd, data.getInternalByteArray());
+            return write(fd, data.getBytesExact());
         }
 
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, PBytes data) {
-            return writeStd(fd, data.getInternalByteArray());
+            return writeStd(fd, data.getBytesExact());
         }
 
         @Specialization(guards = "fd == 0 || fd > 2")
         @TruffleBoundary
         Object write(int fd, PByteArray data) {
-            return write(fd, data.getInternalByteArray());
+            return write(fd, data.getBytesExact());
         }
 
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, PByteArray data) {
-            return writeStd(fd, data.getInternalByteArray());
+            return writeStd(fd, data.getBytesExact());
+        }
+
+        @Specialization
+        Object writePInt(PInt fd, Object data,
+                        @Cached("create()") WriteNode recursive) {
+            return recursive.executeWith(fd.intValue(), data);
+        }
+
+        protected WriteNode create() {
+            return PosixModuleBuiltinsFactory.WriteNodeFactory.create(null);
         }
     }
 
     @Builtin(name = "read", fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReadNode extends PythonFileNode {
         @Specialization
         @TruffleBoundary
-        Object read(int fd, int requestedSize) {
+        Object read(int fd, long requestedSize) {
             SeekableByteChannel channel = getFileChannel(fd);
             try {
                 long size = Math.min(requestedSize, channel.size() - channel.position());
@@ -692,6 +811,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "isatty", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IsATTYNode extends PythonBuiltinNode {
         @Specialization
         boolean isATTY(int fd) {
@@ -709,6 +829,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "_exit", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ExitNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
@@ -719,6 +840,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "chmod", minNumOfArguments = 2, keywordArguments = {"dir_fd", "follow_symlinks"})
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ChmodNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -744,6 +866,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "utime", minNumOfArguments = 1, keywordArguments = {"times", "ns", "dir_fd", "follow_symlinks"})
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UtimeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
@@ -847,6 +970,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     // FIXME: this is not nearly ready, just good enough for now
     @Builtin(name = "system", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
         static final String[] shell = System.getProperty("os.name").toLowerCase().startsWith("windows") ? new String[]{"cmd.exe", "/c"}
                         : new String[]{(System.getenv().getOrDefault("SHELL", "sh")), "-c"};
@@ -864,6 +988,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
 
             @Override
+            @TruffleBoundary
             public void run() {
                 try {
                     InputStreamReader isr = new InputStreamReader(is);
@@ -892,6 +1017,117 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             } catch (IOException | InterruptedException e) {
                 return -1;
             }
+        }
+    }
+
+    abstract static class ConvertPathlikeObjectNode extends PBaseNode {
+        @Child private LookupAndCallUnaryNode callFspathNode;
+        @CompilationFinal private ValueProfile resultTypeProfile;
+
+        public abstract String execute(Object o);
+
+        @Specialization
+        String doPString(String obj) {
+            return obj;
+        }
+
+        @Specialization
+        String doPString(PString obj) {
+            return obj.getValue();
+        }
+
+        @Fallback
+        String doGeneric(Object obj) {
+            if (callFspathNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFspathNode = insert(LookupAndCallUnaryNode.create(__FSPATH__));
+            }
+            if (resultTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                resultTypeProfile = ValueProfile.createClassProfile();
+            }
+            Object profiled = resultTypeProfile.profile(callFspathNode.executeObject(obj));
+            if (profiled instanceof String) {
+                return (String) profiled;
+            } else if (profiled instanceof PString) {
+                return doPString((PString) profiled);
+            }
+            throw raise(TypeError, "invalid type %p return from path-like object", profiled);
+        }
+
+        public static ConvertPathlikeObjectNode create() {
+            return ConvertPathlikeObjectNodeGen.create();
+        }
+
+    }
+
+    @Builtin(name = "rename", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @GenerateNodeFactory
+    public abstract static class RenameNode extends PythonFileNode {
+        @Specialization
+        Object rename(Object src, Object dst, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PNone kwargs,
+                        @Cached("create()") ConvertPathlikeObjectNode convertSrcNode,
+                        @Cached("create()") ConvertPathlikeObjectNode convertDstNode) {
+            return rename(convertSrcNode.execute(src), convertDstNode.execute(dst));
+        }
+
+        @Specialization
+        Object rename(Object src, Object dst, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs,
+                        @Cached("create()") ConvertPathlikeObjectNode convertSrcNode,
+                        @Cached("create()") ConvertPathlikeObjectNode convertDstNode) {
+
+            Object effectiveSrc = src;
+            Object effectiveDst = dst;
+            for (int i = 0; i < kwargs.length; i++) {
+                Object value = kwargs[i].getValue();
+                if ("src_dir_fd".equals(kwargs[i].getName())) {
+                    if (!(value instanceof Integer)) {
+                        throw raise(OSError, "invalid file descriptor provided");
+                    }
+                    effectiveSrc = getFilePath((int) value);
+                } else if ("dst_dir_fd".equals(kwargs[i].getName())) {
+                    if (!(value instanceof Integer)) {
+                        throw raise(OSError, "invalid file descriptor provided");
+                    }
+                    effectiveDst = getFilePath((int) value);
+                }
+            }
+            return rename(convertSrcNode.execute(effectiveSrc), convertDstNode.execute(effectiveDst));
+        }
+
+        @TruffleBoundary
+        private Object rename(String src, String dst) {
+            try {
+                TruffleFile dstFile = getContext().getEnv().getTruffleFile(dst);
+                if (dstFile.isDirectory()) {
+                    throw raise(OSError, "%s is a directory", dst);
+                }
+                TruffleFile file = getContext().getEnv().getTruffleFile(src);
+                file.move(dstFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                return PNone.NONE;
+            } catch (IOException e) {
+                throw raise(OSError, "cannot rename %s to %s", src, dst);
+            }
+        }
+    }
+
+    @Builtin(name = "replace", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @GenerateNodeFactory
+    public abstract static class ReplaceNode extends RenameNode {
+    }
+
+    @Builtin(name = "urandom", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class URandomNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        PBytes urandom(int size) {
+            // size is in bytes
+            BigInteger bigInteger = new BigInteger(size * 8, new Random());
+            // sign may introduce an extra byte
+            byte[] range = Arrays.copyOfRange(bigInteger.toByteArray(), 0, size);
+            return factory().createBytes(range);
         }
     }
 }

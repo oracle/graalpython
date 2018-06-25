@@ -39,7 +39,11 @@
 #ifndef CAPI_H
 #define CAPI_H
 
+#define MUST_INLINE __attribute__((always_inline)) inline
+
 #include "Python.h"
+
+#define SRC_CS "utf-8"
 
 /* Private types are defined here because we need to declare the type cast. */
 typedef struct {
@@ -60,9 +64,17 @@ typedef struct {
     PyCapsule_Destructor destructor;
 } PyCapsule;
 
+typedef struct {
+    PyObject_VAR_HEAD
+    void *buf_delegate;
+} PyBufferDecorator;
+
+PyAPI_DATA(PyTypeObject) PyBuffer_Type;
+
 /* Declare Python structs/types for explicit polyglot typecasts. */
 /* NOTE: Also add an appropriate case in 'PyTruffle_Explicit_Cast' ! */
 POLYGLOT_DECLARE_STRUCT(_object);
+POLYGLOT_DECLARE_TYPE(PyBaseExceptionObject);
 POLYGLOT_DECLARE_TYPE(PyModuleObject);
 POLYGLOT_DECLARE_TYPE(PyVarObject);
 POLYGLOT_DECLARE_STRUCT(_typeobject);
@@ -75,33 +87,97 @@ POLYGLOT_DECLARE_STRUCT(_longobject);
 POLYGLOT_DECLARE_TYPE(PyCapsule);
 POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
 POLYGLOT_DECLARE_TYPE(PySetObject);
+POLYGLOT_DECLARE_TYPE(PyBufferDecorator);
+POLYGLOT_DECLARE_TYPE(PyFloatObject);
 
 
-extern void* to_java(PyObject* obj);
-extern void* to_java_type(PyTypeObject* cls);
-extern PyObject* to_sulong(void *o);
-#define as_char_pointer(obj) truffle_invoke(PY_TRUFFLE_CEXT, "to_char_pointer", to_java(obj))
-#define as_long(obj) truffle_invoke(PY_TRUFFLE_CEXT, "to_long", obj)
+// TODO cache landing function ?
+#define PY_TRUFFLE_LANDING ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)))
+#define PY_TRUFFLE_LANDING_L ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)))
+#define PY_TRUFFLE_LANDING_D ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)))
+#define PY_TRUFFLE_LANDING_PTR ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_ptr", SRC_CS)))
+#define PY_TRUFFLE_CEXT_LANDING ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall", SRC_CS)))
+#define PY_TRUFFLE_CEXT_LANDING_L ((uint64_t (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)))
+#define PY_TRUFFLE_CEXT_LANDING_D ((double (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)))
+#define PY_TRUFFLE_CEXT_LANDING_PTR ((void* (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)))
+
+/* upcall macros for calling into Python */
+
+/* Call function with return type 'PyObject *'; does polyglot cast and error handling */
+#define UPCALL_O(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function with a primitive return; no polyglot cast but error handling */
+#define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function with return type 'int'; no polyglot cast but error handling */
+#define UPCALL_I(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+
+/* Call function with return type 'long'; no polyglot cast but error handling */
+#define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
+
+/* Call function with return type 'double'; no polyglot cast but error handling */
+#define UPCALL_D(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING_D((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function with return type 'void*'; no polyglot cast and no error handling */
+#define UPCALL_PTR(__name__, ...) (PY_TRUFFLE_LANDING_PTR(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
+#define UPCALL_CEXT_O(__name__, ...) handle_exception_and_cast(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call void function of 'python_cext' module; no polyglot cast and no error handling */
+#define UPCALL_CEXT_VOID(__name__, ...) (PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with return type 'PyObject*'; no polyglot cast but error handling */
+#define UPCALL_CEXT_NOCAST(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with return type 'void*'; no polyglot cast and no error handling */
+#define UPCALL_CEXT_PTR(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_PTR(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with a primitive return; no polyglot cast but error handling */
+#define UPCALL_CEXT_P(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_L(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+/* Call function of 'python_cext' module with return type 'int'; no polyglot cast but error handling */
+#define UPCALL_CEXT_I(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+
+/* Call function of 'python_cext' module with return type 'long'; no polyglot cast but error handling */
+#define UPCALL_CEXT_L(__name__, ...) UPCALL_CEXT_P(__name__, ##__VA_ARGS__)
+
+/* Call function of 'python_cext' module with return type 'double'; no polyglot cast but error handling */
+#define UPCALL_CEXT_D(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_D(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+
+#define as_char_pointer(obj) ((const char*)UPCALL_CEXT_PTR("to_char_pointer", native_to_java(obj)))
+#define as_long(obj) ((long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "to_long", to_java(obj))))
+#define as_long_long(obj) ((long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long long), polyglot_from_string("long long", "utf-8"))))
+#define as_unsigned_long_long(obj) ((unsigned long long)polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 0, sizeof(unsigned long long), polyglot_from_string("unsigned long long", "utf-8"))))
 #define as_int(obj) ((int)as_long(obj))
 #define as_short(obj) ((short)as_long(obj))
 #define as_uchar(obj) ((unsigned char)as_long(obj))
 #define as_char(obj) ((char)as_long(obj))
-#define as_double(obj) truffle_invoke_d(PY_TRUFFLE_CEXT, "to_double", to_java(obj))
+#define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
+
+
+PyObject* handle_exception_and_cast(void* val);
+void* handle_exception(void* val);
+void* native_to_java(PyObject* obj);
+extern void* to_java(PyObject* obj);
+extern void* to_java_type(PyTypeObject* cls);
+extern PyObject* to_sulong(void *o);
+extern PyObject* explicit_cast(PyObject* cobj);
 
 // defined in 'exceptions.c'
 void initialize_exceptions();
 // defined in 'pyhash.c'
 void initialize_hashes();
 
-#define write_struct_field(object, struct, fieldname, value)            \
-    truffle_write(to_java(object),                                      \
-                  #fieldname ,                                          \
-                  to_java(value));                                      \
-    truffle_write(to_java(object),                                      \
-                  offsetof(struct, fieldname),                          \
-                  to_java(value));
-
+// prototype of C landing function
+void* wrap_direct(PyCFunction fun, ...);
+int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, PyObject *closure);
+void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
+void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
+void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
+void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames);
+void* wrap_unsupported(void *fun, ...);
 
 #define TDEBUG __asm__("int $3")
 #define get_method_flags_wrapper(flags)                                 \
@@ -119,11 +195,25 @@ void initialize_hashes();
           truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :              \
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
+#define get_method_flags_cwrapper(flags)                                \
+    (void*)((((flags) < 0) ?                                            \
+     wrap_direct :                                                      \
+     (((flags) & METH_KEYWORDS) ?                                       \
+      wrap_keywords :                                                   \
+      (((flags) & METH_VARARGS) ?                                       \
+       wrap_varargs :                                                   \
+       (((flags) & METH_NOARGS) ?                                       \
+        wrap_noargs :                                                   \
+        (((flags) & METH_O) ?                                           \
+         wrap_direct :                                                  \
+         (((flags) & METH_FASTCALL) ?                                   \
+          wrap_fastcall :                                               \
+          wrap_unsupported)))))))
 
-#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__) {\
+#define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
     __TYPE_NAME__,                              /* tp_name */\
-    0,                                          /* tp_basicsize */\
+    (__SIZE__),                                 /* tp_basicsize */\
     0,                                          /* tp_itemsize */\
     0,                                          /* tp_dealloc */\
     0,                                          /* tp_print */\
@@ -165,57 +255,61 @@ void initialize_hashes();
 
 
 int PyTruffle_Debug(void *arg);
-PyTypeObject* PyObjectHandle_ForJavaType(void* jobj);
+void* PyObjectHandle_ForJavaType(void* jobj);
 
-extern short ReadShortMember(PyObject* object, int offset);
-extern int ReadIntMember(PyObject* object, int offset);
-extern long ReadLongMember(PyObject* object, int offset);
-extern float ReadFloatMember(PyObject* object, int offset);
-extern double ReadDoubleMember(PyObject* object, int offset);
-extern void* ReadStringMember(PyObject* object, int offset);
-extern PyObject* ReadObjectMember(PyObject* object, int offset);
-extern char ReadCharMember(PyObject* object, int offset);
-extern char ReadByteMember(PyObject* object, int offset);
-extern unsigned char ReadUByteMember(PyObject* object, int offset);
-extern unsigned short ReadUShortMember(PyObject* object, int offset);
-extern unsigned int ReadUIntMember(PyObject* object, int offset);
-extern unsigned long ReadULongMember(PyObject* object, int offset);
-extern char ReadBoolMember(PyObject* object, int offset);
-extern PyObject* ReadObjectExMember(PyObject* object, int offset);
-extern long long ReadLongLongMember(PyObject* object, int offset);
-extern unsigned long long ReadULongLongMember(PyObject* object, int offset);
-extern Py_ssize_t ReadPySSizeT(PyObject* object, int offset);
+extern PyObject* ReadShortMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadIntMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadLongMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadFloatMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadDoubleMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadStringMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadObjectMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadCharMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadByteMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadUByteMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadUShortMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadUIntMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadULongMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadBoolMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadObjectExMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadLongLongMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadULongLongMember(PyObject* object, PyObject* offset);
+extern PyObject* ReadPySSizeT(PyObject* object, PyObject* offset);
 
-extern void WriteShortMember(PyObject* object, int offset, short value);
-extern void WriteIntMember(PyObject* object, int offset, int value);
-extern void WriteLongMember(PyObject* object, int offset, long value);
-extern void WriteFloatMember(PyObject* object, int offset, float value);
-extern void WriteDoubleMember(PyObject* object, int offset, double value);
-extern void WriteStringMember(PyObject* object, int offset, PyObject* value);
-extern void WriteObjectMember(PyObject* object, int offset, PyObject* value);
-extern void WriteCharMember(PyObject* object, int offset, PyObject* value);
-extern void WriteByteMember(PyObject* object, int offset, PyObject* value);
-extern void WriteUByteMember(PyObject* object, int offset, PyObject* value);
-extern void WriteUShortMember(PyObject* object, int offset, unsigned short value);
-extern void WriteUIntMember(PyObject* object, int offset, unsigned int value);
-extern void WriteULongMember(PyObject* object, int offset, unsigned long value);
-extern void WriteBoolMember(PyObject* object, int offset, PyObject* value);
-extern void WriteObjectExMember(PyObject* object, int offset, PyObject* value);
-extern void WriteLongLongMember(PyObject* object, int offset, long long value);
-extern void WriteULongLongMember(PyObject* object, int offset, unsigned long long value);
-extern void WritePySSizeT(PyObject* object, int offset, Py_ssize_t value);
+extern PyObject* WriteShortMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteIntMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteLongMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteFloatMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteDoubleMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteStringMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteObjectMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteCharMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteByteMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteUByteMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteUShortMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteUIntMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteULongMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteObjectExMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteLongLongMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WriteULongLongMember(PyObject* object, PyObject* offset, PyObject* value);
+extern PyObject* WritePySSizeT(PyObject* object, PyObject* offset, PyObject* value);
 
 extern PyObject marker_struct;
 #define ERROR_MARKER &marker_struct
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
 
-/* UNICODE */
-
-void* PyTruffle_Unicode_FromString(const char* o);
-
 /* DICT */
-
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
+
+/* BYTES */
+int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+
+/* Like 'memcpy' but can read/write from/to managed objects. */
+int bytes_copy2mem(char* target, char* source, size_t nbytes);
+
+/* MEMORYVIEW, BUFFERDECORATOR */
+int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags);
 
 #endif

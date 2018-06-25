@@ -54,3 +54,56 @@ def decode(self, encoding="utf-8", errors="strict"):
 
 
 bytes.decode = decode
+
+
+def count(self, sub, start=None, end=None):
+    arr = self
+    if start and end:
+        arr = self[start:end]
+    elif start:
+        arr = self[start:]
+    elif end:
+        arr = self[:end]
+
+    matches = 0
+    # TODO implement Boyer-Moore algorithm
+    l_sub = len(sub)
+    for i in range(len(arr)):
+        matched = True
+        for j in range(l_sub):
+            if sub[j] != arr[i + j]:
+                matched = False
+                break
+        if matched:
+            matches += 1
+    return matches
+
+
+bytes.count = count
+
+
+def rfind(self, sub, start=None, end=None):
+    arr = self
+    if start and end:
+        arr = self[start:end]
+    elif start:
+        arr = self[start:]
+    elif end:
+        arr = self[:end]
+
+    # TODO implement properly using a fast algorithm
+    l_sub = len(sub)
+    if l_sub == 0:
+        return len(arr)
+
+    for i in range(len(arr), 0, -1):
+        matched = True
+        j = 0
+        while j < l_sub and sub[l_sub - j - 1] == arr[i - j - 1]:
+            j += 1
+        if j >= l_sub:
+            return i - j
+    return -1
+
+
+bytes.rfind = rfind

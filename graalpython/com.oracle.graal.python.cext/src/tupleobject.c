@@ -38,39 +38,27 @@
  */
 #include "capi.h"
 
-PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS);
+PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS, sizeof(PyTupleObject) - sizeof(PyObject *));
 
 /* Tuples */
 PyObject* PyTuple_New(Py_ssize_t size) {
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_New", size));
+    return UPCALL_CEXT_O("PyTuple_New", size);
 }
 
 int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyTuple_SetItem", to_java(tuple), position, to_java(item));
-}
-
-void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position) {
-	void* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetItem", jtuple, position);
-	if (result == ERROR_MARKER) {
-		return NULL;
-	}
-    return result;
+    return UPCALL_CEXT_I("PyTuple_SetItem", native_to_java(tuple), position, native_to_java(item));
 }
 
 PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-	return to_sulong(PyTruffle_Tuple_GetItem(to_java(tuple), position));
+    return UPCALL_CEXT_O("PyTuple_GetItem", native_to_java(tuple), position);
 }
 
 Py_ssize_t PyTuple_Size(PyObject *op) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyTuple_Size", to_java(op));
+    return UPCALL_CEXT_L("PyTuple_Size", native_to_java(op));
 }
 
 PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
-    PyObject* result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_GetSlice", to_java(tuple), i, j);
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyTuple_GetSlice", native_to_java(tuple), i, j);
 }
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {

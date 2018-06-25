@@ -41,24 +41,47 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.TruffleObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class CExtNodes {
 
     @ImportStatic(PGuards.class)
-    public abstract static class ToSulongNode extends PBaseNode {
+    abstract static class CExtBaseNode extends PBaseNode {
+
+        protected static boolean isNativeWrapper(Object obj) {
+            return obj instanceof PythonNativeWrapper;
+        }
+
+    }
+
+    public abstract static class ToSulongNode extends CExtBaseNode {
 
         public abstract Object execute(Object obj);
 
@@ -68,53 +91,68 @@ public abstract class CExtNodes {
          * passed from Python into C code need to wrap Strings into PStrings.
          */
         @Specialization
-        Object run(String str) {
+        Object doString(String str) {
             return PythonObjectNativeWrapper.wrap(factory().createString(str));
         }
 
         @Specialization
-        Object run(boolean b) {
+        Object doBoolean(boolean b) {
             return PythonObjectNativeWrapper.wrap(factory().createInt(b));
         }
 
         @Specialization
-        Object run(int integer) {
-            return PythonObjectNativeWrapper.wrap(factory().createInt(integer));
+        Object doInteger(int i) {
+            return PythonObjectNativeWrapper.wrap(factory().createInt(i));
         }
 
         @Specialization
-        Object run(long integer) {
-            return PythonObjectNativeWrapper.wrap(factory().createInt(integer));
+        Object doLong(long l) {
+            return PythonObjectNativeWrapper.wrap(factory().createInt(l));
         }
 
         @Specialization
-        Object run(double number) {
-            return PythonObjectNativeWrapper.wrap(factory().createFloat(number));
+        Object doDouble(double d) {
+            return PythonObjectNativeWrapper.wrap(factory().createFloat(d));
         }
 
         @Specialization
-        Object runNativeClass(PythonNativeClass object) {
-            return object.object;
+        Object doNativeClass(PythonNativeClass nativeClass) {
+            return nativeClass.object;
         }
 
         @Specialization
-        Object runNativeObject(PythonNativeObject object) {
-            return object.object;
+        Object doNativeObject(PythonNativeObject nativeObject) {
+            return nativeObject.object;
         }
 
-        @Specialization(guards = {"!isNativeClass(object)", "!isNativeObject(object)", "!isNoValue(object)"})
+        @Specialization(guards = "!isNativeClass(object)")
+        Object doPythonClass(PythonClass object) {
+            return PythonClassNativeWrapper.wrap(object);
+        }
+
+        @Specialization(guards = {"!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"})
         Object runNativeObject(PythonAbstractObject object) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object);
         }
 
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)"})
+        Object doPythonClass(TruffleObject object) {
+            return TruffleObjectNativeWrapper.wrap(object);
+        }
+
         @Fallback
         Object run(Object obj) {
+            assert obj != null : "Java 'null' cannot be a Sulong value";
             return obj;
         }
 
         protected static boolean isNativeClass(PythonAbstractObject o) {
             return o instanceof PythonNativeClass;
+        }
+
+        protected static boolean isPythonClass(PythonAbstractObject o) {
+            return o instanceof PythonClass;
         }
 
         protected static boolean isNativeObject(PythonAbstractObject o) {
@@ -130,38 +168,64 @@ public abstract class CExtNodes {
      * Unwraps objects contained in {@link PythonObjectNativeWrapper} instances or wraps objects
      * allocated in native code for consumption in Java.
      */
-    @ImportStatic(PGuards.class)
-    public abstract static class AsPythonObjectNode extends PBaseNode {
+    public abstract static class AsPythonObjectNode extends CExtBaseNode {
         public abstract Object execute(Object value);
 
-        @Child GetClassNode getClassNode = GetClassNode.create();
-        ConditionProfile branchCond = ConditionProfile.createBinaryProfile();
+        @Child GetClassNode getClassNode;
 
         @Specialization
-        Object run(PythonObjectNativeWrapper object) {
-            return object.getPythonObject();
+        Object doNativeWrapper(PythonNativeWrapper object) {
+            return object.getDelegate();
+        }
+
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)"})
+        PythonAbstractObject doNativeObject(TruffleObject object) {
+            return factory().createNativeObjectWrapper(object);
         }
 
         @Specialization
-        Object run(PythonAbstractObject object) {
+        PythonAbstractObject doPythonObject(PythonAbstractObject object) {
             return object;
+        }
+
+        @Specialization
+        String doString(String object) {
+            return object;
+        }
+
+        @Specialization
+        int doLong(int i) {
+            return i;
+        }
+
+        @Specialization
+        long doLong(long l) {
+            return l;
+        }
+
+        @Specialization
+        double doDouble(double d) {
+            return d;
         }
 
         @Fallback
         Object run(Object obj) {
-            if (branchCond.profile(getClassNode.execute(obj) == getCore().getForeignClass())) {
-                // TODO: this should very likely only be done for objects that come from Sulong...
-                // TODO: prevent calling this from any other place
-                return factory().createNativeObjectWrapper(obj);
-            } else {
-                return obj;
+            throw raise(PythonErrorType.SystemError, "invalid object from native: %s", obj);
+        }
+
+        protected boolean isForeignObject(TruffleObject obj) {
+            // TODO we could probably also just use 'PGuards.isForeignObject'
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
             }
+            return getClassNode.execute(obj) == getCore().getForeignClass();
         }
 
         @TruffleBoundary
         public static Object doSlowPath(Object object) {
-            if (object instanceof PythonObjectNativeWrapper) {
-                return ((PythonObjectNativeWrapper) object).getPythonObject();
+            if (object instanceof PythonNativeWrapper) {
+                return ((PythonNativeWrapper) object).getDelegate();
             } else if (GetClassNode.getItSlowPath(object) == PythonLanguage.getCore().getForeignClass()) {
                 throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
             }
@@ -174,26 +238,179 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Does the same conversion as the native function {@code to_java}.
+     * Does the same conversion as the native function {@code to_java}. The node tries to avoid
+     * calling the native function for resolving native handles.
      */
-    static class ToJavaNode extends PBaseNode {
-        @Child private PCallNativeNode callNativeNode = PCallNativeNode.create(1);
+    public abstract static class ToJavaNode extends CExtBaseNode {
+        @Child private PCallNativeNode callNativeNode;
         @Child private AsPythonObjectNode toJavaNode = AsPythonObjectNode.create();
 
         @CompilationFinal TruffleObject nativeToJavaFunction;
 
-        Object execute(Object value) {
+        public abstract Object execute(Object value);
+
+        @Specialization
+        PythonAbstractObject doPythonObject(PythonAbstractObject value) {
+            return value;
+        }
+
+        @Specialization
+        Object doWrapper(PythonObjectNativeWrapper value) {
+            return toJavaNode.execute(value);
+        }
+
+        @Fallback
+        Object doForeign(Object value) {
+            if (callNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeNode = insert(PCallNativeNode.create(1));
+            }
+            if (callNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+            }
             if (nativeToJavaFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeToJavaFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUNCTION_NATIVE_TO_JAVA);
+                nativeToJavaFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_NATIVE_TO_JAVA);
             }
             return toJavaNode.execute(callNativeNode.execute(nativeToJavaFunction, new Object[]{value}));
         }
 
         public static ToJavaNode create() {
-            return new ToJavaNode();
+            return ToJavaNodeGen.create();
         }
-
     }
 
+    public abstract static class AsCharPointer extends CExtBaseNode {
+
+        @CompilationFinal TruffleObject truffle_string_to_cstr;
+        @CompilationFinal TruffleObject truffle_byte_array_to_native;
+
+        public abstract Object execute(Object obj);
+
+        @Specialization
+        Object doPString(PString str,
+                        @Cached("createExecute(1)") Node executeNode) {
+            return doString(str.getValue(), executeNode);
+        }
+
+        @Specialization
+        Object doString(String str,
+                        @Cached("createExecute(1)") Node executeNode) {
+            try {
+                return ForeignAccess.sendExecute(executeNode, getTruffleStringToCstr(), str, str.length());
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+
+        @Specialization
+        Object doByteArray(byte[] arr,
+                        @Cached("createExecute(2)") Node executeNode) {
+            try {
+                return ForeignAccess.sendExecute(executeNode, getTruffleByteArrayToNative(), getContext().getEnv().asGuestValue(arr), arr.length);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+
+        TruffleObject getTruffleStringToCstr() {
+            if (truffle_string_to_cstr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                truffle_string_to_cstr = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR);
+            }
+            return truffle_string_to_cstr;
+        }
+
+        TruffleObject getTruffleByteArrayToNative() {
+            if (truffle_byte_array_to_native == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                truffle_byte_array_to_native = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE);
+            }
+            return truffle_byte_array_to_native;
+        }
+
+        protected Node createExecute(int arity) {
+            return Message.createExecute(arity).createNode();
+        }
+
+        public static AsCharPointer create() {
+            return AsCharPointerNodeGen.create();
+        }
+    }
+
+    public static class FromCharPointerNode extends CExtBaseNode {
+
+        @CompilationFinal TruffleObject truffle_cstr_to_string;
+        @Child private Node executeNode;
+
+        TruffleObject getTruffleStringToCstr() {
+            if (truffle_cstr_to_string == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                truffle_cstr_to_string = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING);
+            }
+            return truffle_cstr_to_string;
+        }
+
+        private Node getExecuteNode() {
+            if (executeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                executeNode = insert(Message.createExecute(1).createNode());
+            }
+            return executeNode;
+        }
+
+        public String execute(Object charPtr) {
+            try {
+                return (String) ForeignAccess.sendExecute(getExecuteNode(), getTruffleStringToCstr(), charPtr);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw e.raise();
+            }
+        }
+
+        public static FromCharPointerNode create() {
+            return new FromCharPointerNode();
+        }
+    }
+
+    public static class GetNativeClassNode extends CExtBaseNode {
+
+        @Child PCallNativeNode callGetObTypeNode;
+        @Child ToJavaNode toJavaNode;
+
+        @CompilationFinal private TruffleObject func;
+
+        public PythonClass execute(PythonNativeObject object) {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            Object[] args = new Object[]{object.object};
+            return (PythonClass) getToJavaNode().execute(getCallGetObTypeNode().execute(getObTypeFunction(), args));
+        }
+
+        private ToJavaNode getToJavaNode() {
+            if (toJavaNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaNode = insert(ToJavaNode.create());
+            }
+            return toJavaNode;
+        }
+
+        private PCallNativeNode getCallGetObTypeNode() {
+            if (callGetObTypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callGetObTypeNode = insert(PCallNativeNode.create(1));
+            }
+            return callGetObTypeNode;
+        }
+
+        TruffleObject getObTypeFunction() {
+            if (func == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                func = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_GET_OB_TYPE);
+            }
+            return func;
+        }
+
+        public static GetNativeClassNode create() {
+            return new GetNativeClassNode();
+        }
+    }
 }

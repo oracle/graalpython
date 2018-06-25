@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
+import com.oracle.truffle.api.CompilerAsserts;
+
 public final class PNotImplemented extends PythonAbstractObject {
 
     public static final PNotImplemented NOT_IMPLEMENTED = new PNotImplemented();
@@ -34,6 +36,7 @@ public final class PNotImplemented extends PythonAbstractObject {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return "NotImplemented";
     }
 

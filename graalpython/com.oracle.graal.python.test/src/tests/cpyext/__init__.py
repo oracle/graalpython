@@ -36,25 +36,27 @@
 # SOFTWARE.
 
 import sys
-#from _ast import arguments
+from string import Formatter
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
     raise ImportError("posix or nt module is required in builtin modules")
 __dir__ = __file__.rpartition("/")[0]
 
-
 GRAALPYTHON = sys.implementation.name == "graalpython"
 
+
 def unhandled_error_compare(x, y):
-    if (isinstance(x,BaseException) and isinstance(y,BaseException)):
+    if (isinstance(x, BaseException) and isinstance(y, BaseException)):
         return type(x) == type(y)
     else:
         return x == y
 
+
 class CPyExtTestCase():
+
     def setUp(self):
         for typ in type(self).mro():
-            for k,v in typ.__dict__.items():
+            for k, v in typ.__dict__.items():
                 if k.startswith("test_"):
                     modname = k.replace("test_", "")
                     if k.startswith("test_graalpython_"):
@@ -67,16 +69,24 @@ class CPyExtTestCase():
 
 def ccompile(self, name):
     from distutils.core import setup, Extension
-    module = Extension(name, sources = ['%s/%s.c' % (__dir__, name)])
+    source_file = '%s/%s.c' % (__dir__, name)
+    module = Extension(name, sources=[source_file])
     args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
     setup(
-        script_name = 'setup',
-        script_args = args,
-        name = name,
-        version = '1.0',
-        description = '',
-        ext_modules = [module]
+        script_name='setup',
+        script_args=args,
+        name=name,
+        version='1.0',
+        description='',
+        ext_modules=[module]
     )
+    # ensure file was really written
+    try:
+        stat_result = os.stat(source_file)
+        if stat_result[6] == 0:
+            raise SystemError("empty source file %s" % (source_file,))
+    except FileNotFoundError:
+        raise SystemError("source file %s not available" % (source_file,))
 
 
 c_template = """
@@ -96,13 +106,13 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
         if (!PyArg_ParseTuple(___arg, "{argspec}", {derefargumentnames})) {{
             return NULL;
         }}
-    }} 
+    }}
 #ifdef SINGLEARG
     else {{
         {singleargumentname} = ___arg;
     }}
 #endif
-    
+
     return Py_BuildValue("{resultspec}", {callfunction}({argumentnames}));
 }}
 
@@ -144,7 +154,7 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
         if (!PyArg_ParseTuple(___arg, "{argspec}", {derefargumentnames})) {{
             return NULL;
         }}
-    }} 
+    }}
 #ifdef SINGLEARG
     else {{
         {singleargumentname} = ___arg;
@@ -185,7 +195,7 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
     PyObject* ___arg;
     {argumentdeclarations};
     {resultvardeclarations}
-    void* res;
+    {resulttype} res;
 
     if (!PyArg_ParseTuple(args, "O", &___arg)) {{
         return NULL;
@@ -196,13 +206,13 @@ static PyObject* test_{capifunction}(PyObject* module, PyObject* args) {{
             return NULL;
         }}
     }}
-#ifdef SINGLEARG 
+#ifdef SINGLEARG
     else {{
         {singleargumentname} = ___arg;
     }}
 #endif
-    
-    res = (void *){callfunction}({argumentnames}{resultvarlocations});
+
+    res = {callfunction}({argumentnames}{resultvarlocations});
 
     return Py_BuildValue("{resultspec}", res {resultvarnames});
 }}
@@ -228,7 +238,9 @@ PyInit_{capifunction}(void)
 }}
 """
 
+
 class CPyExtFunction():
+
     def __init__(self, pfunc, parameters, template=c_template, cmpfunc=None, **kwargs):
         self.template = template
         self.pfunc = pfunc
@@ -236,7 +248,7 @@ class CPyExtFunction():
         kwargs["name"] = kwargs["name"] if "name" in kwargs else None
         self.name = kwargs["name"]
         if "code" in kwargs:
-            kwargs["customcode"] = kwargs["code"] 
+            kwargs["customcode"] = kwargs["code"]
             del kwargs["code"]
         else:
             kwargs["customcode"] = ""
@@ -286,7 +298,7 @@ class CPyExtFunction():
 
     def __repr__(self):
         return "<CPyExtFunction %s>" % self.name
-    
+
     def test(self):
         sys.path.insert(0, __dir__)
         try:
@@ -302,7 +314,6 @@ class CPyExtFunction():
                 cresult = ctest(cargs[i])
             except BaseException as e:
                 cresult = e
-
             try:
                 presult = self.pfunc(pargs[i])
             except BaseException as e:
@@ -327,10 +338,11 @@ class CPyExtFunctionOutVars(CPyExtFunction):
     This class supports this.
     Set 'resultvars' to declare the output vars.
     '''
+
     def __init__(self, pfunc, parameters, template=c_template_multi_res, **kwargs):
         super(CPyExtFunctionOutVars, self).__init__(pfunc, parameters, **kwargs)
         self.template = template
-    
+
     def create_module(self, name=None):
         fargs = self.formatargs
         if "resultvars" not in fargs:
@@ -348,9 +360,11 @@ class CPyExtFunctionOutVars(CPyExtFunction):
                 fargs["resultvarnames"] = ""
         if len(fargs["resultvarnames"]) and not fargs["resultvarnames"].startswith(","):
             fargs["resultvarnames"] = ", " + fargs["resultvarnames"]
-            
+
         if "resultvarlocations" not in fargs:
                     fargs["resultvarlocations"] = ", ".join("&" + arg.rpartition(" ")[2] for arg in fargs["resultvars"])
+        if "resulttype" not in fargs:
+                    fargs["resulttype"] = "void*"
         if len(fargs["resultvarlocations"]):
             fargs["resultvarlocations"] = ", " + fargs["resultvarlocations"]
         self._insert(fargs, "customcode", "")
@@ -358,16 +372,148 @@ class CPyExtFunctionOutVars(CPyExtFunction):
 
 
 class CPyExtFunctionVoid(CPyExtFunction):
+
     def __init__(self, pfunc, parameters, template=c_template_void, **kwargs):
         super(CPyExtFunctionVoid, self).__init__(pfunc, parameters, **kwargs)
         self.template = template
-    
+
     def create_module(self, name=None):
         fargs = self.formatargs
         if "resultval" not in fargs:
             fargs["resultval"] = "Py_None"
         super(CPyExtFunctionVoid, self).create_module(name)
 
+
+class UnseenFormatter(Formatter):
+
+    def get_value(self, key, args, kwds):
+        if isinstance(key, str):
+            try:
+                return kwds[key]
+            except KeyError:
+                return 0
+        else:
+            return Formatter.get_value(key, args, kwds)
+
+
+def CPyExtType(name, code, **kwargs):
+    template = """
+    #include "Python.h"
+
+    {code}
+
+    static PyNumberMethods {name}_number_methods = {{
+        {nb_add},
+        {nb_subtract},
+        {nb_multiply},
+        {nb_remainder},
+        {nb_divmod},
+        {nb_power},
+        {nb_negative},
+        {nb_positive},
+        {nb_absolute},
+        {nb_bool},
+        {nb_invert},
+        {nb_lshift},
+        {nb_rshift},
+        {nb_and},
+        {nb_xor},
+        {nb_or},
+        {nb_int},
+        {nb_reserved},
+        {nb_float},
+        {nb_inplace_add},
+        {nb_inplace_subtract},
+        {nb_inplace_multiply},
+        {nb_inplace_remainder},
+        {nb_inplace_power},
+        {nb_inplace_lshift},
+        {nb_inplace_rshift},
+        {nb_inplace_and},
+        {nb_inplace_xor},
+        {nb_inplace_or},
+        {nb_floor_divide},
+        {nb_true_divide},
+        {nb_inplace_floor_divide},
+        {nb_inplace_true_divide},
+        {nb_index},
+        {nb_matrix_multiply},
+        {nb_inplace_matrix_multiply},
+    }};
+
+    typedef struct {{
+        PyObject_HEAD
+    }} {name}Object;
+
+    static PyTypeObject {name}Type = {{
+        PyVarObject_HEAD_INIT(NULL, 0)
+        "{name}.{name}",
+        sizeof({name}Object),      /* tp_basicsize */
+        0,                         /* tp_itemsize */
+        0,                         /* tp_dealloc */
+        {tp_print},
+        {tp_getattr},
+        {tp_setattr},
+        0,                         /* tp_reserved */
+        {tp_repr},
+        &{name}_number_methods,
+        {tp_as_sequence},
+        {tp_as_mapping},
+        {tp_hash},
+        {tp_call},
+        {tp_str},
+        {tp_getattro},
+        {tp_setattro},
+        {tp_as_buffer},
+        Py_TPFLAGS_DEFAULT,
+        "",
+    }};
+
+    static PyModuleDef {name}module = {{
+        PyModuleDef_HEAD_INIT,
+        "{name}",
+        "",
+        -1,
+        NULL, NULL, NULL, NULL, NULL
+    }};
+
+    PyMODINIT_FUNC
+    PyInit_{name}(void)
+    {{
+        PyObject* m;
+
+        {name}Type.tp_new = PyType_GenericNew;
+        {ready_code}
+        if (PyType_Ready(&{name}Type) < 0)
+            return NULL;
+
+        m = PyModule_Create(&{name}module);
+        if (m == NULL)
+            return NULL;
+
+        Py_INCREF(&{name}Type);
+        PyModule_AddObject(m, "{name}", (PyObject *)&{name}Type);
+        return m;
+    }}
+    """
+
+    kwargs["name"] = name
+    kwargs["code"] = code
+    kwargs.setdefault("ready_code", "")
+    c_source = UnseenFormatter().format(template, **kwargs)
+
+    with open("%s/%s.c" % (__dir__, name), "wb", buffering=0) as f:
+        if GRAALPYTHON:
+            f.write(c_source)
+        else:
+            f.write(bytes(c_source, 'utf-8'))
+    ccompile(None, name)
+    sys.path.insert(0, __dir__)
+    try:
+        cmodule = __import__(name)
+    finally:
+        sys.path.pop(0)
+    return getattr(cmodule, name)
 
 
 CPyExtTestCase.compile_module = ccompile

@@ -139,6 +139,14 @@ public final class PArguments {
         return (PythonObject) frame.getArguments()[INDEX_GLOBALS_ARGUMENT];
     }
 
+    public static PythonObject getGlobalsSafe(Frame frame) {
+        if (frame.getArguments()[INDEX_GLOBALS_ARGUMENT] instanceof PythonObject) {
+            return getGlobals(frame);
+        } else {
+            return null;
+        }
+    }
+
     public static void setPFrame(Frame frame, PFrame pFrame) {
         ((PFrame[]) frame.getArguments()[INDEX_PFRAME_ARGUMENT])[0] = pFrame;
     }
@@ -182,6 +190,14 @@ public final class PArguments {
 
     public static Frame getGeneratorFrame(Frame frame) {
         return (Frame) frame.getArguments()[INDEX_GENERATOR_FRAME];
+    }
+
+    public static Frame getGeneratorFrameSafe(Frame frame) {
+        if (frame.getArguments()[INDEX_GENERATOR_FRAME] instanceof Frame) {
+            return getGeneratorFrame(frame);
+        } else {
+            return null;
+        }
     }
 
     public static void setGeneratorFrame(Object[] arguments, Frame generatorFrame) {

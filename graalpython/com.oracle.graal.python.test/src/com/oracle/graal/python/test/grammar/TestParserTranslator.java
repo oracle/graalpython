@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
@@ -386,7 +387,7 @@ public class TestParserTranslator {
         parseAs("1 / 2", LookupAndCallBinaryNode.class);
         parseAs("1 % 2", LookupAndCallBinaryNode.class);
         parseAs("1 // 2", LookupAndCallBinaryNode.class);
-        parseAs("1 ** 2", LookupAndCallBinaryNode.class);
+        parseAs("1 ** 2", LookupAndCallTernaryNode.class);
     }
 
     @Test

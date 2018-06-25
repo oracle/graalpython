@@ -57,10 +57,13 @@ public enum PythonErrorType {
     TypeError,
     UnboundLocalError,
     UnicodeEncodeError,
+    UnicodeDecodeError,
     UnicodeError,
     UnicodeWarning,
     UserWarning,
     ValueError,
     Warning,
-    ZeroDivisionError;
+    ZeroDivisionError,
+    BufferError,
+    FileNotFoundError;
 }

@@ -33,7 +33,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -70,6 +69,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -98,7 +98,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public class TruffleObjectBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TruffleObjectBuiltinsFactory.getFactories();
     }
 
@@ -785,20 +785,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Fallback
         protected Object doGeneric(Object callee, @SuppressWarnings("unused") Object arguments, @SuppressWarnings("unused") Object keywords) {
             throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable %s()", callee);
-        }
-    }
-
-    @Builtin(name = __GETATTRIBUTE__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class GetattributeNode extends UnboxNode {
-        @Specialization(guards = "isForeignObject(object)")
-        protected Object doIt(TruffleObject object, Object key,
-                        @Cached("READ.createNode()") Node readNode) {
-            try {
-                return ForeignAccess.sendRead(readNode, object, key);
-            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw raise(PythonErrorType.AttributeError, "foreign object %s has no attribute %s", object, key);
-            }
         }
     }
 

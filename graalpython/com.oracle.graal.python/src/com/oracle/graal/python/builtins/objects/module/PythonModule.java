@@ -29,7 +29,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PATH__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -54,7 +53,6 @@ public final class PythonModule extends PythonObject {
 
         if (file != null) {
             setAttribute(__FILE__, file);
-            setAttribute(__PATH__, file);
         }
     }
 

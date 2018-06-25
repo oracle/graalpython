@@ -47,6 +47,12 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
@@ -107,9 +113,23 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
         }
     }
 
+    @Specialization(guards = "isForeignObject(object)")
+    protected Object readForeign(TruffleObject object, Object key,
+                    @Cached("createReadNode()") Node readNode) {
+        try {
+            return ForeignAccess.sendRead(readNode, object, key);
+        } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+            return PNone.NO_VALUE;
+        }
+    }
+
     @SuppressWarnings("unused")
-    @Specialization(guards = "!isPythonObject(object)")
+    @Specialization(guards = {"!isPythonObject(object)", "!isForeignObject(object)"})
     protected PNone readUnboxed(Object object, Object key) {
         return PNone.NO_VALUE;
+    }
+
+    protected Node createReadNode() {
+        return Message.READ.createNode();
     }
 }

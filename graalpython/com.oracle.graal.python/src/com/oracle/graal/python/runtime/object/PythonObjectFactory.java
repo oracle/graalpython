@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PDoubleArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntArrayIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
@@ -81,10 +82,12 @@ import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.reversed.PSequenceReverseIterator;
@@ -307,6 +310,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSlice(lookupClass(PythonBuiltinClassType.PSlice), start, stop, step));
     }
 
+    public PRandom createRandom(PythonClass cls) {
+        return trace(new PRandom(cls));
+    }
+
     /*
      * Classes, methods and functions
      */
@@ -319,7 +326,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PythonClass(metaclass, name, bases));
     }
 
-    public PythonClass createNativeClassWrapper(Object object, PythonClass metaClass, String name, PythonClass[] pythonClasses) {
+    public PythonNativeClass createNativeClassWrapper(Object object, PythonClass metaClass, String name, PythonClass[] pythonClasses) {
         return trace(new PythonNativeClass(object, metaClass, name, pythonClasses));
     }
 
@@ -483,8 +490,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMappingproxy(cls, object));
     }
 
+    public PReferenceType createReferenceType(PythonClass cls, PythonObject object, PFunction callback) {
+        return trace(new PReferenceType(cls, object, callback));
+    }
+
     public PReferenceType createReferenceType(PythonObject object, PFunction callback) {
-        return trace(new PReferenceType(lookupClass(PythonBuiltinClassType.PReferenceType), object, callback));
+        return createReferenceType(lookupClass(PythonBuiltinClassType.PReferenceType), object, callback);
     }
 
     /*
@@ -536,7 +547,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PByteArray(cls, array));
     }
 
-    public Object createByteArray(PythonClass cls, SequenceStorage storage) {
+    public PByteArray createByteArray(SequenceStorage storage) {
+        return createByteArray(lookupClass(PythonBuiltinClassType.PByteArray), storage);
+    }
+
+    public PByteArray createByteArray(PythonClass cls, SequenceStorage storage) {
         return trace(new PByteArray(cls, storage));
     }
 
@@ -592,16 +607,14 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSequenceReverseIterator(cls, sequence, lengthHint));
     }
 
-    public PRangeIterator createRangeIterator(PRange range) {
-        return trace(new PRangeIterator(lookupClass(PythonBuiltinClassType.PRangeIterator), range));
-    }
-
-    public PRangeReverseIterator createRangeReverseIterator(PRange range) {
-        return trace(new PRangeReverseIterator(lookupClass(PythonBuiltinClassType.PRangeReverseIterator), range));
-    }
-
-    public PRangeReverseIterator createRangeReverseIterator(int start, int stop, int step) {
-        return trace(new PRangeReverseIterator(lookupClass(PythonBuiltinClassType.PRangeReverseIterator), start, stop, step));
+    public PIntegerIterator createRangeIterator(int start, int stop, int step) {
+        PIntegerIterator object;
+        if (step > 0) {
+            object = new PRangeIterator(lookupClass(PythonBuiltinClassType.PRangeIterator), start, stop, step);
+        } else {
+            object = new PRangeReverseIterator(lookupClass(PythonBuiltinClassType.PRangeReverseIterator), start, stop, -step);
+        }
+        return trace(object);
     }
 
     public PIntArrayIterator createIntArrayIterator(PIntArray array) {
@@ -650,5 +663,13 @@ public abstract class PythonObjectFactory extends Node {
 
     public PForeignArrayIterator createForeignArrayIterator(TruffleObject iterable, int size) {
         return trace(new PForeignArrayIterator(lookupClass(PythonBuiltinClassType.PForeignArrayIterator), iterable, size));
+    }
+
+    public PBuffer createBuffer(PythonClass cls, Object iterable) {
+        return trace(new PBuffer(cls, iterable));
+    }
+
+    public PBuffer createBuffer(Object iterable) {
+        return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable));
     }
 }

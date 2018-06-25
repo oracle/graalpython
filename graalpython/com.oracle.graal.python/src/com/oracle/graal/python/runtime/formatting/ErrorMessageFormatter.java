@@ -42,7 +42,6 @@ import java.util.Formatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 
 /**
@@ -81,13 +80,13 @@ public class ErrorMessageFormatter {
         while (m.find(idx)) {
             String group = m.group();
             if ("%p".equals(group)) {
-                String name = getClass(getClassNode, args[matchIdx]).getName();
+                String name = getClassName(getClassNode, args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%P".equals(group)) {
-                String name = getClass(getClassNode, args[matchIdx]).toString();
+                String name = "<class \'" + getClassName(getClassNode, args[matchIdx]) + "\'>";
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
@@ -95,16 +94,19 @@ public class ErrorMessageFormatter {
             }
 
             idx = m.end();
-            matchIdx++;
+            // '%%' is an escape sequence and does not consume an argument
+            if (!"%%".equals(group)) {
+                matchIdx++;
+            }
         }
         return String.format(sb.toString(), compact(args, removedCnt));
     }
 
-    private static PythonClass getClass(GetClassNode getClassNode, Object obj) {
+    private static String getClassName(GetClassNode getClassNode, Object obj) {
         if (getClassNode != null) {
-            return getClassNode.execute(obj);
+            return getClassNode.execute(obj).getName();
         }
-        return GetClassNode.getItSlowPath(obj);
+        return GetClassNode.getNameSlowPath(obj);
     }
 
     private static Object[] compact(Object[] args, int removedCnt) {

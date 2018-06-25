@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
 import java.io.IOException;
@@ -57,6 +58,7 @@ import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.InteropModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.JavaModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.LocaleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
@@ -67,6 +69,7 @@ import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
+import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -107,10 +110,12 @@ import com.oracle.graal.python.builtins.objects.iterator.SentinelIteratorBuiltin
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.reversed.ReversedBuiltins;
@@ -183,6 +188,8 @@ public final class Python3Core implements PythonCore {
                     "bytes",
                     "float",
                     "time",
+                    "unicodedata",
+                    "_locale",
     };
 
     private static final Map<String, Object> BUILTIN_CONSTANTS = new HashMap<>();
@@ -240,6 +247,7 @@ public final class Python3Core implements PythonCore {
                     new MathModuleBuiltins(),
                     new MarshalModuleBuiltins(),
                     new RandomModuleBuiltins(),
+                    new RandomBuiltins(),
                     new TruffleCextBuiltins(),
                     new WeakRefModuleBuiltins(),
                     new ReferenceTypeBuiltins(),
@@ -258,7 +266,10 @@ public final class Python3Core implements PythonCore {
                     new GcModuleBuiltins(),
                     new AtexitModuleBuiltins(),
                     new FaulthandlerModuleBuiltins(),
+                    new UnicodeDataModuleBuiltins(),
+                    new LocaleModuleBuiltins(),
                     new SysModuleBuiltins(),
+                    new BufferBuiltins(),
     };
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
@@ -278,6 +289,7 @@ public final class Python3Core implements PythonCore {
     private final PythonParser parser;
 
     @CompilationFinal private boolean initialized;
+    @CompilationFinal private boolean builtinsPatchesLoaded;
 
     // used in case PythonOptions.SharedCore is false
     @CompilationFinal private PythonContext singletonContext;
@@ -347,6 +359,15 @@ public final class Python3Core implements PythonCore {
         exportCInterface(getContext());
         currentException = null;
         initialized = true;
+    }
+
+    @Override
+    public void loadBuiltinsPatches() {
+        if (initialized && !builtinsPatchesLoaded) {
+            builtinsPatchesLoaded = true;
+            String coreHome = PythonCore.getCoreHomeOrFail();
+            loadFile(__BUILTINS_PATCHES__, coreHome);
+        }
     }
 
     public Object duplicate(Map<Object, Object> replacements, Object value) {

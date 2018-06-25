@@ -41,3 +41,6 @@ class staticmethod(object):
 
     def __get__(self, instance, owner=None):
         return self.__func__
+
+    def __call__(self, *args, **kwargs):
+        return self.__func__(*args, **kwargs)

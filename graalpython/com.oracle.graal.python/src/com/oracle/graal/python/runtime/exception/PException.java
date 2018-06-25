@@ -41,6 +41,7 @@ package com.oracle.graal.python.runtime.exception;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.nodes.Node;
@@ -82,6 +83,7 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return getMessage();
     }
 
@@ -142,6 +144,12 @@ public final class PException extends RuntimeException implements TruffleExcepti
 
     public void expectStopIteration(PythonCore core, ConditionProfile profile) {
         if (profile.profile(getType() != core.getErrorClass(PythonErrorType.StopIteration))) {
+            throw this;
+        }
+    }
+
+    public void expectAttributeError(PythonCore core, ConditionProfile profile) {
+        if (profile.profile(getType() != core.getErrorClass(PythonErrorType.AttributeError))) {
             throw this;
         }
     }

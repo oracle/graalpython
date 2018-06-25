@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,10 +36,12 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Layout;
@@ -86,10 +89,19 @@ public class PythonClass extends PythonObject {
 
         // do not inherit layout from the TypeClass.
         storage = freshShape().newInstance();
-        setAttribute(__NAME__, className);
+        setAttribute(__NAME__, getBaseName(name));
+        setAttribute(__QUALNAME__, className);
         setAttribute(__DOC__, PNone.NONE);
         // provide our instances with a fresh shape tree
         instanceShape = freshShape();
+    }
+
+    private static String getBaseName(String qname) {
+        int lastDot = qname.lastIndexOf('.');
+        if (lastDot != -1) {
+            return qname.substring(lastDot + 1);
+        }
+        return qname;
     }
 
     public Assumption getLookupStableAssumption() {
@@ -228,6 +240,7 @@ public class PythonClass extends PythonObject {
     }
 
     @Override
+    @TruffleBoundary
     public Object getAttribute(String name) {
         for (PythonClass o : methodResolutionOrder) {
             if (o.getStorage().containsKey(name)) {
@@ -259,7 +272,8 @@ public class PythonClass extends PythonObject {
 
     @Override
     public String toString() {
-        return "<class \'" + className + "\'>";
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("<class '%s'>", className);
     }
 
     public PythonClass[] getBaseClasses() {
@@ -304,5 +318,10 @@ public class PythonClass extends PythonObject {
             }
             this.flags = flags;
         }
+    }
+
+    @Override
+    public PythonClassNativeWrapper getNativeWrapper() {
+        return (PythonClassNativeWrapper) super.getNativeWrapper();
     }
 }

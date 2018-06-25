@@ -27,6 +27,8 @@ package com.oracle.graal.python.builtins;
 
 import java.util.HashMap;
 
+import com.oracle.truffle.api.CompilerAsserts;
+
 public enum PythonBuiltinClassType {
 
     TruffleObject(com.oracle.truffle.api.interop.TruffleObject.class, "truffle_object"),
@@ -73,6 +75,7 @@ public enum PythonBuiltinClassType {
     PMethod(com.oracle.graal.python.builtins.objects.method.PMethod.class, "method"),
     PNone(com.oracle.graal.python.builtins.objects.PNone.class, "NoneType"),
     PNotImplemented(com.oracle.graal.python.builtins.objects.PNotImplemented.class, "NotImplementedType"),
+    PRandom(com.oracle.graal.python.builtins.objects.random.PRandom.class, "random"),
     PRange(com.oracle.graal.python.builtins.objects.range.PRange.class, "range"),
     PRangeIterator(com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.class, "iterator"),
     PRangeReverseIterator(com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator.class, "iterator"),
@@ -90,10 +93,13 @@ public enum PythonBuiltinClassType {
     PTuple(com.oracle.graal.python.builtins.objects.tuple.PTuple.class, "tuple"),
     PythonBuiltinClass(com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass.class, "type"),
     PythonClass(com.oracle.graal.python.builtins.objects.type.PythonClass.class, "type"),
+    PythonNativeClass(com.oracle.graal.python.builtins.objects.cext.PythonNativeClass.class, "type"),
     PythonModule(com.oracle.graal.python.builtins.objects.module.PythonModule.class, "module"),
     PythonObject(com.oracle.graal.python.builtins.objects.object.PythonObject.class, "object"),
+    PythonNativeObject(com.oracle.graal.python.builtins.objects.cext.PythonNativeObject.class, "object"),
     PythonParseResult(com.oracle.graal.python.runtime.PythonParseResult.class, "code"),
-    PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip");
+    PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip"),
+    PBuffer(com.oracle.graal.python.builtins.objects.memoryview.PBuffer.class, "buffer");
 
     private final Class<?> clazz;
     private final String shortName;
@@ -105,6 +111,7 @@ public enum PythonBuiltinClassType {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return shortName;
     }
 

@@ -34,8 +34,9 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -45,13 +46,18 @@ import com.oracle.truffle.api.dsl.Specialization;
 public class PZipBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return PZipBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = __NEXT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "isEmpty(self.getIterators())")
+        public Object __next__(@SuppressWarnings("unused") PZip self) {
+            throw raise(PythonErrorType.StopIteration);
+        }
 
         @Specialization
         public Object __next__(PZip self,

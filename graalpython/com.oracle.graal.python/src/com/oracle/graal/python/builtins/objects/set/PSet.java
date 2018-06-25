@@ -71,5 +71,4 @@ public final class PSet extends PBaseSet {
     public void setDictStorage(HashingStorage newStorage) {
         throw new RuntimeException("set has fixed storage");
     }
-
 }

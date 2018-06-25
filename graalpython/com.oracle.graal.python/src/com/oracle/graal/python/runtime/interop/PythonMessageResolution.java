@@ -227,7 +227,7 @@ public class PythonMessageResolution {
         }
     }
 
-    private static final class ExecuteNode extends Node {
+    public static final class ExecuteNode extends Node {
         @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
         @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create();
@@ -452,7 +452,7 @@ public class PythonMessageResolution {
     @Resolve(message = "GET_SIZE")
     abstract static class PForeignGetSizeNode extends Node {
         @Child IsSequenceNode isSeq = IsSequenceNode.create();
-        @Child private BuiltinFunctions.LenNode lenNode = BuiltinFunctionsFactory.LenNodeFactory.create(null);
+        @Child private BuiltinFunctions.LenNode lenNode = BuiltinFunctionsFactory.LenNodeFactory.create();
 
         public Object access(Object object) {
             if (isSeq.execute(object)) {

@@ -111,8 +111,8 @@ public abstract class LookupAndCallUnaryNode extends PNode {
         Object attribute = getCore().lookupType(PythonBuiltinClassType.fromClass(receiver.getClass())).getAttribute(name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
-            if (builtinFunction.getBuiltinNode() instanceof PythonUnaryBuiltinNode) {
-                return (PythonUnaryBuiltinNode) builtinFunction.getBuiltinNode().emptyCopy();
+            if (PythonUnaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
+                return (PythonUnaryBuiltinNode) builtinFunction.getBuiltinNodeFactory().createNode();
             }
         }
         return null;

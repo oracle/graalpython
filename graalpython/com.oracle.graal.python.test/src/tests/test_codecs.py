@@ -2,6 +2,8 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+
+
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
     try:
@@ -12,7 +14,12 @@ def assert_raises(err, fn, *args, **kwargs):
 
 
 def test_import():
-    import codecs
+    imported = True
+    try:
+        import codecs
+    except ImportError:
+        imported = False
+    assert imported
 
 
 def test_decode():
@@ -21,9 +28,9 @@ def test_decode():
     # TODO: this does not work yet due to the fact that we do not handle all strings literal types yet
     # assert codecs.decode(b'\xe4\xf6\xfc', 'latin-1') == '\xe4\xf6\xfc'
     # assert_raises(TypeError, codecs.decode)
-    # assert codecs.decode(b'abc') == 'abc'
+    assert codecs.decode(b'abc') == 'abc'
     # assert_raises(UnicodeDecodeError, codecs.decode, b'\xff', 'ascii')
-    #
+
     # test keywords
     # assert codecs.decode(obj=b'\xe4\xf6\xfc', encoding='latin-1') == '\xe4\xf6\xfc'
     # assert codecs.decode(b'[\xff]', 'ascii', errors='ignore') == '[]'
@@ -36,7 +43,7 @@ def test_encode():
     # TODO: this does not work yet due to the fact that we do not handle all strings literal types yet
     # assert codecs.encode('\xe4\xf6\xfc', 'latin-1') == b'\xe4\xf6\xfc'
     # assert_raises(TypeError, codecs.encode)
-    # assert_raises(LookupError, codecs.encode, "foo", "__spam__")
+    assert_raises(LookupError, codecs.encode, "foo", "__spam__")
     # assert codecs.encode('abc') == b'abc'
     # assert_raises(UnicodeEncodeError, codecs.encode, '\xffff', 'ascii')
 

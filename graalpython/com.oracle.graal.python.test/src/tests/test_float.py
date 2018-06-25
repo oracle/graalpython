@@ -575,3 +575,91 @@ class HexFloatTests(unittest.TestCase):
         f = F.fromhex('1', '1')
         self.assertEqual(17.0, f)
         self.assertEqual(F, type(f))
+
+class MyFloat(float):
+    pass
+
+class RealImagConjugateTests(unittest.TestCase):
+    
+    def test_real_imag(self):
+        def builtinTest(number):
+            a = float(number)
+            b = a.real
+            c = a.imag
+            assert a == b
+            assert a is b
+            assert c == 0
+            assert type(a) == float
+            assert type(b) == float
+            assert type(c) == float
+
+        builtinTest(-9.1)
+        builtinTest(0.0)
+        builtinTest(9.2)
+        builtinTest(6227020800.90)
+        builtinTest(9999992432902008176640000999999.1)
+
+    def test_real_imag_subclass(self):
+        def subclassTest(number):
+            a = MyFloat(number)
+            b = a.real
+            c = a.imag
+            assert a == b
+            assert a is not b
+            assert c == 0.0
+            assert type(a) == MyFloat
+            assert type(b) == float
+            assert type(c) == float
+
+        subclassTest(-9.0)
+        subclassTest(0.0)
+        subclassTest(9.1)
+        subclassTest(6227020800.2)
+        subclassTest(9999992432902008176640000999999.33)
+
+    def test_conjugate(self):
+        def builtinTest(number):
+            a = float(number)
+            b = a.conjugate()
+            assert a == b
+            assert a is b
+            assert type(a) == float
+            assert type(b) == float
+
+        builtinTest(-9.1)
+        builtinTest(0.0)
+        builtinTest(9.2)
+        builtinTest(6227020800.90)
+        builtinTest(9999992432902008176640000999999.1)
+
+    def test_conjugate_subclass(self):
+        def subclassTest(number):
+            a = MyFloat(number)
+            b = a.conjugate()
+            assert a == b
+            assert a is not b
+            assert type(a) == MyFloat
+            assert type(b) == float
+
+        subclassTest(-9.0)
+        subclassTest(0.0)
+        subclassTest(9.1)
+        subclassTest(6227020800.2)
+        subclassTest(9999992432902008176640000999999.33)
+
+    def test_trunc(self):
+        self.assertEqual(float(1).__trunc__(), 1)
+        self.assertEqual(float(1.99).__trunc__(), 1)
+        self.assertEqual(float(-1.99).__trunc__(), -1)
+
+        self.assertRaises(ValueError, float('nan').__trunc__)
+        self.assertRaises(OverflowError, float('inf').__trunc__)
+        self.assertRaises(OverflowError, float('-inf').__trunc__)
+
+        self.assertEqual(MyFloat(1).__trunc__(), 1)
+        self.assertEqual(MyFloat(1.99).__trunc__(), 1)
+        self.assertEqual(MyFloat(-1.99).__trunc__(), -1)
+
+        self.assertRaises(ValueError, MyFloat('nan').__trunc__)
+        self.assertRaises(OverflowError, MyFloat('inf').__trunc__)
+        self.assertRaises(OverflowError, MyFloat('-inf').__trunc__)

@@ -39,6 +39,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
@@ -99,6 +100,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return __repr__(store.getInternalByteArray());
     }
 

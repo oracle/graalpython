@@ -26,7 +26,6 @@
 package com.oracle.graal.python.nodes;
 
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -64,6 +63,7 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.IsNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
@@ -74,7 +74,6 @@ import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.generator.DictConcatNode;
 import com.oracle.graal.python.nodes.generator.ListAppendNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
@@ -116,7 +115,6 @@ import com.oracle.truffle.api.source.SourceSection;
 public class NodeFactory {
 
     private final PythonLanguage language;
-    private final HashMap<Class<? extends PythonBuiltinNode>, com.oracle.truffle.api.dsl.NodeFactory<PythonBuiltinNode>> builtinFactories = new HashMap<>();
 
     private NodeFactory(PythonLanguage language) {
         this.language = language;
@@ -124,14 +122,6 @@ public class NodeFactory {
 
     public static NodeFactory create(PythonLanguage language) {
         return new NodeFactory(language);
-    }
-
-    public void registerNodeFactory(PythonBuiltinNode builtinNode, com.oracle.truffle.api.dsl.NodeFactory<PythonBuiltinNode> factory) {
-        builtinFactories.put(builtinNode.getClass(), factory);
-    }
-
-    public com.oracle.truffle.api.dsl.NodeFactory<PythonBuiltinNode> getBuiltinNodeFactoryFor(PythonBuiltinNode builtinNode) {
-        return builtinFactories.get(builtinNode.getClass());
     }
 
     @SuppressWarnings({"unchecked", "unused"})
@@ -251,7 +241,7 @@ public class NodeFactory {
         return new StringLiteralNode(value);
     }
 
-    public PNode createBytesLiteral(String value) {
+    public PNode createBytesLiteral(byte[] value) {
         return new BytesLiteralNode(value);
     }
 
@@ -359,7 +349,7 @@ public class NodeFactory {
             case "%":
                 return BinaryArithmetic.Mod.create(left, right);
             case "**":
-                return BinaryArithmetic.Pow.create(left, right);
+                return TernaryArithmetic.Pow.create(left, right);
             case "<<":
                 return BinaryArithmetic.LShift.create(left, right);
             case ">>":

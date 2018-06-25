@@ -41,7 +41,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -55,7 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class FrozenSetBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return FrozenSetBuiltinsFactory.getFactories();
     }
 
@@ -96,7 +96,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __LE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
-        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
+        @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode = HashingStorageNodes.ContainsKeyNode.create();
 
         @Specialization
         Object run(PBaseSet self, PBaseSet other) {

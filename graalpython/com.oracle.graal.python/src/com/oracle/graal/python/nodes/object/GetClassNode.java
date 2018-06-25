@@ -39,9 +39,11 @@
 package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -50,22 +52,16 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
 
 @NodeChildren({@NodeChild(value = "object", type = PNode.class)})
 public abstract class GetClassNode extends PNode {
@@ -186,24 +182,10 @@ public abstract class GetClassNode extends PNode {
         return object.getType();
     }
 
-    static Node createExecuteNode() {
-        return Message.createExecute(1).createNode();
-    }
-
-    TruffleObject getObTypeFunction() {
-        return (TruffleObject) getContext().getEnv().importSymbol("get_ob_type");
-    }
-
     @Specialization
     protected PythonClass getIt(PythonNativeObject object,
-                    @Cached("getObTypeFunction()") TruffleObject func,
-                    @Cached("createExecuteNode()") Node executeNode) {
-        try {
-            return (PythonClass) ForeignAccess.sendExecute(executeNode, func, object.object);
-        } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException(e);
-        }
+                    @Cached("create()") GetNativeClassNode getNativeClassNode) {
+        return getNativeClassNode.execute(object);
     }
 
     @SuppressWarnings("unused")
@@ -220,4 +202,11 @@ public abstract class GetClassNode extends PNode {
         return PythonLanguage.getCore().lookupType(o.getClass());
     }
 
+    @TruffleBoundary
+    public static String getNameSlowPath(Object o) {
+        if (PGuards.isForeignObject(o)) {
+            return BuiltinNames.FOREIGN;
+        }
+        return PythonBuiltinClassType.fromClass(o.getClass()).toString();
+    }
 }

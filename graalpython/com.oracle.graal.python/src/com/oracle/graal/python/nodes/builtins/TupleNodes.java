@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -64,6 +65,16 @@ public abstract class TupleNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructTupleNode extends PBaseNode {
+
+        @Child private GetClassNode getClassNode;
+
+        protected PythonClass getClass(Object value) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(value);
+        }
 
         public final PTuple execute(Object value) {
             return execute(lookupClass(PythonBuiltinClassType.PTuple), value);
@@ -86,7 +97,12 @@ public abstract class TupleNodes {
             return factory().createTuple(cls, values);
         }
 
-        @Specialization(guards = "!isNoValue(iterable)")
+        @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(getClass(iterable))"})
+        public PTuple tuple(@SuppressWarnings("unused") PythonClass cls, PTuple iterable) {
+            return iterable;
+        }
+
+        @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable)"})
         public PTuple tuple(PythonClass cls, Object iterable,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
@@ -108,6 +124,13 @@ public abstract class TupleNodes {
         public PTuple tuple(@SuppressWarnings("unused") Object cls, Object value) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("list does not support iterable object " + value);
+        }
+
+        protected boolean createNewTuple(PythonClass cls, Object iterable) {
+            if (iterable instanceof PTuple) {
+                return !(PGuards.cannotBeOverridden(cls) && PGuards.cannotBeOverridden(getClass(iterable)));
+            }
+            return true;
         }
 
         public static ConstructTupleNode create() {

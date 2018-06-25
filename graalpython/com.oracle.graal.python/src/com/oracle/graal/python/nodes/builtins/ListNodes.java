@@ -38,8 +38,16 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -47,29 +55,29 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
+import com.oracle.graal.python.nodes.builtins.ListNodesFactory.CreateListFromIteratorNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
+import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@GenerateNodeFactory
 public abstract class ListNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -78,7 +86,7 @@ public abstract class ListNodes {
         public abstract PList execute(PythonClass cls, Object iterable);
 
         @Specialization
-        public PList executeGeneric(PythonClass cls, Object iterator,
+        public PList create(PythonClass cls, Object iterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             PList list = factory().createList(cls);
@@ -95,7 +103,7 @@ public abstract class ListNodes {
         }
 
         public static CreateListFromIteratorNode create() {
-            return ListNodesFactory.CreateListFromIteratorNodeGen.create();
+            return CreateListFromIteratorNodeGen.create();
         }
     }
 
@@ -172,6 +180,99 @@ public abstract class ListNodes {
 
         public static FastConstructListNode create() {
             return FastConstructListNodeGen.create();
+        }
+    }
+
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class IndexNode extends PBaseNode {
+        private static final String DEFAULT_ERROR_MSG = "list indices must be integers or slices, not %p";
+        @Child LookupAndCallUnaryNode getIndexNode;
+        private final CheckType checkType;
+        private final String errorMessage;
+
+        protected static enum CheckType {
+            SUBSCRIPT,
+            INTEGER,
+            NUMBER;
+        }
+
+        protected IndexNode(String message, CheckType type) {
+            checkType = type;
+            getIndexNode = LookupAndCallUnaryNode.create(__INDEX__);
+            errorMessage = message;
+        }
+
+        public static IndexNode create(String message) {
+            return IndexNodeGen.create(message, CheckType.SUBSCRIPT);
+        }
+
+        public static IndexNode create() {
+            return IndexNodeGen.create(DEFAULT_ERROR_MSG, CheckType.SUBSCRIPT);
+        }
+
+        public static IndexNode createInteger(String msg) {
+            return IndexNodeGen.create(msg, CheckType.INTEGER);
+        }
+
+        public static IndexNode createNumber(String msg) {
+            return IndexNodeGen.create(msg, CheckType.NUMBER);
+        }
+
+        public abstract Object execute(Object object);
+
+        protected boolean isSubscript() {
+            return checkType == CheckType.SUBSCRIPT;
+        }
+
+        protected boolean isNumber() {
+            return checkType == CheckType.NUMBER;
+        }
+
+        @Specialization
+        long doLong(long slice) {
+            return slice;
+        }
+
+        @Specialization
+        PInt doPInt(PInt slice) {
+            return slice;
+        }
+
+        @Specialization(guards = "isSubscript()")
+        PSlice doSlice(PSlice slice) {
+            return slice;
+        }
+
+        @Specialization(guards = "isNumber()")
+        float doFloat(float slice) {
+            return slice;
+        }
+
+        @Specialization(guards = "isNumber()")
+        double doDouble(double slice) {
+            return slice;
+        }
+
+        @Fallback
+        Object doGeneric(Object object) {
+            Object idx = getIndexNode.executeObject(object);
+            boolean valid = false;
+            switch (checkType) {
+                case SUBSCRIPT:
+                    valid = MathGuards.isInteger(idx) || idx instanceof PSlice;
+                    break;
+                case NUMBER:
+                    valid = MathGuards.isNumber(idx);
+                    break;
+                case INTEGER:
+                    valid = MathGuards.isInteger(idx);
+                    break;
+            }
+            if (valid) {
+                return idx;
+            } else {
+                throw raise(TypeError, errorMessage, idx);
+            }
         }
     }
 
@@ -308,7 +409,8 @@ public abstract class ListNodes {
             store.ensureCapacity(length + delta);
             // we need to work with the copy in the case if a[i:j] = a
             SequenceStorage workingValue = store == value.getSequenceStorage()
-                            ? workingValue = store.copy() : value.getSequenceStorage();
+                            ? workingValue = store.copy()
+                            : value.getSequenceStorage();
 
             if (step == 1) {
                 if (delta < 0) {

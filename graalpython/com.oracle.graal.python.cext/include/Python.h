@@ -107,11 +107,11 @@
 #include "pyfpe.h"
 #include "memoryobject.h"
 
-#undef Py_NoValue
-#define Py_NoValue truffle_invoke(PY_TRUFFLE_CEXT, "Py_NoValue")
+#define PY_TRUFFLE_CEXT ((void*)polyglot_import("python_cext"))
+#define PY_BUILTIN ((void*)polyglot_import("python_builtins"))
 
-#define PY_TRUFFLE_CEXT ((void*)truffle_import_cached("python_cext"))
-#define PY_BUILTIN ((void*)truffle_import_cached("python_builtins"))
+#undef Py_NoValue
+#define Py_NoValue UPCALL_CEXT_O("Py_NoValue")
 
 // TODO: we must extend the refcounting behavior to support handles to managed objects
 #undef Py_DECREF
@@ -179,7 +179,7 @@ extern int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, c
 #ifdef PyArg_ParseTuple
 #undef PyArg_ParseTuple
 #endif
-#define PyArg_ParseTuple(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, (char*[]) { NULL }, ##__VA_ARGS__)
+#define PyArg_ParseTuple(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, ##__VA_ARGS__)
 
 #ifdef _PyArg_ParseTupleAndKeywordsFast
 #undef _PyArg_ParseTupleAndKeywordsFast
@@ -189,7 +189,7 @@ extern int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, c
 #ifdef PyArg_Parse
 #undef PyArg_Parse
 #endif
-#define PyArg_Parse(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, (char*[]) { NULL }, __VA_ARGS__)
+#define PyArg_Parse(ARGV, FORMAT, ...) PyArg_ParseTupleAndKeywords(ARGV, PyDict_New(), FORMAT, NULL, __VA_ARGS__)
 
 extern PyObject * PyTruffle_Unicode_FromFormat(const char *fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19);
 #define PyTruffle_Unicode_FromFormat_0(F1) PyTruffle_Unicode_FromFormat(F1, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)

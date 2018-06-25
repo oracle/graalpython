@@ -40,7 +40,7 @@
 
 #include <pyerrors.h>
 
-#define PY_EXCEPTION(__EXC_NAME__) ((PyObject*)polyglot_as__object(to_sulong(truffle_import_cached("python_" __EXC_NAME__))))
+#define PY_EXCEPTION(__EXC_NAME__) (UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(__EXC_NAME__, SRC_CS)))
 
 PyObject * PyExc_BaseException = NULL;
 PyObject * PyExc_Exception = NULL;
@@ -72,36 +72,38 @@ PyObject * PyExc_ResourceWarning = NULL;
 PyObject * PyExc_ZeroDivisionError = NULL;
 PyObject * PyExc_ArithmeticError = NULL;
 PyObject * PyExc_StopIteration = NULL;
+PyObject * PyExc_BufferError = NULL;
 
 void initialize_exceptions() {
-	PyExc_AttributeError = PY_EXCEPTION("AttributeError");
-	PyExc_BaseException = PY_EXCEPTION("BaseException");
-	PyExc_BytesWarning = PY_EXCEPTION("BytesWarning");
-	PyExc_DeprecationWarning = PY_EXCEPTION("DeprecationWarning");
-	PyExc_Exception = PY_EXCEPTION("Exception");
-	PyExc_FloatingPointError = PY_EXCEPTION("FloatingPointError");
-	PyExc_IOError = PY_EXCEPTION("IOError");
-	PyExc_ImportError = PY_EXCEPTION("ImportError");
-	PyExc_ImportWarning = PY_EXCEPTION("ImportWarning");
-	PyExc_IndexError = PY_EXCEPTION("IndexError");
-	PyExc_KeyError = PY_EXCEPTION("KeyError");
-	PyExc_MemoryError = PY_EXCEPTION("MemoryError");
-	PyExc_NameError = PY_EXCEPTION("NameError");
-	PyExc_OSError = PY_EXCEPTION("OSError");
-	PyExc_OverflowError = PY_EXCEPTION("OverflowError");
-	PyExc_PendingDeprecationWarning = PY_EXCEPTION("PendingDeprecationWarning");
-	PyExc_ResourceWarning = PY_EXCEPTION("ResourceWarning");
-	PyExc_RuntimeError = PY_EXCEPTION("RuntimeError");
-	PyExc_RuntimeWarning = PY_EXCEPTION("RuntimeWarning");
-	PyExc_SyntaxWarning = PY_EXCEPTION("SyntaxWarning");
-	PyExc_SystemError = PY_EXCEPTION("SystemError");
-	PyExc_TypeError = PY_EXCEPTION("TypeError");
-	PyExc_UnicodeWarning = PY_EXCEPTION("UnicodeWarning");
-	PyExc_UserWarning = PY_EXCEPTION("UserWarning");
-	PyExc_ValueError = PY_EXCEPTION("ValueError");
-	PyExc_Warning = PY_EXCEPTION("Warning");
-        PyExc_ZeroDivisionError = PY_EXCEPTION("ZeroDivisionError");
-        PyExc_ArithmeticError = PY_EXCEPTION("ArithmeticError");
-        PyExc_StopIteration = PY_EXCEPTION("StopIteration");
+    PyExc_AttributeError = PY_EXCEPTION("AttributeError");
+    PyExc_BaseException = PY_EXCEPTION("BaseException");
+    PyExc_BytesWarning = PY_EXCEPTION("BytesWarning");
+    PyExc_DeprecationWarning = PY_EXCEPTION("DeprecationWarning");
+    PyExc_Exception = PY_EXCEPTION("Exception");
+    PyExc_FloatingPointError = PY_EXCEPTION("FloatingPointError");
+    PyExc_IOError = PY_EXCEPTION("IOError");
+    PyExc_ImportError = PY_EXCEPTION("ImportError");
+    PyExc_ImportWarning = PY_EXCEPTION("ImportWarning");
+    PyExc_IndexError = PY_EXCEPTION("IndexError");
+    PyExc_KeyError = PY_EXCEPTION("KeyError");
+    PyExc_MemoryError = PY_EXCEPTION("MemoryError");
+    PyExc_NameError = PY_EXCEPTION("NameError");
+    PyExc_OSError = PY_EXCEPTION("OSError");
+    PyExc_OverflowError = PY_EXCEPTION("OverflowError");
+    PyExc_PendingDeprecationWarning = PY_EXCEPTION("PendingDeprecationWarning");
+    PyExc_ResourceWarning = PY_EXCEPTION("ResourceWarning");
+    PyExc_RuntimeError = PY_EXCEPTION("RuntimeError");
+    PyExc_RuntimeWarning = PY_EXCEPTION("RuntimeWarning");
+    PyExc_SyntaxWarning = PY_EXCEPTION("SyntaxWarning");
+    PyExc_SystemError = PY_EXCEPTION("SystemError");
+    PyExc_TypeError = PY_EXCEPTION("TypeError");
+    PyExc_UnicodeWarning = PY_EXCEPTION("UnicodeWarning");
+    PyExc_UserWarning = PY_EXCEPTION("UserWarning");
+    PyExc_ValueError = PY_EXCEPTION("ValueError");
+    PyExc_Warning = PY_EXCEPTION("Warning");
+    PyExc_ZeroDivisionError = PY_EXCEPTION("ZeroDivisionError");
+    PyExc_ArithmeticError = PY_EXCEPTION("ArithmeticError");
+    PyExc_StopIteration = PY_EXCEPTION("StopIteration");
+    PyExc_BufferError = PY_EXCEPTION("BufferError");
 }
 

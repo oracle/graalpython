@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -88,7 +89,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix", "base_prefix", "base_exec_prefix"};
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SysModuleBuiltinsFactory.getFactories();
     }
 
@@ -104,6 +105,9 @@ public class SysModuleBuiltins extends PythonBuiltins {
             StringBuilder sb = new StringBuilder();
             sb.append(System.getProperty("java.home")).append(PythonCore.FILE_SEPARATOR).append("bin").append(PythonCore.FILE_SEPARATOR).append("java ");
             for (String arg : ManagementFactory.getRuntimeMXBean().getInputArguments()) {
+                if (arg.matches("-Xrunjdwp:transport=dt_socket,server=y,address=\\d+,suspend=y")) {
+                    arg = arg.replace("suspend=y", "suspend=n");
+                }
                 sb.append(arg).append(' ');
             }
             sb.append("-classpath ");

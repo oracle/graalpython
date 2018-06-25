@@ -40,6 +40,7 @@ package com.oracle.graal.python.nodes;
 
 public abstract class SpecialMethodNames {
     public static final String __NEW__ = "__new__";
+    public static final String __ALLOC__ = "__alloc__";
     public static final String __INIT__ = "__init__";
     public static final String __CEIL__ = "__ceil__";
     public static final String __DEL__ = "__del__";
@@ -72,6 +73,7 @@ public abstract class SpecialMethodNames {
     public static final String __SUBCLASSES__ = "__subclasses__";
     public static final String __SUBCLASSHOOK__ = "__subclasshook__";
     public static final String __CALL__ = "__call__";
+    public static final String __CALLBACK__ = "__callback__";
     public static final String __LEN__ = "__len__";
     public static final String __LENGTH_HINT__ = "__length_hint__";
     public static final String __GETITEM__ = "__getitem__";
@@ -88,6 +90,7 @@ public abstract class SpecialMethodNames {
     public static final String __DIV__ = "__div__";
     public static final String __MATMUL__ = "__matmul__";
     public static final String __TRUEDIV__ = "__truediv__";
+    public static final String __TRUNC__ = "__trunc__";
     public static final String __FLOORDIV__ = "__floordiv__";
     public static final String __MOD__ = "__mod__";
     public static final String __DIVMOD__ = "__divmod__";
@@ -151,6 +154,7 @@ public abstract class SpecialMethodNames {
     public static final String KEYS = "keys";
     public static final String ITEMS = "items";
     public static final String VALUES = "values";
+    public static final String __FSPATH__ = "__fspath__";
 
     public static final String RICHCMP = "__truffle_richcompare__";
 }

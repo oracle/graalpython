@@ -36,31 +36,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.builtins.objects.random;
 
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
+import java.util.Random;
 
-/**
- * Wraps a sequence object (like a list) such that it behaves like a bare C array.
- */
-public class PySequenceArrayWrapper implements TruffleObject {
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-    private final Object delegate;
+public class PRandom extends PythonBuiltinObject {
+    private static class PythonRandom extends Random {
+        private static final long serialVersionUID = 1L;
 
-    public PySequenceArrayWrapper(Object delegate) {
-        this.delegate = delegate;
+        long getSeed() {
+            int nextseed = this.next(48); // 48 magic number of bits shifted away in superclass
+            this.setSeed(nextseed);
+            return nextseed;
+        }
     }
 
-    public Object getDelegate() {
-        return delegate;
+    private PythonRandom javaRandom;
+
+    public PRandom(PythonClass cls) {
+        super(cls);
+        resetJavaRandom();
     }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PySequenceArrayWrapper;
+    @TruffleBoundary
+    public void setSeed(long seed) {
+        javaRandom.setSeed(seed);
     }
 
-    public ForeignAccess getForeignAccess() {
-        return PySequenceArrayWrapperMRForeign.ACCESS;
+    @TruffleBoundary
+    public long getSeed() {
+        return javaRandom.getSeed();
+    }
+
+    public long nextLong() {
+        return javaRandom.nextLong();
+    }
+
+    public double nextDouble() {
+        return javaRandom.nextDouble();
+    }
+
+    public Random getJavaRandom() {
+        return javaRandom;
+    }
+
+    @TruffleBoundary
+    public void resetJavaRandom() {
+        javaRandom = new PythonRandom();
     }
 }

@@ -35,16 +35,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#!/bin/bash
 
-cd "$(dirname $0)"
-cd ..
-UNIT_TESTS_PATH="graalpython/lib-python/3/test/test_*.py"
-for TEST in ${UNIT_TESTS_PATH}
-do
-    echo "##############################################################"
-    echo "#### running: ${TEST}"
-    mx python3 --python.CatchAllExceptions=true ${TEST}
-done
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
 
-echo "DONE"
+
+def test_import():
+    imported = True
+    try:
+        from _locale import (setlocale, LC_ALL, LC_CTYPE, LC_NUMERIC, localeconv, Error)
+    except ImportError:
+        imported = False
+    assert imported
+
+
+def test_get_setlocale():
+    import locale
+    current_locale = locale.getlocale(0)
+    try:
+        new_locale = ('en_GB', 'UTF-8')
+        assert str(locale.setlocale(0, new_locale)) == '.'.join(new_locale)
+        assert locale.getlocale(0) == new_locale
+    finally:
+        assert str(locale.setlocale(0, current_locale)) == '.'.join(current_locale)

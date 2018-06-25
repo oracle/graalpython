@@ -27,8 +27,6 @@ package com.oracle.graal.python.nodes.literal;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
@@ -36,8 +34,8 @@ public final class BytesLiteralNode extends LiteralNode {
 
     @CompilationFinal(dimensions = 1) private final byte[] value;
 
-    public BytesLiteralNode(String value) {
-        this.value = BytesUtils.fromString(PythonLanguage.getCore(), value);
+    public BytesLiteralNode(byte[] value) {
+        this.value = value;
     }
 
     @Override
