@@ -81,7 +81,7 @@ public class RangeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBuiltinNode {
+    abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doPRange(PRange left, PRange right) {
             return left.equals(right);
