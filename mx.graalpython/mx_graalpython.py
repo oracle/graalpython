@@ -255,7 +255,7 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     cpyext = 'python-cpyext'
-    svmunit = 'python-svm-unitttest'
+    svmunit = 'python-svm-unittest'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
@@ -363,8 +363,34 @@ def graalpython_gate_runner(args, tasks):
                 python_svm(["-h"])
             if os.path.exists("./graalpython-svm"):
                 langhome = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-                test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v",
-                             "graalpython/com.oracle.graal.python.test/src/tests/"]
+
+                # tests root directory
+                tests_folder = "graalpython/com.oracle.graal.python.test/src/tests/"
+
+                # list of excluded tests
+                excluded = ["test_interop.py"]
+
+                def is_included(path):
+                    if path.endswith(".py"):
+                        basename = path.rpartition("/")[2]
+                        return basename.startswith("test_") and basename not in excluded
+                    return False
+
+                # list all 1st-level tests and exclude the SVM-incompatible ones
+                testfiles = []
+                paths = [tests_folder]
+                while paths:
+                    path = paths.pop()
+                    if is_included(path):
+                        testfiles.append(path)
+                    else:
+                        try:
+                            paths += [(path + f if path.endswith("/") else "%s/%s" % (path, f)) for f in
+                                      os.listdir(path)]
+                        except OSError:
+                            pass
+
+                test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v"] + testfiles
                 mx.run(["./graalpython-svm", "--python.CoreHome=graalpython/lib-graalpython", "--python.StdLibHome=graalpython/lib-python/3", langhome] + test_args, nonZeroIsFatal=True)
 
     with Task('GraalPython downstream R tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.R]) as task:
