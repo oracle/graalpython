@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Layout;
@@ -239,6 +240,7 @@ public class PythonClass extends PythonObject {
     }
 
     @Override
+    @TruffleBoundary
     public Object getAttribute(String name) {
         for (PythonClass o : methodResolutionOrder) {
             if (o.getStorage().containsKey(name)) {
@@ -270,7 +272,8 @@ public class PythonClass extends PythonObject {
 
     @Override
     public String toString() {
-        return "<class \'" + className + "\'>";
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("<class '%s'>", className);
     }
 
     public PythonClass[] getBaseClasses() {

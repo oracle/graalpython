@@ -42,6 +42,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import com.oracle.truffle.api.CompilerAsserts;
+
 /**
  * Implementation of a map with a memory-efficient structure that always preserves insertion order
  * when iterating over keys. Particularly efficient when number of entries is 0 or smaller equal
@@ -650,6 +652,7 @@ public class EconomicMapStorage extends HashingStorage implements Iterable<Objec
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         StringBuilder builder = new StringBuilder();
         builder.append(isSet ? "set(size=" : "map(size=").append(length()).append(", {");
         String sep = "";

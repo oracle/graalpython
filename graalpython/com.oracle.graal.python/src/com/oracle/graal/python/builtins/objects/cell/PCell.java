@@ -45,7 +45,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerAsserts;
 
 public class PCell extends PythonBuiltinObject {
     private Object ref;
@@ -81,11 +81,11 @@ public class PCell extends PythonBuiltinObject {
     }
 
     @Override
-    @TruffleBoundary
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         if (ref == null) {
-            return String.format("<cell at %s: empty>", this.hashCode());
+            return String.format("<cell at %s: empty>", hashCode());
         }
-        return String.format("<cell at %s: %s object at %s>", this.hashCode(), ref.getClass().getSimpleName(), ref.hashCode());
+        return String.format("<cell at %s: %s object at %s>", hashCode(), ref.getClass().getSimpleName(), ref.hashCode());
     }
 }

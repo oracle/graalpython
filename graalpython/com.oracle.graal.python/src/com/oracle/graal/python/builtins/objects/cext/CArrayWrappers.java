@@ -38,46 +38,66 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * Unlike a
- * {@link com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper}
- * object that wraps a Python unicode object, this wrapper let's a Java String look like a
- * {@code char*}.
+ * Native wrappers for managed objects such that they can be used as a C array by native code. The
+ * major difference to other native wrappers is that they are copied to native memory if it receives
+ * {@code TO_NATIVE}. This is primarily necessary for {@code char*} arrays.
  */
-public class CStringWrapper implements TruffleObject {
+public abstract class CArrayWrappers {
 
-    private final String delegate;
-    private Object nativePointer;
+    public abstract static class CArrayWrapper extends PythonNativeWrapper {
 
-    public CStringWrapper(String delegate) {
-        this.delegate = delegate;
+        static boolean isInstance(TruffleObject o) {
+            return o instanceof CArrayWrapper;
+        }
+
+        @Override
+        public ForeignAccess getForeignAccess() {
+            return CArrayWrapperMRForeign.ACCESS;
+        }
     }
 
-    public String getDelegate() {
-        return delegate;
+    /**
+     * Unlike a
+     * {@link com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper}
+     * object that wraps a Python unicode object, this wrapper let's a Java String look like a
+     * {@code char*}.
+     */
+    public static class CStringWrapper extends CArrayWrapper {
+
+        private final String delegate;
+
+        public CStringWrapper(String delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public String getDelegate() {
+            return delegate;
+        }
+
     }
 
-    public Object getNativePointer() {
-        return nativePointer;
-    }
+    /**
+     * A native wrapper for arbitrary byte arrays (i.e. the store of a Python Bytes object) to be
+     * used like a {@code char*} pointer.
+     */
+    public static class CByteArrayWrapper extends CArrayWrapper {
 
-    public void setNativePointer(Object nativePointer) {
-        assert this.nativePointer == null;
-        this.nativePointer = nativePointer;
-    }
+        private final byte[] delegate;
 
-    public boolean isNative() {
-        return nativePointer != null;
-    }
+        public CByteArrayWrapper(byte[] delegate) {
+            this.delegate = delegate;
+        }
 
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof CStringWrapper;
-    }
+        @Override
+        public byte[] getDelegate() {
+            return delegate;
+        }
 
-    public ForeignAccess getForeignAccess() {
-        return CStringWrapperMRForeign.ACCESS;
     }
 }

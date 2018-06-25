@@ -44,7 +44,7 @@
 PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS, offsetof(PyLongObject, ob_digit));
 
 long PyLong_AsLong(PyObject *obj) {
-    return truffle_invoke_l(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long), truffle_read_string("long"));
+    return UPCALL_CEXT_L("PyLong_AsPrimitive", native_to_java(obj), 1, sizeof(long), polyglot_from_string("long", SRC_CS));
 }
 
 long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
@@ -52,12 +52,12 @@ long PyLong_AsLongAndOverflow(PyObject *obj, int *overflow) {
         PyErr_BadInternalCall();
         return -1;
     }
-    long result = truffle_invoke_l(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(long), truffle_read_string("long"));
+    long result = UPCALL_CEXT_L("PyLong_AsPrimitive", native_to_java(obj), 1, sizeof(long), polyglot_from_string("long", SRC_CS));
     *overflow = result == -1L && PyErr_Occurred() != NULL;
     return result;
 }
 
-long long PyLong_AsLonglong(PyObject *obj) {
+long long PyLong_AsLongLong(PyObject *obj) {
     return as_long_long(obj);
 }
 
@@ -76,22 +76,18 @@ unsigned long PyLong_AsUnsignedLong(PyObject *obj) {
         PyErr_BadInternalCall();
         return (unsigned long)-1;
     }
-    return (unsigned long) truffle_invoke_l(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 0, sizeof(unsigned long), truffle_read_string("unsigned long"));
+    return (unsigned long) UPCALL_CEXT_L("PyLong_AsPrimitive", native_to_java(obj), 0, sizeof(unsigned long), polyglot_from_string("unsigned long", SRC_CS));
 }
 PyObject * PyLong_FromSsize_t(Py_ssize_t n) {
 	return PyLong_FromLongLong(n);
 }
 
 PyObject * PyLong_FromDouble(double n) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyLong_FromLongLong", n, 1);
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyLong_FromLongLong", n, 1);
 }
 
 Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
-    return truffle_invoke_l(PY_TRUFFLE_CEXT, "PyLong_AsPrimitive", to_java(obj), 1, sizeof(Py_ssize_t), truffle_read_string("ssize_t"));
+    return UPCALL_CEXT_L("PyLong_AsPrimitive", native_to_java(obj), 1, sizeof(Py_ssize_t), polyglot_from_string("ssize_t", SRC_CS));
 }
 
 PyObject * PyLong_FromVoidPtr(void *p) {
@@ -118,11 +114,7 @@ PyObject * PyLong_FromLong(long n)  {
 }
 
 PyObject * PyLong_FromLongLong(long long n)  {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyLong_FromLongLong", n, 1);
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyLong_FromLongLong", n, 1);
 }
 
 PyObject * PyLong_FromUnsignedLong(unsigned long n) {
@@ -130,15 +122,11 @@ PyObject * PyLong_FromUnsignedLong(unsigned long n) {
 }
 
 PyObject * PyLong_FromUnsignedLongLong(unsigned long long n) {
-    PyObject *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyLong_FromLongLong", n, 0);
-    if (result == ERROR_MARKER) {
-    	return NULL;
-    }
-    return to_sulong(result);
+    return UPCALL_CEXT_O("PyLong_FromLongLong", n, 0);
 }
 
 int _PyLong_Sign(PyObject *vv) {
-    return truffle_invoke_i(PY_TRUFFLE_CEXT, "_PyLong_Sign", to_java(vv));
+    return UPCALL_CEXT_I("_PyLong_Sign", native_to_java(vv));
 }
 
 PyObject * PyLong_FromSize_t(size_t n)  {

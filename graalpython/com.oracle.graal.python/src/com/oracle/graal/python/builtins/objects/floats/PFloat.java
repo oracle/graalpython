@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.floats;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.CompilerAsserts;
 
 public class PFloat extends PythonBuiltinObject {
 
@@ -53,6 +54,7 @@ public class PFloat extends PythonBuiltinObject {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return Double.toString(value);
     }
 

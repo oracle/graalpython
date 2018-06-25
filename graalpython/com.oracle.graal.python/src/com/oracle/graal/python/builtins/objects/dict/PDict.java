@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.CompilerAsserts;
 
 public final class PDict extends PHashingCollection {
 
@@ -122,6 +123,7 @@ public final class PDict extends PHashingCollection {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         StringBuilder buf = new StringBuilder("{");
         int length = dictStorage.length();
         int i = 0;

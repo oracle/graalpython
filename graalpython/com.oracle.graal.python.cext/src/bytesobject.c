@@ -49,42 +49,24 @@ PyTypeObject PyBytes_Type = PY_TRUFFLE_TYPE("bytes", &PyType_Type, Py_TPFLAGS_DE
 PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
     setlocale(LC_ALL, NULL);
     const char* encoding = nl_langinfo(CODESET);
-    return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyBytes_FromStringAndSize", truffle_read_n_string(str, sz), truffle_read_string(encoding)));
+    void *jstr = str != NULL ? polyglot_from_string_n(str, sz, SRC_CS) : to_java(NULL);
+	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", jstr, polyglot_from_string(encoding, SRC_CS));
 }
 
 PyObject * PyBytes_FromString(const char *str) {
 	setlocale(LC_ALL, NULL);
 	const char* encoding = nl_langinfo(CODESET);
-	return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyBytes_FromStringAndSize", truffle_read_string(str), truffle_read_string(encoding)));
+	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", polyglot_from_string(str, SRC_CS), polyglot_from_string(encoding, SRC_CS));
 }
 
 char* PyBytes_AsString(PyObject *obj) {
-	if (obj == NULL) {
-		return NULL;
-	}
-	// returns a Java byte array
- 	void *result = truffle_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Bytes_AsString", to_java(obj), ERROR_MARKER);
- 	if (result == ERROR_MARKER) {
- 		return NULL;
- 	}
- 	if(truffle_has_size(result)) {
- 		int n = truffle_get_size(result);
- 		char *barr = (char *) malloc(n*sizeof(char));
-
- 		// we need to read element-by-element
- 		int i;
- 		for(i=0; i < n; i++) {
- 			barr[i] = truffle_read_idx_c(result, i);
- 		}
- 		return barr;
- 	}
- 	return NULL;
+    return UPCALL_CEXT_NOCAST("PyTruffle_Bytes_AsString", native_to_java(obj), ERROR_MARKER);
 }
 
 int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {
 	setlocale(LC_ALL, NULL);
 	const char* encoding = nl_langinfo(CODESET);
- 	PyObject *result = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyBytes_AsStringCheckEmbeddedNull", to_java(obj), truffle_read_string(encoding)));
+	PyObject *result = UPCALL_CEXT_O("PyBytes_AsStringCheckEmbeddedNull", native_to_java(obj), polyglot_from_string(encoding, SRC_CS));
  	if(result == NULL) {
  		return -1;
  	}
@@ -92,7 +74,7 @@ int PyBytes_AsStringAndSize(PyObject *obj, char **s, Py_ssize_t *len) {
  	*s = as_char_pointer(result);
 
     if (len != NULL) {
-    	*len = truffle_invoke_i(PY_TRUFFLE_CEXT, "PyObject_LEN", to_java(obj));
+        *len = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Object_LEN", native_to_java(obj)));
     }
 
     return 0;
@@ -218,17 +200,16 @@ PyBytes_FromFormatV(const char *format, va_list vargs) {
 
         default:
             // TODO correctly handle this case
-            return to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyBytes_FromFormat", truffle_read_string(format), f+i));
-
+            return UPCALL_CEXT_O("PyBytes_FromFormat", polyglot_from_string(format, SRC_CS), f+i);
         }
     }
 
 
-#define SETARG(__args, __i, __arg) truffle_invoke(PY_TRUFFLE_CEXT, "PyTuple_SetItem", (__args), (__i), (__arg));
+#define SETARG(__args, __i, __arg) UPCALL_CEXT_I("PyTuple_SetItem", native_to_java(__args), (__i), (__arg))
 
     // do actual conversion using one-character type specifiers
     int conversions = strlen(buffer);
-    PyObject* args = to_java(PyTuple_New(conversions));
+    PyObject* args = PyTuple_New(conversions);
     for (int i=0; i < conversions; i++) {
     	switch(buffer[i]) {
     	case 'c':
@@ -250,19 +231,18 @@ PyBytes_FromFormatV(const char *format, va_list vargs) {
             SETARG(args, i, va_arg(vargs, size_t));
             break;
     	case 's':
-            SETARG(args, i, truffle_read_string(va_arg(vargs, const char*)));
+            SETARG(args, i, polyglot_from_string(va_arg(vargs, const char*), SRC_CS));
     		break;
     	case 'p':
-            SETARG(args, i, to_java(va_arg(vargs, void*)));
+            SETARG(args, i, native_to_java(va_arg(vargs, void*)));
     		break;
     	}
     }
-    PyObject *res = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyBytes_FromFormat", truffle_read_string(format), args));
-    return res;
+    return UPCALL_CEXT_O("PyBytes_FromFormat", polyglot_from_string(format, SRC_CS), native_to_java(args));
 }
 
 void PyBytes_Concat(PyObject **bytes, PyObject *newpart) {
-    *bytes = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "PyBytes_Concat", to_java(*bytes), to_java(newpart)));
+    *bytes = UPCALL_CEXT_O("PyBytes_Concat", native_to_java(*bytes), native_to_java(newpart));
 }
 
 void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart) {
@@ -271,9 +251,17 @@ void PyBytes_ConcatAndDel(PyObject **bytes, PyObject *newpart) {
 }
 
 Py_ssize_t PyBytes_Size(PyObject *bytes) {
-	return truffle_invoke_i(PY_TRUFFLE_CEXT, "PyBytes_Size", to_java(bytes));
+    return UPCALL_CEXT_L("PyBytes_Size", native_to_java(bytes));
 }
 
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags) {
     return PyBuffer_FillInfo(view, (PyObject*)self, (void *)self->ob_sval, Py_SIZE(self), 1, flags);
+}
+
+int bytes_copy2mem(char* target, char* source, size_t nbytes) {
+    size_t i;
+    for (i = 0; i < nbytes; i++) {
+        target[i] = source[i];
+    }
+    return 0;
 }

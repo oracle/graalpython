@@ -46,24 +46,23 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
         return -1;
     }
     int idx = 0;
-    void* mod_w = to_java(mod);
     PyMethodDef def = methods[idx];
     while (def.ml_name != NULL) {
-        truffle_invoke(PY_TRUFFLE_CEXT,
+        polyglot_invoke(PY_TRUFFLE_CEXT,
                        "AddFunction",
-                       mod_w,
-                       truffle_read_string((const char*)(def.ml_name)),
-                       truffle_address_to_function(def.ml_meth),
-                       truffle_address_to_function(get_method_flags_cwrapper(def.ml_flags)),
+                       native_to_java(mod),
+                       polyglot_from_string((const char*)(def.ml_name), SRC_CS),
+                       def.ml_meth,
+                       get_method_flags_cwrapper(def.ml_flags),
                        get_method_flags_wrapper(def.ml_flags),
-                       truffle_read_string((const char*)(def.ml_doc ? def.ml_doc : "")));
+                       polyglot_from_string((const char*)(def.ml_doc ? def.ml_doc : ""), SRC_CS));
         def = methods[++idx];
     }
     return 0;
 }
 
 int PyModule_SetDocString(PyObject* m, const char* doc) {
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyModule_SetDocString", to_java(m), truffle_read_string(doc));
+    UPCALL_CEXT_VOID("PyModule_SetDocString", native_to_java(m), polyglot_from_string(doc, SRC_CS));
     return 0;
 }
 
@@ -75,7 +74,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         return NULL;
     }
 
-    PyObject* mod = to_sulong(truffle_invoke(PY_TRUFFLE_CEXT, "_PyModule_CreateInitialized_PyModule_New", truffle_read_string(moduledef->m_name)));
+    PyModuleObject* mod = polyglot_as_PyModuleObject(UPCALL_CEXT_O("_PyModule_CreateInitialized_PyModule_New", polyglot_from_string(moduledef->m_name, SRC_CS)));
 
     if (moduledef->m_size > 0) {
         void* md_state = PyMem_MALLOC(moduledef->m_size);
@@ -84,32 +83,32 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
             return NULL;
         }
         memset(md_state, 0, moduledef->m_size);
-        truffle_write(to_java(mod), "md_state", md_state);
+        mod->md_state = md_state;
     }
 
     if (moduledef->m_methods != NULL) {
-        if (PyModule_AddFunctions(mod, moduledef->m_methods) != 0) {
+        if (PyModule_AddFunctions((PyObject*) mod, moduledef->m_methods) != 0) {
             return NULL;
         }
     }
 
     if (moduledef->m_doc != NULL) {
-        if (PyModule_SetDocString(mod, moduledef->m_doc) != 0) {
+        if (PyModule_SetDocString((PyObject*) mod, moduledef->m_doc) != 0) {
             return NULL;
         }
     }
 
-    truffle_write(to_java(mod), "md_def", moduledef);
-    return mod;
+    mod->md_def = moduledef;
+    return (PyObject*) mod;
 }
 
 int PyModule_AddObject(PyObject* m, const char* k, PyObject* v) {
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyModule_AddObject", to_java(m), truffle_read_string(k), to_java(v));
+    UPCALL_CEXT_VOID("PyModule_AddObject", native_to_java(m), polyglot_from_string(k, SRC_CS), native_to_java(v));
     return 0;
 }
 
 int PyModule_AddIntConstant(PyObject* m, const char* k, long constant) {
-    truffle_invoke(PY_TRUFFLE_CEXT, "PyModule_AddObject", to_java(m), truffle_read_string(k), constant);
+    UPCALL_CEXT_VOID("PyModule_AddObject", native_to_java(m), polyglot_from_string(k, SRC_CS), PyLong_FromLong(constant));
     return 0;
 }
 
@@ -122,5 +121,5 @@ PyObject* PyModule_GetDict(PyObject* o) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    return ((PyModuleObject*)polyglot_as_PyModuleObject(o))->md_dict;
+    return (polyglot_as_PyModuleObject(o))->md_dict;
 }

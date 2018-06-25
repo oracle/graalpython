@@ -143,7 +143,7 @@ class TestPyUnicode(CPyExtTestCase):
             ("hellö",),
         ),
         code="""#include <unicodeobject.h>
- 
+
         PyObject* wrap_PyUnicode_FromUnicode(PyObject* strObj) {
             Py_UNICODE* wchars;
             Py_ssize_t n;
@@ -335,5 +335,63 @@ class TestPyUnicode(CPyExtTestCase):
         resultspec="n",
         argspec='O',
         arguments=["PyObject* o"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_AsUnicode = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            ("hello", b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00', b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
+        ),
+        code=""" PyObject* wrap_PyUnicode_AsUnicode(PyObject* unicodeObj, PyObject* expected_16, PyObject* expected_32) {
+            Py_ssize_t n = Py_UNICODE_SIZE == 2 ? PyBytes_Size(expected_16) : PyBytes_Size(expected_32);
+            char* actual_bytes = (char*) PyUnicode_AsUnicode(unicodeObj);
+            char* expected_bytes = Py_UNICODE_SIZE == 2 ? PyBytes_AsString(expected_16) : PyBytes_AsString(expected_32);
+            Py_ssize_t i;
+            for (i=0; i < n; i++) {
+                if (actual_bytes[i] != expected_bytes[i]) {
+                    PyErr_Format(PyExc_ValueError, "invalid byte at %d: expected '%c', but was '%c'", i, expected_bytes[i], actual_bytes[i]);
+                    return NULL;
+                }
+            }
+            return Py_True;
+        }
+        """,
+        resultspec="O",
+        argspec='OOO',
+        arguments=["PyObject* unicodeObj", "PyObject* expected_16", "PyObject* expected_32"],
+        callfunction="wrap_PyUnicode_AsUnicode",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_AsUnicodeAndSize = CPyExtFunction(
+        lambda args: True,
+        lambda: (
+            ("hello", b'\x68\x00\x65\x00\x6c\x00\x6c\x00\x6f\x00', b"\x68\x00\x00\x00\x65\x00\x00\x00\x6c\x00\x00\x00\x6c\x00\x00\x00\x6f\x00\x00\x00"),
+        ),
+        code=""" PyObject* wrap_PyUnicode_AsUnicodeAndSize(PyObject* unicodeObj, PyObject* expected_16, PyObject* expected_32) {
+            Py_ssize_t n = Py_UNICODE_SIZE == 2 ? PyBytes_Size(expected_16) : PyBytes_Size(expected_32);
+            Py_ssize_t expected_n = n / Py_UNICODE_SIZE;
+            Py_ssize_t actual_n = 0;
+            char* actual_bytes = (char*) PyUnicode_AsUnicodeAndSize(unicodeObj, &actual_n);
+            char* expected_bytes = Py_UNICODE_SIZE == 2 ? PyBytes_AsString(expected_16) : PyBytes_AsString(expected_32);
+            Py_ssize_t i;
+            if (expected_n != actual_n) {
+                PyErr_Format(PyExc_ValueError, "invalid size: expected '%ld', but was '%ld'", expected_n, actual_n);
+                return NULL;
+            }
+            for (i=0; i < n; i++) {
+                if (actual_bytes[i] != expected_bytes[i]) {
+                    PyErr_Format(PyExc_ValueError, "invalid byte at %d: expected '%c', but was '%c'", i, expected_bytes[i], actual_bytes[i]);
+                    return NULL;
+                }
+            }
+            return Py_True;
+        }
+        """,
+        resultspec="O",
+        argspec='OOO',
+        arguments=["PyObject* unicodeObj", "PyObject* expected_16", "PyObject* expected_32"],
+        callfunction="wrap_PyUnicode_AsUnicodeAndSize",
         cmpfunc=unhandled_error_compare
     )

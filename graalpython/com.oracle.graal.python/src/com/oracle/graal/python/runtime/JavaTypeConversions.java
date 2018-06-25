@@ -39,7 +39,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class JavaTypeConversions {
 
-    @TruffleBoundary
+    @TruffleBoundary(transferToInterpreterOnException = false)
     public static Object stringToInt(String num, int base) {
         if ((base >= 2 && base <= 32) || base == 0) {
             BigInteger bi = asciiToBigInteger(num, 10, false);
@@ -78,7 +78,7 @@ public class JavaTypeConversions {
         }
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(transferToInterpreterOnException = false)
     public static Object toInt(Object arg) {
         if (arg instanceof Integer || arg instanceof BigInteger) {
             return arg;
@@ -125,7 +125,7 @@ public class JavaTypeConversions {
     }
 
     // Copied directly from Jython
-    @TruffleBoundary
+    @TruffleBoundary(transferToInterpreterOnException = false)
     private static BigInteger asciiToBigInteger(String str, int possibleBase, boolean isLong) {
         int base = possibleBase;
         int b = 0;
@@ -246,7 +246,7 @@ public class JavaTypeConversions {
     }
 
     // Taken from Jython PyString's __complex__() method
-    @TruffleBoundary
+    @TruffleBoundary(transferToInterpreterOnException = false)
     public static PComplex convertStringToComplex(String str, PythonClass cls, PythonObjectFactory factory) {
         boolean gotRe = false;
         boolean gotIm = false;

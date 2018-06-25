@@ -36,19 +36,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+package com.oracle.graal.python.nodes.function;
 
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.ImportStatic;
 
-PyTypeObject PyFloat_Type = PY_TRUFFLE_TYPE("float", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyFloatObject));
-
-double PyFloat_AsDouble(PyObject *op) {
-    if (op == NULL) {
-        PyErr_BadArgument();
-        return -1.0;
-    }
-    return UPCALL_CEXT_D("PyFloat_AsPrimitive", native_to_java(op));
-}
-
-PyObject* PyFloat_FromDouble(double fval) {
-    return polyglot_as_PyFloatObject(UPCALL_CEXT_O("PyFloat_FromDouble", fval));
+@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
+public abstract class PythonBuiltinBaseNode extends PBaseNode {
 }

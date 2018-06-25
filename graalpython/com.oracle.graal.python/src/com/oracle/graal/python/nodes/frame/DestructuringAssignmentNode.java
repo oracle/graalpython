@@ -76,7 +76,7 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
         for (int i = 0; i < slots.size(); i++) {
             this.slots[i] = (WriteNode) slots.get(i).makeWriteNode(null);
         }
-        this.lenNode = starredIndex == -1 ? null : BuiltinFunctionsFactory.LenNodeFactory.create(null);
+        this.lenNode = starredIndex == -1 ? null : BuiltinFunctionsFactory.LenNodeFactory.create();
     }
 
     public static PNode create(PNode rhs, List<ReadNode> slots, int starredIndex, PNode[] assignments) {

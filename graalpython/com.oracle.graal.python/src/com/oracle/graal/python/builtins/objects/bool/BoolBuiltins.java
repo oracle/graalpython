@@ -25,15 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.bool;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -41,35 +34,34 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 @CoreFunctions(extendClasses = Boolean.class)
 public final class BoolBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BoolBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = __STR__, fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonBuiltinNode {
         @Specialization
-        public Object str(boolean self) {
-            return self ? "True" : "False";
+        public Object doLong(long self) {
+            return self == 1 ? "True" : "False";
         }
 
         @Specialization
-        public Object str(PInt self) {
+        public Object doPInt(PInt self) {
             return self.getValue() == BigInteger.ZERO ? "False" : "True";
         }
     }
@@ -79,104 +71,4 @@ public final class BoolBuiltins extends PythonBuiltins {
     abstract static class RepNode extends StrNode {
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean eq(boolean left, boolean right) {
-            return left == right;
-        }
-
-        @TruffleBoundary
-        @Specialization
-        boolean eq(PInt left, PInt right) {
-            return left.getValue().equals(right.getValue());
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __AND__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class AndNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        protected boolean doBB(boolean left, boolean right) {
-            return left & right;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __OR__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class OrNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        protected boolean doBB(boolean left, boolean right) {
-            return left | right;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __XOR__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class XorNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        protected boolean op(boolean left, boolean right) {
-            return left ^ right;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object doGeneric(Object left, Object right) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __INT__, fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    abstract static class IntNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        int op(boolean self) {
-            return self ? 1 : 0;
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
-    @Builtin(name = __INDEX__, fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    abstract static class IndexNode extends IntNode {
-    }
-
-    @Builtin(name = __FLOAT__, fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    abstract static class FloatNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        double op(boolean self) {
-            return self ? 1.0 : 0.0;
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
 }

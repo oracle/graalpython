@@ -105,12 +105,12 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
     public String toString() {
         StringBuilder buf = new StringBuilder("(");
         for (int i = 0; i < array.length - 1; i++) {
-            buf.append(toString(array[i]));
+            buf.append(array[i]);
             buf.append(", ");
         }
 
         if (array.length > 0) {
-            buf.append(toString(array[array.length - 1]));
+            buf.append(array[array.length - 1]);
         }
 
         if (array.length == 1) {

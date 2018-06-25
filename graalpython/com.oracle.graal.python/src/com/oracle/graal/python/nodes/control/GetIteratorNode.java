@@ -92,11 +92,7 @@ public abstract class GetIteratorNode extends UnaryOpNode {
 
     @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doPRange(PRange value) {
-        if (value.getStep() > 0) {
-            return factory().createRangeIterator(value);
-        } else {
-            return factory().createRangeReverseIterator(value.getStart(), value.getStop(), -value.getStep());
-        }
+        return factory().createRangeIterator(value.getStart(), value.getStop(), value.getStep());
     }
 
     @Specialization(guards = "iterCannotBeOverridden(value)")
@@ -148,11 +144,6 @@ public abstract class GetIteratorNode extends UnaryOpNode {
     @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doPZip(PZip value) {
         return value;
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(range)")
-    public PythonObject doRange(PRange range) {
-        return factory().createRangeIterator(range);
     }
 
     @Specialization(guards = {"!isNoValue(value)"})

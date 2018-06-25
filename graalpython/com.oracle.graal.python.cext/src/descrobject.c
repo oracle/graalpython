@@ -46,8 +46,10 @@ typedef struct {
 
 PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(mappingproxyobject));
 
+POLYGLOT_DECLARE_TYPE(mappingproxyobject);
+
 /* Dicts */
 PyObject* PyDictProxy_New(PyObject *mapping) {
-    return truffle_invoke(PY_TRUFFLE_CEXT, "PyDictProxy_New", to_java(mapping));
+    return (PyObject*) polyglot_as_mappingproxyobject(UPCALL_CEXT_O("PyDictProxy_New", native_to_java(mapping)));
 }
 

@@ -29,12 +29,14 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.nodes.RootNode;
 
-public class PBuiltinFunction extends PythonBuiltinObject implements PythonCallable {
+public final class PBuiltinFunction extends PythonBuiltinObject implements PythonCallable {
 
     @CompilationFinal private String name;
     private final RootCallTarget callTarget;
@@ -57,10 +59,10 @@ public class PBuiltinFunction extends PythonBuiltinObject implements PythonCalla
         return callTarget.getRootNode();
     }
 
-    public PythonBuiltinNode getBuiltinNode() {
+    public NodeFactory<? extends PythonBuiltinBaseNode> getBuiltinNodeFactory() {
         RootNode functionRootNode = getFunctionRootNode();
         if (functionRootNode instanceof BuiltinFunctionRootNode) {
-            return ((BuiltinFunctionRootNode) functionRootNode).getBody();
+            return ((BuiltinFunctionRootNode) functionRootNode).getFactory();
         } else {
             return null;
         }
@@ -87,6 +89,7 @@ public class PBuiltinFunction extends PythonBuiltinObject implements PythonCalla
 
     @Override
     public String toString() {
-        return "<built-in function " + name + ">";
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("<built-in function %s>", name);
     }
 }

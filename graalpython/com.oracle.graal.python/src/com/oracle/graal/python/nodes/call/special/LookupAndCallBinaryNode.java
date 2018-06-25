@@ -156,8 +156,8 @@ public abstract class LookupAndCallBinaryNode extends PNode {
         Object attribute = getCore().lookupType(PythonBuiltinClassType.fromClass(receiver.getClass())).getAttribute(name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
-            if (builtinFunction.getBuiltinNode() instanceof PythonBinaryBuiltinNode) {
-                return (PythonBinaryBuiltinNode) builtinFunction.getBuiltinNode().emptyCopy();
+            if (PythonBinaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
+                return (PythonBinaryBuiltinNode) builtinFunction.getBuiltinNodeFactory().createNode();
             }
         }
         return null;
