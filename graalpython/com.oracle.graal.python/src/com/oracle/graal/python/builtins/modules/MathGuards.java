@@ -50,11 +50,19 @@ public class MathGuards {
         return Long.MIN_VALUE <= value && value <= Long.MAX_VALUE;
     }
 
+    public static boolean fitInt(double value) {
+        return Integer.MIN_VALUE <= value && value <= Integer.MAX_VALUE;
+    }
+
     public static boolean isNumber(Object value) {
         return isInteger(value) || value instanceof Float || value instanceof Double || value instanceof PFloat;
     }
 
     public static boolean isInteger(Object value) {
         return value instanceof Integer || value instanceof Long || value instanceof PInt || value instanceof Boolean;
+    }
+
+    public static boolean isFloat(Object value) {
+        return value instanceof Double || value instanceof PFloat;
     }
 }

@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PDoubleArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntArrayIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
@@ -606,16 +607,14 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PSequenceReverseIterator(cls, sequence, lengthHint));
     }
 
-    public PRangeIterator createRangeIterator(PRange range) {
-        return trace(new PRangeIterator(lookupClass(PythonBuiltinClassType.PRangeIterator), range));
-    }
-
-    public PRangeReverseIterator createRangeReverseIterator(PRange range) {
-        return trace(new PRangeReverseIterator(lookupClass(PythonBuiltinClassType.PRangeReverseIterator), range));
-    }
-
-    public PRangeReverseIterator createRangeReverseIterator(int start, int stop, int step) {
-        return trace(new PRangeReverseIterator(lookupClass(PythonBuiltinClassType.PRangeReverseIterator), start, stop, step));
+    public PIntegerIterator createRangeIterator(int start, int stop, int step) {
+        PIntegerIterator object;
+        if (step > 0) {
+            object = new PRangeIterator(lookupClass(PythonBuiltinClassType.PRangeIterator), start, stop, step);
+        } else {
+            object = new PRangeReverseIterator(lookupClass(PythonBuiltinClassType.PRangeReverseIterator), start, stop, -step);
+        }
+        return trace(object);
     }
 
     public PIntArrayIterator createIntArrayIterator(PIntArray array) {

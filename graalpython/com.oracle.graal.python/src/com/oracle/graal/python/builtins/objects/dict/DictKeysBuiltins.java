@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -52,7 +53,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class DictKeysBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DictKeysBuiltinsFactory.getFactories();
     }
 
@@ -79,7 +80,7 @@ public final class DictKeysBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class ContainsNode extends PythonUnaryBuiltinNode {
+    public abstract static class ContainsNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getDict().size() == 0")
         boolean runEmpty(PDictKeysView self, Object key) {

@@ -27,6 +27,8 @@ package com.oracle.graal.python.builtins;
 
 import java.util.HashMap;
 
+import com.oracle.truffle.api.CompilerAsserts;
+
 public enum PythonBuiltinClassType {
 
     TruffleObject(com.oracle.truffle.api.interop.TruffleObject.class, "truffle_object"),
@@ -109,6 +111,7 @@ public enum PythonBuiltinClassType {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return shortName;
     }
 

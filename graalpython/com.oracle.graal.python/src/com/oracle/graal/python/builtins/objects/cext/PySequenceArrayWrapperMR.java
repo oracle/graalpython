@@ -155,11 +155,11 @@ public class PySequenceArrayWrapperMR {
         }
 
         protected static ListBuiltins.GetItemNode createListGetItem() {
-            return ListBuiltinsFactory.GetItemNodeFactory.create(null);
+            return ListBuiltinsFactory.GetItemNodeFactory.create();
         }
 
         protected static TupleBuiltins.GetItemNode createTupleGetItem() {
-            return TupleBuiltinsFactory.GetItemNodeFactory.create(null);
+            return TupleBuiltinsFactory.GetItemNodeFactory.create();
         }
 
         protected boolean isTuple(Object object) {
@@ -201,7 +201,7 @@ public class PySequenceArrayWrapperMR {
         }
 
         protected static ListBuiltins.SetItemNode createListSetItem() {
-            return ListBuiltinsFactory.SetItemNodeFactory.create(null);
+            return ListBuiltinsFactory.SetItemNodeFactory.create();
         }
 
         public static WriteArrayItemNode create() {

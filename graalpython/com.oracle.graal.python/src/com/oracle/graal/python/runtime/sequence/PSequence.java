@@ -25,15 +25,10 @@
  */
 package com.oracle.graal.python.runtime.sequence;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -65,22 +60,6 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
     public abstract SequenceStorage getSequenceStorage();
 
     public abstract boolean lessThan(PSequence sequence);
-
-    public static String toString(Object item) {
-        if (item == null) {
-            return "(null)";
-        } else if (item instanceof String) {
-            return "'" + item.toString() + "'";
-        } else if (item instanceof Boolean) {
-            return ((boolean) item ? "True" : "False");
-        } else if (item instanceof PythonObject) {
-            return PythonBuiltinNode.callAttributeSlowPath((PythonObject) item, __REPR__);
-        } else if (item instanceof Double) {
-            return JavaTypeConversions.doubleToString((double) item);
-        } else {
-            return item.toString();
-        }
-    }
 
     public static PSequence require(Object value) {
         if (value instanceof PSequence) {

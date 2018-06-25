@@ -54,14 +54,14 @@ public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
 
     public abstract Object execute(Object callable, Object arg1, int arg2, Object arg3);
 
-    @Specialization(guards = {"isTernary(func)", "func == cachedFunc"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object call(@SuppressWarnings("unused") PBuiltinFunction func, Object arg1, int arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
         return builtinNode.execute(arg1, arg2, arg3);
     }
 
-    @Specialization(guards = {"isTernary(func)", "func == cachedFunc"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object call(@SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {

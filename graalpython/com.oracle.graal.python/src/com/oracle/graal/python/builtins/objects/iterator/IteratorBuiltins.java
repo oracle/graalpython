@@ -39,14 +39,16 @@ import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeRe
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PSequenceIterator.class)
 public class IteratorBuiltins extends PythonBuiltins {
@@ -57,7 +59,7 @@ public class IteratorBuiltins extends PythonBuiltins {
      */
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IteratorBuiltinsFactory.getFactories();
     }
 
@@ -145,9 +147,11 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isPSequence()")
-        public Object next(PSequenceIterator self) {
-            if (!self.stopIterationReached && self.index < self.getPSequence().len()) {
-                return self.getPSequence().getItem(self.index++);
+        public Object next(PSequenceIterator self,
+                        @Cached("createClassProfile()") ValueProfile sequenceProfile) {
+            PSequence sequence = sequenceProfile.profile(self.getPSequence());
+            if (!self.stopIterationReached && self.index < sequence.len()) {
+                return sequence.getItem(self.index++);
             }
             self.stopIterationReached = true;
             throw raise(StopIteration);

@@ -70,6 +70,10 @@ public abstract class PBaseNode extends Node {
         return core;
     }
 
+    public final NodeFactory getNodeFactory() {
+        return getCore().getLanguage().getNodeFactory();
+    }
+
     public final PException raise(PythonErrorType type) {
         throw getCore().raise(type, this);
     }

@@ -86,7 +86,7 @@ public abstract class ListNodes {
         public abstract PList execute(PythonClass cls, Object iterable);
 
         @Specialization
-        public PList executeGeneric(PythonClass cls, Object iterator,
+        public PList create(PythonClass cls, Object iterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             PList list = factory().createList(cls);

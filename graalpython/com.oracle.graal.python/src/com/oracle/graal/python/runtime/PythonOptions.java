@@ -62,10 +62,10 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(20);
+    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(4);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(20);
+    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(4);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);
@@ -100,8 +100,8 @@ public final class PythonOptions {
     @Option(category = OptionCategory.USER, help = "") //
     public static final OptionKey<Boolean> InspectFlag = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.") public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(
-                    false);
+    @Option(category = OptionCategory.USER, help = "Remove assert statements and any code conditional on the value of __debug__.") //
+    public static final OptionKey<Boolean> PythonOptimizeFlag = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "Turn on verbose mode") //
     public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);

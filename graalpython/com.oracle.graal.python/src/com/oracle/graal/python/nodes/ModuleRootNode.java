@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -55,6 +56,7 @@ public class ModuleRootNode extends PClosureRootNode {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return "<module '" + name + "'>";
     }
 

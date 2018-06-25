@@ -129,6 +129,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -152,7 +153,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class BuiltinConstructors extends PythonBuiltins {
 
     @Override
-    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BuiltinConstructorsFactory.getFactories();
     }
 
@@ -353,8 +354,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
         @Specialization
-        public PythonObject reversed(@SuppressWarnings("unused") PythonClass cls, PRange range) {
-            return factory().createRangeReverseIterator(range);
+        public PythonObject reversed(@SuppressWarnings("unused") PythonClass cls, PRange range,
+                        @Cached("createBinaryProfile()") ConditionProfile stepOneProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile stepMinusOneProfile) {
+            int stop;
+            int start;
+            int step = range.getStep();
+            if (stepOneProfile.profile(step == 1)) {
+                start = range.getStop() - 1;
+                stop = range.getStart() - 1;
+                step = -1;
+            } else if (stepMinusOneProfile.profile(step == -1)) {
+                start = range.getStop() + 1;
+                stop = range.getStart() + 1;
+                step = 1;
+            } else {
+                assert step != 0;
+                long delta = (range.getStop() - (long) range.getStart() - (step > 0 ? -1 : 1)) / step * step;
+                start = (int) (range.getStart() + delta);
+                stop = range.getStart() - step;
+                step = -step;
+            }
+            return factory().createRangeIterator(start, stop, step);
         }
 
         @Specialization
@@ -798,7 +819,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
         @Override
-        public final Object execute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public final Object varArgExecute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return execute(PNone.NO_VALUE, arguments, keywords);
         }
 

@@ -32,6 +32,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivi
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -41,9 +42,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -61,13 +62,12 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.math.MathContext;
 
 @CoreFunctions(defineModule = "math")
 public class MathModuleBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return MathModuleBuiltinsFactory.getFactories();
     }
 
@@ -152,7 +152,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         public static SqrtNode create() {
-            return MathModuleBuiltinsFactory.SqrtNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.SqrtNodeFactory.create();
         }
     }
 
@@ -199,10 +199,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public int ceil(boolean value) {
-            if (value) {
-                return 1;
-            }
-            return 0;
+            return value ? 1 : 0;
         }
 
         @Specialization
@@ -211,10 +208,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
             Object result = dispatchCeil.executeObject(value);
             if (PNone.NO_VALUE.equals(result)) {
-                if (value.getValue() <= Long.MAX_VALUE) {
-                    result = Math.ceil(value.getValue());
+                if (MathGuards.fitLong(value.getValue())) {
+                    return ceilLong(value.getValue());
                 } else {
-                    result = factory().createInt(BigDecimal.valueOf(Math.ceil(value.getValue())).toBigInteger());
+                    return ceil(value.getValue());
                 }
             }
             return result;
@@ -744,7 +741,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static IsNanNode create() {
-            return MathModuleBuiltinsFactory.IsNanNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.IsNanNodeFactory.create();
         }
     }
 
@@ -939,7 +936,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static AcosNode create() {
-            return MathModuleBuiltinsFactory.AcosNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.AcosNodeFactory.create();
         }
     }
 
@@ -992,7 +989,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static AcoshNode create() {
-            return MathModuleBuiltinsFactory.AcoshNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.AcoshNodeFactory.create();
         }
     }
 
@@ -1038,7 +1035,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static AsinNode create() {
-            return MathModuleBuiltinsFactory.AsinNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.AsinNodeFactory.create();
         }
     }
 
@@ -1078,7 +1075,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static CosNode create() {
-            return MathModuleBuiltinsFactory.CosNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.CosNodeFactory.create();
         }
     }
 
@@ -1123,7 +1120,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static CoshNode create() {
-            return MathModuleBuiltinsFactory.CoshNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.CoshNodeFactory.create();
         }
     }
 
@@ -1163,7 +1160,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static SinNode create() {
-            return MathModuleBuiltinsFactory.SinNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.SinNodeFactory.create();
         }
     }
 
@@ -1208,7 +1205,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static SinhNode create() {
-            return MathModuleBuiltinsFactory.SinhNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.SinhNodeFactory.create();
         }
     }
 
@@ -1248,7 +1245,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static TanNode create() {
-            return MathModuleBuiltinsFactory.TanNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.TanNodeFactory.create();
         }
     }
 
@@ -1288,7 +1285,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static TanhNode create() {
-            return MathModuleBuiltinsFactory.TanhNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.TanhNodeFactory.create();
         }
     }
 
@@ -1328,7 +1325,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static AtanNode create() {
-            return MathModuleBuiltinsFactory.AtanNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.AtanNodeFactory.create();
         }
     }
 
@@ -1375,7 +1372,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static AtanhNode create() {
-            return MathModuleBuiltinsFactory.AtanhNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.AtanhNodeFactory.create();
         }
     }
 
@@ -1419,7 +1416,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static AsinhNode create() {
-            return MathModuleBuiltinsFactory.AsinhNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.AsinhNodeFactory.create();
         }
     }
 
@@ -1458,7 +1455,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static IsFiniteNode create() {
-            return MathModuleBuiltinsFactory.IsFiniteNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.IsFiniteNodeFactory.create();
         }
     }
 
@@ -1497,7 +1494,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected static IsInfNode create() {
-            return MathModuleBuiltinsFactory.IsInfNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.IsInfNodeFactory.create();
         }
     }
 
@@ -1505,7 +1502,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class LogNode extends PythonUnaryBuiltinNode {
+    public abstract static class LogNode extends PythonBinaryBuiltinNode {
 
         @Child private LookupAndCallUnaryNode valueDispatchNode;
         @Child private LookupAndCallUnaryNode baseDispatchNode;
@@ -1717,13 +1714,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         public static LogNode create() {
-            return MathModuleBuiltinsFactory.LogNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.LogNodeFactory.create();
         }
     }
 
     @Builtin(name = "fabs", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class fabsNode extends PythonBuiltinNode {
+    public abstract static class FabsNode extends PythonBuiltinNode {
 
         @Specialization
         public double fabs(int value) {
@@ -1878,7 +1875,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         public static PowNode create() {
-            return MathModuleBuiltinsFactory.PowNodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.PowNodeFactory.create();
         }
     }
 
@@ -1968,7 +1965,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         protected Atan2Node create() {
-            return MathModuleBuiltinsFactory.Atan2NodeFactory.create(new PNode[0]);
+            return MathModuleBuiltinsFactory.Atan2NodeFactory.create();
         }
     }
 }
