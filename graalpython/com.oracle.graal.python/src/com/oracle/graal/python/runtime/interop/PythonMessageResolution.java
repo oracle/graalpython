@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
@@ -45,6 +47,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -60,6 +63,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
@@ -444,8 +448,78 @@ public class PythonMessageResolution {
 
     @Resolve(message = "HAS_SIZE")
     abstract static class PForeignHasSizeNode extends Node {
+        @Child private IsSequenceNode isSequenceNode;
+        @Child private IsMappingNode isMappingNode;
+        @Child private BuiltinFunctions.LenNode lenNode;
+        @Child private PTypeUnboxNode unboxNode;
+        @Child private LookupAndCallBinaryNode callGetItemNode;
+
+        private final ValueProfile profile = ValueProfile.createClassProfile();
+
         public Object access(Object object) {
-            return object instanceof PSequence;
+            Object profiled = profile.profile(object);
+            // A sequence object always has a size even if there is no '__len__' attribute. This is,
+            // e.g., the case for 'array'.
+            if (profiled instanceof PSequence) {
+                return true;
+            }
+            if (profiled instanceof PHashingCollection) {
+                return false;
+            }
+            if (getIsSequenceNode().execute(profiled) && !getIsMappingNode().execute(profiled)) {
+                // also try to access using an integer index
+                int len = (int) getUnboxNode().execute(getLenNode().executeWith(profiled));
+                if (len > 0) {
+                    try {
+                        getCallGetItemNode().executeObject(profiled, 0);
+                        return true;
+                    } catch (PException e) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private BuiltinFunctions.LenNode getLenNode() {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
+            }
+            return lenNode;
+        }
+
+        private PTypeUnboxNode getUnboxNode() {
+            if (unboxNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                unboxNode = insert(PTypeUnboxNode.create());
+            }
+            return unboxNode;
+        }
+
+        private LookupAndCallBinaryNode getCallGetItemNode() {
+            if (callGetItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callGetItemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__));
+            }
+            return callGetItemNode;
+        }
+
+        private IsSequenceNode getIsSequenceNode() {
+            if (isSequenceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSequenceNode = insert(IsSequenceNode.create());
+            }
+            return isSequenceNode;
+        }
+
+        private IsMappingNode getIsMappingNode() {
+            if (isMappingNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isMappingNode = insert(IsMappingNode.create());
+            }
+            return isMappingNode;
         }
     }
 
@@ -453,10 +527,11 @@ public class PythonMessageResolution {
     abstract static class PForeignGetSizeNode extends Node {
         @Child IsSequenceNode isSeq = IsSequenceNode.create();
         @Child private BuiltinFunctions.LenNode lenNode = BuiltinFunctionsFactory.LenNodeFactory.create();
+        @Child private PTypeUnboxNode unboxNode = PTypeUnboxNode.create();
 
         public Object access(Object object) {
             if (isSeq.execute(object)) {
-                return lenNode.executeWith(object);
+                return unboxNode.execute(lenNode.executeWith(object));
             }
             throw UnsupportedMessageException.raise(Message.GET_SIZE);
         }
