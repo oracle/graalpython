@@ -34,6 +34,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 
 import java.util.List;
@@ -91,6 +92,18 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization
         public int len(PBaseSet self) {
             return self.size();
+        }
+    }
+
+    @Builtin(name = __REDUCE__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object iter(PBaseSet self) {
+            Object[] reduceTuple = new Object[]{PNone.NONE, PNone.NONE, PNone.NONE};
+            reduceTuple[0] = self.getPythonClass();
+            reduceTuple[1] = factory().createTuple(new Object[]{factory().createList(self.getDictStorage().keysAsArray())});
+            return factory().createTuple(reduceTuple);
         }
     }
 

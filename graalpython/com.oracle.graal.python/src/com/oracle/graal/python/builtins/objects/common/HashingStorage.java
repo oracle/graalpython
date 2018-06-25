@@ -234,7 +234,24 @@ public abstract class HashingStorage {
 
     public abstract Iterable<Object> keys();
 
+    private Object[] iteratorAsArray(Iterable<Object> iterable) {
+        Object[] items = new Object[this.length()];
+        int i = 0;
+        for(Object item: iterable) {
+            items[i++] = item;
+        }
+        return items;
+    }
+
+    public Object[] keysAsArray() {
+        return iteratorAsArray(keys());
+    }
+
     public abstract Iterable<Object> values();
+
+    public Object[] valuesAsArray() {
+        return iteratorAsArray(values());
+    }
 
     public abstract Iterable<DictEntry> entries();
 
