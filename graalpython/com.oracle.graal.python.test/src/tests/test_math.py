@@ -1216,3 +1216,26 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.radians, 'ahoj')
         self.ftest('radians(BIG_INT)', math.radians(BIG_INT), 1.7453279312865818e+29)
 
+    def testModf(self):
+        self.assertRaises(TypeError, math.modf)
+
+        def testmodf(name, result, expected):
+            (v1, v2), (e1, e2) = result, expected
+            if abs(v1-e1) > eps or abs(v2-e2):
+                self.fail('%s returned %r, expected %r'%\
+                          (name, result, expected))
+
+        testmodf('modf(1.5)', math.modf(1.5), (0.5, 1.0))
+        testmodf('modf(-1.5)', math.modf(-1.5), (-0.5, -1.0))
+
+        self.assertEqual(math.modf(INF), (0.0, INF))
+        self.assertEqual(math.modf(NINF), (-0.0, NINF))
+
+        modf_nan = math.modf(NAN)
+        self.assertTrue(math.isnan(modf_nan[0]))
+        self.assertTrue(math.isnan(modf_nan[1]))
+
+        # test of specializations
+        testmodf('modf(MyFloat())', math.modf(MyFloat()), (0.6, 0.0))
+        self.assertRaises(TypeError, math.modf, 'ahoj')
+        testmodf('modf(BIG_INT)', math.modf(BIG_INT), (0.0, 9.999992432902008e+30))

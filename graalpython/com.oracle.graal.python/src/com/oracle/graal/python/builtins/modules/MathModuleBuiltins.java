@@ -966,6 +966,43 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = "modf", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class ModfNode extends MathUnaryBuiltinNode {
+
+        @Specialization
+        public PTuple modfD(double value) {
+            if (!Double.isFinite(value)) {
+                if (Double.isInfinite(value)) {
+                    return factory().createTuple(new Object[]{Math.copySign(0., value), value});
+                } else if (Double.isNaN(value)) {
+                    return factory().createTuple(new Object[]{value, value});
+                }
+            }
+            double fraction = value % 1;
+            double integral = value - fraction;
+            return factory().createTuple(new Object[]{fraction, integral});
+        }
+
+        @Specialization
+        public PTuple modfL(long value) {
+            return modfD(value);
+        }
+
+        @Specialization
+        public PTuple frexpPI(PInt value) {
+            return modfD(value.doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public PTuple frexpO(Object value,
+                        @Cached("create()") ConvertToFloatNode convertToFloatNode) {
+            return modfD(convertToFloatNode.execute(value));
+        }
+    }
+
     @Builtin(name = "acos", fixedNumOfArguments = 1, doc = "Return the arc cosine (measured in radians) of x.")
     @GenerateNodeFactory
     public abstract static class AcosNode extends MathDoubleUnaryBuiltinNode {
