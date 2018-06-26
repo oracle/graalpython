@@ -1169,3 +1169,27 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.trunc, 1, 2)
         self.assertRaises(TypeError, math.trunc, TestNoTrunc())
 
+    def testDegrees(self):
+        self.assertRaises(TypeError, math.degrees)
+        self.ftest('degrees(pi)', math.degrees(math.pi), 180.0)
+        self.ftest('degrees(pi/2)', math.degrees(math.pi/2), 90.0)
+        self.ftest('degrees(-pi/4)', math.degrees(-math.pi/4), -45.0)
+        self.ftest('degrees(0)', math.degrees(0), 0)
+
+        # test of specializations
+        self.ftest('degrees(MyFloat())', math.degrees(MyFloat()), 34.37746770784939)
+        self.assertRaises(TypeError, math.degrees, 'ahoj')
+        self.ftest('degrees(BIG_INT)', math.degrees(BIG_INT), 5.729573615680451e+32)
+
+    def testRadians(self):
+        self.assertRaises(TypeError, math.radians)
+        self.ftest('radians(180)', math.radians(180), math.pi)
+        self.ftest('radians(90)', math.radians(90), math.pi/2)
+        self.ftest('radians(-45)', math.radians(-45), -math.pi/4)
+        self.ftest('radians(0)', math.radians(0), 0)
+
+        # test of specializations
+        self.ftest('radians(MyFloat())', math.radians(MyFloat()), 0.010471975511965976)
+        self.assertRaises(TypeError, math.radians, 'ahoj')
+        self.ftest('radians(BIG_INT)', math.radians(BIG_INT), 1.7453279312865818e+29)
+

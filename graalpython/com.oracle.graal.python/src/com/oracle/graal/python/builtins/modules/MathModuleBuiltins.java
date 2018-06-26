@@ -1689,4 +1689,28 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return atan2DD(convertLeftFloat.execute(left), convertRightFloat.execute(right));
         }
     }
+
+    @Builtin(name = "degrees", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class DegreesNode extends MathDoubleUnaryBuiltinNode {
+        private static final double RAD_TO_DEG = 180.0 / Math.PI;
+
+        @Override
+        @TruffleBoundary
+        public double count(double value) {
+            return value * RAD_TO_DEG;
+        }
+    }
+
+    @Builtin(name = "radians", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class RadiansNode extends MathDoubleUnaryBuiltinNode {
+        private static final double DEG_TO_RAD = Math.PI / 180.0;
+
+        @Override
+        @TruffleBoundary
+        public double count(double value) {
+            return value * DEG_TO_RAD;
+        }
+    }
 }
