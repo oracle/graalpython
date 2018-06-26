@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.generator;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -45,6 +46,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -171,6 +173,21 @@ public class GeneratorBuiltins extends PythonBuiltins {
             instance.setTraceback(tb);
             PArguments.setSpecialArgument(self.getArguments(), pException);
             return resumeGenerator(self);
+        }
+    }
+
+    @Builtin(name = "gi_code", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetCodeNode extends PythonBuiltinNode {
+        @Specialization(guards = {"isNoValue(none)"})
+        Object getCode(PGenerator self, @SuppressWarnings("unused") PNone none) {
+            return new PythonParseResult(self.getGeneratorRootNode(), getCore());
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        Object setCode(PGenerator self, PythonParseResult code) {
+            throw raise(NotImplementedError, "setting gi_code");
         }
     }
 }

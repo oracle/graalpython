@@ -168,3 +168,11 @@ class ExceptionTest(unittest.TestCase):
 
 if sys.version_info.minor == 4 and sys.version_info.micro < 3:
     del ExceptionTest
+
+
+def test_unboundlocalerror_gen():
+    def func(args):
+        args = (arg for arg in args)
+        return set(args)
+
+    assert func([1, 2, 3, 4]) == {1, 2, 3, 4}
