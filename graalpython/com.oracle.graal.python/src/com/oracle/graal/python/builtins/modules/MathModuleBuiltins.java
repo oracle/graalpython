@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -126,6 +127,50 @@ public class MathModuleBuiltins extends PythonBuiltins {
                 return (double) result;
             }
             throw raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
+        }
+    }
+
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    static abstract class ConvertToIntNode extends PBaseNode {
+
+        @Child private LookupAndCallUnaryNode callIndexNode;
+
+        abstract Object execute(Object x);
+
+        public static ConvertToIntNode create() {
+            return MathModuleBuiltinsFactory.ConvertToIntNodeGen.create();
+        }
+
+        @Specialization
+        public long toInt(long x) {
+            return x;
+        }
+
+        @Specialization
+        public PInt toInt(PInt x) {
+            return x;
+        }
+
+        @Specialization
+        public long toInt(double x) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization(guards = "!isNumber(x)")
+        public Object toInt(Object x) {
+            if (callIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
+            }
+            Object result = callIndexNode.executeObject(x);
+            if (result == PNone.NONE) {
+                throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+            }
+            if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
+                throw raise(TypeError, " __index__ returned non-int (type %p)", result);
+            }
+            return result;
         }
     }
 
@@ -1000,6 +1045,79 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public PTuple frexpO(Object value,
                         @Cached("create()") ConvertToFloatNode convertToFloatNode) {
             return modfD(convertToFloatNode.execute(value));
+        }
+    }
+
+    @Builtin(name = "gcd", fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class GcdNode extends PythonBinaryBuiltinNode {
+
+        private long count(long a, long b) {
+            if (b == 0) {
+                return a;
+            }
+            return count(b, a % b);
+        }
+
+        @Specialization
+        long gcd(long x, long y) {
+            return Math.abs(count(x, y));
+        }
+
+        @Specialization
+        PInt gcd(long x, PInt y) {
+            return factory().createInt(BigInteger.valueOf(x).gcd(y.getValue()));
+        }
+
+        @Specialization
+        PInt gcd(PInt x, long y) {
+            return factory().createInt(x.getValue().gcd(BigInteger.valueOf(y)));
+        }
+
+        @Specialization
+        PInt gcd(PInt x, PInt y) {
+            return factory().createInt(x.getValue().gcd(y.getValue()));
+        }
+
+        @Specialization
+        int gcd(double x, double y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization
+        int gcd(long x, double y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization
+        int gcd(double x, long y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization
+        int gcd(double x, PInt y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization
+        int gcd(PInt x, double y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization(guards = "!isNumber(x) || !isNumber(y)")
+        Object gcd(Object x, Object y,
+                        @Cached("create()") ConvertToIntNode xConvert,
+                        @Cached("create()") ConvertToIntNode yConvert,
+                        @Cached("create()") GcdNode recursiveNode) {
+            Object xValue = xConvert.execute(x);
+            Object yValue = yConvert.execute(y);
+            return recursiveNode.execute(xValue, yValue);
+        }
+
+        public static GcdNode create() {
+            return MathModuleBuiltinsFactory.GcdNodeFactory.create();
         }
     }
 

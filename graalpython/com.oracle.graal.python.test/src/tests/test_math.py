@@ -15,6 +15,12 @@ LONG_INT = 6227020800
 BIG_INT = 9999992432902008176640000999999
 FLOAT_MAX = sys.float_info.max
 
+class MyIndexable(object):
+    def __init__(self, value):
+        self.value = value
+    def __index__(self):
+        return self.value
+
 """ The next three methods are needed for testing factorials
 """
 def count_set_bits(n):
@@ -947,6 +953,54 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.factorial(13), 6227020800)
         self.assertEqual(math.factorial(30), 265252859812191058636308480000000)
         self.assertRaises(ValueError, math.factorial, -11.1)
+
+    def testGcd(self):
+        gcd = math.gcd
+        self.assertEqual(gcd(0, 0), 0)
+        self.assertEqual(gcd(1, 0), 1)
+        self.assertEqual(gcd(-1, 0), 1)
+        self.assertEqual(gcd(0, 1), 1)
+        self.assertEqual(gcd(0, -1), 1)
+        self.assertEqual(gcd(7, 1), 1)
+        self.assertEqual(gcd(7, -1), 1)
+        self.assertEqual(gcd(-23, 15), 1)
+        self.assertEqual(gcd(120, 84), 12)
+        self.assertEqual(gcd(84, -120), 12)
+        self.assertEqual(gcd(1216342683557601535506311712,
+                             436522681849110124616458784), 32)
+        c = 652560
+        x = 434610456570399902378880679233098819019853229470286994367836600566
+        y = 1064502245825115327754847244914921553977
+        a = x * c
+        b = y * c
+        self.assertEqual(gcd(a, b), c)
+        self.assertEqual(gcd(b, a), c)
+        self.assertEqual(gcd(-a, b), c)
+        self.assertEqual(gcd(b, -a), c)
+        self.assertEqual(gcd(a, -b), c)
+        self.assertEqual(gcd(-b, a), c)
+        self.assertEqual(gcd(-a, -b), c)
+        self.assertEqual(gcd(-b, -a), c)
+        c = 576559230871654959816130551884856912003141446781646602790216406874
+        a = x * c
+        b = y * c
+        self.assertEqual(gcd(a, b), c)
+        self.assertEqual(gcd(b, a), c)
+        self.assertEqual(gcd(-a, b), c)
+        self.assertEqual(gcd(b, -a), c)
+        self.assertEqual(gcd(a, -b), c)
+        self.assertEqual(gcd(-b, a), c)
+        self.assertEqual(gcd(-a, -b), c)
+        self.assertEqual(gcd(-b, -a), c)
+
+        self.assertRaises(TypeError, gcd, 120.0, 84)
+        self.assertRaises(TypeError, gcd, 120, 84.0)
+        self.assertEqual(gcd(MyIndexable(120), MyIndexable(84)), 12)
+
+        # test of specializations
+        self.assertRaises(TypeError, gcd, 120, MyIndexable(6.0))
+        self.assertRaises(TypeError, gcd, 'ahoj', 1)
+        self.assertEqual(gcd(MyIndexable(True), MyIndexable(84)), 1)
 
     def test_floor(self):
         class TestFloor:
