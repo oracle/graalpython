@@ -38,6 +38,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
@@ -134,11 +135,9 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
                 builder.append('_');
                 builder.append(country.toUpperCase());
 
-                String variant = locale.getVariant();
-                if (!variant.isEmpty()) {
-                    builder.append('.');
-                    builder.append(variant);
-                }
+                Charset charset = Charset.defaultCharset();
+                builder.append('.');
+                builder.append(charset.name());
             }
         } else {
             return null;
