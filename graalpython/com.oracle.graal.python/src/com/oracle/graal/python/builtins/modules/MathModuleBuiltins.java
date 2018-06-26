@@ -1713,4 +1713,69 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return value * DEG_TO_RAD;
         }
     }
+
+    @Builtin(name = "hypot", fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class HypotNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public double hypotDD(double x, double y) {
+            double result = Math.hypot(x, y);
+            if (Double.isInfinite(result) && Double.isFinite(x) && Double.isFinite(y)) {
+                throw raise(OverflowError, "math range error");
+            }
+            return result;
+        }
+
+        @Specialization
+        public double hypotDL(double x, long y) {
+            return hypotDD(x, y);
+        }
+
+        @Specialization
+        public double hypotLD(long x, double y) {
+            return hypotDD(x, y);
+        }
+
+        @Specialization
+        public double hypotLL(long x, long y) {
+            return hypotDD(x, y);
+        }
+
+        @Specialization
+        public double hypotDPI(double x, PInt y) {
+            return hypotDD(x, y.doubleValue());
+        }
+
+        @Specialization
+        public double hypotLPI(long x, PInt y) {
+            return hypotDD(x, y.doubleValue());
+        }
+
+        @Specialization
+        public double hypotPIPI(PInt x, PInt y) {
+            return hypotDD(x.doubleValue(), y.doubleValue());
+        }
+
+        @Specialization
+        public double hypotPID(PInt x, double y) {
+            return hypotDD(x.doubleValue(), y);
+        }
+
+        @Specialization
+        public double hypotPIL(PInt x, long y) {
+            return hypotDD(x.doubleValue(), y);
+        }
+
+        @Specialization(guards = "!isNumber(objectX) || !isNumber(objectY)")
+        public double hypotOO(Object objectX, Object objectY,
+                        @Cached("create()") ConvertToFloatNode xConvertNode,
+                        @Cached("create()") ConvertToFloatNode yConvertNode) {
+            return hypotDD(xConvertNode.execute(objectX), yConvertNode.execute(objectY));
+        }
+    }
+
 }

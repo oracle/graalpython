@@ -13,6 +13,7 @@ NINF = float('-inf')
 NAN = float('nan')
 LONG_INT = 6227020800
 BIG_INT = 9999992432902008176640000999999
+FLOAT_MAX = sys.float_info.max
 
 """ The next three methods are needed for testing factorials
 """
@@ -887,6 +888,28 @@ class MathTests(unittest.TestCase):
         self.ftest('atanh(MyFloat())', math.atanh(MyFloat()), 0.6931471805599453)
         self.assertRaises(TypeError, math.atanh, 'ahoj')
         self.assertRaises(ValueError, math.atanh, BIG_INT)
+
+    def testHypot(self):
+        self.assertRaises(TypeError, math.hypot)
+        self.ftest('hypot(0,0)', math.hypot(0,0), 0)
+        self.ftest('hypot(3,4)', math.hypot(3,4), 5)
+        self.assertEqual(math.hypot(NAN, INF), INF)
+        self.assertEqual(math.hypot(INF, NAN), INF)
+        self.assertEqual(math.hypot(NAN, NINF), INF)
+        self.assertEqual(math.hypot(NINF, NAN), INF)
+        self.assertRaises(OverflowError, math.hypot, FLOAT_MAX, FLOAT_MAX)
+        self.assertTrue(math.isnan(math.hypot(1.0, NAN)))
+        self.assertTrue(math.isnan(math.hypot(NAN, -2.0)))
+
+        self.assertEqual(math.hypot(NINF, 1), INF)
+        self.assertEqual(math.hypot(INF, 1), INF)
+        self.assertEqual(math.hypot(1, INF), INF)
+        self.assertEqual(math.hypot(1, NINF), INF)
+
+        self.ftest('math.hypot(MyFloat(), MyFloat())', math.hypot(MyFloat(), MyFloat()), 0.848528137423857)
+        self.ftest('math.hypot(BIG_INT, BIG_INT)', math.hypot(BIG_INT, BIG_INT), 1.4142124922238343e+31)
+        self.assertRaises(TypeError, math.hypot, 'ahoj', 1)
+        self.assertRaises(TypeError, math.hypot, 1, 'cau')
 
     def test_fabs(self):
         self.assertEqual(math.fabs(-1), 1)
