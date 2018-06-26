@@ -78,6 +78,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("pi", Math.PI);
         builtinConstants.put("e", Math.E);
         builtinConstants.put("tau", 2 * Math.PI);
+        builtinConstants.put("inf", Double.POSITIVE_INFINITY);
+        builtinConstants.put("nan", Double.NaN);
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
