@@ -96,8 +96,9 @@ public abstract class WithNode extends StatementNode {
                     @Cached("create()") IsCallableNode isExitCallableNode) {
 
         boolean gotException = false;
-        Object enterCallable = enterGetter.execute(withObject, "__enter__");
+        // CPython first looks up '__exit__
         Object exitCallable = exitGetter.execute(withObject, "__exit__");
+        Object enterCallable = enterGetter.execute(withObject, "__enter__");
 
         if (isCallableNode.execute(enterCallable)) {
             applyValues(frame, enterDispatch.executeCall(enterCallable, createArgs.execute(withObject), new PKeyword[0]));
@@ -109,7 +110,7 @@ public abstract class WithNode extends StatementNode {
             body.execute(frame);
         } catch (PException exception) {
             gotException = true;
-            return handleException(withObject, exception, isExitCallableNode);
+            return handleException(withObject, exitCallable, exception, isExitCallableNode);
         } finally {
             if (!gotException) {
                 if (isExitCallableNode.execute(exitCallable)) {
@@ -122,8 +123,7 @@ public abstract class WithNode extends StatementNode {
         return PNone.NONE;
     }
 
-    private Object handleException(PythonObject withObject, PException e, IsCallableNode isExitCallableNode) {
-        Object exitCallable = exitGetter.execute(withObject, "__exit__");
+    private Object handleException(PythonObject withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
         if (!isExitCallableNode.execute(exitCallable)) {
             throw raise(TypeError, "%p is not callable", exitCallable);
         }
