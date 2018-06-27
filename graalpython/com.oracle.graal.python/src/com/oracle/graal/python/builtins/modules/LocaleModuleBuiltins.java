@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -211,30 +212,36 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"category >= 0", "category <= 6"})
         @TruffleBoundary
         public Object setLocale(int category, @SuppressWarnings("unused") PNone posixLocaleID) {
-            Locale.Category displayCategory = Locale.Category.DISPLAY;
-            Locale.Category formatCategory = Locale.Category.FORMAT;
-
-            switch (category) {
-                case LC_COLLATE:
-                case LC_CTYPE:
-                case LC_MESSAGES:
-                    formatCategory = null;
-                    break;
-                case LC_MONETARY:
-                case LC_NUMERIC:
-                case LC_TIME:
-                    displayCategory = null;
-                    break;
-                case LC_ALL:
-                default:
-            }
-
             Locale defaultLocale;
-            if (displayCategory != null) {
-                defaultLocale = Locale.getDefault(displayCategory);
+            Locale.Category displayCategory = null;
+            Locale.Category formatCategory = null;
+            if (!TruffleOptions.AOT) {
+                displayCategory = Locale.Category.DISPLAY;
+                formatCategory = Locale.Category.FORMAT;
+
+                switch (category) {
+                    case LC_COLLATE:
+                    case LC_CTYPE:
+                    case LC_MESSAGES:
+                        formatCategory = null;
+                        break;
+                    case LC_MONETARY:
+                    case LC_NUMERIC:
+                    case LC_TIME:
+                        displayCategory = null;
+                        break;
+                    case LC_ALL:
+                    default:
+                }
+                if (displayCategory != null) {
+                    defaultLocale = Locale.getDefault(displayCategory);
+                } else {
+                    defaultLocale = Locale.getDefault(formatCategory);
+                }
             } else {
-                defaultLocale = Locale.getDefault(formatCategory);
+                defaultLocale = Locale.getDefault();
             }
+
             return toPosix(defaultLocale);
         }
 
@@ -242,31 +249,39 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"category >= 0", "category <= 6"})
         @TruffleBoundary
         public Object setLocale(int category, String posixLocaleID) {
-            Locale.Category displayCategory = Locale.Category.DISPLAY;
-            Locale.Category formatCategory = Locale.Category.FORMAT;
+            Locale.Category displayCategory = null;
+            Locale.Category formatCategory = null;
+            if (!TruffleOptions.AOT) {
+                displayCategory = Locale.Category.DISPLAY;
+                formatCategory = Locale.Category.FORMAT;
 
-            switch (category) {
-                case LC_COLLATE:
-                case LC_CTYPE:
-                case LC_MESSAGES:
-                    formatCategory = null;
-                    break;
-                case LC_MONETARY:
-                case LC_NUMERIC:
-                case LC_TIME:
-                    displayCategory = null;
-                    break;
-                case LC_ALL:
-                default:
+                switch (category) {
+                    case LC_COLLATE:
+                    case LC_CTYPE:
+                    case LC_MESSAGES:
+                        formatCategory = null;
+                        break;
+                    case LC_MONETARY:
+                    case LC_NUMERIC:
+                    case LC_TIME:
+                        displayCategory = null;
+                        break;
+                    case LC_ALL:
+                    default:
+                }
             }
 
             Locale newLocale = fromPosix(posixLocaleID);
             if (newLocale != null) {
-                if (displayCategory != null) {
-                    Locale.setDefault(displayCategory, newLocale);
-                }
-                if (formatCategory != null) {
-                    Locale.setDefault(formatCategory, newLocale);
+                if (!TruffleOptions.AOT) {
+                    if (displayCategory != null) {
+                        Locale.setDefault(displayCategory, newLocale);
+                    }
+                    if (formatCategory != null) {
+                        Locale.setDefault(formatCategory, newLocale);
+                    }
+                } else {
+                    Locale.setDefault(newLocale);
                 }
             } else {
                 throw raise(PythonErrorType.ValueError, "unsupported locale setting");
