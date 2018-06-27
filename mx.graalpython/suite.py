@@ -25,14 +25,14 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "561c8845426a57b9e019899ac133c4e7f16123a9",
+                "version": "529411afc2de706e8dfbe45f5bb60574a75e9492",
                 "urls": [
                     {"url": "https://github.com/graalvm/sulong", "kind": "git"},
                 ]
             },
             {
                 "name": "regex",
-                "version": "ba18055aa646c58a393c3d9a6b5127c2e158dc04",
+                "version": "8db1309ed8622234cd0d96ec09de8e02cd9bfe3b",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -121,7 +121,6 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "sdk:GRAAL_SDK",
                 "ANTLR4",
-                "sulong:SULONG_SPI",
             ],
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "1.8",
@@ -227,7 +226,6 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "regex:TREGEX",
                 "sdk:GRAAL_SDK",
-                "sulong:SULONG_SPI",
             ],
             "sourcesPath": "graalpython.src.zip",
         },
