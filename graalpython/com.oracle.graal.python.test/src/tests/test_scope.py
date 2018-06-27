@@ -850,3 +850,24 @@ def test_class_attr():
         register()
 
     assert MyClass.a_counter == 24
+
+
+def test_generator_scope():
+    my_obj = [1, 2, 3, 4]
+    my_obj = (i for i in my_obj for j in y)
+    y = [1, 2]
+
+    assert set(my_obj.gi_code.co_cellvars) == set()
+    assert set(my_obj.gi_code.co_freevars) == {'y'}
+
+
+def test_func_scope():
+    my_obj = [1, 2, 3, 4]
+
+    def my_obj():
+        return [i for i in my_obj for j in y]
+
+    y = [1, 2]
+
+    assert set(my_obj.__code__.co_cellvars) == set()
+    assert set(my_obj.__code__.co_freevars) == {'my_obj', 'y'}
