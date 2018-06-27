@@ -198,50 +198,50 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return result;
         }
     }
-    
+
     // bin(object)
     @Builtin(name = BIN, fixedNumOfArguments = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class BinNode extends PythonUnaryBuiltinNode {
-        
+
         public abstract String executeObject(Object x);
-        
+
         private String buildString(boolean isNegative, String number) {
             StringBuilder sb = new StringBuilder();
-            if(isNegative) {
+            if (isNegative) {
                 sb.append('-');
             }
             sb.append("0b");
             sb.append(number);
             return sb.toString();
         }
-        
+
         @Specialization
         public String doL(long x) {
             return buildString(x < 0, Long.toBinaryString(Math.abs(x)));
         }
-        
+
         @Specialization
         public String doD(double x) {
             throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
         }
-        
+
         @Specialization
         @TruffleBoundary
         public String doPI(PInt x) {
             BigInteger value = x.getValue();
             return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(2));
         }
-        
+
         @Specialization
         public String doO(Object x,
-                @Cached("create()") MathModuleBuiltins.ConvertToIntNode toIntNode,
-                @Cached("create()") BinNode recursiveNode) {
+                        @Cached("create()") MathModuleBuiltins.ConvertToIntNode toIntNode,
+                        @Cached("create()") BinNode recursiveNode) {
             Object value = toIntNode.execute(x);
             return recursiveNode.executeObject(value);
         }
-        
+
         protected BinNode create() {
             return BuiltinFunctionsFactory.BinNodeFactory.create();
         }

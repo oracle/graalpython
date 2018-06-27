@@ -46,11 +46,13 @@ import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -65,6 +67,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.Arrays;
 
 @CoreFunctions(defineModule = "math")
 public class MathModuleBuiltins extends PythonBuiltins {
@@ -968,7 +971,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double ldexpLL(long mantissa, long exp) {
-            return exceptInfinity(Math.scalb(mantissa, makeInt(exp)), mantissa);
+            return exceptInfinity(Math.scalb((double) mantissa, makeInt(exp)), mantissa);
         }
 
         @Specialization
@@ -980,7 +983,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double ldexpLPI(long mantissa, PInt exp) {
-            return exceptInfinity(Math.scalb(mantissa, makeInt(exp)), mantissa);
+            return exceptInfinity(Math.scalb((double) mantissa, makeInt(exp)), mantissa);
         }
 
         @Specialization
@@ -1045,6 +1048,127 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public PTuple frexpO(Object value,
                         @Cached("create()") ConvertToFloatNode convertToFloatNode) {
             return modfD(convertToFloatNode.execute(value));
+        }
+    }
+
+    @Builtin(name = "fsum", fixedNumOfArguments = 1)
+    @ImportStatic(PGuards.class)
+    @GenerateNodeFactory
+    public abstract static class FsumNode extends PythonUnaryBuiltinNode {
+
+        /*
+         * This implementation is taken from CPython. The performance is not good. Should be faster.
+         * It can be easily replace with much simpler code based on BigDecimal:
+         * 
+         * BigDecimal result = BigDecimal.ZERO;
+         * 
+         * in cycle just: result = result.add(BigDecimal.valueof(x); ... The current implementation
+         * is little bit faster. The testFSum in test_math.py takes in different implementations:
+         * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
+         */
+        @Specialization
+        @TruffleBoundary
+        public double doIt(Object iterable,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
+                        @Cached("create()") ConvertToFloatNode toFloat,
+                        @Cached("createBinaryProfile()") ConditionProfile stopProfile) {
+            Object iterator = getIterator.executeWith(iterable);
+            double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
+            double xsave;
+            int i, j, n = 0, arayLength = 32;
+            double[] p = new double[arayLength];
+            while (true) {
+                try {
+                    x = toFloat.execute(next.executeObject(iterator));
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), stopProfile);
+                    break;
+                }
+                xsave = x;
+                for (i = j = 0; j < n; j++) { /* for y in partials */
+                    y = p[j];
+                    if (Math.abs(x) < Math.abs(y)) {
+                        t = x;
+                        x = y;
+                        y = t;
+                    }
+                    hi = x + y;
+                    yr = hi - x;
+                    lo = y - yr;
+                    if (lo != 0.0) {
+                        p[i++] = lo;
+                    }
+                    x = hi;
+                }
+
+                n = i;
+                if (x != 0.0) {
+                    if (!Double.isFinite(x)) {
+                        /*
+                         * a nonfinite x could arise either as a result of intermediate overflow, or
+                         * as a result of a nan or inf in the summands
+                         */
+                        if (Double.isFinite(xsave)) {
+                            throw raise(OverflowError, "intermediate overflow in fsum");
+                        }
+                        if (Double.isInfinite(xsave)) {
+                            inf_sum += xsave;
+                        }
+                        special_sum += xsave;
+                        /* reset partials */
+                        n = 0;
+                    } else if (n >= arayLength) {
+                        arayLength += arayLength;
+                        p = Arrays.copyOf(p, arayLength);
+                    } else {
+                        p[n++] = x;
+                    }
+                }
+            }
+
+            if (special_sum != 0.0) {
+                if (Double.isNaN(inf_sum)) {
+                    throw raise(ValueError, "-inf + inf in fsum");
+                } else {
+                    sum = special_sum;
+                    return sum;
+                }
+            }
+
+            hi = 0.0;
+            if (n > 0) {
+                hi = p[--n];
+                /*
+                 * sum_exact(ps, hi) from the top, stop when the sum becomes inexact.
+                 */
+                while (n > 0) {
+                    x = hi;
+                    y = p[--n];
+                    assert (Math.abs(y) < Math.abs(x));
+                    hi = x + y;
+                    yr = hi - x;
+                    lo = y - yr;
+                    if (lo != 0.0)
+                        break;
+                }
+                /*
+                 * Make half-even rounding work across multiple partials. Needed so that sum([1e-16,
+                 * 1, 1e16]) will round-up the last digit to two instead of down to zero (the 1e-16
+                 * makes the 1 slightly closer to two). With a potential 1 ULP rounding error
+                 * fixed-up, math.fsum() can guarantee commutativity.
+                 */
+                if (n > 0 && ((lo < 0.0 && p[n - 1] < 0.0) ||
+                                (lo > 0.0 && p[n - 1] > 0.0))) {
+                    y = lo * 2.0;
+                    x = hi + y;
+                    yr = x - hi;
+                    if (y == yr) {
+                        hi = x;
+                    }
+                }
+            }
+            return hi;
         }
     }
 
