@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory.FloatNodeFactory;
 import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -509,7 +508,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        Object doNativeFloat(PythonNativeClass cls, PythonNativeObject possibleBase,
+        Object doNativeFloat(@SuppressWarnings("unused") PythonNativeClass cls, PythonNativeObject possibleBase,
                         @Cached("cacheGetFloat()") FromNativeSubclassNode getFloat) {
             Object convertedFloat = getFloat.execute(possibleBase);
             if (convertedFloat instanceof Double) {
