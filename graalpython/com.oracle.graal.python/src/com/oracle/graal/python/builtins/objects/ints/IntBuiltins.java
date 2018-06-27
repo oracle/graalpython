@@ -1193,7 +1193,6 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -1253,7 +1252,6 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
-    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
