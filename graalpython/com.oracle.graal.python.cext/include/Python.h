@@ -117,6 +117,7 @@
 #include "traceback.h"
 #include "classobject.h"
 #include "pythread.h"
+#include "iterobject.h"
 
 #define PY_TRUFFLE_CEXT ((void*)polyglot_import("python_cext"))
 #define PY_BUILTIN ((void*)polyglot_import("python_builtins"))
