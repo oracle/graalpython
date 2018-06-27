@@ -247,7 +247,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (!pythonCore.isInitialized()) {
             pythonCore.initialize();
         }
-        context.getOrCreateMainModule(request.getSource().getPath());
+        context.initializeMainModule(request.getSource().getPath());
 
         // if we are running the interpreter, module 'site' is automatically imported
         if (request.getSource().isInteractive()) {
@@ -365,9 +365,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected Iterable<Scope> findTopScopes(PythonContext context) {
         ArrayList<Scope> scopes = new ArrayList<>();
-        if (context.getMainModule() != null) {
-            scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
-        }
+        scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
         scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
         return scopes;
     }

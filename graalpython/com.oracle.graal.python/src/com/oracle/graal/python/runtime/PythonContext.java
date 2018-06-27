@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -109,13 +110,6 @@ public class PythonContext {
         return builtinsModule;
     }
 
-    public PythonModule createMainModule(String path) {
-        mainModule = core.factory().createPythonModule(__MAIN__, path);
-        mainModule.setAttribute(__BUILTINS__, sysModules.getItem("builtins"));
-        getSysModules().setItem(__MAIN__, mainModule);
-        return mainModule;
-    }
-
     public TruffleLanguage.Env getEnv() {
         return env;
     }
@@ -127,14 +121,6 @@ public class PythonContext {
 
     public PythonModule getMainModule() {
         return mainModule;
-    }
-
-    public PythonModule getOrCreateMainModule(String path) {
-        if (mainModule == null) {
-            return createMainModule(path);
-        } else {
-            return mainModule;
-        }
     }
 
     public PythonCore getCore() {
@@ -177,6 +163,9 @@ public class PythonContext {
         PythonModule sysModule = core.createSysModule(this);
         sysModules = (PDict) sysModule.getAttribute("modules");
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
+        mainModule = core.factory().createPythonModule(__MAIN__);
+        mainModule.setAttribute(__BUILTINS__, builtinsModule);
+        sysModules.setItem(__MAIN__, mainModule);
 
         isInitialized = true;
     }
@@ -224,4 +213,7 @@ public class PythonContext {
         return customThreadState.get();
     }
 
+    public void initializeMainModule(String path) {
+        mainModule.setAttribute(__FILE__, path);
+    }
 }

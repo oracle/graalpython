@@ -46,7 +46,7 @@ public class PythonModuleTests {
     @Test
     public void pythonModuleTest() {
         final PythonContext context = PythonTests.getContext();
-        PythonModule module = context.getCore().factory().createPythonModule("testModule", null);
+        PythonModule module = context.getCore().factory().createPythonModule("testModule");
 
         assertEquals("testModule", module.getAttribute(__NAME__).toString());
         assertEquals("None", module.getAttribute(__DOC__).toString());
@@ -74,7 +74,7 @@ public class PythonModuleTests {
     @Test
     public void mainModuleTest() {
         final PythonContext context = PythonTests.getContext();
-        PythonModule main = context.createMainModule(null);
+        PythonModule main = context.getMainModule();
         PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
         PBuiltinFunction abs = (PBuiltinFunction) builtins.getAttribute(BuiltinNames.ABS);
         Object returned = InvokeNode.create(abs).invoke(createWithUserArguments(-42));
