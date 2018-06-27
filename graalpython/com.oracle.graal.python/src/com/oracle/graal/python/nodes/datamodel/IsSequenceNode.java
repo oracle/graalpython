@@ -46,8 +46,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class IsSequenceNode extends PDataModelEmulationNode {
-    @Child private HasInheritedAttributeNode hasGetItemNode = HasInheritedAttributeNode.create(__LEN__);
-    @Child private HasInheritedAttributeNode hasLenNode = HasInheritedAttributeNode.create(__GETITEM__);
+    @Child private HasInheritedAttributeNode hasGetItemNode = HasInheritedAttributeNode.create(__GETITEM__);
+    @Child private HasInheritedAttributeNode hasLenNode = HasInheritedAttributeNode.create(__LEN__);
 
     private final ConditionProfile lenProfile = ConditionProfile.createBinaryProfile();
     private final ConditionProfile getItemProfile = ConditionProfile.createBinaryProfile();
