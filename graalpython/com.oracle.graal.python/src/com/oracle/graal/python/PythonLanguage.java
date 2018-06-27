@@ -365,7 +365,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected Iterable<Scope> findTopScopes(PythonContext context) {
         ArrayList<Scope> scopes = new ArrayList<>();
-        scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
+        if (context.getMainModule() != null) {
+            scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
+        }
         scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
         return scopes;
     }
