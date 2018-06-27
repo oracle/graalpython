@@ -32,6 +32,7 @@ import java.util.Set;
 
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 
@@ -223,6 +224,7 @@ public class ScopeInfo {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return scopeKind.toString() + " " + scopeId;
     }
 }

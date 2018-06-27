@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -70,7 +71,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public class IntBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return IntBuiltinsFactory.getFactories();
     }
 
@@ -87,45 +88,34 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__ROUND__, minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
         public int round(int arg, int n) {
             return arg;
         }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        public long round(long arg, int n) {
+            return arg;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        public PInt round(PInt arg, int n) {
+            return factory().createInt(arg.getValue());
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        Object add(boolean left, boolean right) {
-            return PInt.intValue(left) + PInt.intValue(right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int add(int left, boolean right) {
-            return add(left, PInt.intValue(right));
-        }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         int add(int left, int right) {
-            return Math.addExact(left, right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int add(boolean left, int right) {
-            return addInt(PInt.intValue(left), right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long add(boolean left, long right) {
-            return addLong(PInt.intValue(left), right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int addInt(int left, int right) {
             return Math.addExact(left, right);
         }
 
@@ -135,33 +125,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt addPInt(boolean left, long right) {
-            return addPInt(PInt.intValue(left), right);
-        }
-
-        @Specialization
         PInt addPInt(long left, long right) {
             return factory().createInt(op(BigInteger.valueOf(left), BigInteger.valueOf(right)));
         }
 
         @Specialization
-        Object add(int left, PInt right) {
-            return add(factory().createInt(left), right);
-        }
-
-        @Specialization
-        Object add(PInt left, int right) {
-            return add(left, factory().createInt(right));
-        }
-
-        @Specialization
         Object add(PInt left, long right) {
             return add(left, factory().createInt(right));
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long add(long left, boolean right) {
-            return addLong(left, PInt.intValue(right));
         }
 
         @Specialization
@@ -193,36 +163,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SubNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        int doBB(boolean left, boolean right) {
-            return PInt.intValue(left) - PInt.intValue(right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doBI(boolean left, int right) {
-            return doII(PInt.intValue(left), right);
-        }
-
-        @Specialization
-        long doBIOvf(boolean left, int right) {
-            return doIIOvf(PInt.intValue(left), right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doBL(boolean left, long right) {
-            return doLL(PInt.intValue(left), right);
-        }
-
-        @Specialization
-        PInt doBLOvf(boolean left, long right) {
-            return doLLOvf(PInt.intValue(left), right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doIB(int left, boolean right) {
-            return doII(left, PInt.intValue(right));
-        }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         int doII(int x, int y) throws ArithmeticException {
@@ -245,28 +187,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doIntegerPInt(int left, PInt right) {
-            return factory().createInt(op(BigInteger.valueOf(left), right.getValue()));
-        }
-
-        @Specialization
-        PInt doPIntInteger(PInt left, int right) {
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
-        }
-
-        @Specialization
         Object doPIntLong(PInt left, long right) {
             return doPIntPInt(left, factory().createInt(right));
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doLB(long left, boolean right) {
-            return doLL(left, PInt.intValue(right));
-        }
-
-        @Specialization
-        PInt doLBOvf(long left, boolean right) {
-            return doLLOvf(left, PInt.intValue(right));
         }
 
         @Specialization
@@ -293,36 +215,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__RSUB__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RSubNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        int doBB(boolean right, boolean left) {
-            return PInt.intValue(left) - PInt.intValue(right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doBI(boolean right, int left) {
-            return doII(PInt.intValue(right), left);
-        }
-
-        @Specialization
-        long doBIOvf(boolean right, int left) {
-            return doIIOvf(PInt.intValue(right), left);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doBL(boolean right, long left) {
-            return doLL(PInt.intValue(right), left);
-        }
-
-        @Specialization
-        PInt doBLOvf(boolean right, long left) {
-            return doLLOvf(PInt.intValue(right), left);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doIB(int right, boolean left) {
-            return doII(right, PInt.intValue(left));
-        }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         int doII(int y, int x) throws ArithmeticException {
@@ -345,28 +239,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PInt doIntegerPInt(int right, PInt left) {
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
-        }
-
-        @Specialization
-        PInt doPIntInteger(PInt right, int left) {
-            return factory().createInt(op(BigInteger.valueOf(left), right.getValue()));
-        }
-
-        @Specialization
         Object doPIntLong(PInt right, long left) {
             return doPIntPInt(factory().createInt(left), right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        long doLB(long right, boolean left) {
-            return doLL(right, PInt.intValue(left));
-        }
-
-        @Specialization
-        PInt doLBOvf(long right, boolean left) {
-            return doLLOvf(right, PInt.intValue(left));
         }
 
         @Specialization
@@ -393,26 +267,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__TRUEDIV__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TrueDivNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        double divBB(boolean left, boolean right) {
-            return divDD(PInt.doubleValue(left), PInt.doubleValue(right));
-        }
-
-        @Specialization
-        double divBI(boolean left, int right) {
-            return divDD(PInt.doubleValue(left), right);
-        }
-
-        @Specialization
-        double divBL(boolean left, long right) {
-            return divDD(PInt.doubleValue(left), right);
-        }
-
-        @Specialization
-        double divIB(int left, boolean right) {
-            return divII(left, PInt.intValue(right));
-        }
 
         @Specialization
         double divII(int x, int y) {
@@ -420,16 +276,10 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double divLB(long left, boolean right) {
-            return divLL(left, PInt.intValue(right));
-        }
-
-        @Specialization
         double divLL(long x, long y) {
             return divDD(x, y);
         }
 
-        @Specialization
         double divDD(double x, double y) {
             if (y == 0) {
                 throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
@@ -438,16 +288,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPB(PInt left, boolean right) {
-            return doPL(left, PInt.intValue(right));
-        }
-
-        @Specialization
-        Object doPI(PInt left, int right) {
-            if (right == 0) {
-                throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
-            }
-            return doPP(left, factory().createInt(right));
+        Object doPI(long left, PInt right) {
+            return doPP(factory().createInt(left), right);
         }
 
         @Specialization
@@ -489,21 +331,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__RTRUEDIV__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RTrueDivNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        double divBB(boolean right, boolean left) {
-            return divDD(PInt.doubleValue(right), PInt.doubleValue(left));
-        }
-
-        @Specialization
-        double divBI(boolean right, long left) {
-            return divDD(PInt.doubleValue(right), left);
-        }
-
-        @Specialization
-        double divIB(int right, boolean left) {
-            return divDD(right, PInt.doubleValue(left));
-        }
 
         @Specialization
         double divII(int right, int left) {
@@ -511,26 +340,15 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double divLB(long right, boolean left) {
-            return divDD(right, PInt.doubleValue(left));
-        }
-
-        @Specialization
         double divLL(long right, long left) {
             return divDD(right, left);
         }
 
-        @Specialization
         double divDD(double right, double left) {
             if (right == 0) {
                 throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
             }
             return left / right;
-        }
-
-        @Specialization
-        Object div(PInt right, boolean left) {
-            return doPP(right, factory().createInt(left));
         }
 
         @Specialization
@@ -563,6 +381,9 @@ public class IntBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Fallback
         Object doGeneric(Object left, Object right) {
+            // TODO: raise error if left is an integer
+            // raise(PythonErrorType.TypeError, "descriptor '__rtruediv__' requires a 'int' object
+            // but received a '%p'", right);
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -732,21 +553,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        int doBB(boolean x, boolean y) {
-            return x ? PInt.intValue(y) : 0;
-        }
-
-        @Specialization
-        int doBI(boolean x, int y) {
-            return x ? y : 0;
-        }
-
-        @Specialization
-        long doBL(boolean left, long right) {
-            return left ? right : 0;
-        }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         int doII(int x, int y) throws ArithmeticException {
@@ -768,6 +576,11 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        Object doPIntLong(PInt left, long right) {
+            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
+        }
+
+        @Specialization
         PInt doPIntPInt(PInt left, PInt right) {
             return factory().createInt(op(left.getValue(), right.getValue()));
         }
@@ -775,26 +588,6 @@ public class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         BigInteger op(BigInteger a, BigInteger b) {
             return a.multiply(b);
-        }
-
-        @Specialization
-        Object doPIntLong(PInt left, long right) {
-            return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
-        }
-
-        @Specialization
-        int doIB(int left, boolean right) {
-            return right ? left : 0;
-        }
-
-        @Specialization
-        long doLB(long left, boolean right) {
-            return right ? left : 0;
-        }
-
-        @Specialization
-        Object doPIntBoolean(PInt left, boolean right) {
-            return right ? left : 0;
         }
 
         @SuppressWarnings("unused")
@@ -811,7 +604,9 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__POW__, minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PowNode extends PythonTernaryBuiltinNode {
+
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
         int doIntegerFast(int left, int right, @SuppressWarnings("unused") PNone none) {
             int result = 1;
@@ -924,6 +719,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
         boolean pos(boolean arg) {
@@ -976,6 +772,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__CEIL__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CeilNode extends PythonUnaryBuiltinNode {
         @Specialization
         int ceil(int arg) {
@@ -991,20 +788,15 @@ public class IntBuiltins extends PythonBuiltins {
         PInt ceil(PInt arg) {
             return arg;
         }
-
     }
 
     @Builtin(name = SpecialMethodNames.__FLOOR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloorNode extends PythonUnaryBuiltinNode {
         @Specialization
         int floor(int arg) {
             return arg;
-        }
-
-        @Specialization
-        int floor(boolean arg) {
-            return arg ? 1 : 0;
         }
 
         @Specialization
@@ -1016,11 +808,11 @@ public class IntBuiltins extends PythonBuiltins {
         PInt floor(PInt arg) {
             return factory().createInt(arg.getValue());
         }
-
     }
 
     @Builtin(name = SpecialMethodNames.__POS__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
         int pos(int arg) {
@@ -1040,6 +832,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__NEG__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization(rewriteOn = ArithmeticException.class)
         int neg(int arg) {
@@ -1078,6 +871,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__INVERT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
         @Specialization
         int neg(boolean arg) {
@@ -1341,6 +1135,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__RAND__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RAndNode extends AndNode {
     }
 
@@ -1400,6 +1195,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean eqLL(long a, long b) {
@@ -1459,15 +1255,11 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean eqLL(long a, long b) {
             return a != b;
-        }
-
-        @Specialization
-        boolean eqPiPi(PInt a, PInt b) {
-            return !a.equals(b);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
@@ -1498,6 +1290,11 @@ public class IntBuiltins extends PythonBuiltins {
             }
         }
 
+        @Specialization
+        boolean eqPiPi(PInt a, PInt b) {
+            return !a.equals(b);
+        }
+
         @SuppressWarnings("unused")
         @Fallback
         Object eq(Object a, Object b) {
@@ -1507,19 +1304,10 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doII(int left, int right) {
-            return left < right;
-        }
-
-        @Specialization
-        boolean doIL(int left, long right) {
-            return left < right;
-        }
-
-        @Specialization
-        boolean doLI(long left, int right) {
             return left < right;
         }
 
@@ -1561,6 +1349,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doII(int left, int right) {
@@ -1605,30 +1394,12 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doBB(boolean left, boolean right) {
-            return PInt.intValue(left) > PInt.intValue(right);
-        }
-
-        @Specialization
-        boolean doBI(boolean left, long right) {
-            return PInt.intValue(left) > right;
-        }
-
-        @Specialization
-        boolean doBP(boolean left, PInt right) {
-            return doLP(PInt.intValue(left), right);
-        }
 
         @Specialization
         boolean doII(int left, int right) {
             return left > right;
-        }
-
-        @Specialization
-        boolean doLB(long left, boolean right) {
-            return left > PInt.intValue(right);
         }
 
         @Specialization
@@ -1669,21 +1440,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean doBB(boolean left, boolean right) {
-            return left ? true : !right;
-        }
-
-        @Specialization
-        boolean doBI(boolean left, int right) {
-            return (left ? 1 : 0) > right;
-        }
-
-        @Specialization
-        boolean doIB(int left, boolean right) {
-            return left > (right ? 1 : 0);
-        }
 
         @Specialization
         boolean doII(int left, int right) {
@@ -1729,6 +1487,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = "from_bytes", fixedNumOfArguments = 2, takesVariableArguments = true, keywordArguments = {"signed"})
     @GenerateNodeFactory
     @SuppressWarnings("unused")
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FromBytesNode extends PythonBuiltinNode {
         private static byte[] littleToBig(byte[] bytes, String byteorder) {
             // PInt uses Java BigInteger which are big-endian
@@ -1779,6 +1538,11 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        public boolean toBoolean(int self) {
+            return self != 0;
+        }
+
+        @Specialization
         public boolean toBoolean(long self) {
             return self != 0;
         }
@@ -1791,6 +1555,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__STR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class StrNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -1818,11 +1583,8 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        int hash(boolean self) {
-            return self ? 1 : 0;
-        }
 
         @Specialization
         int hash(int self) {
@@ -1843,6 +1605,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = "bit_length", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class BitLengthNode extends PythonBuiltinNode {
         @Specialization
         int bitLength(int argument) {
@@ -1905,6 +1668,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IntNode extends PythonBuiltinNode {
         @Child private GetClassNode getClassNode;
 
@@ -1949,6 +1713,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__FLOAT__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloatNode extends PythonBuiltinNode {
         @Specialization
         double doBoolean(boolean self) {

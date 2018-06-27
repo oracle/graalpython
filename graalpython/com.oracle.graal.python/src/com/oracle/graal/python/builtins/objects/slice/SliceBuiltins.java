@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.slice;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -32,9 +34,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -44,8 +48,18 @@ import com.oracle.truffle.api.dsl.Specialization;
 public class SliceBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SliceBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public String repr(PSlice self) {
+            return self.toString();
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)

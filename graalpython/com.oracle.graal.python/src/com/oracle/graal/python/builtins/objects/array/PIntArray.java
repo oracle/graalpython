@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.array;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.CompilerAsserts;
 
 public final class PIntArray extends PArray {
 
@@ -82,6 +83,7 @@ public final class PIntArray extends PArray {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         StringBuilder buf = new StringBuilder();
         buf.append("array('i', [");
         for (int i = 0; i < array.length - 1; i++) {

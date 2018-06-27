@@ -25,41 +25,16 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @ReportPolymorphism
 @NodeChild(value = "arguments", type = PNode[].class)
-public abstract class PythonBuiltinNode extends PNode {
-    /**
-     * This is obviously a slow path.
-     */
-    @TruffleBoundary
-    public static String callAttributeSlowPath(PythonObject obj, String attributeId) {
-        Object object = obj.getPythonClass().getAttribute(attributeId);
-        PythonCallable callable;
-        if (object instanceof PythonCallable) {
-            callable = (PythonCallable) object;
-        } else {
-            callable = PythonCallable.require(obj.getAttribute(attributeId));
-        }
-        Object[] arguments = PArguments.create(1);
-        PArguments.setArgument(arguments, 0, obj);
-        InvokeNode invokeNode = InvokeNode.create(callable);
-        return invokeNode.invoke(arguments).toString();
-    }
+public abstract class PythonBuiltinNode extends PythonBuiltinBaseNode {
+
+    public abstract Object execute(VirtualFrame frame);
 
     protected abstract PNode[] getArguments();
-
-    public PythonBuiltinNode emptyCopy() {
-        CompilerDirectives.transferToInterpreter();
-        return getNodeFactory().getBuiltinNodeFactoryFor(this).createNode(new Object[]{null});
-    }
 }

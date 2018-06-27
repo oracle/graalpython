@@ -32,6 +32,7 @@ import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -159,6 +160,7 @@ public class FunctionRootNode extends PClosureRootNode implements CellSupplier {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return "<function root " + functionName + " at " + Integer.toHexString(hashCode()) + ">";
     }
 

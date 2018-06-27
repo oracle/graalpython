@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class HashMapStorage extends HashingStorage {
@@ -114,8 +115,8 @@ public class HashMapStorage extends HashingStorage {
     }
 
     @Override
-    @TruffleBoundary
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         StringBuilder buf = new StringBuilder("{");
         int length = map.size();
         int i = 0;

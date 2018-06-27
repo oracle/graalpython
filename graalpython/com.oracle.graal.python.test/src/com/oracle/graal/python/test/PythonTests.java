@@ -169,7 +169,7 @@ public class PythonTests {
         String source = code;
         PythonTests.runScript(new String[0], source, printStream, System.err);
         String result = byteArray.toString().replaceAll("\r\n", "\n");
-        assertEquals(expected, result);
+        assertEquals(expected.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"), result.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"));
     }
 
     public static VirtualFrame createVirtualFrame() {

@@ -96,7 +96,7 @@ public final class PInt extends PythonBuiltinObject {
         return value.intValue();
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(transferToInterpreterOnException = false)
     public int intValueExact() {
         return value.intValueExact();
     }
@@ -106,7 +106,7 @@ public final class PInt extends PythonBuiltinObject {
         return value.longValue();
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(transferToInterpreterOnException = false)
     public long longValueExact() {
         return value.longValueExact();
     }

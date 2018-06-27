@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -66,7 +67,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 @CoreFunctions(extendClasses = PReferenceType.class)
 public class ReferenceTypeBuiltins extends PythonBuiltins {
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ReferenceTypeBuiltinsFactory.getFactories();
     }
 

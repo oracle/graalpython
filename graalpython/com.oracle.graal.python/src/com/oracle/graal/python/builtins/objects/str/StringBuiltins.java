@@ -33,18 +33,24 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -65,6 +71,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -86,7 +93,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class StringBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return StringBuiltinsFactory.getFactories();
     }
 
@@ -106,12 +113,8 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        public Object repr(PString self) {
-            return repr(self.getValue());
-        }
 
         @Specialization
         @TruffleBoundary
@@ -187,6 +190,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -197,25 +201,11 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean eq(String self, String other) {
             return self.equals(other);
-        }
-
-        @Specialization
-        public boolean eq(PString self, PString other) {
-            return self.getValue().equals(other.getValue());
-        }
-
-        @Specialization
-        public boolean eq(PString self, String other) {
-            return self.getValue().equals(other);
-        }
-
-        @Specialization
-        public boolean eq(String self, PString other) {
-            return self.equals(other.getValue());
         }
 
         @SuppressWarnings("unused")
@@ -227,25 +217,11 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean ne(String self, String other) {
             return !self.equals(other);
-        }
-
-        @Specialization
-        public boolean ne(PString self, PString other) {
-            return !self.getValue().equals(other.getValue());
-        }
-
-        @Specialization
-        public boolean ne(PString self, String other) {
-            return !self.getValue().equals(other);
-        }
-
-        @Specialization
-        public boolean ne(String self, PString other) {
-            return !self.equals(other.getValue());
         }
 
         @SuppressWarnings("unused")
@@ -257,6 +233,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -273,6 +250,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -289,6 +267,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -305,6 +284,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -321,25 +301,11 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
         String doSS(String self, String other) {
             return new StringBuilder(self.length() + other.length()).append(self).append(other).toString();
-        }
-
-        @Specialization
-        String doSS(PString self, String other) {
-            return self.getValue() + other;
-        }
-
-        @Specialization
-        String doSS(String self, PString other) {
-            return self + other.getValue();
-        }
-
-        @Specialization
-        String doSS(PString self, PString other) {
-            return self.getValue() + other.getValue();
         }
 
         @Specialization(guards = "!isString(other)")
@@ -414,6 +380,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.endswith(suffix[, start[, end]])
     @Builtin(name = "endswith", fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EndsWithNode extends PythonBuiltinNode {
 
         @Specialization
@@ -441,7 +408,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization
+        @Fallback
         public Object endsWith(Object self, Object prefix) {
             throw new RuntimeException("endsWith is not supported for " + self + " " + self.getClass() + " prefix " + prefix);
         }
@@ -450,6 +417,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.rfind(str[, start[, end]])
     @Builtin(name = "rfind", minNumOfArguments = 2, maxNumOfArguments = 4)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RFindNode extends PythonBuiltinNode {
 
         @Specialization
@@ -488,6 +456,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.find(str[, start[, end]])
     @Builtin(name = "find", minNumOfArguments = 2, maxNumOfArguments = 4)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FindNode extends PythonBuiltinNode {
 
         @Specialization
@@ -576,6 +545,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.upper()
     @Builtin(name = "upper", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UpperNode extends PythonBuiltinNode {
 
         @Specialization
@@ -588,6 +558,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // static str.maketrans()
     @Builtin(name = "maketrans", fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MakeTransNode extends PythonBuiltinNode {
 
         @Specialization
@@ -611,6 +582,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.translate()
     @Builtin(name = "translate", fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TranslateNode extends PythonBuiltinNode {
         @Specialization
         public String translate(String self, String table) {
@@ -650,6 +622,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.lower()
     @Builtin(name = "lower", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LowerNode extends PythonBuiltinNode {
 
         @Specialization
@@ -662,6 +635,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.capitalize()
     @Builtin(name = "capitalize", fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CapitalizeNode extends PythonBuiltinNode {
 
         @Specialization
@@ -674,6 +648,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.rpartition
     @Builtin(name = "rpartition", fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RPartitionNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -696,6 +671,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.split
     @Builtin(name = "split", maxNumOfArguments = 3)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SplitNode extends PythonBuiltinNode {
 
         @SuppressWarnings("unused")
@@ -802,6 +778,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.split
     @Builtin(name = "rsplit", maxNumOfArguments = 3)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RSplitNode extends PythonBuiltinNode {
 
         @SuppressWarnings("unused")
@@ -922,6 +899,7 @@ public final class StringBuiltins extends PythonBuiltins {
     // str.splitlines([keepends])
     @Builtin(name = "splitlines", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SplitLinesNode extends PythonBuiltinNode {
 
         @Specialization
@@ -930,16 +908,12 @@ public final class StringBuiltins extends PythonBuiltins {
             String[] split = str.split("\n");
             return factory().createList(Arrays.copyOf(split, split.length, Object[].class));
         }
-
-        @Specialization
-        public PList split(PString str, PNone keepends) {
-            return split(str.getValue(), keepends);
-        }
     }
 
     // str.replace
     @Builtin(name = "replace", minNumOfArguments = 3, maxNumOfArguments = 4)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReplaceNode extends PythonBuiltinNode {
 
         @SuppressWarnings("unused")
@@ -958,11 +932,11 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             return newSelf;
         }
-
     }
 
     @Builtin(name = "strip", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StripNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -979,6 +953,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = "rstrip", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RStripNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -996,6 +971,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = "lstrip", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LStripNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -1013,20 +989,17 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(String self) {
             return self.length();
         }
-
-        @Specialization
-        public int len(PString self) {
-            return self.len();
-        }
     }
 
     @Builtin(name = "index", minNumOfArguments = 2, maxNumOfArguments = 4)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IndexNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
@@ -1063,9 +1036,75 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = "encode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class EncodeNode extends PythonBuiltinNode {
+
+        @Specialization
+        Object encode(String self, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            return encodeString(self, "utf-8", "strict");
+        }
+
+        @Specialization
+        Object encode(String self, String encoding, @SuppressWarnings("unused") PNone errors) {
+            return encodeString(self, encoding, "strict");
+        }
+
+        @Specialization
+        Object encode(String self, @SuppressWarnings("unused") PNone encoding, String errors) {
+            return encodeString(self, "utf-8", errors);
+        }
+
+        @Specialization
+        Object encode(String self, String encoding, String errors) {
+            return encodeString(self, encoding, errors);
+        }
+
+        @TruffleBoundary
+        private Object encodeString(String self, String encoding, String errors) {
+            CodingErrorAction errorAction;
+            switch (errors) {
+                case "ignore":
+                    errorAction = CodingErrorAction.IGNORE;
+                    break;
+                case "replace":
+                    errorAction = CodingErrorAction.REPLACE;
+                    break;
+                default:
+                    errorAction = CodingErrorAction.REPORT;
+                    break;
+            }
+
+            try {
+                Charset cs = Charset.forName(encoding);
+                ByteBuffer encoded = cs.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction).encode(CharBuffer.wrap(self));
+                int n = encoded.remaining();
+                byte[] data = new byte[n];
+                encoded.get(data);
+                return factory().createBytes(data);
+            } catch (IllegalArgumentException e) {
+                throw raise(LookupError, "unknown encoding: %s", encoding);
+            } catch (CharacterCodingException e) {
+                throw raise(UnicodeEncodeError, "%s", e.getMessage());
+            }
+        }
+    }
+
+    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        PString doPStringInt(PString left, boolean right) {
+            if (right) {
+                return left;
+            } else {
+                return factory().createString("");
+            }
+        }
+
         @Specialization
         String doStringInt(String left, boolean right) {
             if (right) {
@@ -1104,34 +1143,6 @@ public final class StringBuiltins extends PythonBuiltins {
         String doStringPIntOvf(String left, PInt right) {
             try {
                 return doStringInt(left, right.longValue());
-            } catch (ArithmeticException e) {
-                throw raise(MemoryError);
-            }
-        }
-
-        @Specialization
-        PString doPStringInt(PString left, boolean right) {
-            if (right) {
-                return left;
-            } else {
-                return factory().createString("");
-            }
-        }
-
-        @Specialization
-        String doPStringInt(PString left, long right) {
-            return doStringInt(left.getValue(), right);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        String doPStringPInt(PString left, PInt right) {
-            return doPStringInt(left, right.longValue());
-        }
-
-        @Specialization
-        String doPStringPIntOvf(PString left, PInt right) {
-            try {
-                return doPStringInt(left, right.longValue());
             } catch (ArithmeticException e) {
                 throw raise(MemoryError);
             }

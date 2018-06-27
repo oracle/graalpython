@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
@@ -36,22 +37,37 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PRange.class)
 public class RangeBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RangeBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public String repr(PRange self) {
+            return self.toString();
+        }
     }
 
     @Builtin(name = __LEN__, fixedNumOfArguments = 1)
@@ -65,7 +81,7 @@ public class RangeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBuiltinNode {
+    abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doPRange(PRange left, PRange right) {
             return left.equals(right);
@@ -81,10 +97,56 @@ public class RangeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+        private final ConditionProfile stepOneProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile stepMinusOneProfile = ConditionProfile.createBinaryProfile();
+
         @Specialization
-        boolean contains(PSequence self, Object other) {
-            return self.index(other) != -1;
+        boolean contains(PRange self, long other) {
+            int step = self.getStep();
+            int start = self.getStart();
+            int stop = self.getStop();
+
+            if (stepOneProfile.profile(step == 1)) {
+                return other >= start && other < stop;
+            } else if (stepMinusOneProfile.profile(step == -1)) {
+                return other <= start && other > stop;
+            } else {
+                assert step != 0;
+                if (step > 0) {
+                    if (other >= start && other < stop) {
+                        // discard based on range
+                        return false;
+                    }
+                } else {
+                    if (other <= start && other > stop) {
+                        // discard based on range
+                        return false;
+                    }
+                }
+                return (other - start) % step == 0;
+            }
+        }
+
+        @Specialization
+        boolean contains(PRange self, double other) {
+            return (long) other == other ? contains(self, (long) other) : false;
+        }
+
+        @Specialization
+        boolean contains(PRange self, PInt other) {
+            try {
+                return contains(self, other.longValueExact());
+            } catch (ArithmeticException e) {
+                return false;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        boolean containsFallback(Object self, Object other) {
+            return false;
         }
     }
 
@@ -92,8 +154,8 @@ public class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PRangeIterator iter(PRange self) {
-            return factory().createRangeIterator(self);
+        PIntegerIterator iter(PRange self) {
+            return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep());
         }
     }
 }

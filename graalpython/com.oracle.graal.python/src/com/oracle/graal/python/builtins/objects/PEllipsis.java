@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
+import com.oracle.truffle.api.CompilerAsserts;
+
 public final class PEllipsis extends PythonAbstractObject {
 
     public static final PEllipsis INSTANCE = new PEllipsis();
@@ -47,6 +49,7 @@ public final class PEllipsis extends PythonAbstractObject {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return "Ellipsis";
     }
 

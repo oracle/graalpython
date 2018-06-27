@@ -38,7 +38,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.nio.charset.CodingErrorAction;
@@ -53,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -80,7 +80,7 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BytesBuiltinsFactory.getFactories();
     }
 
@@ -178,19 +178,11 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __STR__, fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class StrNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object str(PBytes self) {
-            return self.toString();
-        }
-    }
-
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object repr(PBytes self) {
             return self.toString();
         }
@@ -253,7 +245,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ITER__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class IterNode extends PythonBinaryBuiltinNode {
+    abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
         PSequenceIterator contains(PBytes self) {
             return factory().createSequenceIterator(self);

@@ -75,35 +75,35 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
 
     public abstract Object executeObject(Object callable, Object receiver);
 
-    @Specialization(guards = {"isUnary(func)", "func == cachedFunc"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     int callInt(@SuppressWarnings("unused") PBuiltinFunction func, int receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) throws UnexpectedResultException {
         return builtinNode.executeInt(receiver);
     }
 
-    @Specialization(guards = {"isUnary(func)", "func == cachedFunc"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     long callLong(@SuppressWarnings("unused") PBuiltinFunction func, long receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) throws UnexpectedResultException {
         return builtinNode.executeLong(receiver);
     }
 
-    @Specialization(guards = {"isUnary(func)", "func == cachedFunc"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     double callDouble(@SuppressWarnings("unused") PBuiltinFunction func, double receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) throws UnexpectedResultException {
         return builtinNode.executeDouble(receiver);
     }
 
-    @Specialization(guards = {"isUnary(func)", "func == cachedFunc"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
     boolean callBool(@SuppressWarnings("unused") PBuiltinFunction func, boolean receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) throws UnexpectedResultException {
         return builtinNode.executeBool(receiver);
     }
 
-    @Specialization(guards = {"isUnary(func)", "func == cachedFunc"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object call(@SuppressWarnings("unused") PBuiltinFunction func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
                     @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) {

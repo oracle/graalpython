@@ -55,8 +55,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.ContainsKeyNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -71,7 +73,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public final class DictBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return DictBuiltinsFactory.getFactories();
     }
 
@@ -264,8 +266,19 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class MissingNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object run(Object self, Object key) {
-            throw raise(KeyError, "%s", key.toString());
+        Object run(Object self, String key) {
+            throw raise(KeyError, "%s", key);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isString(key)")
+        Object run(Object self, Object key,
+                        @Cached("create(__REPR__)") LookupAndCallUnaryNode specialNode) {
+            Object name = specialNode.executeObject(key);
+            if (!PGuards.isString(name)) {
+                throw raise(TypeError, "__repr__ returned non-string (type %p)", name);
+            }
+            throw raise(KeyError, "%s", name);
         }
     }
 

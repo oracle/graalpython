@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
+import com.oracle.truffle.api.CompilerAsserts;
+
 public final class PNone extends PythonAbstractObject {
 
     public static final PNone NONE = new PNone();
@@ -35,6 +37,7 @@ public final class PNone extends PythonAbstractObject {
 
     @Override
     public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
         return this == NONE ? "None" : "NoValue";
     }
 

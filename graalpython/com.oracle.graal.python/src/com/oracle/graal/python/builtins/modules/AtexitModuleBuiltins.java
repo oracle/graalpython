@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.truffle.api.Truffle;
@@ -60,7 +60,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 @CoreFunctions(defineModule = "atexit")
 public class AtexitModuleBuiltins extends PythonBuiltins {
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return AtexitModuleBuiltinsFactory.getFactories();
     }
 

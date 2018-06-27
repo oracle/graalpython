@@ -26,7 +26,9 @@
 package com.oracle.graal.python.builtins.objects.tuple;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -38,18 +40,20 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory.GetItemNodeFactory;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory.IndexNodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -59,13 +63,12 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import java.math.BigInteger;
 
 @CoreFunctions(extendClasses = PTuple.class)
 public class TupleBuiltins extends PythonBuiltins {
 
     @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TupleBuiltinsFactory.getFactories();
     }
 
@@ -243,11 +246,64 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+
+        public String toString(Object item, LookupAndCallUnaryNode reprNode) {
+            if (item == null) {
+                return "(null)";
+            } else if (item instanceof String) {
+                return "'" + item.toString() + "'";
+            } else if (item instanceof Boolean) {
+                return ((boolean) item ? "True" : "False");
+            } else if (item instanceof Double) {
+                return JavaTypeConversions.doubleToString((double) item);
+            } else if (item instanceof Integer) {
+                return ((Integer) item).toString();
+            } else if (item instanceof Long) {
+                return ((Long) item).toString();
+            } else {
+                Object value = reprNode.executeObject(item);
+                if (value instanceof String) {
+                    return (String) value;
+                } else if (value instanceof PString) {
+                    return ((PString) value).getValue();
+                } else {
+                    throw raise(TypeError, "__repr__ returned non-string (type %p)", value);
+                }
+            }
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String repr(PTuple self,
+                        @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode) {
+            Object[] array = self.getArray();
+            StringBuilder buf = new StringBuilder("(");
+            for (int i = 0; i < array.length - 1; i++) {
+                buf.append(toString(array[i], reprNode));
+                buf.append(", ");
+            }
+
+            if (array.length > 0) {
+                buf.append(toString(array[array.length - 1], reprNode));
+            }
+
+            if (array.length == 1) {
+                buf.append(",");
+            }
+
+            buf.append(")");
+            return buf.toString();
+        }
+    }
+
     @Builtin(name = SpecialMethodNames.__GETITEM__, fixedNumOfArguments = 2)
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBuiltinNode {
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         private static final String TYPE_ERROR_MESSAGE = "tuple indices must be integers of slices, not %p";
 
@@ -282,7 +338,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         protected GetItemNode createGetItemNode() {
-            return GetItemNodeFactory.create(new PNode[0]);
+            return GetItemNodeFactory.create();
         }
 
         protected boolean isPSlice(Object object) {
