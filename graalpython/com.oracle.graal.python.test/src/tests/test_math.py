@@ -1323,7 +1323,7 @@ class MathTests(unittest.TestCase):
             (-26.8, -1.0), (-27.0, -1.0), (-27.2, -1.0), (-27.4, -1.0), (-27.6, -1.0)
         ]
         self.executeFnTest(erfValues, math.erf, 'math.erf')
-    
+
     def test_erfc(self):
         values = [(0.0, 1.0), (-0.0, 1.0), (INF, 0.0), (NINF, 2.0), (NAN, NAN),
             # tiny values
@@ -1345,7 +1345,6 @@ class MathTests(unittest.TestCase):
             (27.4, 0.0), (27.6, 0.0), (-26.2, 2.0), (-26.4, 2.0), (-26.6, 2.0),
             (-26.8, 2.0), (-27.0, 2.0), (-27.2, 2.0), (-27.4, 2.0), (-27.6, 2.0)
         ]
-
         self.executeFnTest(values, math.erfc, 'math.erfc')
         
     def test_gamma(self):
@@ -1364,7 +1363,6 @@ class MathTests(unittest.TestCase):
         self.assertRaises(OverflowError, math.gamma, 172)
         self.assertRaises(OverflowError, math.gamma, 2000)
         self.assertRaises(OverflowError, math.gamma, 1.7e308)
-
 
         values = [
             # special values
@@ -1425,7 +1423,6 @@ class MathTests(unittest.TestCase):
         self.assertRaises(ValueError, math.lgamma, -1.79e308)
         self.assertRaises(OverflowError, math.lgamma, 2.55998332785164e305)
         self.assertRaises(OverflowError, math.lgamma, 1.7e308)
-
 
         values = [(INF, INF), (-INF, INF), (NAN, NAN),
             # small positive integers give factorials
@@ -1504,7 +1501,6 @@ class MathTests(unittest.TestCase):
             (-2.457024738, 3.346471988407984e-10)
         ]
         self.executeFnTest(values, math.lgamma, 'math.lgamma')
-        
 
     def testFsum(self):
         # math.fsum relies on exact rounding for correct operation.
