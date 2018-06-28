@@ -1199,9 +1199,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Set_Ptr extends NativeBuiltin {
 
         @Specialization
-        PythonObjectNativeWrapper doPythonObject(PythonObjectNativeWrapper nativeWrapper, TruffleObject ptr) {
+        int doPythonObject(PythonObjectNativeWrapper nativeWrapper, TruffleObject ptr) {
+            nativeWrapper.setNativePointer(null);
             nativeWrapper.setNativePointer(ptr);
-            return nativeWrapper;
+            return 0;
         }
     }
 

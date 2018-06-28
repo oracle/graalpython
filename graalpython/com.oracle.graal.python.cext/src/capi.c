@@ -38,7 +38,15 @@
  */
 #include "capi.h"
 
-#define FORCE_TO_NATIVE(__obj__) (polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", (__obj__), truffle_is_handle_to_managed((__obj__)) ? (__obj__) : truffle_deref_handle_for_managed(__obj__)))
+
+MUST_INLINE static void force_to_native(void* obj) {
+    if (polyglot_is_value(obj)) {
+        void* handle = truffle_deref_handle_for_managed(obj);
+        if(!polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", obj, handle)) {
+            truffle_release_handle(handle);
+        }
+    }
+}
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
     // explicit type cast is required because the type flags are not yet initialized !
@@ -46,7 +54,7 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 
     // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
     // TODO Remove this as soon as this is properly supported.
-    FORCE_TO_NATIVE(ptype);
+    force_to_native(ptype);
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
@@ -59,30 +67,30 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
 static void initialize_globals() {
     // None
     PyObject* jnone = UPCALL_CEXT_O("Py_None");
-    FORCE_TO_NATIVE(jnone);
+    force_to_native(jnone);
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented
     void *jnotimpl = UPCALL_CEXT_O("Py_NotImplemented");
-    FORCE_TO_NATIVE(jnotimpl);
+    force_to_native(jnotimpl);
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
     // Ellipsis
     void *jellipsis = UPCALL_CEXT_O("Py_Ellipsis");
-    FORCE_TO_NATIVE(jellipsis);
+    force_to_native(jellipsis);
     truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
 
     // True, False
     void *jtrue = UPCALL_CEXT_O("Py_True");
-    FORCE_TO_NATIVE(jtrue);
+    force_to_native(jtrue);
     truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(jtrue));
     void *jfalse = UPCALL_CEXT_O("Py_False");
-    FORCE_TO_NATIVE(jfalse);
+    force_to_native(jfalse);
     truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(jfalse));
 
     // error marker
     void *jerrormarker = UPCALL_CEXT_O("Py_ErrorHandler");
-    FORCE_TO_NATIVE(jerrormarker);
+    force_to_native(jerrormarker);
     truffle_assign_managed(&marker_struct, jerrormarker);
 }
 
@@ -205,7 +213,7 @@ PyObject* to_sulong(void *o) {
 
 /** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
-    return native_to_java(obj->ob_type);
+    return native_to_java((PyObject*)obj->ob_type);
 }
 
 typedef struct PyObjectHandle {
