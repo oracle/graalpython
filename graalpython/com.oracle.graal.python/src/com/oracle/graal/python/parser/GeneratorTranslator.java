@@ -31,13 +31,13 @@ import java.util.List;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PNodeUtil;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.BreakNode;
 import com.oracle.graal.python.nodes.control.BreakTargetNode;
 import com.oracle.graal.python.nodes.control.ContinueNode;
 import com.oracle.graal.python.nodes.control.ContinueTargetNode;
 import com.oracle.graal.python.nodes.control.ForNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
@@ -79,6 +79,7 @@ public class GeneratorTranslator {
     private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
     private boolean needToHandleComplicatedYieldExpression;
+    private boolean replacedOuterMostLoopIterator = false;
 
     public GeneratorTranslator(FunctionRootNode root) {
         this.root = root;
@@ -331,7 +332,11 @@ public class GeneratorTranslator {
         } else if (node instanceof ForNode) {
             ForNode forNode = (ForNode) node;
             WriteNode target = (WriteNode) forNode.getTarget();
-            GetIteratorNode getIter = (GetIteratorNode) forNode.getIterator();
+            PNode getIter = forNode.getIterator();
+            if (!replacedOuterMostLoopIterator) {
+                replacedOuterMostLoopIterator = true;
+                getIter = ReadIndexedArgumentNode.create(0);
+            }
             replace(node, GeneratorForNode.create(target, getIter, forNode.getBody(), nextGeneratorForNodeSlot()));
         } else if (node instanceof BlockNode) {
             BlockNode block = (BlockNode) node;
@@ -419,5 +424,4 @@ public class GeneratorTranslator {
     public int getNumOfGeneratorForNode() {
         return numOfGeneratorForNode;
     }
-
 }

@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.parser;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -76,6 +77,8 @@ public class ScopeInfo {
     private List<PNode> defaultArgumentNodes;
     private ReadDefaultArgumentNode[] defaultArgumentReads;
 
+    private int loopCount = 0;
+
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
         this.scopeKind = kind;
@@ -85,6 +88,14 @@ public class ScopeInfo {
         if (this.parent != null) {
             this.parent.childScopes.add(this);
         }
+    }
+
+    public void incLoopCount() {
+        loopCount++;
+    }
+
+    public int getLoopCount() {
+        return loopCount;
     }
 
     public Set<ScopeInfo> getChildScopes() {
@@ -143,7 +154,7 @@ public class ScopeInfo {
         addCellVar(identifier, false);
     }
 
-    protected void addCellVar(String identifier, boolean createFrameSlot) {
+    public void addCellVar(String identifier, boolean createFrameSlot) {
         this.cellVars.add(identifier);
         if (createFrameSlot) {
             this.createSlotIfNotPresent(identifier);
@@ -169,32 +180,27 @@ public class ScopeInfo {
         return this.freeVars.contains(identifier);
     }
 
-    public FrameSlot[] getCellVarSlots() {
-        FrameSlot[] cellVarSlots = new FrameSlot[this.cellVars.size()];
+    private FrameSlot[] getFrameSlots(Collection<String> identifiers, ScopeInfo scope) {
+        assert scope != null : "getting frame slots: scope cannot be null!";
+        FrameSlot[] slots = new FrameSlot[identifiers.size()];
         int i = 0;
-        for (String identifier : this.cellVars) {
-            cellVarSlots[i++] = findFrameSlot(identifier);
+        for (String identifier : identifiers) {
+            slots[i++] = scope.findFrameSlot(identifier);
         }
-        return cellVarSlots;
+        return slots;
+    }
+
+    public FrameSlot[] getCellVarSlots() {
+        return getFrameSlots(cellVars, this);
     }
 
     public FrameSlot[] getFreeVarSlots() {
-        FrameSlot[] freeVarSlots = new FrameSlot[this.freeVars.size()];
-        int i = 0;
-        for (String identifier : this.freeVars) {
-            freeVarSlots[i++] = findFrameSlot(identifier);
-        }
-        return freeVarSlots;
+        return getFrameSlots(freeVars, this);
     }
 
     public FrameSlot[] getFreeVarSlotsInParentScope() {
         assert parent != null : "cannot get current freeVars in parent scope, parent scope cannot be null!";
-        FrameSlot[] freeVarSlots = new FrameSlot[this.freeVars.size()];
-        int i = 0;
-        for (String identifier : this.freeVars) {
-            freeVarSlots[i++] = parent.findFrameSlot(identifier);
-        }
-        return freeVarSlots;
+        return getFrameSlots(freeVars, parent);
     }
 
     public void setDefaultArgumentNodes(List<PNode> defaultArgumentNodes) {

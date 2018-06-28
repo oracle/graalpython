@@ -25,7 +25,9 @@
  */
 package com.oracle.graal.python.parser;
 
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.misc.Interval;
 
 import com.oracle.graal.python.parser.antlr.Python3Parser.ClassdefContext;
 import com.oracle.graal.python.parser.antlr.Python3Parser.FuncdefContext;
@@ -55,6 +57,25 @@ public class TranslationUtil {
         return scopeId;
     }
 
+    public static String getText(ParserRuleContext ctx) {
+        return getText(ctx, 0);
+    }
+
+    public static String getText(ParserRuleContext ctx, int level) {
+        ParserRuleContext context = ctx;
+        int lvl = level;
+        while (lvl > 0) {
+            lvl--;
+            ParserRuleContext parent = ctx.getParent();
+            if (parent == null) {
+                break;
+            }
+            context = parent;
+        }
+        CharStream inputStream = ctx.getStart().getInputStream();
+        return inputStream.getText(new Interval(context.getStart().getStartIndex(), context.getStop().getStopIndex()));
+    }
+
     public static NotCovered notCovered() {
         throw new NotCovered();
     }
@@ -74,6 +95,5 @@ public class TranslationUtil {
         public NotCovered(String message) {
             super(message);
         }
-
     }
 }

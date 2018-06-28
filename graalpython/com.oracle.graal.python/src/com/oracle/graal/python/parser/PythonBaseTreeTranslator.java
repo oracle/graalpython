@@ -70,7 +70,6 @@ import com.oracle.graal.python.nodes.classes.ClassDefinitionEpilogNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
-import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -441,12 +440,13 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
             PNode block = getBlock.apply(ctx);
             PNode yield = factory.createYield(block, environment.getReturnSlot());
             yield.assignSourceSection(block.getSourceSection());
-            PNode body = createGeneratorExpression(ctx.getChild(Python3Parser.Comp_forContext.class, 0), yield);
-            SourceSection srcSection = body.getSourceSection();
-            body = new ReturnTargetNode(body, factory.createReadLocal(environment.getReturnSlot()));
+            ForNode genFor = createGeneratorExpression(ctx.getChild(Python3Parser.Comp_forContext.class, 0), yield);
+            SourceSection srcSection = genFor.getSourceSection();
+            PNode getIterator = genFor.getIterator();
+            PNode body = new ReturnTargetNode(genFor, factory.createReadLocal(environment.getReturnSlot()));
             body.assignSourceSection(srcSection);
             int lineNum = ctx.getStart().getLine();
-            GeneratorExpressionNode genExprDef = createGeneratorExpressionDefinition(body, lineNum);
+            GeneratorExpressionNode genExprDef = createGeneratorExpressionDefinition(body, getIterator, lineNum);
             genExprDef.setEnclosingFrameDescriptor(environment.getEnclosingFrame());
             genExprDef.assignSourceSection(srcSection);
             return genExprDef;
@@ -455,12 +455,13 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         }
     }
 
-    private GeneratorExpressionNode createGeneratorExpressionDefinition(PNode body, int lineNum) {
+    private GeneratorExpressionNode createGeneratorExpressionDefinition(PNode body, PNode getIterator, int lineNum) {
         FrameDescriptor fd = environment.getCurrentFrame();
         String generatorName = "generator_exp:" + lineNum;
         FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots());
         GeneratorTranslator gtran = new GeneratorTranslator(funcRoot);
-        return new GeneratorExpressionNode(generatorName, gtran.translate(), fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
+        RootCallTarget callTarget = gtran.translate();
+        return new GeneratorExpressionNode(generatorName, callTarget, getIterator, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                         gtran.getNumOfActiveFlags(),
                         gtran.getNumOfGeneratorBlockNode(),
                         gtran.getNumOfGeneratorForNode());
@@ -1200,7 +1201,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         }
     }
 
-    private LoopNode createForInScope(PNode target, PNode iterator, PNode body) {
+    private ForNode createForInScope(PNode target, PNode iterator, PNode body) {
         GetIteratorNode getIterator = factory.createGetIterator(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
         return new ForNode(body, target, getIterator);
@@ -1739,11 +1740,14 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         }
     }
 
-    private PNode createGeneratorExpression(Python3Parser.Comp_forContext comp_for, PNode yield) {
+    private ForNode createGeneratorExpression(Python3Parser.Comp_forContext comp_for, PNode yield) {
         // TODO: async
+        environment.pushCurentScope();
+        PNode iterator = asBlockOrPNode(comp_for.or_test().accept(this));
+        environment.popCurrentScope();
+
         PNode targets = assigns.translate(comp_for.exprlist());
         PNode myBody = yield;
-        PNode iterator = asBlockOrPNode(comp_for.or_test().accept(this));
         PNode condition = null;
         Python3Parser.Comp_iterContext comp_iter = comp_for.comp_iter();
         while (comp_iter != null && comp_iter.comp_if() != null) {
@@ -1761,7 +1765,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         if (condition != null) {
             myBody = factory.createIf(factory.createYesNode(condition), myBody, EmptyNode.create());
         }
-        LoopNode loop = createForInScope(targets, iterator, myBody);
+        ForNode loop = createForInScope(targets, iterator, myBody);
         deriveSourceSection(comp_for, loop);
         return loop;
     }
