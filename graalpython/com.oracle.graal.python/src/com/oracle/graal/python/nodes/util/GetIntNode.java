@@ -63,7 +63,7 @@ public abstract class GetIntNode extends PBaseNode {
     }
 
     @Specialization
-    public long toInt(double x) {
+    public long toInt(@SuppressWarnings("unused") double x) {
         throw raise(TypeError, "'float' object cannot be interpreted as an integer");
     }
 

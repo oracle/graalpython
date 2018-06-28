@@ -42,9 +42,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -108,7 +106,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         public abstract double executeObject(Object value);
 
-        public double count(@SuppressWarnings("unused") double value) {
+        public double count(double value) {
             throw raise(NotImplementedError, "count function in Math");
         }
 
@@ -336,7 +334,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "factorial", fixedNumOfArguments = 1)
     @ImportStatic(Double.class)
-    @SuppressWarnings("unused")
     @GenerateNodeFactory
     public abstract static class FactorialNode extends PythonUnaryBuiltinNode {
 
@@ -756,12 +753,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsNanNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean isNan(@SuppressWarnings("unused") long value) {
+        public boolean isNan(long value) {
             return false;
         }
 
         @Specialization
-        public boolean isNan(@SuppressWarnings("unused") PInt value) {
+        public boolean isNan(PInt value) {
             return false;
         }
 
@@ -806,17 +803,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean isClose(double a, double b, @SuppressWarnings("unused") PNone rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+        public boolean isClose(double a, double b, PNone rel_tol, PNone abs_tol) {
             return isCloseDouble(a, b, DEFAULT_REL, DEFAULT_ABS);
         }
 
         @Specialization
-        public boolean isClose(double a, double b, @SuppressWarnings("unused") PNone rel_tol, double abs_tol) {
+        public boolean isClose(double a, double b, PNone rel_tol, double abs_tol) {
             return isCloseDouble(a, b, DEFAULT_REL, abs_tol);
         }
 
         @Specialization
-        public boolean isClose(double a, double b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+        public boolean isClose(double a, double b, double rel_tol, PNone abs_tol) {
             return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
         }
 
@@ -834,7 +831,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "ldexp", fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
     public abstract static class LdexpNode extends PythonBuiltinNode {
 
         private static final String EXPECTED_INT_MESSAGE = "Expected an int as second argument to ldexp.";
@@ -1328,12 +1324,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class IsFiniteNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public boolean isfinite(@SuppressWarnings("unused") long value) {
+        public boolean isfinite(long value) {
             return true;
         }
 
         @Specialization
-        public boolean isfinite(@SuppressWarnings("unused") PInt value) {
+        public boolean isfinite(PInt value) {
             return true;
         }
 
@@ -1356,12 +1352,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class IsInfNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public boolean isinf(@SuppressWarnings("unused") long value) {
+        public boolean isinf(long value) {
             return false;
         }
 
         @Specialization
-        public boolean isinf(@SuppressWarnings("unused") PInt value) {
+        public boolean isinf(PInt value) {
             return false;
         }
 
@@ -1445,7 +1441,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double logDN(double value, @SuppressWarnings("unused") PNone novalue,
+        public double logDN(double value, PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
             raiseMathError(doNotFit, value <= 0);
             return Math.log(value);
@@ -1453,7 +1449,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
+        public double logPIN(PInt value, PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
             BigInteger bValue = value.getValue();
             raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1);
@@ -1989,7 +1985,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
             x2 = x * x;
             acc = 0.0;
-            fk = (double) ERF_SERIES_TERMS + 0.5;
+            fk = ERF_SERIES_TERMS + 0.5;
             for (i = 0; i < ERF_SERIES_TERMS; i++) {
                 acc = 2.0 + x2 * acc / fk;
                 fk -= 1.0;

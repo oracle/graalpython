@@ -208,7 +208,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract String executeObject(Object x);
 
-        private String buildString(boolean isNegative, String number) {
+        private static String buildString(boolean isNegative, String number) {
             StringBuilder sb = new StringBuilder();
             if (isNegative) {
                 sb.append('-');
