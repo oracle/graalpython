@@ -106,7 +106,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         public abstract double executeObject(Object value);
 
-        public double count(double value) {
+        public double count(@SuppressWarnings("unused") double value) {
             throw raise(NotImplementedError, "count function in Math");
         }
 
@@ -358,12 +358,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int factorialBoolean(boolean value) {
+        public int factorialBoolean(@SuppressWarnings("unused") boolean value) {
             return 1;
         }
 
         @Specialization(guards = {"value < 0"})
-        public long factorialNegativeInt(int value) {
+        public long factorialNegativeInt(@SuppressWarnings("unused") int value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
@@ -379,7 +379,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"value < 0"})
-        public long factorialNegativeLong(long value) {
+        public long factorialNegativeLong(@SuppressWarnings("unused") long value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
@@ -395,12 +395,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNegative(value)")
-        public Object factorialPINegative(PInt value) {
+        public Object factorialPINegative(@SuppressWarnings("unused") PInt value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
         @Specialization(guards = "isOvf(value)")
-        public Object factorialPIOvf(PInt value) {
+        public Object factorialPIOvf(@SuppressWarnings("unused") PInt value) {
             throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
         }
 
@@ -415,27 +415,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNaN(value)"})
-        public long factorialDoubleNaN(double value) {
+        public long factorialDoubleNaN(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
         }
 
         @Specialization(guards = {"isInfinite(value)"})
-        public long factorialDoubleInfinite(double value) {
+        public long factorialDoubleInfinite(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.ValueError, "cannot convert float infinity to integer");
         }
 
         @Specialization(guards = "isNegative(value)")
-        public PInt factorialDoubleNegative(double value) {
+        public PInt factorialDoubleNegative(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
         @Specialization(guards = "!isInteger(value)")
-        public PInt factorialDoubleNotInteger(double value) {
+        public PInt factorialDoubleNotInteger(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.ValueError, "factorial() only accepts integral values");
         }
 
         @Specialization(guards = "isOvf(value)")
-        public PInt factorialDoubleOvf(double value) {
+        public PInt factorialDoubleOvf(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
         }
 
@@ -450,27 +450,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNaN(value.getValue())"})
-        public long factorialPFLNaN(PFloat value) {
+        public long factorialPFLNaN(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
         }
 
         @Specialization(guards = {"isInfinite(value.getValue())"})
-        public long factorialPFLInfinite(PFloat value) {
+        public long factorialPFLInfinite(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.ValueError, "cannot convert float infinity to integer");
         }
 
         @Specialization(guards = "isNegative(value.getValue())")
-        public PInt factorialPFLNegative(PFloat value) {
+        public PInt factorialPFLNegative(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
         @Specialization(guards = "!isInteger(value.getValue())")
-        public PInt factorialPFLNotInteger(PFloat value) {
+        public PInt factorialPFLNotInteger(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.ValueError, "factorial() only accepts integral values");
         }
 
         @Specialization(guards = "isOvf(value.getValue())")
-        public PInt factorialPFLOvf(PFloat value) {
+        public PInt factorialPFLOvf(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
         }
 
@@ -753,12 +753,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsNanNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean isNan(long value) {
+        public boolean isNan(@SuppressWarnings("unused") long value) {
             return false;
         }
 
         @Specialization
-        public boolean isNan(PInt value) {
+        public boolean isNan(@SuppressWarnings("unused") PInt value) {
             return false;
         }
 
@@ -803,17 +803,17 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean isClose(double a, double b, PNone rel_tol, PNone abs_tol) {
+        public boolean isClose(double a, double b, @SuppressWarnings("unused") PNone rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
             return isCloseDouble(a, b, DEFAULT_REL, DEFAULT_ABS);
         }
 
         @Specialization
-        public boolean isClose(double a, double b, PNone rel_tol, double abs_tol) {
+        public boolean isClose(double a, double b, @SuppressWarnings("unused") PNone rel_tol, double abs_tol) {
             return isCloseDouble(a, b, DEFAULT_REL, abs_tol);
         }
 
         @Specialization
-        public boolean isClose(double a, double b, double rel_tol, PNone abs_tol) {
+        public boolean isClose(double a, double b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
             return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
         }
 
@@ -823,7 +823,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public boolean isClose(double a, long b, double rel_tol, PNone abs_tol) {
+        public boolean isClose(double a, long b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
             return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
         }
     }
@@ -867,7 +867,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double ldexpDD(double mantissa, double exp) {
+        public double ldexpDD(@SuppressWarnings("unused") double mantissa, @SuppressWarnings("unused") double exp) {
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
 
@@ -877,7 +877,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double ldexpLD(long mantissa, double exp) {
+        public double ldexpLD(@SuppressWarnings("unused") long mantissa, @SuppressWarnings("unused") double exp) {
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
 
@@ -906,7 +906,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double ldexpPID(PInt mantissa, double exp) {
+        public double ldexpPID(@SuppressWarnings("unused") PInt mantissa, @SuppressWarnings("unused") double exp) {
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
 
@@ -917,7 +917,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public double ldexpOO(Object mantissa, Object exp) {
+        public double ldexpOO(Object mantissa, @SuppressWarnings("unused") Object exp) {
             if (!MathGuards.isNumber(mantissa)) {
                 throw raise(TypeError, "must be real number, not %p", mantissa);
             }
@@ -1118,27 +1118,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int gcd(double x, double y) {
+        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") double y) {
             throw raise(TypeError, "'float' object cannot be interpreted as an integer");
         }
 
         @Specialization
-        int gcd(long x, double y) {
+        int gcd(@SuppressWarnings("unused") long x, @SuppressWarnings("unused") double y) {
             throw raise(TypeError, "'float' object cannot be interpreted as an integer");
         }
 
         @Specialization
-        int gcd(double x, long y) {
+        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") long y) {
             throw raise(TypeError, "'float' object cannot be interpreted as an integer");
         }
 
         @Specialization
-        int gcd(double x, PInt y) {
+        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") PInt y) {
             throw raise(TypeError, "'float' object cannot be interpreted as an integer");
         }
 
         @Specialization
-        int gcd(PInt x, double y) {
+        int gcd(@SuppressWarnings("unused") PInt x, @SuppressWarnings("unused") double y) {
             throw raise(TypeError, "'float' object cannot be interpreted as an integer");
         }
 
@@ -1324,12 +1324,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class IsFiniteNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public boolean isfinite(long value) {
+        public boolean isfinite(@SuppressWarnings("unused") long value) {
             return true;
         }
 
         @Specialization
-        public boolean isfinite(PInt value) {
+        public boolean isfinite(@SuppressWarnings("unused") PInt value) {
             return true;
         }
 
@@ -1352,12 +1352,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class IsInfNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public boolean isinf(long value) {
+        public boolean isinf(@SuppressWarnings("unused") long value) {
             return false;
         }
 
         @Specialization
-        public boolean isinf(PInt value) {
+        public boolean isinf(@SuppressWarnings("unused") PInt value) {
             return false;
         }
 
@@ -1441,7 +1441,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double logDN(double value, PNone novalue,
+        public double logDN(double value, @SuppressWarnings("unused") PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
             raiseMathError(doNotFit, value <= 0);
             return Math.log(value);
@@ -1449,7 +1449,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public double logPIN(PInt value, PNone novalue,
+        public double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
                         @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
             BigInteger bValue = value.getValue();
             raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) == -1);
@@ -1995,7 +1995,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         static double m_erfc_contfrac(double x) {
-            double x2, a, da, p, p_last, q, q_last, b, result;
+            double x2, a, da, p, p_last, q, q_last, b;
             int i;
 
             if (x >= ERFC_CONTFRAC_CUTOFF) {
