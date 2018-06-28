@@ -69,7 +69,7 @@ public class PythonContext {
     private OutputStream out;
     private OutputStream err;
     @CompilationFinal private boolean capiWasLoaded = false;
-    private final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
+    private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
@@ -222,7 +222,7 @@ public class PythonContext {
         }
     }
 
-    public Assumption getSingleNativeContextAssumption() {
+    public static Assumption getSingleNativeContextAssumption() {
         return singleNativeContext;
     }
 }

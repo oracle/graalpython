@@ -1199,9 +1199,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Set_Ptr extends NativeBuiltin {
 
         @Specialization
-        int doPythonObject(PythonObjectNativeWrapper nativeWrapper, TruffleObject ptr) {
-            nativeWrapper.setNativePointer(null);
-            nativeWrapper.setNativePointer(ptr);
+        int doPythonObject(PythonAbstractObject nativeWrapper, TruffleObject ptr) {
+            return doNativeWrapper(nativeWrapper.getNativeWrapper(), ptr);
+        }
+
+        @Specialization
+        int doNativeWrapper(PythonObjectNativeWrapper nativeWrapper, TruffleObject ptr) {
+            if (nativeWrapper.isNative()) {
+                PythonContext.getSingleNativeContextAssumption().invalidate();
+            } else {
+                nativeWrapper.setNativePointer(ptr);
+            }
             return 0;
         }
     }
@@ -1211,11 +1219,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_SetBufferProcs extends NativeBuiltin {
 
         @Specialization
-        Object doPythonObject(PythonClass obj, Object getBufferProc, Object releaseBufferProc) {
-            PythonClassNativeWrapper nativeWrapper = obj.getNativeWrapper();
+        Object doNativeWrapper(PythonClassNativeWrapper nativeWrapper, Object getBufferProc, Object releaseBufferProc) {
             nativeWrapper.setGetBufferProc(getBufferProc);
             nativeWrapper.setReleaseBufferProc(releaseBufferProc);
             return PNone.NO_VALUE;
+        }
+
+        @Specialization
+        Object doPythonObject(PythonClass obj, Object getBufferProc, Object releaseBufferProc) {
+            return doNativeWrapper(obj.getNativeWrapper(), getBufferProc, releaseBufferProc);
         }
     }
 

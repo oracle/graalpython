@@ -41,10 +41,7 @@
 
 MUST_INLINE static void force_to_native(void* obj) {
     if (polyglot_is_value(obj)) {
-        void* handle = truffle_deref_handle_for_managed(obj);
-        if(!polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", obj, handle)) {
-            truffle_release_handle(handle);
-        }
+        polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", obj, truffle_deref_handle_for_managed(obj));
     }
 }
 
@@ -95,9 +92,9 @@ static void initialize_globals() {
 }
 
 static void initialize_bufferprocs() {
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyByteArray_Type), (getbufferproc)NULL, (releasebufferproc)NULL);
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)NULL, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
 }
 
 __attribute__((constructor))

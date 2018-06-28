@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
@@ -601,7 +602,7 @@ public class PythonObjectNativeWrapperMR {
         }
 
         protected Assumption getSingleNativeContextAssumption() {
-            return getContext().getSingleNativeContextAssumption();
+            return PythonContext.getSingleNativeContextAssumption();
         }
 
         public static PAsPointerNode create() {
