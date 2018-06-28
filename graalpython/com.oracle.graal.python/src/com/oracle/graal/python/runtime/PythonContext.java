@@ -214,6 +214,8 @@ public class PythonContext {
     }
 
     public void initializeMainModule(String path) {
-        mainModule.setAttribute(__FILE__, path);
+        if (path != null) {
+            mainModule.setAttribute(__FILE__, path);
+        }
     }
 }
