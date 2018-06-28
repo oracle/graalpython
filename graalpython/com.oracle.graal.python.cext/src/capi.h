@@ -86,7 +86,7 @@ PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 /* upcall macros for calling into Python */
 
 /* Call function with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_O(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+#define UPCALL_O(__recv__, __name__, ...) handle_exception(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
 /* Call function with a primitive return; no polyglot cast but error handling */
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
@@ -98,13 +98,13 @@ PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 #define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
 
 /* Call function with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_D(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING_D((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+#define UPCALL_D(__recv__, __name__, ...) handle_exception(PY_TRUFFLE_LANDING_D((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
 /* Call function with return type 'void*'; no polyglot cast and no error handling */
 #define UPCALL_PTR(__name__, ...) (PY_TRUFFLE_LANDING_PTR(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_CEXT_O(__name__, ...) handle_exception_and_cast(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+#define UPCALL_CEXT_O(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
 /* Call void function of 'python_cext' module; no polyglot cast and no error handling */
 #define UPCALL_CEXT_VOID(__name__, ...) (PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
@@ -139,7 +139,6 @@ PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 #define as_float(obj) ((float)as_double(obj))
 
 
-PyObject* handle_exception_and_cast(void* val);
 void* handle_exception(void* val);
 void* native_to_java(PyObject* obj);
 extern void* to_java(PyObject* obj);

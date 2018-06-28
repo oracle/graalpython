@@ -148,12 +148,6 @@ static void initialize_capi() {
     initialize_bufferprocs();
 }
 
-
-__attribute__((always_inline))
-inline PyObject* handle_exception_and_cast(void* val) {
-    return val == ERROR_MARKER ? NULL : val;
-}
-
 __attribute__((always_inline))
 inline void* handle_exception(void* val) {
     return val == ERROR_MARKER ? NULL : val;
