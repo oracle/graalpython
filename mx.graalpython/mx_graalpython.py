@@ -423,7 +423,7 @@ def graalpython_gate_runner(args, tasks):
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
             testdownstream(
                 _suite,
-                [apprepo, mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
+                [apprepo],
                 ".",
                 [["graalpython-apptests"]])
 
