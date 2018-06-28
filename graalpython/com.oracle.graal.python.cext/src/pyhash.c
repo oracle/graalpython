@@ -54,5 +54,5 @@ void initialize_hashes() {
 
 
 Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return polyglot_as_i64(polyglot_invoke(PY_BUILTIN, "hash", polyglot_from_string(src, "ascii")));
+    return UPCALL_L(PY_BUILTIN, "hash", polyglot_from_string(src, "ascii"));
 }
