@@ -260,6 +260,7 @@ class GraalPythonTags(object):
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
     R = 'python-R'
+    apptests = 'python-apptests'
     license = 'python-license'
 
 
@@ -416,6 +417,15 @@ def graalpython_gate_runner(args, tasks):
                 [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
                  ["-v", "--cp-sfx", pythonjars, "r", "--jvm", "--polyglot", "-e", "eval.polyglot('python', path='%s')" % str(script_p2r)]
                  ])
+
+    with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
+        if task:
+            apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
+            testdownstream(
+                _suite,
+                [apprepo, mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
+                ".",
+                [["graalpython-apptests"]])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
