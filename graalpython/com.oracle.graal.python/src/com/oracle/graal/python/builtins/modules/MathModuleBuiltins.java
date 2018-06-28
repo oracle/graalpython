@@ -868,6 +868,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "isclose", minNumOfArguments = 2, keywordArguments = {"rel_tol", "abs_tol"})
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class IsCloseNode extends PythonBuiltinNode {
         private static double DEFAULT_REL = 1e-09;
@@ -912,6 +913,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         public boolean isClose(double a, double b, double rel_tol, double abs_tol) {
             return isCloseDouble(a, b, rel_tol, abs_tol);
+        }
+
+        @Specialization
+        public boolean isClose(double a, long b, double rel_tol, PNone abs_tol) {
+            return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
         }
     }
 
@@ -2057,4 +2063,327 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "erf", fixedNumOfArguments = 1, doc = "Error function at x.")
+    @GenerateNodeFactory
+    public abstract static class ErfNode extends MathDoubleUnaryBuiltinNode {
+        // Adapted implementation from CPython
+        private static final double ERF_SERIES_CUTOFF = 1.5;
+        private static final int ERF_SERIES_TERMS = 25;
+        protected static final double ERFC_CONTFRAC_CUTOFF = 30.0;
+        private static final int ERFC_CONTFRAC_TERMS = 50;
+        private static final double SQRTPI = 1.772453850905516027298167483341145182798;
+
+        static double m_erf_series(double x) {
+            double x2, acc, fk;
+            int i;
+
+            x2 = x * x;
+            acc = 0.0;
+            fk = (double) ERF_SERIES_TERMS + 0.5;
+            for (i = 0; i < ERF_SERIES_TERMS; i++) {
+                acc = 2.0 + x2 * acc / fk;
+                fk -= 1.0;
+            }
+
+            return acc * x * Math.exp(-x2) / SQRTPI;
+        }
+
+        static double m_erfc_contfrac(double x) {
+            double x2, a, da, p, p_last, q, q_last, b, result;
+            int i;
+
+            if (x >= ERFC_CONTFRAC_CUTOFF) {
+                return 0.0;
+            }
+
+            x2 = x * x;
+            a = 0.0;
+            da = 0.5;
+            p = 1.0;
+            p_last = 0.0;
+            q = da + x2;
+            q_last = 1.0;
+            for (i = 0; i < ERFC_CONTFRAC_TERMS; i++) {
+                double temp;
+                a += da;
+                da += 2.0;
+                b = da + x2;
+                temp = p;
+                p = b * p - a * p_last;
+                p_last = temp;
+                temp = q;
+                q = b * q - a * q_last;
+                q_last = temp;
+            }
+
+            return p / q * x * Math.exp(-x2) / SQRTPI;
+        }
+
+        @Override
+        @TruffleBoundary
+        public double count(double x) {
+            double absx, cf;
+
+            if (Double.isNaN(x)) {
+                return x;
+            }
+            absx = Math.abs(x);
+            if (absx < ERF_SERIES_CUTOFF)
+                return m_erf_series(x);
+            else {
+                cf = m_erfc_contfrac(absx);
+                return x > 0.0 ? 1.0 - cf : cf - 1.0;
+            }
+        }
+    }
+
+    @Builtin(name = "erfc", fixedNumOfArguments = 1, doc = "Error function at x.")
+    @GenerateNodeFactory
+    public abstract static class ErfcNode extends ErfNode {
+        // Adapted implementation from CPython
+        @Override
+        @TruffleBoundary
+        public double count(double x) {
+            double absx, cf;
+
+            if (Double.isNaN(x)) {
+                return x;
+            }
+            absx = Math.abs(x);
+            if (absx < ErfNode.ERF_SERIES_CUTOFF)
+                return 1.0 - m_erf_series(x);
+            else {
+                cf = m_erfc_contfrac(absx);
+                return x > 0.0 ? cf : 2.0 - cf;
+            }
+        }
+    }
+
+    @Builtin(name = "gamma", fixedNumOfArguments = 1, doc = "Gamma function at x")
+    @GenerateNodeFactory
+    public abstract static class GammaNode extends MathDoubleUnaryBuiltinNode {
+        // Adapted implementation from CPython
+        private static final int NGAMMA_INTEGRAL = 23;
+        private static final int LANCZOS_N = 13;
+        protected static final double LANCZOS_G = 6.024680040776729583740234375;
+        private static final double LANZOS_G_MINUS_HALF = 5.524680040776729583740234375;
+        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_NUM_COEFFS = new double[]{
+                        23531376880.410759688572007674451636754734846804940,
+                        42919803642.649098768957899047001988850926355848959,
+                        35711959237.355668049440185451547166705960488635843,
+                        17921034426.037209699919755754458931112671403265390,
+                        6039542586.3520280050642916443072979210699388420708,
+                        1439720407.3117216736632230727949123939715485786772,
+                        248874557.86205415651146038641322942321632125127801,
+                        31426415.585400194380614231628318205362874684987640,
+                        2876370.6289353724412254090516208496135991145378768,
+                        186056.26539522349504029498971604569928220784236328,
+                        8071.6720023658162106380029022722506138218516325024,
+                        210.82427775157934587250973392071336271166969580291,
+                        2.5066282746310002701649081771338373386264310793408
+        };
+
+        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_DEN_COEFFS = new double[]{
+                        0.0, 39916800.0, 120543840.0, 150917976.0, 105258076.0, 45995730.0,
+                        13339535.0, 2637558.0, 357423.0, 32670.0, 1925.0, 66.0, 1.0};
+
+        @CompilationFinal(dimensions = 1) protected final static double[] GAMMA_INTEGRAL = new double[]{
+                        1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0, 5040.0, 40320.0, 362880.0,
+                        3628800.0, 39916800.0, 479001600.0, 6227020800.0, 87178291200.0,
+                        1307674368000.0, 20922789888000.0, 355687428096000.0,
+                        6402373705728000.0, 121645100408832000.0, 2432902008176640000.0,
+                        51090942171709440000.0, 1124000727777607680000.0,
+        };
+
+        static double sinpi(double x) {
+            double y, r = 0;
+            int n;
+            /* this function should only ever be called for finite arguments */
+            assert (Double.isFinite(x));
+            y = Math.abs(x) % 2.0;
+            n = (int) Math.round(2.0 * y);
+            assert (0 <= n && n <= 4);
+            switch (n) {
+                case 0:
+                    r = Math.sin(Math.PI * y);
+                    break;
+                case 1:
+                    r = Math.cos(Math.PI * (y - 0.5));
+                    break;
+                case 2:
+                    /*
+                     * N.B. -sin(pi*(y-1.0)) is *not* equivalent: it would give -0.0 instead of 0.0
+                     * when y == 1.0.
+                     */
+                    r = Math.sin(Math.PI * (1.0 - y));
+                    break;
+                case 3:
+                    r = -Math.cos(Math.PI * (y - 1.5));
+                    break;
+                case 4:
+                    r = Math.sin(Math.PI * (y - 2.0));
+                    break;
+                default:
+
+            }
+            return Math.copySign(1.0, x) * r;
+        }
+
+        static double lanczos_sum(double x) {
+            double num = 0.0, den = 0.0;
+            int i;
+            assert (x > 0.0);
+            /*
+             * evaluate the rational function lanczos_sum(x). For large x, the obvious algorithm
+             * risks overflow, so we instead rescale the denominator and numerator of the rational
+             * function by x**(1-LANCZOS_N) and treat this as a rational function in 1/x. This also
+             * reduces the error for larger x values. The choice of cutoff point (5.0 below) is
+             * somewhat arbitrary; in tests, smaller cutoff values than this resulted in lower
+             * accuracy.
+             */
+            if (x < 5.0) {
+                for (i = LANCZOS_N; --i >= 0;) {
+                    num = num * x + LANCZOS_NUM_COEFFS[i];
+                    den = den * x + LANCZOS_DEN_COEFFS[i];
+                }
+            } else {
+                for (i = 0; i < LANCZOS_N; i++) {
+                    num = num / x + LANCZOS_NUM_COEFFS[i];
+                    den = den / x + LANCZOS_DEN_COEFFS[i];
+                }
+            }
+            return num / den;
+        }
+
+        @Override
+        @TruffleBoundary
+        public double count(double x) {
+            double absx, r, y, z, sqrtpow;
+
+            /* special cases */
+            if (!Double.isFinite(x)) {
+                if (Double.isNaN(x) || x > 0.0)
+                    return x; /* tgamma(nan) = nan, tgamma(inf) = inf */
+                else {
+                    checkMathDomainError(false);
+                }
+            }
+            checkMathDomainError(x == 0);
+
+            /* integer arguments */
+            if (x == Math.floor(x)) {
+                checkMathDomainError(x < 0.0);
+                if (x <= NGAMMA_INTEGRAL)
+                    return GAMMA_INTEGRAL[(int) x - 1];
+            }
+            absx = Math.abs(x);
+
+            /* tiny arguments: tgamma(x) ~ 1/x for x near 0 */
+            if (absx < 1e-20) {
+                r = 1.0 / x;
+                checkMathRangeError(Double.isInfinite(r));
+                return r;
+            }
+
+            /*
+             * large arguments: assuming IEEE 754 doubles, tgamma(x) overflows for x > 200, and
+             * underflows to +-0.0 for x < -200, not a negative integer.
+             */
+            if (absx > 200.0) {
+                checkMathRangeError(x >= 0.0);
+                return 0.0 / sinpi(x);
+            }
+
+            y = absx + LANZOS_G_MINUS_HALF;
+            /* compute error in sum */
+            if (absx > LANZOS_G_MINUS_HALF) {
+                /*
+                 * note: the correction can be foiled by an optimizing compiler that (incorrectly)
+                 * thinks that an expression like a + b - a - b can be optimized to 0.0. This
+                 * shouldn't happen in a standards-conforming compiler.
+                 */
+                double q = y - absx;
+                z = q - LANZOS_G_MINUS_HALF;
+            } else {
+                double q = y - LANZOS_G_MINUS_HALF;
+                z = q - absx;
+            }
+            z = z * LANCZOS_G / y;
+            if (x < 0.0) {
+                r = -Math.PI / sinpi(absx) / absx * Math.exp(y) / lanczos_sum(absx);
+                r -= z * r;
+                if (absx < 140.0) {
+                    r /= Math.pow(y, absx - 0.5);
+                } else {
+                    sqrtpow = Math.pow(y, absx / 2.0 - 0.25);
+                    r /= sqrtpow;
+                    r /= sqrtpow;
+                }
+            } else {
+                r = lanczos_sum(absx) / Math.exp(y);
+                r += z * r;
+                if (absx < 140.0) {
+                    r *= Math.pow(y, absx - 0.5);
+                } else {
+                    sqrtpow = Math.pow(y, absx / 2.0 - 0.25);
+                    r *= sqrtpow;
+                    r *= sqrtpow;
+                }
+            }
+            checkMathRangeError(Double.isInfinite(r));
+            return r;
+        }
+
+    }
+
+    @Builtin(name = "lgamma", fixedNumOfArguments = 1, doc = "Natural logarithm of absolute value of Gamma function at x.")
+    @GenerateNodeFactory
+    public abstract static class LgammaNode extends GammaNode {
+        // Adapted implementation from CPython
+        private static final double LOGPI = 1.144729885849400174143427351353058711647;
+
+        @Override
+        @TruffleBoundary
+        public double count(double x) {
+            double r;
+            double absx;
+
+            /* special cases */
+            if (!Double.isFinite(x)) {
+                if (Double.isNaN(x)) {
+                    return x; /* lgamma(nan) = nan */
+                } else {
+                    return Double.POSITIVE_INFINITY; /* lgamma(+-inf) = +inf */
+                }
+            }
+
+            /* integer arguments */
+            if (x == Math.floor(x) && x <= 2.0) {
+                checkMathDomainError(x <= 0.0);
+                return 0.0;
+                /* lgamma(1) = lgamma(2) = 0.0 */
+            }
+
+            absx = Math.abs(x);
+            /* tiny arguments: lgamma(x) ~ -log(fabs(x)) for small x */
+            if (absx < 1e-20) {
+                return -Math.log(absx);
+            }
+            /*
+             * Lanczos' formula. We could save a fraction of a ulp in accuracy by having a second
+             * set of numerator coefficients for lanczos_sum that absorbed the exp(-lanczos_g) term,
+             * and throwing out the lanczos_g subtraction below; it's probably not worth it.
+             */
+            r = Math.log(lanczos_sum(absx)) - LANCZOS_G;
+            r += (absx - 0.5) * (Math.log(absx + LANCZOS_G - 0.5) - 1);
+            if (x < 0.0) {
+                /* Use reflection formula to get value for negative x. */
+                r = LOGPI - Math.log(Math.abs(sinpi(absx))) - Math.log(absx) - r;
+            }
+            checkMathRangeError(Double.isInfinite(r));
+
+            return r;
+        }
+
+    }
 }
