@@ -318,8 +318,8 @@ public abstract class PythonObjectFactory extends Node {
      * Classes, methods and functions
      */
 
-    public PythonModule createPythonModule(String name, String file) {
-        return trace(new PythonModule(lookupClass(PythonBuiltinClassType.PythonModule), name, file));
+    public PythonModule createPythonModule(String name) {
+        return trace(new PythonModule(lookupClass(PythonBuiltinClassType.PythonModule), name));
     }
 
     public PythonClass createPythonClass(PythonClass metaclass, String name, PythonClass[] bases) {

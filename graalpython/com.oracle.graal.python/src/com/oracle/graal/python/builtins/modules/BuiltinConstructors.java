@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
@@ -121,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -133,6 +135,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -146,6 +149,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -1193,26 +1197,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = MODULE, minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = {PythonModule.class}, isPublic = false)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @SuppressWarnings("unused")
     public abstract static class ModuleNode extends PythonBuiltinNode {
+        @Child WriteAttributeToObjectNode writeFile = WriteAttributeToObjectNode.create();
+
         @Specialization
         public PythonModule module(Object cls, String name, PNone path) {
-            return factory().createPythonModule(name, null);
+            return factory().createPythonModule(name);
         }
 
         @Specialization
         public PythonModule module(Object cls, String name, String path) {
-            return factory().createPythonModule(name, path);
-        }
-
-        @Specialization
-        public PythonModule module(Object cls, PString name, PNone path) {
-            return factory().createPythonModule(name.getValue(), null);
-        }
-
-        @Specialization
-        public PythonModule module(Object cls, PString name, String path) {
-            return factory().createPythonModule(name.getValue(), path);
+            PythonModule module = factory().createPythonModule(name);
+            writeFile.execute(module, __FILE__, path);
+            return module;
         }
     }
 
