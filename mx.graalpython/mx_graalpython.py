@@ -255,6 +255,7 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     cpyext = 'python-cpyext'
+    svmunit = 'python-svm-unittest'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
@@ -355,6 +356,42 @@ def graalpython_gate_runner(args, tasks):
                 # TODO: re-enable when python3 is available on darwin
                 mx.log("Running tests with CPython")
                 mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+
+    with Task('GraalPython Python tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
+        if task:
+            if not os.path.exists("./graalpython-svm"):
+                python_svm(["-h"])
+            if os.path.exists("./graalpython-svm"):
+                langhome = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
+
+                # tests root directory
+                tests_folder = "graalpython/com.oracle.graal.python.test/src/tests/"
+
+                # list of excluded tests
+                excluded = ["test_interop.py"]
+
+                def is_included(path):
+                    if path.endswith(".py"):
+                        basename = path.rpartition("/")[2]
+                        return basename.startswith("test_") and basename not in excluded
+                    return False
+
+                # list all 1st-level tests and exclude the SVM-incompatible ones
+                testfiles = []
+                paths = [tests_folder]
+                while paths:
+                    path = paths.pop()
+                    if is_included(path):
+                        testfiles.append(path)
+                    else:
+                        try:
+                            paths += [(path + f if path.endswith("/") else "%s/%s" % (path, f)) for f in
+                                      os.listdir(path)]
+                        except OSError:
+                            pass
+
+                test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v"] + testfiles
+                mx.run(["./graalpython-svm", "--python.CoreHome=graalpython/lib-graalpython", "--python.StdLibHome=graalpython/lib-python/3", langhome] + test_args, nonZeroIsFatal=True)
 
     with Task('GraalPython downstream R tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.R]) as task:
         script_r2p = os.path.join(_suite.dir, "graalpython", "benchmarks", "src", "benchmarks", "interop", "r_python_image_demo.r")
