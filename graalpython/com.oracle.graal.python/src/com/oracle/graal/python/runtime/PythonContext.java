@@ -41,10 +41,12 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 
 public class PythonContext {
@@ -67,6 +69,7 @@ public class PythonContext {
     private OutputStream out;
     private OutputStream err;
     @CompilationFinal private boolean capiWasLoaded = false;
+    private final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
@@ -217,5 +220,9 @@ public class PythonContext {
         if (path != null) {
             mainModule.setAttribute(__FILE__, path);
         }
+    }
+
+    public Assumption getSingleNativeContextAssumption() {
+        return singleNativeContext;
     }
 }
