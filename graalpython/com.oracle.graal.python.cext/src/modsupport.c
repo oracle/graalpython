@@ -575,10 +575,6 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
         return NULL;
     }
 
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-
     switch (PyList_Size(v->list)) {
     case 0:
         return Py_None;
