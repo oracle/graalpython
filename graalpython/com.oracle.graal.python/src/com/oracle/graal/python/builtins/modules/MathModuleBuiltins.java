@@ -1075,7 +1075,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
                     y = lo * 2.0;
                     x = hi + y;
                     yr = x - hi;
-                    if (y == yr) {
+                    if (BigDecimal.valueOf(y).compareTo(BigDecimal.valueOf(yr)) == 0) {
                         hi = x;
                     }
                 }
