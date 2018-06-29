@@ -202,7 +202,7 @@ static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicod
 }
 
 static PyObject* wrap_setattrofunc(setattrofunc f, PyObject* obj, PyObject* key, PyObject* item) {
-	return PyLong_FromLong(f(explicit_cast(obj), explicit_cast(key), explicit_cast(item)));
+	return PyLong_FromLong(f(obj, key, item));
 }
 
 static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObject* n) {
@@ -213,12 +213,8 @@ static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* 
 	return PyLong_FromLong(f(a, PyLong_AsSsize_t(size), b));
 }
 
-static PyObject* wrap_objobjargproc(ssizeobjargproc f, PyObject* a, PyObject* idx, PyObject* b) {
-	return PyLong_FromLong(f(a, idx, b));
-}
-
 static PyObject* wrap_ssizeargfunc(ssizeargfunc f, PyObject* a, PyObject* size) {
-	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size)));
+	return PyLong_FromLong(f(a, PyLong_AsSsize_t(size)));
 }
 
 static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c) {
@@ -226,15 +222,15 @@ static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c
 }
 
 static PyObject* wrap_objobjargproc(objobjargproc f, PyObject* a, PyObject* b, PyObject* c) {
-	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+	return PyLong_FromLong(f(a, b,  c));
 }
 
 static PyObject* wrap_objobjproc(objobjproc f, PyObject* a, PyObject* b) {
-	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b)));
+	return PyLong_FromLong(f(a, b));
 }
 
 static PyObject* wrap_inquiry(inquiry f, PyObject* a) {
-	return PyLong_FromLong(f(explicit_cast(a)));
+	return PyLong_FromLong(f(a));
 }
 
 /* very special case: operator '**' has an optional third arg */
@@ -252,11 +248,11 @@ static PyObject* wrap_pow(ternaryfunc f, ...) {
 }
 
 static PyObject* wrap_lenfunc(lenfunc f, PyObject* a) {
-    return PyLong_FromSsize_t(f(explicit_cast(a)));
+    return PyLong_FromSsize_t(f(a));
 }
 
 static Py_hash_t wrap_hashfunc(hashfunc f, PyObject* a) {
-    return PyLong_FromSsize_t(f(explicit_cast(a)));
+    return PyLong_FromSsize_t(f(a));
 }
 
 
