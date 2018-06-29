@@ -348,6 +348,11 @@ def PyFloat_FromDouble(n):
     return float(n)
 
 
+@may_raise
+def PyFloat_FromObject(n):
+    return float(n)
+
+
 ##################### NUMBER
 
 def _safe_check(v, type_check):
