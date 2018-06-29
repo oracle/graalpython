@@ -64,3 +64,7 @@ void PyMem_RawFree(void *ptr) {
 int PyTraceMalloc_Track(_PyTraceMalloc_domain_t domain, uintptr_t ptr, size_t size) {
     return -2; // we do not track
 }
+
+void PyMem_Free(void *ptr) {
+    free(ptr);
+}
