@@ -247,7 +247,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (!pythonCore.isInitialized()) {
             pythonCore.initialize();
         }
-        context.getOrCreateMainModule(request.getSource().getPath());
+        context.initializeMainModule(request.getSource().getPath());
 
         // if we are running the interpreter, module 'site' is automatically imported
         if (request.getSource().isInteractive()) {

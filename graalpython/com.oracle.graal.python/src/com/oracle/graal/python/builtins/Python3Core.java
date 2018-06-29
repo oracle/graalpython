@@ -391,7 +391,7 @@ public final class Python3Core implements PythonCore {
             return value;
         } else if (value instanceof PythonModule) {
             PythonModule module = (PythonModule) value;
-            PythonModule newModule = factory().createPythonModule(module.getModuleName(), module.getModulePath());
+            PythonModule newModule = factory().createPythonModule(module.getModuleName());
             replacements.put(module, newModule);
             for (String attr : module.getAttributeNames()) {
                 newModule.setAttribute(attr, duplicate(replacements, module.getAttribute(attr)));
@@ -676,7 +676,7 @@ public final class Python3Core implements PythonCore {
     }
 
     public PythonModule createModule(String name, boolean add, PythonBuiltins... builtins) {
-        PythonModule mod = factory().createPythonModule(name, null);
+        PythonModule mod = factory().createPythonModule(name);
         for (PythonBuiltins builtin : builtins) {
             addBuiltinsToModule(mod, builtin);
         }
@@ -779,7 +779,7 @@ public final class Python3Core implements PythonCore {
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
-            mod = factory().createPythonModule("__anonymous__", "<bootstrap>");
+            mod = factory().createPythonModule("__anonymous__");
         }
         CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule.getRootNode());
         callTarget.call(PArguments.withGlobals(mod));

@@ -62,7 +62,7 @@ public abstract class NativeWrappers {
 
         public void setNativePointer(Object nativePointer) {
             // we should set the pointer just once
-            assert this.nativePointer == null || this.nativePointer.equals(nativePointer);
+            assert this.nativePointer == null || this.nativePointer.equals(nativePointer) || nativePointer == null;
             this.nativePointer = nativePointer;
         }
 

@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ReadNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
@@ -76,8 +77,10 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -589,7 +592,7 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
-        @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNodeGen.create();
+        @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNode.create();
 
         Object access(PythonNativeWrapper obj) {
             if (!obj.isNative()) {
@@ -603,7 +606,7 @@ public class PythonObjectNativeWrapperMR {
     abstract static class IsPointerNode extends Node {
         @Child private Node isPointerNode;
 
-        Object access(PythonNativeWrapper obj) {
+        boolean access(PythonNativeWrapper obj) {
             return obj.isNative() && (!(obj.getNativePointer() instanceof TruffleObject) || ForeignAccess.sendIsPointer(getIsPointerNode(), (TruffleObject) obj.getNativePointer()));
         }
 
@@ -618,11 +621,26 @@ public class PythonObjectNativeWrapperMR {
 
     @Resolve(message = "AS_POINTER")
     abstract static class AsPointerNode extends Node {
-        @Child private Node asPointerNode;
+        @Child private PAsPointerNode pAsPointerNode = PAsPointerNode.create();
 
         long access(PythonNativeWrapper obj) {
+            return pAsPointerNode.execute(obj);
+        }
+    }
+
+    abstract static class PAsPointerNode extends PBaseNode {
+        @Child private Node asPointerNode;
+
+        public abstract long execute(PythonNativeWrapper o);
+
+        @Specialization(assumptions = "getSingleNativeContextAssumption()")
+        long doFast(PythonNativeWrapper obj) {
             // the native pointer object must either be a TruffleObject or a primitive
             Object nativePointer = obj.getNativePointer();
+            return ensureLong(nativePointer);
+        }
+
+        private long ensureLong(Object nativePointer) {
             if (nativePointer instanceof TruffleObject) {
                 if (asPointerNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -635,8 +653,22 @@ public class PythonObjectNativeWrapperMR {
                 }
             }
             return (long) nativePointer;
-
         }
+
+        @Specialization(replaces = "doFast")
+        long doSlow(PythonNativeWrapper obj,
+                        @Cached("create()") ToPyObjectNode toPyObjectNode) {
+            return ensureLong(toPyObjectNode.execute(obj));
+        }
+
+        protected Assumption getSingleNativeContextAssumption() {
+            return PythonContext.getSingleNativeContextAssumption();
+        }
+
+        public static PAsPointerNode create() {
+            return PAsPointerNodeGen.create();
+        }
+
     }
 
     abstract static class ToPyObjectNode extends TransformToNativeNode {
@@ -721,6 +753,10 @@ public class PythonObjectNativeWrapperMR {
                 toSulongNode = insert(CExtNodes.ToSulongNode.create());
             }
             return toSulongNode;
+        }
+
+        public static ToPyObjectNode create() {
+            return ToPyObjectNodeGen.create();
         }
     }
 }

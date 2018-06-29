@@ -26,25 +26,23 @@
 package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivisionError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @NodeChildren({@NodeChild(value = "withContext", type = PNode.class)})
 public abstract class WithNode extends StatementNode {
@@ -55,7 +53,7 @@ public abstract class WithNode extends StatementNode {
     @Child private GetAttributeNode exitGetter;
     @Child private CallDispatchNode enterDispatch;
     @Child private CallDispatchNode exitDispatch;
-    @Child private CastToBooleanNode exitResultIsTrueish;
+    @Child private CastToBooleanNode toBooleanNode;
     @Child private CreateArgumentsNode createArgs;
 
     protected WithNode(PNode targetNode, PNode body) {
@@ -65,7 +63,7 @@ public abstract class WithNode extends StatementNode {
         this.exitGetter = GetAttributeNode.create();
         this.enterDispatch = CallDispatchNode.create("__enter__");
         this.exitDispatch = CallDispatchNode.create("__enter__");
-        this.exitResultIsTrueish = CastToBooleanNode.createIfTrueNode();
+        this.toBooleanNode = CastToBooleanNode.createIfTrueNode();
         this.createArgs = CreateArgumentsNode.create();
     }
 
@@ -93,62 +91,53 @@ public abstract class WithNode extends StatementNode {
     }
 
     @Specialization
-    protected Object runWith(VirtualFrame frame, PythonObject withObject) {
+    protected Object runWith(VirtualFrame frame, PythonObject withObject,
+                    @Cached("create()") IsCallableNode isCallableNode,
+                    @Cached("create()") IsCallableNode isExitCallableNode) {
+
         boolean gotException = false;
-        Object enterCallable = enterGetter.execute(withObject, "__enter__");
+        // CPython first looks up '__exit__
         Object exitCallable = exitGetter.execute(withObject, "__exit__");
-        try {
-            applyValues(frame, enterDispatch.executeCall(PythonCallable.expect(enterCallable), createArgs.execute(withObject), new PKeyword[0]));
-        } catch (UnexpectedResultException e1) {
-            CompilerDirectives.transferToInterpreter();
-            throw raise(TypeError, "%s is not callable", e1.getResult());
+        Object enterCallable = enterGetter.execute(withObject, "__enter__");
+
+        if (isCallableNode.execute(enterCallable)) {
+            applyValues(frame, enterDispatch.executeCall(enterCallable, createArgs.execute(withObject), new PKeyword[0]));
+        } else {
+            throw raise(TypeError, "%p is not callable", enterCallable);
         }
+
         try {
             body.execute(frame);
-        } catch (RuntimeException exception) {
-            CompilerDirectives.transferToInterpreter();
+        } catch (PException exception) {
             gotException = true;
-            return handleException(withObject, exception);
+            return handleException(withObject, exitCallable, exception, isExitCallableNode);
         } finally {
             if (!gotException) {
-                try {
-                    return exitDispatch.executeCall(PythonCallable.expect(exitCallable), createArgs.execute(withObject, PNone.NONE, PNone.NONE, PNone.NONE),
-                                    new PKeyword[0]);
-                } catch (UnexpectedResultException e1) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw raise(TypeError, "%s is not callable", e1.getResult());
+                if (isExitCallableNode.execute(exitCallable)) {
+                    exitDispatch.executeCall(exitCallable, createArgs.execute(withObject, PNone.NONE, PNone.NONE, PNone.NONE), new PKeyword[0]);
+                } else {
+                    throw raise(TypeError, "%p is not callable", exitCallable);
                 }
             }
         }
-        assert false;
-        return null;
+        return PNone.NONE;
     }
 
-    private Object handleException(PythonObject withObject, RuntimeException e) {
-        RuntimeException exception = e;
-        PythonCallable exitCallable = null;
-        try {
-            exitCallable = PythonCallable.expect(exitGetter.execute(withObject, "__exit__"));
-        } catch (UnexpectedResultException e1) {
-            CompilerDirectives.transferToInterpreter();
-            throw raise(TypeError, "%s is not callable", e1.getResult());
+    private Object handleException(PythonObject withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
+        if (!isExitCallableNode.execute(exitCallable)) {
+            throw raise(TypeError, "%p is not callable", exitCallable);
         }
-        if (exception instanceof ArithmeticException && exception.getMessage().endsWith("divide by zero")) {
-            // TODO: no ArithmeticExceptions should propagate outside of operations
-            exception = raise(ZeroDivisionError, "division by zero");
+
+        e.getExceptionObject().reifyException();
+        Object type = e.getType();
+        Object value = e.getExceptionObject();
+        Object trace = e.getExceptionObject().getTraceback(factory());
+        Object returnValue = exitDispatch.executeCall(exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
+        // If exit handler returns 'true', suppress
+        if (toBooleanNode.executeWith(returnValue)) {
+            return PNone.NONE;
         }
-        if (exception instanceof PException) {
-            PException pException = (PException) exception;
-            pException.getExceptionObject().reifyException();
-            Object type = pException.getType();
-            Object value = pException.getExceptionObject();
-            Object trace = pException.getExceptionObject().getTraceback(factory());
-            Object returnValue = exitDispatch.executeCall(exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
-            // Corner cases:
-            if (exitResultIsTrueish.executeWith(returnValue)) {
-                return returnValue;
-            }
-        }
-        throw exception;
+        // else re-raise exception
+        throw e;
     }
 }
