@@ -104,6 +104,10 @@ def PyModule_SetDocString(module, string):
     module.__doc__ = string
 
 
+def PyModule_NewObject(name):
+    return moduletype(name)
+
+
 ##################### DICT
 
 def PyDict_New():

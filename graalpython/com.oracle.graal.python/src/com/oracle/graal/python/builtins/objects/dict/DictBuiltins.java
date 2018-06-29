@@ -266,6 +266,12 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class MissingNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
+        Object run(Object self, PString key) {
+            throw raise(KeyError, "%s", key.getValue());
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
         Object run(Object self, String key) {
             throw raise(KeyError, "%s", key);
         }

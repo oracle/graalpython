@@ -45,3 +45,33 @@ PyObject* PyImport_ImportModule(const char *name) {
 PyObject* PyImport_GetModuleDict() {
     return UPCALL_CEXT_O("PyImport_GetModuleDict");
 }
+
+PyObject* PyImport_AddModuleObject(PyObject *name) {
+    return _PyImport_AddModuleObject(name, PyImport_GetModuleDict());
+}
+
+PyObject* PyImport_AddModule(const char *name) {
+    PyObject *nameobj = PyUnicode_FromString(name);
+    if (nameobj == NULL) {
+        return NULL;
+    }
+    return PyImport_AddModuleObject(nameobj);
+}
+
+PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {
+    PyObject* m = PyObject_GetItem(modules, name);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    if (m != NULL && PyModule_Check(m)) {
+        return m;
+    }
+    m = PyModule_NewObject(name);
+    if (m == NULL) {
+        return NULL;
+    }
+    if (PyObject_SetItem(modules, name, m) != 0) {
+        return NULL;
+    }
+    return m;
+}
