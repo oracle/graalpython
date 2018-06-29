@@ -34,6 +34,7 @@ import mx_benchmark
 import mx_gate
 import mx_sdk
 import mx_subst
+import mx_urlrewrites
 from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
@@ -421,11 +422,11 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
-            testdownstream(
-                _suite,
-                [apprepo],
-                ".",
-                [["graalpython-apptests"]])
+            _apptest_suite = _suite.import_suite(
+                "graalpython-apptests",
+                urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
+            )
+            mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
