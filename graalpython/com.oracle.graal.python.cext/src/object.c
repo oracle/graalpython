@@ -369,6 +369,18 @@ PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     return op;
 }
 
+// taken from CPython 3.6.4 "Objects/object.c"
+PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size) {
+    if (op == NULL) {
+        return (PyVarObject *) PyErr_NoMemory();
+    }
+    /* Any changes should be reflected in PyObject_INIT_VAR */
+    op->ob_size = size;
+    Py_TYPE(op) = tp;
+    _Py_NewReference((PyObject *)op);
+    return op;
+}
+
 int PyCallable_Check(PyObject *x) {
     return polyglot_as_i32(polyglot_invoke(PY_BUILTIN, "callable", to_java(x)));
 }

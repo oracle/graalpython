@@ -376,6 +376,30 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
     return 1;
 }
 
+#ifdef _PyArg_ParseStack
+#define __backup_PyArg_ParseStack _PyArg_ParseStack
+#undef _PyArg_ParseStack
+#endif
+// for binary compatibility, also define the function properly
+int _PyArg_ParseStack(PyObject** args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
+    return -1;
+}
+#ifdef __backup_PyArg_ParseStack
+#define _PyArg_ParseStack __backup_PyArg_ParseStack
+#undef __backup_PyArg_ParseStack
+#endif
+
+int PyTruffle_Arg_ParseStack(PyObject **args,  Py_ssize_t nargs,  PyObject *kwnames,  struct _PyArg_Parser *parser, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
+    PyObject* argv = PyTuple_New(nargs);
+    Py_ssize_t i=0;
+
+    for (i=0; i < nargs; i++) {
+        PyTuple_SetItem(argv, i, args[i]);
+    }
+
+    return PyTruffle_Arg_ParseTupleAndKeywords(argv, kwnames, parser->format, parser->keywords, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19);
+}
+
 int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
     va_list vl;
     va_start(vl, parser);

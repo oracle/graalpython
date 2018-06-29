@@ -321,33 +321,7 @@ Py_UNICODE* PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size) {
     return NULL;
 }
 
-/* Fast detection of the most frequent whitespace characters */
-const unsigned char _Py_ascii_whitespace[] = {
-    0, 0, 0, 0, 0, 0, 0, 0,
-/*     case 0x0009: * CHARACTER TABULATION */
-/*     case 0x000A: * LINE FEED */
-/*     case 0x000B: * LINE TABULATION */
-/*     case 0x000C: * FORM FEED */
-/*     case 0x000D: * CARRIAGE RETURN */
-    0, 1, 1, 1, 1, 1, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-/*     case 0x001C: * FILE SEPARATOR */
-/*     case 0x001D: * GROUP SEPARATOR */
-/*     case 0x001E: * RECORD SEPARATOR */
-/*     case 0x001F: * UNIT SEPARATOR */
-    0, 0, 0, 0, 1, 1, 1, 1,
-/*     case 0x0020: * SPACE */
-    1, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
-};
+int _PyUnicode_Ready(PyObject *unicode) {
+    // TODO(fa) anything we need to initialize here?
+    return 0;
+}
