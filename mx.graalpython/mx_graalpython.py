@@ -342,7 +342,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/"]
-            mx.command_function("python")(test_args)
+            mx.command_function("python")(["--python.CatchAllExceptions=true"] + test_args)
             if platform.system() != 'Darwin':
                 # TODO: re-enable when python3 is available on darwin
                 mx.log("Running tests with CPython")
