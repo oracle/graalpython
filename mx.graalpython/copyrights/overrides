@@ -82,12 +82,15 @@ graalpython/com.oracle.graal.python.cext/include/bytearrayobject.h,python.copyri
 graalpython/com.oracle.graal.python.cext/include/bytesobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/ceval.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/code.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/codecs.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/compile.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/complexobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/datetime.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/descrobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/dictobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/fileobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/floatobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/frameobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/listobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/longintrepr.h,python.copyright
@@ -113,6 +116,7 @@ graalpython/com.oracle.graal.python.cext/include/pymath.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pymem.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pyport.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pystate.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/pystrhex.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pythonrun.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pythread.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/pytime.h,python.copyright
@@ -120,6 +124,7 @@ graalpython/com.oracle.graal.python.cext/include/setobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/sliceobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structmember.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/structseq.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/traceback.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/truffle.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/unicodeobject.h,python.copyright
@@ -127,6 +132,11 @@ graalpython/com.oracle.graal.python.cext/include/warnings.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
+graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/getcompiler.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/mysnprintf.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/pystrhex.c,python.copyright
 graalpython/com.oracle.graal.python.shell/src/com/oracle/graal/python/shell/GraalPythonMain.java,zippy.copyright
 graalpython/com.oracle.graal.python.tck/src/com/oracle/graal/python/tck/resources/euler31.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.tck/src/com/oracle/graal/python/tck/resources/mandelbrot3.py,benchmarks.copyright
