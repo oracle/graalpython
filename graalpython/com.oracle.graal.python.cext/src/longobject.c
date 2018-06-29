@@ -106,11 +106,11 @@ void * PyLong_AsVoidPtr(PyObject *obj){
 }
 
 PyObject * PyLong_FromLong(long n)  {
-    void *result = polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_FromLongLong", n, 1);
+    void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyLong_FromLongLong", n, 1));
     if (result == ERROR_MARKER) {
     	return NULL;
     }
-    return to_sulong(result);
+    return result;
 }
 
 PyObject * PyLong_FromLongLong(long long n)  {
