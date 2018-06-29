@@ -955,52 +955,53 @@ class MathTests(unittest.TestCase):
         self.assertRaises(ValueError, math.factorial, -11.1)
 
     def testGcd(self):
-        gcd = math.gcd
-        self.assertEqual(gcd(0, 0), 0)
-        self.assertEqual(gcd(1, 0), 1)
-        self.assertEqual(gcd(-1, 0), 1)
-        self.assertEqual(gcd(0, 1), 1)
-        self.assertEqual(gcd(0, -1), 1)
-        self.assertEqual(gcd(7, 1), 1)
-        self.assertEqual(gcd(7, -1), 1)
-        self.assertEqual(gcd(-23, 15), 1)
-        self.assertEqual(gcd(120, 84), 12)
-        self.assertEqual(gcd(84, -120), 12)
-        self.assertEqual(gcd(1216342683557601535506311712,
-                             436522681849110124616458784), 32)
-        c = 652560
-        x = 434610456570399902378880679233098819019853229470286994367836600566
-        y = 1064502245825115327754847244914921553977
-        a = x * c
-        b = y * c
-        self.assertEqual(gcd(a, b), c)
-        self.assertEqual(gcd(b, a), c)
-        self.assertEqual(gcd(-a, b), c)
-        self.assertEqual(gcd(b, -a), c)
-        self.assertEqual(gcd(a, -b), c)
-        self.assertEqual(gcd(-b, a), c)
-        self.assertEqual(gcd(-a, -b), c)
-        self.assertEqual(gcd(-b, -a), c)
-        c = 576559230871654959816130551884856912003141446781646602790216406874
-        a = x * c
-        b = y * c
-        self.assertEqual(gcd(a, b), c)
-        self.assertEqual(gcd(b, a), c)
-        self.assertEqual(gcd(-a, b), c)
-        self.assertEqual(gcd(b, -a), c)
-        self.assertEqual(gcd(a, -b), c)
-        self.assertEqual(gcd(-b, a), c)
-        self.assertEqual(gcd(-a, -b), c)
-        self.assertEqual(gcd(-b, -a), c)
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
+            gcd = math.gcd
+            self.assertEqual(gcd(0, 0), 0)
+            self.assertEqual(gcd(1, 0), 1)
+            self.assertEqual(gcd(-1, 0), 1)
+            self.assertEqual(gcd(0, 1), 1)
+            self.assertEqual(gcd(0, -1), 1)
+            self.assertEqual(gcd(7, 1), 1)
+            self.assertEqual(gcd(7, -1), 1)
+            self.assertEqual(gcd(-23, 15), 1)
+            self.assertEqual(gcd(120, 84), 12)
+            self.assertEqual(gcd(84, -120), 12)
+            self.assertEqual(gcd(1216342683557601535506311712,
+                                 436522681849110124616458784), 32)
+            c = 652560
+            x = 434610456570399902378880679233098819019853229470286994367836600566
+            y = 1064502245825115327754847244914921553977
+            a = x * c
+            b = y * c
+            self.assertEqual(gcd(a, b), c)
+            self.assertEqual(gcd(b, a), c)
+            self.assertEqual(gcd(-a, b), c)
+            self.assertEqual(gcd(b, -a), c)
+            self.assertEqual(gcd(a, -b), c)
+            self.assertEqual(gcd(-b, a), c)
+            self.assertEqual(gcd(-a, -b), c)
+            self.assertEqual(gcd(-b, -a), c)
+            c = 576559230871654959816130551884856912003141446781646602790216406874
+            a = x * c
+            b = y * c
+            self.assertEqual(gcd(a, b), c)
+            self.assertEqual(gcd(b, a), c)
+            self.assertEqual(gcd(-a, b), c)
+            self.assertEqual(gcd(b, -a), c)
+            self.assertEqual(gcd(a, -b), c)
+            self.assertEqual(gcd(-b, a), c)
+            self.assertEqual(gcd(-a, -b), c)
+            self.assertEqual(gcd(-b, -a), c)
 
-        self.assertRaises(TypeError, gcd, 120.0, 84)
-        self.assertRaises(TypeError, gcd, 120, 84.0)
-        self.assertEqual(gcd(MyIndexable(120), MyIndexable(84)), 12)
+            self.assertRaises(TypeError, gcd, 120.0, 84)
+            self.assertRaises(TypeError, gcd, 120, 84.0)
+            self.assertEqual(gcd(MyIndexable(120), MyIndexable(84)), 12)
 
-        # test of specializations
-        self.assertRaises(TypeError, gcd, 120, MyIndexable(6.0))
-        self.assertRaises(TypeError, gcd, 'ahoj', 1)
-        self.assertEqual(gcd(MyIndexable(True), MyIndexable(84)), 1)
+            # test of specializations
+            self.assertRaises(TypeError, gcd, 120, MyIndexable(6.0))
+            self.assertRaises(TypeError, gcd, 'ahoj', 1)
+            self.assertEqual(gcd(MyIndexable(True), MyIndexable(84)), 1)
 
     def test_floor(self):
         class TestFloor:
@@ -1303,7 +1304,8 @@ class MathTests(unittest.TestCase):
                 self.assertTrue(math.isnan(result), "Test2 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))            
             else :
                 if result != expected:
-                    self.assertTrue(math.isclose(result, expected, rel_tol=1e-12), "Test3 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))
+                    if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
+                        self.assertTrue(math.isclose(result, expected, rel_tol=1e-14), "Test3 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))
 
     def test_erf(self):
         erfValues = [(0.0,  0.0), (-0.0, -0.0), (INF,  1.0), (NINF,  -1.0), (NAN, NAN),
