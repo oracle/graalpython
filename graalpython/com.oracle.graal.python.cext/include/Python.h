@@ -71,6 +71,7 @@
 #include "unicodeobject.h"
 #include "pystate.h"
 #include "pyarena.h"
+#include "compile.h"
 #include "pythonrun.h"
 #include "ceval.h"
 #include "pyerrors.h"
@@ -108,6 +109,8 @@
 #include "memoryobject.h"
 #include "pystrhex.h"
 #include "codecs.h"
+#include "frameobject.h"
+#include "traceback.h"
 
 #define PY_TRUFFLE_CEXT ((void*)polyglot_import("python_cext"))
 #define PY_BUILTIN ((void*)polyglot_import("python_builtins"))
