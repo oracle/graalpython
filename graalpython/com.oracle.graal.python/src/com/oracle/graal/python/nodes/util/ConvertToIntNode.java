@@ -40,9 +40,9 @@ package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -55,47 +55,44 @@ import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class GetDoubleNode extends PBaseNode {
+public abstract class ConvertToIntNode extends PBaseNode {
 
-    @Node.Child private LookupAndCallUnaryNode callFloatNode;
+    @Node.Child private LookupAndCallUnaryNode callIndexNode;
 
-    abstract public double execute(Object x);
+    public abstract Object execute(Object x);
 
-    public static GetDoubleNode create() {
-        return GetDoubleNodeGen.create();
+    public static ConvertToIntNode create() {
+        return ConvertToIntNodeGen.create();
     }
 
     @Specialization
-    public double toDouble(long x) {
+    public long toInt(long x) {
         return x;
     }
 
     @Specialization
-    public double toDouble(PInt x) {
-        return x.doubleValue();
+    public PInt toInt(PInt x) {
+        return x;
     }
 
     @Specialization
-    public double toDouble(double x) {
-        return x;
+    public long toInt(@SuppressWarnings("unused") double x) {
+        throw raise(TypeError, "'float' object cannot be interpreted as an integer");
     }
 
     @Specialization(guards = "!isNumber(x)")
-    public double toDouble(Object x) {
-        if (callFloatNode == null) {
+    public Object toInt(Object x) {
+        if (callIndexNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            callFloatNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
+            callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
         }
-        Object result = callFloatNode.executeObject(x);
-        if (result == PNone.NO_VALUE) {
-            throw raise(TypeError, "must be real number, not %p", x);
+        Object result = callIndexNode.executeObject(x);
+        if (result == PNone.NONE) {
+            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
         }
-        if (result instanceof PFloat) {
-            return ((PFloat) result).getValue();
+        if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
+            throw raise(TypeError, " __index__ returned non-int (type %p)", result);
         }
-        if (result instanceof Float || result instanceof Double) {
-            return (double) result;
-        }
-        throw raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
+        return result;
     }
 }
