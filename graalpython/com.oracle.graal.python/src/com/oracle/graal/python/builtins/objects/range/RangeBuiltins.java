@@ -84,7 +84,23 @@ public class RangeBuiltins extends PythonBuiltins {
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doPRange(PRange left, PRange right) {
-            return left.equals(right);
+            if (left == right) {
+                return true;
+            }
+            if (left.len() != right.len()) {
+                return false;
+            }
+            if (left.len() == 0) {
+                return true;
+            }
+            if (left.getStart() != right.getStart()) {
+                return false;
+            }
+            // same start, just one element => step does not matter
+            if (left.len() == 1) {
+                return true;
+            }
+            return left.getStep() == right.getStep();
         }
 
         @Fallback
