@@ -328,7 +328,7 @@ def python_svm(args):
         nonZeroIsFatal=True
     )
     vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
-    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
     shutil.copy(svm_image, os.path.join(_suite.dir, "graalpython-svm"))
     mx.run([svm_image] + args)
     return svm_image
