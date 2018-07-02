@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.BuiltinNames.ABS;
+import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.CALLABLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.CHR;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPILE;
@@ -120,6 +121,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIntNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -195,6 +197,54 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raise(TypeError, "bad operand type for abs():  %p", object);
             }
             return result;
+        }
+    }
+
+    // bin(object)
+    @Builtin(name = BIN, fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    public abstract static class BinNode extends PythonUnaryBuiltinNode {
+
+        public abstract String executeObject(Object x);
+
+        private static String buildString(boolean isNegative, String number) {
+            StringBuilder sb = new StringBuilder();
+            if (isNegative) {
+                sb.append('-');
+            }
+            sb.append("0b");
+            sb.append(number);
+            return sb.toString();
+        }
+
+        @Specialization
+        public String doL(long x) {
+            return buildString(x < 0, Long.toBinaryString(Math.abs(x)));
+        }
+
+        @Specialization
+        public String doD(double x) {
+            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doPI(PInt x) {
+            BigInteger value = x.getValue();
+            return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(2));
+        }
+
+        @Specialization
+        public String doO(Object x,
+                        @Cached("create()") CastToIntNode toIntNode,
+                        @Cached("create()") BinNode recursiveNode) {
+            Object value = toIntNode.execute(x);
+            return recursiveNode.executeObject(value);
+        }
+
+        protected BinNode create() {
+            return BuiltinFunctionsFactory.BinNodeFactory.create();
         }
     }
 

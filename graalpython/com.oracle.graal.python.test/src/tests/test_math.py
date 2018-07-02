@@ -13,6 +13,13 @@ NINF = float('-inf')
 NAN = float('nan')
 LONG_INT = 6227020800
 BIG_INT = 9999992432902008176640000999999
+FLOAT_MAX = sys.float_info.max
+
+class MyIndexable(object):
+    def __init__(self, value):
+        self.value = value
+    def __index__(self):
+        return self.value
 
 """ The next three methods are needed for testing factorials
 """
@@ -888,6 +895,28 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.atanh, 'ahoj')
         self.assertRaises(ValueError, math.atanh, BIG_INT)
 
+    def testHypot(self):
+        self.assertRaises(TypeError, math.hypot)
+        self.ftest('hypot(0,0)', math.hypot(0,0), 0)
+        self.ftest('hypot(3,4)', math.hypot(3,4), 5)
+        self.assertEqual(math.hypot(NAN, INF), INF)
+        self.assertEqual(math.hypot(INF, NAN), INF)
+        self.assertEqual(math.hypot(NAN, NINF), INF)
+        self.assertEqual(math.hypot(NINF, NAN), INF)
+        self.assertRaises(OverflowError, math.hypot, FLOAT_MAX, FLOAT_MAX)
+        self.assertTrue(math.isnan(math.hypot(1.0, NAN)))
+        self.assertTrue(math.isnan(math.hypot(NAN, -2.0)))
+
+        self.assertEqual(math.hypot(NINF, 1), INF)
+        self.assertEqual(math.hypot(INF, 1), INF)
+        self.assertEqual(math.hypot(1, INF), INF)
+        self.assertEqual(math.hypot(1, NINF), INF)
+
+        self.ftest('math.hypot(MyFloat(), MyFloat())', math.hypot(MyFloat(), MyFloat()), 0.848528137423857)
+        self.ftest('math.hypot(BIG_INT, BIG_INT)', math.hypot(BIG_INT, BIG_INT), 1.4142124922238343e+31)
+        self.assertRaises(TypeError, math.hypot, 'ahoj', 1)
+        self.assertRaises(TypeError, math.hypot, 1, 'cau')
+
     def test_fabs(self):
         self.assertEqual(math.fabs(-1), 1)
         self.assertEqual(math.fabs(0), 0)
@@ -924,6 +953,55 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.factorial(13), 6227020800)
         self.assertEqual(math.factorial(30), 265252859812191058636308480000000)
         self.assertRaises(ValueError, math.factorial, -11.1)
+
+    def testGcd(self):
+        if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
+            gcd = math.gcd
+            self.assertEqual(gcd(0, 0), 0)
+            self.assertEqual(gcd(1, 0), 1)
+            self.assertEqual(gcd(-1, 0), 1)
+            self.assertEqual(gcd(0, 1), 1)
+            self.assertEqual(gcd(0, -1), 1)
+            self.assertEqual(gcd(7, 1), 1)
+            self.assertEqual(gcd(7, -1), 1)
+            self.assertEqual(gcd(-23, 15), 1)
+            self.assertEqual(gcd(120, 84), 12)
+            self.assertEqual(gcd(84, -120), 12)
+            self.assertEqual(gcd(1216342683557601535506311712,
+                                 436522681849110124616458784), 32)
+            c = 652560
+            x = 434610456570399902378880679233098819019853229470286994367836600566
+            y = 1064502245825115327754847244914921553977
+            a = x * c
+            b = y * c
+            self.assertEqual(gcd(a, b), c)
+            self.assertEqual(gcd(b, a), c)
+            self.assertEqual(gcd(-a, b), c)
+            self.assertEqual(gcd(b, -a), c)
+            self.assertEqual(gcd(a, -b), c)
+            self.assertEqual(gcd(-b, a), c)
+            self.assertEqual(gcd(-a, -b), c)
+            self.assertEqual(gcd(-b, -a), c)
+            c = 576559230871654959816130551884856912003141446781646602790216406874
+            a = x * c
+            b = y * c
+            self.assertEqual(gcd(a, b), c)
+            self.assertEqual(gcd(b, a), c)
+            self.assertEqual(gcd(-a, b), c)
+            self.assertEqual(gcd(b, -a), c)
+            self.assertEqual(gcd(a, -b), c)
+            self.assertEqual(gcd(-b, a), c)
+            self.assertEqual(gcd(-a, -b), c)
+            self.assertEqual(gcd(-b, -a), c)
+
+            self.assertRaises(TypeError, gcd, 120.0, 84)
+            self.assertRaises(TypeError, gcd, 120, 84.0)
+            self.assertEqual(gcd(MyIndexable(120), MyIndexable(84)), 12)
+
+            # test of specializations
+            self.assertRaises(TypeError, gcd, 120, MyIndexable(6.0))
+            self.assertRaises(TypeError, gcd, 'ahoj', 1)
+            self.assertEqual(gcd(MyIndexable(True), MyIndexable(84)), 1)
 
     def test_floor(self):
         class TestFloor:
@@ -1143,6 +1221,7 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.ldexp(FF(10), II(12)), 40960.0)
         self.assertRaises(TypeError, math.ldexp, 'Hello', 1000000)
         self.assertRaises(TypeError, math.ldexp, 1, 'Hello')
+        self.assertEqual(math.ldexp(7589167167882033, -48), 26.962138008038156)
     
     def test_trunc(self):
         self.assertEqual(math.trunc(1), 1)
@@ -1169,3 +1248,350 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.trunc, 1, 2)
         self.assertRaises(TypeError, math.trunc, TestNoTrunc())
 
+    def testDegrees(self):
+        self.assertRaises(TypeError, math.degrees)
+        self.ftest('degrees(pi)', math.degrees(math.pi), 180.0)
+        self.ftest('degrees(pi/2)', math.degrees(math.pi/2), 90.0)
+        self.ftest('degrees(-pi/4)', math.degrees(-math.pi/4), -45.0)
+        self.ftest('degrees(0)', math.degrees(0), 0)
+
+        # test of specializations
+        self.ftest('degrees(MyFloat())', math.degrees(MyFloat()), 34.37746770784939)
+        self.assertRaises(TypeError, math.degrees, 'ahoj')
+        self.ftest('degrees(BIG_INT)', math.degrees(BIG_INT), 5.729573615680451e+32)
+
+    def testRadians(self):
+        self.assertRaises(TypeError, math.radians)
+        self.ftest('radians(180)', math.radians(180), math.pi)
+        self.ftest('radians(90)', math.radians(90), math.pi/2)
+        self.ftest('radians(-45)', math.radians(-45), -math.pi/4)
+        self.ftest('radians(0)', math.radians(0), 0)
+
+        # test of specializations
+        self.ftest('radians(MyFloat())', math.radians(MyFloat()), 0.010471975511965976)
+        self.assertRaises(TypeError, math.radians, 'ahoj')
+        self.ftest('radians(BIG_INT)', math.radians(BIG_INT), 1.7453279312865818e+29)
+
+    def testModf(self):
+        self.assertRaises(TypeError, math.modf)
+
+        def testmodf(name, result, expected):
+            (v1, v2), (e1, e2) = result, expected
+            if abs(v1-e1) > eps or abs(v2-e2):
+                self.fail('%s returned %r, expected %r'%\
+                          (name, result, expected))
+
+        testmodf('modf(1.5)', math.modf(1.5), (0.5, 1.0))
+        testmodf('modf(-1.5)', math.modf(-1.5), (-0.5, -1.0))
+
+        self.assertEqual(math.modf(INF), (0.0, INF))
+        self.assertEqual(math.modf(NINF), (-0.0, NINF))
+
+        modf_nan = math.modf(NAN)
+        self.assertTrue(math.isnan(modf_nan[0]))
+        self.assertTrue(math.isnan(modf_nan[1]))
+
+        # test of specializations
+        testmodf('modf(MyFloat())', math.modf(MyFloat()), (0.6, 0.0))
+        self.assertRaises(TypeError, math.modf, 'ahoj')
+        testmodf('modf(BIG_INT)', math.modf(BIG_INT), (0.0, 9.999992432902008e+30))
+
+    def executeFnTest(self, values, fn, fnName):
+        for value in values:
+            result = fn(value[0])
+            expected = value[1]
+            if math.isnan(expected):
+                self.assertTrue(math.isnan(result), "Test2 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))            
+            else :
+                if result != expected:
+                    if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
+                        self.assertTrue(math.isclose(result, expected, rel_tol=1e-14), "Test3 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))
+
+    def test_erf(self):
+        erfValues = [(0.0,  0.0), (-0.0, -0.0), (INF,  1.0), (NINF,  -1.0), (NAN, NAN),
+            # tiny values
+            (1e-308, 1.1283791670955125e-308), (5e-324, 4.9406564584124654e-324), 
+            (1e-10, 1.1283791670955126e-10),
+            # small integers
+            (1, 0.842700792949715), (2, 0.99532226501895271), (3, 0.99997790950300136),
+            (4, 0.99999998458274209), (5, 0.99999999999846256), (6, 1.0),
+            (-1, -0.842700792949715), (-2, -0.99532226501895271), (-3, -0.99997790950300136),
+            (-4, -0.99999998458274209), (-5, -0.99999999999846256), (-6, -1.0),
+            # huge values should all go to +/-1, depending on sign
+            (-40, -1.0), (1e16, 1.0), (-1e150, -1.0), (1.7e308, 1.0),
+            #incorrectly signalled overflow on some platforms.
+            (26.2, 1.0), (26.4, 1.0), (26.6, 1.0), (26.8, 1.0), (27.0, 1.0), (27.2, 1.0),
+            (27.4, 1.0), (27.6, 1.0), (-26.2, -1.0), (-26.4, -1.0), (-26.6, -1.0),
+            (-26.8, -1.0), (-27.0, -1.0), (-27.2, -1.0), (-27.4, -1.0), (-27.6, -1.0)
+        ]
+        self.executeFnTest(erfValues, math.erf, 'math.erf')
+
+    def test_erfc(self):
+        values = [(0.0, 1.0), (-0.0, 1.0), (INF, 0.0), (NINF, 2.0), (NAN, NAN),
+            # tiny values
+            (1e-308, 1.0), (5e-324, 1.0), (1e-10, 0.99999999988716204),
+            # small integers
+            (1, 0.157299207050285), (2, 0.004677734981047268), (3, 2.2090496998585482e-05),
+            (4, 1.541725790028002e-08), (5, 1.5374597944280341e-12), 
+            # this number needs to be rounded
+            (6, 2.1519736712498925e-17),
+            (-1, 1.842700792949715), (-2, 1.9953222650189528), (-3, 1.9999779095030015),
+            (-4, 1.9999999845827421), (-5, 1.9999999999984626), (-6, 2.0),
+            # as x -> infinity, erfc(x) behaves like exp(-x*x)/x/sqrt(pi)
+            (20, 5.395865611607906e-176), (25, 8.300172571196514e-274), (27, 5.2370464393526292e-319), (28, 0.0),
+            # huge values
+            (-40, 2.0), (1e16, 0.0), (-1e150, 2.0), (1.7e308, 0.0),
+            # incorrectly signalled overflow on some platforms.
+            (26.2, 1.6432507924389793e-300), (26.4, 4.4017768588035507e-305), (26.6, 1.08851258854424e-309),
+            (26.8, 2.4849621571966629e-314), (27.0, 5.2370464393526292e-319), (27.2, 9.8813129168249309e-324),
+            (27.4, 0.0), (27.6, 0.0), (-26.2, 2.0), (-26.4, 2.0), (-26.6, 2.0),
+            (-26.8, 2.0), (-27.0, 2.0), (-27.2, 2.0), (-27.4, 2.0), (-27.6, 2.0)
+        ]
+        self.executeFnTest(values, math.erfc, 'math.erfc')
+        
+    def test_gamma(self):
+        self.assertRaises(ValueError, math.gamma, 0.)
+        self.assertRaises(ValueError, math.gamma, -0.0)
+        self.assertRaises(ValueError, math.gamma, NINF)
+        self.assertRaises(ValueError, math.gamma, -1)
+        self.assertRaises(ValueError, math.gamma, -2)
+        self.assertRaises(ValueError, math.gamma, -1e16)
+        self.assertRaises(ValueError, math.gamma, -1e300)
+        self.assertRaises(OverflowError, math.gamma, 5.5e-309)
+        self.assertRaises(OverflowError, math.gamma, 1e-309)
+        self.assertRaises(OverflowError, math.gamma, 1e-323)
+        self.assertRaises(OverflowError, math.gamma, 5e-324)
+        self.assertRaises(OverflowError, math.gamma, 171.625)
+        self.assertRaises(OverflowError, math.gamma, 172)
+        self.assertRaises(OverflowError, math.gamma, 2000)
+        self.assertRaises(OverflowError, math.gamma, 1.7e308)
+
+        values = [
+            # special values
+            (INF, INF), (NAN, NAN),
+            # small positive integers give factorials
+            (1, 1), (2, 1), (3, 2), (4, 6), (5, 24), (6, 120),
+            # half integers
+            (0.5, 1.7724538509055159), (1.5, 0.88622692545275805), (2.5, 1.3293403881791372),
+            (3.5, 3.323350970447842), (-0.5, -3.5449077018110322), (-1.5, 2.3632718012073544),
+            (-2.5, -0.94530872048294170), (-3.5, 0.27008820585226917),
+            # values near 0
+            (0.1, 9.5135076986687306), 
+            (0.01, 99.432585119150602), 
+            (1e-8, 99999999.422784343),
+            #(1e-16, 10000000000000000), 
+            (1e-30, 9.9999999999999988e+29), (1e-160, 1.0000000000000000e+160),
+            (1e-308, 1.0000000000000000e+308), 
+            (5.6e-309, 1.7857142857142848e+308),
+            (-0.1, -10.686287021193193), 
+            (-0.01, -100.58719796441078), 
+            (-1e-8, -100000000.57721567),
+            (-1e-16, -10000000000000000), 
+            (-1e-30, -9.9999999999999988e+29), (-1e-160, -1.0000000000000000e+160),
+            (-1e-308, -1.0000000000000000e+308), 
+            (-5.6e-309, -1.7857142857142848e+308),
+            # values near negative integers
+            (-0.99999999999999989, -9007199254740992.0), 
+            (-1.0000000000000002, 4503599627370495.5),
+            (-1.9999999999999998, 2251799813685248.5), 
+            (-2.0000000000000004, -1125899906842623.5),
+            (-100.00000000000001, -7.5400833348831090e-145), 
+            (-99.999999999999986, 7.5400833348840962e-145),
+            # large inputs
+            (170, 4.2690680090047051e+304), 
+            (171, 7.2574156153079990e+306), 
+            (171.624, 1.7942117599248104e+308),
+            # inputs for which gamma(x) is tiny
+            (-100.5, -3.3536908198076787e-159), 
+            (-160.5, -5.2555464470078293e-286), 
+            (-170.5, -3.3127395215386074e-308),
+            (-171.5, 1.9316265431711902e-310), (-176.5, -1.1956388629358166e-321), (-177.5, 4.9406564584124654e-324),
+            (-178.5, -0.0), (-179.5, 0.0), (-201.0001, 0.0), (-202.9999, -0.0), (-1000.5, -0.0),
+            (-1000000000.3, -0.0), (-4503599627370495.5, 0.0),
+            # inputs that cause problems for the standard reflection formula,
+            # thanks to loss of accuracy in 1-x
+            (-63.349078729022985, 4.1777971677761880e-88),
+            (-127.45117632943295, 1.1831110896236810e-214)
+        ]
+        self.executeFnTest(values, math.gamma, 'math.gamma')
+
+    def test_lgamma(self):
+        self.assertRaises(ValueError, math.lgamma, 0.)
+        self.assertRaises(ValueError, math.lgamma, -0.0)
+        self.assertRaises(ValueError, math.lgamma, -1)
+        self.assertRaises(ValueError, math.lgamma, -2)
+        self.assertRaises(ValueError, math.lgamma, -1)
+        self.assertRaises(ValueError, math.lgamma, -1e300)
+        self.assertRaises(ValueError, math.lgamma, -1.79e308)
+        self.assertRaises(OverflowError, math.lgamma, 2.55998332785164e305)
+        self.assertRaises(OverflowError, math.lgamma, 1.7e308)
+
+        values = [(INF, INF), (-INF, INF), (NAN, NAN),
+            # small positive integers give factorials
+            (1, 0.0), (2, 0.0), 
+            (3, 0.69314718055994529), 
+            (4, 1.791759469228055), 
+            (5, 3.1780538303479458), 
+            (6, 4.7874917427820458), 
+            # half integers
+            (0.5, 0.57236494292470008),
+            (1.5, -0.12078223763524522),
+            (2.5, 0.28468287047291918),
+            (3.5, 1.2009736023470743),
+            (-0.5, 1.2655121234846454),
+            (-1.5, 0.86004701537648098),
+            (-2.5, -0.056243716497674054),
+            (-3.5, -1.309006684993042),
+            # values near 0
+            (0.1, 2.252712651734206),
+            (0.01, 4.5994798780420219),
+            (1e-8, 18.420680738180209),
+            (1e-16, 36.841361487904734),
+            (1e-30, 69.077552789821368),
+            (1e-160, 368.41361487904732),
+            (1e-308, 709.19620864216608),
+            (5.6e-309, 709.77602713741896),
+            (5.5e-309, 709.79404564292167),
+            (1e-309, 711.49879373516012),
+            (1e-323, 743.74692474082133),
+            (5e-324, 744.44007192138122),
+            (-0.1, 2.3689613327287886),
+            (-0.01, 4.6110249927528013),
+            (-1e-8, 18.420680749724522),
+            (-1e-16, 36.841361487904734),
+            (-1e-30, 69.077552789821368),
+            (-1e-160, 368.41361487904732),
+            (-1e-308, 709.19620864216608),
+            (-5.6e-309, 709.77602713741896),
+            (-5.5e-309, 709.79404564292167),
+            (-1e-309, 711.49879373516012),
+            (-1e-323, 743.74692474082133),
+            (-5e-324, 744.44007192138122),
+            # values near negative integers
+            (-0.99999999999999989, 36.736800569677101),
+            (-1.0000000000000002, 36.043653389117154),
+            (-1.9999999999999998, 35.350506208557213),
+            (-2.0000000000000004, 34.657359027997266),
+            (-100.00000000000001, -331.85460524980607),
+            (-99.999999999999986, -331.85460524980596),
+            # large inputs
+            (170, 701.43726380873704),
+            (171, 706.57306224578736),
+            (171.624, 709.78077443669895),
+            (171.625, 709.78591682948365),
+            (172, 711.71472580228999),
+            (2000, 13198.923448054265),
+            (2.55998332785163e305, 1.7976931348623099e+308),
+            # inputs for which gamma(x) is tiny
+            (-100.5, -364.90096830942736),
+            (-160.5, -656.88005261126432),
+            (-170.5, -707.99843314507882),
+            (-171.5, -713.14301641168481),
+            (-176.5, -738.95247590846486),
+            (-177.5, -744.13144651738037),
+            (-178.5, -749.3160351186001),
+            (-1000.5, -5914.4377011168517),
+            (-30000.5, -279278.6629959144),
+            (-4503599627370495.5, -1.5782258434492883e+17),
+            # results close to 0:  positive argument ...
+            (0.99999999999999989, 2.220446049250313e-16),
+            (1.0000000000000002, -3.3306690738754696e-16),
+            (1.9999999999999998, 0.0),
+            (2.0000000000000004, 6.661338147750939e-16),
+            # ... and negative argument
+            (-2.7476826467, -5.24771337495622e-11),
+            (-2.457024738, 3.346471988407984e-10)
+        ]
+        self.executeFnTest(values, math.lgamma, 'math.lgamma')
+
+    def testFsum(self):
+        # math.fsum relies on exact rounding for correct operation.
+        # There's a known problem with IA32 floating-point that causes
+        # inexact rounding in some situations, and will cause the
+        # math.fsum tests below to fail; see issue #2937.  On non IEEE
+        # 754 platforms, and on IEEE 754 platforms that exhibit the
+        # problem described in issue #2937, we simply skip the whole
+        # test.
+
+        # Python version of math.fsum, for comparison.  Uses a
+        # different algorithm based on frexp, ldexp and integer
+        # arithmetic.
+
+        from sys import float_info
+        mant_dig = float_info.mant_dig
+        etiny = float_info.min_exp - mant_dig
+
+        def msum(iterable):
+            """Full precision summation.  Compute sum(iterable) without any
+            intermediate accumulation of error.  Based on the 'lsum' function
+            at http://code.activestate.com/recipes/393090/
+
+            """
+            tmant, texp = 0, 0
+            for x in iterable:
+                mant, exp = math.frexp(x)
+                mant, exp = int(math.ldexp(mant, mant_dig)), exp - mant_dig
+                if texp > exp:
+                    tmant <<= texp-exp
+                    texp = exp
+                else:
+                    mant <<= exp-texp
+                tmant += mant
+            # Round tmant * 2**texp to a float.  The original recipe
+            # used float(str(tmant)) * 2.0**texp for this, but that's
+            # a little unsafe because str -> float conversion can't be
+            # relied upon to do correct rounding on all platforms.
+            tail = max(len(bin(abs(tmant)))-2 - mant_dig, etiny - texp)
+            if tail > 0:
+                h = 1 << (tail-1)
+                tmant = tmant // (2*h) + bool(tmant & h and tmant & 3*h-1)
+                texp += tail
+            return math.ldexp(tmant, texp)
+
+        test_values = [
+            ([], 0.0),
+            ([0.0], 0.0),
+            ([1e100, 1.0, -1e100, 1e-100, 1e50, -1.0, -1e50], 1e-100),
+            ([2.0**53, -0.5, -2.0**-54], 2.0**53-1.0),
+            ([2.0**53, 1.0, 2.0**-100], 2.0**53+2.0),
+            ([2.0**53+10.0, 1.0, 2.0**-100], 2.0**53+12.0),
+            ([2.0**53-4.0, 0.5, 2.0**-54], 2.0**53-3.0),
+            ([1./n for n in range(1, 1001)],
+             float.fromhex('0x1.df11f45f4e61ap+2')),
+            ([(-1.)**n/n for n in range(1, 1001)],
+             float.fromhex('-0x1.62a2af1bd3624p-1')),
+            ([1.7**(i+1)-1.7**i for i in range(1000)] + [-1.7**1000], -1.0),
+            ([1e16, 1., 1e-16], 10000000000000002.0),
+            ([1e16-2., 1.-2.**-53, -(1e16-2.), -(1.-2.**-53)], 0.0),
+            # exercise code for resizing partials array
+            ([2.**n - 2.**(n+50) + 2.**(n+52) for n in range(-1074, 972, 2)] +
+             [-2.**1022],
+             float.fromhex('0x1.5555555555555p+970')),
+            ]
+
+        for i, (vals, expected) in enumerate(test_values):
+            try:
+                actual = math.fsum(vals)
+            except OverflowError:
+                self.fail("test %d failed: got OverflowError, expected %r "
+                          "for math.fsum(%.100r)" % (i, expected, vals))
+            except ValueError:
+                self.fail("test %d failed: got ValueError, expected %r "
+                          "for math.fsum(%.100r)" % (i, expected, vals))
+            self.assertEqual(actual, expected)
+
+        from random import random, gauss, shuffle
+        for j in range(1000):
+            vals = [7, 1e100, -7, -1e100, -9e-20, 8e-20] * 10
+            s = 0
+            for i in range(200):
+                v = gauss(0, random()) ** 7 - s
+                s += v
+                vals.append(v)
+            shuffle(vals)
+
+            s = msum(vals)
+            self.assertEqual(msum(vals), math.fsum(vals))
+
+        self.assertRaises(ValueError, math.fsum, [1., 2, INF, NINF])
+        self.assertEqual(math.fsum([1., 2, INF, INF]), INF)

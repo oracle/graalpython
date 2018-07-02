@@ -42,14 +42,16 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.*;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -64,6 +66,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import java.util.Arrays;
 
 @CoreFunctions(defineModule = "math")
 public class MathModuleBuiltins extends PythonBuiltins {
@@ -78,53 +81,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("pi", Math.PI);
         builtinConstants.put("e", Math.E);
         builtinConstants.put("tau", 2 * Math.PI);
-    }
-
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @ImportStatic(MathGuards.class)
-    static abstract class ConvertToFloatNode extends PBaseNode {
-
-        @Child private LookupAndCallUnaryNode callFloatNode;
-
-        abstract double execute(Object x);
-
-        public static ConvertToFloatNode create() {
-            return MathModuleBuiltinsFactory.ConvertToFloatNodeGen.create();
-        }
-
-        @Specialization
-        public double toDouble(long x) {
-            return x;
-        }
-
-        @Specialization
-        public double toDouble(PInt x) {
-            return x.doubleValue();
-        }
-
-        @Specialization
-        public double toDouble(double x) {
-            return x;
-        }
-
-        @Specialization(guards = "!isNumber(x)")
-        public double toDouble(Object x) {
-            if (callFloatNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callFloatNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__FLOAT__));
-            }
-            Object result = callFloatNode.executeObject(x);
-            if (result == PNone.NO_VALUE) {
-                throw raise(TypeError, "must be real number, not %p", x);
-            }
-            if (result instanceof PFloat) {
-                return ((PFloat) result).getValue();
-            }
-            if (result instanceof Float || result instanceof Double) {
-                return (double) result;
-            }
-            throw raise(TypeError, "%p.__float__ returned non-float (type %p)", x, result);
-        }
+        builtinConstants.put("inf", Double.POSITIVE_INFINITY);
+        builtinConstants.put("nan", Double.NaN);
     }
 
     public abstract static class MathUnaryBuiltinNode extends PythonUnaryBuiltinNode {
@@ -169,7 +127,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public double doGeneral(Object value,
-                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+                        @Cached("create()") CastToDoubleNode convertToFloat) {
             return count(convertToFloat.execute(value));
         }
     }
@@ -303,7 +261,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNumber(value)"})
         public Object ceil(Object value,
-                        @Cached("create()") ConvertToFloatNode convertToFloat,
+                        @Cached("create()") CastToDoubleNode convertToFloat,
                         @Cached("create(__CEIL__)") LookupAndCallUnaryNode dispatchCeil) {
             Object result = dispatchCeil.executeObject(value);
             if (result == PNone.NO_VALUE) {
@@ -376,7 +334,6 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "factorial", fixedNumOfArguments = 1)
     @ImportStatic(Double.class)
-    @SuppressWarnings("unused")
     @GenerateNodeFactory
     public abstract static class FactorialNode extends PythonUnaryBuiltinNode {
 
@@ -401,12 +358,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int factorialBoolean(boolean value) {
+        public int factorialBoolean(@SuppressWarnings("unused") boolean value) {
             return 1;
         }
 
         @Specialization(guards = {"value < 0"})
-        public long factorialNegativeInt(int value) {
+        public long factorialNegativeInt(@SuppressWarnings("unused") int value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
@@ -422,7 +379,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"value < 0"})
-        public long factorialNegativeLong(long value) {
+        public long factorialNegativeLong(@SuppressWarnings("unused") long value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
@@ -438,12 +395,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNegative(value)")
-        public Object factorialPINegative(PInt value) {
+        public Object factorialPINegative(@SuppressWarnings("unused") PInt value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
         @Specialization(guards = "isOvf(value)")
-        public Object factorialPIOvf(PInt value) {
+        public Object factorialPIOvf(@SuppressWarnings("unused") PInt value) {
             throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
         }
 
@@ -458,27 +415,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNaN(value)"})
-        public long factorialDoubleNaN(double value) {
+        public long factorialDoubleNaN(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
         }
 
         @Specialization(guards = {"isInfinite(value)"})
-        public long factorialDoubleInfinite(double value) {
+        public long factorialDoubleInfinite(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.ValueError, "cannot convert float infinity to integer");
         }
 
         @Specialization(guards = "isNegative(value)")
-        public PInt factorialDoubleNegative(double value) {
+        public PInt factorialDoubleNegative(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
         @Specialization(guards = "!isInteger(value)")
-        public PInt factorialDoubleNotInteger(double value) {
+        public PInt factorialDoubleNotInteger(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.ValueError, "factorial() only accepts integral values");
         }
 
         @Specialization(guards = "isOvf(value)")
-        public PInt factorialDoubleOvf(double value) {
+        public PInt factorialDoubleOvf(@SuppressWarnings("unused") double value) {
             throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
         }
 
@@ -493,27 +450,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isNaN(value.getValue())"})
-        public long factorialPFLNaN(PFloat value) {
+        public long factorialPFLNaN(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.ValueError, "cannot convert float NaN to integer");
         }
 
         @Specialization(guards = {"isInfinite(value.getValue())"})
-        public long factorialPFLInfinite(PFloat value) {
+        public long factorialPFLInfinite(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.ValueError, "cannot convert float infinity to integer");
         }
 
         @Specialization(guards = "isNegative(value.getValue())")
-        public PInt factorialPFLNegative(PFloat value) {
+        public PInt factorialPFLNegative(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.ValueError, "factorial() not defined for negative values");
         }
 
         @Specialization(guards = "!isInteger(value.getValue())")
-        public PInt factorialPFLNotInteger(PFloat value) {
+        public PInt factorialPFLNotInteger(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.ValueError, "factorial() only accepts integral values");
         }
 
         @Specialization(guards = "isOvf(value.getValue())")
-        public PInt factorialPFLOvf(PFloat value) {
+        public PInt factorialPFLOvf(@SuppressWarnings("unused") PFloat value) {
             throw raise(PythonErrorType.OverflowError, "factorial() argument should not exceed %l", Long.MAX_VALUE);
         }
 
@@ -785,7 +742,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public PTuple frexpO(Object value,
-                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+                        @Cached("create()") CastToDoubleNode convertToFloat) {
             return frexpD(convertToFloat.execute(value));
         }
     }
@@ -812,12 +769,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(Object value,
-                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+                        @Cached("create()") CastToDoubleNode convertToFloat) {
             return isNan(convertToFloat.execute(value));
         }
     }
 
     @Builtin(name = "isclose", minNumOfArguments = 2, keywordArguments = {"rel_tol", "abs_tol"})
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class IsCloseNode extends PythonBuiltinNode {
         private static double DEFAULT_REL = 1e-09;
@@ -863,12 +821,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public boolean isClose(double a, double b, double rel_tol, double abs_tol) {
             return isCloseDouble(a, b, rel_tol, abs_tol);
         }
+
+        @Specialization
+        public boolean isClose(double a, long b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+            return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
+        }
     }
 
     @Builtin(name = "ldexp", fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
     public abstract static class LdexpNode extends PythonBuiltinNode {
 
         private static final String EXPECTED_INT_MESSAGE = "Expected an int as second argument to ldexp.";
@@ -905,7 +867,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double ldexpDD(double mantissa, double exp) {
+        public double ldexpDD(@SuppressWarnings("unused") double mantissa, @SuppressWarnings("unused") double exp) {
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
 
@@ -915,13 +877,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double ldexpLD(long mantissa, double exp) {
+        public double ldexpLD(@SuppressWarnings("unused") long mantissa, @SuppressWarnings("unused") double exp) {
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
 
         @Specialization
         public double ldexpLL(long mantissa, long exp) {
-            return exceptInfinity(Math.scalb(mantissa, makeInt(exp)), mantissa);
+            return exceptInfinity(Math.scalb((double) mantissa, makeInt(exp)), mantissa);
         }
 
         @Specialization
@@ -933,7 +895,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double ldexpLPI(long mantissa, PInt exp) {
-            return exceptInfinity(Math.scalb(mantissa, makeInt(exp)), mantissa);
+            return exceptInfinity(Math.scalb((double) mantissa, makeInt(exp)), mantissa);
         }
 
         @Specialization
@@ -944,7 +906,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double ldexpPID(PInt mantissa, double exp) {
+        public double ldexpPID(@SuppressWarnings("unused") PInt mantissa, @SuppressWarnings("unused") double exp) {
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
 
@@ -955,13 +917,244 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public double ldexpOO(Object mantissa, Object exp) {
+        public double ldexpOO(Object mantissa, @SuppressWarnings("unused") Object exp) {
             if (!MathGuards.isNumber(mantissa)) {
                 throw raise(TypeError, "must be real number, not %p", mantissa);
             }
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
         }
 
+    }
+
+    @Builtin(name = "modf", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
+    @GenerateNodeFactory
+    public abstract static class ModfNode extends MathUnaryBuiltinNode {
+
+        @Specialization
+        public PTuple modfD(double value) {
+            if (!Double.isFinite(value)) {
+                if (Double.isInfinite(value)) {
+                    return factory().createTuple(new Object[]{Math.copySign(0., value), value});
+                } else if (Double.isNaN(value)) {
+                    return factory().createTuple(new Object[]{value, value});
+                }
+            }
+            double fraction = value % 1;
+            double integral = value - fraction;
+            return factory().createTuple(new Object[]{fraction, integral});
+        }
+
+        @Specialization
+        public PTuple modfL(long value) {
+            return modfD(value);
+        }
+
+        @Specialization
+        public PTuple frexpPI(PInt value) {
+            return modfD(value.doubleValue());
+        }
+
+        @Specialization(guards = "!isNumber(value)")
+        public PTuple frexpO(Object value,
+                        @Cached("create()") CastToDoubleNode convertToFloatNode) {
+            return modfD(convertToFloatNode.execute(value));
+        }
+    }
+
+    @Builtin(name = "fsum", fixedNumOfArguments = 1)
+    @ImportStatic(PGuards.class)
+    @GenerateNodeFactory
+    public abstract static class FsumNode extends PythonUnaryBuiltinNode {
+
+        /*
+         * This implementation is taken from CPython. The performance is not good. Should be faster.
+         * It can be easily replace with much simpler code based on BigDecimal:
+         * 
+         * BigDecimal result = BigDecimal.ZERO;
+         * 
+         * in cycle just: result = result.add(BigDecimal.valueof(x); ... The current implementation
+         * is little bit faster. The testFSum in test_math.py takes in different implementations:
+         * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
+         */
+        @Specialization
+        @TruffleBoundary
+        public double doIt(Object iterable,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create(__NEXT__)") LookupAndCallUnaryNode next,
+                        @Cached("create()") CastToDoubleNode toFloat,
+                        @Cached("createBinaryProfile()") ConditionProfile stopProfile) {
+            Object iterator = getIterator.executeWith(iterable);
+            double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
+            double xsave;
+            int i, j, n = 0, arayLength = 32;
+            double[] p = new double[arayLength];
+            while (true) {
+                try {
+                    x = toFloat.execute(next.executeObject(iterator));
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), stopProfile);
+                    break;
+                }
+                xsave = x;
+                for (i = j = 0; j < n; j++) { /* for y in partials */
+                    y = p[j];
+                    if (Math.abs(x) < Math.abs(y)) {
+                        t = x;
+                        x = y;
+                        y = t;
+                    }
+                    hi = x + y;
+                    yr = hi - x;
+                    lo = y - yr;
+                    if (lo != 0.0) {
+                        p[i++] = lo;
+                    }
+                    x = hi;
+                }
+
+                n = i;
+                if (x != 0.0) {
+                    if (!Double.isFinite(x)) {
+                        /*
+                         * a nonfinite x could arise either as a result of intermediate overflow, or
+                         * as a result of a nan or inf in the summands
+                         */
+                        if (Double.isFinite(xsave)) {
+                            throw raise(OverflowError, "intermediate overflow in fsum");
+                        }
+                        if (Double.isInfinite(xsave)) {
+                            inf_sum += xsave;
+                        }
+                        special_sum += xsave;
+                        /* reset partials */
+                        n = 0;
+                    } else if (n >= arayLength) {
+                        arayLength += arayLength;
+                        p = Arrays.copyOf(p, arayLength);
+                    } else {
+                        p[n++] = x;
+                    }
+                }
+            }
+
+            if (special_sum != 0.0) {
+                if (Double.isNaN(inf_sum)) {
+                    throw raise(ValueError, "-inf + inf in fsum");
+                } else {
+                    sum = special_sum;
+                    return sum;
+                }
+            }
+
+            hi = 0.0;
+            if (n > 0) {
+                hi = p[--n];
+                /*
+                 * sum_exact(ps, hi) from the top, stop when the sum becomes inexact.
+                 */
+                while (n > 0) {
+                    x = hi;
+                    y = p[--n];
+                    assert (Math.abs(y) < Math.abs(x));
+                    hi = x + y;
+                    yr = hi - x;
+                    lo = y - yr;
+                    if (lo != 0.0)
+                        break;
+                }
+                /*
+                 * Make half-even rounding work across multiple partials. Needed so that sum([1e-16,
+                 * 1, 1e16]) will round-up the last digit to two instead of down to zero (the 1e-16
+                 * makes the 1 slightly closer to two). With a potential 1 ULP rounding error
+                 * fixed-up, math.fsum() can guarantee commutativity.
+                 */
+                if (n > 0 && ((lo < 0.0 && p[n - 1] < 0.0) ||
+                                (lo > 0.0 && p[n - 1] > 0.0))) {
+                    y = lo * 2.0;
+                    x = hi + y;
+                    yr = x - hi;
+                    if (BigDecimal.valueOf(y).compareTo(BigDecimal.valueOf(yr)) == 0) {
+                        hi = x;
+                    }
+                }
+            }
+            return hi;
+        }
+    }
+
+    @Builtin(name = "gcd", fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class GcdNode extends PythonBinaryBuiltinNode {
+
+        private long count(long a, long b) {
+            if (b == 0) {
+                return a;
+            }
+            return count(b, a % b);
+        }
+
+        @Specialization
+        long gcd(long x, long y) {
+            return Math.abs(count(x, y));
+        }
+
+        @Specialization
+        PInt gcd(long x, PInt y) {
+            return factory().createInt(BigInteger.valueOf(x).gcd(y.getValue()));
+        }
+
+        @Specialization
+        PInt gcd(PInt x, long y) {
+            return factory().createInt(x.getValue().gcd(BigInteger.valueOf(y)));
+        }
+
+        @Specialization
+        PInt gcd(PInt x, PInt y) {
+            return factory().createInt(x.getValue().gcd(y.getValue()));
+        }
+
+        @Specialization
+        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") double y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization
+        int gcd(@SuppressWarnings("unused") long x, @SuppressWarnings("unused") double y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization
+        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") long y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization
+        int gcd(@SuppressWarnings("unused") double x, @SuppressWarnings("unused") PInt y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization
+        int gcd(@SuppressWarnings("unused") PInt x, @SuppressWarnings("unused") double y) {
+            throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+        }
+
+        @Specialization(guards = "!isNumber(x) || !isNumber(y)")
+        Object gcd(Object x, Object y,
+                        @Cached("create()") CastToIntNode xCast,
+                        @Cached("create()") CastToIntNode yCast,
+                        @Cached("create()") GcdNode recursiveNode) {
+            Object xValue = xCast.execute(x);
+            Object yValue = yCast.execute(y);
+            return recursiveNode.execute(xValue, yValue);
+        }
+
+        public static GcdNode create() {
+            return MathModuleBuiltinsFactory.GcdNodeFactory.create();
+        }
     }
 
     @Builtin(name = "acos", fixedNumOfArguments = 1, doc = "Return the arc cosine (measured in radians) of x.")
@@ -1147,7 +1340,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(Object value,
-                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+                        @Cached("create()") CastToDoubleNode convertToFloat) {
             return isfinite(convertToFloat.execute(value));
         }
     }
@@ -1175,7 +1368,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public boolean isinf(Object value,
-                        @Cached("create()") ConvertToFloatNode convertToFloat) {
+                        @Cached("create()") CastToDoubleNode convertToFloat) {
             return isinf(convertToFloat.execute(value));
         }
     }
@@ -1186,24 +1379,24 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LogNode extends PythonBinaryBuiltinNode {
 
-        @Child private ConvertToFloatNode valueConvertNode;
-        @Child private ConvertToFloatNode baseConvertNode;
+        @Child private CastToDoubleNode valueCastNode;
+        @Child private CastToDoubleNode baseCastNode;
         @Child private LogNode recLogNode;
 
-        private ConvertToFloatNode getValueConvertNode() {
-            if (valueConvertNode == null) {
+        private CastToDoubleNode getValueCastNode() {
+            if (valueCastNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                valueConvertNode = insert(ConvertToFloatNode.create());
+                valueCastNode = insert(CastToDoubleNode.create());
             }
-            return valueConvertNode;
+            return valueCastNode;
         }
 
-        private ConvertToFloatNode getBaseConvertNode() {
-            if (baseConvertNode == null) {
+        private CastToDoubleNode getBaseCastNode() {
+            if (baseCastNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                baseConvertNode = insert(ConvertToFloatNode.create());
+                baseCastNode = insert(CastToDoubleNode.create());
             }
-            return baseConvertNode;
+            return baseCastNode;
         }
 
         private double executeRecursiveLogNode(Object value, Object base) {
@@ -1347,27 +1540,27 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(value)")
         public double logO(Object value, PNone novalue) {
-            return executeRecursiveLogNode(getValueConvertNode().execute(value), novalue);
+            return executeRecursiveLogNode(getValueCastNode().execute(value), novalue);
         }
 
         @Specialization(guards = {"!isNumber(value)", "!isNoValue(base)"})
         public double logOO(Object value, Object base) {
-            return executeRecursiveLogNode(getValueConvertNode().execute(value), getBaseConvertNode().execute(base));
+            return executeRecursiveLogNode(getValueCastNode().execute(value), getBaseCastNode().execute(base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         public double logLO(long value, Object base) {
-            return executeRecursiveLogNode(value, getBaseConvertNode().execute(base));
+            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         public double logDO(double value, Object base) {
-            return executeRecursiveLogNode(value, getBaseConvertNode().execute(base));
+            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
         }
 
         @Specialization(guards = {"!isNumber(base)"})
         public double logPIO(PInt value, Object base) {
-            return executeRecursiveLogNode(value, getBaseConvertNode().execute(base));
+            return executeRecursiveLogNode(value, getBaseCastNode().execute(base));
         }
 
         private void raiseMathError(ConditionProfile doNotFit, boolean con) {
@@ -1608,8 +1801,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNumber(left)||!isNumber(right)"})
         double pow(Object left, Object right,
-                        @Cached("create()") ConvertToFloatNode convertLeftFloat,
-                        @Cached("create()") ConvertToFloatNode convertRightFloat) {
+                        @Cached("create()") CastToDoubleNode convertLeftFloat,
+                        @Cached("create()") CastToDoubleNode convertRightFloat) {
             return pow(convertLeftFloat.execute(left), convertRightFloat.execute(right));
         }
     }
@@ -1682,9 +1875,421 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(left) || !isNumber(right)")
         double atan2(Object left, Object right,
-                        @Cached("create()") ConvertToFloatNode convertLeftFloat,
-                        @Cached("create()") ConvertToFloatNode convertRightFloat) {
+                        @Cached("create()") CastToDoubleNode convertLeftFloat,
+                        @Cached("create()") CastToDoubleNode convertRightFloat) {
             return atan2DD(convertLeftFloat.execute(left), convertRightFloat.execute(right));
         }
+    }
+
+    @Builtin(name = "degrees", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class DegreesNode extends MathDoubleUnaryBuiltinNode {
+        private static final double RAD_TO_DEG = 180.0 / Math.PI;
+
+        @Override
+        @TruffleBoundary
+        public double count(double value) {
+            return value * RAD_TO_DEG;
+        }
+    }
+
+    @Builtin(name = "radians", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class RadiansNode extends MathDoubleUnaryBuiltinNode {
+        private static final double DEG_TO_RAD = Math.PI / 180.0;
+
+        @Override
+        @TruffleBoundary
+        public double count(double value) {
+            return value * DEG_TO_RAD;
+        }
+    }
+
+    @Builtin(name = "hypot", fixedNumOfArguments = 2)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @GenerateNodeFactory
+    @ImportStatic(MathGuards.class)
+    public abstract static class HypotNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public double hypotDD(double x, double y) {
+            double result = Math.hypot(x, y);
+            if (Double.isInfinite(result) && Double.isFinite(x) && Double.isFinite(y)) {
+                throw raise(OverflowError, "math range error");
+            }
+            return result;
+        }
+
+        @Specialization
+        public double hypotDL(double x, long y) {
+            return hypotDD(x, y);
+        }
+
+        @Specialization
+        public double hypotLD(long x, double y) {
+            return hypotDD(x, y);
+        }
+
+        @Specialization
+        public double hypotLL(long x, long y) {
+            return hypotDD(x, y);
+        }
+
+        @Specialization
+        public double hypotDPI(double x, PInt y) {
+            return hypotDD(x, y.doubleValue());
+        }
+
+        @Specialization
+        public double hypotLPI(long x, PInt y) {
+            return hypotDD(x, y.doubleValue());
+        }
+
+        @Specialization
+        public double hypotPIPI(PInt x, PInt y) {
+            return hypotDD(x.doubleValue(), y.doubleValue());
+        }
+
+        @Specialization
+        public double hypotPID(PInt x, double y) {
+            return hypotDD(x.doubleValue(), y);
+        }
+
+        @Specialization
+        public double hypotPIL(PInt x, long y) {
+            return hypotDD(x.doubleValue(), y);
+        }
+
+        @Specialization(guards = "!isNumber(objectX) || !isNumber(objectY)")
+        public double hypotOO(Object objectX, Object objectY,
+                        @Cached("create()") CastToDoubleNode xCastNode,
+                        @Cached("create()") CastToDoubleNode yCastNode) {
+            return hypotDD(xCastNode.execute(objectX), yCastNode.execute(objectY));
+        }
+    }
+
+    @Builtin(name = "erf", fixedNumOfArguments = 1, doc = "Error function at x.")
+    @GenerateNodeFactory
+    public abstract static class ErfNode extends MathDoubleUnaryBuiltinNode {
+        // Adapted implementation from CPython
+        private static final double ERF_SERIES_CUTOFF = 1.5;
+        private static final int ERF_SERIES_TERMS = 25;
+        protected static final double ERFC_CONTFRAC_CUTOFF = 30.0;
+        private static final int ERFC_CONTFRAC_TERMS = 50;
+        private static final double SQRTPI = 1.772453850905516027298167483341145182798;
+
+        static double m_erf_series(double x) {
+            double x2, acc, fk;
+            int i;
+
+            x2 = x * x;
+            acc = 0.0;
+            fk = ERF_SERIES_TERMS + 0.5;
+            for (i = 0; i < ERF_SERIES_TERMS; i++) {
+                acc = 2.0 + x2 * acc / fk;
+                fk -= 1.0;
+            }
+
+            return acc * x * Math.exp(-x2) / SQRTPI;
+        }
+
+        static double m_erfc_contfrac(double x) {
+            double x2, a, da, p, p_last, q, q_last, b;
+            int i;
+
+            if (x >= ERFC_CONTFRAC_CUTOFF) {
+                return 0.0;
+            }
+
+            x2 = x * x;
+            a = 0.0;
+            da = 0.5;
+            p = 1.0;
+            p_last = 0.0;
+            q = da + x2;
+            q_last = 1.0;
+            for (i = 0; i < ERFC_CONTFRAC_TERMS; i++) {
+                double temp;
+                a += da;
+                da += 2.0;
+                b = da + x2;
+                temp = p;
+                p = b * p - a * p_last;
+                p_last = temp;
+                temp = q;
+                q = b * q - a * q_last;
+                q_last = temp;
+            }
+
+            return p / q * x * Math.exp(-x2) / SQRTPI;
+        }
+
+        @Override
+        @TruffleBoundary
+        public double count(double x) {
+            double absx, cf;
+
+            if (Double.isNaN(x)) {
+                return x;
+            }
+            absx = Math.abs(x);
+            if (absx < ERF_SERIES_CUTOFF)
+                return m_erf_series(x);
+            else {
+                cf = m_erfc_contfrac(absx);
+                return x > 0.0 ? 1.0 - cf : cf - 1.0;
+            }
+        }
+    }
+
+    @Builtin(name = "erfc", fixedNumOfArguments = 1, doc = "Error function at x.")
+    @GenerateNodeFactory
+    public abstract static class ErfcNode extends ErfNode {
+        // Adapted implementation from CPython
+        @Override
+        @TruffleBoundary
+        public double count(double x) {
+            double absx, cf;
+
+            if (Double.isNaN(x)) {
+                return x;
+            }
+            absx = Math.abs(x);
+            if (absx < ErfNode.ERF_SERIES_CUTOFF)
+                return 1.0 - m_erf_series(x);
+            else {
+                cf = m_erfc_contfrac(absx);
+                return x > 0.0 ? cf : 2.0 - cf;
+            }
+        }
+    }
+
+    @Builtin(name = "gamma", fixedNumOfArguments = 1, doc = "Gamma function at x")
+    @GenerateNodeFactory
+    public abstract static class GammaNode extends MathDoubleUnaryBuiltinNode {
+        // Adapted implementation from CPython
+        private static final int NGAMMA_INTEGRAL = 23;
+        private static final int LANCZOS_N = 13;
+        protected static final double LANCZOS_G = 6.024680040776729583740234375;
+        private static final double LANZOS_G_MINUS_HALF = 5.524680040776729583740234375;
+        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_NUM_COEFFS = new double[]{
+                        23531376880.410759688572007674451636754734846804940,
+                        42919803642.649098768957899047001988850926355848959,
+                        35711959237.355668049440185451547166705960488635843,
+                        17921034426.037209699919755754458931112671403265390,
+                        6039542586.3520280050642916443072979210699388420708,
+                        1439720407.3117216736632230727949123939715485786772,
+                        248874557.86205415651146038641322942321632125127801,
+                        31426415.585400194380614231628318205362874684987640,
+                        2876370.6289353724412254090516208496135991145378768,
+                        186056.26539522349504029498971604569928220784236328,
+                        8071.6720023658162106380029022722506138218516325024,
+                        210.82427775157934587250973392071336271166969580291,
+                        2.5066282746310002701649081771338373386264310793408
+        };
+
+        @CompilationFinal(dimensions = 1) protected final static double[] LANCZOS_DEN_COEFFS = new double[]{
+                        0.0, 39916800.0, 120543840.0, 150917976.0, 105258076.0, 45995730.0,
+                        13339535.0, 2637558.0, 357423.0, 32670.0, 1925.0, 66.0, 1.0};
+
+        @CompilationFinal(dimensions = 1) protected final static double[] GAMMA_INTEGRAL = new double[]{
+                        1.0, 1.0, 2.0, 6.0, 24.0, 120.0, 720.0, 5040.0, 40320.0, 362880.0,
+                        3628800.0, 39916800.0, 479001600.0, 6227020800.0, 87178291200.0,
+                        1307674368000.0, 20922789888000.0, 355687428096000.0,
+                        6402373705728000.0, 121645100408832000.0, 2432902008176640000.0,
+                        51090942171709440000.0, 1124000727777607680000.0,
+        };
+
+        static double sinpi(double x) {
+            double y, r = 0;
+            int n;
+            /* this function should only ever be called for finite arguments */
+            assert (Double.isFinite(x));
+            y = Math.abs(x) % 2.0;
+            n = (int) Math.round(2.0 * y);
+            assert (0 <= n && n <= 4);
+            switch (n) {
+                case 0:
+                    r = Math.sin(Math.PI * y);
+                    break;
+                case 1:
+                    r = Math.cos(Math.PI * (y - 0.5));
+                    break;
+                case 2:
+                    /*
+                     * N.B. -sin(pi*(y-1.0)) is *not* equivalent: it would give -0.0 instead of 0.0
+                     * when y == 1.0.
+                     */
+                    r = Math.sin(Math.PI * (1.0 - y));
+                    break;
+                case 3:
+                    r = -Math.cos(Math.PI * (y - 1.5));
+                    break;
+                case 4:
+                    r = Math.sin(Math.PI * (y - 2.0));
+                    break;
+                default:
+
+            }
+            return Math.copySign(1.0, x) * r;
+        }
+
+        static double lanczos_sum(double x) {
+            double num = 0.0, den = 0.0;
+            int i;
+            assert (x > 0.0);
+            /*
+             * evaluate the rational function lanczos_sum(x). For large x, the obvious algorithm
+             * risks overflow, so we instead rescale the denominator and numerator of the rational
+             * function by x**(1-LANCZOS_N) and treat this as a rational function in 1/x. This also
+             * reduces the error for larger x values. The choice of cutoff point (5.0 below) is
+             * somewhat arbitrary; in tests, smaller cutoff values than this resulted in lower
+             * accuracy.
+             */
+            if (x < 5.0) {
+                for (i = LANCZOS_N; --i >= 0;) {
+                    num = num * x + LANCZOS_NUM_COEFFS[i];
+                    den = den * x + LANCZOS_DEN_COEFFS[i];
+                }
+            } else {
+                for (i = 0; i < LANCZOS_N; i++) {
+                    num = num / x + LANCZOS_NUM_COEFFS[i];
+                    den = den / x + LANCZOS_DEN_COEFFS[i];
+                }
+            }
+            return num / den;
+        }
+
+        @Override
+        @TruffleBoundary
+        public double count(double x) {
+            double absx, r, y, z, sqrtpow;
+
+            /* special cases */
+            if (!Double.isFinite(x)) {
+                if (Double.isNaN(x) || x > 0.0)
+                    return x; /* tgamma(nan) = nan, tgamma(inf) = inf */
+                else {
+                    checkMathDomainError(false);
+                }
+            }
+            checkMathDomainError(x == 0);
+
+            /* integer arguments */
+            if (x == Math.floor(x)) {
+                checkMathDomainError(x < 0.0);
+                if (x <= NGAMMA_INTEGRAL)
+                    return GAMMA_INTEGRAL[(int) x - 1];
+            }
+            absx = Math.abs(x);
+
+            /* tiny arguments: tgamma(x) ~ 1/x for x near 0 */
+            if (absx < 1e-20) {
+                r = 1.0 / x;
+                checkMathRangeError(Double.isInfinite(r));
+                return r;
+            }
+
+            /*
+             * large arguments: assuming IEEE 754 doubles, tgamma(x) overflows for x > 200, and
+             * underflows to +-0.0 for x < -200, not a negative integer.
+             */
+            if (absx > 200.0) {
+                checkMathRangeError(x >= 0.0);
+                return 0.0 / sinpi(x);
+            }
+
+            y = absx + LANZOS_G_MINUS_HALF;
+            /* compute error in sum */
+            if (absx > LANZOS_G_MINUS_HALF) {
+                /*
+                 * note: the correction can be foiled by an optimizing compiler that (incorrectly)
+                 * thinks that an expression like a + b - a - b can be optimized to 0.0. This
+                 * shouldn't happen in a standards-conforming compiler.
+                 */
+                double q = y - absx;
+                z = q - LANZOS_G_MINUS_HALF;
+            } else {
+                double q = y - LANZOS_G_MINUS_HALF;
+                z = q - absx;
+            }
+            z = z * LANCZOS_G / y;
+            if (x < 0.0) {
+                r = -Math.PI / sinpi(absx) / absx * Math.exp(y) / lanczos_sum(absx);
+                r -= z * r;
+                if (absx < 140.0) {
+                    r /= Math.pow(y, absx - 0.5);
+                } else {
+                    sqrtpow = Math.pow(y, absx / 2.0 - 0.25);
+                    r /= sqrtpow;
+                    r /= sqrtpow;
+                }
+            } else {
+                r = lanczos_sum(absx) / Math.exp(y);
+                r += z * r;
+                if (absx < 140.0) {
+                    r *= Math.pow(y, absx - 0.5);
+                } else {
+                    sqrtpow = Math.pow(y, absx / 2.0 - 0.25);
+                    r *= sqrtpow;
+                    r *= sqrtpow;
+                }
+            }
+            checkMathRangeError(Double.isInfinite(r));
+            return r;
+        }
+
+    }
+
+    @Builtin(name = "lgamma", fixedNumOfArguments = 1, doc = "Natural logarithm of absolute value of Gamma function at x.")
+    @GenerateNodeFactory
+    public abstract static class LgammaNode extends GammaNode {
+        // Adapted implementation from CPython
+        private static final double LOGPI = 1.144729885849400174143427351353058711647;
+
+        @Override
+        @TruffleBoundary
+        public double count(double x) {
+            double r;
+            double absx;
+
+            /* special cases */
+            if (!Double.isFinite(x)) {
+                if (Double.isNaN(x)) {
+                    return x; /* lgamma(nan) = nan */
+                } else {
+                    return Double.POSITIVE_INFINITY; /* lgamma(+-inf) = +inf */
+                }
+            }
+
+            /* integer arguments */
+            if (x == Math.floor(x) && x <= 2.0) {
+                checkMathDomainError(x <= 0.0);
+                return 0.0;
+                /* lgamma(1) = lgamma(2) = 0.0 */
+            }
+
+            absx = Math.abs(x);
+            /* tiny arguments: lgamma(x) ~ -log(fabs(x)) for small x */
+            if (absx < 1e-20) {
+                return -Math.log(absx);
+            }
+            /*
+             * Lanczos' formula. We could save a fraction of a ulp in accuracy by having a second
+             * set of numerator coefficients for lanczos_sum that absorbed the exp(-lanczos_g) term,
+             * and throwing out the lanczos_g subtraction below; it's probably not worth it.
+             */
+            r = Math.log(lanczos_sum(absx)) - LANCZOS_G;
+            r += (absx - 0.5) * (Math.log(absx + LANCZOS_G - 0.5) - 1);
+            if (x < 0.0) {
+                /* Use reflection formula to get value for negative x. */
+                r = LOGPI - Math.log(Math.abs(sinpi(absx))) - Math.log(absx) - r;
+            }
+            checkMathRangeError(Double.isInfinite(r));
+
+            return r;
+        }
+
     }
 }
