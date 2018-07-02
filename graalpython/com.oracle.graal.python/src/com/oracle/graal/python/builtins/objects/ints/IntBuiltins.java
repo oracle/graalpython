@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.runtime.ArithmeticUtil;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -607,6 +610,10 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PowNode extends PythonTernaryBuiltinNode {
 
+        protected static PowNode create() {
+            return null;
+        }
+
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
         int doIntegerFast(int left, int right, @SuppressWarnings("unused") PNone none) {
             int result = 1;
@@ -686,6 +693,28 @@ public class IntBuiltins extends PythonBuiltins {
             }
             double value = Math.pow(left.doubleValue(), right.doubleValue());
             return factory().createInt((long) value);
+        }
+
+        @Specialization
+        Object modulo(Object x, Object y, long z,
+                        @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
+                        @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
+            Object result = powNode.execute(x, y, PNone.NO_VALUE);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+            return modNode.executeObject(result, z);
+        }
+
+        @Specialization
+        Object modulo(Object x, Object y, PInt z,
+                        @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
+                        @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
+            Object result = powNode.execute(x, y, PNone.NO_VALUE);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+            return modNode.executeObject(result, z);
         }
 
         @Fallback
