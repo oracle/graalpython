@@ -58,6 +58,7 @@ _FLAGS_TO_JS = ["", "i", "", "m",
 class SRE_Match():
     def __init__(self, pattern, pos, endpos, result):
         self.result = result
+        self.compiled_regex = result.regex
         self.re = pattern
         self.pos = pos
         self.endpos = endpos
@@ -65,28 +66,42 @@ class SRE_Match():
     def end(self, groupnum=0):
         return self.result.end[groupnum]
 
+    def _groupidx(self, idx):
+        if isinstance(idx, str):
+            return self.compiled_regex.groups[idx]
+        else:
+            return idx
+
     def group(self, *args):
         if not args:
             return self.result.input[self.result.start[0]:self.result.end[0]]
         elif len(args) == 1:
-            return self.result.input[self.result.start[args[0]]:self.result.end[args[0]]]
+            idxarg = self._groupidx(args[0])
+            return self.result.input[self.result.start[idxarg]:self.result.end[idxarg]]
         else:
             lst = []
             for arg in args:
-                lst.append(self.result.input[self.result.start[arg]:self.result.end[arg]])
+                idxarg = self._groupidx(arg)
+                lst.append(self.result.input[self.result.start[idxarg]:self.result.end[idxarg]])
             return tuple(lst)
 
     def groups(self, default=None):
         lst = []
         for arg in range(1, self.result.groupCount):
-            lst.append(self.result.input[self.result.start[arg]:self.result.end[arg]])
+            idxarg = self._groupidx(arg)
+            lst.append(self.result.input[self.result.start[idxarg]:self.result.end[idxarg]])
         return tuple(lst)
 
+    def groupdict(self, default=None):
+        return self.compiled_regex.groups
+
     def span(self, groupnum=0):
-        return (self.result.start[groupnum], self.result.end[groupnum])
+        idxarg = self._groupidx(groupnum)
+        return (self.result.start[idxarg], self.result.end[idxarg])
 
     def start(self, groupnum=0):
-        return self.result.start[groupnum]
+        idxarg = self._groupidx(groupnum)
+        return self.result.start[idxarg]
 
     @property
     def string(self):
