@@ -55,14 +55,14 @@ import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class ConvertToIntNode extends PBaseNode {
+public abstract class CastToIntNode extends PBaseNode {
 
     @Node.Child private LookupAndCallUnaryNode callIndexNode;
 
     public abstract Object execute(Object x);
 
-    public static ConvertToIntNode create() {
-        return ConvertToIntNodeGen.create();
+    public static CastToIntNode create() {
+        return CastToIntNodeGen.create();
     }
 
     @Specialization

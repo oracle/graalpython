@@ -55,14 +55,14 @@ import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class ConvertToDoubleNode extends PBaseNode {
+public abstract class CastToDoubleNode extends PBaseNode {
 
     @Node.Child private LookupAndCallUnaryNode callFloatNode;
 
     abstract public double execute(Object x);
 
-    public static ConvertToDoubleNode create() {
-        return ConvertToDoubleNodeGen.create();
+    public static CastToDoubleNode create() {
+        return CastToDoubleNodeGen.create();
     }
 
     @Specialization
