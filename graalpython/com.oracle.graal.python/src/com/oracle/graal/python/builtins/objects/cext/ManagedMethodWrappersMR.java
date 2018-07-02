@@ -90,8 +90,8 @@ public class ManagedMethodWrappersMR {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 executeNode = insert(new PythonMessageResolution.ExecuteNode());
             }
-            if (arguments.length != 2) {
-                throw ArityException.raise(2, arguments.length);
+            if (arguments.length != 3) {
+                throw ArityException.raise(3, arguments.length);
             }
 
             // convert args
@@ -100,9 +100,9 @@ public class ManagedMethodWrappersMR {
                 converted[i] = getToJavaNode().execute(arguments[i]);
             }
 
-            Object[] userArgs = posArgsNode.executeWithArguments(null, posStarargsNode.executeWith(converted[0]));
+            Object[] userArgs = posArgsNode.executeWithArguments(converted[0], posStarargsNode.executeWith(converted[1]));
             Object[] pArgs = createArgs.execute(userArgs);
-            PKeyword[] kwargs = expandKwargsNode.executeWith(converted[1]);
+            PKeyword[] kwargs = expandKwargsNode.executeWith(converted[2]);
             return getToSulongNode().execute(getDispatchNode().executeCall(object.getDelegate(), pArgs, kwargs));
         }
 

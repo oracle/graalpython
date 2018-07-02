@@ -45,6 +45,10 @@ public final class PInt extends PythonBuiltinObject {
         return value;
     }
 
+    public boolean isOne() {
+        return value.equals(BigInteger.ONE);
+    }
+
     public boolean isZero() {
         return value.equals(BigInteger.ZERO);
     }

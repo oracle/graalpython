@@ -77,6 +77,8 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -866,22 +868,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "TrufflePFloat_AsPrimitive", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class TrufflePFloat_AsPrimitive extends NativeBuiltin {
-        @Specialization
-        double doDouble(double d) {
-            return d;
-        }
-
-        @Fallback
-        double doGeneric(Object obj) {
-            return raiseNative(-1.0, PythonErrorType.TypeError, "must be real number, not %p", obj);
-        }
-
-    }
-
     @Builtin(name = "PyTruffle_Unicode_FromWchar", fixedNumOfArguments = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1214,6 +1200,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffle_Set_SulongType", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Set_SulongType extends NativeBuiltin {
+
+        @Specialization
+        Object doPythonObject(PythonClassNativeWrapper klass, Object ptr) {
+            ((PythonClass) klass.getPythonObject()).setSulongType(ptr);
+            return ptr;
+        }
+    }
+
     @Builtin(name = "PyTruffle_SetBufferProcs", fixedNumOfArguments = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_SetBufferProcs extends NativeBuiltin {
@@ -1238,6 +1235,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object get() {
             return getContext().getCustomThreadState();
+        }
+    }
+
+    @Builtin(name = "PyTruffleSlice_GetIndicesEx", fixedNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class PyTruffleSlice_GetIndicesEx extends NativeBuiltin {
+        @Specialization
+        Object doUnpack(int start, int stop, int step, long length) {
+            PSlice tmpSlice = factory().createSlice(start, stop, step);
+            SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+            return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
         }
     }
 

@@ -41,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -64,6 +65,7 @@ public class PythonClass extends PythonObject {
     private final Set<PythonClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonClass, Boolean>());
     private final Shape instanceShape;
     private final FlagsContainer flags;
+    @CompilationFinal private Object sulongType;
 
     public final boolean isBuiltin() {
         return this instanceof PythonBuiltinClass;
@@ -323,5 +325,14 @@ public class PythonClass extends PythonObject {
     @Override
     public PythonClassNativeWrapper getNativeWrapper() {
         return (PythonClassNativeWrapper) super.getNativeWrapper();
+    }
+
+    public final Object getSulongType() {
+        return sulongType;
+    }
+
+    public final void setSulongType(Object dynamicSulongType) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        this.sulongType = dynamicSulongType;
     }
 }

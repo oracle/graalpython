@@ -60,8 +60,10 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -98,10 +100,43 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonNativeWrapper.class)
 public class PythonObjectNativeWrapperMR {
     protected static String GP_OBJECT = "gp_object";
+
+    @SuppressWarnings("unknown-message")
+    @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
+    abstract static class GetDynamicTypeNode extends Node {
+        @Child GetClassNode getClass = GetClassNode.create();
+
+        public Object access(PythonObjectNativeWrapper object) {
+            PythonClass klass = getClass.execute(object.getPythonObject());
+            Object sulongType = klass.getSulongType();
+            if (sulongType == null) {
+                CompilerDirectives.transferToInterpreter();
+                sulongType = findBuiltinClass(klass);
+                if (sulongType == null) {
+                    throw new IllegalStateException("sulong type for " + klass.getName() + " was not registered");
+                }
+            }
+            return sulongType;
+        }
+
+        private static Object findBuiltinClass(PythonClass klass) {
+            PythonClass[] mro = klass.getMethodResolutionOrder();
+            Object sulongType = null;
+            for (PythonClass superClass : mro) {
+                sulongType = superClass.getSulongType();
+                if (sulongType != null) {
+                    klass.setSulongType(sulongType);
+                    break;
+                }
+            }
+            return sulongType;
+        }
+    }
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
@@ -179,6 +214,16 @@ public class PythonObjectNativeWrapperMR {
             return new PySequenceArrayWrapper(object);
         }
 
+        @Specialization(guards = "eq(OB_FVAL, key)")
+        Object doObFval(PythonObject object, @SuppressWarnings("unused") String key,
+                        @Cached("createClassProfile()") ValueProfile profile) {
+            Object profiled = profile.profile(object);
+            if (profiled instanceof PFloat) {
+                return ((PFloat) profiled).getValue();
+            }
+            throw UnsupportedMessageException.raise(Message.READ);
+        }
+
         @Specialization(guards = "eq(TP_FLAGS, key)")
         long doTpFlags(PythonClass object, @SuppressWarnings("unused") String key) {
             return object.getFlags();
@@ -201,7 +246,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_ALLOC, key)")
         Object doTpAlloc(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getAllocNode) {
+                        @Cached("create()") LookupAttributeInMRONode getAllocNode) {
             Object result = getAllocNode.execute(object, SpecialMethodNames.__ALLOC__);
             return getToSulongNode().execute(result);
         }
@@ -230,19 +275,19 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_HASH, key)")
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getHashNode) {
+                        @Cached("create()") LookupInheritedAttributeNode getHashNode) {
             return getToSulongNode().execute(getHashNode.execute(object, SpecialMethodNames.__HASH__));
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         Object doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getAttrNode) {
+                        @Cached("create()") LookupInheritedAttributeNode getAttrNode) {
             return getAttrNode.execute(object, SpecialAttributeNames.__BASICSIZE__);
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
         Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getCmpNode) {
+                        @Cached("create()") LookupInheritedAttributeNode getCmpNode) {
             return getToSulongNode().execute(getCmpNode.execute(object, SpecialMethodNames.RICHCMP));
         }
 
@@ -310,6 +355,21 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
         Object doObSval(PBuffer object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object.getDelegate());
+        }
+
+        @Specialization(guards = "eq(START, key)")
+        int doStart(PSlice object, @SuppressWarnings("unused") String key) {
+            return object.getStart();
+        }
+
+        @Specialization(guards = "eq(STOP, key)")
+        int doStop(PSlice object, @SuppressWarnings("unused") String key) {
+            return object.getStop();
+        }
+
+        @Specialization(guards = "eq(STEP, key)")
+        int doStep(PSlice object, @SuppressWarnings("unused") String key) {
+            return object.getStep();
         }
 
         @Fallback

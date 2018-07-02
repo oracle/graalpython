@@ -104,6 +104,10 @@ def PyModule_SetDocString(module, string):
     module.__doc__ = string
 
 
+def PyModule_NewObject(name):
+    return moduletype(name)
+
+
 ##################### DICT
 
 def PyDict_New():
@@ -344,12 +348,9 @@ def PyFloat_FromDouble(n):
     return float(n)
 
 
-@may_raise(-1.0)
-def PyFloat_AsPrimitive(n):
-    if isinstance(n, float):
-        return TrufflePFloat_AsPrimitive(n)
-    else:
-        return TrufflePFloat_AsPrimitive(float(n))
+@may_raise
+def PyFloat_FromObject(n):
+    return float(n)
 
 
 ##################### NUMBER
@@ -548,7 +549,7 @@ class PyCapsule:
 
     def __init__(self, name, pointer, destructor):
         self.name = name
-        self.pointer = pointer
+        self.pointer = to_sulong(pointer)
 
     def __repr__(self):
         name = "NULL" if self.name is None else self.name
@@ -769,7 +770,7 @@ def dict_from_list(lst):
         raise SystemError("list cannot be converted to dict")
     d = {}
     for i in range(0, len(lst), 2):
-        d[l[i]] = d[l[i + 1]]
+        d[lst[i]] = lst[i + 1]
     return d
 
 
@@ -1154,6 +1155,11 @@ def PyImport_GetModuleDict():
 @may_raise
 def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
+
+
+@may_raise
+def PySlice_GetIndicesEx(start, stop, step, length):
+    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
 
 
 @may_raise

@@ -36,42 +36,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "capi.h"
+#include "Python.h"
 
-PyObject* PyImport_ImportModule(const char *name) {
-    return UPCALL_CEXT_O("PyImport_ImportModule", polyglot_from_string(name, SRC_CS));
-}
 
-PyObject* PyImport_GetModuleDict() {
-    return UPCALL_CEXT_O("PyImport_GetModuleDict");
-}
-
-PyObject* PyImport_AddModuleObject(PyObject *name) {
-    return _PyImport_AddModuleObject(name, PyImport_GetModuleDict());
-}
-
-PyObject* PyImport_AddModule(const char *name) {
-    PyObject *nameobj = PyUnicode_FromString(name);
-    if (nameobj == NULL) {
-        return NULL;
-    }
-    return PyImport_AddModuleObject(nameobj);
-}
-
-PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {
-    PyObject* m = PyObject_GetItem(modules, name);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    if (m != NULL && PyModule_Check(m)) {
-        return m;
-    }
-    m = PyModule_NewObject(name);
-    if (m == NULL) {
-        return NULL;
-    }
-    if (PyObject_SetItem(modules, name, m) != 0) {
-        return NULL;
-    }
-    return m;
-}
+const char *Py_hexdigits = "0123456789abcdef";

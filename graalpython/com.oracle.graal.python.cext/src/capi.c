@@ -45,13 +45,15 @@ MUST_INLINE static void force_to_native(void* obj) {
     }
 }
 
-static void initialize_type_structure(PyTypeObject* structure, const char* typname) {
-    // explicit type cast is required because the type flags are not yet initialized !
-    PyTypeObject* ptype = polyglot_as__typeobject(UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(typname, SRC_CS)));
+static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {
+    PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(typname, SRC_CS));
 
     // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
     // TODO Remove this as soon as this is properly supported.
     force_to_native(ptype);
+
+    // Store the Sulong struct type id to be used for instances of this class
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, typeid);
 
     unsigned long original_flags = structure->tp_flags;
     Py_ssize_t basicsize = structure->tp_basicsize;
@@ -60,6 +62,51 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
     type_handle->tp_flags = original_flags | Py_TPFLAGS_READY;
     type_handle->tp_basicsize = basicsize;
 }
+
+#define initialize_type(typeobject, typename, struct)                   \
+    __attribute__((constructor))                                        \
+    static void initialize_ ## typeobject ## _gen(void) {               \
+        initialize_type_structure(&typeobject,                          \
+                                  #typename,                            \
+                                  polyglot_ ## struct ## _typeid());    \
+    }
+
+#define declare_struct(typeobject, typename, struct)    \
+    POLYGLOT_DECLARE_STRUCT(struct);                    \
+    initialize_type(typeobject, typename, struct)
+
+#define declare_type(typeobject, typename, objecttype)  \
+    POLYGLOT_DECLARE_TYPE(objecttype);                  \
+    initialize_type(typeobject, typename, objecttype)
+
+declare_struct(PyType_Type, type, _typeobject);
+declare_struct(PyBaseObject_Type, object, _object);
+declare_type(PyUnicode_Type, str, PyUnicodeObject);
+declare_struct(PyLong_Type, int, _longobject);
+declare_type(PyBytes_Type, bytes, PyBytesObject);
+declare_type(PyDict_Type, dict, PyDictObject);
+declare_type(PyTuple_Type, tuple, PyTupleObject);
+declare_type(PyList_Type, list, PyListObject);
+declare_type(PyComplex_Type, complex, PyComplexObject);
+declare_type(PyModule_Type, module, PyModuleObject);
+declare_type(PyCapsule_Type, PyCapsule, PyCapsule);
+declare_type(PyMemoryView_Type, memoryview, PyMemoryViewObject);
+declare_type(PySet_Type, set, PySetObject);
+declare_type(PyFloat_Type, float, PyFloatObject);
+declare_type(PySlice_Type, slice, PySliceObject);
+declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
+declare_type(PyCFunction_Type, function, PyCFunctionObject);
+declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
+declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
+// Below types use the same object structure as others, and thus
+// POLYGLOT_DECLARE_TYPE should not be called again
+initialize_type(PySuper_Type, super, _object);
+initialize_type(_PyNone_Type, NoneType, _object);
+initialize_type(PyFrozenSet_Type, frozenset, PySetObject);
+initialize_type(PyBool_Type, bool, _longobject);
+initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
+initialize_type(PyDictProxy_Type, mappingproxy, _object);
+initialize_type(PyEllipsis_Type, ellipsis, _object);
 
 static void initialize_globals() {
     // None
@@ -80,10 +127,10 @@ static void initialize_globals() {
     // True, False
     void *jtrue = UPCALL_CEXT_O("Py_True");
     force_to_native(jtrue);
-    truffle_assign_managed(&_Py_TrueStruct, polyglot_as__longobject(jtrue));
+    truffle_assign_managed(&_Py_TrueStruct, jtrue);
     void *jfalse = UPCALL_CEXT_O("Py_False");
     force_to_native(jfalse);
-    truffle_assign_managed(&_Py_FalseStruct, polyglot_as__longobject(jfalse));
+    truffle_assign_managed(&_Py_FalseStruct, jfalse);
 
     // error marker
     void *jerrormarker = UPCALL_CEXT_O("Py_ErrorHandler");
@@ -99,45 +146,11 @@ static void initialize_bufferprocs() {
 
 __attribute__((constructor))
 static void initialize_capi() {
-    // initialize base types
-    initialize_type_structure(&PyType_Type, "type");
-    initialize_type_structure(&PyBaseObject_Type, "object");
-    initialize_type_structure(&PySuper_Type, "super");
-    initialize_type_structure(&_PyNone_Type, "NoneType");
-    initialize_type_structure(&PyModule_Type, "module");
-    initialize_type_structure(&PyUnicode_Type, "str");
-    initialize_type_structure(&PyBool_Type, "bool");
-    initialize_type_structure(&PyFloat_Type, "float");
-    initialize_type_structure(&PyLong_Type, "int");
-    initialize_type_structure(&PyBytes_Type, "bytes");
-    initialize_type_structure(&PyDict_Type, "dict");
-    initialize_type_structure(&PyTuple_Type, "tuple");
-    initialize_type_structure(&PyList_Type, "list");
-    initialize_type_structure(&PyDictProxy_Type, "mappingproxy");
-    initialize_type_structure(&PyComplex_Type, "complex");
-    initialize_type_structure(&PySlice_Type, "slice");
-    initialize_type_structure(&PyByteArray_Type, "bytearray");
-    initialize_type_structure(&_PyNotImplemented_Type, "NotImplementedType");
-    initialize_type_structure(&PyCapsule_Type, "PyCapsule");
-    initialize_type_structure(&PyMemoryView_Type, "memoryview");
-    initialize_type_structure(&PyCFunction_Type, "function");
-    initialize_type_structure(&PyFrozenSet_Type, "frozenset");
-    initialize_type_structure(&PySet_Type, "set");
-    initialize_type_structure(&PyEllipsis_Type, "ellipsis");
-    initialize_type_structure(&PyBuffer_Type, "buffer");
-
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
-
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
-}
-
-
-__attribute__((always_inline))
-inline PyObject* handle_exception_and_cast(void* val) {
-    return val == ERROR_MARKER ? NULL : explicit_cast(val);
 }
 
 __attribute__((always_inline))
@@ -149,11 +162,11 @@ void* native_to_java(PyObject* obj) {
     if (obj == Py_None) {
         return Py_None;
     } else if (obj == NULL) {
-    	return Py_NoValue;
+        return Py_NoValue;
     } else if (polyglot_is_string(obj)) {
         return obj;
     } else if (truffle_is_handle_to_managed(obj)) {
-    	return truffle_managed_from_handle(obj);
+        return truffle_managed_from_handle(obj);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {
         return truffle_managed_from_handle(obj->ob_refcnt);
     }
@@ -166,51 +179,16 @@ inline void* to_java(PyObject* obj) {
 }
 
 void* to_java_type(PyTypeObject* cls) {
-	return to_java((PyObject*)cls);
-}
-
-
-#define PyTruffle_FastSubclass(__flags, __reference_flags) ((__flags) & (__reference_flags))
-
-__attribute__((always_inline))
-static inline PyObject* PyTruffle_Explicit_Cast(PyObject* cobj, unsigned long flags) {
-    if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_TYPE_SUBCLASS)) {
-    	return (PyObject*)polyglot_as__typeobject(cobj);
-    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_TUPLE_SUBCLASS)) {
-    	return (PyObject*)polyglot_as_PyTupleObject(cobj);
-    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_LIST_SUBCLASS)) {
-    	return (PyObject*)polyglot_as_PyListObject(cobj);
-    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_DICT_SUBCLASS)) {
-    	return (PyObject*)polyglot_as_PyDictObject(cobj);
-    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_UNICODE_SUBCLASS)) {
-    	return (PyObject*)polyglot_as_PyUnicodeObject(cobj);
-    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_BYTES_SUBCLASS)) {
-    	return (PyObject*)polyglot_as_PyBytesObject(cobj);
-    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_LONG_SUBCLASS)) {
-    	return (PyObject*)polyglot_as__longobject(cobj);
-    } else if (PyTruffle_FastSubclass(flags, Py_TPFLAGS_BASE_EXC_SUBCLASS)) {
-    	return (PyObject*)polyglot_as_PyBaseExceptionObject(cobj);
-    }
-    return (PyObject*)polyglot_as_PyVarObject(cobj);
-}
-
-
-__attribute__((always_inline))
-inline PyObject* explicit_cast(PyObject* cobj) {
-    if(polyglot_is_value(cobj)) {
-        unsigned long flags = polyglot_as_i64(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_GetTpFlags", cobj));
-        return PyTruffle_Explicit_Cast(cobj, flags);
-    }
-    return cobj;
+    return to_java((PyObject*)cls);
 }
 
 PyObject* to_sulong(void *o) {
-    return explicit_cast(polyglot_invoke(PY_TRUFFLE_CEXT, "to_sulong", o));
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "to_sulong", o);
 }
 
 /** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
-    return native_to_java((PyObject*)obj->ob_type);
+    return native_to_java((PyObject*)(obj->ob_type));
 }
 
 typedef struct PyObjectHandle {
@@ -222,21 +200,18 @@ uint64_t PyTruffle_Wchar_Size() {
 }
 
 void* PyObjectHandle_ForJavaObject(void* cobj, unsigned long flags) {
-	if (!truffle_is_handle_to_managed(cobj)) {
-		if(polyglot_is_value(cobj)) {
-			cobj = PyTruffle_Explicit_Cast(cobj, flags);
-		}
-		return truffle_deref_handle_for_managed(cobj);
-	}
-	return cobj;
+    if (!truffle_is_handle_to_managed(cobj)) {
+        return truffle_deref_handle_for_managed(cobj);
+    }
+    return cobj;
 }
 
 /** to be used from Java code only; only creates the deref handle */
 void* PyObjectHandle_ForJavaType(void* ptype) {
-	if (!truffle_is_handle_to_managed(ptype)) {
-		return truffle_deref_handle_for_managed(ptype);
-	}
-	return ptype;
+    if (!truffle_is_handle_to_managed(ptype)) {
+        return truffle_deref_handle_for_managed(ptype);
+    }
+    return ptype;
 }
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
@@ -277,23 +252,23 @@ const char* PyTruffle_ByteArrayToNative(const void* jbyteArray, int len) {
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
 
 PyObject* ReadShortMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromLong(ReadMember(object, offset, short));
+    return PyLong_FromLong(ReadMember(object, offset, short));
 }
 
 PyObject* ReadIntMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromLong(ReadMember(object, offset, int));
+    return PyLong_FromLong(ReadMember(object, offset, int));
 }
 
 PyObject* ReadLongMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromLong(ReadMember(object, offset, long));
+    return PyLong_FromLong(ReadMember(object, offset, long));
 }
 
 PyObject* ReadFloatMember(PyObject* object, PyObject* offset) {
-	return PyFloat_FromDouble(ReadMember(object, offset, float));
+    return PyFloat_FromDouble(ReadMember(object, offset, float));
 }
 
 PyObject* ReadDoubleMember(PyObject* object, PyObject* offset) {
-	return PyFloat_FromDouble(ReadMember(object, offset, double));
+    return PyFloat_FromDouble(ReadMember(object, offset, double));
 }
 
 PyObject* ReadStringMember(PyObject* object, PyObject* offset) {
@@ -314,23 +289,23 @@ PyObject* ReadCharMember(PyObject* object, PyObject* offset) {
 }
 
 PyObject* ReadByteMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromLong(ReadMember(object, offset, char));
+    return PyLong_FromLong(ReadMember(object, offset, char));
 }
 
 PyObject* ReadUByteMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned char));
+    return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned char));
 }
 
 PyObject* ReadUShortMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned short));
+    return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned short));
 }
 
 PyObject* ReadUIntMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned int));
+    return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned int));
 }
 
 PyObject* ReadULongMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned long));
+    return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned long));
 }
 
 PyObject* ReadBoolMember(PyObject* object, PyObject* offset) {
@@ -349,15 +324,15 @@ PyObject* ReadObjectExMember(PyObject* object, PyObject* offset) {
 }
 
 PyObject* ReadLongLongMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromLongLong(ReadMember(object, offset, long long));
+    return PyLong_FromLongLong(ReadMember(object, offset, long long));
 }
 
 PyObject* ReadULongLongMember(PyObject* object, PyObject* offset) {
-	return PyLong_FromUnsignedLongLong(ReadMember(object, offset, unsigned long long));
+    return PyLong_FromUnsignedLongLong(ReadMember(object, offset, unsigned long long));
 }
 
 PyObject* ReadPySSizeT(PyObject* object, PyObject* offset) {
-	return PyLong_FromSsize_t(ReadMember(object, offset, Py_ssize_t));
+    return PyLong_FromSsize_t(ReadMember(object, offset, Py_ssize_t));
 }
 
 #undef ReadMember
@@ -463,15 +438,15 @@ PyObject* WritePySSizeT(PyObject* object, PyObject* offset, PyObject* value) {
 }
 
 PyObject marker_struct = {
-  _PyObject_EXTRA_INIT
-  1, &PyBaseObject_Type
+    _PyObject_EXTRA_INIT
+    1, &PyBaseObject_Type
 };
 
 #undef WriteMember
 
 int PyTruffle_Debug(void *arg) {
-	polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
-	return 0;
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Debug", arg);
+    return 0;
 }
 
 typedef PyObject* (*f0)();
@@ -498,101 +473,101 @@ typedef PyObject* (*f20)(PyObject*, PyObject*, PyObject*, PyObject*, PyObject*, 
 
 #define _PICK_FUN_CAST(DUMMY, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, NAME, ...) NAME
 #define _CALL_ARITY(FUN, ...) ( (_PICK_FUN_CAST(NULL, ##__VA_ARGS__, f20, f19, f18, f17, f16, f15, f14, f13, f12, f11, f10, f9, f8, f7, f6, f5, f4, f3, f2, f1, f0))(FUN))(__VA_ARGS__)
-#define ARG(__n) explicit_cast((PyObject*)polyglot_get_arg((__n)))
+#define ARG(__n) ((PyObject*)polyglot_get_arg((__n)))
 
-int wrap_setter(PyCFunction fun, PyObject* self, PyObject* value, PyObject* closure) {
+int wrap_setter(PyCFunction fun, PyObject* self, PyObject* value, void* closure) {
     return _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
 }
 
 void* wrap_direct(PyCFunction fun, ...) {
-	PyObject *res = NULL;
-	switch(polyglot_get_arg_count()-1) {
-	case 0:
-		res = _CALL_ARITY(fun);
-		break;
-	case 1:
-		res = _CALL_ARITY(fun, ARG(1));
-		break;
-	case 2:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2));
-		break;
-	case 3:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
-		break;
-	case 4:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4));
-		break;
-	case 5:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
-		break;
-	case 6:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
-		break;
-	case 7:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7));
-		break;
-	case 8:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8));
-		break;
-	case 9:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9));
-		break;
-	case 10:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10));
-		break;
-	case 11:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11));
-		break;
-	case 12:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12));
-		break;
-	case 13:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13));
-		break;
-	case 14:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14));
-		break;
-	case 15:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15));
-		break;
-	case 16:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16));
-		break;
-	case 17:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17));
-		break;
-	case 18:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18));
-		break;
-	case 19:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
-		break;
-	case 20:
-		res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19), ARG(20));
-		break;
-	default:
-	    _PyErr_BadInternalCall(__FILE__, __LINE__);
-	    res = NULL;
-	}
-	return native_to_java(res);
+    PyObject *res = NULL;
+    switch(polyglot_get_arg_count()-1) {
+    case 0:
+        res = _CALL_ARITY(fun);
+        break;
+    case 1:
+        res = _CALL_ARITY(fun, ARG(1));
+        break;
+    case 2:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2));
+        break;
+    case 3:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3));
+        break;
+    case 4:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4));
+        break;
+    case 5:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5));
+        break;
+    case 6:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6));
+        break;
+    case 7:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7));
+        break;
+    case 8:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8));
+        break;
+    case 9:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9));
+        break;
+    case 10:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10));
+        break;
+    case 11:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11));
+        break;
+    case 12:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12));
+        break;
+    case 13:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13));
+        break;
+    case 14:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14));
+        break;
+    case 15:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15));
+        break;
+    case 16:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16));
+        break;
+    case 17:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17));
+        break;
+    case 18:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18));
+        break;
+    case 19:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
+        break;
+    case 20:
+        res = _CALL_ARITY(fun, ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(9), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19), ARG(20));
+        break;
+    default:
+        _PyErr_BadInternalCall(__FILE__, __LINE__);
+        res = NULL;
+    }
+    return native_to_java(res);
 }
 
 void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs) {
-	return native_to_java(fun(explicit_cast(module), explicit_cast(varargs)));
+    return native_to_java(fun(module, varargs));
 }
 
 void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs) {
-	return native_to_java(fun(explicit_cast(module), explicit_cast(varargs), explicit_cast(kwargs)));
+    return native_to_java(fun(module, varargs, kwargs));
 }
 
 void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone) {
-	return native_to_java(fun(explicit_cast(module), explicit_cast(pnone)));
+    return native_to_java(fun(module, pnone));
 }
 
 void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames) {
-	return native_to_java(fun(explicit_cast(self), PySequence_Fast_ITEMS(explicit_cast((PyObject*)args)), PyLong_AsSsize_t(nargs), explicit_cast(kwnames)));
+    return native_to_java(fun(self, PySequence_Fast_ITEMS((PyObject*)args), PyLong_AsSsize_t(nargs), kwnames));
 }
 
 void* wrap_unsupported(void *fun, ...) {
-	return NULL;
+    return NULL;
 }

@@ -168,7 +168,7 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
         return -1;
     }
     if (polyglot_is_value(base)) {
-        return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", native_to_java(base), native_to_java(key), native_to_java(type)));
+        return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", native_to_java((PyObject*)base), native_to_java(key), native_to_java((PyObject*)type)));
     } else {
         PyObject *dict = base->tp_subclasses;
         if (dict == NULL) {
@@ -178,7 +178,7 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
             }
         }
         // TODO value should be a weak reference !
-        return PyDict_SetItem(base->tp_subclasses, key, type);
+        return PyDict_SetItem(base->tp_subclasses, key, (PyObject*)type);
     }
 	return -1;
 }
@@ -186,51 +186,51 @@ static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
 /* Special C landing functions that convert some arguments to primitives. */
 
 static PyObject* wrap_allocfunc(allocfunc f, PyTypeObject* klass, PyObject* n) {
-	return f(explicit_cast(klass), PyLong_AsSsize_t(n));
+	return f(klass, PyLong_AsSsize_t(n));
 }
 
 /* Wrapper around a native function to be called by Python code. */
 static PyObject* wrap_getattrfunc(getattrfunc f, PyObject* obj, PyObject* unicode) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
-	return f(explicit_cast(obj), as_char_pointer(unicode));
+	return f(obj, as_char_pointer(unicode));
 }
 
 /* Wrapper around the native function to be called by Python code. */
 static PyObject* wrap_setattrfunc(setattrfunc f, PyObject* obj, PyObject* unicode, PyObject* value) {
 	// we really need to provide 'char *' since this often runs non-Sulong code
-	return f(explicit_cast(obj), as_char_pointer(unicode), explicit_cast(value));
+	return f(obj, as_char_pointer(unicode), value);
 }
 
 static PyObject* wrap_setattrofunc(setattrofunc f, PyObject* obj, PyObject* key, PyObject* item) {
-	return PyLong_FromLong(f(explicit_cast(obj), explicit_cast(key), explicit_cast(item)));
+	return PyLong_FromLong(f(obj, key, item));
 }
 
 static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObject* n) {
-	return f(explicit_cast(a), explicit_cast(b), (int)PyLong_AsLong(n));
+	return f(a, b, (int)PyLong_AsLong(n));
 }
 
 static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* size, PyObject* b) {
-	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size), explicit_cast(b)));
+	return PyLong_FromLong(f(a, PyLong_AsSsize_t(size), b));
 }
 
 static PyObject* wrap_ssizeargfunc(ssizeargfunc f, PyObject* a, PyObject* size) {
-	return PyLong_FromLong(f(explicit_cast(a), PyLong_AsSsize_t(size)));
+	return PyLong_FromLong(f(a, PyLong_AsSsize_t(size)));
 }
 
 static PyObject* wrap_initproc(initproc f, PyObject* a, PyObject* b, PyObject* c) {
-	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+	return PyLong_FromLong(f(a, b,  c));
 }
 
 static PyObject* wrap_objobjargproc(objobjargproc f, PyObject* a, PyObject* b, PyObject* c) {
-	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b),  explicit_cast(c)));
+	return PyLong_FromLong(f(a, b,  c));
 }
 
 static PyObject* wrap_objobjproc(objobjproc f, PyObject* a, PyObject* b) {
-	return PyLong_FromLong(f(explicit_cast(a), explicit_cast(b)));
+	return PyLong_FromLong(f(a, b));
 }
 
 static PyObject* wrap_inquiry(inquiry f, PyObject* a) {
-	return PyLong_FromLong(f(explicit_cast(a)));
+	return PyLong_FromLong(f(a));
 }
 
 /* very special case: operator '**' has an optional third arg */
@@ -239,20 +239,20 @@ static PyObject* wrap_pow(ternaryfunc f, ...) {
     switch(nargs) {
     case 3:
         // TODO use 'native_to_java' on result
-        return f(explicit_cast(polyglot_get_arg(1)), explicit_cast(polyglot_get_arg(2)), Py_None);
+        return f(polyglot_get_arg(1), polyglot_get_arg(2), Py_None);
     case 4:
         // TODO use 'native_to_java' on result
-        return f(explicit_cast(polyglot_get_arg(1)), explicit_cast(polyglot_get_arg(2)), explicit_cast(polyglot_get_arg(3)));
+        return f(polyglot_get_arg(1), polyglot_get_arg(2), polyglot_get_arg(3));
     }
-	return native_to_java(NULL);
+    return Py_NoValue;
 }
 
 static PyObject* wrap_lenfunc(lenfunc f, PyObject* a) {
-    return PyLong_FromSsize_t(f(explicit_cast(a)));
+    return PyLong_FromSsize_t(f(a));
 }
 
 static Py_hash_t wrap_hashfunc(hashfunc f, PyObject* a) {
-    return PyLong_FromSsize_t(f(explicit_cast(a)));
+    return PyLong_FromSsize_t(f(a));
 }
 
 
@@ -324,14 +324,14 @@ int PyType_Ready(PyTypeObject* cls) {
     if (lastDot) {
         PyDict_SetItemString(native_members, "__module__", polyglot_from_string(lastDot + 1, SRC_CS));
     }
-    PyTypeObject* javacls = polyglot_as__typeobject(polyglot_invoke(PY_TRUFFLE_CEXT,
-                                          "PyType_Ready",
-                                          // no conversion of cls here, because we
-                                          // store this into the PyTypeObject
-                                          cls,
-                                          native_to_java(metaclass),
-                                          native_to_java(bases),
-                                          native_to_java(native_members)));
+    PyTypeObject* javacls = polyglot_invoke(PY_TRUFFLE_CEXT,
+                                            "PyType_Ready",
+                                            // no conversion of cls here, because we
+                                            // store this into the PyTypeObject
+                                            cls,
+                                            native_to_java((PyObject*)metaclass),
+                                            native_to_java(bases),
+                                            native_to_java(native_members));
 
     // remember the managed wrapper
     ((PyObject*)cls)->ob_refcnt = truffle_handle_for_managed(javacls);
@@ -383,7 +383,7 @@ int PyType_Ready(PyTypeObject* cls) {
                             getter_fun != NULL ? (getter)getter_fun : native_to_java(Py_None),
                             wrap_direct,
                             setter_fun != NULL ? (setter)setter_fun : native_to_java(Py_None),
-                            wrap_direct,
+                            wrap_setter,
                             getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : polyglot_from_string("", SRC_CS),
                             // do not convert the closure, it is handed to the
                             // getter and setter as-is
@@ -501,12 +501,7 @@ int PyType_Ready(PyTypeObject* cls) {
     Py_ssize_t i;
     for (i = 0; i < n; i++) {
         PyObject* base_class_object = PyTuple_GetItem(bases, i);
-        PyTypeObject* b = NULL;
-        if (polyglot_is_value(base_class_object)) {
-            b = polyglot_as__typeobject(base_class_object);
-        }  else {
-            b = (PyTypeObject*) base_class_object;
-        }
+        PyTypeObject* b = (PyTypeObject*) base_class_object;
         if (PyType_Check(b) && add_subclass(b, cls) < 0) {
         	cls->tp_flags &= ~Py_TPFLAGS_READYING;
         	return -1;

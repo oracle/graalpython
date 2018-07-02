@@ -104,7 +104,12 @@ public class CodeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected Object doIt(PythonParseResult self) {
             RootNode rootNode = self.getRootNode();
-            return rootNode.getSourceSection().getStartLine();
+            SourceSection sourceSection = rootNode.getSourceSection();
+            if (sourceSection == null) {
+                return 1;
+            } else {
+                return sourceSection.getStartLine();
+            }
         }
     }
 

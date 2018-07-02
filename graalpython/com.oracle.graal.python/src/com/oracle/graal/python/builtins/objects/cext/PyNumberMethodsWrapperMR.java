@@ -41,6 +41,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -75,6 +76,8 @@ public class PyNumberMethodsWrapperMR {
                     return SpecialMethodNames.__INDEX__;
                 case NB_POW:
                     return SpecialMethodNames.__POW__;
+                case NB_TRUE_DIVIDE:
+                    return SpecialMethodNames.__TRUEDIV__;
                 default:
                     // TODO extend list
                     throw UnknownIdentifierException.raise(numberMethodsMember);

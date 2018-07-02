@@ -69,6 +69,10 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -500,6 +504,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 } else {
                     throw raise(TypeError, "%p.__float__ returned non-float (type %p)", obj, result);
                 }
+            }
+        }
+
+        protected static FromNativeSubclassNode cacheGetFloat() {
+            return FromNativeSubclassNode.create(PythonBuiltinClassType.PFloat, NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE);
+        }
+
+        @Specialization
+        Object doNativeFloat(@SuppressWarnings("unused") PythonNativeClass cls, PythonNativeObject possibleBase,
+                        @Cached("cacheGetFloat()") FromNativeSubclassNode getFloat) {
+            Object convertedFloat = getFloat.execute(possibleBase);
+            if (convertedFloat instanceof Double) {
+                return possibleBase; // TODO (tfel): we really need to call back into C
+            } else {
+                throw raise(TypeError, "must be real number, not %p", possibleBase);
             }
         }
 

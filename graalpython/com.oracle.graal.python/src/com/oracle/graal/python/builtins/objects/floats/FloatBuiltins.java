@@ -63,10 +63,14 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
@@ -275,6 +279,21 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double doDP(double left, PInt right) {
             return left * right.doubleValue();
+        }
+
+        protected static FromNativeSubclassNode cacheGetFloat() {
+            return FromNativeSubclassNode.create(PythonBuiltinClassType.PFloat, NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE);
+        }
+
+        @Specialization
+        Object doDP(PythonNativeObject left, double right,
+                        @Cached("cacheGetFloat()") FromNativeSubclassNode getFloat) {
+            Object leftPrimitive = getFloat.execute(left);
+            if (leftPrimitive != null && leftPrimitive instanceof Double) {
+                return ((double) leftPrimitive) * right;
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
 
         @SuppressWarnings("unused")

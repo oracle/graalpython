@@ -34,6 +34,7 @@ import mx_benchmark
 import mx_gate
 import mx_sdk
 import mx_subst
+import mx_urlrewrites
 from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
@@ -260,6 +261,7 @@ class GraalPythonTags(object):
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
     R = 'python-R'
+    apptests = 'python-apptests'
     license = 'python-license'
 
 
@@ -326,7 +328,7 @@ def python_svm(args):
         nonZeroIsFatal=True
     )
     vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
-    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
     shutil.copy(svm_image, os.path.join(_suite.dir, "graalpython-svm"))
     mx.run([svm_image] + args)
     return svm_image
@@ -416,6 +418,15 @@ def graalpython_gate_runner(args, tasks):
                 [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
                  ["-v", "--cp-sfx", pythonjars, "r", "--jvm", "--polyglot", "-e", "eval.polyglot('python', path='%s')" % str(script_p2r)]
                  ])
+
+    with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
+        if task:
+            apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
+            _apptest_suite = _suite.import_suite(
+                "graalpython-apptests",
+                urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
+            )
+            mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -704,7 +715,7 @@ def update_import_cmd(args):
                 join(_sulong.dir, "include", "truffle.h"),
                 join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
             ) and shutil.copy(
-                join(_sulong.dir, "projects", "com.oracle.truffle.llvm.libraries.bitcode", "inclue", "polyglot.h"),
+                join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
                 join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
             )
         # make sure that truffle and regex are the same version

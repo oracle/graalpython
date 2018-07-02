@@ -119,7 +119,7 @@ public class FunctionRootNode extends PClosureRootNode implements CellSupplier {
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor().shallowCopy(), uninitializedBody, executionCellSlots);
+        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots);
     }
 
     @ExplodeLoop

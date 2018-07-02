@@ -38,8 +38,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 /**
  * A Python built-in class that is immutable.
  */
-public class PythonBuiltinClass extends PythonClass implements PythonCallable {
-
+public final class PythonBuiltinClass extends PythonClass implements PythonCallable {
     public PythonBuiltinClass(PythonClass typeClass, String name, PythonClass superClass) {
         super(typeClass, name, superClass);
         assert typeClass != null || BuiltinNames.TYPE.equals(name) : "typeClass can only be null for initial builtin type class";

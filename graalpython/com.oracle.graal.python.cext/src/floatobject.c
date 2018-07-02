@@ -46,9 +46,19 @@ double PyFloat_AsDouble(PyObject *op) {
         PyErr_BadArgument();
         return -1.0;
     }
-    return UPCALL_CEXT_D("PyFloat_AsPrimitive", native_to_java(op));
+
+    if (PyFloat_Check(op)) {
+        return PyFloat_AS_DOUBLE(op);
+    }
+
+    op = UPCALL_CEXT_O("PyFloat_FromObject", native_to_java(op));
+    if (op == NULL) {
+        return -1.0;
+    } else {
+        return PyFloat_AS_DOUBLE(op);
+    }
 }
 
 PyObject* PyFloat_FromDouble(double fval) {
-    return polyglot_as_PyFloatObject(UPCALL_CEXT_O("PyFloat_FromDouble", fval));
+    return UPCALL_CEXT_O("PyFloat_FromDouble", fval);
 }

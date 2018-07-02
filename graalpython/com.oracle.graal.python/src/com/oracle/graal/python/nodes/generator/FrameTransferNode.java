@@ -61,7 +61,6 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     @Specialization(guards = "isBooleanKind(frame)")
     public boolean write(VirtualFrame frame, boolean right) {
         Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        assert frameSlot.getFrameDescriptor() == cargoFrame.getFrameDescriptor();
         cargoFrame.setBoolean(frameSlot, right);
         return right;
     }
@@ -69,7 +68,6 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     @Specialization(guards = "isIntegerKind(frame)")
     public int doInteger(VirtualFrame frame, int value) {
         Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        assert frameSlot.getFrameDescriptor() == cargoFrame.getFrameDescriptor();
         cargoFrame.setInt(frameSlot, value);
         return value;
     }
@@ -77,7 +75,6 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     @Specialization(guards = "isIntOrObjectKind(frame)")
     public PInt write(VirtualFrame frame, PInt value) {
         Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        assert frameSlot.getFrameDescriptor() == cargoFrame.getFrameDescriptor();
         setObject(cargoFrame, value);
         return value;
     }
@@ -85,7 +82,6 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     @Specialization(guards = "isLongKind(frame)")
     public long doLong(VirtualFrame frame, long value) {
         Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        assert frameSlot.getFrameDescriptor() == cargoFrame.getFrameDescriptor();
         cargoFrame.setLong(frameSlot, value);
         return value;
     }
@@ -93,7 +89,6 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     @Specialization(guards = "isDoubleKind(frame)")
     public double doDouble(VirtualFrame frame, double right) {
         Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        assert frameSlot.getFrameDescriptor() == cargoFrame.getFrameDescriptor();
         cargoFrame.setDouble(frameSlot, right);
         return right;
     }
@@ -101,7 +96,6 @@ public abstract class FrameTransferNode extends FrameSlotNode {
     @Specialization(guards = "isObjectKind(frame)")
     public Object write(VirtualFrame frame, Object right) {
         Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        assert frameSlot.getFrameDescriptor() == cargoFrame.getFrameDescriptor();
         assert !(right instanceof PInt);
         setObject(cargoFrame, right);
         return right;

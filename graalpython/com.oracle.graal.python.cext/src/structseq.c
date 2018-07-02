@@ -40,5 +40,5 @@
 
 /* StructSequences */
 PyObject* PyStructSequence_New(PyTypeObject* o) {
-    return UPCALL_CEXT_O("PyStructSequence_New", native_to_java(o));
+    return UPCALL_CEXT_O("PyStructSequence_New", native_to_java((PyObject*)o));
 }

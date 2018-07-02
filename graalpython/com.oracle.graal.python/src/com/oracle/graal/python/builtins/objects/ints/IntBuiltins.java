@@ -1196,20 +1196,19 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        boolean eq(boolean left, boolean right) {
-            return left == right;
-        }
-
-        @Specialization
-        boolean eqII(int a, int b) {
-            return a == b;
-        }
-
         @Specialization
         boolean eqLL(long a, long b) {
             return a == b;
+        }
+
+        @Specialization
+        boolean eqPIntBoolean(PInt a, boolean b) {
+            return b ? a.isOne() : a.isZero();
+        }
+
+        @Specialization
+        boolean eqBooleanPInt(boolean a, PInt b) {
+            return a ? b.isOne() : b.isZero();
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
@@ -1232,7 +1231,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean eqLPiOvf(long b, PInt a) {
+        boolean eqPiLOvf(long b, PInt a) {
             try {
                 return a.longValueExact() == b;
             } catch (ArithmeticException e) {
@@ -1257,11 +1256,6 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean eqII(int a, int b) {
-            return a != b;
-        }
-
-        @Specialization
         boolean eqLL(long a, long b) {
             return a != b;
         }
@@ -1273,6 +1267,20 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqPiLOvf(PInt a, long b) {
+            try {
+                return a.longValueExact() != b;
+            } catch (ArithmeticException e) {
+                return true;
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        boolean eqPiL(long b, PInt a) {
+            return a.longValueExact() != b;
+        }
+
+        @Specialization
+        boolean eqPiLOvf(long b, PInt a) {
             try {
                 return a.longValueExact() != b;
             } catch (ArithmeticException e) {
