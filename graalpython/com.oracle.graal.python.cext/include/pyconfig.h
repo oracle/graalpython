@@ -11,30 +11,31 @@
 #define Py_PYCONFIG_H
 
 
-// TRUFFLE DEFS
-#define SIZEOF_DOUBLE 8
-#define SIZEOF_FLOAT 4
-#define SIZEOF_FPOS_T 16
-#define SIZEOF_INT 4
-#define SIZEOF_LONG 8
-#define SIZEOF_LONG_DOUBLE 16
-#define SIZEOF_LONG_LONG 8
-#define SIZEOF_OFF_T 8
-#define SIZEOF_PID_T 4
-#define SIZEOF_PTHREAD_T 8
-#define SIZEOF_SHORT 2
-#define SIZEOF_SIZE_T 8
-#define SIZEOF_TIME_T 8
-#define SIZEOF_UINTPTR_T 8
-#define SIZEOF_VOID_P 8
-#define SIZEOF_WCHAR_T 2
+// defines based on Clang defines
+#define SIZEOF_DOUBLE __SIZEOF_DOUBLE__
+#define SIZEOF_FLOAT __SIZEOF_FLOAT__
+#define SIZEOF_FPOS_T __SIZEOF_INT128__
+#define SIZEOF_INT __SIZEOF_INT__
+#define SIZEOF_LONG __SIZEOF_LONG__
+#define SIZEOF_LONG_DOUBLE __SIZEOF_LONG_DOUBLE__
+#define SIZEOF_LONG_LONG __SIZEOF_LONG_LONG__
+#define SIZEOF_OFF_T __SIZEOF_SIZE_T__
+#define SIZEOF_PID_T __SIZEOF_INT__
+#define SIZEOF_PTHREAD_T __SIZEOF_LONG__
+#define SIZEOF_SHORT __SIZEOF_SHORT__
+#define SIZEOF_SIZE_T __SIZEOF_SIZE_T__
+#define SIZEOF_TIME_T __SIZEOF_POINTER__
+#define SIZEOF_UINTPTR_T __SIZEOF_POINTER__
+#define SIZEOF_VOID_P __SIZEOF_POINTER__
+#define SIZEOF_WCHAR_T __SIZEOF_WCHAR_T__
 #define SIZEOF__BOOL 1
-#define INT_MIN 0x80000000
-#define INT_MAX 0x7fffffff
-#define UINT_MAX 0xffffffff
-#define SHRT_MIN 0x8000
-#define SHRT_MAX 0x7fff
-#define USHRT_MAX 0xffff
+#define INT_MIN ((-__INT32_MAX__)-1)
+#define INT_MAX __INT32_MAX__
+#define UINT_MAX __UINT32_MAX__
+#define SHRT_MIN ((-__INT16_MAX__)-1)
+#define SHRT_MAX __INT16_MAX__
+#define USHRT_MAX __UINT16_MAX__
+#define CHAR_BIT __CHAR_BIT__
 // #define Py_LIMITED_API 1
 #define _Py_BEGIN_SUPPRESS_IPH
 #define _Py_END_SUPPRESS_IPH
