@@ -389,24 +389,62 @@ int _PyArg_ParseStack(PyObject** args, Py_ssize_t nargs, PyObject* kwnames, stru
 #undef __backup_PyArg_ParseStack
 #endif
 
-int PyTruffle_Arg_ParseStack(PyObject **args,  Py_ssize_t nargs,  PyObject *kwnames,  struct _PyArg_Parser *parser, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
-    PyObject* argv = PyTuple_New(nargs);
-    Py_ssize_t i=0;
 
+MUST_INLINE static PyObject* stack2tuple(PyObject** args, Py_ssize_t nargs) {
+    PyObject* argv = PyTuple_New(nargs);
+    Py_ssize_t i;
     for (i=0; i < nargs; i++) {
         PyTuple_SetItem(argv, i, args[i]);
     }
+    return argv;
+}
 
+int PyTruffle_Arg_ParseStack_SizeT(PyObject **args,  Py_ssize_t nargs, const char *format, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
+    // TODO(fa) That's not very fast and we should refactor these functions.
+    PyObject* argv = stack2tuple(args, nargs);
+    return PyTruffle_Arg_ParseTupleAndKeywords(argv, NULL, format, NULL, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19);
+}
+
+#ifdef _PyArg_ParseStack_SizeT
+#define __backup_PyArg_ParseStack_SizeT _PyArg_ParseStack_SizeT
+#undef _PyArg_ParseStack_SizeT
+#endif
+int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, const char *format, ...) {
+    // TODO(fa) That's not very fast and we should refactor these functions.
+#define ARG(__i__) ((__i__)+3 < n ? polyglot_get_arg((__i__)+3) : NULL)
+    int n = polyglot_get_arg_count();
+    PyObject* argv = stack2tuple(args, nargs);
+    return PyTruffle_Arg_ParseTupleAndKeywords(argv, NULL, format, NULL, n, ARG(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(8), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
+#undef ARG
+}
+#ifdef __backup_PyArg_ParseStack_SizeT
+#define _PyArg_ParseStack_SizeT __backup_PyArg_ParseStack_SizeT
+#undef __backup_PyArg_ParseStack_SizeT
+#endif
+
+int PyTruffle_Arg_ParseStackAndKeywords_SizeT(PyObject **args, Py_ssize_t nargs, PyObject *kwnames, struct _PyArg_Parser *parser, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
+    // TODO(fa) That's not very fast and we should refactor these functions.
+    PyObject* argv = stack2tuple(args, nargs);
     return PyTruffle_Arg_ParseTupleAndKeywords(argv, kwnames, parser->format, parser->keywords, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19);
 }
 
-int _PyArg_ParseStack_SizeT(PyObject** args, Py_ssize_t nargs, PyObject* kwnames, struct _PyArg_Parser* parser, ...) {
-    va_list vl;
-    va_start(vl, parser);
-    int* fd = va_arg(vl,int*);
-    *fd = args[0];
-    return 1;
+#ifdef _PyArg_ParseStackAndKeywords_SizeT
+#define __backup_PyArg_ParseStackAndKeywords_SizeT _PyArg_ParseStackAndKeywords_SizeT
+#undef _PyArg_ParseStackAndKeywords_SizeT
+#endif
+int _PyArg_ParseStackAndKeywords_SizeT(PyObject **args, Py_ssize_t nargs, PyObject *kwnames, struct _PyArg_Parser *parser, ...) {
+    // TODO(fa) That's not very fast and we should refactor these functions.
+#define ARG(__i__) ((__i__)+4 < n ? polyglot_get_arg((__i__)+4) : NULL)
+    int n = polyglot_get_arg_count();
+    PyObject* argv = stack2tuple(args, nargs);
+    return PyTruffle_Arg_ParseTupleAndKeywords(argv, kwnames, parser->format, parser->keywords, n, ARG(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(8), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
+#undef ARG
 }
+#ifdef __backup_PyArg_ParseStackAndKeywords_SizeT
+#define _PyArg_ParseStackAndKeywords_SizeT __backup_PyArg_ParseStackAndKeywords_SizeT
+#undef __backup_PyArg_ParseStackAndKeywords_SizeT
+#endif
+
 
 typedef struct _build_stack {
     PyObject* list;
