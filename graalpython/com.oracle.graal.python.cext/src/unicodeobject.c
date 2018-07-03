@@ -193,6 +193,10 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
 
 
 PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
+    if (u == NULL) {
+        return to_sulong(polyglot_from_string_n("", 0, "utf-16le"));
+    }
+
     switch(Py_UNICODE_SIZE) {
     case 2:
         return to_sulong(polyglot_from_string_n((const char*)u, size*2, "utf-16le"));

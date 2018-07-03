@@ -43,16 +43,24 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeData;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeState;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PyUnicodeWrapperMRFactory.PyUnicodeToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.PAsPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -71,19 +79,18 @@ public class PyUnicodeWrapperMR {
                 case NativeMemberNames.UNICODE_DATA_UCS2:
                 case NativeMemberNames.UNICODE_DATA_UCS4:
                     PString s = object.getDelegate();
-                    return getAsWideCharNode().execute(s, getSizeofWcharNode().execute(), s.len());
+                    return new PySequenceArrayWrapper(getAsWideCharNode().execute(s, getSizeofWcharNode().execute(), s.len()));
             }
             throw UnknownIdentifierException.raise(key);
         }
 
         public Object access(PyUnicodeState object, String key) {
-            int value;
+            // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
+            int value = 0b000000000000000000000000_1_0_0_000_00;
             if (onlyAscii(object.getDelegate().getValue())) {
-                // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
-                value = 0b000000000000000000000000_1_1_0_000_00;
-            } else {
-                value = 0b000000000000000000000000_1_0_0_000_00;
+                value |= 0b1_0_000_00;
             }
+            value |= ((int) getSizeofWcharNode().execute() << 2) & 0b11100;
             switch (key) {
                 case NativeMemberNames.UNICODE_STATE_INTERNED:
                 case NativeMemberNames.UNICODE_STATE_KIND:
@@ -131,4 +138,77 @@ public class PyUnicodeWrapperMR {
             return asciiEncoder.canEncode(value);
         }
     }
+
+    @Resolve(message = "TO_NATIVE")
+    abstract static class ToNativeNode extends Node {
+        @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNode.create();
+
+        Object access(PyUnicodeWrapper obj) {
+            if (!obj.isNative()) {
+                obj.setNativePointer(toPyObjectNode.execute(obj.getDelegate()));
+            }
+            return obj;
+        }
+    }
+
+    @Resolve(message = "IS_POINTER")
+    abstract static class IsPointerNode extends Node {
+        @Child private Node isPointerNode;
+
+        boolean access(PyUnicodeWrapper obj) {
+            return obj.isNative() && (!(obj.getNativePointer() instanceof TruffleObject) || ForeignAccess.sendIsPointer(getIsPointerNode(), (TruffleObject) obj.getNativePointer()));
+        }
+
+        private Node getIsPointerNode() {
+            if (isPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isPointerNode = insert(Message.IS_POINTER.createNode());
+            }
+            return isPointerNode;
+        }
+    }
+
+    @Resolve(message = "AS_POINTER")
+    abstract static class AsPointerNode extends Node {
+        @Child private PAsPointerNode pAsPointerNode = PAsPointerNode.create();
+
+        long access(PyUnicodeWrapper obj) {
+            return pAsPointerNode.execute(obj);
+        }
+    }
+
+    abstract static class PyUnicodeToNativeNode extends TransformToNativeNode {
+        @CompilationFinal private TruffleObject derefHandleIntrinsic;
+        @Child private PCallNativeNode callNativeUnary;
+        @Child private PCallNativeNode callNativeBinary;
+        @Child private CExtNodes.ToSulongNode toSulongNode;
+
+        public abstract Object execute(Object value);
+
+        @Specialization
+        Object doUnicodeWrapper(PyUnicodeWrapper object) {
+            return ensureIsPointer(callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), object));
+        }
+
+        private TruffleObject getPyObjectHandle_ForJavaType() {
+            if (derefHandleIntrinsic == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                derefHandleIntrinsic = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_DEREF_HANDLE);
+            }
+            return derefHandleIntrinsic;
+        }
+
+        private Object callUnaryIntoCapi(TruffleObject fun, Object arg) {
+            if (callNativeUnary == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNativeUnary = insert(PCallNativeNode.create(1));
+            }
+            return callNativeUnary.execute(fun, new Object[]{arg});
+        }
+
+        public static PyUnicodeToNativeNode create() {
+            return PyUnicodeToNativeNodeGen.create();
+        }
+    }
+
 }
