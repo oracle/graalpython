@@ -147,14 +147,11 @@ public class PythonObjectNativeWrapperMR {
             if (key.equals(GP_OBJECT)) {
                 return object.getDelegate();
             }
-            if (NativeMemberNames.isValid(key)) {
-                if (readNativeMemberNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    readNativeMemberNode = insert(ReadNativeMemberNode.create());
-                }
-                return readNativeMemberNode.execute(object.getDelegate(), key);
+            if (readNativeMemberNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readNativeMemberNode = insert(ReadNativeMemberNode.create());
             }
-            throw UnknownIdentifierException.raise(key.toString());
+            return readNativeMemberNode.execute(object.getDelegate(), key);
         }
     }
 
@@ -429,14 +426,11 @@ public class PythonObjectNativeWrapperMR {
         @Child private WriteNativeMemberNode writeNativeMemberNode;
 
         public Object access(PythonNativeWrapper object, String key, Object value) {
-            if (NativeMemberNames.isValid(key)) {
-                if (writeNativeMemberNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    writeNativeMemberNode = insert(WriteNativeMemberNode.create());
-                }
-                return writeNativeMemberNode.execute(object.getDelegate(), key, value);
+            if (writeNativeMemberNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeNativeMemberNode = insert(WriteNativeMemberNode.create());
             }
-            throw UnknownIdentifierException.raise(key);
+            return writeNativeMemberNode.execute(object.getDelegate(), key, value);
         }
     }
 

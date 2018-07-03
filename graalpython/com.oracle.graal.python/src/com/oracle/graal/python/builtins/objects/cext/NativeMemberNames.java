@@ -38,7 +38,13 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-public abstract class NativeMemberNames {
+import java.lang.reflect.Field;
+
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
+
+public final class NativeMemberNames {
     public static final String OB_BASE = "ob_base";
     public static final String OB_REFCNT = "ob_refcnt";
     public static final String OB_TYPE = "ob_type";
@@ -82,53 +88,30 @@ public abstract class NativeMemberNames {
     public static final String START = "start";
     public static final String STOP = "stop";
     public static final String STEP = "step";
+    public static final String IM_FUNC = "im_func";
+    public static final String IM_SELF = "im_self";
 
-    public static boolean isValid(String key) {
-        switch (key) {
-            case OB_BASE:
-            case OB_REFCNT:
-            case OB_TYPE:
-            case OB_SIZE:
-            case OB_SVAL:
-            case TP_FLAGS:
-            case TP_NAME:
-            case TP_BASE:
-            case TP_BASICSIZE:
-            case TP_ALLOC:
-            case TP_AS_NUMBER:
-            case TP_HASH:
-            case TP_RICHCOMPARE:
-            case TP_SUBCLASSES:
-            case TP_AS_BUFFER:
-            case TP_GETATTR:
-            case TP_SETATTR:
-            case TP_GETATTRO:
-            case TP_SETATTRO:
-            case TP_NEW:
-            case _BASE:
-            case OB_ITEM:
-            case MA_USED:
-            case UNICODE_WSTR:
-            case UNICODE_WSTR_LENGTH:
-            case UNICODE_STATE:
-            case UNICODE_STATE_INTERNED:
-            case UNICODE_STATE_KIND:
-            case UNICODE_STATE_COMPACT:
-            case UNICODE_STATE_ASCII:
-            case UNICODE_STATE_READY:
-            case MD_STATE:
-            case MD_DEF:
-            case MD_DICT:
-            case NB_ADD:
-            case NB_INDEX:
-            case NB_POW:
-            case NB_TRUE_DIVIDE:
-            case OB_FVAL:
-            case START:
-            case STOP:
-            case STEP:
-            case BUF_DELEGATE:
+    @CompilationFinal(dimensions = 1) public static final String[] values;
+    static {
+        Field[] declaredFields = NativeMemberNames.class.getDeclaredFields();
+        values = new String[declaredFields.length - 1]; // omit the values field
+        for (int i = 0; i < declaredFields.length; i++) {
+            Field s = declaredFields[i];
+            if (s.getType() == String.class) {
+                try {
+                    values[i] = (String) s.get(NativeMemberNames.class);
+                } catch (IllegalArgumentException | IllegalAccessException e) {
+                }
+            }
+        }
+    }
+
+    @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
+    public static boolean isValid(String name) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(name)) {
                 return true;
+            }
         }
         return false;
     }
