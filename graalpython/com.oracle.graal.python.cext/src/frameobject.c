@@ -39,11 +39,4 @@
 
 #include "capi.h"
 
-PyObject * PyThreadState_GetDict() {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ThreadState_GetDict"));
-}
-
-PyThreadState * PyThreadState_Get() {
-    // TODO: (tfel) how much ThreadState will we actually support?
-    return (PyThreadState*)PyThreadState_GetDict();
-}
+PyTypeObject PyFrame_Type = PY_TRUFFLE_TYPE("frame", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));

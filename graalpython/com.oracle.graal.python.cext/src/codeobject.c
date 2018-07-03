@@ -38,6 +38,8 @@
  */
 #include "capi.h"
 
+PyTypeObject PyCode_Type = PY_TRUFFLE_TYPE("code", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(PyTypeObject));
+
 PyCodeObject* PyCode_New(int argcount, int kwonlyargcount, int nlocals,
                          int stacksize, int flags, PyObject *code,
                          PyObject *consts, PyObject *names, PyObject *varnames,

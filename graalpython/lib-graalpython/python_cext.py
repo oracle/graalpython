@@ -1058,6 +1058,12 @@ def PyTruffle_Type(type_name):
         return type(getattr)
     elif type_name == "ellipsis":
         return type(Py_Ellipsis())
+    elif type_name == "method":
+        return type(may_raise)
+    elif type_name == "code":
+        return codetype
+    elif type_name == "frame":
+        return type(sys._getframe(0))
     else:
         return getattr(sys.modules["builtins"], type_name)
 
