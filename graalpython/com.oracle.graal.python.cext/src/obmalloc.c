@@ -67,6 +67,10 @@ int PyTraceMalloc_Track(_PyTraceMalloc_domain_t domain, uintptr_t ptr, size_t si
     return -2; // we do not track
 }
 
+void * PyMem_Realloc(void *ptr, size_t new_size) {
+    return PyMem_RawRealloc(ptr, new_size);
+}
+
 void PyMem_Free(void *ptr) {
     free(ptr);
 }
