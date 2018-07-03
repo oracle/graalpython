@@ -62,6 +62,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetIt
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -367,6 +369,26 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(STEP, key)")
         int doStep(PSlice object, @SuppressWarnings("unused") String key) {
             return object.getStep();
+        }
+
+        @Specialization(guards = "eq(IM_SELF, key)")
+        Object doImSelf(PMethod object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getSelf());
+        }
+
+        @Specialization(guards = "eq(IM_SELF, key)")
+        Object doImSelf(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getSelf());
+        }
+
+        @Specialization(guards = "eq(IM_FUNC, key)")
+        Object doImFunc(PMethod object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getFunction());
+        }
+
+        @Specialization(guards = "eq(IM_FUNC, key)")
+        Object doImFunc(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getFunction());
         }
 
         @Fallback
