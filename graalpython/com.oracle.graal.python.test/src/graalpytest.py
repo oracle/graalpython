@@ -75,8 +75,13 @@ class TestCase(object):
                 if print_immediately:
                     print("Exception during setup occurred: %s\n" % e)
                 code = func.__code__
+                _, _, tb = sys.exc_info()
+                import traceback
+                tb_info = traceback.extract_tb(tb)
+                filename, line, func, text = tb_info[-1]
                 self.exceptions.append(
-                    ("%s:%d (%s)" % (code.co_filename, code.co_firstlineno, func), e)
+                    # ("%s:%d (%s)" % (code.co_filename, code.co_firstlineno, func), e)
+                    ("%s:%d (%s)" % (filename, line, func), e)
                 )
                 return False
         else:
