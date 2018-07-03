@@ -1021,6 +1021,18 @@ def PyFile_WriteObject(obj, file, flags):
     file.write(write_value)
     return 0
 
+
+##  CODE
+
+
+codetype = type(may_raise.__code__)
+
+
+@may_raise
+def PyCode_New(*args):
+    return codetype(*args)
+
+
 ##################### C EXT HELPERS
 
 def PyTruffle_Debug(*args):

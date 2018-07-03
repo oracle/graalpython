@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
@@ -36,42 +36,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.parser;
+#include "capi.h"
 
-import org.antlr.v4.runtime.ParserRuleContext;
-
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParseResult;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
-
-public class PythonTreeTranslator extends PythonBaseTreeTranslator<PythonParseResult> {
-
-    private PythonParseResult result;
-
-    public PythonTreeTranslator(PythonCore core, String name, ParserRuleContext input, TranslationEnvironment environment, Source source) {
-        super(core, name, environment, source);
-        RootNode rootNode = null;
-
-        try {
-            Object parseResult = input.accept(this);
-            if (parseResult instanceof RootNode) {
-                rootNode = (RootNode) parseResult;
-            } else {
-                throw new RuntimeException("Unexpected parse result");
-            }
-        } catch (PException e) {
-            throw e;
-        } catch (Exception t) {
-            t.printStackTrace();
-            throw new RuntimeException("Failed in " + this + " with error " + t, t);
-        }
-        this.result = new PythonParseResult(rootNode);
-    }
-
-    @Override
-    public PythonParseResult getTranslationResult() {
-        return result;
-    }
+PyCodeObject* PyCode_New(int argcount, int kwonlyargcount, int nlocals,
+                         int stacksize, int flags, PyObject *code,
+                         PyObject *consts, PyObject *names, PyObject *varnames,
+                         PyObject *freevars, PyObject *cellvars,
+                         PyObject *filename, PyObject *name, int firstlineno,
+                         PyObject *lnotab) {
+    return UPCALL_CEXT_O("PyCode_New", argcount, kwonlyargcount, nlocals,
+                         stacksize, flags, native_to_java(code),
+                         native_to_java(consts), native_to_java(names), native_to_java(varnames),
+                         native_to_java(filename), native_to_java(name), firstlineno,
+                         native_to_java(lnotab));
 }

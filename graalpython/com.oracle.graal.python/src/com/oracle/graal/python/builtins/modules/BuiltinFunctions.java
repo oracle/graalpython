@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -453,7 +454,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
@@ -461,39 +462,31 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, globals, globals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, PythonObject globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, PythonObject locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, globals, locals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, PythonParseResult code, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, callerGlobals, locals, callerClosure);
         }
 
-        /**
-         * @param locals TODO: support the locals dictionary in execution
-         */
         @TruffleBoundary
-        private static Object evalExpression(PythonParseResult code, PythonObject globals, PythonObject locals, PCell[] closure) {
+        private static Object evalExpression(PCode code, PythonObject globals, PythonObject locals, PCell[] closure) {
             RootNode root = code.getRootNode();
-            Object[] args = PArguments.create();
-            PArguments.setGlobals(args, globals);
-            PArguments.setClosure(args, closure);
-            // TODO: cache code and CallTargets and use Direct/IndirectCallNode
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(root);
-            return callTarget.call(args);
+            return evalNode(root, globals, locals, closure);
         }
 
         @TruffleBoundary
@@ -507,7 +500,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             PythonParser parser = getCore().getParser();
             PythonParseResult parsed = parser.parseEval(getCore(), expression, name);
-            return evalExpression(parsed, globals, locals, closure);
+            return evalNode(parsed.getRootNode(), globals, locals, closure);
+        }
+
+        /**
+         * @param locals TODO: support the locals dictionary in execution
+         */
+        @TruffleBoundary
+        private static Object evalNode(RootNode root, PythonObject globals, @SuppressWarnings("unused") PythonObject locals, PCell[] closure) {
+            Object[] args = PArguments.create();
+            PArguments.setGlobals(args, globals);
+            PArguments.setClosure(args, closure);
+            // TODO: cache code and CallTargets and use Direct/IndirectCallNode
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(root);
+            return callTarget.call(args);
         }
     }
 
@@ -526,26 +532,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @TruffleBoundary
         Object compile(String source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
             PythonParser parser = getCore().getParser();
+            PythonParseResult result;
             if (mode.equals("exec")) {
-                return parser.parseExec(getCore(), source, filename);
+                result = parser.parseExec(getCore(), source, filename);
             } else if (mode.equals("eval")) {
-                return parser.parseEval(getCore(), source, filename);
+                result = parser.parseEval(getCore(), source, filename);
             } else if (mode.equals("single")) {
-                return parser.parseSingle(getCore(), source, filename);
+                result = parser.parseSingle(getCore(), source, filename);
             } else {
                 // create source
                 Source src = Source.newBuilder(source).name(filename).mimeType(mode).build();
                 CallTarget parse = getContext().getEnv().parse(src);
                 if (parse instanceof RootCallTarget) {
-                    return new PythonParseResult(((RootCallTarget) parse).getRootNode(), getCore());
+                    result = new PythonParseResult(((RootCallTarget) parse).getRootNode());
                 }
                 throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
             }
+            return factory().createCode(result);
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        Object compile(PythonParseResult code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
+        Object compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
             return code;
         }
     }

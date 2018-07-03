@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -137,7 +138,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -1401,12 +1401,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = {PythonParseResult.class}, isPublic = false, minNumOfArguments = 13, maxNumOfArguments = 15)
+    @Builtin(name = "code", constructsClass = {PCode.class}, isPublic = false, minNumOfArguments = 13, maxNumOfArguments = 15)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Specialization
-        Object call() {
-            throw raise(NotImplementedError, "constructing code objects manually");
+        Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
+                        int flags, String codestring, Object constants, Object names, Object varnames,
+                        String filename, String name, int firstlineno, Object lnotab, Object freevars,
+                        Object cellvars) {
+            return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
+                            flags, codestring, constants, names, varnames,
+                            filename, name, firstlineno, lnotab, freevars,
+                            cellvars);
         }
     }
 

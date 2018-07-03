@@ -169,7 +169,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             if (rootNode == null) {
                 return PNone.NONE;
             } else {
-                return new PythonParseResult(rootNode, getCore());
+                return factory().createCode(new PythonParseResult(rootNode));
             }
         }
     }

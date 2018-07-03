@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
@@ -102,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -671,5 +673,17 @@ public abstract class PythonObjectFactory extends Node {
 
     public PBuffer createBuffer(Object iterable) {
         return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable));
+    }
+
+    public Object createCode(PythonParseResult result) {
+        return trace(new PCode(lookupClass(PythonBuiltinClassType.PCode), result));
+    }
+
+    public Object createCode(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, String codestring, Object constants, Object names, Object varnames,
+                    String filename, String name, int firstlineno, Object lnotab, Object freevars, Object cellvars) {
+        return trace(new PCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
+                        flags, codestring, constants, names, varnames,
+                        filename, name, firstlineno, lnotab, freevars,
+                        cellvars));
     }
 }

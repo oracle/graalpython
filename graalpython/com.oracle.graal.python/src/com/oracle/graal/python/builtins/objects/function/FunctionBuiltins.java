@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -303,12 +304,12 @@ public class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         Object getCode(PFunction self, @SuppressWarnings("unused") PNone none) {
-            return new PythonParseResult(self.getFunctionRootNode(), getCore());
+            return factory().createCode(new PythonParseResult(self.getFunctionRootNode()));
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isBuiltinFunction(self)")
-        Object setCode(PFunction self, PythonParseResult code) {
+        Object setCode(PFunction self, PCode code) {
             throw raise(NotImplementedError, "setting __code__");
         }
 
