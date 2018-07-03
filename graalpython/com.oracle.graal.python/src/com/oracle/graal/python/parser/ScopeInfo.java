@@ -184,7 +184,7 @@ public class ScopeInfo {
         return this.freeVars.contains(identifier);
     }
 
-    private FrameSlot[] getFrameSlots(Collection<String> identifiers, ScopeInfo scope) {
+    private static FrameSlot[] getFrameSlots(Collection<String> identifiers, ScopeInfo scope) {
         assert scope != null : "getting frame slots: scope cannot be null!";
         FrameSlot[] slots = new FrameSlot[identifiers.size()];
         int i = 0;

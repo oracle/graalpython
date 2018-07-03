@@ -47,7 +47,7 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     private final PythonCore core;
     private final boolean interactive;
     private final boolean trackCells;
-    private int comprehensionOrTestDepth = 0;
+    private ScopeInfo currentGeneratorScope = null;
 
     public ScopeTranslator(PythonCore core, TranslationEnvironment environment, boolean interactive, boolean trackCells) {
         this.core = core;
@@ -360,33 +360,37 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
 
     @Override
     public T visitOr_test(Python3Parser.Or_testContext ctx) {
-        ScopeInfo generatorScope = null;
+        boolean pushedCurrentGeneratorScope = false;
         if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
-            if (comprehensionOrTestDepth == 0 && environment.getCurrentScopeLoopCount() == 1) {
+            if (currentGeneratorScope == null && environment.getCurrentScopeLoopCount() == 1) {
                 // the generator iterator needs to be early evaluated in the parent scope
-                generatorScope = environment.pushCurentScope();
+                currentGeneratorScope = environment.pushCurentScope();
+                pushedCurrentGeneratorScope = true;
             }
-            comprehensionOrTestDepth++;
         }
         try {
             return super.visitOr_test(ctx);
         } finally {
             if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
-                comprehensionOrTestDepth--;
-                if (comprehensionOrTestDepth == 0 && generatorScope != null && generatorScope.getLoopCount() == 1) {
+                if (pushedCurrentGeneratorScope && currentGeneratorScope.getLoopCount() == 1) {
                     // restore the current scope
                     environment.popCurrentScope();
+                    currentGeneratorScope = null;
                 }
             }
         }
     }
 
     private T visitGenerator(ParserRuleContext ctx, Function<ParserRuleContext, T> block) {
-        environment.beginScope(ctx, ScopeKind.Generator);
+        if (currentGeneratorScope == null) {
+            environment.beginScope(ctx, ScopeKind.Generator);
+        }
         try {
             return block.apply(ctx);
         } finally {
-            environment.endScope(ctx);
+            if (currentGeneratorScope == null) {
+                environment.endScope(ctx);
+            }
         }
     }
 
