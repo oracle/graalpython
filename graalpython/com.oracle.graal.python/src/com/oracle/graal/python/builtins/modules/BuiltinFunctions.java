@@ -121,7 +121,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -237,7 +237,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public String doO(Object x,
-                        @Cached("create()") CastToIntNode toIntNode,
+                        @Cached("create()") CastToIntegerFromIndexNode toIntNode,
                         @Cached("create()") BinNode recursiveNode) {
             Object value = toIntNode.execute(x);
             return recursiveNode.executeObject(value);
