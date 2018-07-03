@@ -45,7 +45,7 @@ import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 /**
- * Wraps a sequence object (like a list) such that it behaves like a bare C array.
+ * A native wrapper for the {@code state} member of {@code PyASCIIObject}.
  */
 public class PyUnicodeState implements TruffleObject {
 

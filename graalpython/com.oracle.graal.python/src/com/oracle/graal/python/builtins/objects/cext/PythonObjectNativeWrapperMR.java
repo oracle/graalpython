@@ -93,7 +93,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
@@ -164,8 +163,7 @@ public class PythonObjectNativeWrapperMR {
         @Child GetClassNode getClass = GetClassNode.create();
         @Child private ToSulongNode toSulongNode;
         @Child private HashingStorageNodes.GetItemNode getItemNode;
-
-        @CompilationFinal long wcharSize = -1;
+        @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
 
         abstract Object execute(Object receiver, String key);
 
@@ -351,8 +349,13 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(UNICODE_LENGTH, key)")
-        long doWstrLength(PString object, @SuppressWarnings("unused") String key) {
+        long doUnicodeLength(PString object, @SuppressWarnings("unused") String key) {
             return object.len();
+        }
+
+        @Specialization(guards = "eq(UNICODE_DATA, key)")
+        Object doUnicodeData(PString object, @SuppressWarnings("unused") String key) {
+            return new PyUnicodeData(object);
         }
 
         @Specialization(guards = "eq(UNICODE_STATE, key)")
@@ -453,17 +456,11 @@ public class PythonObjectNativeWrapperMR {
         }
 
         private long sizeofWchar() {
-            if (wcharSize < 0) {
+            if (sizeofWcharNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                TruffleObject boxed = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_WHCAR_SIZE);
-                try {
-                    wcharSize = (long) ForeignAccess.sendExecute(Message.createExecute(0).createNode(), boxed);
-                    assert wcharSize >= 0L;
-                } catch (InteropException e) {
-                    throw e.raise();
-                }
+                sizeofWcharNode = insert(CExtNodes.SizeofWCharNode.create());
             }
-            return wcharSize;
+            return sizeofWcharNode.execute();
         }
     }
 

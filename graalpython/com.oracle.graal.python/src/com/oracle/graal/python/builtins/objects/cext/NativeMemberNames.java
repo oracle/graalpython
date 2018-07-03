@@ -73,6 +73,11 @@ public final class NativeMemberNames {
     public static final String OB_ITEM = "ob_item";
     public static final String MA_USED = "ma_used";
     public static final String UNICODE_LENGTH = "length";
+    public static final String UNICODE_DATA = "data";
+    public static final String UNICODE_DATA_ANY = "any";
+    public static final String UNICODE_DATA_LATIN1 = "latin1";
+    public static final String UNICODE_DATA_UCS2 = "ucs2";
+    public static final String UNICODE_DATA_UCS4 = "ucs4";
     public static final String UNICODE_WSTR = "wstr";
     public static final String UNICODE_WSTR_LENGTH = "wstr_length";
     public static final String UNICODE_STATE = "state";
