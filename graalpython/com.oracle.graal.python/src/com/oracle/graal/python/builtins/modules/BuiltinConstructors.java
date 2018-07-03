@@ -1401,7 +1401,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = {PCode.class}, isPublic = false, minNumOfArguments = 13, maxNumOfArguments = 15)
+    @Builtin(name = "code", constructsClass = {PCode.class}, isPublic = false, minNumOfArguments = 14, maxNumOfArguments = 16)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1413,6 +1413,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             flags, codestring, constants, names, varnames,
                             filename, name, firstlineno, lnotab, freevars,
                             cellvars);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
+                        int flags, PBytes codestring, Object constants, Object names, Object varnames,
+                        PString filename, PString name, int firstlineno, Object lnotab, Object freevars,
+                        Object cellvars) {
+            return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
+                            flags, new String(codestring.getInternalByteArray()), constants, names, varnames,
+                            filename.getValue(), name.getValue(), firstlineno, lnotab, freevars,
+                            cellvars);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object call(Object cls, Object argcount, Object kwonlyargcount, Object nlocals, Object stacksize,
+                        Object flags, Object codestring, Object constants, Object names, Object varnames,
+                        Object filename, Object name, Object firstlineno, Object lnotab, Object freevars,
+                        Object cellvars) {
+            throw raise(PythonErrorType.NotImplementedError, "code object instance from generic arguments");
         }
     }
 
