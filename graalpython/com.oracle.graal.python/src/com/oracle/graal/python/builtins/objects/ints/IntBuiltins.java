@@ -696,7 +696,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object modulo(Object x, Object y, long z,
+        Object powModulo(Object x, Object y, long z,
                         @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
                         @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
             Object result = powNode.execute(x, y, PNone.NO_VALUE);
@@ -707,7 +707,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object modulo(Object x, Object y, PInt z,
+        Object powModuloPInt(Object x, Object y, PInt z,
                         @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
                         @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
             Object result = powNode.execute(x, y, PNone.NO_VALUE);
