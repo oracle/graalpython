@@ -975,7 +975,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Child private LdexpNode recursiveNode;
 
         @Fallback
-        public double ldexpOO(Object mantissa, @SuppressWarnings("unused") Object exp) {
+        public double ldexpOO(Object mantissa, Object exp) {
             if (PGuards.isInteger(exp) || PGuards.isPInt(exp) || (exp instanceof Boolean)) {
                 if (castNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

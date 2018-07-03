@@ -76,7 +76,7 @@ public abstract class CastToIntegerFromIndexNode extends PBaseNode {
     }
 
     @Specialization
-    public long toInt(@SuppressWarnings("unused") double x) {
+    public long toInt(double x) {
         throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
     }
 
