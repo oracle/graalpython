@@ -65,17 +65,17 @@ public abstract class CallDispatchNode extends Node {
      * the (transient) bound method.
      */
     @SuppressWarnings("unused")
-    @Specialization(guards = "method.__func__() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
     protected Object callMethod(PMethod method, Object[] arguments, PKeyword[] keywords,
-                    @Cached("method.__func__()") PFunction cachedCallee,
+                    @Cached("method.getFunction()") PFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
         return invoke.invoke(arguments, keywords);
     }
 
     @SuppressWarnings("unused")
-    @Specialization(guards = "method.__func__() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
     protected Object callBuiltinMethod(PBuiltinMethod method, Object[] arguments, PKeyword[] keywords,
-                    @Cached("method.__func__()") PBuiltinFunction cachedCallee,
+                    @Cached("method.getFunction()") PBuiltinFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
         return invoke.invoke(arguments, keywords);
     }
