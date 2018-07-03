@@ -45,7 +45,7 @@ except NotImplementedError as e:
 
 CODESIZE = 4
 
-MAGIC = 20140917
+MAGIC = 20171005
 MAXREPEAT = 4294967295
 MAXGROUPS = 2147483647
 FLAG_NAMES = ["re.TEMPLATE", "re.IGNORECASE", "re.LOCALE", "re.MULTILINE",
@@ -259,3 +259,10 @@ def getcodesize(*args, **kwargs):
 
 def getlower(char_ord, flags):
     return ord(chr(char_ord).lower())
+
+def unicode_iscased(codepoint):
+    ch = chr(codepoint)
+    return ch != ch.lower() or ch != ch.upper()
+
+def unicode_tolower(codepoint):
+    return ord(chr(codepoint).lower())
