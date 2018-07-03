@@ -114,20 +114,20 @@ def test_string():
 
 def test_range_step1():
     t = range(5)
-    # assert t[0:0] == range(0)
-    # assert t[1:2] == range(1, 2)
-    # assert t[-2:-1] == range(3, 4)
-    # assert t[-100:100] == range(0, 5)
-    # assert t[100:-100] == range(5, 0)
-    # assert t[:] == range(0, 5)
-    # assert t[1:None] == range(1, 5)
-    # assert t[None:3] == range(0, 3)
+    assert t[0:0] == range(0)
+    assert t[1:2] == range(1, 2)
+    assert t[-2:-1] == range(3, 4)
+    assert t[-100:100] == range(0, 5)
+    assert t[100:-100] == range(5, 0)
+    assert t[:] == range(0, 5)
+    assert t[1:None] == range(1, 5)
+    assert t[None:3] == range(0, 3)
 
     # extended slice
-    # assert t[::] == range(0, 5)
-    # assert t[::2] == range(0, 5, 2)
-    # print("2")
-    # assert t[1::2] == range(1, 4, 2)
+    assert t[::] == range(0, 5)
+    assert t[::2] == range(0, 5, 2)
+    print("2")
+    assert t[1::2] == range(1, 4, 2)
     # assert t[::-1] == range(4, -1, -1)
     # assert t[::-2] == "420"
     # assert t[3::-2] == "31"
