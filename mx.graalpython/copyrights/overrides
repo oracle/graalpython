@@ -81,6 +81,7 @@ graalpython/com.oracle.graal.python.cext/include/boolobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/bytearrayobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/bytesobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/ceval.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/classobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/code.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/codecs.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/compile.h,python.copyright
