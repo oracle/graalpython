@@ -236,7 +236,7 @@ def punittest(args):
 
 
 def nativebuild(args):
-    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON"])
+    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON,GRAALPYTHON_GRAALVM_SUPPORT"])
 
 
 def nativeclean(args):
