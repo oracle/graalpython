@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
-import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -57,20 +56,23 @@ public class PyUnicodeStateMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
-        @Child private ToSulongNode toSulongNode;
 
         public Object access(PyUnicodeState object, String key) {
+            int value;
+            if (onlyAscii(object.getDelegate().getValue())) {
+                // padding(24), ready(1), ascii(1), compact(1), kind(3), interned(2)
+                value = 0b000000000000000000000000_1_1_0_000_00;
+            } else {
+                value = 0b000000000000000000000000_1_0_0_000_00;
+            }
             switch (key) {
                 case NativeMemberNames.UNICODE_STATE_INTERNED:
-                    return getToSulongNode().execute(false);
                 case NativeMemberNames.UNICODE_STATE_KIND:
-                    return getToSulongNode().execute(0);
                 case NativeMemberNames.UNICODE_STATE_COMPACT:
-                    return getToSulongNode().execute(false);
                 case NativeMemberNames.UNICODE_STATE_ASCII:
-                    return getToSulongNode().execute(onlyAscii(object.getDelegate().getValue()));
                 case NativeMemberNames.UNICODE_STATE_READY:
-                    return getToSulongNode().execute(true);
+                    // it's a bit field; so we need to return the whole 32-bit word
+                    return value;
             }
             throw UnknownIdentifierException.raise(key);
         }
@@ -92,14 +94,6 @@ public class PyUnicodeStateMR {
         @TruffleBoundary
         private static boolean doCheck(String value, CharsetEncoder asciiEncoder) {
             return asciiEncoder.canEncode(value);
-        }
-
-        private ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
-            }
-            return toSulongNode;
         }
     }
 }
