@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.parser;
 
+import static com.oracle.graal.python.nodes.PNodeUtil.replace;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,18 +81,12 @@ public class GeneratorTranslator {
     private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
     private boolean needToHandleComplicatedYieldExpression;
-    private boolean replacedOuterMostLoopIterator = false;
+    private PNode getOuterMostLoopIterator;
+    private final boolean inGeneratorExpression;
 
-    public GeneratorTranslator(FunctionRootNode root) {
+    public GeneratorTranslator(FunctionRootNode root, boolean inGeneratorExpression) {
         this.root = root;
-    }
-
-    private static <T extends PNode> T replace(PNode oldNode, T node) {
-        if (oldNode.isStatement()) {
-            node.markAsStatement();
-        }
-        node.assignSourceSection(oldNode.getSourceSection());
-        return oldNode.replace(node);
+        this.inGeneratorExpression = inGeneratorExpression;
     }
 
     public RootCallTarget translate() {
@@ -106,6 +102,11 @@ public class GeneratorTranslator {
         /**
          * Redirect local variable accesses to materialized persistent frame.
          */
+        ForNode outerMostLoop = NodeUtil.findFirstNodeInstance(root, ForNode.class);
+        if (outerMostLoop != null && inGeneratorExpression) {
+            replaceOuterMostForNode(outerMostLoop);
+        }
+
         for (WriteLocalVariableNode write : NodeUtil.findAllNodeInstances(root, WriteLocalVariableNode.class)) {
             replace(write, WriteGeneratorFrameVariableNode.create(write.getSlot(), write.getRhs()));
         }
@@ -308,6 +309,20 @@ public class GeneratorTranslator {
         }
     }
 
+    private void replaceForNode(ForNode forNode) {
+        WriteNode target = (WriteNode) forNode.getTarget();
+        PNode getIter = forNode.getIterator();
+        replace(forNode, GeneratorForNode.create(target, getIter, forNode.getBody(), nextGeneratorForNodeSlot()));
+    }
+
+    private void replaceOuterMostForNode(ForNode forNode) {
+        WriteNode target = (WriteNode) forNode.getTarget();
+        PNode getIter = forNode.getIterator();
+        getOuterMostLoopIterator = getIter;
+        getIter = ReadIndexedArgumentNode.create(0);
+        replace(forNode, GeneratorForNode.create(target, getIter, forNode.getBody(), nextGeneratorForNodeSlot()));
+    }
+
     private void replaceControl(PNode node, YieldNode yield) {
         /**
          * Has it been replaced already?
@@ -329,15 +344,11 @@ public class GeneratorTranslator {
             int ifFlag = nextActiveFlagSlot();
             int elseFlag = nextActiveFlagSlot();
             replace(node, GeneratorIfNode.create(ifNode.getCondition(), ifNode.getThen(), ifNode.getElse(), ifFlag, elseFlag));
+
         } else if (node instanceof ForNode) {
             ForNode forNode = (ForNode) node;
-            WriteNode target = (WriteNode) forNode.getTarget();
-            PNode getIter = forNode.getIterator();
-            if (!replacedOuterMostLoopIterator) {
-                replacedOuterMostLoopIterator = true;
-                getIter = ReadIndexedArgumentNode.create(0);
-            }
-            replace(node, GeneratorForNode.create(target, getIter, forNode.getBody(), nextGeneratorForNodeSlot()));
+            replaceForNode(forNode);
+
         } else if (node instanceof BlockNode) {
             BlockNode block = (BlockNode) node;
             int slotOfBlockIndex = nextGeneratorBlockIndexSlot();
@@ -347,16 +358,19 @@ public class GeneratorTranslator {
             }
 
             replace(node, new GeneratorBlockNode(block.getStatements(), slotOfBlockIndex));
+
         } else if (node instanceof TryExceptNode) {
             TryExceptNode tryExceptNode = (TryExceptNode) node;
             int exceptFlag = nextActiveFlagSlot();
             int elseFlag = nextActiveFlagSlot();
             int exceptIndex = nextGeneratorBlockIndexSlot();
             replace(node, new GeneratorTryExceptNode(tryExceptNode.getBody(), tryExceptNode.getExceptNodes(), tryExceptNode.getOrelse(), exceptFlag, elseFlag, exceptIndex));
+
         } else if (node instanceof TryFinallyNode) {
             TryFinallyNode tryFinally = (TryFinallyNode) node;
             int finallyFlag = nextActiveFlagSlot();
             replace(node, new GeneratorTryFinallyNode(tryFinally.getBody(), tryFinally.getFinalbody(), finallyFlag));
+
         } else if (node instanceof StatementNode) {
             // do nothing for now
         } else {
@@ -423,5 +437,9 @@ public class GeneratorTranslator {
 
     public int getNumOfGeneratorForNode() {
         return numOfGeneratorForNode;
+    }
+
+    public PNode getGetOuterMostLoopIterator() {
+        return getOuterMostLoopIterator;
     }
 }

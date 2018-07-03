@@ -354,9 +354,7 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitComp_for(Python3Parser.Comp_forContext ctx) {
         declareNames(ctx.exprlist());
-        if (trackCells) {
-            environment.incCurrentScopeLoopCount();
-        }
+        environment.incCurrentScopeLoopCount();
         return super.visitComp_for(ctx);
     }
 

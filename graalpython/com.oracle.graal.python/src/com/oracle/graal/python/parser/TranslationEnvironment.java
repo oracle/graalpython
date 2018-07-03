@@ -75,6 +75,10 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
     public TranslationEnvironment reset() {
         scopeLevel = 0;
         listComprehensionSlotCounter = 0;
+        scopesStack.clear();
+        for (ScopeInfo scope : scopeInfos.values()) {
+            scope.resetLoopCount();
+        }
         return this;
     }
 
@@ -114,13 +118,11 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
         return null;
     }
 
-    public ScopeInfo popCurrentScope() {
+    public void popCurrentScope() {
         if (!scopesStack.isEmpty()) {
             scopeLevel++;
             currentScope = scopesStack.pop();
-            return currentScope;
         }
-        return null;
     }
 
     public boolean atModuleLevel() {

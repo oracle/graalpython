@@ -98,6 +98,10 @@ public class ScopeInfo {
         return loopCount;
     }
 
+    public void resetLoopCount() {
+        this.loopCount = 0;
+    }
+
     public Set<ScopeInfo> getChildScopes() {
         return childScopes;
     }
