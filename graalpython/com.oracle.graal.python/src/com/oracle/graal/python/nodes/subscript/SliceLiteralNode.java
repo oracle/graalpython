@@ -33,7 +33,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -46,33 +45,74 @@ public abstract class SliceLiteralNode extends PNode {
     public abstract PSlice execute(Object start, Object stop, Object step);
 
     @Specialization
-    public PSlice doPSlice(int start, int stop, int step) {
+    public PSlice doInt(int start, int stop, int step) {
         return factory().createSlice(start, stop, step);
     }
 
     @Specialization
-    public PSlice doSlice(@SuppressWarnings("unused") PNone start, int stop, int step) {
+    public PSlice doInt(@SuppressWarnings("unused") PNone start, int stop, int step) {
         return factory().createSlice(MISSING_INDEX, stop, step);
     }
 
     @Specialization
-    public PSlice doPSlice(int start, int stop, @SuppressWarnings("unused") PNone step) {
+    public PSlice doInt(int start, int stop, @SuppressWarnings("unused") PNone step) {
         return factory().createSlice(start, stop, 1);
     }
 
-    @TruffleBoundary
+    @Specialization(rewriteOn = ArithmeticException.class)
+    public PSlice doLongExact(long start, long stop, @SuppressWarnings("unused") PNone step) {
+        return factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), 1);
+    }
+
     @Specialization
-    public PSlice doPSlice(long start, long stop, @SuppressWarnings("unused") PNone step) {
+    public PSlice doLongGeneric(long start, long stop, @SuppressWarnings("unused") PNone step) {
         try {
-            return factory().createSlice(Math.toIntExact(start), Math.toIntExact(stop), 1);
+            return factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), 1);
         } catch (ArithmeticException e) {
             throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
         }
     }
 
-    @Specialization
-    public PSlice doPSlice(PInt start, PInt stop, @SuppressWarnings("unused") PNone step) {
+    @Specialization(rewriteOn = ArithmeticException.class)
+    public PSlice doPIntExact(PInt start, PInt stop, @SuppressWarnings("unused") PNone step) {
         return factory().createSlice(start.intValueExact(), stop.intValueExact(), 1);
+    }
+
+    @Specialization
+    public PSlice doPIntGeneric(PInt start, PInt stop, @SuppressWarnings("unused") PNone step) {
+        try {
+            return factory().createSlice(start.intValueExact(), stop.intValueExact(), 1);
+        } catch (ArithmeticException e) {
+            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+        }
+    }
+
+    @Specialization(rewriteOn = ArithmeticException.class)
+    public PSlice doPIntLongExact(PInt start, long stop, @SuppressWarnings("unused") PNone step) {
+        return factory().createSlice(start.intValueExact(), PInt.intValueExact(stop), 1);
+    }
+
+    @Specialization
+    public PSlice doPIntLongGeneric(PInt start, long stop, @SuppressWarnings("unused") PNone step) {
+        try {
+            return factory().createSlice(start.intValueExact(), PInt.intValueExact(stop), 1);
+        } catch (ArithmeticException e) {
+            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+        }
+    }
+
+    @Specialization(rewriteOn = ArithmeticException.class)
+    public PSlice doLongPIntExact(long start, PInt stop, @SuppressWarnings("unused") PNone step) {
+        return factory().createSlice(PInt.intValueExact(start), stop.intValueExact(), 1);
+    }
+
+    @Specialization
+    public PSlice doLongPIntGeneric(long start, PInt stop, @SuppressWarnings("unused") PNone step) {
+        try {
+            return factory().createSlice(PInt.intValueExact(start), stop.intValueExact(), 1);
+        } catch (ArithmeticException e) {
+            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+        }
     }
 
     @Specialization
