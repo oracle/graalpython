@@ -508,6 +508,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFrame(lookupClass(PythonBuiltinClassType.PFrame), exception, index));
     }
 
+    public PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
+        return trace(new PFrame(lookupClass(PythonBuiltinClassType.PFrame), threadState, code, globals, locals));
+    }
+
     public PTraceback createTraceback(PBaseException exception, int index) {
         return trace(new PTraceback(lookupClass(PythonBuiltinClassType.PTraceback), exception, index));
     }

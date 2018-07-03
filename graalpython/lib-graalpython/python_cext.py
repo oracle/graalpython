@@ -1024,7 +1024,6 @@ def PyFile_WriteObject(obj, file, flags):
 
 ##  CODE
 
-
 codetype = type(may_raise.__code__)
 
 
@@ -1059,7 +1058,7 @@ def PyTruffle_Type(type_name):
     elif type_name == "ellipsis":
         return type(Py_Ellipsis())
     elif type_name == "method":
-        return type(may_raise)
+        return type({}.update)
     elif type_name == "code":
         return codetype
     elif type_name == "frame":

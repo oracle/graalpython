@@ -38,13 +38,17 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
@@ -59,6 +63,7 @@ public final class PFrame extends PythonBuiltinObject {
     private final boolean inClassScope;
     private final Frame frame;
     private final Node location;
+    private int line = -2;
 
     public PFrame(PythonClass cls, PBaseException exception, int index) {
         super(cls);
@@ -69,6 +74,23 @@ public final class PFrame extends PythonBuiltinObject {
         this.frame = truffleStackTraceElement.getFrame();
         this.location = truffleStackTraceElement.getLocation();
         this.inClassScope = truffleStackTraceElement.getTarget().getRootNode() instanceof ClassBodyRootNode;
+    }
+
+    public PFrame(PythonClass cls, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object locals) {
+        super(cls);
+        this.exception = null;
+        this.index = -1;
+
+        Object[] frameArgs = PArguments.create();
+        PArguments.setGlobals(frameArgs, globals);
+        this.frame = Truffle.getRuntime().createMaterializedFrame(frameArgs);
+        this.location = code.getRootNode();
+        this.inClassScope = code.getRootNode() instanceof ClassBodyRootNode;
+        this.line = code.getRootNode() == null ? code.getFirstLineNo() : -2;
+
+        if (locals instanceof PDict) {
+            localsDict = (PDict) locals;
+        }
     }
 
     public PBaseException getException() {
@@ -89,14 +111,17 @@ public final class PFrame extends PythonBuiltinObject {
 
     @TruffleBoundary
     public int getLine() {
-        if (location == null) {
-            return -1;
+        if (line == -2) {
+            if (location == null) {
+                line = -1;
+            }
+            SourceSection sourceSection = location.getEncapsulatingSourceSection();
+            if (sourceSection == null) {
+                line = -1;
+            }
+            line = sourceSection.getStartLine();
         }
-        SourceSection sourceSection = location.getEncapsulatingSourceSection();
-        if (sourceSection == null) {
-            return -1;
-        }
-        return sourceSection.getStartLine();
+        return line;
     }
 
     public Node getCallNode() {

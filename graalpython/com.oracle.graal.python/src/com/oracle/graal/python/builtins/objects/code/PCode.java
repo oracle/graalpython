@@ -67,7 +67,11 @@ public class PCode extends PythonBuiltinObject {
     }
 
     public RootNode getRootNode() {
-        return result.getRootNode();
+        if (result != null) {
+            return result.getRootNode();
+        } else {
+            return null;
+        }
     }
 
     public Object getFreeVars() {
@@ -82,7 +86,7 @@ public class PCode extends PythonBuiltinObject {
         return filename;
     }
 
-    public Object getFirstLineNo() {
+    public int getFirstLineNo() {
         return firstlineno;
     }
 

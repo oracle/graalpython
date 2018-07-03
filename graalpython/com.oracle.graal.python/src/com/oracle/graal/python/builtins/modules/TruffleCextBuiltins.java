@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNative
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -77,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -1150,6 +1152,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         long getHash() {
             return PComplex.IMAG_MULTIPLIER;
+        }
+    }
+
+    @Builtin(name = "PyTruffleFrame_New", fixedNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class PyTruffleFrameNewNode extends PythonBuiltinNode {
+        @Specialization
+        Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
+            return factory().createPFrame(threadState, code, globals, locals);
         }
     }
 

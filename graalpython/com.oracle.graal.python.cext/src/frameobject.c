@@ -40,3 +40,7 @@
 #include "capi.h"
 
 PyTypeObject PyFrame_Type = PY_TRUFFLE_TYPE("frame", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));
+
+PyFrameObject* PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals, PyObject *locals) {
+    return UPCALL_CEXT_O("PyTruffleFrame_New", native_to_java((PyObject*)tstate), native_to_java(code), native_to_java(globals), native_to_java(locals));
+}
