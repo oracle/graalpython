@@ -22,6 +22,10 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # list
+
+import sys
+
+
 def test_list():
     l = [0, 1, 2, 3, 4]
     assert l[0:0] == []
@@ -126,20 +130,52 @@ def test_range_step1():
     # extended slice
     assert t[::] == range(0, 5)
     assert t[::2] == range(0, 5, 2)
-    print("2")
     assert t[1::2] == range(1, 4, 2)
-    # assert t[::-1] == range(4, -1, -1)
-    # assert t[::-2] == "420"
-    # assert t[3::-2] == "31"
-    # assert t[3:3:-2] == ""
-    # assert t[3:2:-2] == "3"
-    # assert t[3:1:-2] == "3"
-    # assert t[3:0:-2] == "31"
-    # assert t[::-100] == "4"
-    # assert t[100:-100:] == ""
-    # assert t[-100:100:] == "01234"
-    # assert t[100:-100:-1] == "43210"
-    # assert t[-100:100:-1] == ""
-    # assert t[-100:100:2] == "024"
-    print("DONE")
+    assert t[::-1] == range(4, -1, -1)
+    assert t[::-2] == range(4, -1, -2)
 
+    if sys.version_info.minor >= 7:
+        assert t[3::-2] == range(3, 0, -2)
+    else:
+        assert t[3::-2] == range(3, -1, -2)
+    assert t[3:3:-2] == range(0)
+    assert t[3:2:-2] == range(3, 2, -2)
+    assert t[3:1:-2] == range(3, 1, -2)
+    assert t[3:0:-2] == range(3, 0, -2)
+    assert t[::-100] == range(4, 5, 1)
+    assert t[100:-100:] == range(0)
+    assert t[-100:100:] == range(5)
+    assert t[100:-100:-1] == range(4, -1, -1)
+    assert t[-100:100:-1] == range(0)
+    assert t[-100:100:2] == range(0, 5, 2)
+
+
+def test_range_step2():
+    t = range(5, 15, 2)
+    assert t[0:0] == range(5, 5, 2)
+    assert t[1:2] == range(7, 9, 2)
+    assert t[-2:-1] == range(11, 13, 2)
+    assert t[-100:100] == range(5, 15, 2)
+    assert t[100:-100] == range(15, 5, 2)
+    assert t[:] == range(5, 15, 2)
+    assert t[1:None] == range(7, 15, 2)
+    assert t[None:3] == range(5, 11, 2)
+
+    # extended slice
+    assert t[::] == range(5, 15, 2)
+    assert t[::2] == range(5, 15, 4)
+    assert t[1::2] == range(7, 15, 4)
+    assert t[::-1] == range(13, 3, -2)
+    assert t[::-2] == range(13, 3, -4)
+
+    assert t[3::-2] == range(11, 3, -4)
+    assert t[3:3:-2] == range(11, 11, -4)
+    assert t[3:2:-2] == range(11, 9, -4)
+    assert t[3:1:-2] == range(11, 7, -4)
+    assert t[3:0:-2] == range(11, 5, -4)
+    assert t[::-100] == range(13, 3, -200)
+    assert t[100:-100:] == range(15, 5, 2)
+    assert t[-100:100:] == range(5, 15, 2)
+    assert t[100:-100:-1] == range(13, 3, -2)
+    assert t[-100:100:-1] == range(3, 13, -2)
+    assert t[-100:100:2] == range(5, 15, 4)
