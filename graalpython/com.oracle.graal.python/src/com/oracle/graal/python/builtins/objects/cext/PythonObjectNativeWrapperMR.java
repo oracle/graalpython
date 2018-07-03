@@ -350,6 +350,11 @@ public class PythonObjectNativeWrapperMR {
             return result.len() / sizeofWchar;
         }
 
+        @Specialization(guards = "eq(UNICODE_LENGTH, key)")
+        long doWstrLength(PString object, @SuppressWarnings("unused") String key) {
+            return object.len();
+        }
+
         @Specialization(guards = "eq(UNICODE_STATE, key)")
         Object doState(PString object, @SuppressWarnings("unused") String key) {
             // TODO also support bare 'String' ?
