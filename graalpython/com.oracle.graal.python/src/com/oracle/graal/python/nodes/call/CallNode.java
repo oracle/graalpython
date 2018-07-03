@@ -90,12 +90,12 @@ public abstract class CallNode extends PBaseNode {
 
     @Specialization
     protected Object methodCall(PMethod callable, Object[] arguments, PKeyword[] keywords) {
-        return dispatch.executeCall(callable, createArguments.executeWithSelf(callable.__self__(), arguments), keywords);
+        return dispatch.executeCall(callable, createArguments.executeWithSelf(callable.getSelf(), arguments), keywords);
     }
 
     @Specialization
     protected Object builtinMethodCall(PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
-        return dispatch.executeCall(callable, createArguments.executeWithSelf(callable.__self__(), arguments), keywords);
+        return dispatch.executeCall(callable, createArguments.executeWithSelf(callable.getSelf(), arguments), keywords);
     }
 
     @Specialization
