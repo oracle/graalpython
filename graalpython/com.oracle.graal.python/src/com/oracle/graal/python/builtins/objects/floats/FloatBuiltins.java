@@ -177,6 +177,21 @@ public final class FloatBuiltins extends PythonBuiltins {
         PFloat doPFloat(PFloat self) {
             return self;
         }
+
+        protected static FromNativeSubclassNode cacheGetFloat() {
+            return FromNativeSubclassNode.create(PythonBuiltinClassType.PFloat, NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE);
+        }
+
+        @Specialization
+        Object doNativeFloat(PythonNativeObject possibleBase,
+                        @Cached("cacheGetFloat()") FromNativeSubclassNode getFloat) {
+            Object convertedFloat = getFloat.execute(possibleBase);
+            if (convertedFloat instanceof Double) {
+                return possibleBase;
+            } else {
+                throw raise(PythonErrorType.TypeError, "must be real number, not %p", possibleBase);
+            }
+        }
     }
 
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)

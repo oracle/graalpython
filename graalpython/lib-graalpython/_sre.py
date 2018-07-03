@@ -58,6 +58,7 @@ _FLAGS_TO_JS = ["", "i", "", "m",
 class SRE_Match():
     def __init__(self, pattern, pos, endpos, result):
         self.result = result
+        self.compiled_regex = result.regex
         self.re = pattern
         self.pos = pos
         self.endpos = endpos
@@ -67,26 +68,49 @@ class SRE_Match():
 
     def group(self, *args):
         if not args:
-            return self.result.input[self.result.start[0]:self.result.end[0]]
+            return self.__group__(0)
         elif len(args) == 1:
-            return self.result.input[self.result.start[args[0]]:self.result.end[args[0]]]
+            return self.__group__(args[0])
         else:
             lst = []
             for arg in args:
-                lst.append(self.result.input[self.result.start[arg]:self.result.end[arg]])
+                lst.append(self.__group__(arg))
             return tuple(lst)
 
     def groups(self, default=None):
         lst = []
         for arg in range(1, self.result.groupCount):
-            lst.append(self.result.input[self.result.start[arg]:self.result.end[arg]])
+            lst.append(self.__group__(arg))
         return tuple(lst)
 
+    def __groupidx__(self, idx):
+        if isinstance(idx, str):
+            return self.compiled_regex.groups[idx]
+        else:
+            return idx
+
+    def __group__(self, idx):
+        idxarg = self.__groupidx__(idx)
+        start = self.result.start[idxarg]
+        if start < 0:
+            return None
+        else:
+            return self.result.input[start:self.result.end[idxarg]]
+
+    def groupdict(self, default=None):
+        d = {}
+        for k in self.compiled_regex.groups:
+            idx = self.compiled_regex.groups[k]
+            d[k] = self.__group__(idx)
+        return d
+
     def span(self, groupnum=0):
-        return (self.result.start[groupnum], self.result.end[groupnum])
+        idxarg = self.__groupidx__(groupnum)
+        return (self.result.start[idxarg], self.result.end[idxarg])
 
     def start(self, groupnum=0):
-        return self.result.start[groupnum]
+        idxarg = self.__groupidx__(groupnum)
+        return self.result.start[idxarg]
 
     @property
     def string(self):

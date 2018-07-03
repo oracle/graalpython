@@ -73,6 +73,7 @@ def make_flags_class():
 flags = make_flags_class()(flags)
 del make_flags_class
 
+
 def make_float_info_class():
     from _descriptor import make_named_tuple_class
     return make_named_tuple_class(
@@ -91,6 +92,26 @@ def make_float_info_class():
     )
 float_info = make_float_info_class()(float_info)
 del make_float_info_class
+
+
+def make_hash_info_class():
+    from _descriptor import make_named_tuple_class
+    return make_named_tuple_class(
+        "hash_info",
+        ["algorithm",
+         "cutoff",
+         "hash_bits",
+         "imag",
+         "inf",
+         "modulus",
+         "nan",
+         "seed_bits",
+         "width"]
+    )
+hash_info = make_hash_info_class()(
+    ("java", 0, 64, 0, float('inf').__hash__(), 7, float('nan').__hash__(), 0, 64)
+)
+del make_hash_info_class
 
 
 meta_path = []

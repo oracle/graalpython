@@ -61,6 +61,7 @@
 #include <langinfo.h>
 #include <assert.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "pyport.h"
 #include "pymacro.h"
