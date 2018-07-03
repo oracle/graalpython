@@ -43,6 +43,11 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeData;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeState;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -51,11 +56,25 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.nodes.Node;
 
-@MessageResolution(receiverType = PyUnicodeState.class)
-public class PyUnicodeStateMR {
+@MessageResolution(receiverType = PyUnicodeWrapper.class)
+public class PyUnicodeWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
+        @Child private UnicodeAsWideCharNode asWideCharNode;
+        @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
+
+        public Object access(PyUnicodeData object, String key) {
+            switch (key) {
+                case NativeMemberNames.UNICODE_DATA_ANY:
+                case NativeMemberNames.UNICODE_DATA_LATIN1:
+                case NativeMemberNames.UNICODE_DATA_UCS2:
+                case NativeMemberNames.UNICODE_DATA_UCS4:
+                    PString s = object.getDelegate();
+                    return getAsWideCharNode().execute(s, getSizeofWcharNode().execute(), s.len());
+            }
+            throw UnknownIdentifierException.raise(key);
+        }
 
         public Object access(PyUnicodeState object, String key) {
             int value;
@@ -75,6 +94,22 @@ public class PyUnicodeStateMR {
                     return value;
             }
             throw UnknownIdentifierException.raise(key);
+        }
+
+        private UnicodeAsWideCharNode getAsWideCharNode() {
+            if (asWideCharNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asWideCharNode = insert(UnicodeAsWideCharNode.create(0));
+            }
+            return asWideCharNode;
+        }
+
+        private CExtNodes.SizeofWCharNode getSizeofWcharNode() {
+            if (sizeofWcharNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sizeofWcharNode = insert(CExtNodes.SizeofWCharNode.create());
+            }
+            return sizeofWcharNode;
         }
 
         @CompilationFinal private CharsetEncoder asciiEncoder;
