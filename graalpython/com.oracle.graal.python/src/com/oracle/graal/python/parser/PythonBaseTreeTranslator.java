@@ -459,8 +459,10 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         FrameDescriptor fd = environment.getCurrentFrame();
         String generatorName = "generator_exp:" + lineNum;
         FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots());
-        GeneratorTranslator gtran = new GeneratorTranslator(funcRoot);
-        return new GeneratorExpressionNode(generatorName, gtran.translate(), fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
+        GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, true);
+        RootCallTarget callTarget = gtran.translate();
+        PNode loopIterator = gtran.getGetOuterMostLoopIterator();
+        return new GeneratorExpressionNode(generatorName, callTarget, loopIterator, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                         gtran.getNumOfActiveFlags(),
                         gtran.getNumOfGeneratorBlockNode(),
                         gtran.getNumOfGeneratorForNode());
@@ -1414,8 +1416,9 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
          */
         PNode funcDef;
         if (environment.isInGeneratorScope()) {
-            GeneratorTranslator gtran = new GeneratorTranslator(funcRoot);
-            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, core, arity, defaults, gtran.translate(), fd,
+            GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
+            RootCallTarget callTarget = gtran.translate();
+            funcDef = GeneratorFunctionDefinitionNode.create(funcName, enclosingClassName, core, arity, defaults, callTarget, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
@@ -1567,8 +1570,9 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
          */
         PNode funcDef;
         if (environment.isInGeneratorScope()) {
-            GeneratorTranslator gtran = new GeneratorTranslator(funcRoot);
-            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, core, arity, defaults, gtran.translate(), fd,
+            GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, false);
+            RootCallTarget callTarget = gtran.translate();
+            funcDef = GeneratorFunctionDefinitionNode.create(funcname, null, core, arity, defaults, callTarget, fd,
                             environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                             gtran.getNumOfActiveFlags(), gtran.getNumOfGeneratorBlockNode(), gtran.getNumOfGeneratorForNode());
         } else {
@@ -1740,10 +1744,21 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     }
 
     private PNode createGeneratorExpression(Python3Parser.Comp_forContext comp_for, PNode yield) {
+        return createGeneratorExpression(comp_for, yield, true);
+    }
+
+    private PNode createGeneratorExpression(Python3Parser.Comp_forContext comp_for, PNode yield, boolean iteratorInParentScope) {
         // TODO: async
+        if (iteratorInParentScope) {
+            environment.pushCurentScope();
+        }
+        PNode iterator = asBlockOrPNode(comp_for.or_test().accept(this));
+        if (iteratorInParentScope) {
+            environment.popCurrentScope();
+        }
+
         PNode targets = assigns.translate(comp_for.exprlist());
         PNode myBody = yield;
-        PNode iterator = asBlockOrPNode(comp_for.or_test().accept(this));
         PNode condition = null;
         Python3Parser.Comp_iterContext comp_iter = comp_for.comp_iter();
         while (comp_iter != null && comp_iter.comp_if() != null) {
@@ -1756,7 +1771,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
             comp_iter = comp_iter.comp_if().comp_iter();
         }
         if (comp_iter != null && comp_iter.comp_for() != null) {
-            myBody = createGeneratorExpression(comp_iter.comp_for(), yield);
+            myBody = createGeneratorExpression(comp_iter.comp_for(), yield, false);
         }
         if (condition != null) {
             myBody = factory.createIf(factory.createYesNode(condition), myBody, EmptyNode.create());

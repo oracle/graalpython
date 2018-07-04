@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -50,12 +51,15 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @CompilationFinal private FrameDescriptor enclosingFrameDescriptor;
     @CompilationFinal private boolean isEnclosingFrameGenerator;
     @CompilationFinal private boolean isOptimized;
+    @Child private PNode getIterator;
 
-    public GeneratorExpressionNode(String name, RootCallTarget callTarget, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
+    public GeneratorExpressionNode(String name, RootCallTarget callTarget, PNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
+                    ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         super(definitionCellSlots, executionCellSlots);
         this.name = name;
         this.callTarget = callTarget;
+        this.getIterator = getIterator;
         this.frameDescriptor = descriptor;
         this.numOfActiveFlags = numOfActiveFlags;
         this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
@@ -117,7 +121,13 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        Object[] arguments = PArguments.create();
+        Object[] arguments;
+        if (getIterator == null) {
+            arguments = PArguments.create(0);
+        } else {
+            arguments = PArguments.create(1);
+            PArguments.setArgument(arguments, 0, getIterator.execute(frame));
+        }
         PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
 
         PCell[] closure;
