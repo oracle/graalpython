@@ -60,6 +60,9 @@ PyObject* PyImport_AddModule(const char *name) {
 
 PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {
     PyObject* m = PyObject_GetItem(modules, name);
+    if (PyErr_ExceptionMatches(PyExc_KeyError)) {
+        PyErr_Clear();
+    }
     if (PyErr_Occurred()) {
         return NULL;
     }
