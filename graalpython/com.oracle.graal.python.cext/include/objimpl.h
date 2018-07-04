@@ -297,33 +297,36 @@ extern PyGC_Head *_PyGC_generation0;
 
 /* Tell the GC to track this object.  NB: While the object is tracked the
  * collector it must be safe to call the ob_traverse method. */
-#define _PyObject_GC_TRACK(o) do { \
-    PyGC_Head *g = _Py_AS_GC(o); \
-    if (_PyGCHead_REFS(g) != _PyGC_REFS_UNTRACKED) \
-        Py_FatalError("GC object already tracked"); \
-    _PyGCHead_SET_REFS(g, _PyGC_REFS_REACHABLE); \
-    g->gc.gc_next = _PyGC_generation0; \
-    g->gc.gc_prev = _PyGC_generation0->gc.gc_prev; \
-    g->gc.gc_prev->gc.gc_next = g; \
-    _PyGC_generation0->gc.gc_prev = g; \
-    } while (0);
+//#define _PyObject_GC_TRACK(o) do { \
+//    PyGC_Head *g = _Py_AS_GC(o); \
+//    if (_PyGCHead_REFS(g) != _PyGC_REFS_UNTRACKED) \
+//        Py_FatalError("GC object already tracked"); \
+//    _PyGCHead_SET_REFS(g, _PyGC_REFS_REACHABLE); \
+//    g->gc.gc_next = _PyGC_generation0; \
+//    g->gc.gc_prev = _PyGC_generation0->gc.gc_prev; \
+//    g->gc.gc_prev->gc.gc_next = g; \
+//    _PyGC_generation0->gc.gc_prev = g; \
+//    } while (0);
+#define _PyObject_GC_TRACK(o)
 
 /* Tell the GC to stop tracking this object.
  * gc_next doesn't need to be set to NULL, but doing so is a good
  * way to provoke memory errors if calling code is confused.
  */
-#define _PyObject_GC_UNTRACK(o) do { \
-    PyGC_Head *g = _Py_AS_GC(o); \
-    assert(_PyGCHead_REFS(g) != _PyGC_REFS_UNTRACKED); \
-    _PyGCHead_SET_REFS(g, _PyGC_REFS_UNTRACKED); \
-    g->gc.gc_prev->gc.gc_next = g->gc.gc_next; \
-    g->gc.gc_next->gc.gc_prev = g->gc.gc_prev; \
-    g->gc.gc_next = NULL; \
-    } while (0);
+#define _PyObject_GC_UNTRACK(o)
+//#define _PyObject_GC_UNTRACK(o) do { \
+//    PyGC_Head *g = _Py_AS_GC(o); \
+//    assert(_PyGCHead_REFS(g) != _PyGC_REFS_UNTRACKED); \
+//    _PyGCHead_SET_REFS(g, _PyGC_REFS_UNTRACKED); \
+//    g->gc.gc_prev->gc.gc_next = g->gc.gc_next; \
+//    g->gc.gc_next->gc.gc_prev = g->gc.gc_prev; \
+//    g->gc.gc_next = NULL; \
+//    } while (0);
 
 /* True if the object is currently tracked by the GC. */
-#define _PyObject_GC_IS_TRACKED(o) \
-    (_PyGC_REFS(o) != _PyGC_REFS_UNTRACKED)
+#define _PyObject_GC_IS_TRACKED(o) 0
+//#define _PyObject_GC_IS_TRACKED(o) \
+//    (_PyGC_REFS(o) != _PyGC_REFS_UNTRACKED)
 
 /* True if the object may be tracked by the GC in the future, or already is.
    This can be useful to implement some optimizations. */
