@@ -40,19 +40,52 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-@NodeChildren({@NodeChild(value = "klass", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
-public abstract class LookupAttributeInMRONode extends PNode {
-    public static LookupAttributeInMRONode create() {
-        return LookupAttributeInMRONodeGen.create(null, null);
+public abstract class LookupAttributeInMRONode extends PBaseNode {
+
+    public abstract static class Dynamic extends PBaseNode {
+
+        public static LookupAttributeInMRONode.Dynamic create() {
+            return LookupAttributeInMRONodeGen.DynamicNodeGen.create();
+        }
+
+        public abstract Object execute(Object klass, Object key);
+
+        @Specialization(guards = "key == cachedKey", limit = "2")
+        @ExplodeLoop
+        protected Object lookupConstantMRO(PythonClass klass, @SuppressWarnings("unused") String key,
+                        @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                        @Cached("create(key)") LookupAttributeInMRONode lookup) {
+            return lookup.execute(klass);
+        }
+
+        @Specialization
+        protected Object lookup(PythonClass klass, Object key,
+                        @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+            return LookupAttributeInMRONode.lookupSlow(klass, key, readAttrNode);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        protected Object lookup(Object klass, Object key) {
+            return PNone.NO_VALUE;
+        }
+    }
+
+    private final String key;
+
+    public LookupAttributeInMRONode(String key) {
+        this.key = key;
+    }
+
+    public static LookupAttributeInMRONode create(String key) {
+        return LookupAttributeInMRONodeGen.create(key);
     }
 
     /**
@@ -61,13 +94,12 @@ public abstract class LookupAttributeInMRONode extends PNode {
      * @return The lookup result, or {@link PNone#NO_VALUE} if the key isn't defined on any object
      *         in the MRO.
      */
-    public abstract Object execute(Object klass, Object key);
+    public abstract Object execute(PythonClass klass);
 
-    @Specialization(guards = {"klass == cachedKlass", "key.equals(cachedKey)", "mroLength < 32"}, limit = "5", assumptions = "lookupStable")
+    @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "5", assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
-    protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass, String key,
+    protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
-                    @Cached("key") @SuppressWarnings("unused") String cachedKey,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
                     @Cached(value = "cachedKlass.getMethodResolutionOrder()", dimensions = 1) PythonClass[] mro,
@@ -83,8 +115,12 @@ public abstract class LookupAttributeInMRONode extends PNode {
     }
 
     @Specialization
-    protected Object lookup(PythonClass klass, String key,
+    protected Object lookup(PythonClass klass,
                     @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+        return lookupSlow(klass, key, readAttrNode);
+    }
+
+    protected static Object lookupSlow(PythonClass klass, Object key, ReadAttributeFromObjectNode readAttrNode) {
         PythonClass[] mro = klass.getMethodResolutionOrder();
         for (int i = 0; i < mro.length; i++) {
             PythonClass kls = mro[i];
@@ -93,12 +129,6 @@ public abstract class LookupAttributeInMRONode extends PNode {
                 return value;
             }
         }
-        return PNone.NO_VALUE;
-    }
-
-    @SuppressWarnings("unused")
-    @Fallback
-    protected Object lookup(Object klass, Object key) {
         return PNone.NO_VALUE;
     }
 }

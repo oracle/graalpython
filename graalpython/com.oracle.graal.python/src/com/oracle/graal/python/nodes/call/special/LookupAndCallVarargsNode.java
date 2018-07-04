@@ -40,7 +40,8 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -60,7 +61,8 @@ public abstract class LookupAndCallVarargsNode extends PBaseNode {
 
     @Specialization
     Object callObject(Object callable, Object[] arguments,
-                    @Cached("create()") LookupInheritedAttributeNode getattr) {
-        return dispatchNode.execute(getattr.execute(callable, name), arguments, PKeyword.EMPTY_KEYWORDS);
+                    @Cached("create()") GetClassNode getClassNode,
+                    @Cached("create()") LookupAttributeInMRONode.Dynamic getattr) {
+        return dispatchNode.execute(getattr.execute(getClassNode.execute(callable), name), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

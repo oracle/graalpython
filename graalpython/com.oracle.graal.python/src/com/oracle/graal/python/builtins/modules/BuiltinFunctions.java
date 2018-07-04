@@ -54,8 +54,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BREAKPOINT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
@@ -260,7 +258,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public boolean callable(Object object,
-                        @Cached("create()") LookupInheritedAttributeNode getAttributeNode) {
+                        @Cached("create(__CALL__)") LookupInheritedAttributeNode getAttributeNode) {
             /**
              * Added temporarily to skip translation/execution errors in unit testing
              */
@@ -269,7 +267,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return true;
             }
 
-            Object callAttr = getAttributeNode.execute(object, __CALL__);
+            Object callAttr = getAttributeNode.execute(object);
             if (callAttr != NO_VALUE) {
                 return true;
             }
@@ -336,10 +334,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isPException(object)")
         public Object hash(Object object,
-                        @Cached("create()") LookupInheritedAttributeNode lookupDirNode,
+                        @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
                         @Cached("createIfTrueNode()") CastToBooleanNode trueNode) {
-            if (trueNode.executeWith(lookupDirNode.execute(object, __DIR__))) {
+            if (trueNode.executeWith(lookupDirNode.execute(object))) {
                 return dispatchHash.executeObject(object);
             }
             return object.hashCode();

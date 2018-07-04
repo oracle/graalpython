@@ -38,9 +38,7 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -55,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.CreateListFromIteratorNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
@@ -276,7 +274,7 @@ public abstract class ListNodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class SetSliceNode extends PBaseNode {
 
         public abstract PNone execute(PList list, PSlice slice, Object value);
@@ -331,15 +329,16 @@ public abstract class ListNodes {
 
         @Specialization
         public PNone doPList(PList list, PSlice slice, Object value,
-                        @Cached("create()") LookupInheritedAttributeNode attrNode,
+                        @Cached("create(__ITER__)") LookupAttributeInMRONode iterNode,
+                        @Cached("create(__GETITEM__)") LookupAttributeInMRONode getItemNode,
                         @Cached("create()") ListNodes.ConstructListNode constructListNode,
                         @Cached("create()") GetClassNode getClassNode,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
 
             PythonClass clazz = getClassNode.execute(value);
-            boolean isIter = attrNode.execute(clazz, __ITER__) != null;
+            boolean isIter = iterNode.execute(clazz) != PNone.NO_VALUE;
             if (!isIter) {
-                isIter = attrNode.execute(clazz, __GETITEM__) != null;
+                isIter = getItemNode.execute(clazz) != PNone.NO_VALUE;
                 if (!isIter) {
                     throw raise(PythonErrorType.TypeError, "can only assign an iterable");
                 }

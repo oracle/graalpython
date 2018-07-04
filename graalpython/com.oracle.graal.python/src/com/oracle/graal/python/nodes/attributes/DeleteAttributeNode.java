@@ -48,8 +48,6 @@ import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
-
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
@@ -69,11 +67,11 @@ public abstract class DeleteAttributeNode extends PNode {
     protected Object doIt(Object object, Object key,
                     @Cached("createIdentityProfile()") ValueProfile setattributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create()") LookupAttributeInMRONode setattributeLookup,
+                    @Cached("create(__DELATTR__)") LookupAttributeInMRONode lookupDelAttr,
                     @Cached("create()") CallDispatchNode dispatchSetattribute,
                     @Cached("create()") CreateArgumentsNode createArgs) {
         PythonClass type = getClassNode.execute(object);
-        Object descr = setattributeProfile.profile(setattributeLookup.execute(type, __DELATTR__));
+        Object descr = setattributeProfile.profile(lookupDelAttr.execute(type));
         return dispatchSetattribute.executeCall(descr, createArgs.execute(object, key), new PKeyword[0]);
     }
 }

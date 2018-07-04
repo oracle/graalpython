@@ -68,7 +68,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -1166,10 +1166,12 @@ public final class StringBuiltins extends PythonBuiltins {
     abstract static class ModNode extends PythonBinaryBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         Object doGeneric(String left, Object right,
                         @Cached("create()") CallDispatchNode callNode,
-                        @Cached("create()") LookupInheritedAttributeNode lookupAttrNode) {
-            return new StringFormatter(getCore(), left).format(right, callNode, lookupAttrNode);
+                        @Cached("create()") GetClassNode getClassNode,
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode) {
+            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key));
         }
 
         protected BuiltinFunctions.ReprNode createReprNode() {

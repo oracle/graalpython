@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -231,7 +230,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private final BranchProfile errorProfile = BranchProfile.create();
         private final ConditionProfile typeIsObjectProfile = ConditionProfile.createBinaryProfile();
 
-        @Child private LookupInheritedAttributeNode lookup = LookupInheritedAttributeNode.create();
+        @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
         private final ValueProfile typeProfile = ValueProfile.createIdentityProfile();
         @Child private GetClassNode getObjectClassNode;
         @Child private GetClassNode getDataClassNode;
@@ -244,7 +243,8 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(Object object, Object key) {
-            Object descr = lookup.execute(object, key);
+            PythonClass type = getObjectClass(object);
+            Object descr = lookup.execute(type, key);
             PythonClass dataDescClass = null;
             if (descr != PNone.NO_VALUE) {
                 hasDescProfile.enter();
@@ -259,7 +259,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     Object get = lookupGet(dataDescClass);
                     if (get instanceof PythonCallable) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
-                        return dispatch(object, descr, get);
+                        return dispatch(object, type, descr, get);
                     }
                 }
             }
@@ -282,7 +282,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (get == PNone.NO_VALUE) {
                     return descr;
                 } else if (get instanceof PythonCallable) {
-                    return dispatch(object, descr, get);
+                    return dispatch(object, type, descr, get);
                 }
             }
             errorProfile.enter();
@@ -305,37 +305,36 @@ public class ObjectBuiltins extends PythonBuiltins {
             return attrRead.execute(object, key);
         }
 
-        private Object dispatch(Object object, Object descr, Object get) {
+        private Object dispatch(Object object, Object type, Object descr, Object get) {
             if (dispatchGet == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 dispatchGet = insert(CallTernaryMethodNode.create());
             }
-            PythonClass type = getObjectClass(object);
             return dispatchGet.execute(get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
         }
 
         private Object lookupGet(PythonClass dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupGetNode = insert(LookupAttributeInMRONode.create());
+                lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
             }
-            return lookupGetNode.execute(dataDescClass, __GET__);
+            return lookupGetNode.execute(dataDescClass);
         }
 
         private Object lookupDelete(PythonClass dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupDeleteNode = insert(LookupAttributeInMRONode.create());
+                lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
             }
-            return lookupDeleteNode.execute(dataDescClass, __DELETE__);
+            return lookupDeleteNode.execute(dataDescClass);
         }
 
         private Object lookupSet(PythonClass dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupAttributeInMRONode.create());
+                lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
             }
-            return lookupSetNode.execute(dataDescClass, __SET__);
+            return lookupSetNode.execute(dataDescClass);
         }
 
         private PythonClass getObjectClass(Object object) {
@@ -369,15 +368,17 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
         protected Object doIt(Object object, Object key, Object value,
-                        @Cached("create()") LookupInheritedAttributeNode getExisting,
+                        @Cached("create()") GetClassNode getObjectClassNode,
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
-                        @Cached("create()") LookupAttributeInMRONode lookupSetNode,
+                        @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
                         @Cached("create()") CallTernaryMethodNode callSetNode,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            Object descr = getExisting.execute(object, key);
+            PythonClass type = getObjectClassNode.execute(object);
+            Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = getDataClassNode.execute(descr);
-                Object set = lookupSetNode.execute(dataDescClass, __SET__);
+                PythonClass dataDescClass = getDataClassNode.execute(descr);
+                Object set = lookupSetNode.execute(dataDescClass);
                 if (set instanceof PythonCallable) {
                     callSetNode.execute(set, descr, object, value);
                     return PNone.NONE;
@@ -399,16 +400,18 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
         protected Object doIt(Object object, Object key,
-                        @Cached("create()") LookupInheritedAttributeNode getExisting,
+                        @Cached("create()") GetClassNode getObjectClassNode,
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
-                        @Cached("create()") LookupAttributeInMRONode lookupSetNode,
+                        @Cached("create(__DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached("create()") CallBinaryMethodNode callSetNode,
                         @Cached("create()") ReadAttributeFromObjectNode attrRead,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            Object descr = getExisting.execute(object, key);
+            PythonClass type = getObjectClassNode.execute(object);
+            Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = getDataClassNode.execute(descr);
-                Object set = lookupSetNode.execute(dataDescClass, __DELETE__);
+                PythonClass dataDescClass = getDataClassNode.execute(descr);
+                Object set = lookupDeleteNode.execute(dataDescClass);
                 if (set instanceof PythonCallable) {
                     callSetNode.executeObject(set, descr, object);
                     return PNone.NONE;
