@@ -345,7 +345,7 @@ public class PythonObjectNativeWrapperMR {
             return new PyUnicodeState(object);
         }
 
-        @Specialization(guards = "eq(MD_DICT, key)")
+        @Specialization(guards = "eq(MD_DICT, key) || eq(TP_DICT, key)")
         Object doMdDict(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached("create()") GetAttributeNode getDictNode) {
             return getToSulongNode().execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
