@@ -38,28 +38,23 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@ImportStatic(Message.class)
 @NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
 public abstract class GetAttributeNode extends PNode implements ReadNode {
 
+    @Child LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+
     public PNode makeWriteNode(PNode rhs) {
         return SetAttributeNode.create(getObject(), getKey(), rhs);
-    }
-
-    public static GetAttributeNode create() {
-        return create(null, null);
     }
 
     public static GetAttributeNode create(PNode object, PNode key) {
@@ -70,23 +65,18 @@ public abstract class GetAttributeNode extends PNode implements ReadNode {
 
     public abstract PNode getKey();
 
-    public abstract Object execute(Object object, Object key);
-
-    public abstract Object executeWithObject(Object object);
-
-    public Object executeWithKey(VirtualFrame frame, Object key) {
-        return execute(getObject().execute(frame), key);
+    @Specialization(rewriteOn = UnexpectedResultException.class)
+    protected int doItInt(Object object, Object key) throws UnexpectedResultException {
+        return dispatchNode.executeInt(object, key);
     }
 
-    @Specialization
-    protected Object doIt(PKeyword[] keywords, Object key,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode dispatchNode) {
-        return dispatchNode.executeObject(factory().createDict(keywords), key);
+    @Specialization(rewriteOn = UnexpectedResultException.class)
+    protected boolean doItBoolean(Object object, Object key) throws UnexpectedResultException {
+        return dispatchNode.executeBool(object, key);
     }
 
-    @Specialization
-    protected Object doIt(Object object, Object key,
-                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode dispatchNode) {
+    @Specialization(replaces = {"doItInt", "doItBoolean"})
+    protected Object doIt(Object object, Object key) {
         return dispatchNode.executeObject(object, key);
     }
 }

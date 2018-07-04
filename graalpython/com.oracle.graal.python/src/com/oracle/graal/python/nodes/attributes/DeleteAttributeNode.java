@@ -70,7 +70,7 @@ public abstract class DeleteAttributeNode extends PNode {
                     @Cached("createIdentityProfile()") ValueProfile setattributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") LookupAttributeInMRONode setattributeLookup,
-                    @Cached("create(__DELATTR__)") CallDispatchNode dispatchSetattribute,
+                    @Cached("create()") CallDispatchNode dispatchSetattribute,
                     @Cached("create()") CreateArgumentsNode createArgs) {
         PythonClass type = getClassNode.execute(object);
         Object descr = setattributeProfile.profile(setattributeLookup.execute(type, __DELATTR__));

@@ -151,7 +151,7 @@ public abstract class GetIteratorNode extends UnaryOpNode {
                     @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
                     @Cached("create()") LookupAttributeInMRONode lookupAttrMroNode,
                     @Cached("create()") LookupAttributeInMRONode lookupGetitemAttrMroNode,
-                    @Cached("create(__ITER__)") CallDispatchNode dispatchGetattribute,
+                    @Cached("create()") CallDispatchNode dispatchGetattribute,
                     @Cached("create()") CreateArgumentsNode createArgs,
                     @Cached("create()") IsIteratorObjectNode isIteratorObjectNode) {
         PythonClass clazz = getClass(value);

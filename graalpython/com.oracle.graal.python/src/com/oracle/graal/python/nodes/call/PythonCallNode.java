@@ -32,6 +32,7 @@ import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNodeGen.GetCallAttributeNodeGen;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.debug.DebuggerTags;
@@ -69,7 +70,7 @@ public abstract class PythonCallNode extends PNode {
         if (calleeNode instanceof ReadGlobalOrBuiltinNode) {
             calleeName = ((ReadGlobalOrBuiltinNode) calleeNode).getAttributeId();
         } else if (calleeNode instanceof GetAttributeNode) {
-            getCallableNode = GetCallAttributeNodeGen.create((GetAttributeNode) calleeNode, ((GetAttributeNode) calleeNode).getObject(), ((GetAttributeNode) calleeNode).getKey());
+            getCallableNode = GetCallAttributeNodeGen.create(((GetAttributeNode) calleeNode).getObject(), ((GetAttributeNode) calleeNode).getKey());
         }
 
         return PythonCallNodeGen.create(calleeName, getCallableNode, PositionalArgumentsNode.create(argumentNodes, starargs), KeywordArgumentsNode.create(keywords, kwargs));
@@ -77,11 +78,6 @@ public abstract class PythonCallNode extends PNode {
 
     @NodeChildren({@NodeChild("object"), @NodeChild("key")})
     protected abstract static class GetCallAttributeNode extends PNode {
-        @Child private GetAttributeNode getAttributeNode;
-
-        public GetCallAttributeNode(GetAttributeNode getAttributeNode) {
-            this.getAttributeNode = getAttributeNode;
-        }
 
         @Specialization(guards = "isForeignObject(object)")
         Object getForeignInvoke(TruffleObject object, String key) {
@@ -89,8 +85,9 @@ public abstract class PythonCallNode extends PNode {
         }
 
         @Specialization(guards = "!isForeignObject(object)")
-        Object getCallAttribute(Object object, Object key) {
-            return getAttributeNode.execute(object, key);
+        Object getCallAttribute(Object object, Object key,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode) {
+            return getAttributeNode.executeObject(object, key);
         }
     }
 
@@ -123,7 +120,7 @@ public abstract class PythonCallNode extends PNode {
                     @Cached("create()") BranchProfile nameError,
                     @Cached("create()") BranchProfile typeError,
                     @Cached("create()") BranchProfile invokeError,
-                    @Cached("create()") GetAttributeNode getAttrNode,
+                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode,
                     @Cached("createInvoke()") Node invokeNode) {
         if (keywords.length != 0) {
             keywordsError.enter();
@@ -140,7 +137,7 @@ public abstract class PythonCallNode extends PNode {
         } catch (UnsupportedMessageException e) {
             invokeError.enter();
             // the interop contract is to revert to READ and then EXECUTE
-            Object member = getAttrNode.execute(callable.receiver, callable.identifier);
+            Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);
             return callNode.execute(member, arguments, keywords);
         }
     }

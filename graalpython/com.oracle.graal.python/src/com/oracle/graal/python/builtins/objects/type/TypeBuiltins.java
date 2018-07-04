@@ -58,11 +58,11 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory.CallNodeFactory;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -381,7 +381,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __INSTANCECHECK__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public static abstract class InstanceCheckNode extends PythonBinaryBuiltinNode {
-        @Child private GetAttributeNode getAttributeNode = GetAttributeNode.create();
+        @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
         @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
 
@@ -392,7 +392,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         private PythonObject getInstanceClassAttr(Object instance) {
-            Object classAttr = getAttributeNode.execute(instance, __CLASS__);
+            Object classAttr = getAttributeNode.executeObject(instance, __CLASS__);
             if (classAttr instanceof PythonObject) {
                 return (PythonObject) classAttr;
             }
@@ -408,7 +408,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 return true;
             }
 
-            Object instanceClass = getAttributeNode.execute(instance, __CLASS__);
+            Object instanceClass = getAttributeNode.executeObject(instance, __CLASS__);
             return instanceClass instanceof PythonClass && isSubtypeNode.execute(instanceClass, cls);
         }
 

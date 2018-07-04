@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+
 import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -47,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -95,14 +97,14 @@ class TryExceptNodeMessageResolution {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
-        @Child GetAttributeNode getAttr = GetAttributeNode.create();
+        @Child LookupAndCallBinaryNode getAttr = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child PythonObjectFactory factory = PythonObjectFactory.create();
 
         CatchesFunction access(TryExceptNode object, String name) {
             return doit(object, name, getAttr, factory);
         }
 
-        static CatchesFunction doit(TryExceptNode object, String name, GetAttributeNode getAttr, PythonObjectFactory factory) {
+        static CatchesFunction doit(TryExceptNode object, String name, LookupAndCallBinaryNode getAttr, PythonObjectFactory factory) {
             if (name.equals(StandardTags.TryBlockTag.CATCHES)) {
                 if (object.getCatchesFunction() == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -114,14 +116,14 @@ class TryExceptNodeMessageResolution {
                         PNode exceptType = node.getExceptType();
                         if (exceptType instanceof ReadGlobalOrBuiltinNode) {
                             try {
-                                literalCatches.add(getAttr.execute(builtins, ((ReadGlobalOrBuiltinNode) exceptType).getAttributeId()));
+                                literalCatches.add(getAttr.executeObject(builtins, ((ReadGlobalOrBuiltinNode) exceptType).getAttributeId()));
                             } catch (PException e) {
                             }
                         } else if (exceptType instanceof TupleLiteralNode) {
                             for (PNode tupleValue : ((TupleLiteralNode) exceptType).getValues()) {
                                 if (tupleValue instanceof ReadGlobalOrBuiltinNode) {
                                     try {
-                                        literalCatches.add(getAttr.execute(builtins, ((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId()));
+                                        literalCatches.add(getAttr.executeObject(builtins, ((ReadGlobalOrBuiltinNode) tupleValue).getAttributeId()));
                                     } catch (PException e) {
                                     }
                                 }
@@ -129,7 +131,7 @@ class TryExceptNodeMessageResolution {
                         }
                     }
 
-                    Object isinstanceFunc = getAttr.execute(builtins, BuiltinNames.ISINSTANCE);
+                    Object isinstanceFunc = getAttr.executeObject(builtins, BuiltinNames.ISINSTANCE);
                     PTuple caughtClasses = factory.createTuple(literalCatches.toArray());
 
                     if (isinstanceFunc instanceof PBuiltinFunction) {
@@ -148,7 +150,7 @@ class TryExceptNodeMessageResolution {
 
     @Resolve(message = "INVOKE")
     abstract static class InvokeNode extends Node {
-        @Child GetAttributeNode getAttr = GetAttributeNode.create();
+        @Child LookupAndCallBinaryNode getAttr = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child PythonObjectFactory factory = PythonObjectFactory.create();
 
         Object access(TryExceptNode object, String name, Object[] arguments) {

@@ -40,22 +40,12 @@ import com.oracle.truffle.api.nodes.Node;
 @ImportStatic(PythonOptions.class)
 public abstract class CallDispatchNode extends Node {
 
-    protected final String calleeName;
-
-    public CallDispatchNode(String calleeName) {
-        this.calleeName = calleeName;
-    }
-
     protected static InvokeNode createInvokeNode(PythonCallable callee) {
         return InvokeNode.create(callee);
     }
 
-    public static CallDispatchNode create(String name) {
-        return CallDispatchNodeGen.create(name);
-    }
-
     public static CallDispatchNode create() {
-        return CallDispatchNodeGen.create("~unspecified");
+        return CallDispatchNodeGen.create();
     }
 
     public abstract Object executeCall(Object callee, Object[] arguments, PKeyword[] keywords);

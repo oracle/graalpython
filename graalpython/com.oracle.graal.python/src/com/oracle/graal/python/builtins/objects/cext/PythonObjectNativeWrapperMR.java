@@ -71,9 +71,9 @@ import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -348,8 +348,8 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(MD_DICT, key)")
         Object doMdDict(PythonObject object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getDictNode) {
-            return getToSulongNode().execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDictNode) {
+            return getToSulongNode().execute(getDictNode.executeObject(object, SpecialAttributeNames.__DICT__));
         }
 
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
