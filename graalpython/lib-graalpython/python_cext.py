@@ -1192,7 +1192,7 @@ def PySlice_GetIndicesEx(start, stop, step, length):
     return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
 
 
-@may_raise
+@may_raise(to_sulong(error_handler))
 def PyTruffle_Upcall(rcv, name, *args):
     nargs = len(args)
     converted = [None] * nargs
