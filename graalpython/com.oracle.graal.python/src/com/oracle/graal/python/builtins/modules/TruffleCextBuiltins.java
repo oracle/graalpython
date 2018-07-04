@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -1161,6 +1162,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
             return factory().createPFrame(threadState, code, globals, locals);
+        }
+    }
+
+    @Builtin(name = "PyTruffleTraceBack_Here", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleTraceBack_HereNode extends PythonBuiltinNode {
+        @Specialization
+        Object tbHere(PTraceback next, PFrame frame) {
+            PTraceback newTb = next.getException().putTracebackOnTop(factory());
+            newTb.setPFrame(frame);
+            return 0;
         }
     }
 

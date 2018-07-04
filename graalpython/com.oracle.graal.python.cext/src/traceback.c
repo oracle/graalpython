@@ -36,53 +36,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.traceback;
 
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+#include "capi.h"
 
-public final class PTraceback extends PythonBuiltinObject {
+PyTypeObject PyTraceBack_Type = PY_TRUFFLE_TYPE("traceback", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));
 
-    public static final String TB_FRAME = "tb_frame";
-    public static final String TB_NEXT = "tb_next";
-    public static final String TB_LASTI = "tb_lasti";
-    public static final String TB_LINENO = "tb_lineno";
-
-    @CompilationFinal(dimensions = 1) public static final Object[] TB_DIR_FIELDS = new Object[]{TB_FRAME, TB_NEXT, TB_LASTI, TB_LINENO};
-
-    private final PBaseException exception;
-    private final int index;
-    private PFrame frame;
-
-    public PTraceback(PythonClass clazz, PBaseException exception, int index) {
-        super(clazz);
-        this.exception = exception;
-        this.index = index;
-    }
-
-    public PBaseException getException() {
-        return exception;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public PFrame getPFrame(PythonObjectFactory factory) {
-        if (frame == null) {
-            return frame = exception.getPFrame(factory, index);
-        }
-        return frame;
-    }
-
-    public void setPFrame(PFrame frame) {
-        if (this.frame != null) {
-            throw new IllegalStateException("fabricating a frame for a traceback that already has one");
-        }
-        this.frame = frame;
-    }
+int PyTraceBack_Here(PyFrameObject *frame) {
+    TDEBUG;
+    return UPCALL_CEXT_I("PyTraceBack_Here", native_to_java(frame));
 }

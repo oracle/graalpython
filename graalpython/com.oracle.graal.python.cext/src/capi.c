@@ -101,6 +101,7 @@ declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
 declare_type(PyMethod_Type, method, PyMethodObject);
 declare_type(PyCode_Type, code, PyCodeObject);
 declare_type(PyFrame_Type, frame, PyFrameObject);
+declare_type(PyTraceBack_Type, traceback, PyTracebackObject);
 // Below types use the same object structure as others, and thus
 // POLYGLOT_DECLARE_TYPE should not be called again
 initialize_type(PySuper_Type, super, _object);

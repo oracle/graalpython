@@ -1032,6 +1032,17 @@ def PyCode_New(*args):
     return codetype(*args)
 
 
+## TRACEBACK
+
+tbtype = type(sys._getframe(0).f_trace)
+
+@may_raise(-1)
+def PyTraceBack_Here(frame):
+    # skip this, the may_raise wrapper, the upcall wrapper, and PyTraceBack_Here itself
+    parentframe = sys._getframe(4)
+    return PyTruffleTraceBack_Here(parentframe.f_trace, frame)
+
+
 ##################### C EXT HELPERS
 
 def PyTruffle_Debug(*args):
@@ -1061,6 +1072,8 @@ def PyTruffle_Type(type_name):
         return type({}.update)
     elif type_name == "code":
         return codetype
+    elif type_name == "traceback":
+        return tbtype
     elif type_name == "frame":
         return type(sys._getframe(0))
     else:

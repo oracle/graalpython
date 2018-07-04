@@ -119,6 +119,16 @@ public final class PBaseException extends PythonObject {
         this.traceback = new PTraceback[0];
     }
 
+    public PTraceback putTracebackOnTop(PythonObjectFactory factory) {
+        CompilerAsserts.neverPartOfCompilation();
+        PTraceback[] newTb = new PTraceback[this.traceback.length + 1];
+        System.arraycopy(this.traceback, 0, newTb, 0, this.traceback.length);
+        PTraceback tb = factory.createTraceback(this, traceback.length);
+        newTb[this.traceback.length] = tb;
+        this.traceback = newTb;
+        return tb;
+    }
+
     /**
      * Can be null in case of lazily formatted arguments.
      */

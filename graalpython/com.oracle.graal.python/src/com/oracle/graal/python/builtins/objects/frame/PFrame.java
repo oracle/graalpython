@@ -114,12 +114,14 @@ public final class PFrame extends PythonBuiltinObject {
         if (line == -2) {
             if (location == null) {
                 line = -1;
+            } else {
+                SourceSection sourceSection = location.getEncapsulatingSourceSection();
+                if (sourceSection == null) {
+                    line = -1;
+                } else {
+                    line = sourceSection.getStartLine();
+                }
             }
-            SourceSection sourceSection = location.getEncapsulatingSourceSection();
-            if (sourceSection == null) {
-                line = -1;
-            }
-            line = sourceSection.getStartLine();
         }
         return line;
     }
