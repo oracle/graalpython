@@ -543,6 +543,22 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
+    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
+    public static Object checkFunctionResult(PythonContext context, Node isNullNode, String name, Object result) {
+        PException currentException = context.getCurrentException();
+        boolean errOccurred = currentException != null;
+        if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
+            if (!errOccurred) {
+                throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned NULL without setting an error", name);
+            } else {
+                throw currentException;
+            }
+        } else if (errOccurred) {
+            throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned a result with an error set", name);
+        }
+        return result;
+    }
+
     static class ExternalFunctionNode extends RootNode {
         private final TruffleObject cwrapper;
         private final TruffleObject callable;
@@ -593,7 +609,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
                     }
                 }
-                return fromNative(asPythonObjectNode.execute(checkFunctionResult(ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                return fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException(e.toString());
@@ -619,22 +635,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public String getName() {
             return name;
-        }
-
-        // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
-        private Object checkFunctionResult(Object result) {
-            PException currentException = getContext().getCurrentException();
-            boolean errOccurred = currentException != null;
-            if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
-                if (!errOccurred) {
-                    throw getCore().raise(PythonErrorType.SystemError, this, "%s returned NULL without setting an error", name);
-                } else {
-                    throw currentException;
-                }
-            } else if (errOccurred) {
-                throw getCore().raise(PythonErrorType.SystemError, this, "%s returned a result with an error set", name);
-            }
-            return result;
         }
     }
 
