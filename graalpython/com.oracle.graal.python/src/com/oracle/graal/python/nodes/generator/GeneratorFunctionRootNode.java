@@ -23,42 +23,42 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.builtins.objects.function;
+package com.oracle.graal.python.nodes.generator;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-public final class PGeneratorFunction extends PFunction {
+public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
+    private final RootCallTarget callTarget;
+    private final FrameDescriptor frameDescriptor;
+    private final int numOfActiveFlags;
+    private final int numOfGeneratorBlockNode;
+    private final int numOfGeneratorForNode;
+    private final PCell[] closure;
+    private final ExecutionCellSlots cellSlots;
 
-    public static PGeneratorFunction create(PythonClass clazz, PythonCore core, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure, ExecutionCellSlots executionCellSlots,
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
+
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-
-        GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(core.getLanguage(), callTarget,
-                        frameDescriptor, closure, executionCellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
-
-        return new PGeneratorFunction(clazz, name, enclosingClassName, arity, Truffle.getRuntime().createCallTarget(generatorFunctionRootNode), frameDescriptor, globals, closure);
-    }
-
-    public PGeneratorFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        super(clazz, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure);
-    }
-
-    @Override
-    public boolean isGeneratorFunction() {
-        return true;
+        super(language, frameDescriptor, executionCellSlots);
+        this.callTarget = callTarget;
+        this.frameDescriptor = frameDescriptor;
+        this.closure = closure;
+        this.cellSlots = executionCellSlots;
+        this.numOfActiveFlags = numOfActiveFlags;
+        this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
+        this.numOfGeneratorForNode = numOfGeneratorForNode;
     }
 
     @Override
-    public PGeneratorFunction asGeneratorFunction() {
-        return this;
+    public Object execute(VirtualFrame frame) {
+        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
     }
 }
