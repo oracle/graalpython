@@ -228,7 +228,7 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
             String identifier = name.getText();
             environment.addNonlocal(identifier);
             if (trackCells) {
-                environment.registerCellVariable(identifier);
+                environment.registerCell(identifier);
             }
         }
         return super.visitNonlocal_stmt(ctx);
