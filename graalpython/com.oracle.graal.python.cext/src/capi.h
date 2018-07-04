@@ -167,14 +167,14 @@ void* wrap_unsupported(void *fun, ...);
      truffle_read(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \
      (((flags) & METH_FASTCALL) ?                                       \
       truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                  \
-      (((flags) & METH_VARARGS) ?                                       \
-       truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
-       (((flags) & METH_NOARGS) ?                                       \
-        truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                  \
-        (((flags) & METH_O) ?                                           \
-         truffle_read(PY_TRUFFLE_CEXT, "METH_O") :                      \
-         (((flags) & METH_KEYWORDS) ?                                   \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :              \
+      (((flags) & METH_KEYWORDS) ?                                       \
+       truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
+       (((flags) & METH_VARARGS) ?                                       \
+        truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
+        (((flags) & METH_NOARGS) ?                                           \
+         truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                      \
+         (((flags) & METH_O) ?                                   \
+          truffle_read(PY_TRUFFLE_CEXT, "METH_O") :              \
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
 #define get_method_flags_cwrapper(flags)                                \
@@ -182,14 +182,14 @@ void* wrap_unsupported(void *fun, ...);
      wrap_direct :                                                      \
      (((flags) & METH_FASTCALL) ?                                       \
       wrap_fastcall :                                                   \
-      (((flags) & METH_VARARGS) ?                                       \
-       wrap_varargs :                                                   \
-       (((flags) & METH_NOARGS) ?                                       \
-        wrap_noargs :                                                   \
-        (((flags) & METH_O) ?                                           \
-         wrap_direct :                                                  \
-         (((flags) & METH_KEYWORDS) ?                                   \
-          wrap_keywords :                                               \
+      (((flags) & METH_KEYWORDS) ?                                      \
+       wrap_keywords :                                                   \
+       (((flags) & METH_VARARGS) ?                                       \
+        wrap_varargs :                                                   \
+        (((flags) & METH_NOARGS) ?                                           \
+         wrap_noargs :                                                  \
+         (((flags) & METH_O) ?                                   \
+          wrap_direct :                                               \
           wrap_unsupported)))))))
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
