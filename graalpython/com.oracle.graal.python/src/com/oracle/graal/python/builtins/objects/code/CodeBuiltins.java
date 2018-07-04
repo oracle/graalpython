@@ -36,6 +36,7 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -60,6 +61,8 @@ public class CodeBuiltins extends PythonBuiltins {
             RootNode rootNode = self.getRootNode();
             if (rootNode instanceof FunctionRootNode) {
                 return factory().createTuple(((FunctionRootNode) rootNode).getFreeVars());
+            } else if (rootNode instanceof GeneratorFunctionRootNode) {
+                return factory().createTuple(((GeneratorFunctionRootNode) rootNode).getFreeVars());
             } else {
                 return PNone.NONE;
             }
@@ -74,6 +77,8 @@ public class CodeBuiltins extends PythonBuiltins {
             RootNode rootNode = self.getRootNode();
             if (rootNode instanceof FunctionRootNode) {
                 return factory().createTuple(((FunctionRootNode) rootNode).getCellVars());
+            } else if (rootNode instanceof GeneratorFunctionRootNode) {
+                return factory().createTuple(((GeneratorFunctionRootNode) rootNode).getCellVars());
             } else {
                 return PNone.NONE;
             }

@@ -25,27 +25,24 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
 
 public final class PGeneratorFunction extends PFunction {
 
     public static PGeneratorFunction create(PythonClass clazz, PythonCore core, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure, ExecutionCellSlots cellSlots,
+                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
 
         GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(core.getLanguage(), callTarget,
-                        frameDescriptor, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+                        frameDescriptor, closure, executionCellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
 
         return new PGeneratorFunction(clazz, name, enclosingClassName, arity, Truffle.getRuntime().createCallTarget(generatorFunctionRootNode), frameDescriptor, globals, closure);
     }
@@ -63,34 +60,5 @@ public final class PGeneratorFunction extends PFunction {
     @Override
     public PGeneratorFunction asGeneratorFunction() {
         return this;
-    }
-
-    private final static class GeneratorFunctionRootNode extends RootNode {
-        private final RootCallTarget callTarget;
-        private final FrameDescriptor frameDescriptor;
-        private final int numOfActiveFlags;
-        private final int numOfGeneratorBlockNode;
-        private final int numOfGeneratorForNode;
-        private final PCell[] closure;
-        private final ExecutionCellSlots cellSlots;
-
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
-
-        protected GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots cellSlots,
-                        int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-            super(language);
-            this.callTarget = callTarget;
-            this.frameDescriptor = frameDescriptor;
-            this.closure = closure;
-            this.cellSlots = cellSlots;
-            this.numOfActiveFlags = numOfActiveFlags;
-            this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
-            this.numOfGeneratorForNode = numOfGeneratorForNode;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
-        }
     }
 }

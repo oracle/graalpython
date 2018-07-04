@@ -33,7 +33,6 @@ import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -130,13 +129,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
         }
         PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
 
-        PCell[] closure;
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        if (generatorFrame != null) {
-            closure = getClosureFromLocals(generatorFrame);
-        } else {
-            closure = getClosureFromLocals(frame);
-        }
+        PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
         return factory().createGenerator(name, callTarget, frameDescriptor, arguments, closure, executionCellSlots,
                         numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
     }

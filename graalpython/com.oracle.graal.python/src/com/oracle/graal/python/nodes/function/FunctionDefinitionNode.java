@@ -64,7 +64,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     public Object execute(VirtualFrame frame) {
         defaults.executeVoid(frame);
 
-        PCell[] closure = getClosureFromLocals(frame);
+        PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
         return factory().createFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure);
     }
 
