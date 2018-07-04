@@ -852,6 +852,39 @@ def test_class_attr():
     assert MyClass.a_counter == 24
 
 
+def test_generator_func_with_nested_nonlocals():
+    def b_func():
+        exec_gen = False
+
+        def _inner_func():
+            def doit():
+                nonlocal exec_gen
+                exec_gen = True
+                return [1]
+
+            assert set(doit.__code__.co_cellvars) == set()
+            assert set(doit.__code__.co_freevars) == {'exec_gen'}
+            for A in doit():
+                for C in Y:
+                    yield A
+
+        assert set(_inner_func.__code__.co_cellvars) == set()
+        assert set(_inner_func.__code__.co_freevars) == {'Y', 'exec_gen'}
+
+        gen = _inner_func()
+        assert not exec_gen
+
+        Y = [1, 2]
+
+        list(gen)
+        assert exec_gen
+        return gen
+
+    assert set(b_func.__code__.co_cellvars) == {'Y', 'exec_gen'}
+    assert set(b_func.__code__.co_freevars) == set()
+    b_func()
+
+
 def test_generator_scope():
     my_obj = [1, 2, 3, 4]
     my_obj = (i for i in my_obj for j in y)
