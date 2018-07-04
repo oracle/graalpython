@@ -37,7 +37,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
 
@@ -53,8 +52,6 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @CompilationFinal private boolean isEnclosingFrameGenerator;
     @CompilationFinal private boolean isOptimized;
     @Child private PNode getIterator;
-
-    @CompilationFinal private ConditionProfile iteratorProfile = ConditionProfile.createBinaryProfile();
 
     public GeneratorExpressionNode(String name, RootCallTarget callTarget, PNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
                     ExecutionCellSlots executionCellSlots,
@@ -125,7 +122,7 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @Override
     public Object execute(VirtualFrame frame) {
         Object[] arguments;
-        if (iteratorProfile.profile(getIterator == null)) {
+        if (getIterator == null) {
             arguments = PArguments.create(0);
         } else {
             arguments = PArguments.create(1);
