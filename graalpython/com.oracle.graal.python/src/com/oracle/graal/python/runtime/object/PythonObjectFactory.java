@@ -352,6 +352,14 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFunction(lookupClass(PythonBuiltinClassType.PFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
     }
 
+    public PBuiltinFunction createFunction(String name, Arity arity, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PFunction), name, arity, callTarget));
+    }
+
+    public PFunction createBuiltinFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
+        return trace(new PFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
+    }
+
     public PBuiltinFunction createBuiltinFunction(String name, Arity arity, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, arity, callTarget));
     }

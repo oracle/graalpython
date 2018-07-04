@@ -26,7 +26,7 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 
 import java.util.List;
 
@@ -34,54 +34,26 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PFunction.class)
-public class FunctionBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PBuiltinFunction.class)
+public class BuiltinFunctionBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return FunctionBuiltinsFactory.getFactories();
+        return BuiltinFunctionBuiltinsFactory.getFactories();
     }
 
-    @SuppressWarnings("unused")
-    @Builtin(name = __GET__, fixedNumOfArguments = 3)
+    @Builtin(name = __SELF__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class GetNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = {"self.isStatic()"})
-        protected Object doStatic(PFunction self, Object instance, Object klass) {
-            return self;
-        }
-
-        @Specialization(guards = {"self.isStatic()"})
-        protected Object doBuiltinStatic(PBuiltinFunction self, Object instance, Object klass) {
-            return self;
-        }
-
-        @Specialization(guards = {"!isNone(instance)", "!self.isStatic()"})
-        protected PMethod doMethod(PFunction self, Object instance, Object klass) {
-            return factory().createMethod(instance, self);
-        }
-
-        @Specialization(guards = {"!isNone(instance)", "!self.isStatic()"})
-        protected PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass) {
-            return factory().createBuiltinMethod(instance, self);
-        }
-
+    public abstract static class SelfNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object doFunction(PFunction self, PNone instance, Object klass) {
-            return self;
-        }
-
-        @Specialization
-        protected Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
-            return self;
+        protected Object doStatic(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
         }
     }
 }

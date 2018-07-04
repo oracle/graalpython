@@ -1084,7 +1084,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // function(code, globals[, name[, argdefs[, closure]]])
-    @Builtin(name = "function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PFunction.class, PBuiltinFunction.class, PGeneratorFunction.class}, isPublic = false)
+    @Builtin(name = "function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PFunction.class, PGeneratorFunction.class}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
 
@@ -1092,6 +1092,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         public PFunction function(Object cls, Object code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
             throw raise(NotImplementedError, "function construction not implemented");
+        }
+    }
+
+    // builtin-function(method-def, self, module)
+    @Builtin(name = "builtin-function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PBuiltinFunction.class}, isPublic = false)
+    @GenerateNodeFactory
+    public abstract static class BuiltinFunctionNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        public PFunction function(Object cls, Object method_def, Object def, Object name, Object module) {
+            throw raise(TypeError, "cannot create 'builtin_function' instances");
         }
     }
 
