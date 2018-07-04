@@ -341,6 +341,15 @@ def _PyLong_Sign(n):
         return 1
 
 
+@may_raise
+def PyLong_FromString(string, base, negative):
+    result = int(string, base)
+    if negative:
+        return -result
+    else:
+        return result
+
+
 ##################### FLOAT
 
 @may_raise
