@@ -44,12 +44,11 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PByteArray extends PArray implements PIBytesLike {
 
-    @CompilationFinal private SequenceStorage store;
+    private SequenceStorage store;
 
     public PByteArray(PythonClass cls, byte[] bytes) {
         super(cls);
@@ -69,6 +68,10 @@ public final class PByteArray extends PArray implements PIBytesLike {
     @Override
     public Object getItemNormalized(int idx) {
         return store.getItemNormalized(idx);
+    }
+
+    public void setItem(int idx, Object value) {
+        setItemNormalized(SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range"), value);
     }
 
     public void setItemNormalized(int index, Object value) {
