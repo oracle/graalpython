@@ -76,12 +76,10 @@ class TestCase(object):
                     print("Exception during setup occurred: %s\n" % e)
                 code = func.__code__
                 _, _, tb = sys.exc_info()
-                import traceback
-                tb_info = traceback.extract_tb(tb)
-                filename, line, func, text = tb_info[-1]
-                self.exceptions.append(
-                    # ("%s:%d (%s)" % (code.co_filename, code.co_firstlineno, func), e)
-                    ("%s:%d (%s)" % (filename, line, func), e)
+                from traceback import extract_tb
+                filename, line, func, text = extract_tb(tb)[-1]
+                self._appendException(
+                    ("In test '%s': %s:%d (%s)" % (code.co_filename, filename, line, func), e)
                 )
                 return False
         else:
@@ -176,6 +174,9 @@ class TestCase(object):
             msg = "Expected '%r' to be in '%r'" % (expected, in_str)
         assert expected in in_str, msg
 
+    def _appendException(self, e):
+        self.exceptions.append(e)
+
     @classmethod
     def run(cls, items=None):
         instance = cls()
@@ -244,7 +245,12 @@ class TestRunner(object):
                         test_module = getattr(test_module, p)
                     test_module = getattr(test_module, name)
                 except BaseException as e:
-                    self.exceptions.append((testfile, e))
+                    _, _, tb = sys.exc_info()
+                    from traceback import extract_tb
+                    filename, line, func, text = extract_tb(tb)[-1]
+                    self.exceptions.append(
+                        ("In test '%s': Exception occurred in %s:%d" % (testfile, filename, line), e)
+                    )
                 else:
                     yield test_module
                 sys.path.pop(0)
