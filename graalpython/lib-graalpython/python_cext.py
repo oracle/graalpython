@@ -1188,6 +1188,11 @@ def PyImport_ImportModule(name):
 
 
 @may_raise
+def PyImport_Import(name):
+    return __import__(name)
+
+
+@may_raise
 def PyImport_GetModuleDict():
     return sys.modules
 

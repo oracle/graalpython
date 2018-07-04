@@ -42,6 +42,10 @@ PyObject* PyImport_ImportModule(const char *name) {
     return UPCALL_CEXT_O("PyImport_ImportModule", polyglot_from_string(name, SRC_CS));
 }
 
+PyObject* PyImport_Import(PyObject *name) {
+    return UPCALL_CEXT_O("PyImport_Import", name);
+}
+
 PyObject* PyImport_GetModuleDict() {
     return UPCALL_CEXT_O("PyImport_GetModuleDict");
 }
