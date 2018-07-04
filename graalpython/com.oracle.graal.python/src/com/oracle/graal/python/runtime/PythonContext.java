@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonImmutableBuiltinType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -57,12 +58,6 @@ public class PythonContext {
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
-
-    public enum PythonImmutableBuiltinType {
-        PFrozenSet,
-        PTuple,
-        PBytes
-    }
 
     private final long[] emptyImmutableObjectsIdCache = new long[PythonImmutableBuiltinType.values().length];
 
@@ -99,19 +94,7 @@ public class PythonContext {
         }
     }
 
-    public long getEmptyFrozenSetId() {
-        return getEmptyImmutableObjectGlobalId(PythonImmutableBuiltinType.PFrozenSet);
-    }
-
-    public long getEmptyTupleId() {
-        return getEmptyImmutableObjectGlobalId(PythonImmutableBuiltinType.PTuple);
-    }
-
-    public long getEmptyBytesId() {
-        return getEmptyImmutableObjectGlobalId(PythonImmutableBuiltinType.PBytes);
-    }
-
-    private long getEmptyImmutableObjectGlobalId(PythonImmutableBuiltinType immutableType) {
+    public long getEmptyImmutableObjectGlobalId(PythonImmutableBuiltinType immutableType) {
         int idx = immutableType.ordinal();
         if (emptyImmutableObjectsIdCache[idx] == 0) {
             synchronized (emptyImmutableObjectsIdCache) {

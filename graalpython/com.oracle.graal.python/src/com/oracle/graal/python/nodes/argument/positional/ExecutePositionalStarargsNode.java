@@ -119,9 +119,9 @@ public abstract class ExecutePositionalStarargsNode extends PNode {
 
     @Specialization
     Object[] starargs(Object object,
-                      @Cached("create()") GetIteratorNode getIterator,
-                      @Cached("create()") GetNextNode next,
-                      @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                    @Cached("create()") GetIteratorNode getIterator,
+                    @Cached("create()") GetNextNode next,
+                    @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
         Object iterator = getIterator.executeWith(object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
             List<Object> internalStorage = new ArrayList<>();

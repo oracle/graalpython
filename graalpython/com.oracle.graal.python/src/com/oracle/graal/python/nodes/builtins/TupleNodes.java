@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -87,17 +84,9 @@ public abstract class TupleNodes {
 
         public abstract PTuple execute(Object cls, Object value);
 
-        protected long getEmptyId() {
-            return getContext().getEmptyTupleId();
-        }
-
         @Specialization(guards = "isNoValue(none)")
-        public PTuple tuple(PythonClass cls, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") WriteAttributeToObjectNode writeId,
-                        @Cached("getEmptyId()") long emptyId) {
-            PTuple emptyTuple = factory().createEmptyTuple(cls);
-            writeId.execute(emptyTuple, ID_KEY, emptyId);
-            return emptyTuple;
+        public PTuple tuple(PythonClass cls, @SuppressWarnings("unused") PNone none) {
+            return factory().createEmptyTuple(cls);
         }
 
         @Specialization

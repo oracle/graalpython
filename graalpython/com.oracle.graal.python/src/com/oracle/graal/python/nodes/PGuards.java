@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -90,6 +91,14 @@ public abstract class PGuards {
         return set.size() == 0;
     }
 
+    public static boolean isEmpty(PTuple tuple) {
+        return tuple.isEmpty();
+    }
+
+    public static boolean isEmpty(PBytes bytes) {
+        return bytes.len() == 0;
+    }
+
     public static boolean isNone(Object value) {
         return value == PNone.NONE;
     }
@@ -106,11 +115,11 @@ public abstract class PGuards {
         return value instanceof PythonClass;
     }
 
-    public static boolean isEmptyStorage(PList list) {
-        return list.getSequenceStorage() instanceof EmptySequenceStorage;
+    public static boolean isEmptyStorage(PSequence seq) {
+        return seq.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
-    public static boolean isEmptyStorage(PByteArray byteArray) {
+    public static boolean isEmptyStorage(PArray byteArray) {
         return byteArray.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
@@ -122,12 +131,12 @@ public abstract class PGuards {
         return list.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
-    public static boolean isIntStorage(PByteArray byteArray) {
-        return byteArray.getSequenceStorage() instanceof IntSequenceStorage;
+    public static boolean isIntStorage(PArray array) {
+        return array.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
-    public static boolean isByteStorage(PByteArray byteArray) {
-        return byteArray.getSequenceStorage() instanceof ByteSequenceStorage;
+    public static boolean isByteStorage(PArray array) {
+        return array.getSequenceStorage() instanceof ByteSequenceStorage;
     }
 
     public static boolean areBothIntStorage(PSequence first, PSequence second) {

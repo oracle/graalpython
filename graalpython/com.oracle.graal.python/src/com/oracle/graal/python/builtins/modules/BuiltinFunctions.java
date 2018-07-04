@@ -75,6 +75,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonImmutableBuiltinType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -688,7 +690,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return Double.hashCode(value);
         }
 
-        @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)"})
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyTuple(PTuple value) {
+            return getId(value, PythonImmutableBuiltinType.PTuple);
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyBytes(PBytes value) {
+            return getId(value, PythonImmutableBuiltinType.PBytes);
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyFrozenSet(PFrozenSet value) {
+            return getId(value, PythonImmutableBuiltinType.PFrozenSet);
+        }
+
+        protected boolean isEmptyImmutableBuiltin(Object object) {
+            return (object instanceof PTuple && PGuards.isEmpty((PTuple) object)) ||
+                            (object instanceof PBytes && PGuards.isEmpty((PBytes) object)) ||
+                            (object instanceof PFrozenSet && PGuards.isEmpty((PFrozenSet) object));
+        }
+
+        @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
         Object doId(PythonObject obj) {
             return getId(obj);
         }
@@ -699,6 +722,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private Object getId(PythonObject obj) {
+            return getId(obj, null);
+        }
+
+        private Object getId(PythonObject obj, PythonImmutableBuiltinType immutableType) {
             if (readId == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readId = insert(ReadAttributeFromObjectNode.create());
@@ -706,7 +733,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object id = readId.execute(obj, ID_KEY);
             if (id == NO_VALUE) {
-                id = getContext().getNextGlobalId();
+                if (immutableType != null) {
+                    id = getContext().getEmptyImmutableObjectGlobalId(immutableType);
+                } else {
+                    id = getContext().getNextGlobalId();
+                }
                 writeId.execute(obj, ID_KEY, id);
             }
             return id;
