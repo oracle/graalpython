@@ -225,7 +225,11 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitNonlocal_stmt(Python3Parser.Nonlocal_stmtContext ctx) {
         for (TerminalNode name : ctx.NAME()) {
-            environment.addNonlocal(name.getText());
+            String identifier = name.getText();
+            environment.addNonlocal(identifier);
+            if (trackCells) {
+                environment.registerCellVariable(identifier);
+            }
         }
         return super.visitNonlocal_stmt(ctx);
     }
