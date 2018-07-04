@@ -693,6 +693,17 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
         object.__setattr__(mod_obj, name, func)
 
 
+def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+    func = wrapper(CreateFunction(name, cfunc, cwrapper))
+    if isclass:
+        func = classmethod(func)
+    elif isstatic:
+        func = cstaticmethod(func)
+    func.__name__ = name
+    func.__doc__ = doc
+    return func
+
+
 def AddMember(primary, name, memberType, offset, canSet, doc):
     pclass = to_java(primary)
     member = property()
