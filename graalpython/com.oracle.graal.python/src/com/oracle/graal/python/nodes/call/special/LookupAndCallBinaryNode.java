@@ -78,6 +78,8 @@ public abstract class LookupAndCallBinaryNode extends PNode {
 
     public abstract int executeInt(int arg, int arg2) throws UnexpectedResultException;
 
+    public abstract int executeInt(Object arg, Object arg2) throws UnexpectedResultException;
+
     public abstract long executeLong(int arg, int arg2) throws UnexpectedResultException;
 
     public abstract long executeLong(long arg, long arg2) throws UnexpectedResultException;

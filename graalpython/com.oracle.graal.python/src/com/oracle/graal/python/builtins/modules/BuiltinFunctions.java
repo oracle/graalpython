@@ -96,7 +96,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -560,18 +559,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"name.equals(cachedName)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(Object primary, String name, PNone defaultValue,
                         @Cached("name") String cachedName,
-                        @Cached("create()") GetAttributeNode getter) {
-            return getter.execute(primary, cachedName);
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter) {
+            return getter.executeObject(primary, cachedName);
         }
 
         @SuppressWarnings("unused")
         @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"name.equals(cachedName)", "!isNoValue(defaultValue)"})
         public Object getAttr(Object primary, String name, Object defaultValue,
                         @Cached("name") String cachedName,
-                        @Cached("create()") GetAttributeNode getter,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             try {
-                return getter.execute(primary, cachedName);
+                return getter.executeObject(primary, cachedName);
             } catch (PException e) {
                 e.expect(AttributeError, getCore(), errorProfile);
                 return defaultValue;
@@ -580,16 +579,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "isNoValue(defaultValue)")
         public Object getAttrFromObject(Object primary, String name, @SuppressWarnings("unused") PNone defaultValue,
-                        @Cached("create()") GetAttributeNode getter) {
-            return getter.execute(primary, name);
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter) {
+            return getter.executeObject(primary, name);
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
         public Object getAttrFromObject(Object primary, String name, Object defaultValue,
-                        @Cached("create()") GetAttributeNode getter,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             try {
-                return getter.execute(primary, name);
+                return getter.executeObject(primary, name);
             } catch (PException e) {
                 e.expect(AttributeError, getCore(), errorProfile);
                 return defaultValue;
@@ -603,13 +602,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "!isString(name)")
         public Object getAttrGeneric(Object primary, Object name, Object defaultValue,
-                        @Cached("create()") GetAttributeNode getter,
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             if (PGuards.isNoValue(defaultValue)) {
-                return getter.execute(primary, name);
+                return getter.executeObject(primary, name);
             } else {
                 try {
-                    return getter.execute(primary, name);
+                    return getter.executeObject(primary, name);
                 } catch (PException e) {
                     e.expect(AttributeError, getCore(), errorProfile);
                     return defaultValue;

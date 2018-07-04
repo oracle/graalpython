@@ -79,7 +79,7 @@ public class ManagedMethodWrappersMR {
         private CallDispatchNode getDispatchNode() {
             if (dispatch == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                dispatch = insert(CallDispatchNode.create("<foreign-invoke>"));
+                dispatch = insert(CallDispatchNode.create());
             }
             return dispatch;
         }

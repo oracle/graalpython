@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -102,15 +101,15 @@ public abstract class LookupAndCallTernaryNode extends PNode {
     @Specialization(guards = "!isReversible()")
     Object callObject(Object arg1, int arg2, Object arg3,
                     @Cached("create()") GetClassNode getclass,
-                    @Cached("create()") GetAttributeNode getattr) {
-        return dispatchNode.execute(getattr.execute(getclass.execute(arg1), name), arg1, arg2, arg3);
+                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
+        return dispatchNode.execute(getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
     @Specialization(guards = "!isReversible()")
     Object callObject(Object arg1, Object arg2, Object arg3,
                     @Cached("create()") GetClassNode getclass,
-                    @Cached("create()") GetAttributeNode getattr) {
-        return dispatchNode.execute(getattr.execute(getclass.execute(arg1), name), arg1, arg2, arg3);
+                    @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
+        return dispatchNode.execute(getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
     private CallTernaryMethodNode ensureReverseDispatch() {

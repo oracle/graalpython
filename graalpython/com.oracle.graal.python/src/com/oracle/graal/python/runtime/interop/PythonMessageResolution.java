@@ -38,6 +38,7 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 
 import java.util.Arrays;
@@ -59,7 +60,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ArityCheckNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -160,7 +160,7 @@ public class PythonMessageResolution {
         private static final Object NONEXISTING_IDENTIFIER = new Object();
 
         @Child private IsSequenceNode isSequence = IsSequenceNode.create();
-        @Child private GetAttributeNode readNode = GetAttributeNode.create();
+        @Child private LookupAndCallBinaryNode readNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child private GetItemNode getItemNode = GetItemNode.create();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();
         @Child private KeyForItemAccess getItemKey = new KeyForItemAccess();
@@ -171,7 +171,7 @@ public class PythonMessageResolution {
             String attrKey = getAttributeKey.execute(key);
             if (attrKey != null) {
                 try {
-                    return toForeign.executeConvert(readNode.execute(object, attrKey));
+                    return toForeign.executeConvert(readNode.executeObject(object, attrKey));
                 } catch (PException e) {
                     // pass, we might be reading an item that starts with "@"
                 }
@@ -184,7 +184,7 @@ public class PythonMessageResolution {
 
             if (strProfile.profile(key instanceof String)) {
                 try {
-                    return toForeign.executeConvert(readNode.execute(object, key));
+                    return toForeign.executeConvert(readNode.executeObject(object, key));
                 } catch (PException e) {
                     // pass
                 }
@@ -243,7 +243,7 @@ public class PythonMessageResolution {
         private CallDispatchNode getDispatchNode() {
             if (dispatch == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                dispatch = insert(CallDispatchNode.create("<foreign-invoke>"));
+                dispatch = insert(CallDispatchNode.create());
             }
             return dispatch;
         }
@@ -417,11 +417,11 @@ public class PythonMessageResolution {
 
     @Resolve(message = "INVOKE")
     abstract static class PForeignInvokeNode extends Node {
-        @Child private GetAttributeNode getattr = GetAttributeNode.create();
+        @Child private LookupAndCallBinaryNode getattr = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child private ExecuteNode execNode = new ExecuteNode();
 
         public Object access(Object receiver, String name, Object[] arguments) {
-            Object attribute = getattr.execute(receiver, name);
+            Object attribute = getattr.executeObject(receiver, name);
             return execNode.execute(attribute, arguments);
         }
     }
@@ -546,7 +546,8 @@ public class PythonMessageResolution {
 
     @Resolve(message = "KEY_INFO")
     abstract static class PKeyInfoNode extends Node {
-        @Child private GetAttributeNode getCallNode = GetAttributeNode.create();
+        @Child private LookupAndCallBinaryNode getCallNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+
         ReadNode readNode = new ReadNode();
         IsImmutable isImmutable = new IsImmutable();
 
@@ -556,7 +557,7 @@ public class PythonMessageResolution {
             if (attr != ReadNode.NONEXISTING_IDENTIFIER) {
                 info |= KeyInfo.READABLE;
                 try {
-                    getCallNode.execute(attr, SpecialMethodNames.__CALL__);
+                    getCallNode.executeObject(attr, SpecialMethodNames.__CALL__);
                     info |= KeyInfo.INVOCABLE;
                 } catch (PException e) {
                 }
