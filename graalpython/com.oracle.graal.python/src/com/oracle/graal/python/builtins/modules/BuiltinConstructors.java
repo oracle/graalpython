@@ -136,6 +136,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -1527,6 +1528,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object slice(PythonClass cls, int first, int second, int third) {
             return factory().createSlice(first, second, third);
+        }
+
+        @Specialization
+        Object slice(PythonClass cls, Object start, Object stop, Object step,
+                        @Cached("create()") SliceLiteralNode sliceNode) {
+            return sliceNode.execute(start, stop, step);
         }
     }
 

@@ -43,6 +43,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 @TypeSystemReference(PythonArithmeticTypes.class) // because bool -> int works here
 public abstract class SliceLiteralNode extends PNode {
 
+    public abstract PSlice execute(Object start, Object stop, Object step);
+
     @Specialization
     public PSlice doPSlice(int start, int stop, int step) {
         return factory().createSlice(start, stop, step);
@@ -122,5 +124,9 @@ public abstract class SliceLiteralNode extends PNode {
 
     public static PNode create(PNode lower, PNode upper, PNode step) {
         return SliceLiteralNodeGen.create(lower, upper, step);
+    }
+
+    public static SliceLiteralNode create() {
+        return SliceLiteralNodeGen.create(null, null, null);
     }
 }
