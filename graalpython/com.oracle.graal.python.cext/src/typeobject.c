@@ -421,3 +421,7 @@ int PyType_Ready(PyTypeObject* cls) {
 #undef ADD_SLOT
 #undef ADD_METHOD_OR_SLOT
 }
+
+void PyType_Modified(PyTypeObject* type) {
+    // TODO: (tfel) what needs to be done?
+}
