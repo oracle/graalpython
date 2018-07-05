@@ -57,7 +57,11 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
 
         public abstract Object execute(Object klass, Object key);
 
-        @Specialization(guards = "key == cachedKey", limit = "2")
+        protected static boolean compareStrings(String key, String cachedKey) {
+            return cachedKey.equals(key);
+        }
+
+        @Specialization(guards = "compareStrings(key, cachedKey)", limit = "2")
         @ExplodeLoop
         protected Object lookupConstantMRO(PythonClass klass, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
