@@ -174,9 +174,6 @@ class TestCase(object):
             msg = "Expected '%r' to be in '%r'" % (expected, in_str)
         assert expected in in_str, msg
 
-    def _appendException(self, e):
-        self.exceptions.append(e)
-
     @classmethod
     def run(cls, items=None):
         instance = cls()
@@ -284,6 +281,11 @@ class TestRunner(object):
         print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
         for e in self.exceptions:
             print(e)
+            if verbose:
+                msg, exc = e
+                import traceback
+                traceback.print_tb(exc.__traceback__)
+
         if self.exceptions or self.failed:
             os._exit(1)
 
