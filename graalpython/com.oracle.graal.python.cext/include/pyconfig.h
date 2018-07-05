@@ -52,5 +52,7 @@
 
 #define HAVE_WCHAR_H 1
 
+#define WITH_THREAD 1
+
 #endif /*Py_PYCONFIG_H*/
 
