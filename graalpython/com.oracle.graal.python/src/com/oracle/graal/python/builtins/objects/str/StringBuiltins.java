@@ -197,6 +197,12 @@ public final class StringBuiltins extends PythonBuiltins {
         boolean contains(String self, String other) {
             return self.contains(other);
         }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
