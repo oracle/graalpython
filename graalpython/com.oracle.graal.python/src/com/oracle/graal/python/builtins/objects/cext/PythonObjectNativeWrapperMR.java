@@ -214,6 +214,11 @@ public class PythonObjectNativeWrapperMR {
             return new PySequenceArrayWrapper(object);
         }
 
+        @Specialization(guards = "eq(OB_START, key)")
+        Object doObStart(PByteArray object, @SuppressWarnings("unused") String key) {
+            return new PySequenceArrayWrapper(object);
+        }
+
         @Specialization(guards = "eq(OB_FVAL, key)")
         Object doObFval(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached("createClassProfile()") ValueProfile profile) {

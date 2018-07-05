@@ -74,7 +74,6 @@ typedef struct {
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 
-
 // TODO cache landing function ?
 #define PY_TRUFFLE_LANDING ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)))
 #define PY_TRUFFLE_LANDING_L ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)))
@@ -285,8 +284,9 @@ extern PyObject marker_struct;
 /* DICT */
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
 
-/* BYTES */
+/* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
 
 /* Like 'memcpy' but can read/write from/to managed objects. */
 int bytes_copy2mem(char* target, char* source, size_t nbytes);

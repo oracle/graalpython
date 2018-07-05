@@ -52,6 +52,7 @@ public final class NativeMemberNames {
     public static final String OB_TYPE = "ob_type";
     public static final String OB_SIZE = "ob_size";
     public static final String OB_SVAL = "ob_sval";
+    public static final String OB_START = "ob_start";
     public static final String TP_FLAGS = "tp_flags";
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
