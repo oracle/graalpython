@@ -43,8 +43,20 @@ PyObject* PyImport_ImportModule(const char *name) {
 }
 
 PyObject* PyImport_Import(PyObject *name) {
-    return UPCALL_CEXT_O("PyImport_Import", name);
+    return UPCALL_CEXT_O("PyImport_Import", native_to_java(name));
 }
+
+PyObject* PyImport_ImportModuleLevelObject(PyObject* name, PyObject* globals, PyObject* locals,
+                                           PyObject* fromlist, int level) {
+    return UPCALL_O(PY_BUILTIN, "__import__", native_to_java(name), native_to_java(globals),
+                    native_to_java(locals), native_to_java(fromlist), level);
+}
+
+PyObject* PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObject *locals,
+                                     PyObject *fromlist, int level) {
+    return PyImport_ImportModuleLevelObject(PyUnicode_FromString(name), globals, locals, fromlist, level);
+}
+
 
 PyObject* PyImport_GetModuleDict() {
     return UPCALL_CEXT_O("PyImport_GetModuleDict");
