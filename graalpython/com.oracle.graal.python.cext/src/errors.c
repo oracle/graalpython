@@ -51,7 +51,7 @@ void PyErr_BadInternalCall(void) {
 
 
 PyObject* PyErr_Occurred() {
-	return UPCALL_CEXT_O("PyErr_Occurred", ERROR_MARKER);
+    return UPCALL_CEXT_O("PyErr_Occurred", ERROR_MARKER);
 }
 
 void PyErr_SetString(PyObject *exception, const char *string) {
@@ -107,11 +107,11 @@ static void _PyErr_GetOrFetchExcInfo(int consume, PyObject **p_type, PyObject **
 }
 
 void PyErr_Fetch(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
-	_PyErr_GetOrFetchExcInfo(1, p_type, p_value, p_traceback);
+    _PyErr_GetOrFetchExcInfo(1, p_type, p_value, p_traceback);
 }
 
 void PyErr_GetExcInfo(PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
-	_PyErr_GetOrFetchExcInfo(0, p_type, p_value, p_traceback);
+    _PyErr_GetOrFetchExcInfo(0, p_type, p_value, p_traceback);
     Py_XINCREF(*p_type);
     Py_XINCREF(*p_value);
     Py_XINCREF(*p_traceback);
@@ -160,4 +160,8 @@ void PyErr_Display(PyObject *exception, PyObject *value, PyObject *tb) {
 void PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb) {
     // TODO (tfel): do we have to?
     return;
+}
+
+void PyErr_SetExcInfo(PyObject *p_type, PyObject *p_value, PyObject *p_traceback) {
+    PyErr_Restore(p_type, p_value, p_traceback);
 }
