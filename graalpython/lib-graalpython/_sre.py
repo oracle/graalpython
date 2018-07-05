@@ -38,10 +38,24 @@
 # SOFTWARE.
 
 import polyglot as _interop
+
+_fallback_engine = None
 try:
-    TREGEX_ENGINE = _interop.eval(string="", language="regex")()
+    import sre_compile
+    _fallback_engine = sre_compile.compile
+except:
+    # TODO reporting ?
+    pass
+
+try:
+    if _fallback_engine:
+        TREGEX_ENGINE = _interop.eval(string="", language="regex")("", _fallback_engine)
+    else:
+        TREGEX_ENGINE = _interop.eval(string="", language="regex")()
 except NotImplementedError as e:
     def TREGEX_ENGINE(*args): raise e
+
+del _fallback_engine
 
 CODESIZE = 4
 
@@ -129,7 +143,7 @@ class SRE_Match():
 
 class SRE_Pattern():
     def __init__(self, pattern, flags, code, groups=0, groupindex=None, indexgroup=None):
-        self.pattern = self._decode_string(pattern, flags)
+        self.pattern = self._decode_pattern(pattern, flags)
         self.flags = flags
         self.code = code
         self.num_groups = groups
@@ -141,13 +155,18 @@ class SRE_Pattern():
                 jsflags.append(jsflag)
         self.jsflags = "".join(jsflags)
 
+
     def _decode_string(self, string, flags=0):
         if isinstance(string, str):
-            pattern = string
+            return string
         elif isinstance(string, bytes):
-            pattern = string.decode()
-        else:
-            raise TypeError("invalid search pattern {!r}".format(string))
+            return string.decode()
+        raise TypeError("invalid search pattern {!r}".format(string))
+
+
+    def _decode_pattern(self, string, flags=0):
+        pattern = self._decode_string(string, flags)
+
         # TODO: fix this in the regex engine
         pattern = pattern.replace(r'\"', '"').replace(r"\'", "'")
 
