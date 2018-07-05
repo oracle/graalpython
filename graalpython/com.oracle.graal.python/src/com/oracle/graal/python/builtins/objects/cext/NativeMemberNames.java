@@ -60,6 +60,7 @@ public final class NativeMemberNames {
     public static final String TP_RICHCOMPARE = "tp_richcompare";
     public static final String TP_SUBCLASSES = "tp_subclasses";
     public static final String TP_AS_BUFFER = "tp_as_buffer";
+    public static final String TP_AS_SEQUENCE = "tp_as_sequence";
     public static final String TP_GETATTR = "tp_getattr";
     public static final String TP_SETATTR = "tp_setattr";
     public static final String TP_GETATTRO = "tp_getattro";
@@ -85,12 +86,14 @@ public final class NativeMemberNames {
     public static final String NB_INDEX = "nb_index";
     public static final String NB_POW = "nb_power";
     public static final String NB_TRUE_DIVIDE = "nb_true_divide";
+    public static final String NB_MULTIPLY = "nb_multiply";
     public static final String OB_FVAL = "ob_fval";
     public static final String START = "start";
     public static final String STOP = "stop";
     public static final String STEP = "step";
     public static final String IM_FUNC = "im_func";
     public static final String IM_SELF = "im_self";
+    public static final String SQ_REPEAT = "sq_repeat";
 
     @CompilationFinal(dimensions = 1) public static final String[] values;
     static {

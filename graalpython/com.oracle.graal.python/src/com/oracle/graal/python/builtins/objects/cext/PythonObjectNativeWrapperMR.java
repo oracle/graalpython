@@ -266,6 +266,16 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
+        @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
+        Object doTpAsSequence(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") LookupAttributeInMRONode getAttrNode) {
+            if (getAttrNode.execute(object, SpecialMethodNames.__LEN__) != PNone.NO_VALUE) {
+                return new PySequenceMethodsWrapper(object);
+            } else {
+                return getToSulongNode().execute(PNone.NO_VALUE);
+            }
+        }
+
         @Specialization(guards = "eq(TP_NEW, key)")
         Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create()") LookupAttributeInMRONode getAttrNode) {

@@ -38,12 +38,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_MULTIPLY;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
-
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -53,15 +47,15 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.nodes.Node;
 
-@MessageResolution(receiverType = PyNumberMethodsWrapper.class)
-public class PyNumberMethodsWrapperMR {
+@MessageResolution(receiverType = PySequenceMethodsWrapper.class)
+public class PySequenceMethodsWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         @Child private LookupAttributeInMRONode getAttributeNode;
         @Child private ToSulongNode toSulongNode;
 
-        public Object access(PyNumberMethodsWrapper object, String key) {
+        public Object access(PySequenceMethodsWrapper object, String key) {
             // translate key to attribute name
             String attributeName = toAttributeName(key);
 
@@ -71,15 +65,7 @@ public class PyNumberMethodsWrapperMR {
 
         private static String toAttributeName(String numberMethodsMember) {
             switch (numberMethodsMember) {
-                case NB_ADD:
-                    return SpecialMethodNames.__ADD__;
-                case NB_INDEX:
-                    return SpecialMethodNames.__INDEX__;
-                case NB_POW:
-                    return SpecialMethodNames.__POW__;
-                case NB_TRUE_DIVIDE:
-                    return SpecialMethodNames.__TRUEDIV__;
-                case NB_MULTIPLY:
+                case NativeMemberNames.SQ_REPEAT:
                     return SpecialMethodNames.__MUL__;
                 default:
                     // TODO extend list
