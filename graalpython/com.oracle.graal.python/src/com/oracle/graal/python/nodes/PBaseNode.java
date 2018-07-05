@@ -93,6 +93,10 @@ public abstract class PBaseNode extends Node {
         throw getCore().raise(type, this, format, arguments);
     }
 
+    public final PException raiseIndexError() {
+        return raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
+    }
+
     public PythonClass lookupClass(PythonBuiltinClassType type) {
         return getCore().lookupType(type);
     }

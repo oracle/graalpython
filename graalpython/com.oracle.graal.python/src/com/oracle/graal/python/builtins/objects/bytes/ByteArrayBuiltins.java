@@ -561,10 +561,38 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class GetitemNode extends PythonBinaryBuiltinNode {
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getitem(PByteArray self, int idx) {
+        Object doInt(PByteArray self, int idx) {
             return self.getItem(idx);
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        Object doLongExact(PByteArray self, long idx) {
+            return self.getItem(PInt.intValueExact(idx));
+        }
+
+        @Specialization
+        Object doLongGeneric(PByteArray self, long idx) {
+            try {
+                return self.getItem(PInt.intValueExact(idx));
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        Object doPIntExact(PByteArray self, PInt idx) {
+            return self.getItem(idx.intValueExact());
+        }
+
+        @Specialization
+        Object doPIntGeneric(PByteArray self, PInt idx) {
+            try {
+                return self.getItem(idx.intValueExact());
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
         }
 
         @Specialization

@@ -69,7 +69,7 @@ public abstract class SliceLiteralNode extends PNode {
         try {
             return factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), 1);
         } catch (ArithmeticException e) {
-            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+            throw raiseIndexError();
         }
     }
 
@@ -83,7 +83,7 @@ public abstract class SliceLiteralNode extends PNode {
         try {
             return factory().createSlice(start.intValueExact(), stop.intValueExact(), 1);
         } catch (ArithmeticException e) {
-            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+            throw raiseIndexError();
         }
     }
 
@@ -97,7 +97,7 @@ public abstract class SliceLiteralNode extends PNode {
         try {
             return factory().createSlice(start.intValueExact(), PInt.intValueExact(stop), 1);
         } catch (ArithmeticException e) {
-            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+            throw raiseIndexError();
         }
     }
 
@@ -111,7 +111,7 @@ public abstract class SliceLiteralNode extends PNode {
         try {
             return factory().createSlice(PInt.intValueExact(start), stop.intValueExact(), 1);
         } catch (ArithmeticException e) {
-            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+            throw raiseIndexError();
         }
     }
 
@@ -125,7 +125,7 @@ public abstract class SliceLiteralNode extends PNode {
         try {
             return factory().createSlice(PInt.intValueExact(start), MISSING_INDEX, 1);
         } catch (ArithmeticException e) {
-            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+            throw raiseIndexError();
         }
     }
 
