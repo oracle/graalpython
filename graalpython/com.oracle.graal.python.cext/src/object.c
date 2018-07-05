@@ -255,6 +255,9 @@ static Py_hash_t wrap_hashfunc(hashfunc f, PyObject* a) {
     return PyLong_FromSsize_t(f(a));
 }
 
+static PyObject* wrap_reverse_binop(binaryfunc f, PyObject* a, PyObject* b) {
+    return f(b, a);
+}
 
 int PyType_Ready(PyTypeObject* cls) {
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
@@ -433,11 +436,10 @@ int PyType_Ready(PyTypeObject* cls) {
     PyNumberMethods* numbers = cls->tp_as_number;
     if (numbers) {
         ADD_SLOT("__add__", numbers->nb_add, -2);
-        ADD_SLOT("__radd__", numbers->nb_add, -2);
+        ADD_SLOT_CONV("__radd__", wrap_reverse_binop, numbers->nb_add, -2);
         ADD_SLOT("__sub__", numbers->nb_subtract, -2);
-        ADD_SLOT("__rsub__", numbers->nb_subtract, -2);
+        ADD_SLOT_CONV("__rsub__", wrap_reverse_binop, numbers->nb_subtract, -2);
         ADD_SLOT("__mul__", numbers->nb_multiply, -2);
-        ADD_SLOT("__rmul__", numbers->nb_multiply, -2);
         ADD_SLOT("__rem__", numbers->nb_remainder, -2);
         ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
         ADD_SLOT_CONV("__pow__", wrap_pow, numbers->nb_power, -3);
@@ -449,11 +451,8 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
         ADD_SLOT("__and__", numbers->nb_and, -2);
-        ADD_SLOT("__rand__", numbers->nb_and, -2);
         ADD_SLOT("__xor__", numbers->nb_xor, -2);
-        ADD_SLOT("__rxor__", numbers->nb_xor, -2);
         ADD_SLOT("__or__", numbers->nb_or, -2);
-        ADD_SLOT("__ror__", numbers->nb_or, -2);
         ADD_SLOT("__int__", numbers->nb_int, -1);
         ADD_SLOT("__float__", numbers->nb_float, -1);
         ADD_SLOT("__iadd__", numbers->nb_inplace_add, -2);
