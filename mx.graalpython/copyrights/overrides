@@ -534,6 +534,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TypedSequenceStorage.java,zippy.copyright
 graalpython/lib-graalpython/_io.py,pypy.copyright
 graalpython/lib-graalpython/itertools.py,pypy.copyright
+graalpython/lib-graalpython/object.py,pypy.copyright
 graalpython/lib-graalpython/str.py,pypy.copyright
 graalpython/lib-graalpython/timsort.py,pypy.copyright
 mx.graalpython/mx_graalpython.py,zippy.copyright
