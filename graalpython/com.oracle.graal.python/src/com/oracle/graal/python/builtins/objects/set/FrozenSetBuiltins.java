@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
+import static com.oracle.graal.python.builtins.objects.common.HashingStorage.getSlowPathEquivalence;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -148,6 +150,26 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.IntersectNode intersectNode;
+
+        @TruffleBoundary
+        private HashingStorage getStringAsHashingStorage(String str) {
+            HashingStorage storage = EconomicMapStorage.create(str.length(), true);
+            for (int i = 0; i < str.length(); i++) {
+                String key = String.valueOf(str.charAt(i));
+                storage.setItem(key, PNone.NO_VALUE, getSlowPathEquivalence(key));
+            }
+            return storage;
+        }
+
+        @Specialization
+        PBaseSet doPBaseSet(PSet left, String right) {
+            return factory().createSet(getIntersectNode().execute(left.getDictStorage(), getStringAsHashingStorage(right)));
+        }
+
+        @Specialization
+        PBaseSet doPBaseSet(PFrozenSet left, String right) {
+            return factory().createFrozenSet(getIntersectNode().execute(left.getDictStorage(), getStringAsHashingStorage(right)));
+        }
 
         private HashingStorageNodes.IntersectNode getIntersectNode() {
             if (intersectNode == null) {
