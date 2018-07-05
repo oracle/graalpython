@@ -39,23 +39,11 @@
 
 import polyglot as _interop
 
-_fallback_engine = None
+# just test if TREGEX is available
 try:
-    import sre_compile
-    _fallback_engine = sre_compile.compile
-except:
-    # TODO reporting ?
-    pass
-
-try:
-    if _fallback_engine:
-        TREGEX_ENGINE = _interop.eval(string="", language="regex")("", _fallback_engine)
-    else:
-        TREGEX_ENGINE = _interop.eval(string="", language="regex")()
+    _tregex_available = _interop.eval(string="", language="regex")() != None
 except NotImplementedError as e:
-    def TREGEX_ENGINE(*args): raise e
-
-del _fallback_engine
+    _tregex_available = False
 
 CODESIZE = 4
 
@@ -154,6 +142,18 @@ class SRE_Pattern():
             if flags & (1 << i):
                 jsflags.append(jsflag)
         self.jsflags = "".join(jsflags)
+        if _tregex_available:
+            self.__tregex_engine = _interop.eval(string="", language="regex")("", self.__fallback_engine)
+
+
+    def __fallback_engine(self, pattern, flags):
+        try:
+            print("IMPORTING SRE_COMPILE")
+            import _cpython_sre
+            return lambda regexObj, pattern, start_pos: _cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup).match(pattern, start_pos)
+        except:
+            # TODO reporting ?
+            raise
 
 
     def _decode_string(self, string, flags=0):
@@ -194,7 +194,7 @@ class SRE_Pattern():
         return "re.compile(%s%s%s)" % (self.pattern, sep, sflags)
 
     def _search(self, pattern, string, pos, endpos):
-        pattern = TREGEX_ENGINE(self.pattern, self.jsflags)
+        pattern = self.__tregex_engine(self.pattern, self.jsflags)
         string = self._decode_string(string)
         if endpos == -1 or endpos >= len(string):
             result = pattern.exec(string, pos)
@@ -223,7 +223,7 @@ class SRE_Pattern():
         return self._search(pattern, string, pos, endpos)
 
     def findall(self, string, pos=0, endpos=-1):
-        pattern = TREGEX_ENGINE(self.pattern, self.jsflags)
+        pattern = self.__tregex_engine(self.pattern, self.jsflags)
         string = self._decode_string(string)
         if endpos > len(string):
             endpos = len(string)
@@ -246,7 +246,7 @@ class SRE_Pattern():
 
     def sub(self, repl, string, count=0):
         n = 0
-        pattern = TREGEX_ENGINE(self.pattern, self.jsflags)
+        pattern = self.__tregex_engine(self.pattern, self.jsflags)
         string = self._decode_string(string)
         result = []
         pos = 0
