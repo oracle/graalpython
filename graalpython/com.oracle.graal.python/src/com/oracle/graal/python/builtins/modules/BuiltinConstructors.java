@@ -45,9 +45,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -121,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -395,15 +393,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
         public Object reversed(PythonClass cls, Object sequence,
-                        @Cached("create()") LookupInheritedAttributeNode reversedNode,
+                        @Cached("create()") GetClassNode getClassNode,
+                        @Cached("create(__REVERSED__)") LookupAttributeInMRONode reversedNode,
                         @Cached("create()") CallUnaryMethodNode callReversedNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode lenNode,
-                        @Cached("create()") LookupInheritedAttributeNode getItemNode,
+                        @Cached("create(__GETITEM__)") LookupAttributeInMRONode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile noReversedProfile,
                         @Cached("createBinaryProfile()") ConditionProfile noGetItemProfile) {
-            Object reversed = reversedNode.execute(sequence, __REVERSED__);
+            PythonClass sequenceKlass = getClassNode.execute(sequence);
+            Object reversed = reversedNode.execute(sequenceKlass);
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
-                Object getItem = getItemNode.execute(sequence, __GETITEM__);
+                Object getItem = getItemNode.execute(sequenceKlass);
                 if (noGetItemProfile.profile(getItem == PNone.NO_VALUE)) {
                     throw raise(TypeError, "'%p' object is not reversible", sequence);
                 } else {
@@ -1110,12 +1110,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @TruffleBoundary
         public Object type(PythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
-                        @Cached("create()") LookupInheritedAttributeNode getNewFuncNode,
+                        @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create()") CallDispatchNode callNewFuncNode,
                         @Cached("create()") CreateArgumentsNode createArgs) {
             PythonClass metaclass = calculate_metaclass(cls, bases, getMetaclassNode);
             if (metaclass != cls) {
-                Object newFunc = getNewFuncNode.execute(metaclass, __NEW__);
+                Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
                     // the new metaclass has the same __new__ function as we are in
                 } else {

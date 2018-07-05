@@ -290,9 +290,9 @@ public abstract class HashingStorageNodes {
         protected boolean hasKeysAttribute(PythonObject o) {
             if (lookupKeysAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupKeysAttributeNode = insert(LookupInheritedAttributeNode.create());
+                lookupKeysAttributeNode = insert(LookupInheritedAttributeNode.create(KEYS));
             }
-            return lookupKeysAttributeNode.execute(o, KEYS) != PNone.NO_VALUE;
+            return lookupKeysAttributeNode.execute(o) != PNone.NO_VALUE;
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "isEmpty(kwargs)"})

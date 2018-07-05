@@ -38,8 +38,11 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.Arrays;
 
@@ -96,20 +99,20 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 @MessageResolution(receiverType = PythonObject.class)
 public class PythonMessageResolution {
     private static final class HasSetItem extends Node {
-        @Child private LookupInheritedAttributeNode getSetItemNode = LookupInheritedAttributeNode.create();
+        @Child private LookupInheritedAttributeNode getSetItemNode = LookupInheritedAttributeNode.create(__SETITEM__);
         final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
         public boolean execute(Object object) {
-            return profile.profile(getSetItemNode.execute(object, SpecialMethodNames.__SETITEM__) != PNone.NO_VALUE);
+            return profile.profile(getSetItemNode.execute(object) != PNone.NO_VALUE);
         }
     }
 
     private static final class HasDelItem extends Node {
-        @Child private LookupInheritedAttributeNode getDelItemNode = LookupInheritedAttributeNode.create();
+        @Child private LookupInheritedAttributeNode getDelItemNode = LookupInheritedAttributeNode.create(__DELITEM__);
         final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
         public boolean execute(Object object) {
-            return profile.profile(getDelItemNode.execute(object, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE);
+            return profile.profile(getDelItemNode.execute(object) != PNone.NO_VALUE);
         }
     }
 
@@ -234,7 +237,7 @@ public class PythonMessageResolution {
     public static final class ExecuteNode extends Node {
         @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
-        @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create();
+        @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create(__CALL__);
         @Child private CallDispatchNode dispatch;
         @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
         @Child private ArityCheckNode arityCheckNode = ArityCheckNode.create();
@@ -249,7 +252,7 @@ public class PythonMessageResolution {
         }
 
         public Object execute(Object receiver, Object[] arguments) {
-            Object callable = getCall.execute(receiver, SpecialMethodNames.__CALL__);
+            Object callable = getCall.execute(receiver);
 
             // convert foreign argument values to Python values
             Object[] convertedArgs = new Object[arguments.length];

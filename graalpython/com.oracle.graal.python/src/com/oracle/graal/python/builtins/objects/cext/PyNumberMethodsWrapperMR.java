@@ -42,9 +42,13 @@ import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.MessageResolution;
@@ -57,39 +61,50 @@ public class PyNumberMethodsWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
-        @Child private LookupAttributeInMRONode getAttributeNode;
+        @Child private LookupAttributeInMRONode getAddAttributeNode;
+        @Child private LookupAttributeInMRONode getIndexAttributeNode;
+        @Child private LookupAttributeInMRONode getPowAttributeNode;
+        @Child private LookupAttributeInMRONode getTrueDivAttributeNode;
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PyNumberMethodsWrapper object, String key) {
             // translate key to attribute name
-            String attributeName = toAttributeName(key);
-
-            Object execute = getReadArrayItemNode().execute(object.getDelegate(), attributeName);
-            return getToSulongNode().execute(execute);
-        }
-
-        private static String toAttributeName(String numberMethodsMember) {
-            switch (numberMethodsMember) {
+            PythonClass delegate = object.getDelegate();
+            Object result;
+            switch (key) {
                 case NB_ADD:
-                    return SpecialMethodNames.__ADD__;
+                    if (getAddAttributeNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getAddAttributeNode = insert(LookupAttributeInMRONode.create(__ADD__));
+                    }
+                    result = getAddAttributeNode.execute(delegate);
+                    break;
                 case NB_INDEX:
-                    return SpecialMethodNames.__INDEX__;
+                    if (getIndexAttributeNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getIndexAttributeNode = insert(LookupAttributeInMRONode.create(__INDEX__));
+                    }
+                    result = getIndexAttributeNode.execute(delegate);
+                    break;
                 case NB_POW:
-                    return SpecialMethodNames.__POW__;
+                    if (getPowAttributeNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getPowAttributeNode = insert(LookupAttributeInMRONode.create(__POW__));
+                    }
+                    result = getPowAttributeNode.execute(delegate);
+                    break;
                 case NB_TRUE_DIVIDE:
-                    return SpecialMethodNames.__TRUEDIV__;
+                    if (getTrueDivAttributeNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getTrueDivAttributeNode = insert(LookupAttributeInMRONode.create(__TRUEDIV__));
+                    }
+                    result = getTrueDivAttributeNode.execute(delegate);
+                    break;
                 default:
                     // TODO extend list
-                    throw UnknownIdentifierException.raise(numberMethodsMember);
+                    throw UnknownIdentifierException.raise(key);
             }
-        }
-
-        private LookupAttributeInMRONode getReadArrayItemNode() {
-            if (getAttributeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttributeNode = insert(LookupAttributeInMRONode.create());
-            }
-            return getAttributeNode;
+            return getToSulongNode().execute(result);
         }
 
         private ToSulongNode getToSulongNode() {

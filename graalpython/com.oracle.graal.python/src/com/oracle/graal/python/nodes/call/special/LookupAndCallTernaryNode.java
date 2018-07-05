@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -63,7 +64,7 @@ public abstract class LookupAndCallTernaryNode extends PNode {
         public abstract Object execute(Object arg, Object arg2, Object arg3);
     }
 
-    private final String name;
+    protected final String name;
     private final boolean isReversible;
     @Child private CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
     @Child private CallTernaryMethodNode reverseDispatchNode;
@@ -125,7 +126,7 @@ public abstract class LookupAndCallTernaryNode extends PNode {
         // this also serves as a branch profile
         if (getThirdAttrNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getThirdAttrNode = insert(LookupInheritedAttributeNode.create());
+            getThirdAttrNode = insert(LookupInheritedAttributeNode.create(name));
         }
         return getThirdAttrNode;
     }
@@ -141,20 +142,21 @@ public abstract class LookupAndCallTernaryNode extends PNode {
 
     @Specialization(guards = "isReversible()")
     Object callObject(Object v, Object w, Object z,
-                    @Cached("create()") LookupInheritedAttributeNode getattr,
-                    @Cached("create()") LookupInheritedAttributeNode getattrR,
+                    @Cached("create(name)") LookupAttributeInMRONode getattr,
+                    @Cached("create(name)") LookupAttributeInMRONode getattrR,
                     @Cached("create()") GetClassNode getClass,
                     @Cached("create()") GetClassNode getClassR,
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("create()") BranchProfile notImplementedBranch) {
-        Object result = PNotImplemented.NOT_IMPLEMENTED;
-        Object leftCallable = getattr.execute(v, name);
-        Object rightCallable = PNone.NO_VALUE;
-
         PythonClass leftClass = getClass.execute(v);
         PythonClass rightClass = getClassR.execute(w);
+
+        Object result = PNotImplemented.NOT_IMPLEMENTED;
+        Object leftCallable = getattr.execute(leftClass);
+        Object rightCallable = PNone.NO_VALUE;
+
         if (leftClass != rightClass) {
-            rightCallable = getattrR.execute(w, name);
+            rightCallable = getattrR.execute(rightClass);
             if (rightCallable == leftCallable) {
                 rightCallable = PNone.NO_VALUE;
             }
@@ -179,7 +181,7 @@ public abstract class LookupAndCallTernaryNode extends PNode {
             }
         }
 
-        Object zCallable = ensureGetAttrZ().execute(z, name);
+        Object zCallable = ensureGetAttrZ().execute(z);
         if (zCallable != PNone.NO_VALUE && zCallable != leftCallable && zCallable != rightCallable) {
             ensureThirdDispatch().execute(zCallable, v, w, z);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {

@@ -131,9 +131,9 @@ public class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Child CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
-        @Child LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create();
+        @Child LookupAttributeInMRONode lookupNew = LookupAttributeInMRONode.create(__NEW__);
         @Child CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
-        @Child LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create();
+        @Child LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
         @Child GetClassNode getClass = GetClassNode.create();
         @Child PositionalArgumentsNode createArgs = PositionalArgumentsNode.create();
 
@@ -174,7 +174,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         private Object op(PythonClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
-            Object newMethod = lookupNew.execute(self, __NEW__);
+            Object newMethod = lookupNew.execute(self);
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? createArgs.executeWithArguments(self, arguments) : arguments;
@@ -186,7 +186,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         // passing keywords or more than one argument see:
                         // https://github.com/python/cpython/blob/2102c789035ccacbac4362589402ac68baa2cd29/Objects/typeobject.c#L3538
                     } else {
-                        Object initMethod = lookupInit.execute(newInstanceKlass, __INIT__);
+                        Object initMethod = lookupInit.execute(newInstanceKlass);
                         if (newMethod != PNone.NO_VALUE) {
                             Object[] initArgs;
                             if (doCreateArgs) {
@@ -222,7 +222,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private final BranchProfile hasValueProfile = BranchProfile.create();
         private final BranchProfile errorProfile = BranchProfile.create();
 
-        @Child private LookupInheritedAttributeNode lookup = LookupInheritedAttributeNode.create();
+        @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
         private final ValueProfile typeProfile = ValueProfile.createIdentityProfile();
         @Child private GetClassNode getDataClassNode;
         @Child private GetClassNode getObjectClassNode;
@@ -232,11 +232,12 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private LookupAttributeInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode invokeGet;
         @Child private CallTernaryMethodNode invokeValueGet;
-        @Child private LookupAttributeInMRONode attrRead;
+        @Child private LookupAttributeInMRONode.Dynamic lookupAsClass;
 
         @Specialization
         protected Object doIt(Object object, Object key) {
-            Object descr = lookup.execute(object, key);
+            PythonClass type = typeProfile.profile(getObjectClass(object));
+            Object descr = lookup.execute(type, key);
             PythonClass dataDescClass = null;
             Object get = null;
             if (descr != PNone.NO_VALUE) {
@@ -252,7 +253,6 @@ public class TypeBuiltins extends PythonBuiltins {
                     if (set != PNone.NO_VALUE || delete != PNone.NO_VALUE) {
                         isDescProfile.enter();
                         // Only override if __get__ is defined, too, for compatibility with CPython.
-                        PythonClass type = typeProfile.profile(getObjectClass(object));
                         if (invokeGet == null) {
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             invokeGet = insert(CallTernaryMethodNode.create());
@@ -280,7 +280,6 @@ public class TypeBuiltins extends PythonBuiltins {
                 if (get == PNone.NO_VALUE) {
                     return descr;
                 } else if (get instanceof PythonCallable) {
-                    PythonClass type = typeProfile.profile(getObjectClass(object));
                     if (invokeGet == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeGet = insert(CallTernaryMethodNode.create());
@@ -293,43 +292,43 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         private Object readAttribute(Object object, Object key) {
-            if (attrRead == null) {
+            if (lookupAsClass == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                attrRead = insert(LookupAttributeInMRONode.create());
+                lookupAsClass = insert(LookupAttributeInMRONode.Dynamic.create());
             }
-            return attrRead.execute(object, key);
+            return lookupAsClass.execute(object, key);
         }
 
         private Object lookupDelete(PythonClass dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupDeleteNode = insert(LookupAttributeInMRONode.create());
+                lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
             }
-            return lookupDeleteNode.execute(dataDescClass, __DELETE__);
+            return lookupDeleteNode.execute(dataDescClass);
         }
 
         private Object lookupSet(PythonClass dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupAttributeInMRONode.create());
+                lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
             }
-            return lookupSetNode.execute(dataDescClass, __SET__);
+            return lookupSetNode.execute(dataDescClass);
         }
 
         private Object lookupGet(PythonClass dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupGetNode = insert(LookupAttributeInMRONode.create());
+                lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
             }
-            return lookupGetNode.execute(dataDescClass, __GET__);
+            return lookupGetNode.execute(dataDescClass);
         }
 
         private Object lookupValueGet(Object value) {
             if (valueGetLookup == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                valueGetLookup = insert(LookupInheritedAttributeNode.create());
+                valueGetLookup = insert(LookupInheritedAttributeNode.create(__GET__));
             }
-            return valueGetLookup.execute(value, __GET__);
+            return valueGetLookup.execute(value);
         }
 
         private PythonClass getDataClass(Object descr) {

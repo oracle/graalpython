@@ -57,7 +57,7 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
     @Child private GetItemNode getItem = GetItemNodeGen.create();
     @Child private GetItemNode getNonExistingItem = GetItemNodeGen.create();
     @Child private BuiltinFunctions.LenNode lenNode;
-    @Child private LookupInheritedAttributeNode lookupInheritedAttributeNode = LookupInheritedAttributeNode.create();
+    @Child private LookupInheritedAttributeNode lookupGetItemNode = LookupInheritedAttributeNode.create(__GETITEM__);
     @Child private TupleNodes.ConstructTupleNode constructTupleNode = TupleNodes.ConstructTupleNode.create();
 
     private final BranchProfile notEnoughValuesProfile = BranchProfile.create();
@@ -152,7 +152,7 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
     @Override
     public Object execute(VirtualFrame frame) {
         Object rhsValue = rhs.execute(frame);
-        Object getItemAttribute = lookupInheritedAttributeNode.execute(rhsValue, __GETITEM__);
+        Object getItemAttribute = lookupGetItemNode.execute(rhsValue);
         if (getItemAttribute == NO_VALUE) {
             rhsValue = constructTupleNode.execute(rhsValue);
         }

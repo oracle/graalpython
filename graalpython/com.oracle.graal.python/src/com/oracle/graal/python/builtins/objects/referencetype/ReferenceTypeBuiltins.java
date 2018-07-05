@@ -38,7 +38,6 @@
  */
 package com.oracle.graal.python.builtins.objects.referencetype;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALLBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -119,9 +118,9 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getObject() != null")
         @TruffleBoundary
         public String repr(PReferenceType self,
-                        @Cached("create()") LookupInheritedAttributeNode getNameNode) {
+                        @Cached("create(__NAME__)") LookupInheritedAttributeNode getNameNode) {
             Object object = self.getObject();
-            Object name = getNameNode.execute(object, __NAME__);
+            Object name = getNameNode.execute(object);
             if (name == PNone.NO_VALUE) {
                 return String.format("<weakref at %s; to '%s' at %s>", self.hashCode(), object.hashCode(), object.hashCode());
             } else {

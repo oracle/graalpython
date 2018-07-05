@@ -38,10 +38,6 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PCharArray;
 import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
@@ -49,21 +45,15 @@ import com.oracle.graal.python.builtins.objects.array.PIntArray;
 import com.oracle.graal.python.builtins.objects.array.PLongArray;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class IsIterableNode extends PDataModelEmulationNode {
-    @Child private HasInheritedAttributeNode hasNextNode = HasInheritedAttributeNode.create(__NEXT__);
-    @Child private LookupInheritedAttributeNode getIterNode = LookupInheritedAttributeNode.create();
-    @Child private LookupInheritedAttributeNode getGetItemNode = LookupInheritedAttributeNode.create();
-    @Child private IsCallableNode isCallableNode = IsCallableNode.create();
-
-    private final ConditionProfile profileIter = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile profileGetItem = ConditionProfile.createBinaryProfile();
-    private final ConditionProfile profileNext = ConditionProfile.createBinaryProfile();
 
     @Specialization
     public boolean isIterable(@SuppressWarnings("unused") PRange range) {
@@ -106,16 +96,25 @@ public abstract class IsIterableNode extends PDataModelEmulationNode {
     }
 
     @Specialization
-    public boolean isIterable(Object object) {
-        Object iterMethod = getIterNode.execute(object, __ITER__);
+    public boolean isIterable(Object object,
+                    @Cached("create()") GetClassNode getClassNode,
+                    @Cached("create(__ITER__)") LookupAttributeInMRONode getIterNode,
+                    @Cached("create(__GETITEM__)") LookupAttributeInMRONode getGetItemNode,
+                    @Cached("create(__NEXT__)") LookupAttributeInMRONode hasNextNode,
+                    @Cached("create()") IsCallableNode isCallableNode,
+                    @Cached("createBinaryProfile()") ConditionProfile profileIter,
+                    @Cached("createBinaryProfile()") ConditionProfile profileGetItem,
+                    @Cached("createBinaryProfile()") ConditionProfile profileNext) {
+        PythonClass klass = getClassNode.execute(object);
+        Object iterMethod = getIterNode.execute(klass);
         if (profileIter.profile(iterMethod != PNone.NO_VALUE && iterMethod != PNone.NONE)) {
             return true;
         } else {
-            Object getItemMethod = getGetItemNode.execute(object, __GETITEM__);
+            Object getItemMethod = getGetItemNode.execute(klass);
             if (profileGetItem.profile(getItemMethod != PNone.NO_VALUE)) {
                 return true;
             } else if (isCallableNode.execute(object)) {
-                return profileNext.profile(hasNextNode.execute(object));
+                return profileNext.profile(hasNextNode.execute(klass) != PNone.NO_VALUE);
             }
         }
         return false;

@@ -38,8 +38,6 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
-
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -92,10 +90,10 @@ public abstract class SetAttributeNode extends PNode implements WriteNode {
     protected Object doIt(Object object, Object key, Object value,
                     @Cached("createIdentityProfile()") ValueProfile setattributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create()") LookupAttributeInMRONode setattributeLookup,
+                    @Cached("create(__SETATTR__)") LookupAttributeInMRONode setattributeLookup,
                     @Cached("create()") CallTernaryMethodNode callSetattr) {
         PythonClass type = getClassNode.execute(object);
-        Object descr = setattributeProfile.profile(setattributeLookup.execute(type, __SETATTR__));
+        Object descr = setattributeProfile.profile(setattributeLookup.execute(type));
         return callSetattr.execute(descr, object, key, value);
     }
 }

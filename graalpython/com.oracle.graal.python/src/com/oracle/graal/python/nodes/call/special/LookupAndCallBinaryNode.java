@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -267,8 +268,8 @@ public abstract class LookupAndCallBinaryNode extends PNode {
 
     @Specialization(guards = "!isReversible()")
     Object callObject(Object left, Object right,
-                    @Cached("create()") LookupInheritedAttributeNode getattr) {
-        Object leftCallable = getattr.execute(left, name);
+                    @Cached("create(name)") LookupInheritedAttributeNode getattr) {
+        Object leftCallable = getattr.execute(left);
         Object result;
         if (leftCallable == PNone.NO_VALUE) {
             result = PNotImplemented.NOT_IMPLEMENTED;
@@ -287,21 +288,21 @@ public abstract class LookupAndCallBinaryNode extends PNode {
 
     @Specialization(guards = "isReversible()")
     Object callObject(Object left, Object right,
-                    @Cached("create()") LookupInheritedAttributeNode getattr,
-                    @Cached("create()") LookupInheritedAttributeNode getattrR,
+                    @Cached("create(name)") LookupAttributeInMRONode getattr,
+                    @Cached("create(rname)") LookupAttributeInMRONode getattrR,
                     @Cached("create()") GetClassNode getClass,
                     @Cached("create()") GetClassNode getClassR,
                     @Cached("create()") IsSubtypeNode isSubtype,
                     @Cached("createBinaryProfile()") ConditionProfile notImplementedBranch) {
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        Object leftCallable = getattr.execute(left, name);
-        Object rightCallable = getattrR.execute(right, rname);
+        PythonClass leftClass = getClass.execute(left);
+        Object leftCallable = getattr.execute(leftClass);
+        PythonClass rightClass = getClassR.execute(right);
+        Object rightCallable = getattrR.execute(rightClass);
         if (leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
         }
         if (leftCallable != PNone.NO_VALUE) {
-            PythonClass leftClass = getClass.execute(left);
-            PythonClass rightClass = getClassR.execute(right);
             if (rightCallable != PNone.NO_VALUE && leftClass != rightClass && isSubtype.execute(rightClass, leftClass)) {
                 result = ensureReverseDispatch().executeObject(rightCallable, right, left);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
