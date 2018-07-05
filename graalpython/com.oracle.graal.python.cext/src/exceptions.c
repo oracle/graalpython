@@ -109,3 +109,12 @@ void initialize_exceptions() {
     PyExc_BufferError = PY_EXCEPTION("BufferError");
 }
 
+
+int PyException_SetTraceback(PyObject *self, PyObject *tb) {
+    PyObject* result = UPCALL_O(native_to_java(self), "with_traceback", native_to_java(tb));
+    if (result == ERROR_MARKER) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
