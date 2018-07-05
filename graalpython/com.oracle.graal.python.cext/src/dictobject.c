@@ -105,7 +105,7 @@ int PyDict_DelItemString(PyObject *d, const char *key) {
 }
 
 int PyDict_Update(PyObject *a, PyObject *b) {
-    PyObject* result = UPCALL_O(a, "update", b);
+    PyObject* result = UPCALL_O(native_to_java(a), "update", native_to_java(b));
     if (PyErr_Occurred()) {
         return -1;
     } else {

@@ -84,5 +84,5 @@ Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_
 }
 
 PyObject* PySlice_New(PyObject* start, PyObject *stop, PyObject *step) {
-    return UPCALL_CEXT_O("PySlice_New", start, stop, step);
+    return UPCALL_CEXT_O("PySlice_New", native_to_java(start), native_to_java(stop), native_to_java(step));
 }
