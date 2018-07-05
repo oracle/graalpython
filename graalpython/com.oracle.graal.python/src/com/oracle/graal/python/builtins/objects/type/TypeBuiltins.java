@@ -235,7 +235,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private LookupAttributeInMRONode attrRead;
 
         @Specialization
-        protected Object doIt(Object object, Object key) {
+        protected Object doIt(PythonClass object, Object key) {
             Object descr = lookup.execute(object, key);
             PythonClass dataDescClass = null;
             Object get = null;
@@ -289,7 +289,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 }
             }
             errorProfile.enter();
-            throw raise(AttributeError, "object has no attribute %s", key);
+            throw raise(AttributeError, "type object '%s' has no attribute %s", object.getName(), key);
         }
 
         private Object readAttribute(Object object, Object key) {
