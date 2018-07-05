@@ -42,6 +42,5 @@
 PyTypeObject PyTraceBack_Type = PY_TRUFFLE_TYPE("traceback", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyTypeObject));
 
 int PyTraceBack_Here(PyFrameObject *frame) {
-    TDEBUG;
     return UPCALL_CEXT_I("PyTraceBack_Here", native_to_java(frame));
 }
