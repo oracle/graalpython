@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -62,6 +63,9 @@ public class ImportFromNode extends AbstractImportNode {
     @ExplodeLoop
     public Object execute(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
+        if (importee == null || importee.isEmpty()) {
+            throw raise(PythonErrorType.ImportError, "attempted relative import with no known parent package");
+        }
         Object importedModule = importModule(importee, globals, fromlist, level);
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
