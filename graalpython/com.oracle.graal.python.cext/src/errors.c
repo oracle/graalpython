@@ -156,3 +156,8 @@ void PyErr_WriteUnraisable(PyObject *obj) {
 void PyErr_Display(PyObject *exception, PyObject *value, PyObject *tb) {
     UPCALL_CEXT_VOID("PyErr_Display", native_to_java(exception), native_to_java(value), native_to_java(tb));
 }
+
+void PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb) {
+    // TODO (tfel): do we have to?
+    return;
+}
