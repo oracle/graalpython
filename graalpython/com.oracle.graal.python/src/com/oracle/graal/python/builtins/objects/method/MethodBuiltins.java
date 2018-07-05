@@ -109,6 +109,11 @@ public class MethodBuiltins extends PythonBuiltins {
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
             return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__NAME__);
         }
+
+        @Specialization
+        protected Object doIt(PBuiltinMethod self) {
+            return self.getName();
+        }
     }
 
     @Builtin(name = SpecialAttributeNames.__CODE__, fixedNumOfArguments = 1, isGetter = true)
