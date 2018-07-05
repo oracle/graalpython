@@ -296,6 +296,10 @@ int PyObject_SetAttrString(PyObject* obj, const char* attr, PyObject* value) {
     return UPCALL_CEXT_I("PyObject_SetAttr", native_to_java(obj), polyglot_from_string(attr, SRC_CS), native_to_java(value));
 }
 
+int PyObject_HasAttr(PyObject* obj, PyObject* attr) {
+    return UPCALL_CEXT_I("PyObject_HasAttr", native_to_java(obj), native_to_java(attr));
+}
+
 int PyObject_HasAttrString(PyObject* obj, const char* attr) {
     return UPCALL_CEXT_I("PyObject_HasAttr", native_to_java(obj), polyglot_from_string(attr, SRC_CS));
 }
