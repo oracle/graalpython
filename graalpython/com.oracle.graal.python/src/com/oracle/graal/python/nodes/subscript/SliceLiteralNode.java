@@ -120,11 +120,10 @@ public abstract class SliceLiteralNode extends PNode {
         return factory().createSlice(start, MISSING_INDEX, MISSING_INDEX);
     }
 
-    @TruffleBoundary
     @Specialization
     public PSlice doPSlice(long start, @SuppressWarnings("unused") PNone stop, @SuppressWarnings("unused") PNone step) {
         try {
-            return factory().createSlice(Math.toIntExact(start), MISSING_INDEX, 1);
+            return factory().createSlice(PInt.intValueExact(start), MISSING_INDEX, 1);
         } catch (ArithmeticException e) {
             throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
         }
