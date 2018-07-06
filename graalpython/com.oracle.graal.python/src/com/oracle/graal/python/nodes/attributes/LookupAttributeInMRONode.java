@@ -102,6 +102,31 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
      */
     public abstract Object execute(PythonClass klass);
 
+    protected PythonClass findClassInMRO(PythonClass klass) {
+        PythonClass[] mro = klass.getMethodResolutionOrder();
+        for (int i = 0; i < mro.length; i++) {
+            PythonClass kls = mro[i];
+            if (kls.getStorage().containsKey(key)) {
+                return kls;
+            }
+        }
+        return null;
+    }
+
+    @Specialization(guards = {"klass == cachedKlass", "cachedAttrKlass != null"}, limit = "5", assumptions = "lookupStable", rewriteOn = IllegalStateException.class)
+    protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
+                    @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
+                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
+                    @Cached("findClassInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClass cachedAttrKlass) {
+        Object value = readAttrNode.execute(cachedAttrKlass, key);
+        if (value == PNone.NO_VALUE) {
+            // in case the attribute was deleted
+            throw new IllegalStateException();
+        }
+        return value;
+    }
+
     @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "5", assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass,
