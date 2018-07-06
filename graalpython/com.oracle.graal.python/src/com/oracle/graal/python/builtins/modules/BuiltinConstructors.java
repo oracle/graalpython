@@ -1130,13 +1130,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // builtin-function(method-def, self, module)
-    @Builtin(name = "builtin-function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PBuiltinFunction.class}, isPublic = false)
+    @Builtin(name = "method_descriptor", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PBuiltinFunction.class}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class BuiltinFunctionNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         public PFunction function(Object cls, Object method_def, Object def, Object name, Object module) {
-            throw raise(TypeError, "cannot create 'builtin_function' instances");
+            throw raise(TypeError, "cannot create 'method_descriptor' instances");
         }
     }
 
@@ -1415,14 +1415,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "method", fixedNumOfArguments = 3, constructsClass = {PMethod.class, PBuiltinMethod.class}, isPublic = false)
+    @Builtin(name = "method", fixedNumOfArguments = 3, constructsClass = {PMethod.class}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonBuiltinNode {
         @Specialization
         Object method(PythonClass cls, Object self, PFunction func) {
             return factory().createMethod(cls, self, func);
         }
+    }
 
+    @Builtin(name = "builtin_function_or_method", fixedNumOfArguments = 3, constructsClass = {PBuiltinMethod.class}, isPublic = false)
+    @GenerateNodeFactory
+    public abstract static class BuiltinMethodTypeNode extends PythonBuiltinNode {
         @Specialization
         Object method(PythonClass cls, Object self, PBuiltinFunction func) {
             return factory().createBuiltinMethod(cls, self, func);

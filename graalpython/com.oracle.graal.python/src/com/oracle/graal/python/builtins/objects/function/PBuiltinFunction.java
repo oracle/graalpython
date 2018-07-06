@@ -28,32 +28,41 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
+import com.oracle.graal.python.builtins.BoundBuiltinCallable;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.nodes.RootNode;
 
-public final class PBuiltinFunction extends PythonBuiltinObject implements PythonCallable {
+public final class PBuiltinFunction extends PythonBuiltinObject implements PythonCallable, BoundBuiltinCallable<PBuiltinFunction> {
 
-    @CompilationFinal private String name;
+    private final String name;
+    private final PythonClass enclosingType;
     private final RootCallTarget callTarget;
     private final Arity arity;
     private final boolean isStatic;
 
-    public PBuiltinFunction(PythonClass clazz, String name, Arity arity, RootCallTarget callTarget) {
+    public PBuiltinFunction(PythonClass clazz, String name, PythonClass enclosingType, Arity arity, RootCallTarget callTarget) {
         super(clazz);
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
+        this.enclosingType = enclosingType;
         this.callTarget = callTarget;
         this.arity = arity;
         this.getStorage().define(__NAME__, name);
-        this.getStorage().define(__QUALNAME__, name);
+        this.getStorage().define("__objclass__", enclosingType);
+        if (enclosingType != null) {
+            this.getStorage().define(__QUALNAME__, enclosingType.getName() + "." + name);
+        } else {
+            this.getStorage().define(__QUALNAME__, name);
+        }
     }
 
     public boolean isStatic() {
@@ -88,13 +97,27 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Pytho
         return name;
     }
 
-    public void unsafeSetName(String newName) {
-        name = newName;
+    public PythonClass getEnclosingType() {
+        return enclosingType;
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("<built-in function %s>", name);
+        if (enclosingType == null) {
+            return String.format("PBuiltinFunction %s at 0x%x", name, hashCode());
+        } else {
+            return String.format("PBuiltinFunction %s.%s at 0x%x", enclosingType.getName(), name, hashCode());
+        }
+    }
+
+    public PBuiltinFunction boundToObject(Object klass, PythonObjectFactory factory) {
+        if (klass == enclosingType) {
+            return this;
+        } else if (klass instanceof PythonModule) {
+            return this;
+        } else {
+            return factory.createBuiltinFunction(name, (PythonClass) klass, arity, callTarget);
+        }
     }
 }

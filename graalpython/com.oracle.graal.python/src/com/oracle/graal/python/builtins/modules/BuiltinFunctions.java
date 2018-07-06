@@ -150,7 +150,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
-@CoreFunctions(extendModule = "builtins")
+@CoreFunctions(defineModule = "builtins")
 public final class BuiltinFunctions extends PythonBuiltins {
 
     @Override

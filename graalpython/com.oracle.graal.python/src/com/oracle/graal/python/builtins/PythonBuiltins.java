@@ -40,7 +40,6 @@ import java.util.function.BiConsumer;
 
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -51,7 +50,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 
 public abstract class PythonBuiltins {
     protected final Map<String, Object> builtinConstants = new HashMap<>();
-    private final Map<String, PBuiltinFunction> builtinFunctions = new HashMap<>();
+    private final Map<String, BoundBuiltinCallable<?>> builtinFunctions = new HashMap<>();
     private final Map<PythonBuiltinClass, Map.Entry<Class<?>[], Boolean>> builtinClasses = new HashMap<>();
 
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
@@ -62,39 +61,26 @@ public abstract class PythonBuiltins {
         }
         initializeEachFactoryWith((factory, builtin) -> {
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory));
-            String name = builtin.name();
             if (builtin.constructsClass().length > 0) {
-                name = __NEW__;
-            }
-            PBuiltinFunction function;
-            if (this.getClass().getAnnotation(CoreFunctions.class).extendClasses().length == 0) {
-                // builtin module functions are builtin-functions, i.e., they have no __get__
-                function = core.factory().createBuiltinFunction(name, createArity(builtin), callTarget);
-            } else {
-                // builtin class functions are functions, i.e., they have a __get__
-                function = core.factory().createFunction(name, createArity(builtin), callTarget);
-            }
-            PythonObject attribute = function;
-            String doc = builtin.doc();
-            if (builtin.constructsClass().length > 0) {
+                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin), callTarget);
                 PythonBuiltinClass builtinClass = createBuiltinClassFor(core, builtin);
-                builtinClass.setAttributeUnsafe(__NEW__, function);
-                attribute = builtinClass;
-            } else if (builtin.isGetter() || builtin.isSetter()) {
-                CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
-                PythonBuiltinClass builtinClass = core.lookupType(annotation.extendClasses()[0]);
-                if (builtin.isGetter() && !builtin.isSetter()) {
-                    attribute = core.factory().createGetSetDescriptor(function, null, builtin.name(), builtinClass);
-                } else if (!builtin.isGetter() && builtin.isSetter()) {
-                    attribute = core.factory().createGetSetDescriptor(null, function, builtin.name(), builtinClass);
-                } else {
-                    attribute = core.factory().createGetSetDescriptor(function, function, builtin.name(), builtinClass);
-                }
-                builtinConstants.put(builtin.name(), attribute);
+                builtinClass.setAttributeUnsafe(__NEW__, newFunc);
+                builtinClass.setAttribute(__DOC__, builtin.doc());
             } else {
-                setBuiltinFunction(builtin.name(), function);
+                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, createArity(builtin), callTarget);
+                function.setAttribute(__DOC__, builtin.doc());
+                BoundBuiltinCallable<?> callable = function;
+                if (builtin.isGetter() || builtin.isSetter()) {
+                    if (builtin.isGetter() && !builtin.isSetter()) {
+                        callable = core.factory().createGetSetDescriptor(function, null, builtin.name(), null);
+                    } else if (!builtin.isGetter() && builtin.isSetter()) {
+                        callable = core.factory().createGetSetDescriptor(null, function, builtin.name(), null);
+                    } else {
+                        callable = core.factory().createGetSetDescriptor(function, function, builtin.name(), null);
+                    }
+                }
+                setBuiltinFunction(builtin.name(), callable);
             }
-            attribute.setAttribute(__DOC__, doc);
         });
     }
 
@@ -165,7 +151,7 @@ public abstract class PythonBuiltins {
                         Arrays.asList(new String[0]), Arrays.asList(builtin.keywordArguments()));
     }
 
-    private void setBuiltinFunction(String name, PBuiltinFunction function) {
+    private void setBuiltinFunction(String name, BoundBuiltinCallable<?> function) {
         builtinFunctions.put(name, function);
     }
 
@@ -174,7 +160,7 @@ public abstract class PythonBuiltins {
         builtinClasses.put(builtinClass, simpleEntry);
     }
 
-    protected Map<String, PBuiltinFunction> getBuiltinFunctions() {
+    protected Map<String, BoundBuiltinCallable<?>> getBuiltinFunctions() {
         return builtinFunctions;
     }
 

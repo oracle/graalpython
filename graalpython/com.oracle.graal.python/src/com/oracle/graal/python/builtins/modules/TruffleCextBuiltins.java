@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -97,7 +98,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -335,35 +335,37 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateFunction", minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = "CreateBuiltinMethod", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class CreateFunctionNode extends PythonTernaryBuiltinNode {
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class CreateBuiltinMethodNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object runWithoutCWrapper(PBuiltinFunction descriptor, Object self) {
+            return factory().createBuiltinMethod(self, descriptor);
+        }
+    }
+
+    @Builtin(name = "CreateFunction", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class CreateFunctionNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(cwrapper)")
         @TruffleBoundary
-        Object runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper) {
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, PythonClass type) {
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
-            return factory().createBuiltinFunction(name, createArity(name), callTarget);
+            return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
 
         @Specialization(guards = "!isNoValue(cwrapper)")
         @TruffleBoundary
-        Object run(String name, TruffleObject callable, TruffleObject cwrapper) {
+        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, PythonClass type) {
             RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
-            return factory().createBuiltinFunction(name, createArity(name), callTarget);
+            return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
 
         private static Arity createArity(String name) {
             return new Arity(name, 0, 0, true, true, new ArrayList<>(), new ArrayList<>());
-        }
-
-        @Specialization(guards = "!isNoValue(cwrapper)")
-        Object runWithoutCWrapper(PString name, TruffleObject callable, PNone cwrapper) {
-            return runWithoutCWrapper(name.getValue(), callable, cwrapper);
-        }
-
-        @Specialization(guards = "!isNoValue(cwrapper)")
-        Object run(PString name, TruffleObject callable, TruffleObject cwrapper) {
-            return run(name.getValue(), callable, cwrapper);
         }
     }
 
