@@ -43,7 +43,6 @@ public abstract class PythonBuiltinObject extends PythonObject {
 
     public PythonBuiltinObject(PythonClass cls) {
         super(cls);
-        assert cls != null : getClass().getSimpleName();
     }
 
     private boolean isBuiltin() {

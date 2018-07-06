@@ -44,17 +44,16 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __GETITEM__)
-@GenerateNodeFactory
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
-    @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
+    @Child private NormalizeIndexNode normalize;
 
     public abstract Object execute(Object primary, Object slice);
 
@@ -69,11 +68,19 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
     public static GetItemNode create() {
-        return GetItemNodeFactory.create(null, null);
+        return GetItemNodeGen.create(null, null);
     }
 
     public static GetItemNode create(PNode primary, PNode slice) {
-        return GetItemNodeFactory.create(primary, slice);
+        return GetItemNodeGen.create(primary, slice);
+    }
+
+    private NormalizeIndexNode ensureNormalize() {
+        if (normalize == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            normalize = insert(NormalizeIndexNode.create());
+        }
+        return normalize;
     }
 
     private int toInt(PInt index) {
@@ -87,7 +94,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     @Override
     public PNode makeWriteNode(PNode rhs) {
-        return SetItemNodeFactory.create(getPrimary(), getSlice(), rhs);
+        return SetItemNode.create(getPrimary(), getSlice(), rhs);
     }
 
     @Specialization
@@ -145,7 +152,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     @Specialization
     public Object doPBytes(PBytes primary, int idx) {
-        return primary.getItemNormalized(normalize.forRange(idx, primary.len()));
+        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
     }
 
     @Specialization
@@ -155,7 +162,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     @Specialization
     public Object doPByteArray(PByteArray primary, int idx) {
-        return primary.getItemNormalized(normalize.forRange(idx, primary.len()));
+        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
     }
 
     @Specialization
@@ -165,62 +172,62 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     @Specialization
     public Object doPRange(PRange primary, int idx) {
-        return primary.getItemNormalized(normalize.forRange(idx, primary.len()));
+        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
     }
 
     @Specialization
     public Object doPRange(PRange primary, long idx) {
-        return primary.getItemNormalized(normalize.forRange(idx, primary.len()));
+        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
     }
 
     @Specialization
     public int doPIntArray(PIntArray primary, int idx) {
-        return primary.getIntItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getIntItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public int doPIntArray(PIntArray primary, long idx) {
-        return primary.getIntItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getIntItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public long doPLongArray(PLongArray primary, int idx) {
-        return primary.getLongItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getLongItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public long doPLongArray(PLongArray primary, long idx) {
-        return primary.getLongItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getLongItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public double doPDoubleArray(PDoubleArray primary, int idx) {
-        return primary.getDoubleItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getDoubleItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public double doPDoubleArray(PDoubleArray primary, long idx) {
-        return primary.getDoubleItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getDoubleItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public char doPCharArray(PCharArray primary, int idx) {
-        return primary.getCharItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getCharItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public char doPCharArray(PCharArray primary, long idx) {
-        return primary.getCharItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getCharItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public Object doPArray(PArray primary, long idx) {
-        return primary.getItemNormalized(normalize.forArray(idx, primary.len()));
+        return primary.getItemNormalized(ensureNormalize().forArray(idx, primary.len()));
     }
 
     @Specialization
     public Object doPArray(PArray primary, PInt idx) {
-        return primary.getItemNormalized(normalize.forArray(toInt(idx), primary.len()));
+        return primary.getItemNormalized(ensureNormalize().forArray(toInt(idx), primary.len()));
     }
 
     @Specialization

@@ -73,7 +73,7 @@ public class PythonClass extends PythonObject {
 
     @TruffleBoundary
     public PythonClass(PythonClass typeClass, String name, PythonClass... baseClasses) {
-        super(typeClass);
+        super(typeClass, freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
         this.lookupStableAssumption = new CyclicAssumption(className);
 
@@ -89,8 +89,6 @@ public class PythonClass extends PythonObject {
         // Compute MRO
         computeMethodResolutionOrder();
 
-        // do not inherit layout from the TypeClass.
-        storage = freshShape().newInstance();
         setAttribute(__NAME__, getBaseName(name));
         setAttribute(__QUALNAME__, className);
         setAttribute(__DOC__, PNone.NONE);

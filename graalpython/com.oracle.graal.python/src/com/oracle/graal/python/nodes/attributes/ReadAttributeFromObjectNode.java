@@ -65,24 +65,70 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
 
     public abstract Object execute(Object object, Object key);
 
-    protected Location getLocationOrNull(Property prop) {
+    protected static Location getLocationOrNull(Property prop) {
         return prop == null ? null : prop.getLocation();
+    }
+
+    protected static boolean isNull(Object value) {
+        return value == null;
+    }
+
+    protected static Object readFinalValue(PythonObject object, Location location) {
+        Object value = location.get(object.getStorage());
+        return value == null ? PNone.NO_VALUE : value;
+    }
+
+    /*
+     * Includes "object" as a parameter so that Truffle DSL sees this as a dynamic check.
+     */
+    protected static boolean checkShape(@SuppressWarnings("unused") PythonObject object, PythonObject cachedObject, Shape cachedShape) {
+        return cachedObject.getStorage().getShape() == cachedShape;
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(limit = "1", //
+                    guards = {
+                                    "object == cachedObject",
+                                    "checkShape(object, cachedObject, cachedShape)",
+                                    "key == cachedKey",
+                                    "!isNull(loc)",
+                                    "loc.isAssumedFinal()"
+                    }, //
+                    assumptions = {
+                                    "layoutAssumption",
+                                    "finalAssumption"
+                    })
+    protected Object readDirectFinal(PythonObject object, Object key,
+                    @Cached("object") PythonObject cachedObject,
+                    @Cached("key") Object cachedKey,
+                    @Cached("object.getStorage().getShape()") Shape cachedShape,
+                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                    @Cached("getLocationOrNull(cachedShape.getProperty(key))") Location loc,
+                    @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
+                    @Cached("readFinalValue(object, loc)") Object cachedValue) {
+        assert assertFinal(object, key, cachedValue);
+        return cachedValue;
+    }
+
+    private static boolean assertFinal(PythonObject object, Object key, Object cachedValue) {
+        Object other = object.getStorage().get(key) == null ? PNone.NO_VALUE : object.getStorage().get(key);
+        return cachedValue == other || cachedValue instanceof Number && other instanceof Number && ((Number) cachedValue).doubleValue() == ((Number) other).doubleValue();
     }
 
     @SuppressWarnings("unused")
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
-                                    "key == cachedKey"
+                                    "key == cachedKey",
+                                    "isNull(loc) || !loc.isAssumedFinal()"
                     }, //
                     assumptions = "layoutAssumption")
     protected Object readDirect(PythonObject object, Object key,
                     @Cached("key") Object cachedKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("cachedShape.getProperty(key)") Property prop,
-                    @Cached("getLocationOrNull(prop)") Location loc) {
-        if (prop == null) {
+                    @Cached("getLocationOrNull(cachedShape.getProperty(key))") Location loc) {
+        if (loc == null) {
             return PNone.NO_VALUE;
         } else {
             return loc.get(object.getStorage());

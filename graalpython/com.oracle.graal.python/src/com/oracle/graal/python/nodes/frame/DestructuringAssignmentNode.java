@@ -41,7 +41,7 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNodeFactory.GetItemNodeGen;
+import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;

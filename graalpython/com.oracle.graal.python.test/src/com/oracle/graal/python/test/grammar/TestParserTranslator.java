@@ -257,12 +257,13 @@ public class TestParserTranslator {
 
     @Test
     public void parseSubscript() {
-        getChild(parseAs("foobar[1]", GetItemNode.class), 1, ReadGlobalOrBuiltinNode.class);
+        GetItemNode node = parseAs("foobar[1]", GetItemNode.class);
+        assertInstanceOf(node.getLeftNode(), ReadGlobalOrBuiltinNode.class);
         parseAs("foobar[:]", GetItemNode.class);
         parseAs("foobar[::]", GetItemNode.class);
         parseAs("foobar[1:2:3]", GetItemNode.class);
         GetItemNode parseAs = parseAs("foobar[1,2]", GetItemNode.class);
-        assert parseAs.getSlice() instanceof TupleLiteralNode;
+        assertInstanceOf(parseAs.getSlice(), TupleLiteralNode.class);
     }
 
     @Test
