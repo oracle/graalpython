@@ -211,12 +211,12 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(OB_SVAL, key)")
         Object doObSval(PBytes object, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object);
+            return new PySequenceArrayWrapper(object, 1);
         }
 
         @Specialization(guards = "eq(OB_START, key)")
         Object doObStart(PByteArray object, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object);
+            return new PySequenceArrayWrapper(object, 1);
         }
 
         @Specialization(guards = "eq(OB_FVAL, key)")
@@ -338,13 +338,14 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(OB_ITEM, key)")
         Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object);
+            return new PySequenceArrayWrapper(object, 4);
         }
 
         @Specialization(guards = "eq(UNICODE_WSTR, key)")
         Object doWstr(PString object, @SuppressWarnings("unused") String key,
                         @Cached("create(0)") UnicodeAsWideCharNode asWideCharNode) {
-            return new PySequenceArrayWrapper(asWideCharNode.execute(object, sizeofWchar(), object.len()));
+            int elementSize = sizeofWchar();
+            return new PySequenceArrayWrapper(asWideCharNode.execute(object, elementSize, object.len()), elementSize);
         }
 
         @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
@@ -386,7 +387,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
         Object doObSval(PBuffer object, @SuppressWarnings("unused") String key) {
-            return new PySequenceArrayWrapper(object.getDelegate());
+            return new PySequenceArrayWrapper(object.getDelegate(), 1);
         }
 
         @Specialization(guards = "eq(START, key)")
@@ -462,12 +463,12 @@ public class PythonObjectNativeWrapperMR {
             return toSulongNode;
         }
 
-        private long sizeofWchar() {
+        private int sizeofWchar() {
             if (sizeofWcharNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 sizeofWcharNode = insert(CExtNodes.SizeofWCharNode.create());
             }
-            return sizeofWcharNode.execute();
+            return (int) sizeofWcharNode.execute();
         }
     }
 

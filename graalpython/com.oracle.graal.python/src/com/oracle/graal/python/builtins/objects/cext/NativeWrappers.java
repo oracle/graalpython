@@ -195,13 +195,21 @@ public abstract class NativeWrappers {
 
         private final Object delegate;
 
-        public PySequenceArrayWrapper(Object delegate) {
+        /** Number of bytes that constitute a single element. */
+        private final int elementAccessSize;
+
+        public PySequenceArrayWrapper(Object delegate, int elementAccessSize) {
             this.delegate = delegate;
+            this.elementAccessSize = elementAccessSize;
         }
 
         @Override
         public Object getDelegate() {
             return delegate;
+        }
+
+        public int getElementAccessSize() {
+            return elementAccessSize;
         }
 
         static boolean isInstance(TruffleObject o) {

@@ -73,13 +73,15 @@ public class PyUnicodeWrapperMR {
         @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
 
         public Object access(PyUnicodeData object, String key) {
+            int elementSize;
             switch (key) {
                 case NativeMemberNames.UNICODE_DATA_ANY:
                 case NativeMemberNames.UNICODE_DATA_LATIN1:
                 case NativeMemberNames.UNICODE_DATA_UCS2:
                 case NativeMemberNames.UNICODE_DATA_UCS4:
+                    elementSize = (int) getSizeofWcharNode().execute();
                     PString s = object.getDelegate();
-                    return new PySequenceArrayWrapper(getAsWideCharNode().execute(s, getSizeofWcharNode().execute(), s.len()));
+                    return new PySequenceArrayWrapper(getAsWideCharNode().execute(s, elementSize, s.len()), elementSize);
             }
             throw UnknownIdentifierException.raise(key);
         }

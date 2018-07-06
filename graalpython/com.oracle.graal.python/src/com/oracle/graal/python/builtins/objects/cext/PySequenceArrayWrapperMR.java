@@ -75,27 +75,19 @@ public class PySequenceArrayWrapperMR {
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         @Child private ReadArrayItemNode readArrayItemNode;
-        @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceArrayWrapper object, Object key) {
-            return getToSulongNode().execute(getReadArrayItemNode().execute(object.getDelegate(), key));
+            return getReadArrayItemNode(object.getElementAccessSize()).execute(object.getDelegate(), key);
         }
 
-        private ReadArrayItemNode getReadArrayItemNode() {
+        private ReadArrayItemNode getReadArrayItemNode(int elementAccessSize) {
             if (readArrayItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readArrayItemNode = insert(ReadArrayItemNode.create());
+                readArrayItemNode = insert(ReadArrayItemNode.create(elementAccessSize));
             }
             return readArrayItemNode;
         }
 
-        private ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
-            }
-            return toSulongNode;
-        }
     }
 
     @Resolve(message = "WRITE")
@@ -127,27 +119,60 @@ public class PySequenceArrayWrapperMR {
     @TypeSystemReference(PythonTypes.class)
     abstract static class ReadArrayItemNode extends Node {
 
+        @Child private ToSulongNode toSulongNode;
+
+        final int elementAccessSize;
+
+        public ReadArrayItemNode(int elementAccessSize) {
+            this.elementAccessSize = elementAccessSize;
+        }
+
         public abstract Object execute(Object arrayObject, Object idx);
 
         @Specialization
         Object doTuple(PTuple tuple, long idx,
                         @Cached("createTupleGetItem()") TupleBuiltins.GetItemNode getItemNode) {
-            return getItemNode.execute(tuple, idx);
+            return getToSulongNode().execute(getItemNode.execute(tuple, idx));
         }
 
         @Specialization
         Object doTuple(PList list, long idx,
                         @Cached("createListGetItem()") ListBuiltins.GetItemNode getItemNode) {
-            return getItemNode.execute(list, idx);
+            return getToSulongNode().execute(getItemNode.execute(list, idx));
         }
 
-        @Specialization
-        Object doTuple(PBytes tuple, long idx) {
+        @Specialization(guards = "elementAccessSize == 1")
+        byte doBytesI8(PBytes bytes, long idx) {
             // simulate sentinel value
-            if (idx == tuple.len()) {
+            if (idx == bytes.len()) {
                 return (byte) 0;
             }
-            return tuple.getInternalByteArray()[(int) idx];
+            return bytes.getInternalByteArray()[(int) idx];
+        }
+
+        @Specialization(guards = "elementAccessSize == 2")
+        char doBytesI16(PBytes bytes, long idx) {
+            assert idx % elementAccessSize == 0;
+            int len = bytes.len() / elementAccessSize;
+            // simulate sentinel value
+            if (idx == len) {
+                return (char) 0;
+            }
+            int i = (int) idx * elementAccessSize;
+            byte[] barr = bytes.getInternalByteArray();
+            return (char) (barr[i] | (barr[i + 1] << 8) & 0xFF00);
+        }
+
+        @Specialization(guards = "elementAccessSize == 4")
+        int doBytesI32(PBytes bytes, long idx) {
+            int len = bytes.len() / elementAccessSize;
+            // simulate sentinel value
+            if (idx == len) {
+                return 0;
+            }
+            int i = (int) idx * elementAccessSize;
+            byte[] barr = bytes.getInternalByteArray();
+            return barr[i] | (barr[i + 1] << 8) & 0xFF00 | (barr[i + 2] << 16) & 0xFF0000 | (barr[i + 3] << 24) & 0xFF000000;
         }
 
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
@@ -172,8 +197,16 @@ public class PySequenceArrayWrapperMR {
             return object instanceof PList;
         }
 
-        public static ReadArrayItemNode create() {
-            return ReadArrayItemNodeGen.create();
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
+
+        public static ReadArrayItemNode create(int elementAccessSize) {
+            return ReadArrayItemNodeGen.create(elementAccessSize);
         }
     }
 
