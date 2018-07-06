@@ -54,4 +54,5 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE = "PyTruffle_ByteArrayToNative";
     public static final String FUN_GET_OB_TYPE = "get_ob_type";
     public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
+    public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
 }

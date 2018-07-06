@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.GetTypeIDNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ReadArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -52,8 +54,10 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -68,22 +72,34 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
 public class PySequenceArrayWrapperMR {
+
+    @SuppressWarnings("unknown-message")
+    @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
+    abstract static class GetDynamicTypeNode extends Node {
+        @Child GetTypeIDNode getTypeIDNode = GetTypeIDNode.create();
+
+        public Object access(PySequenceArrayWrapper object) {
+            return getTypeIDNode.execute(object.getDelegate());
+        }
+
+    }
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         @Child private ReadArrayItemNode readArrayItemNode;
 
         public Object access(PySequenceArrayWrapper object, Object key) {
-            return getReadArrayItemNode(object.getElementAccessSize()).execute(object.getDelegate(), key);
+            return getReadArrayItemNode().execute(object.getDelegate(), key);
         }
 
-        private ReadArrayItemNode getReadArrayItemNode(int elementAccessSize) {
+        private ReadArrayItemNode getReadArrayItemNode() {
             if (readArrayItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readArrayItemNode = insert(ReadArrayItemNode.create(elementAccessSize));
+                readArrayItemNode = insert(ReadArrayItemNode.create());
             }
             return readArrayItemNode;
         }
@@ -121,12 +137,6 @@ public class PySequenceArrayWrapperMR {
 
         @Child private ToSulongNode toSulongNode;
 
-        final int elementAccessSize;
-
-        public ReadArrayItemNode(int elementAccessSize) {
-            this.elementAccessSize = elementAccessSize;
-        }
-
         public abstract Object execute(Object arrayObject, Object idx);
 
         @Specialization
@@ -141,38 +151,32 @@ public class PySequenceArrayWrapperMR {
             return getToSulongNode().execute(getItemNode.execute(list, idx));
         }
 
-        @Specialization(guards = "elementAccessSize == 1")
-        byte doBytesI8(PBytes bytes, long idx) {
-            // simulate sentinel value
-            if (idx == bytes.len()) {
-                return (byte) 0;
-            }
-            return bytes.getInternalByteArray()[(int) idx];
-        }
-
-        @Specialization(guards = "elementAccessSize == 2")
-        char doBytesI16(PBytes bytes, long idx) {
-            assert idx % elementAccessSize == 0;
-            int len = bytes.len() / elementAccessSize;
+        @Specialization
+        long doBytesI32(PBytes bytes, long idx) {
+            int len = bytes.len();
             // simulate sentinel value
             if (idx == len) {
-                return (char) 0;
+                return 0L;
             }
-            int i = (int) idx * elementAccessSize;
+            int i = (int) idx;
             byte[] barr = bytes.getInternalByteArray();
-            return (char) (barr[i] | (barr[i + 1] << 8) & 0xFF00);
-        }
-
-        @Specialization(guards = "elementAccessSize == 4")
-        int doBytesI32(PBytes bytes, long idx) {
-            int len = bytes.len() / elementAccessSize;
-            // simulate sentinel value
-            if (idx == len) {
-                return 0;
-            }
-            int i = (int) idx * elementAccessSize;
-            byte[] barr = bytes.getInternalByteArray();
-            return barr[i] | (barr[i + 1] << 8) & 0xFF00 | (barr[i + 2] << 16) & 0xFF0000 | (barr[i + 3] << 24) & 0xFF000000;
+            long result = 0;
+            result |= barr[i];
+            if (i + 1 < len)
+                result |= (barr[i + 1] << 8L) & 0xFF00L;
+            if (i + 2 < len)
+                result |= (barr[i + 2] << 16L) & 0xFF0000L;
+            if (i + 3 < len)
+                result |= (barr[i + 3] << 24L) & 0xFF000000L;
+            if (i + 4 < len)
+                result |= (barr[i + 4] << 32L) & 0xFF00000000L;
+            if (i + 5 < len)
+                result |= (barr[i + 5] << 40L) & 0xFF0000000000L;
+            if (i + 6 < len)
+                result |= (barr[i + 6] << 48L) & 0xFF000000000000L;
+            if (i + 7 < len)
+                result |= (barr[i + 7] << 56L) & 0xFF00000000000000L;
+            return result;
         }
 
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
@@ -205,8 +209,8 @@ public class PySequenceArrayWrapperMR {
             return toSulongNode;
         }
 
-        public static ReadArrayItemNode create(int elementAccessSize) {
-            return ReadArrayItemNodeGen.create(elementAccessSize);
+        public static ReadArrayItemNode create() {
+            return ReadArrayItemNodeGen.create();
         }
     }
 
@@ -316,6 +320,79 @@ public class PySequenceArrayWrapperMR {
                 }
             }
             return (long) nativePointer;
+        }
+    }
+
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class GetTypeIDNode extends PBaseNode {
+
+        @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create(1);
+
+        @CompilationFinal TruffleObject funGetByteArrayTypeID;
+
+        public abstract Object execute(Object delegate);
+
+        private Object callGetByteArrayTypeID(long len) {
+            return callUnaryNode.execute(getGetByteArrayTypeIDFunc(), new Object[]{len});
+        }
+
+        private TruffleObject getGetByteArrayTypeIDFunc() {
+            if (funGetByteArrayTypeID == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                funGetByteArrayTypeID = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID);
+            }
+            return funGetByteArrayTypeID;
+        }
+
+        @Specialization
+        Object doTuple(PTuple tuple) {
+            return callGetByteArrayTypeID(tuple.len());
+        }
+
+        @Specialization
+        Object doTuple(PList list) {
+            return callGetByteArrayTypeID(list.len());
+        }
+
+        @Specialization
+        Object doBytes(PBytes bytes) {
+            return callGetByteArrayTypeID(bytes.len());
+        }
+
+        @Specialization
+        Object doByteArray(PByteArray bytes) {
+            return callGetByteArrayTypeID(bytes.len());
+        }
+
+        @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
+        Object doGeneric(Object object,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode getLenNode) {
+            try {
+                return callGetByteArrayTypeID(getLenNode.executeInt(object));
+            } catch (UnexpectedResultException e) {
+                // TODO do something useful
+                throw new AssertionError();
+            }
+        }
+
+        protected static ListBuiltins.GetItemNode createListGetItem() {
+            return ListBuiltinsFactory.GetItemNodeFactory.create();
+        }
+
+        protected static TupleBuiltins.GetItemNode createTupleGetItem() {
+            return TupleBuiltinsFactory.GetItemNodeFactory.create();
+        }
+
+        protected boolean isTuple(Object object) {
+            return object instanceof PTuple;
+        }
+
+        protected boolean isList(Object object) {
+            return object instanceof PList;
+        }
+
+        public static GetTypeIDNode create() {
+            return GetTypeIDNodeGen.create();
         }
     }
 

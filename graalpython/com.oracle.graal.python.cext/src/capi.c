@@ -114,6 +114,11 @@ initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
 initialize_type(PyDictProxy_Type, mappingproxy, _object);
 initialize_type(PyEllipsis_Type, ellipsis, _object);
 
+typedef struct {
+    uint8_t element;
+} suint8_t;
+POLYGLOT_DECLARE_TYPE(suint8_t);
+
 static void initialize_globals() {
     // None
     PyObject* jnone = UPCALL_CEXT_O("Py_None");
@@ -199,6 +204,11 @@ PyObject* to_sulong(void *o) {
 /** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
     return native_to_java((PyObject*)(obj->ob_type));
+}
+
+/** to be used from Java code only; returns the type ID for a byte array */
+polyglot_typeid get_byte_array_typeid(uint64_t len) {
+    return polyglot_array_typeid(polyglot_suint8_t_typeid(), len);
 }
 
 typedef struct PyObjectHandle {
