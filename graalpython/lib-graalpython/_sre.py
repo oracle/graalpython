@@ -145,12 +145,35 @@ class SRE_Pattern():
         if _tregex_available:
             self.__tregex_engine = _interop.eval(string="", language="regex")("", self.__fallback_engine)
 
+    class InternalSREPattern:
+        def __init__(self, match_result):
+            self._match_result = match_result
+            self.isMatch = match_result != None
+            self.regex = match_result.re
+
+        @property
+        def start(self):
+            return [self._match_result.start()]
+
+        @property
+        def end(self):
+            return [self._match_result.end()]
+
+    class RegexResult:
+        def __init__(self, cpython_sre_result):
+            __tdebug__(cpython_sre_result)
+            self._sre_result = cpython_sre_result
+
+        def __call__(self, original_result, pattern, start_pos):
+            __tdebug__(original_result, pattern, start_pos)
+            return SRE_Pattern.InternalSREPattern(self._sre_result.match(pattern, start_pos))
+
 
     def __fallback_engine(self, pattern, flags):
         try:
             print("IMPORTING SRE_COMPILE")
             import _cpython_sre
-            return lambda regexObj, pattern, start_pos: _cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup).match(pattern, start_pos)
+            return self.RegexResult(_cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup))
         except:
             # TODO reporting ?
             raise
