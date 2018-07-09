@@ -65,11 +65,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         defaults.executeVoid(frame);
 
         PCell[] closure = getClosureFromLocals(frame);
-        if (getContext().isInitialized()) {
-            return factory().createFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure);
-        } else {
-            return factory().createBuiltinFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure);
-        }
+        return factory().createFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure);
     }
 
     public String getFunctionName() {
