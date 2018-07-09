@@ -151,14 +151,19 @@ public class PySequenceArrayWrapperMR {
             return getToSulongNode().execute(getItemNode.execute(list, idx));
         }
 
+        /**
+         * The sequence array wrapper of a {@code bytes} object represents {@code ob_sval}. We type
+         * it as {@code uint8_t*} and therefore we get a byte index. However, we return
+         * {@code uint64_t} since we do not know how many bytes are requested.
+         */
         @Specialization
-        long doBytesI32(PBytes bytes, long idx) {
+        long doBytesI32(PBytes bytes, long byteIdx) {
             int len = bytes.len();
             // simulate sentinel value
-            if (idx == len) {
+            if (byteIdx == len) {
                 return 0L;
             }
-            int i = (int) idx;
+            int i = (int) byteIdx;
             byte[] barr = bytes.getInternalByteArray();
             long result = 0;
             result |= barr[i];
@@ -329,29 +334,34 @@ public class PySequenceArrayWrapperMR {
         @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create(1);
 
         @CompilationFinal TruffleObject funGetByteArrayTypeID;
+        @CompilationFinal TruffleObject funGetPtrArrayTypeID;
 
         public abstract Object execute(Object delegate);
 
         private Object callGetByteArrayTypeID(long len) {
-            return callUnaryNode.execute(getGetByteArrayTypeIDFunc(), new Object[]{len});
-        }
-
-        private TruffleObject getGetByteArrayTypeIDFunc() {
             if (funGetByteArrayTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 funGetByteArrayTypeID = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID);
             }
-            return funGetByteArrayTypeID;
+            return callUnaryNode.execute(funGetByteArrayTypeID, new Object[]{len});
+        }
+
+        private Object callGetPtrArrayTypeID(long len) {
+            if (funGetPtrArrayTypeID == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                funGetPtrArrayTypeID = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID);
+            }
+            return callUnaryNode.execute(funGetPtrArrayTypeID, new Object[]{len});
         }
 
         @Specialization
         Object doTuple(PTuple tuple) {
-            return callGetByteArrayTypeID(tuple.len());
+            return callGetPtrArrayTypeID(tuple.len());
         }
 
         @Specialization
-        Object doTuple(PList list) {
-            return callGetByteArrayTypeID(list.len());
+        Object doList(PList list) {
+            return callGetPtrArrayTypeID(list.len());
         }
 
         @Specialization
@@ -368,7 +378,7 @@ public class PySequenceArrayWrapperMR {
         Object doGeneric(Object object,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode getLenNode) {
             try {
-                return callGetByteArrayTypeID(getLenNode.executeInt(object));
+                return callGetPtrArrayTypeID(getLenNode.executeInt(object));
             } catch (UnexpectedResultException e) {
                 // TODO do something useful
                 throw new AssertionError();

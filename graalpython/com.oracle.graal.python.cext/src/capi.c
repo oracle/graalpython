@@ -114,10 +114,11 @@ initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
 initialize_type(PyDictProxy_Type, mappingproxy, _object);
 initialize_type(PyEllipsis_Type, ellipsis, _object);
 
-typedef struct {
-    uint8_t element;
-} suint8_t;
-POLYGLOT_DECLARE_TYPE(suint8_t);
+typedef uint8_t ByteArray[0];
+POLYGLOT_DECLARE_TYPE(ByteArray);
+
+typedef PyObject* PtrArray[0];
+POLYGLOT_DECLARE_TYPE(PtrArray);
 
 static void initialize_globals() {
     // None
@@ -208,7 +209,12 @@ void* get_ob_type(PyObject* obj) {
 
 /** to be used from Java code only; returns the type ID for a byte array */
 polyglot_typeid get_byte_array_typeid(uint64_t len) {
-    return polyglot_array_typeid(polyglot_suint8_t_typeid(), len);
+    return polyglot_ByteArray_typeid();
+}
+
+/** to be used from Java code only; returns the type ID for a 'PyObject*' array */
+polyglot_typeid get_ptr_array_typeid(uint64_t len) {
+    return polyglot_PtrArray_typeid();
 }
 
 typedef struct PyObjectHandle {
@@ -236,7 +242,6 @@ void* PyObjectHandle_ForJavaType(void* ptype) {
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
 void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
-    // TODO do polyglot typecast depending on element_size
     return truffle_deref_handle_for_managed(jobj);
 }
 
