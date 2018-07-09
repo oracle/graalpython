@@ -74,7 +74,7 @@ public abstract class NativeWrappers {
         }
 
         static boolean isInstance(TruffleObject o) {
-            return o instanceof PythonNativeWrapper;
+            return o instanceof PythonObjectNativeWrapper || o instanceof TruffleObjectNativeWrapper;
         }
 
         @Override
