@@ -507,7 +507,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * @param locals TODO: support the locals dictionary in execution
          */
         @TruffleBoundary
-        private static Object evalNode(RootNode root, PythonObject globals, @SuppressWarnings("unused") PythonObject locals, PCell[] closure) {
+        private static Object evalNode(RootNode root, PythonObject globals, PythonObject locals, PCell[] closure) {
             Object[] args = PArguments.create();
             PArguments.setGlobals(args, globals);
             PArguments.setClosure(args, closure);
