@@ -48,9 +48,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class LookupAttributeInMRONode extends PBaseNode {
@@ -106,32 +103,43 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
      */
     public abstract Object execute(PythonClass klass);
 
-    protected PythonClass findClassInMRO(PythonClass klass) {
+    final static class PythonClassAssumptionPair {
+        public PythonClass cls;
+        public Assumption assumption;
+
+        public PythonClassAssumptionPair(PythonClass cls, Assumption assumption) {
+            this.cls = cls;
+            this.assumption = assumption;
+        }
+    }
+
+    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(PythonClass klass) {
         PythonClass[] mro = klass.getMethodResolutionOrder();
+        Assumption attrAssumption = null;
         for (int i = 0; i < mro.length; i++) {
             PythonClass kls = mro[i];
+            if (attrAssumption == null) {
+                attrAssumption = kls.createAttributeInMROFinalAssumption(key);
+            } else {
+                kls.setAttributesInMROFinalAssumption(key, attrAssumption);
+            }
+
             if (kls.getStorage().containsKey(key)) {
-                return kls;
+                return new PythonClassAssumptionPair(kls, attrAssumption);
             }
         }
-        return null;
+        return new PythonClassAssumptionPair(null, attrAssumption);
     }
 
-    protected Location getLocationOrNull(Shape shape) {
-        Property prop = shape.getProperty(key);
-        return prop == null ? null : prop.getLocation();
-    }
-
-    @Specialization(guards = {"klass == cachedKlass", "cachedAttrKlass != null"}, limit = "5", assumptions = {"lookupStable", "finalAssumption"}, rewriteOn = IllegalStateException.class)
+    @Specialization(guards = {"klass == cachedKlass", "cachedAttrKlass != null"}, limit = "5", assumptions = {"lookupStable", "attributeInMROFinalAssumption"}, rewriteOn = IllegalStateException.class)
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                    @Cached("findClassInMRO(cachedKlass)") PythonClass cachedAttrKlass,
-                    @Cached("createBinaryProfile()") ConditionProfile attributeDeletedProfile,
-                    @Cached("cachedAttrKlass.getStorage().getShape()") @SuppressWarnings("unused") Shape cachedShape,
-                    @Cached("getLocationOrNull(cachedShape)") @SuppressWarnings("unused") Location loc,
-                    @Cached("loc.getFinalAssumption()") @SuppressWarnings("unused") Assumption finalAssumption) {
+                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClassAssumptionPair cachedPair,
+                    @Cached("cachedPair.cls") PythonClass cachedAttrKlass,
+                    @Cached("cachedPair.assumption") @SuppressWarnings("unused") Assumption attributeInMROFinalAssumption,
+                    @Cached("createBinaryProfile()") ConditionProfile attributeDeletedProfile) {
         Object value = readAttrNode.execute(cachedAttrKlass, key);
         if (attributeDeletedProfile.profile(value == PNone.NO_VALUE)) {
             // in case the attribute was deleted

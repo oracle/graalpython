@@ -31,7 +31,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -41,10 +43,11 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
@@ -61,6 +64,7 @@ public class PythonClass extends PythonObject {
     @CompilationFinal(dimensions = 1) private PythonClass[] baseClasses;
     @CompilationFinal(dimensions = 1) private PythonClass[] methodResolutionOrder;
     private CyclicAssumption lookupStableAssumption;
+    private Map<Object, List<Assumption>> attributesInMROFinalAssumptions;
 
     private final Set<PythonClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonClass, Boolean>());
     private final Shape instanceShape;
@@ -76,6 +80,7 @@ public class PythonClass extends PythonObject {
         super(typeClass, freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
         this.lookupStableAssumption = new CyclicAssumption(className);
+        this.attributesInMROFinalAssumptions = new HashMap<>();
 
         assert baseClasses.length > 0;
         if (baseClasses.length == 1 && baseClasses[0] == null) {
@@ -106,6 +111,38 @@ public class PythonClass extends PythonObject {
 
     public Assumption getLookupStableAssumption() {
         return lookupStableAssumption.getAssumption();
+    }
+
+    @TruffleBoundary
+    public Assumption createAttributeInMROFinalAssumption(Object name) {
+        List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
+        if (attrAssumptions == null) {
+            attrAssumptions = new ArrayList<>();
+            attributesInMROFinalAssumptions.put(name, attrAssumptions);
+        }
+
+        Assumption assumption = Truffle.getRuntime().createAssumption(className + "." + name);
+        attrAssumptions.add(assumption);
+        return assumption;
+    }
+
+    @TruffleBoundary
+    public void setAttributesInMROFinalAssumption(Object name, Assumption assumption) {
+        List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
+        if (attrAssumptions == null) {
+            attrAssumptions = new ArrayList<>();
+            attributesInMROFinalAssumptions.put(name, attrAssumptions);
+        }
+
+        attrAssumptions.add(assumption);
+    }
+
+    @TruffleBoundary
+    public void invalidateAttributeInMROFinalAssumptions(Object name) {
+        List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, new ArrayList<>());
+        for (Assumption assumption : assumptions) {
+            assumption.invalidate();
+        }
     }
 
     @TruffleBoundary
