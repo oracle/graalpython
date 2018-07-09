@@ -43,7 +43,7 @@ PyObject* PyImport_ImportModule(const char *name) {
 }
 
 PyObject* PyImport_Import(PyObject *name) {
-    return UPCALL_CEXT_O("PyImport_Import", native_to_java(name));
+    return UPCALL_CEXT_O("PyImport_ImportModule", native_to_java(name));
 }
 
 PyObject* PyImport_ImportModuleLevelObject(PyObject* name, PyObject* globals, PyObject* locals,

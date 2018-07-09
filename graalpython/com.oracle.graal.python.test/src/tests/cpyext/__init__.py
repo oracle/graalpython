@@ -70,14 +70,7 @@ class CPyExtTestCase():
 def ccompile(self, name):
     from distutils.core import setup, Extension
     source_file = '%s/%s.c' % (__dir__, name)
-
-    try:
-        stat_result = os.stat(source_file)
-        if stat_result[6] == 0:
-            raise SystemError("empty source file %s" % (source_file,))
-    except FileNotFoundError:
-        raise SystemError("source file %s not available" % (source_file,))
-
+    file_not_empty(source_file)
     module = Extension(name, sources=[source_file])
     args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
     setup(
@@ -90,24 +83,19 @@ def ccompile(self, name):
     )
     # ensure file was really written
     binary_file_llvm = '%s/%s.bc' % (__dir__, name)
-    binary_file_gcc = '%s/%s.so' % (__dir__, name)
-
-    tries = 0
-    while tries < 3 and not file_not_empty(binary_file_llvm) and not file_not_empty(binary_file_gcc):
-        tries += 1
-
-    if tries >= 3:
-        raise SystemError("binary file %s/%s.(bc|so) not available" % (__dir__, name))
+    if GRAALPYTHON:
+        file_not_empty(binary_file_llvm)
 
 
 def file_not_empty(path):
-    try:
-        stat_result = os.stat(path)
-        if stat_result[6] == 0:
-            return False
-    except FileNotFoundError:
-        return False
-    return True
+    for i in range(3):
+        try:
+            stat_result = os.stat(path)
+            if stat_result[6] != 0:
+                return
+        except FileNotFoundError:
+            pass
+    raise SystemError("file %s not available" % path)
 
 
 c_template = """

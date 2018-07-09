@@ -272,3 +272,19 @@ class TestPyLong(CPyExtTestCase):
         arguments=["PyObject* o"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyLong_FromString = CPyExtFunction(
+        lambda args: int(args[0], args[1]),
+        lambda: (
+            ("  12 ", 10),
+            ("12", 0),
+        ),
+        code='''PyObject* wrap_PyLong_FromString(const char* str, int base) {
+            char* pend;
+            return PyLong_FromString(str, &pend, base);
+        }''',
+        callfunction="wrap_PyLong_FromString",
+        resultspec="O",
+        argspec="si",
+        arguments=["char* string", "int base"],
+    )

@@ -110,3 +110,41 @@ class TestMisc(CPyExtTestCase):
         arguments=["PyObject* ignored"],
         callfunction="wrap_PyImport_GetModuleDict",
     )
+
+    test_PyImport_Import = CPyExtFunction(
+        _reference_importmodule,
+        lambda: (
+            ("os",),
+            ("os.path",),
+            ("distutils.core",),
+            ("nonexisting",),
+        ),
+        resultspec="O",
+        argspec="O",
+        arguments=["PyObject* module_name"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyImport_ImportModuleLevelObject = CPyExtFunction(
+        lambda args: __import__(*args),
+        lambda: (
+            ("os", None, None, ["*"], 0),
+            ("os", None, None, ["path"], 0),
+        ),
+        resultspec="O",
+        argspec="OOOOi",
+        arguments=["PyObject* name", "PyObject* globals", "PyObject* locals", "PyObject* fromlist", "int level"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyImport_ImportModuleLevel = CPyExtFunction(
+        lambda args: __import__(*args),
+        lambda: (
+            ("os", None, None, ["*"], 0),
+            ("os", None, None, ["path"], 0),
+        ),
+        resultspec="O",
+        argspec="sOOOi",
+        arguments=["char* name", "PyObject* globals", "PyObject* locals", "PyObject* fromlist", "int level"],
+        cmpfunc=unhandled_error_compare
+    )
