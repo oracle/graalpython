@@ -51,6 +51,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class LookupAttributeInMRONode extends PBaseNode {
 
@@ -127,11 +128,12 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
                     @Cached("findClassInMRO(cachedKlass)") PythonClass cachedAttrKlass,
+                    @Cached("createBinaryProfile()") ConditionProfile attributeDeletedProfile,
                     @Cached("cachedAttrKlass.getStorage().getShape()") @SuppressWarnings("unused") Shape cachedShape,
                     @Cached("getLocationOrNull(cachedShape)") @SuppressWarnings("unused") Location loc,
                     @Cached("loc.getFinalAssumption()") @SuppressWarnings("unused") Assumption finalAssumption) {
         Object value = readAttrNode.execute(cachedAttrKlass, key);
-        if (value == PNone.NO_VALUE) {
+        if (attributeDeletedProfile.profile(value == PNone.NO_VALUE)) {
             // in case the attribute was deleted
             throw new IllegalStateException();
         }
