@@ -38,17 +38,27 @@ public final class EmptySequenceStorage extends SequenceStorage {
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
 
     @Override
-    public SequenceStorage generalizeFor(Object value) {
+    public SequenceStorage generalizeFor(Object value, SequenceStorage target) {
         final SequenceStorage generalized;
 
-        if (value instanceof Integer) {
-            if (!PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceLongType)) {
-                generalized = new IntSequenceStorage();
+        if (value instanceof Byte) {
+            generalized = new ByteSequenceStorage(16);
+        } else if (value instanceof Integer) {
+            if (target instanceof ByteSequenceStorage) {
+                generalized = new ByteSequenceStorage(16);
+            } else {
+                if (!PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceLongType)) {
+                    generalized = new IntSequenceStorage();
+                } else {
+                    generalized = new LongSequenceStorage();
+                }
+            }
+        } else if (value instanceof Long) {
+            if (target instanceof ByteSequenceStorage) {
+                generalized = new ByteSequenceStorage(16);
             } else {
                 generalized = new LongSequenceStorage();
             }
-        } else if (value instanceof Long) {
-            generalized = new LongSequenceStorage();
         } else if (value instanceof Double) {
             generalized = new DoubleSequenceStorage();
         } else if (value instanceof PList) {

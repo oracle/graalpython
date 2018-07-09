@@ -147,13 +147,13 @@ public final class PList extends PSequence {
 
     public final void append(Object value) {
         if (store instanceof EmptySequenceStorage) {
-            store = store.generalizeFor(value);
+            store = store.generalizeFor(value, null);
         }
 
         try {
             store.append(value);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value);
+            store = store.generalizeFor(value, null);
 
             try {
                 store.append(value);
@@ -169,7 +169,7 @@ public final class PList extends PSequence {
         try {
             store.extend(other);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(other.getIndicativeValue());
+            store = store.generalizeFor(other.getIndicativeValue(), other);
 
             try {
                 store.extend(other);
@@ -186,7 +186,7 @@ public final class PList extends PSequence {
         try {
             newStore.extend(otherStore);
         } catch (SequenceStoreException e) {
-            newStore = newStore.generalizeFor(otherStore.getIndicativeValue());
+            newStore = newStore.generalizeFor(otherStore.getIndicativeValue(), otherStore);
 
             try {
                 newStore.extend(otherStore);
@@ -207,7 +207,7 @@ public final class PList extends PSequence {
         try {
             store.insertItem(index, value);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value);
+            store = store.generalizeFor(value, null);
 
             try {
                 store.insertItem(index, value);

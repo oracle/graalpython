@@ -260,7 +260,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public ObjectSequenceStorage generalizeFor(Object value) {
+    public ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
         return this;
     }
 

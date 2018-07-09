@@ -78,7 +78,7 @@ public final class PByteArray extends PArray implements PIBytesLike {
         try {
             store.setItemNormalized(index, value);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value);
+            store = store.generalizeFor(value, null);
 
             try {
                 store.setItemNormalized(index, value);
@@ -102,13 +102,14 @@ public final class PByteArray extends PArray implements PIBytesLike {
             normalizedStop = normalizedStart;
         }
 
+        SequenceStorage other = value.getSequenceStorage();
         try {
-            store.setSliceInBound(normalizedStart, normalizedStop, step, value.getSequenceStorage());
+            store.setSliceInBound(normalizedStart, normalizedStop, step, other);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value.getSequenceStorage().getIndicativeValue());
+            store = store.generalizeFor(other.getIndicativeValue(), other);
 
             try {
-                store.setSliceInBound(start, stop, step, value.getSequenceStorage());
+                store.setSliceInBound(start, stop, step, other);
             } catch (SequenceStoreException ex) {
                 throw new IllegalStateException();
             }

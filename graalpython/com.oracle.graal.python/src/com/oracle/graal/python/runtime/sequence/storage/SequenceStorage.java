@@ -74,7 +74,7 @@ public abstract class SequenceStorage {
 
     public abstract boolean equals(SequenceStorage other);
 
-    public abstract SequenceStorage generalizeFor(Object value);
+    public abstract SequenceStorage generalizeFor(Object value, SequenceStorage other);
 
     public abstract Object getIndicativeValue();
 
