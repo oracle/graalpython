@@ -52,6 +52,7 @@ import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class), @NodeChild(value = "rhs", type = PNode.class)})
@@ -93,16 +94,21 @@ public abstract class SetAttributeNode extends PNode implements WriteNode {
     protected Object doClass(PythonClass cls, Object key, Object value,
                     @Cached("createIdentityProfile()") ValueProfile setattributeProfile,
                     @Cached("create(__SETATTR__)") LookupAttributeInMRONode setattributeLookup,
-                    @Cached("create()") CallTernaryMethodNode callSetattr) {
-        Object descr = setattributeProfile.profile(setattributeLookup.execute(cls));
-        PythonClass[] mro = cls.getMethodResolutionOrder();
-        for (int i = 0; i < mro.length; i++) {
-            PythonClass kls = mro[i];
-            DynamicObject storage = kls.getStorage();
-            if (storage.containsKey(key)) {
-                storage.getShape().getProperty(key).getLocation().getFinalAssumption().invalidate();
+                    @Cached("create()") CallTernaryMethodNode callSetattr,
+                    @Cached("createBinaryProfile()") ConditionProfile isAddingAttributeProfile) {
+        // add new attribute case: invalidate the final assumption for the classes in the MRO chain
+        // this is needed to de-specialize LookupAttributeInMRONode.lookupConstantMROCached
+        if (isAddingAttributeProfile.profile(cls.getStorage().containsKey(key))) {
+            PythonClass[] mro = cls.getMethodResolutionOrder();
+            for (int i = 0; i < mro.length; i++) {
+                PythonClass kls = mro[i];
+                DynamicObject storage = kls.getStorage();
+                if (storage.containsKey(key)) {
+                    storage.getShape().getProperty(key).getLocation().getFinalAssumption().invalidate();
+                }
             }
         }
+        Object descr = setattributeProfile.profile(setattributeLookup.execute(cls));
         return callSetattr.execute(descr, cls, key, value);
     }
 
