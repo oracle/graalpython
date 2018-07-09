@@ -137,6 +137,7 @@ class SRE_Pattern():
         self.num_groups = groups
         self.groupindex = groupindex
         self.indexgroup = indexgroup
+        self.__compiled_sre_pattern = None
         jsflags = []
         for i,jsflag in enumerate(_FLAGS_TO_JS):
             if flags & (1 << i):
@@ -171,12 +172,17 @@ class SRE_Pattern():
 
     def __fallback_engine(self, pattern, flags):
         try:
-            print("IMPORTING SRE_COMPILE")
-            import _cpython_sre
-            return self.RegexResult(_cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup))
+            return self.RegexResult(self.__compile_cpython_sre())
         except:
             # TODO reporting ?
             raise
+
+    def __compile_cpython_sre(self):
+        if not self.__compiled_sre_pattern:
+            print("IMPORTING SRE_COMPILE")
+            import _cpython_sre
+            self.__compiled_sre_pattern = _cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
+        return self.__compiled_sre_pattern
 
 
     def _decode_string(self, string, flags=0):
@@ -246,26 +252,31 @@ class SRE_Pattern():
         return self._search(pattern, string, pos, endpos)
 
     def findall(self, string, pos=0, endpos=-1):
-        pattern = self.__tregex_engine(self.pattern, self.jsflags)
-        string = self._decode_string(string)
-        if endpos > len(string):
-            endpos = len(string)
-        elif endpos < 0:
-            endpos = endpos % len(string) + 1
-        matchlist = []
-        while pos < endpos:
-            result = pattern.exec(string, pos)
-            if not result.isMatch:
-                break
-            elif self.num_groups == 0:
-                matchlist.append("")
-            elif self.num_groups == 1:
-                matchlist.append(string[result.start[1]:result.end[1]])
-            else:
-                matchlist.append(SRE_Match(self, pos, endpos, result).groups())
-            no_progress = (result.start[0] == result.end[0])
-            pos = result.end[0] + no_progress
-        return matchlist
+        try:
+            pattern = self.__tregex_engine(self.pattern, self.jsflags)
+            string = self._decode_string(string)
+            if endpos > len(string):
+                endpos = len(string)
+            elif endpos < 0:
+                endpos = endpos % len(string) + 1
+            matchlist = []
+            while pos < endpos:
+                result = pattern.exec(string, pos)
+                if not result.isMatch:
+                    break
+                elif self.num_groups == 0:
+                    matchlist.append("")
+                elif self.num_groups == 1:
+                    matchlist.append(string[result.start[1]:result.end[1]])
+                else:
+                    matchlist.append(SRE_Match(self, pos, endpos, result).groups())
+                no_progress = (result.start[0] == result.end[0])
+                pos = result.end[0] + no_progress
+            return matchlist
+        except:
+            # use fallback engine
+            return self.__compile_cpython_sre().finall(string, pos, endpos)
+            
 
     def sub(self, repl, string, count=0):
         n = 0
@@ -273,7 +284,7 @@ class SRE_Pattern():
         string = self._decode_string(string)
         result = []
         pos = 0
-        while count == 0 or n < count:
+        while (count == 0 or n < count) and pos <= len(string):
             match = pattern.exec(string, pos)
             if not match.isMatch:
                 break
