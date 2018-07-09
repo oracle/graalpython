@@ -289,3 +289,35 @@ def test_create_seq_and_kw():
     d = dict(dict(a=1, b=2, c=3), d=4)
     for k in ['a', 'b', 'c', 'd']:
         assert k in d
+
+
+def test_dictview_set_operations_on_keys():
+    k1 = {1: 1, 2: 2}.keys()
+    k2 = {1: 1, 2: 2, 3: 3}.keys()
+    k3 = {4: 4}.keys()
+
+    assert k1 - k2 == set()
+    assert k1 - k3 == {1, 2}
+    assert k2 - k1 == {3}
+    assert k3 - k1 == {4}
+    assert k1 & k2 == {1, 2}
+    assert k1 & k3 == set()
+    assert k1 | k2 == {1, 2, 3}
+    assert k1 ^ k2 == {3}
+    assert k1 ^ k3 == {1, 2, 4}
+
+
+def test_dictview_set_operations_on_items():
+    k1 = {1: 1, 2: 2}.items()
+    k2 = {1: 1, 2: 2, 3: 3}.items()
+    k3 = {4: 4}.items()
+
+    assert k1 - k2 == set()
+    # assert k1 - k3 == {(1, 1), (2, 2)}
+    # assert k2 - k1 == {(3, 3)}
+    # assert k3 - k1 == {(4, 4)}
+    # assert k1 & k2 == {(1, 1), (2, 2)}
+    # assert k1 & k3 == set()
+    # assert k1 | k2 == {(1, 1), (2, 2), (3, 3)}
+    # assert k1 ^ k2 == {(3, 3)}
+    # assert k1 ^ k3 == {(1, 1), (2, 2), (4, 4)}

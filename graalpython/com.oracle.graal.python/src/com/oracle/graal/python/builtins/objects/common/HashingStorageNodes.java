@@ -1277,6 +1277,41 @@ public abstract class HashingStorageNodes {
         }
     }
 
+    public static class ExclusiveOrNode extends Node {
+        @Child private ContainsKeyNode containsKeyNode;
+        @Child private SetItemNode setItemNode;
+
+        public HashingStorage execute(HashingStorage left, HashingStorage right) {
+            EconomicMapStorage newStorage = EconomicMapStorage.create(false);
+            if (left.length() != 0 && right.length() != 0) {
+                if (containsKeyNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    containsKeyNode = insert(ContainsKeyNode.create());
+                }
+                if (setItemNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    setItemNode = insert(SetItemNode.create());
+                }
+
+                for (Object leftKey : left.keys()) {
+                    if (!containsKeyNode.execute(right, leftKey)) {
+                        setItemNode.execute(null, newStorage, leftKey, PNone.NO_VALUE);
+                    }
+                }
+                for (Object rightKey : right.keys()) {
+                    if (!containsKeyNode.execute(left, rightKey)) {
+                        setItemNode.execute(null, newStorage, rightKey, PNone.NO_VALUE);
+                    }
+                }
+            }
+            return newStorage;
+        }
+
+        public static ExclusiveOrNode create() {
+            return new ExclusiveOrNode();
+        }
+    }
+
     public abstract static class DiffNode extends DictStorageBaseNode {
 
         public abstract HashingStorage execute(HashingStorage left, HashingStorage right);

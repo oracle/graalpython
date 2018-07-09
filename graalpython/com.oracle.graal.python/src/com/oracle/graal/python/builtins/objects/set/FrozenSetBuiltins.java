@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -117,51 +116,35 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __AND__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
-        @Child private HashingStorageNodes.IntersectNode intersectNode;
-
         @Specialization
-        PBaseSet doPBaseSet(PSet left, PBaseSet right) {
-            HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), right.getDictStorage());
+        PBaseSet doPBaseSet(PSet left, PBaseSet right,
+                        @Cached("create()") HashingStorageNodes.IntersectNode intersectNode) {
+            HashingStorage intersectedStorage = intersectNode.execute(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doPBaseSet(PFrozenSet left, PBaseSet right) {
-            HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), right.getDictStorage());
+        PBaseSet doPBaseSet(PFrozenSet left, PBaseSet right,
+                        @Cached("create()") HashingStorageNodes.IntersectNode intersectNode) {
+            HashingStorage intersectedStorage = intersectNode.execute(left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
-        }
-
-        private HashingStorageNodes.IntersectNode getIntersectNode() {
-            if (intersectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                intersectNode = insert(HashingStorageNodes.IntersectNode.create());
-            }
-            return intersectNode;
         }
     }
 
     @Builtin(name = __SUB__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
-        @Child private HashingStorageNodes.DiffNode diffNode;
-
-        private HashingStorageNodes.DiffNode getDiffNode() {
-            if (diffNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                diffNode = HashingStorageNodes.DiffNode.create();
-            }
-            return diffNode;
-        }
-
         @Specialization
-        PBaseSet doPBaseSet(PSet left, PBaseSet right) {
-            HashingStorage storage = getDiffNode().execute(left.getDictStorage(), right.getDictStorage());
+        PBaseSet doPBaseSet(PSet left, PBaseSet right,
+                        @Cached("create()") HashingStorageNodes.DiffNode diffNode) {
+            HashingStorage storage = diffNode.execute(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(storage);
         }
 
         @Specialization
-        PBaseSet doPBaseSet(PFrozenSet left, PBaseSet right) {
-            HashingStorage storage = getDiffNode().execute(left.getDictStorage(), right.getDictStorage());
+        PBaseSet doPBaseSet(PFrozenSet left, PBaseSet right,
+                        @Cached("create()") HashingStorageNodes.DiffNode diffNode) {
+            HashingStorage storage = diffNode.execute(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(storage);
         }
     }
