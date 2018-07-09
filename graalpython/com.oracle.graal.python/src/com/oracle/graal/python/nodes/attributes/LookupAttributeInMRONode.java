@@ -48,6 +48,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.object.Location;
+import com.oracle.truffle.api.object.Property;
+import com.oracle.truffle.api.object.Shape;
 
 public abstract class LookupAttributeInMRONode extends PBaseNode {
 
@@ -113,12 +116,20 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         return null;
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "cachedAttrKlass != null"}, limit = "5", assumptions = "lookupStable", rewriteOn = IllegalStateException.class)
+    protected Location getLocationOrNull(Shape shape) {
+        Property prop = shape.getProperty(key);
+        return prop == null ? null : prop.getLocation();
+    }
+
+    @Specialization(guards = {"klass == cachedKlass", "cachedAttrKlass != null"}, limit = "5", assumptions = {"lookupStable", "finalAssumption"}, rewriteOn = IllegalStateException.class)
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                    @Cached("findClassInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClass cachedAttrKlass) {
+                    @Cached("findClassInMRO(cachedKlass)") PythonClass cachedAttrKlass,
+                    @Cached("cachedAttrKlass.getStorage().getShape()") @SuppressWarnings("unused") Shape cachedShape,
+                    @Cached("getLocationOrNull(cachedShape)") @SuppressWarnings("unused") Location loc,
+                    @Cached("loc.getFinalAssumption()") @SuppressWarnings("unused") Assumption finalAssumption) {
         Object value = readAttrNode.execute(cachedAttrKlass, key);
         if (value == PNone.NO_VALUE) {
             // in case the attribute was deleted

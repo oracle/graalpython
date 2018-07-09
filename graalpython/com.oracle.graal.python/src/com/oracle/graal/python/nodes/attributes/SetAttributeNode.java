@@ -51,6 +51,7 @@ import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class), @NodeChild(value = "rhs", type = PNode.class)})
@@ -86,6 +87,23 @@ public abstract class SetAttributeNode extends PNode implements WriteNode {
 
     public PNode getPrimaryNode() {
         return getObject();
+    }
+
+    @Specialization
+    protected Object doClass(PythonClass cls, Object key, Object value,
+                    @Cached("createIdentityProfile()") ValueProfile setattributeProfile,
+                    @Cached("create(__SETATTR__)") LookupAttributeInMRONode setattributeLookup,
+                    @Cached("create()") CallTernaryMethodNode callSetattr) {
+        Object descr = setattributeProfile.profile(setattributeLookup.execute(cls));
+        PythonClass[] mro = cls.getMethodResolutionOrder();
+        for (int i = 0; i < mro.length; i++) {
+            PythonClass kls = mro[i];
+            DynamicObject storage = kls.getStorage();
+            if (storage.containsKey(key)) {
+                storage.getShape().getProperty(key).getLocation().getFinalAssumption().invalidate();
+            }
+        }
+        return callSetattr.execute(descr, cls, key, value);
     }
 
     @Specialization
