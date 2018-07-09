@@ -46,6 +46,7 @@
 #define HAVE_SYS_WAIT_H
 
 #define PYPY_VERSION 0
+#define PYPY_VERSION_NUM 0
 
 #include <truffle.h>
 #include <polyglot.h>
