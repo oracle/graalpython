@@ -167,7 +167,7 @@ class TimSort(object):
                 if lower(a.getitem(p + ofs), key):
                     lastofs = ofs
                     try:
-                        ofs = ovfcheck(ofs << 1)
+                        ofs = ofs << 1
                     except OverflowError:
                         ofs = maxofs
                     else:
@@ -192,7 +192,7 @@ class TimSort(object):
                     # key <= a[hint - ofs]
                     lastofs = ofs
                     try:
-                        ofs = ovfcheck(ofs << 1)
+                        ofs = ofs << 1
                     except OverflowError:
                         ofs = maxofs
                     else:
