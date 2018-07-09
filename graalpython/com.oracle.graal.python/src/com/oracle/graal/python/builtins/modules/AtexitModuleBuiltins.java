@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -66,7 +66,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         return AtexitModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "register", minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = "register", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonVarargsBuiltinNode {
         private static class AtExitCallTarget extends RootNode {
@@ -89,18 +89,18 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
+        Object register(@SuppressWarnings("unused") Object module, Object callable, Object[] arguments, PKeyword[] keywords) {
             AtExitCallTarget atExitCallTarget = new AtExitCallTarget(getContext().getLanguage(), callable, arguments, keywords);
             getContext().registerShutdownHook(callable, Truffle.getRuntime().createCallTarget(atExitCallTarget));
             return callable;
         }
     }
 
-    @Builtin(name = "unregister", fixedNumOfArguments = 1)
+    @Builtin(name = "unregister", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
+    abstract static class UnregisterNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object register(Object callable) {
+        Object register(@SuppressWarnings("unused") Object module, Object callable) {
             getContext().deregisterShutdownHook(callable);
             return PNone.NONE;
         }

@@ -50,7 +50,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return MethodBuiltinsFactory.getFactories();
+        return BuiltinMethodBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)

@@ -80,12 +80,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         return InteropModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "import_value", minNumOfArguments = 1, keywordArguments = {"name"})
+    @Builtin(name = "import_value", minNumOfArguments = 2, keywordArguments = {"name"})
     @GenerateNodeFactory
     public abstract static class ImportNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object importSymbol(String name) {
+        public Object importSymbol(@SuppressWarnings("unused") Object module, String name) {
             Object object = getContext().getEnv().importSymbol(name);
             if (object == null) {
                 return PNone.NONE;
@@ -94,12 +94,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "eval", minNumOfArguments = 0, keywordArguments = {"path", "string", "language"})
+    @Builtin(name = "eval", minNumOfArguments = 1, keywordArguments = {"path", "string", "language"})
     @GenerateNodeFactory
     abstract static class EvalInteropNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object evalString(@SuppressWarnings("unused") PNone path, String value, String lang) {
+        Object evalString(@SuppressWarnings("unused") Object module, @SuppressWarnings("unused") PNone path, String value, String lang) {
             try {
                 return getContext().getEnv().parse(builderWithMimeType(lang, Source.newBuilder(value).name(value)).build()).call();
             } catch (RuntimeException e) {
@@ -109,7 +109,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object evalFile(String path, @SuppressWarnings("unused") PNone string, String lang) {
+        Object evalFile(@SuppressWarnings("unused") Object module, String path, @SuppressWarnings("unused") PNone string, String lang) {
             Env env = getContext().getEnv();
             try {
                 return getContext().getEnv().parse(builderWithMimeType(lang, env.newSourceBuilder(env.getTruffleFile(path)).name(path)).build()).call();
@@ -122,7 +122,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object evalFile(String path, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang) {
+        Object evalFile(@SuppressWarnings("unused") Object module, String path, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang) {
             Env env = getContext().getEnv();
             try {
                 return getContext().getEnv().parse(env.newSourceBuilder(env.getTruffleFile(path)).name(path).build()).call();
@@ -135,13 +135,13 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object evalStringWithoutLang(PNone path, String string, PNone lang) {
+        Object evalStringWithoutLang(@SuppressWarnings("unused") Object module, PNone path, String string, PNone lang) {
             throw raise(ValueError, "polyglot.eval with a string argument must pass a language or mime-type");
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object evalWithoutContent(Object path, Object string, Object lang) {
+        Object evalWithoutContent(@SuppressWarnings("unused") Object module, Object path, Object string, Object lang) {
             throw raise(ValueError, "polyglot.eval must pass strings as either 'path' or a 'string' keyword");
         }
 
@@ -157,12 +157,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "export_value", minNumOfArguments = 1, keywordArguments = {"name"})
+    @Builtin(name = "export_value", minNumOfArguments = 2, keywordArguments = {"name"})
     @GenerateNodeFactory
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object exportSymbol(Object value, String name) {
+        public Object exportSymbol(@SuppressWarnings("unused") Object module, Object value, String name) {
             getContext().getEnv().exportSymbol(name, value);
             return value;
         }
@@ -170,18 +170,18 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        public Object exportSymbol(PythonCallable value, PNone name) {
+        public Object exportSymbol(@SuppressWarnings("unused") Object module, PythonCallable value, PNone name) {
             getContext().getEnv().exportSymbol(value.getName(), value);
             return value;
         }
     }
 
-    @Builtin(name = "__read__", fixedNumOfArguments = 2)
+    @Builtin(name = "__read__", fixedNumOfArguments = 3)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class ReadNode extends PythonBuiltinNode {
         @Specialization
-        Object read(TruffleObject receiver, Object key,
+        Object read(@SuppressWarnings("unused") Object module, TruffleObject receiver, Object key,
                         @Cached("READ.createNode()") Node readNode) {
             try {
                 return ForeignAccess.sendRead(readNode, receiver, key);
@@ -191,12 +191,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__write__", fixedNumOfArguments = 3)
+    @Builtin(name = "__write__", fixedNumOfArguments = 4)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBuiltinNode {
         @Specialization
-        Object write(TruffleObject receiver, Object key, Object value,
+        Object write(@SuppressWarnings("unused") Object module, TruffleObject receiver, Object key, Object value,
                         @Cached("WRITE.createNode()") Node writeNode) {
             try {
                 return ForeignAccess.sendWrite(writeNode, receiver, key, value);
@@ -206,12 +206,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__remove__", fixedNumOfArguments = 2)
+    @Builtin(name = "__remove__", fixedNumOfArguments = 3)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class removeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, Object key,
+        Object remove(@SuppressWarnings("unused") Object module, TruffleObject receiver, Object key,
                         @Cached("REMOVE.createNode()") Node removeNode) {
             try {
                 return ForeignAccess.sendRemove(removeNode, receiver, key);
@@ -221,12 +221,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__execute__", minNumOfArguments = 1, takesVariableArguments = true)
+    @Builtin(name = "__execute__", minNumOfArguments = 2, takesVariableArguments = true)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class executeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, Object[] arguments,
+        Object remove(@SuppressWarnings("unused") Object module, TruffleObject receiver, Object[] arguments,
                         @Cached("createExecute(0).createNode()") Node executeNode) {
             try {
                 return ForeignAccess.sendExecute(executeNode, receiver, arguments);
@@ -236,12 +236,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__new__", minNumOfArguments = 1, takesVariableArguments = true)
+    @Builtin(name = "__new__", minNumOfArguments = 2, takesVariableArguments = true)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class newNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, Object[] arguments,
+        Object remove(@SuppressWarnings("unused") Object module, TruffleObject receiver, Object[] arguments,
                         @Cached("createNew(0).createNode()") Node executeNode) {
             try {
                 return ForeignAccess.sendNew(executeNode, receiver, arguments);
@@ -251,12 +251,12 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__invoke__", minNumOfArguments = 2, takesVariableArguments = true)
+    @Builtin(name = "__invoke__", minNumOfArguments = 3, takesVariableArguments = true)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class invokeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver, String key, Object[] arguments,
+        Object remove(@SuppressWarnings("unused") Object module, TruffleObject receiver, String key, Object[] arguments,
                         @Cached("createInvoke(0).createNode()") Node executeNode) {
             try {
                 return ForeignAccess.sendInvoke(executeNode, receiver, key, arguments);
@@ -266,39 +266,39 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__is_null__", fixedNumOfArguments = 1)
+    @Builtin(name = "__is_null__", fixedNumOfArguments = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class IsNullNode extends PythonBuiltinNode {
         @Specialization
-        boolean remove(TruffleObject receiver,
+        boolean remove(@SuppressWarnings("unused") Object module, TruffleObject receiver,
                         @Cached("IS_NULL.createNode()") Node executeNode) {
             return ForeignAccess.sendIsNull(executeNode, receiver);
         }
     }
 
-    @Builtin(name = "__has_size__", fixedNumOfArguments = 1)
+    @Builtin(name = "__has_size__", fixedNumOfArguments = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class HasSizeNode extends PythonBuiltinNode {
         @Specialization
-        boolean remove(@SuppressWarnings("unused") String receiver) {
+        boolean remove(@SuppressWarnings("unused") Object module, @SuppressWarnings("unused") String receiver) {
             return true;
         }
 
         @Specialization
-        boolean remove(TruffleObject receiver,
+        boolean remove(@SuppressWarnings("unused") Object module, TruffleObject receiver,
                         @Cached("HAS_SIZE.createNode()") Node executeNode) {
             return ForeignAccess.sendHasSize(executeNode, receiver);
         }
     }
 
-    @Builtin(name = "__get_size__", fixedNumOfArguments = 1)
+    @Builtin(name = "__get_size__", fixedNumOfArguments = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class GetSizeNode extends PythonBuiltinNode {
         @Specialization
-        Object remove(TruffleObject receiver,
+        Object remove(@SuppressWarnings("unused") Object module, TruffleObject receiver,
                         @Cached("GET_SIZE.createNode()") Node executeNode) {
             try {
                 return ForeignAccess.sendGetSize(executeNode, receiver);
@@ -308,50 +308,50 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__is_boxed__", fixedNumOfArguments = 1)
+    @Builtin(name = "__is_boxed__", fixedNumOfArguments = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class IsBoxedNode extends PythonBuiltinNode {
         @Specialization
-        boolean remove(TruffleObject receiver,
+        boolean remove(@SuppressWarnings("unused") Object module, TruffleObject receiver,
                         @Cached("IS_BOXED.createNode()") Node executeNode) {
             return ForeignAccess.sendIsBoxed(executeNode, receiver);
         }
     }
 
-    @Builtin(name = "__has_keys__", fixedNumOfArguments = 1)
+    @Builtin(name = "__has_keys__", fixedNumOfArguments = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class HasKeysNode extends PythonBuiltinNode {
         @Specialization
-        boolean remove(TruffleObject receiver,
+        boolean remove(@SuppressWarnings("unused") Object module, TruffleObject receiver,
                         @Cached("HAS_KEYS.createNode()") Node executeNode) {
             return ForeignAccess.sendHasKeys(executeNode, receiver);
         }
 
         @Fallback
-        boolean remove(@SuppressWarnings("unused") Object receiver) {
+        boolean remove(@SuppressWarnings("unused") Object module, @SuppressWarnings("unused") Object receiver) {
             return false;
         }
     }
 
-    @Builtin(name = "__key_info__", fixedNumOfArguments = 2)
+    @Builtin(name = "__key_info__", fixedNumOfArguments = 3)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class KeyInfoNode extends PythonBuiltinNode {
         @Specialization
-        int remove(TruffleObject receiver, Object key,
+        int remove(@SuppressWarnings("unused") Object module, TruffleObject receiver, Object key,
                         @Cached("KEY_INFO.createNode()") Node executeNode) {
             return ForeignAccess.sendKeyInfo(executeNode, receiver, key);
         }
     }
 
-    @Builtin(name = "__keys__", fixedNumOfArguments = 1)
+    @Builtin(name = "__keys__", fixedNumOfArguments = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonBuiltinNode {
         @Specialization
-        TruffleObject remove(TruffleObject receiver,
+        TruffleObject remove(@SuppressWarnings("unused") Object module, TruffleObject receiver,
                         @Cached("KEYS.createNode()") Node executeNode) {
             try {
                 return ForeignAccess.sendKeys(executeNode, receiver);

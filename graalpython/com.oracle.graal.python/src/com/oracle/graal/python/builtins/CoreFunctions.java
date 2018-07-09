@@ -35,4 +35,6 @@ public @interface CoreFunctions {
     String publicName() default "";
 
     Class<?>[] extendClasses() default {};
+
+    boolean nakedModuleFunctions() default false;
 }

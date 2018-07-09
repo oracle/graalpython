@@ -224,11 +224,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_encode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_encode", fixedNumOfArguments = 2, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends PythonBuiltinNode {
         @Specialization(guards = "isString(str)")
-        Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        Object encode(@SuppressWarnings("unused") Object module, Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
             PBytes bytes = encodeString(profiledStr.toString(), "utf-8", "strict");
@@ -236,7 +236,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)"})
-        Object encode(Object str, Object encoding, @SuppressWarnings("unused") PNone errors,
+        Object encode(@SuppressWarnings("unused") Object module, Object str, Object encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
@@ -246,7 +246,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(str)", "isString(errors)"})
-        Object encode(Object str, @SuppressWarnings("unused") PNone encoding, Object errors,
+        Object encode(@SuppressWarnings("unused") Object module, Object str, @SuppressWarnings("unused") PNone encoding, Object errors,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
@@ -256,7 +256,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)", "isString(errors)"})
-        Object encode(Object str, Object encoding, Object errors,
+        Object encode(@SuppressWarnings("unused") Object module, Object str, Object encoding, Object errors,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
@@ -268,7 +268,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+        Object encode(@SuppressWarnings("unused") Object module, Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
             throw raise(TypeError, "Can't convert '%p' object to str implicitly", str);
         }
 
@@ -309,17 +309,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_decode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_decode", fixedNumOfArguments = 2, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends PythonBuiltinNode {
         @Specialization
-        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        Object decode(@SuppressWarnings("unused") Object module, PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             String string = decodeBytes(bytes.getBytesBuffer(), "utf-8", "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
         @Specialization(guards = {"isString(encoding)"})
-        Object decode(PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
+        Object decode(@SuppressWarnings("unused") Object module, PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             String string = decodeBytes(bytes.getBytesBuffer(), profiledEncoding.toString(), "strict");
@@ -327,7 +327,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(errors)"})
-        Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
+        Object decode(@SuppressWarnings("unused") Object module, PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledErrors = errorsTypeProfile.profile(errors);
             String string = decodeBytes(bytes.getBytesBuffer(), "utf-8", profiledErrors.toString());
@@ -335,7 +335,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(encoding)", "isString(errors)"})
-        Object decode(PIBytesLike bytes, Object encoding, Object errors,
+        Object decode(@SuppressWarnings("unused") Object module, PIBytesLike bytes, Object encoding, Object errors,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
@@ -345,7 +345,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+        Object decode(@SuppressWarnings("unused") Object module, Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", bytes);
         }
 
@@ -383,12 +383,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.lookup(name)
-    @Builtin(name = "__truffle_lookup", fixedNumOfArguments = 1)
+    @Builtin(name = "__truffle_lookup", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality
         @Specialization
-        Object lookup(String encoding) {
+        Object lookup(@SuppressWarnings("unused") Object module, String encoding) {
             try {
                 getCharset(encoding);
                 return true;

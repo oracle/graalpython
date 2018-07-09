@@ -37,7 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def hasattr(obj, key):
+@__builtin__
+def hasattr(mod, obj, key):
     try:
         type(obj).__getattribute__(obj, key)
         return True
@@ -51,7 +52,7 @@ def hasattr(obj, key):
 def make_print():
     builtin_print = print
 
-    def func(*objects, sep=" ", end="\n", file=None, flush=False):
+    def func(mod, *objects, sep=" ", end="\n", file=None, flush=False):
         if file is not None:
             sz = len(objects) - 1
             for i in range(sz):
@@ -62,7 +63,7 @@ def make_print():
         else:
             builtin_print(tuple(objects), sep, end, file, flush)
     return func
-print = make_print()
+print = __builtin__(make_print())
 del make_print
 
 
@@ -70,38 +71,41 @@ del make_print
 def make_globals_function():
     import sys
 
-    def func():
+    def func(mod):
         return sys._getframe(1).f_globals
     return func
-globals = make_globals_function()
+globals = __builtin__(make_globals_function())
 del make_globals_function
 
 
 def make_locals_function():
     import sys
 
-    def func():
+    def func(mod):
         return sys._getframe(1).f_locals
     return func
-locals = make_locals_function()
+locals = __builtin__(make_locals_function())
 del make_locals_function
 
 
-def any(iterable):
+@__builtin__
+def any(mod, iterable):
     for i in iterable:
         if i:
             return True
     return False
 
 
-def all(iterable):
+@__builtin__
+def all(mod, iterable):
     for i in iterable:
         if not i:
             return False
     return True
 
 
-def filter(func, iterable):
+@__builtin__
+def filter(mod, func, iterable):
     result = []
     predicate = func if func is not None else lambda a: a
     for i in iterable:
@@ -110,7 +114,8 @@ def filter(func, iterable):
     return tuple(result)
 
 
-def exec(source, globals=None, locals=None):
+@__builtin__
+def exec(mod, source, globals=None, locals=None):
     # compile returns the source if already a code object
     return eval(compile(source, "<exec>", "exec"), globals, locals)
 
@@ -152,7 +157,8 @@ def _caller_locals():
     return sys._getframe(2).f_locals
 
 
-def vars(*obj):
+@__builtin__
+def vars(mod, *obj):
     """Return a dictionary of all the attributes currently bound in obj.  If
     called with no argument, return the variables bound in local scope."""
     if len(obj) == 0:
@@ -167,7 +173,8 @@ def vars(*obj):
         raise TypeError("vars() argument must have __dict__ attribute")
 
 
-def format(value, format_spec=''):
+@__builtin__
+def format(mod, value, format_spec=''):
     """Return value.__format__(format_spec)
 
     format_spec defaults to the empty string.
@@ -176,7 +183,8 @@ def format(value, format_spec=''):
     return value.__format__(format_spec)
 
 
-def sorted(iterable, key=None, reverse=False):
+@__builtin__
+def sorted(mod, iterable, key=None, reverse=False):
     """Return a new list containing all items from the iterable in ascending order.
 
     A custom key function can be supplied to customize the sort order, and the

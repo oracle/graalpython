@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -73,6 +74,7 @@ public class PythonContext {
 
     private OutputStream out;
     private OutputStream err;
+    private InputStream in;
     @CompilationFinal private boolean capiWasLoaded = false;
     private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
@@ -86,9 +88,11 @@ public class PythonContext {
         this.core = core;
         this.env = env;
         if (env == null) {
+            this.in = System.in;
             this.out = System.out;
             this.err = System.err;
         } else {
+            this.in = env.in();
             this.out = env.out();
             this.err = env.err();
         }
@@ -150,6 +154,10 @@ public class PythonContext {
 
     public PythonCore getCore() {
         return core;
+    }
+
+    public InputStream getStandardIn() {
+        return in;
     }
 
     public OutputStream getStandardErr() {

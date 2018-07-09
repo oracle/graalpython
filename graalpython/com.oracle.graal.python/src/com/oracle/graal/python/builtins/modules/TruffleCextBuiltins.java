@@ -131,7 +131,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
-@CoreFunctions(defineModule = "python_cext")
+@CoreFunctions(defineModule = "python_cext", nakedModuleFunctions = true)
 public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Override

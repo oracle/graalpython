@@ -34,6 +34,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
 
 import java.util.List;
 
@@ -46,15 +47,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -91,7 +84,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialAttributeNames.__CODE__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CODE__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
@@ -106,7 +99,7 @@ public class MethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Child GetClassNode getClassNode;
-        @Child BranchProfile builtinProfile = BranchProfile.create();
+        BranchProfile builtinProfile = BranchProfile.create();
 
         @Specialization
         @TruffleBoundary

@@ -117,6 +117,8 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
+import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -242,7 +244,9 @@ public final class Python3Core implements PythonCore {
                     new AbstractFunctionBuiltins(),
                     new FunctionBuiltins(),
                     new BuiltinFunctionBuiltins(),
+                    new AbstractMethodBuiltins(),
                     new MethodBuiltins(),
+                    new BuiltinMethodBuiltins(),
                     new CodeBuiltins(),
                     new FrameBuiltins(),
                     new MappingproxyBuiltins(),
@@ -660,10 +664,10 @@ public final class Python3Core implements PythonCore {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
+                addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin, annotation);
             }
             for (Class<?> klass : annotation.extendClasses()) {
-                addBuiltinsTo(lookupType(klass), builtin);
+                addBuiltinsTo(lookupType(klass), builtin, annotation);
             }
         }
 
@@ -691,7 +695,7 @@ public final class Python3Core implements PythonCore {
         return mod;
     }
 
-    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtins) {
+    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtins, CoreFunctions annotation) {
         Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
         for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
             String constantName = entry.getKey();
@@ -702,7 +706,7 @@ public final class Python3Core implements PythonCore {
         for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             String methodName = entry.getKey();
             Object value;
-            if (obj instanceof PythonModule) {
+            if (obj instanceof PythonModule && !annotation.nakedModuleFunctions()) {
                 value = factory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
             } else {
                 value = entry.getValue().boundToObject(obj, factory());

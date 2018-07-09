@@ -68,7 +68,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import java.util.Arrays;
 
-@CoreFunctions(defineModule = "math")
+@CoreFunctions(defineModule = "math", nakedModuleFunctions = true)
 public class MathModuleBuiltins extends PythonBuiltins {
 
     @Override
@@ -1038,9 +1038,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         /*
          * This implementation is taken from CPython. The performance is not good. Should be faster.
          * It can be easily replace with much simpler code based on BigDecimal:
-         * 
+         *
          * BigDecimal result = BigDecimal.ZERO;
-         * 
+         *
          * in cycle just: result = result.add(BigDecimal.valueof(x); ... The current implementation
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1

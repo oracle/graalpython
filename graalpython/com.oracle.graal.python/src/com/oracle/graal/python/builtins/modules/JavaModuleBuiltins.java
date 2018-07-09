@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -60,11 +60,11 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         return JavaModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "type", fixedNumOfArguments = 1)
+    @Builtin(name = "type", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class TypeNode extends PythonUnaryBuiltinNode {
+    abstract static class TypeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object type(String name) {
+        Object type(@SuppressWarnings("unused") Object module, String name) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, "host lookup is not allowed");

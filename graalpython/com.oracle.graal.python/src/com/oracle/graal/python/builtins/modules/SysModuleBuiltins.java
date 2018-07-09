@@ -182,11 +182,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "exc_info", fixedNumOfArguments = 0)
+    @Builtin(name = "exc_info", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public static abstract class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
-        public Object run() {
+        public Object run(@SuppressWarnings("unused") Object module) {
             PythonContext context = getContext();
             PException currentException = context == null ? getCore().getCurrentException() : context.getCurrentException();
             if (currentException == null) {
@@ -199,15 +199,15 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_getframe", minNumOfArguments = 0, maxNumOfArguments = 1)
+    @Builtin(name = "_getframe", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public static abstract class GetFrameNode extends PythonBuiltinNode {
 
         @Child private DirectCallNode call;
 
         @Specialization
-        Object first(@SuppressWarnings("unused") PNone arg) {
-            return counted(0);
+        Object first(Object module, @SuppressWarnings("unused") PNone arg) {
+            return counted(module, 0);
         }
 
         /*
@@ -234,7 +234,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object counted(int num) {
+        Object counted(@SuppressWarnings("unused") Object module, int num) {
             if (call == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 GetStackTraceRootNode rootNode = new GetStackTraceRootNode(getRootNode().getLanguage(PythonLanguage.class));
@@ -255,28 +255,28 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedLong(long num) {
-            return counted(PInt.intValueExact(num));
+        Object countedLong(Object module, long num) {
+            return counted(module, PInt.intValueExact(num));
         }
 
         @Specialization
-        Object countedLongOvf(long num) {
+        Object countedLongOvf(Object module, long num) {
             try {
-                return counted(PInt.intValueExact(num));
+                return counted(module, PInt.intValueExact(num));
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        Object countedPInt(PInt num) {
-            return counted(num.intValueExact());
+        Object countedPInt(Object module, PInt num) {
+            return counted(module, num.intValueExact());
         }
 
         @Specialization
-        Object countedPIntOvf(PInt num) {
+        Object countedPIntOvf(Object module, PInt num) {
             try {
-                return counted(num.intValueExact());
+                return counted(module, num.intValueExact());
             } catch (ArithmeticException e) {
                 throw raiseCallStackDepth();
             }
@@ -288,36 +288,36 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "getfilesystemencoding", fixedNumOfArguments = 0)
+    @Builtin(name = "getfilesystemencoding", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
-        protected String getFileSystemEncoding() {
+        protected String getFileSystemEncoding(@SuppressWarnings("unused") Object module) {
             return System.getProperty("file.encoding");
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfArguments = 0)
+    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
-        protected String getFileSystemEncoding() {
+        protected String getFileSystemEncoding(@SuppressWarnings("unused") Object module) {
             return "surrogateescape";
         }
     }
 
-    @Builtin(name = "intern", fixedNumOfArguments = 1)
+    @Builtin(name = "intern", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        String doBytes(String s) {
+        String doBytes(@SuppressWarnings("unused") Object module, String s) {
             return s.intern();
         }
 
         @Specialization
         @TruffleBoundary
-        PString doBytes(PString ps) {
+        PString doBytes(@SuppressWarnings("unused") Object module, PString ps) {
             String s = ps.getValue();
             return factory().createString(s.intern());
         }

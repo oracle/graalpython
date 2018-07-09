@@ -155,12 +155,12 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     }
 
     // _locale.localeconv()
-    @Builtin(name = "localeconv")
+    @Builtin(name = "localeconv", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class LocaleConvNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public PDict localeconv() {
+        public PDict localeconv(@SuppressWarnings("unused") Object module) {
             Map<String, Object> dict = new HashMap<>();
 
             // get default locale for the format category
@@ -206,14 +206,14 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     }
 
     // _locale.setlocale(category, locale=None)
-    @Builtin(name = "setlocale", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "setlocale", minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
     public abstract static class SetLocaleNode extends PythonBuiltinNode {
 
         @SuppressWarnings("fallthrough")
         @Specialization(guards = {"category >= 0", "category <= 6"})
         @TruffleBoundary
-        public Object setLocale(int category, @SuppressWarnings("unused") PNone posixLocaleID) {
+        public Object setLocale(@SuppressWarnings("unused") Object module, int category, @SuppressWarnings("unused") PNone posixLocaleID) {
             Locale defaultLocale;
             Locale.Category displayCategory = null;
             Locale.Category formatCategory = null;
@@ -250,7 +250,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("fallthrough")
         @Specialization(guards = {"category >= 0", "category <= 6"})
         @TruffleBoundary
-        public Object setLocale(int category, String posixLocaleID) {
+        public Object setLocale(@SuppressWarnings("unused") Object module, int category, String posixLocaleID) {
             Locale.Category displayCategory = null;
             Locale.Category formatCategory = null;
             if (!TruffleOptions.AOT) {
@@ -293,7 +293,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        public Object setLocale(@SuppressWarnings("unused") Object category, @SuppressWarnings("unused") Object locale) {
+        public Object setLocale(@SuppressWarnings("unused") Object module, @SuppressWarnings("unused") Object category, @SuppressWarnings("unused") Object locale) {
             throw raise(PythonErrorType.ValueError, "invalid locale category");
         }
     }

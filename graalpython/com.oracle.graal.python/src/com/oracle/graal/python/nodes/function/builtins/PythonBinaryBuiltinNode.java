@@ -47,6 +47,10 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
     public abstract Object execute(Object arg, Object arg2);
 
+    public boolean executeBool(Object arg, boolean arg2) throws UnexpectedResultException {
+        return PGuards.expectBoolean(execute(arg, arg2));
+    }
+
     public boolean executeBool(boolean arg, boolean arg2) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(arg, arg2));
     }
@@ -55,7 +59,15 @@ public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
         return PGuards.expectInteger(execute(arg, arg2));
     }
 
+    public int executeInt(Object arg, boolean arg2) throws UnexpectedResultException {
+        return PGuards.expectInteger(execute(arg, arg2));
+    }
+
     public int executeInt(int arg, int arg2) throws UnexpectedResultException {
+        return PGuards.expectInteger(execute(arg, arg2));
+    }
+
+    public int executeInt(Object arg, int arg2) throws UnexpectedResultException {
         return PGuards.expectInteger(execute(arg, arg2));
     }
 
@@ -63,7 +75,15 @@ public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
         return PGuards.expectLong(execute(arg, arg2));
     }
 
+    public long executeLong(Object arg, long arg2) throws UnexpectedResultException {
+        return PGuards.expectLong(execute(arg, arg2));
+    }
+
     public double executeDouble(double arg, double arg2) throws UnexpectedResultException {
+        return PGuards.expectDouble(execute(arg, arg2));
+    }
+
+    public double executeDouble(Object arg, double arg2) throws UnexpectedResultException {
         return PGuards.expectDouble(execute(arg, arg2));
     }
 
@@ -71,11 +91,23 @@ public abstract class PythonBinaryBuiltinNode extends PythonBuiltinBaseNode {
         return PGuards.expectBoolean(execute(arg, arg2));
     }
 
+    public boolean executeBool(Object arg, int arg2) throws UnexpectedResultException {
+        return PGuards.expectBoolean(execute(arg, arg2));
+    }
+
     public boolean executeBool(long arg, long arg2) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(arg, arg2));
     }
 
+    public boolean executeBool(Object arg, long arg2) throws UnexpectedResultException {
+        return PGuards.expectBoolean(execute(arg, arg2));
+    }
+
     public boolean executeBool(double arg, double arg2) throws UnexpectedResultException {
+        return PGuards.expectBoolean(execute(arg, arg2));
+    }
+
+    public boolean executeBool(Object arg, double arg2) throws UnexpectedResultException {
         return PGuards.expectBoolean(execute(arg, arg2));
     }
 }
