@@ -109,7 +109,7 @@ public class PyNumberMethodsWrapperMR {
                         getMulAttributeNode = insert(LookupAttributeInMRONode.create(__MUL__));
                     }
                     result = getMulAttributeNode.execute(delegate);
-                    break;                    
+                    break;
                 default:
                     // TODO extend list
                     throw UnknownIdentifierException.raise(key);
