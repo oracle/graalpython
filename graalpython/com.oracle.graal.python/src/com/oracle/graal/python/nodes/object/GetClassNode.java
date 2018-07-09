@@ -62,6 +62,7 @@ import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChildren({@NodeChild(value = "object", type = PNode.class)})
 public abstract class GetClassNode extends PNode {
@@ -90,8 +91,9 @@ public abstract class GetClassNode extends PNode {
     }
 
     @Specialization(guards = "!isNone(object)")
-    protected PythonClass getIt(PythonObject object) {
-        return object.getPythonClass();
+    protected PythonClass getIt(PythonObject object,
+                    @Cached("createIdentityProfile()") ValueProfile profile) {
+        return profile.profile(object.getPythonClass());
     }
 
     PythonBuiltinClass cacheNone() {

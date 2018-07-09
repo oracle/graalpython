@@ -40,14 +40,14 @@ import gzip
 import os
 import re
 import subprocess
-import sys
 from collections import defaultdict
 from json import dumps
 from multiprocessing import Pool
 from pprint import pformat
-from time import gmtime, strftime
 
 import argparse
+import sys
+from time import gmtime, strftime
 
 # global CLI flags
 flags = None
@@ -64,8 +64,10 @@ HTML_RESULTS_NAME = "{}.html".format(_BASE_NAME)
 PTRN_ERROR = re.compile(r'^(?P<error>[A-Z][a-z][a-zA-Z]+):(?P<message>.*)$')
 PTRN_UNITTEST = re.compile(r'^#### running: graalpython/lib-python/3/test/(?P<unittest>.*)$')
 PTRN_NUM_TESTS = re.compile(r'^Ran (?P<num_tests>\d+) test.*$')
-PTRN_NUM_ERRORS = re.compile(
+PTRN_FAILED = re.compile(
     r'^FAILED \((failures=(?P<failures>\d+))?(, )?(errors=(?P<errors>\d+))?(, )?(skipped=(?P<skipped>\d+))?\)$')
+PTRN_OK = re.compile(
+    r'^OK \((failures=(?P<failures>\d+))?(, )?(errors=(?P<errors>\d+))?(, )?(skipped=(?P<skipped>\d+))?\)$')
 PTRN_JAVA_EXCEPTION = re.compile(r'^(?P<exception>com\.oracle\.[^:]*):(?P<message>.*)')
 PTRN_MODULE_NOT_FOUND = re.compile(r'.*ModuleNotFound: \'(?P<module>.*)\'\..*', re.DOTALL)
 
@@ -169,8 +171,8 @@ class StatEntry(object):
         self.num_skipped = -1
 
     def all_ok(self):
-        self.num_errors = 0
         self.num_fails = 0
+        self.num_errors = 0
         self.num_skipped = 0
 
     @property
@@ -212,12 +214,23 @@ def process_output(output_lines):
             stats[unittests[-1]].all_ok()
             continue
 
+        match = re.match(PTRN_OK, line)
+        if match:
+            fails = match.group('failures')
+            errs = match.group('errors')
+            skipped = match.group('skipped')
+
+            stats[unittests[-1]].num_fails = int(fails) if fails else 0
+            stats[unittests[-1]].num_errors = int(errs) if errs else 0
+            stats[unittests[-1]].num_skipped = int(skipped) if skipped else 0
+            continue
+
         match = re.match(PTRN_NUM_TESTS, line)
         if match:
             stats[unittests[-1]].num_tests = int(match.group('num_tests'))
             continue
 
-        match = re.match(PTRN_NUM_ERRORS, line)
+        match = re.match(PTRN_FAILED, line)
         if match:
             fails = match.group('failures')
             errs = match.group('errors')

@@ -95,7 +95,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
-        @Child private CallDispatchNode dispatch = CallDispatchNode.create("callCall");
+        @Child private CallDispatchNode dispatch = CallDispatchNode.create();
         @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
         @Specialization

@@ -37,8 +37,8 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -59,7 +59,7 @@ public class MethodBuiltins extends PythonBuiltins {
     @Builtin(name = __CALL__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
-        @Child private CallDispatchNode dispatch = CallDispatchNode.create("callCall");
+        @Child private CallDispatchNode dispatch = CallDispatchNode.create();
         @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
         @Specialization
@@ -106,8 +106,8 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class NameNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self,
-                        @Cached("create()") GetAttributeNode getCode) {
-            return getCode.execute(self.getFunction(), SpecialAttributeNames.__NAME__);
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
+            return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__NAME__);
         }
     }
 
@@ -116,8 +116,8 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self,
-                        @Cached("create()") GetAttributeNode getCode) {
-            return getCode.execute(self.getFunction(), SpecialAttributeNames.__CODE__);
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
+            return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__CODE__);
         }
     }
 

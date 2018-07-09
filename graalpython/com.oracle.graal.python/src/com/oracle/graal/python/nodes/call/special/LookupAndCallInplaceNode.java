@@ -102,8 +102,8 @@ public abstract class LookupAndCallInplaceNode extends PNode {
 
     @Specialization(guards = "!hasBinaryVersion()")
     Object callObject(Object left, Object right,
-                    @Cached("create()") LookupInheritedAttributeNode getattr) {
-        Object leftCallable = getattr.execute(left, inplaceOpName);
+                    @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattr) {
+        Object leftCallable = getattr.execute(left);
         Object result;
         if (leftCallable == PNone.NO_VALUE) {
             result = PNotImplemented.NOT_IMPLEMENTED;
@@ -122,10 +122,10 @@ public abstract class LookupAndCallInplaceNode extends PNode {
 
     @Specialization(guards = "hasBinaryVersion()")
     Object callObject(Object left, Object right,
-                    @Cached("create()") LookupInheritedAttributeNode getattrInplace,
+                    @Cached("create(inplaceOpName)") LookupInheritedAttributeNode getattrInplace,
                     @Cached("create(binaryOpName, reverseBinaryOpName)") LookupAndCallBinaryNode binaryNode) {
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        Object inplaceCallable = getattrInplace.execute(left, inplaceOpName);
+        Object inplaceCallable = getattrInplace.execute(left);
         if (inplaceCallable != PNone.NO_VALUE) {
             result = ensureDispatch().executeObject(inplaceCallable, left, right);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {

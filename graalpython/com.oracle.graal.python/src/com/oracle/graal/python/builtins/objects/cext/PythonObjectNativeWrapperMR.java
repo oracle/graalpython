@@ -38,9 +38,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -73,9 +70,9 @@ import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -157,7 +154,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class})
+    @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNativeMemberNode extends PBaseNode {
         @Child GetClassNode getClass = GetClassNode.create();
@@ -245,8 +242,8 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_ALLOC, key)")
         Object doTpAlloc(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") LookupAttributeInMRONode getAllocNode) {
-            Object result = getAllocNode.execute(object, SpecialMethodNames.__ALLOC__);
+                        @Cached("create(__ALLOC__)") LookupAttributeInMRONode getAllocNode) {
+            Object result = getAllocNode.execute(object);
             return getToSulongNode().execute(result);
         }
 
@@ -268,8 +265,8 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
         Object doTpAsSequence(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") LookupAttributeInMRONode getAttrNode) {
-            if (getAttrNode.execute(object, SpecialMethodNames.__LEN__) != PNone.NO_VALUE) {
+                        @Cached("create(__LEN__)") LookupAttributeInMRONode getAttrNode) {
+            if (getAttrNode.execute(object) != PNone.NO_VALUE) {
                 return new PySequenceMethodsWrapper(object);
             } else {
                 return getToSulongNode().execute(PNone.NO_VALUE);
@@ -278,26 +275,26 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_NEW, key)")
         Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") LookupAttributeInMRONode getAttrNode) {
-            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object, SpecialAttributeNames.__NEW__));
+                        @Cached("create(__NEW__)") LookupAttributeInMRONode getAttrNode) {
+            return ManagedMethodWrappers.createKeywords(getAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") LookupInheritedAttributeNode getHashNode) {
-            return getToSulongNode().execute(getHashNode.execute(object, SpecialMethodNames.__HASH__));
+                        @Cached("create(__HASH__)") LookupInheritedAttributeNode getHashNode) {
+            return getToSulongNode().execute(getHashNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         Object doTpBasicsize(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") LookupInheritedAttributeNode getAttrNode) {
-            return getAttrNode.execute(object, SpecialAttributeNames.__BASICSIZE__);
+                        @Cached("create(__BASICSIZE__)") LookupInheritedAttributeNode getAttrNode) {
+            return getAttrNode.execute(object);
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
         Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") LookupInheritedAttributeNode getCmpNode) {
-            return getToSulongNode().execute(getCmpNode.execute(object, SpecialMethodNames.RICHCMP));
+                        @Cached("create(RICHCMP)") LookupInheritedAttributeNode getCmpNode) {
+            return getToSulongNode().execute(getCmpNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
@@ -320,14 +317,14 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
         Object doTpGetattro(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") LookupInheritedAttributeNode lookupAttrNode) {
-            return PyAttributeProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object, __GETATTRIBUTE__));
+                        @Cached("create(__GETATTRIBUTE__)") LookupInheritedAttributeNode lookupAttrNode) {
+            return PyAttributeProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SETATTRO, key)")
         Object doTpSetattro(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") LookupInheritedAttributeNode lookupAttrNode) {
-            return PyAttributeProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object, __SETATTR__));
+                        @Cached("create(__SETATTR__)") LookupInheritedAttributeNode lookupAttrNode) {
+            return PyAttributeProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")
@@ -357,8 +354,8 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(MD_DICT, key) || eq(TP_DICT, key)")
         Object doMdDict(PythonObject object, @SuppressWarnings("unused") String key,
-                        @Cached("create()") GetAttributeNode getDictNode) {
-            return getToSulongNode().execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
+                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDictNode) {
+            return getToSulongNode().execute(getDictNode.executeObject(object, SpecialAttributeNames.__DICT__));
         }
 
         @Specialization(guards = "eq(MD_DEF, key)")

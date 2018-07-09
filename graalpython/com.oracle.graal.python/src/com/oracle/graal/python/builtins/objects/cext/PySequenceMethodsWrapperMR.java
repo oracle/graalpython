@@ -39,6 +39,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -52,33 +53,25 @@ public class PySequenceMethodsWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
-        @Child private LookupAttributeInMRONode getAttributeNode;
+        @Child private LookupAttributeInMRONode getSqRepeatNode;
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PySequenceMethodsWrapper object, String key) {
-            // translate key to attribute name
-            String attributeName = toAttributeName(key);
-
-            Object execute = getReadArrayItemNode().execute(object.getDelegate(), attributeName);
-            return getToSulongNode().execute(execute);
-        }
-
-        private static String toAttributeName(String numberMethodsMember) {
-            switch (numberMethodsMember) {
+            PythonClass delegate = object.getDelegate();
+            Object result;
+            switch (key) {
                 case NativeMemberNames.SQ_REPEAT:
-                    return SpecialMethodNames.__MUL__;
+                    if (getSqRepeatNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getSqRepeatNode = insert(LookupAttributeInMRONode.create(SpecialMethodNames.__MUL__));
+                    }
+                    result = getSqRepeatNode.execute(delegate);
+                    break;
                 default:
                     // TODO extend list
-                    throw UnknownIdentifierException.raise(numberMethodsMember);
+                    throw UnknownIdentifierException.raise(key);
             }
-        }
-
-        private LookupAttributeInMRONode getReadArrayItemNode() {
-            if (getAttributeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttributeNode = insert(LookupAttributeInMRONode.create());
-            }
-            return getAttributeNode;
+            return getToSulongNode().execute(result);
         }
 
         private ToSulongNode getToSulongNode() {

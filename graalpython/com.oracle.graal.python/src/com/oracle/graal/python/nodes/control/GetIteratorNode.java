@@ -25,9 +25,6 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -44,6 +41,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -55,6 +53,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -149,13 +148,13 @@ public abstract class GetIteratorNode extends UnaryOpNode {
     @Specialization(guards = {"!isNoValue(value)"})
     public Object doGeneric(Object value,
                     @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
-                    @Cached("create()") LookupAttributeInMRONode lookupAttrMroNode,
-                    @Cached("create()") LookupAttributeInMRONode lookupGetitemAttrMroNode,
-                    @Cached("create(__ITER__)") CallDispatchNode dispatchGetattribute,
+                    @Cached("create(__ITER__)") LookupAttributeInMRONode lookupAttrMroNode,
+                    @Cached("create(__GETITEM__)") LookupAttributeInMRONode lookupGetitemAttrMroNode,
+                    @Cached("create()") CallDispatchNode dispatchGetattribute,
                     @Cached("create()") CreateArgumentsNode createArgs,
                     @Cached("create()") IsIteratorObjectNode isIteratorObjectNode) {
         PythonClass clazz = getClass(value);
-        Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz, __ITER__));
+        Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz));
         if (attrObj != PNone.NO_VALUE && attrObj != PNone.NONE) {
             Object iterObj = dispatchGetattribute.executeCall(attrObj, createArgs.execute(value), PKeyword.EMPTY_KEYWORDS);
             if (isIteratorObjectNode.execute(iterObj)) {
@@ -164,7 +163,7 @@ public abstract class GetIteratorNode extends UnaryOpNode {
                 throw nonIterator(iterObj);
             }
         } else {
-            Object getItemAttrObj = lookupGetitemAttrMroNode.execute(clazz, __GETITEM__);
+            Object getItemAttrObj = lookupGetitemAttrMroNode.execute(clazz);
             if (getItemAttrObj != PNone.NO_VALUE) {
                 return factory().createSequenceIterator(value);
             }
@@ -185,6 +184,7 @@ public abstract class GetIteratorNode extends UnaryOpNode {
         return raise(TypeError, "iter() returned non-iterator of type '%p'", value);
     }
 
+    @ImportStatic(SpecialMethodNames.class)
     abstract static class IsIteratorObjectNode extends Node {
 
         public abstract boolean execute(Object o);
@@ -198,8 +198,8 @@ public abstract class GetIteratorNode extends UnaryOpNode {
         @Specialization
         boolean doPIterator(Object it,
                         @Cached("create()") GetClassNode getClassNode,
-                        @Cached("create()") LookupAttributeInMRONode lookupAttributeNode) {
-            return lookupAttributeNode.execute(getClassNode.execute(it), __NEXT__) != PNone.NO_VALUE;
+                        @Cached("create(__NEXT__)") LookupAttributeInMRONode lookupAttributeNode) {
+            return lookupAttributeNode.execute(getClassNode.execute(it)) != PNone.NO_VALUE;
         }
 
         public static IsIteratorObjectNode create() {

@@ -42,18 +42,17 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.truffle.api.nodes.Node;
 
 public class HasInheritedAttributeNode extends Node {
-    private final String attribute;
-    @Child private LookupInheritedAttributeNode lookupInheritedAttributeNode = LookupInheritedAttributeNode.create();
+    @Child private LookupInheritedAttributeNode lookupInheritedAttributeNode;
 
-    private HasInheritedAttributeNode(String attribute) {
-        this.attribute = attribute;
+    private HasInheritedAttributeNode(String key) {
+        this.lookupInheritedAttributeNode = LookupInheritedAttributeNode.create(key);
     }
 
     public boolean execute(Object object) {
-        return lookupInheritedAttributeNode.execute(object, attribute) != PNone.NO_VALUE;
+        return lookupInheritedAttributeNode.execute(object) != PNone.NO_VALUE;
     }
 
-    public static HasInheritedAttributeNode create(String attribute) {
-        return new HasInheritedAttributeNode(attribute);
+    public static HasInheritedAttributeNode create(String key) {
+        return new HasInheritedAttributeNode(key);
     }
 }

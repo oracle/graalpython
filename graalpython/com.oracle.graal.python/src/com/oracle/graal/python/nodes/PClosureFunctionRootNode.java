@@ -36,33 +36,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.call.special;
+package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlot;
 
-public abstract class LookupAndCallVarargsNode extends PBaseNode {
-    private final String name;
-    @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
+public abstract class PClosureFunctionRootNode extends PClosureRootNode {
+    @CompilerDirectives.CompilationFinal(dimensions = 1) protected final FrameSlot[] cellVarSlots;
 
-    public abstract Object execute(Object callable, Object[] arguments);
-
-    public static LookupAndCallVarargsNode create(String name) {
-        return LookupAndCallVarargsNodeGen.create(name);
+    protected PClosureFunctionRootNode(TruffleLanguage<?> language, FrameDescriptor frameDescriptor, ExecutionCellSlots executionCellSlots) {
+        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots());
+        this.cellVarSlots = executionCellSlots.getCellVarSlots();
     }
 
-    LookupAndCallVarargsNode(String name) {
-        this.name = name;
-    }
-
-    @Specialization
-    Object callObject(Object callable, Object[] arguments,
-                    @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create()") LookupAttributeInMRONode.Dynamic getattr) {
-        return dispatchNode.execute(getattr.execute(getClassNode.execute(callable), name), arguments, PKeyword.EMPTY_KEYWORDS);
+    public String[] getCellVars() {
+        String[] cellVars = new String[cellVarSlots.length];
+        for (int i = 0; i < cellVars.length; i++) {
+            cellVars[i] = (String) cellVarSlots[i].getIdentifier();
+        }
+        return cellVars;
     }
 }

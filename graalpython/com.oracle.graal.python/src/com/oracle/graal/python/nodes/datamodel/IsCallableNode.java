@@ -49,7 +49,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class IsCallableNode extends PDataModelEmulationNode {
-    @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create();
+    @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create(__CALL__);
 
     protected static boolean isNoCallable(Object callee) {
         return !(callee instanceof PythonCallable);
@@ -57,7 +57,7 @@ public abstract class IsCallableNode extends PDataModelEmulationNode {
 
     @Specialization(guards = {"isNoCallable(callable) || isClass(callable)"})
     protected boolean isSpecialCallable(Object callable) {
-        Object call = callAttrGetterNode.execute(callable, __CALL__);
+        Object call = callAttrGetterNode.execute(callable);
         return !isNoCallable(call);
     }
 

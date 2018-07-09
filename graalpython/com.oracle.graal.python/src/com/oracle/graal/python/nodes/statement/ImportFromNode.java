@@ -25,23 +25,23 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class ImportFromNode extends AbstractImportNode {
-    @Child private GetAttributeNode getAttr = GetAttributeNode.create();
     private final String importee;
     private final int level;
     private final String[] fromlist;
     @Children private final WriteNode[] aslist;
-    @Child private GetAttributeNode readNode = GetAttributeNode.create();
+    @Child private LookupAndCallBinaryNode readNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
 
     public static ImportFromNode create(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
         return new ImportFromNode(importee, fromlist, readNodes, level);
@@ -67,7 +67,7 @@ public class ImportFromNode extends AbstractImportNode {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
             try {
-                writeNode.doWrite(frame, readNode.execute(importedModule, attr));
+                writeNode.doWrite(frame, readNode.executeObject(importedModule, attr));
             } catch (PException e) {
                 throw raise(ImportError, "cannot import name '%s'", attr);
             }

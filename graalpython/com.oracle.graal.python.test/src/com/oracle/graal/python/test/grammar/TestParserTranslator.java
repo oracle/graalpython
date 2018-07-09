@@ -105,7 +105,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.source.Source;
 
-@SuppressWarnings({"unchecked"})
 public class TestParserTranslator {
     PythonContext context;
 
@@ -132,7 +131,7 @@ public class TestParserTranslator {
                 continue;
             }
             assertTrue("Expected an instance of " + klass + ", got " + n.getClass(), klass.isInstance(n));
-            return (T) n;
+            return klass.cast(n);
         }
         assertFalse("Expected an instance of " + klass + ", got null", true);
         return null;
@@ -158,7 +157,12 @@ public class TestParserTranslator {
     <T> T literalAs(String src, Class<? extends PNode> klass, Class<? extends T> rklass) {
         Object literal = literalAs(src, klass);
         assertTrue("Expected an instance of " + rklass + ", got " + literal.getClass(), rklass.isInstance(literal));
-        return (T) literal;
+        return rklass.cast(literal);
+    }
+
+    <T> T assertInstanceOf(PNode value, Class<? extends T> klass) {
+        assertTrue("Expected an instance of " + klass + ", got " + value.getClass(), klass.isInstance(value));
+        return klass.cast(value);
     }
 
     @Test
@@ -247,18 +251,19 @@ public class TestParserTranslator {
     public void parsePropertyAccess() {
         parseAs("foobar13_ddsA.property", GetAttributeNode.class);
         GetAttributeNode anotherProperty = parseAs("foobar13_ddsA.property.anotherProperty", GetAttributeNode.class);
-        GetAttributeNode property = getFirstChild(anotherProperty, GetAttributeNode.class);
-        getFirstChild(property, ReadGlobalOrBuiltinNode.class);
+        GetAttributeNode property = assertInstanceOf(anotherProperty.getObject(), GetAttributeNode.class);
+        assertInstanceOf(property.getObject(), ReadGlobalOrBuiltinNode.class);
     }
 
     @Test
     public void parseSubscript() {
-        getChild(parseAs("foobar[1]", GetItemNode.class), 1, ReadGlobalOrBuiltinNode.class);
+        GetItemNode node = parseAs("foobar[1]", GetItemNode.class);
+        assertInstanceOf(node.getLeftNode(), ReadGlobalOrBuiltinNode.class);
         parseAs("foobar[:]", GetItemNode.class);
         parseAs("foobar[::]", GetItemNode.class);
         parseAs("foobar[1:2:3]", GetItemNode.class);
         GetItemNode parseAs = parseAs("foobar[1,2]", GetItemNode.class);
-        assert parseAs.getSlice() instanceof TupleLiteralNode;
+        assertInstanceOf(parseAs.getSlice(), TupleLiteralNode.class);
     }
 
     @Test

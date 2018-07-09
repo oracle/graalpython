@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -59,6 +60,17 @@ abstract class ExpressionDefinitionNode extends PNode {
             closure[i] = (PCell) cell;
         }
 
+        return closure;
+    }
+
+    PCell[] getClosureFromGeneratorOrFunctionLocals(Frame frame) {
+        PCell[] closure;
+        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
+        if (generatorFrame != null) {
+            closure = getClosureFromLocals(generatorFrame);
+        } else {
+            closure = getClosureFromLocals(frame);
+        }
         return closure;
     }
 }

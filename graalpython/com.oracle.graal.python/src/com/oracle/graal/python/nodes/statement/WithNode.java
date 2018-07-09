@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -32,8 +33,8 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -49,22 +50,16 @@ public abstract class WithNode extends StatementNode {
 
     @Child private PNode body;
     @Child private PNode targetNode;
-    @Child private GetAttributeNode enterGetter;
-    @Child private GetAttributeNode exitGetter;
-    @Child private CallDispatchNode enterDispatch;
-    @Child private CallDispatchNode exitDispatch;
-    @Child private CastToBooleanNode toBooleanNode;
-    @Child private CreateArgumentsNode createArgs;
+    @Child private LookupAndCallBinaryNode enterGetter = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+    @Child private LookupAndCallBinaryNode exitGetter = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+    @Child private CallDispatchNode enterDispatch = CallDispatchNode.create();
+    @Child private CallDispatchNode exitDispatch = CallDispatchNode.create();
+    @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
+    @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
     protected WithNode(PNode targetNode, PNode body) {
         this.targetNode = targetNode;
         this.body = body;
-        this.enterGetter = GetAttributeNode.create();
-        this.exitGetter = GetAttributeNode.create();
-        this.enterDispatch = CallDispatchNode.create("__enter__");
-        this.exitDispatch = CallDispatchNode.create("__enter__");
-        this.toBooleanNode = CastToBooleanNode.createIfTrueNode();
-        this.createArgs = CreateArgumentsNode.create();
     }
 
     public static WithNode create(PNode withContext, PNode targetNode, PNode body) {
@@ -97,8 +92,8 @@ public abstract class WithNode extends StatementNode {
 
         boolean gotException = false;
         // CPython first looks up '__exit__
-        Object exitCallable = exitGetter.execute(withObject, "__exit__");
-        Object enterCallable = enterGetter.execute(withObject, "__enter__");
+        Object exitCallable = exitGetter.executeObject(withObject, "__exit__");
+        Object enterCallable = enterGetter.executeObject(withObject, "__enter__");
 
         if (isCallableNode.execute(enterCallable)) {
             applyValues(frame, enterDispatch.executeCall(enterCallable, createArgs.execute(withObject), new PKeyword[0]));

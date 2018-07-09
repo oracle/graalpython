@@ -36,33 +36,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.call.special;
+package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
+import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-public abstract class LookupAndCallVarargsNode extends PBaseNode {
-    private final String name;
-    @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
+public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
+    private final RootCallTarget callTarget;
+    private final FrameDescriptor frameDescriptor;
+    private final int numOfActiveFlags;
+    private final int numOfGeneratorBlockNode;
+    private final int numOfGeneratorForNode;
+    private final PCell[] closure;
+    private final ExecutionCellSlots cellSlots;
 
-    public abstract Object execute(Object callable, Object[] arguments);
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public static LookupAndCallVarargsNode create(String name) {
-        return LookupAndCallVarargsNodeGen.create(name);
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
+                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
+        super(language, frameDescriptor, executionCellSlots);
+        this.callTarget = callTarget;
+        this.frameDescriptor = frameDescriptor;
+        this.closure = closure;
+        this.cellSlots = executionCellSlots;
+        this.numOfActiveFlags = numOfActiveFlags;
+        this.numOfGeneratorBlockNode = numOfGeneratorBlockNode;
+        this.numOfGeneratorForNode = numOfGeneratorForNode;
     }
 
-    LookupAndCallVarargsNode(String name) {
-        this.name = name;
-    }
-
-    @Specialization
-    Object callObject(Object callable, Object[] arguments,
-                    @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create()") LookupAttributeInMRONode.Dynamic getattr) {
-        return dispatchNode.execute(getattr.execute(getClassNode.execute(callable), name), arguments, PKeyword.EMPTY_KEYWORDS);
+    @Override
+    public Object execute(VirtualFrame frame) {
+        return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
     }
 }
