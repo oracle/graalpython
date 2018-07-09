@@ -361,6 +361,13 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(getDictNode.execute(object, SpecialAttributeNames.__DICT__));
         }
 
+        @Specialization(guards = "eq(MD_DEF, key)")
+        Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key) {
+            PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+            assert nativeWrapper != null;
+            return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), NativeMemberNames.MD_DEF);
+        }
+
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
         Object doObSval(PBuffer object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object.getDelegate());
@@ -509,6 +516,14 @@ public class PythonObjectNativeWrapperMR {
             for (Object item : dict.items()) {
                 object.getSubClasses().add((PythonClass) item);
             }
+            return value;
+        }
+
+        @Specialization(guards = "eq(MD_DEF, key)")
+        Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value) {
+            PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+            assert nativeWrapper != null;
+            getSetItemNode().execute(null, nativeWrapper.createNativeMemberStore(), NativeMemberNames.MD_DEF, value);
             return value;
         }
 
