@@ -133,6 +133,7 @@ PyObject * PyLong_FromSize_t(size_t n)  {
 	return PyLong_FromUnsignedLongLong(n);
 }
 
+// partially taken from CPython 3.7.0 "Objects/longobject.c"
 PyObject * PyLong_FromString(const char* inputStr, char** pend, int base) {
     int negative = 0, error_if_nonzero = 0;
     char* str = (char*)inputStr;

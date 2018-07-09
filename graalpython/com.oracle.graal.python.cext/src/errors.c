@@ -158,7 +158,8 @@ void PyErr_Display(PyObject *exception, PyObject *value, PyObject *tb) {
 }
 
 void PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb) {
-    // TODO (tfel): do we have to?
+    // (tfel): nothing to do here from our side, the exception is already
+    // reified
     return;
 }
 

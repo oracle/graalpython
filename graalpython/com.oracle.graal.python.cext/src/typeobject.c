@@ -423,5 +423,6 @@ int PyType_Ready(PyTypeObject* cls) {
 }
 
 void PyType_Modified(PyTypeObject* type) {
-    // TODO: (tfel) what needs to be done?
+    // (tfel) I don't think we have to do anything here, since we track MRO
+    // changes separately, anyway
 }

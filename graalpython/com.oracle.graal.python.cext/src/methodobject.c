@@ -43,16 +43,16 @@ typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
 PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
 
 PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
-    PyObject* func = UPCALL_CEXT_O("PyCFunction_NewEx",
-                                   polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
-                                   ml->ml_meth,
-                                   get_method_flags_cwrapper(ml->ml_flags),
-                                   get_method_flags_wrapper(ml->ml_flags),
-                                   polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS));
-    /* TODO: are the below fields required?
-     * ((PyCFunctionObject*)func)->m_self = self;
-     * ((PyCFunctionObject*)func)->m_module = module;
-     * ((PyCFunctionObject*)func)->m_ml = ml;
-     */
-    return func;
+    PyObject* func = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
+                                               "PyCFunction_NewEx",
+                                               polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
+                                               ml->ml_meth,
+                                               get_method_flags_cwrapper(ml->ml_flags),
+                                               get_method_flags_wrapper(ml->ml_flags),
+                                               polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS)));
+    if (func == ERROR_MARKER) {
+        return NULL;
+    } else {
+        return func;
+    }
 }

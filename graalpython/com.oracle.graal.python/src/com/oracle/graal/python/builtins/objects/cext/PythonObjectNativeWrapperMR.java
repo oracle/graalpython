@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import java.util.logging.Level;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -413,7 +415,7 @@ public class PythonObjectNativeWrapperMR {
             if (object instanceof PythonAbstractObject) {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
-                System.err.println("[python] read of native member " + key);
+                PythonLanguage.getLogger().log(Level.WARNING, "read of Python struct native member", key);
                 return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), key);
             }
             throw UnknownIdentifierException.raise(key);
@@ -532,7 +534,7 @@ public class PythonObjectNativeWrapperMR {
             if (object instanceof PythonAbstractObject) {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
-                System.err.println("[python] write of native member " + key);
+                PythonLanguage.getLogger().log(Level.WARNING, "write of Python struct native member", key);
                 getSetItemNode().execute(null, nativeWrapper.createNativeMemberStore(), key, value);
                 return value;
             }
