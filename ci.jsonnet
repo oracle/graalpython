@@ -71,6 +71,7 @@
       "python": "==3.4.1",
       "libffi": ">=3.2.1",
       "bzip2": ">=1.0.6",
+      "pip:wllvm": "==1.2.2",
     },
     downloads +: {
       LIBGMP: utils.download("libgmp", "6.1.0"),
