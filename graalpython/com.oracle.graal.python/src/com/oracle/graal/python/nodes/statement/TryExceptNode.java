@@ -76,6 +76,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     throw e;
                 } else {
                     PException pe = new PException(getBaseException(e), this);
+                    pe.getExceptionObject().setException(pe);
                     try {
                         catchException(frame, pe);
                     } catch (PException pe_thrown) {
