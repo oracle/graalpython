@@ -63,9 +63,6 @@ public class ImportFromNode extends AbstractImportNode {
     @ExplodeLoop
     public Object execute(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
-        if (importee == null || importee.isEmpty()) {
-            throw raise(PythonErrorType.ImportError, "attempted relative import with no known parent package");
-        }
         Object importedModule = importModule(importee, globals, fromlist, level);
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
