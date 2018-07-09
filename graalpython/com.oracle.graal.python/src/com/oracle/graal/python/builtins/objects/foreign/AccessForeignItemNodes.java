@@ -58,7 +58,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
@@ -158,7 +157,7 @@ abstract class AccessForeignItemNodes {
         }
 
         private Object readForeignValue(TruffleObject object, Object key, Node foreignRead, boolean indexed) {
-            Object index = indexed ? getIndexNode().executeObject(key) : key;
+            Object index = indexed ? checkNumber(getIndexNode().executeObject(key)) : key;
             try {
                 return getToPythonNode().executeConvert(ForeignAccess.sendRead(foreignRead, object, getToForeignNode().executeConvert(index)));
             } catch (UnsupportedMessageException ex) {
@@ -173,6 +172,13 @@ abstract class AccessForeignItemNodes {
                     throw raise(KeyError, "invalid key %s", key);
                 }
             }
+        }
+
+        private Object checkNumber(Object object) {
+            if (object instanceof Number || PTypeToForeignNode.isBoxed(object)) {
+                return object;
+            }
+            throw raiseIndexError();
         }
 
         protected boolean isArray(TruffleObject o) {
