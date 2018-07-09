@@ -86,7 +86,7 @@ public abstract class WithNode extends StatementNode {
     }
 
     @Specialization
-    protected Object runWith(VirtualFrame frame, PythonObject withObject,
+    protected Object runWith(VirtualFrame frame, Object withObject,
                     @Cached("create()") IsCallableNode isCallableNode,
                     @Cached("create()") IsCallableNode isExitCallableNode) {
 
@@ -118,7 +118,7 @@ public abstract class WithNode extends StatementNode {
         return PNone.NONE;
     }
 
-    private Object handleException(PythonObject withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
+    private Object handleException(Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
         if (!isExitCallableNode.execute(exitCallable)) {
             throw raise(TypeError, "%p is not callable", exitCallable);
         }
