@@ -40,11 +40,13 @@ package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
@@ -64,6 +66,7 @@ public class PyNumberMethodsWrapperMR {
         @Child private LookupAttributeInMRONode getAddAttributeNode;
         @Child private LookupAttributeInMRONode getIndexAttributeNode;
         @Child private LookupAttributeInMRONode getPowAttributeNode;
+        @Child private LookupAttributeInMRONode getMulAttributeNode;
         @Child private LookupAttributeInMRONode getTrueDivAttributeNode;
         @Child private ToSulongNode toSulongNode;
 
@@ -99,6 +102,13 @@ public class PyNumberMethodsWrapperMR {
                         getTrueDivAttributeNode = insert(LookupAttributeInMRONode.create(__TRUEDIV__));
                     }
                     result = getTrueDivAttributeNode.execute(delegate);
+                    break;
+                case NB_MULTIPLY:
+                    if (getMulAttributeNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getMulAttributeNode = insert(LookupAttributeInMRONode.create(__MUL__));
+                    }
+                    result = getMulAttributeNode.execute(delegate);
                     break;
                 default:
                     // TODO extend list

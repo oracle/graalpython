@@ -181,7 +181,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"})
         Object getCode(PGenerator self, @SuppressWarnings("unused") PNone none) {
-            return new PythonParseResult(self.getGeneratorRootNode(), getCore());
+            return factory().createCode(new PythonParseResult(self.getGeneratorRootNode()));
         }
 
         @SuppressWarnings("unused")

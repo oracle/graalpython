@@ -36,42 +36,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.parser;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import org.antlr.v4.runtime.ParserRuleContext;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.MessageResolution;
+import com.oracle.truffle.api.interop.Resolve;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.nodes.Node;
 
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParseResult;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
+@MessageResolution(receiverType = PySequenceMethodsWrapper.class)
+public class PySequenceMethodsWrapperMR {
 
-public class PythonTreeTranslator extends PythonBaseTreeTranslator<PythonParseResult> {
+    @Resolve(message = "READ")
+    abstract static class ReadNode extends Node {
+        @Child private LookupAttributeInMRONode getSqRepeatNode;
+        @Child private ToSulongNode toSulongNode;
 
-    private PythonParseResult result;
-
-    public PythonTreeTranslator(PythonCore core, String name, ParserRuleContext input, TranslationEnvironment environment, Source source) {
-        super(core, name, environment, source);
-        RootNode rootNode = null;
-
-        try {
-            Object parseResult = input.accept(this);
-            if (parseResult instanceof RootNode) {
-                rootNode = (RootNode) parseResult;
-            } else {
-                throw new RuntimeException("Unexpected parse result");
+        public Object access(PySequenceMethodsWrapper object, String key) {
+            PythonClass delegate = object.getDelegate();
+            Object result;
+            switch (key) {
+                case NativeMemberNames.SQ_REPEAT:
+                    if (getSqRepeatNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getSqRepeatNode = insert(LookupAttributeInMRONode.create(SpecialMethodNames.__MUL__));
+                    }
+                    result = getSqRepeatNode.execute(delegate);
+                    break;
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.raise(key);
             }
-        } catch (PException e) {
-            throw e;
-        } catch (Exception t) {
-            t.printStackTrace();
-            throw new RuntimeException("Failed in " + this + " with error " + t, t);
+            return getToSulongNode().execute(result);
         }
-        this.result = new PythonParseResult(rootNode);
-    }
 
-    @Override
-    public PythonParseResult getTranslationResult() {
-        return result;
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
     }
 }

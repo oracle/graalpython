@@ -341,6 +341,15 @@ def _PyLong_Sign(n):
         return 1
 
 
+@may_raise
+def PyLong_FromString(string, base, negative):
+    result = int(string, base)
+    if negative:
+        return -result
+    else:
+        return result
+
+
 ##################### FLOAT
 
 @may_raise
@@ -684,6 +693,17 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
         object.__setattr__(mod_obj, name, func)
 
 
+def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+    func = wrapper(CreateFunction(name, cfunc, cwrapper))
+    if isclass:
+        func = classmethod(func)
+    elif isstatic:
+        func = cstaticmethod(func)
+    func.__name__ = name
+    func.__doc__ = doc
+    return func
+
+
 def AddMember(primary, name, memberType, offset, canSet, doc):
     pclass = to_java(primary)
     member = property()
@@ -1021,6 +1041,28 @@ def PyFile_WriteObject(obj, file, flags):
     file.write(write_value)
     return 0
 
+
+##  CODE
+
+codetype = type(may_raise.__code__)
+
+
+@may_raise
+def PyCode_New(*args):
+    return codetype(*args)
+
+
+## TRACEBACK
+
+tbtype = type(sys._getframe(0).f_trace)
+
+@may_raise(-1)
+def PyTraceBack_Here(frame):
+    # skip this, the may_raise wrapper, the upcall wrapper, and PyTraceBack_Here itself
+    parentframe = sys._getframe(4)
+    return PyTruffleTraceBack_Here(parentframe.f_trace, frame)
+
+
 ##################### C EXT HELPERS
 
 def PyTruffle_Debug(*args):
@@ -1046,6 +1088,14 @@ def PyTruffle_Type(type_name):
         return type(getattr)
     elif type_name == "ellipsis":
         return type(Py_Ellipsis())
+    elif type_name == "method":
+        return type({}.update)
+    elif type_name == "code":
+        return codetype
+    elif type_name == "traceback":
+        return tbtype
+    elif type_name == "frame":
+        return type(sys._getframe(0))
     else:
         return getattr(sys.modules["builtins"], type_name)
 
@@ -1163,6 +1213,11 @@ def PySlice_GetIndicesEx(start, stop, step, length):
 
 
 @may_raise
+def PySlice_New(start, stop, step):
+    return slice(start, stop, step)
+
+
+@may_raise(to_sulong(error_handler))
 def PyTruffle_Upcall(rcv, name, *args):
     nargs = len(args)
     converted = [None] * nargs

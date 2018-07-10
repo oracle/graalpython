@@ -46,11 +46,11 @@ public class PBuiltinMethod extends PythonBuiltinObject implements PythonCallabl
         this.callTarget = function.getCallTarget();
     }
 
-    public PBuiltinFunction __func__() {
+    public PBuiltinFunction getFunction() {
         return function;
     }
 
-    public Object __self__() {
+    public Object getSelf() {
         return self;
     }
 

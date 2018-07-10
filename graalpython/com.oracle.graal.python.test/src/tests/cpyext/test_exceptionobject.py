@@ -35,52 +35,30 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def _f(): pass
-FunctionType = type(_f)
-descriptor = type(FunctionType.__code__)
+import sys
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+__dir__ = __file__.rpartition("/")[0]
 
 
-def make_named_tuple_class(name, fields):
-    class named_tuple(tuple):
-        __name__ = name
-        n_sequence_fields = len(fields)
-
-        def __str__(self):
-            return self.__repr__()
-
-        def __repr__(self):
-            return "%s%s" % (name, tuple.__repr__(self))
+try:
+    raise TypeError
+except:
+    TB = sys.exc_info()[2]
 
 
-    def _define_named_tuple_methods():
-        for i, name in enumerate(fields):
-            def make_func(i):
-                def func(self):
-                    return self[i]
-                return func
-            setattr(named_tuple, name, descriptor(fget=make_func(i), name=name, owner=named_tuple))
+class TestExceptionobject(CPyExtTestCase):
+    def compile_module(self, name):
+        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
+        super().compile_module(name)
 
-
-    _define_named_tuple_methods()
-    return named_tuple
-
-
-class SimpleNamespace(object):
-    def __init__(self, **kwargs):
-        object.__setattr__(self, "__ns__", kwargs)
-
-    def __delattr__(self, name):
-        object.__getattribute__(self, "__ns__").__delitem__(name)
-
-    def __getattr__(self, name):
-        return object.__getattribute__(self, "__ns__")[name]
-
-    def __setattr__(self, name, value):
-        object.__getattribute__(self, "__ns__")[name] = value
-
-    def __repr__(self):
-        sb = []
-        ns = object.__getattribute__(self, "__ns__")
-        for k,v in ns.items():
-            sb.append("%s='%s'" % (k,v))
-        return "namespace(%s)" % ", ".join(sb)
+    test_PyException_SetTraceback = CPyExtFunction(
+        lambda args: 0,
+        lambda: (
+            (
+                AssertionError(), TB
+            ),
+        ),
+        resultspec="i",
+        argspec="OO",
+        arguments=["PyObject* exc", "PyObject* tb"],
+    )

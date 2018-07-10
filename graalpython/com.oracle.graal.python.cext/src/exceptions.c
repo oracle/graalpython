@@ -75,9 +75,13 @@ PyObject * PyExc_ZeroDivisionError = NULL;
 PyObject * PyExc_ArithmeticError = NULL;
 PyObject * PyExc_StopIteration = NULL;
 PyObject * PyExc_BufferError = NULL;
+PyObject * PyExc_AssertionError = NULL;
+PyObject * PyExc_UnboundLocalError = NULL;
+PyObject * PyExc_NotImplementedError = NULL;
 
 void initialize_exceptions() {
     PyExc_AttributeError = PY_EXCEPTION("AttributeError");
+    PyExc_AssertionError = PY_EXCEPTION("AssertionError");
     PyExc_BaseException = PY_EXCEPTION("BaseException");
     PyExc_BytesWarning = PY_EXCEPTION("BytesWarning");
     PyExc_DeprecationWarning = PY_EXCEPTION("DeprecationWarning");
@@ -107,5 +111,16 @@ void initialize_exceptions() {
     PyExc_ArithmeticError = PY_EXCEPTION("ArithmeticError");
     PyExc_StopIteration = PY_EXCEPTION("StopIteration");
     PyExc_BufferError = PY_EXCEPTION("BufferError");
+    PyExc_UnboundLocalError = PY_EXCEPTION("UnboundLocalError");
+    PyExc_NotImplementedError = PY_EXCEPTION("NotImplementedError");
 }
 
+
+int PyException_SetTraceback(PyObject *self, PyObject *tb) {
+    PyObject* result = UPCALL_O(native_to_java(self), "with_traceback", native_to_java(tb));
+    if (result == ERROR_MARKER) {
+        return -1;
+    } else {
+        return 0;
+    }
+}

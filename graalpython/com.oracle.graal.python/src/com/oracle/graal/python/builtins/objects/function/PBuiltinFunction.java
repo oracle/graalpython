@@ -25,6 +25,9 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
+
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -49,6 +52,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Pytho
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
         this.callTarget = callTarget;
         this.arity = arity;
+        this.getStorage().define(__NAME__, name);
+        this.getStorage().define(__QUALNAME__, name);
     }
 
     public boolean isStatic() {

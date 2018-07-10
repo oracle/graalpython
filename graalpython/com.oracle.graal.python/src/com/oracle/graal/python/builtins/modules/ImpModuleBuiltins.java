@@ -139,6 +139,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         protected static final String INITIALIZE_CAPI = "initialize_capi";
         private static final String LLVM_LANGUAGE = "llvm";
         @Child private SetItemNode setItemNode;
+        @Child private Node isNullNode = Message.IS_NULL.createNode();
 
         @Specialization
         @TruffleBoundary
@@ -184,7 +185,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
-                Object result = AsPythonObjectNode.doSlowPath(ForeignAccess.sendExecute(executeNode, pyinitFunc));
+                Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
+                TruffleCextBuiltins.checkFunctionResult(getContext(), isNullNode, "PyInit_" + basename, nativeResult);
+                Object result = AsPythonObjectNode.doSlowPath(nativeResult);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);

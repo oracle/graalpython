@@ -36,14 +36,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 #include "capi.h"
 
-PyObject * PyThreadState_GetDict() {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ThreadState_GetDict"));
+PyTypeObject PyMethod_Type = PY_TRUFFLE_TYPE("method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyMethodObject));
+PyTypeObject PyInstanceMethod_Type = PY_TRUFFLE_TYPE("instancemethod", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyInstanceMethodObject));
+
+PyObject* PyMethod_Function(PyObject* obj) {
+    if (PyMethod_Check(obj)) {
+        return PyMethod_GET_FUNCTION(obj);
+    } else {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
 }
 
-PyThreadState * PyThreadState_Get() {
-    // TODO: (tfel) how much ThreadState will we actually support?
-    return (PyThreadState*)PyThreadState_GetDict();
+PyObject* PyMethod_Self(PyObject* obj) {
+    if (PyMethod_Check(obj)) {
+        return PyMethod_GET_SELF(obj);
+    } else {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
 }

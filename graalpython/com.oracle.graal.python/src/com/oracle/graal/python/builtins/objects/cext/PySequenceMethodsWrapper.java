@@ -36,14 +36,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.builtins.objects.cext;
 
-#include "capi.h"
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-PyObject * PyThreadState_GetDict() {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ThreadState_GetDict"));
-}
+/**
+ * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
+ */
+public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 
-PyThreadState * PyThreadState_Get() {
-    // TODO: (tfel) how much ThreadState will we actually support?
-    return (PyThreadState*)PyThreadState_GetDict();
+    private final PythonClass delegate;
+
+    public PySequenceMethodsWrapper(PythonClass delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public PythonClass getDelegate() {
+        return delegate;
+    }
+
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PySequenceMethodsWrapper;
+    }
+
+    @Override
+    public ForeignAccess getForeignAccess() {
+        return PySequenceMethodsWrapperMRForeign.ACCESS;
+    }
 }

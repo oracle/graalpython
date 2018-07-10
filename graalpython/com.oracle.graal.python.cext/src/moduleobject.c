@@ -125,5 +125,5 @@ PyObject* PyModule_GetDict(PyObject* o) {
 }
 
 PyObject* PyModule_NewObject(PyObject* name) {
-    return UPCALL_CEXT_O("PyModule_New", name);
+    return UPCALL_CEXT_O("PyModule_NewObject", native_to_java(name));
 }

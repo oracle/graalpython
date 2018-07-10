@@ -81,6 +81,7 @@ graalpython/com.oracle.graal.python.cext/include/boolobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/bytearrayobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/bytesobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/ceval.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/classobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/code.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/codecs.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/compile.h,python.copyright
@@ -307,6 +308,8 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/foreign/TruffleObjectBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/frame/FrameBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/Arity.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/AbstractFunctionBuiltins.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/BuiltinFunctionBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/FunctionBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PArguments.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/function/PBuiltinFunction.java,zippy.copyright
@@ -533,6 +536,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TypedSequenceStorage.java,zippy.copyright
 graalpython/lib-graalpython/_io.py,pypy.copyright
 graalpython/lib-graalpython/itertools.py,pypy.copyright
+graalpython/lib-graalpython/object.py,pypy.copyright
 graalpython/lib-graalpython/str.py,pypy.copyright
 graalpython/lib-graalpython/timsort.py,pypy.copyright
 mx.graalpython/mx_graalpython.py,zippy.copyright

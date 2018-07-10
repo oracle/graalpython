@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
@@ -36,14 +36,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 #include "capi.h"
 
-PyObject * PyThreadState_GetDict() {
-    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_ThreadState_GetDict"));
-}
+PyTypeObject PyCode_Type = PY_TRUFFLE_TYPE("code", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(PyTypeObject));
 
-PyThreadState * PyThreadState_Get() {
-    // TODO: (tfel) how much ThreadState will we actually support?
-    return (PyThreadState*)PyThreadState_GetDict();
+PyCodeObject* PyCode_New(int argcount, int kwonlyargcount, int nlocals,
+                         int stacksize, int flags, PyObject *code,
+                         PyObject *consts, PyObject *names, PyObject *varnames,
+                         PyObject *freevars, PyObject *cellvars,
+                         PyObject *filename, PyObject *name, int firstlineno,
+                         PyObject *lnotab) {
+    return UPCALL_CEXT_O("PyCode_New", argcount, kwonlyargcount, nlocals,
+                         stacksize, flags, native_to_java(code),
+                         native_to_java(consts), native_to_java(names), native_to_java(varnames),
+                         native_to_java(filename), native_to_java(name), firstlineno,
+                         native_to_java(lnotab));
 }

@@ -103,3 +103,12 @@ int PyDict_SetItemString(PyObject *d, const char *key, PyObject *item) {
 int PyDict_DelItemString(PyObject *d, const char *key) {
     return UPCALL_CEXT_I("PyDict_DelItem", native_to_java(d), polyglot_from_string(key, SRC_CS));
 }
+
+int PyDict_Update(PyObject *a, PyObject *b) {
+    PyObject* result = UPCALL_O(native_to_java(a), "update", native_to_java(b));
+    if (PyErr_Occurred()) {
+        return -1;
+    } else {
+        return 0;
+    }
+}

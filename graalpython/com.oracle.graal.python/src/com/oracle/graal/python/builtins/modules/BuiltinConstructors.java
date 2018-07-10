@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -133,9 +134,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -1083,7 +1084,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // function(code, globals[, name[, argdefs[, closure]]])
-    @Builtin(name = "function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PFunction.class, PBuiltinFunction.class, PGeneratorFunction.class}, isPublic = false)
+    @Builtin(name = "function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PFunction.class, PGeneratorFunction.class}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
 
@@ -1091,6 +1092,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         public PFunction function(Object cls, Object code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
             throw raise(NotImplementedError, "function construction not implemented");
+        }
+    }
+
+    // builtin-function(method-def, self, module)
+    @Builtin(name = "builtin-function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PBuiltinFunction.class}, isPublic = false)
+    @GenerateNodeFactory
+    public abstract static class BuiltinFunctionNode extends PythonBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        public PFunction function(Object cls, Object method_def, Object def, Object name, Object module) {
+            throw raise(TypeError, "cannot create 'builtin_function' instances");
         }
     }
 
@@ -1401,12 +1413,39 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = {PythonParseResult.class}, isPublic = false, minNumOfArguments = 13, maxNumOfArguments = 15)
+    @Builtin(name = "code", constructsClass = {PCode.class}, isPublic = false, minNumOfArguments = 14, maxNumOfArguments = 16)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Specialization
-        Object call() {
-            throw raise(NotImplementedError, "constructing code objects manually");
+        Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
+                        int flags, String codestring, Object constants, Object names, Object varnames,
+                        String filename, String name, int firstlineno, Object lnotab, Object freevars,
+                        Object cellvars) {
+            return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
+                            flags, codestring, constants, names, varnames,
+                            filename, name, firstlineno, lnotab, freevars,
+                            cellvars);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
+                        int flags, PBytes codestring, Object constants, Object names, Object varnames,
+                        PString filename, PString name, int firstlineno, Object lnotab, Object freevars,
+                        Object cellvars) {
+            return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
+                            flags, new String(codestring.getInternalByteArray()), constants, names, varnames,
+                            filename.getValue(), name.getValue(), firstlineno, lnotab, freevars,
+                            cellvars);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object call(Object cls, Object argcount, Object kwonlyargcount, Object nlocals, Object stacksize,
+                        Object flags, Object codestring, Object constants, Object names, Object varnames,
+                        Object filename, Object name, Object firstlineno, Object lnotab, Object freevars,
+                        Object cellvars) {
+            throw raise(PythonErrorType.NotImplementedError, "code object instance from generic arguments");
         }
     }
 
@@ -1500,6 +1539,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object slice(PythonClass cls, int first, int second, int third) {
             return factory().createSlice(first, second, third);
+        }
+
+        @Specialization
+        Object slice(PythonClass cls, Object start, Object stop, Object step,
+                        @Cached("create()") SliceLiteralNode sliceNode) {
+            return sliceNode.execute(start, stop, step);
         }
     }
 

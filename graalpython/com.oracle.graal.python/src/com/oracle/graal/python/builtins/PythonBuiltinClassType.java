@@ -37,7 +37,7 @@ public enum PythonBuiltinClassType {
     PArray(com.oracle.graal.python.builtins.objects.array.PArray.class, "array"),
     PBaseException(com.oracle.graal.python.builtins.objects.exception.PBaseException.class, "BaseException"),
     PBaseSetIterator(com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator.class, "iterator"),
-    PBuiltinFunction(com.oracle.graal.python.builtins.objects.function.PBuiltinFunction.class, "function"),
+    PBuiltinFunction(com.oracle.graal.python.builtins.objects.function.PBuiltinFunction.class, "builtin-function"),
     PBuiltinMethod(com.oracle.graal.python.builtins.objects.method.PBuiltinMethod.class, "method"),
     PByteArray(com.oracle.graal.python.builtins.objects.bytes.PByteArray.class, "bytearray"),
     PBytes(com.oracle.graal.python.builtins.objects.bytes.PBytes.class, "bytes"),
@@ -97,7 +97,7 @@ public enum PythonBuiltinClassType {
     PythonModule(com.oracle.graal.python.builtins.objects.module.PythonModule.class, "module"),
     PythonObject(com.oracle.graal.python.builtins.objects.object.PythonObject.class, "object"),
     PythonNativeObject(com.oracle.graal.python.builtins.objects.cext.PythonNativeObject.class, "object"),
-    PythonParseResult(com.oracle.graal.python.runtime.PythonParseResult.class, "code"),
+    PCode(com.oracle.graal.python.builtins.objects.code.PCode.class, "code"),
     PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip"),
     PBuffer(com.oracle.graal.python.builtins.objects.memoryview.PBuffer.class, "buffer");
 

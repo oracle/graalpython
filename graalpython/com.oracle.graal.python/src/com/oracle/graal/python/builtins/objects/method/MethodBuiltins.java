@@ -64,12 +64,12 @@ public class MethodBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(PMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.__func__(), createArgs.executeWithSelf(self.__self__(), arguments), keywords);
+            return dispatch.executeCall(self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
         }
 
         @Specialization
         protected Object doIt(PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.__func__(), createArgs.executeWithSelf(self.__self__(), arguments), keywords);
+            return dispatch.executeCall(self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
         }
     }
 
@@ -78,12 +78,12 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class SelfNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self) {
-            return self.__self__();
+            return self.getSelf();
         }
 
         @Specialization
         protected Object doIt(PBuiltinMethod self) {
-            return self.__self__();
+            return self.getSelf();
         }
     }
 
@@ -92,12 +92,12 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class FuncNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self) {
-            return self.__func__();
+            return self.getFunction();
         }
 
         @Specialization
         protected Object doIt(PBuiltinMethod self) {
-            return self.__func__();
+            return self.getFunction();
         }
     }
 
@@ -107,7 +107,7 @@ public class MethodBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.__func__(), SpecialAttributeNames.__NAME__);
+            return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__NAME__);
         }
     }
 
@@ -117,7 +117,7 @@ public class MethodBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.__func__(), SpecialAttributeNames.__CODE__);
+            return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__CODE__);
         }
     }
 
@@ -126,12 +126,12 @@ public class MethodBuiltins extends PythonBuiltins {
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean eq(PMethod self, PMethod other) {
-            return self.__func__() == other.__func__() && self.__self__() == other.__self__();
+            return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
         }
 
         @Specialization
         boolean eq(PBuiltinMethod self, PBuiltinMethod other) {
-            return self.__func__() == other.__func__() && self.__self__() == other.__self__();
+            return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
         }
 
         @Fallback

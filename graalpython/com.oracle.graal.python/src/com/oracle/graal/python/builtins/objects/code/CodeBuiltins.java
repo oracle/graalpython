@@ -37,7 +37,6 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -45,7 +44,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
-@CoreFunctions(extendClasses = PythonParseResult.class)
+@CoreFunctions(extendClasses = PCode.class)
 public class CodeBuiltins extends PythonBuiltins {
 
     @Override
@@ -57,7 +56,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FreeVarsNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PythonParseResult self) {
+        protected Object doIt(PCode self) {
             RootNode rootNode = self.getRootNode();
             if (rootNode instanceof FunctionRootNode) {
                 return factory().createTuple(((FunctionRootNode) rootNode).getFreeVars());
@@ -73,7 +72,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CellVarsNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PythonParseResult self) {
+        protected Object doIt(PCode self) {
             RootNode rootNode = self.getRootNode();
             if (rootNode instanceof FunctionRootNode) {
                 return factory().createTuple(((FunctionRootNode) rootNode).getCellVars());
@@ -89,8 +88,11 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FilenameNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PythonParseResult self) {
+        protected Object doIt(PCode self) {
             RootNode rootNode = self.getRootNode();
+            if (rootNode == null) {
+                return self.getFilename();
+            }
             SourceSection src = rootNode.getSourceSection();
             if (src != null) {
                 return src.getSource().getName();
@@ -107,8 +109,11 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class LinenoNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected Object doIt(PythonParseResult self) {
+        protected Object doIt(PCode self) {
             RootNode rootNode = self.getRootNode();
+            if (rootNode == null) {
+                return self.getFirstLineNo();
+            }
             SourceSection sourceSection = rootNode.getSourceSection();
             if (sourceSection == null) {
                 return 1;
@@ -123,13 +128,15 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class NameNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected Object doIt(PythonParseResult self) {
+        protected Object doIt(PCode self) {
             RootNode rootNode = self.getRootNode();
             String name;
             if (rootNode instanceof ModuleRootNode) {
                 name = "<module>";
             } else if (rootNode instanceof FunctionRootNode) {
                 name = ((FunctionRootNode) rootNode).getFunctionName();
+            } else if (rootNode == null) {
+                name = self.getName();
             } else {
                 name = rootNode.getName();
             }

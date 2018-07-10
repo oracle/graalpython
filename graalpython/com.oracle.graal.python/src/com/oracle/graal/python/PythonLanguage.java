@@ -58,6 +58,7 @@ import com.oracle.truffle.api.Scope;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -383,5 +384,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static PythonCore getCore() {
         PythonCore core = getCurrentLanguage(PythonLanguage.class).sharedCore;
         return core != null ? core : getContext().getCore();
+    }
+
+    public static TruffleLogger getLogger() {
+        return TruffleLogger.getLogger(ID, PythonLanguage.class);
     }
 }

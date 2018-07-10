@@ -78,4 +78,11 @@ public final class PTraceback extends PythonBuiltinObject {
         }
         return frame;
     }
+
+    public void setPFrame(PFrame frame) {
+        if (this.frame != null) {
+            throw new IllegalStateException("fabricating a frame for a traceback that already has one");
+        }
+        this.frame = frame;
+    }
 }

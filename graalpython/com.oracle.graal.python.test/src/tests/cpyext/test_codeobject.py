@@ -35,52 +35,45 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def _f(): pass
-FunctionType = type(_f)
-descriptor = type(FunctionType.__code__)
+import sys
+import types
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+__dir__ = __file__.rpartition("/")[0]
 
 
-def make_named_tuple_class(name, fields):
-    class named_tuple(tuple):
-        __name__ = name
-        n_sequence_fields = len(fields)
-
-        def __str__(self):
-            return self.__repr__()
-
-        def __repr__(self):
-            return "%s%s" % (name, tuple.__repr__(self))
+class DummyClass():
+    def foo(self):
+        return 0
 
 
-    def _define_named_tuple_methods():
-        for i, name in enumerate(fields):
-            def make_func(i):
-                def func(self):
-                    return self[i]
-                return func
-            setattr(named_tuple, name, descriptor(fget=make_func(i), name=name, owner=named_tuple))
+DummyInstance = DummyClass()
+DictInstance = {}
 
 
-    _define_named_tuple_methods()
-    return named_tuple
+class TestCodeobject(CPyExtTestCase):
+    def compile_module(self, name):
+        type(self).mro()[1].__dict__["test_%s" % name].create_module(name)
+        super().compile_module(name)
 
+    testmod = type(sys)("foo")
 
-class SimpleNamespace(object):
-    def __init__(self, **kwargs):
-        object.__setattr__(self, "__ns__", kwargs)
-
-    def __delattr__(self, name):
-        object.__getattribute__(self, "__ns__").__delitem__(name)
-
-    def __getattr__(self, name):
-        return object.__getattribute__(self, "__ns__")[name]
-
-    def __setattr__(self, name, value):
-        object.__getattribute__(self, "__ns__")[name] = value
-
-    def __repr__(self):
-        sb = []
-        ns = object.__getattribute__(self, "__ns__")
-        for k,v in ns.items():
-            sb.append("%s='%s'" % (k,v))
-        return "namespace(%s)" % ", ".join(sb)
+    test_PyCode_New = CPyExtFunction(
+        lambda args: args,
+        lambda: (
+            (
+                1,2,3,4,0,b"",tuple(),tuple(),tuple(),
+                tuple(),tuple(),"filename","name",1,b"",
+            ),
+        ),
+        resultspec="O",
+        argspec="iiiiiOOOOOOOOiO",
+        arguments=[
+            "int argcount", "int kwonlyargcount", "int nlocals",
+            "int stacksize", "int flags", "PyObject* code",
+            "PyObject* consts", "PyObject* names", "PyObject* varnames",
+            "PyObject* freevars", "PyObject* cellvars",
+            "PyObject* filename", "PyObject* name", "int firstlineno",
+            "PyObject* lnotab"
+        ],
+        cmpfunc=lambda cr,pr: isinstance(cr, types.CodeType),
+    )

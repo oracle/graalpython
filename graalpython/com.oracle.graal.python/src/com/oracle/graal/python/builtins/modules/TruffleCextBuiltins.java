@@ -69,14 +69,17 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNative
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -540,6 +543,22 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
+    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
+    public static Object checkFunctionResult(PythonContext context, Node isNullNode, String name, Object result) {
+        PException currentException = context.getCurrentException();
+        boolean errOccurred = currentException != null;
+        if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
+            if (!errOccurred) {
+                throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned NULL without setting an error", name);
+            } else {
+                throw currentException;
+            }
+        } else if (errOccurred) {
+            throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned a result with an error set", name);
+        }
+        return result;
+    }
+
     static class ExternalFunctionNode extends RootNode {
         private final TruffleObject cwrapper;
         private final TruffleObject callable;
@@ -590,7 +609,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
                     }
                 }
-                return fromNative(asPythonObjectNode.execute(checkFunctionResult(ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                return fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException(e.toString());
@@ -616,22 +635,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public String getName() {
             return name;
-        }
-
-        // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
-        private Object checkFunctionResult(Object result) {
-            PException currentException = getContext().getCurrentException();
-            boolean errOccurred = currentException != null;
-            if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
-                if (!errOccurred) {
-                    throw getCore().raise(PythonErrorType.SystemError, this, "%s returned NULL without setting an error", name);
-                } else {
-                    throw currentException;
-                }
-            } else if (errOccurred) {
-                throw getCore().raise(PythonErrorType.SystemError, this, "%s returned a result with an error set", name);
-            }
-            return result;
         }
     }
 
@@ -1150,6 +1153,26 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         long getHash() {
             return PComplex.IMAG_MULTIPLIER;
+        }
+    }
+
+    @Builtin(name = "PyTruffleFrame_New", fixedNumOfArguments = 4)
+    @GenerateNodeFactory
+    abstract static class PyTruffleFrameNewNode extends PythonBuiltinNode {
+        @Specialization
+        Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
+            return factory().createPFrame(threadState, code, globals, locals);
+        }
+    }
+
+    @Builtin(name = "PyTruffleTraceBack_Here", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffleTraceBack_HereNode extends PythonBuiltinNode {
+        @Specialization
+        Object tbHere(PTraceback next, PFrame frame) {
+            PTraceback newTb = next.getException().putTracebackOnTop(factory());
+            newTb.setPFrame(frame);
+            return 0;
         }
     }
 

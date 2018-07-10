@@ -38,6 +38,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import java.util.logging.Level;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -59,6 +61,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetIt
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -144,14 +148,11 @@ public class PythonObjectNativeWrapperMR {
             if (key.equals(GP_OBJECT)) {
                 return object.getDelegate();
             }
-            if (NativeMemberNames.isValid(key)) {
-                if (readNativeMemberNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    readNativeMemberNode = insert(ReadNativeMemberNode.create());
-                }
-                return readNativeMemberNode.execute(object.getDelegate(), key);
+            if (readNativeMemberNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readNativeMemberNode = insert(ReadNativeMemberNode.create());
             }
-            throw UnknownIdentifierException.raise(key.toString());
+            return readNativeMemberNode.execute(object.getDelegate(), key);
         }
     }
 
@@ -264,6 +265,16 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(PNone.NO_VALUE);
         }
 
+        @Specialization(guards = "eq(TP_AS_SEQUENCE, key)")
+        Object doTpAsSequence(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__LEN__)") LookupAttributeInMRONode getAttrNode) {
+            if (getAttrNode.execute(object) != PNone.NO_VALUE) {
+                return new PySequenceMethodsWrapper(object);
+            } else {
+                return getToSulongNode().execute(PNone.NO_VALUE);
+            }
+        }
+
         @Specialization(guards = "eq(TP_NEW, key)")
         Object doTpNew(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__NEW__)") LookupAttributeInMRONode getAttrNode) {
@@ -343,10 +354,17 @@ public class PythonObjectNativeWrapperMR {
             return new PyUnicodeState(object);
         }
 
-        @Specialization(guards = "eq(MD_DICT, key)")
+        @Specialization(guards = "eq(MD_DICT, key) || eq(TP_DICT, key)")
         Object doMdDict(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDictNode) {
             return getToSulongNode().execute(getDictNode.executeObject(object, SpecialAttributeNames.__DICT__));
+        }
+
+        @Specialization(guards = "eq(MD_DEF, key)")
+        Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key) {
+            PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+            assert nativeWrapper != null;
+            return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), NativeMemberNames.MD_DEF);
         }
 
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
@@ -369,6 +387,26 @@ public class PythonObjectNativeWrapperMR {
             return object.getStep();
         }
 
+        @Specialization(guards = "eq(IM_SELF, key)")
+        Object doImSelf(PMethod object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getSelf());
+        }
+
+        @Specialization(guards = "eq(IM_SELF, key)")
+        Object doImSelf(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getSelf());
+        }
+
+        @Specialization(guards = "eq(IM_FUNC, key)")
+        Object doImFunc(PMethod object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getFunction());
+        }
+
+        @Specialization(guards = "eq(IM_FUNC, key)")
+        Object doImFunc(PBuiltinMethod object, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(object.getFunction());
+        }
+
         @Fallback
         Object doGeneric(Object object, String key) {
             // This is the preliminary generic case: There are native members we know that they
@@ -377,6 +415,7 @@ public class PythonObjectNativeWrapperMR {
             if (object instanceof PythonAbstractObject) {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
+                PythonLanguage.getLogger().log(Level.FINE, "read of Python struct native member " + key);
                 return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), key);
             }
             throw UnknownIdentifierException.raise(key);
@@ -426,14 +465,11 @@ public class PythonObjectNativeWrapperMR {
         @Child private WriteNativeMemberNode writeNativeMemberNode;
 
         public Object access(PythonNativeWrapper object, String key, Object value) {
-            if (NativeMemberNames.isValid(key)) {
-                if (writeNativeMemberNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    writeNativeMemberNode = insert(WriteNativeMemberNode.create());
-                }
-                return writeNativeMemberNode.execute(object.getDelegate(), key, value);
+            if (writeNativeMemberNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeNativeMemberNode = insert(WriteNativeMemberNode.create());
             }
-            throw UnknownIdentifierException.raise(key);
+            return writeNativeMemberNode.execute(object.getDelegate(), key, value);
         }
     }
 
@@ -482,6 +518,14 @@ public class PythonObjectNativeWrapperMR {
             return value;
         }
 
+        @Specialization(guards = "eq(MD_DEF, key)")
+        Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value) {
+            PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+            assert nativeWrapper != null;
+            getSetItemNode().execute(null, nativeWrapper.createNativeMemberStore(), NativeMemberNames.MD_DEF, value);
+            return value;
+        }
+
         @Fallback
         Object doGeneric(Object object, String key, Object value) {
             // This is the preliminary generic case: There are native members we know that they
@@ -490,6 +534,7 @@ public class PythonObjectNativeWrapperMR {
             if (object instanceof PythonAbstractObject) {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
+                PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
                 getSetItemNode().execute(null, nativeWrapper.createNativeMemberStore(), key, value);
                 return value;
             }

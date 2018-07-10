@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
- * Copyright (c) 2013, Regents of the University of California
+ * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
  *
@@ -23,19 +23,37 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.runtime;
 
-import com.oracle.truffle.api.nodes.RootNode;
+package com.oracle.graal.python.builtins.objects.function;
 
-public class PythonParseResult {
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 
-    private final RootNode rootNode;
+import java.util.List;
 
-    public PythonParseResult(RootNode rootNode) {
-        this.rootNode = rootNode;
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+
+@CoreFunctions(extendClasses = PBuiltinFunction.class)
+public class BuiltinFunctionBuiltins extends PythonBuiltins {
+
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return BuiltinFunctionBuiltinsFactory.getFactories();
     }
 
-    public RootNode getRootNode() {
-        return rootNode;
+    @Builtin(name = __SELF__, fixedNumOfArguments = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class SelfNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        protected Object doStatic(@SuppressWarnings("unused") Object self) {
+            return PNone.NONE;
+        }
     }
 }

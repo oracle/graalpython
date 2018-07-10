@@ -49,11 +49,11 @@ public final class PMethod extends PythonBuiltinObject implements PythonCallable
         this.callTarget = function.getCallTarget();
     }
 
-    public PFunction __func__() {
+    public PFunction getFunction() {
         return function;
     }
 
-    public Object __self__() {
+    public Object getSelf() {
         return self;
     }
 

@@ -66,7 +66,14 @@ public abstract class PythonBuiltins {
             if (builtin.constructsClass().length > 0) {
                 name = __NEW__;
             }
-            PBuiltinFunction function = core.factory().createBuiltinFunction(name, createArity(builtin), callTarget);
+            PBuiltinFunction function;
+            if (this.getClass().getAnnotation(CoreFunctions.class).extendClasses().length == 0) {
+                // builtin module functions are builtin-functions, i.e., they have no __get__
+                function = core.factory().createBuiltinFunction(name, createArity(builtin), callTarget);
+            } else {
+                // builtin class functions are functions, i.e., they have a __get__
+                function = core.factory().createFunction(name, createArity(builtin), callTarget);
+            }
             PythonObject attribute = function;
             String doc = builtin.doc();
             if (builtin.constructsClass().length > 0) {
@@ -75,7 +82,6 @@ public abstract class PythonBuiltins {
                 attribute = builtinClass;
             } else if (builtin.isGetter() || builtin.isSetter()) {
                 CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
-                assert annotation.extendClasses().length == 1;
                 PythonBuiltinClass builtinClass = core.lookupType(annotation.extendClasses()[0]);
                 if (builtin.isGetter() && !builtin.isSetter()) {
                     attribute = core.factory().createGetSetDescriptor(function, null, builtin.name(), builtinClass);
