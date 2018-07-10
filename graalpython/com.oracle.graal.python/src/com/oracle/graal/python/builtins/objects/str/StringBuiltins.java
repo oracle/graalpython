@@ -529,8 +529,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         public Object findFail(Object self, Object str, Object start, Object end) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException("find is not supported for \"" + self + "\", " + self.getClass() + ", prefix " + str);
+            throw raise(TypeError, "must be str, not %p", str);
         }
     }
 
