@@ -537,12 +537,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (mode.equals("single")) {
                 result = parser.parseSingle(getCore(), source, filename);
             } else {
-                // create source
-                Source src = Source.newBuilder(source).name(filename).mimeType(mode).build();
-                CallTarget parse = getContext().getEnv().parse(src);
-                if (parse instanceof RootCallTarget) {
-                    result = new PythonParseResult(((RootCallTarget) parse).getRootNode());
-                }
                 throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
             }
             return factory().createCode(result);
