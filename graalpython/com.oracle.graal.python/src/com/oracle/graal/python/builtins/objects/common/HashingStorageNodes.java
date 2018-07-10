@@ -1107,16 +1107,16 @@ public abstract class HashingStorageNodes {
     }
 
     public abstract static class KeysEqualsNode extends DictStorageBaseNode {
-        @Child private GetItemNode getRightItemNode;
+        @Child private ContainsKeyNode rightContainsKeyNode;
 
         public abstract boolean execute(HashingStorage selfStorage, HashingStorage other);
 
-        private GetItemNode getRightItemNode() {
-            if (getRightItemNode == null) {
+        private ContainsKeyNode getRightContainsKeyNode() {
+            if (rightContainsKeyNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getRightItemNode = insert(GetItemNode.create());
+                rightContainsKeyNode = insert(ContainsKeyNode.create());
             }
-            return getRightItemNode;
+            return rightContainsKeyNode;
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
@@ -1132,8 +1132,7 @@ public abstract class HashingStorageNodes {
             if (selfStorage.length() == other.length()) {
                 Iterable<Object> keys = selfStorage.keys();
                 for (Object key : keys) {
-                    Object rightItem = getRightItemNode().execute(other, key);
-                    if (rightItem == null) {
+                    if (!getRightContainsKeyNode().execute(other, key)) {
                         return false;
                     }
                 }
@@ -1147,8 +1146,7 @@ public abstract class HashingStorageNodes {
             if (selfStorage.length() == other.length()) {
                 Iterable<Object> keys = selfStorage.keys();
                 for (Object key : keys) {
-                    Object rightItem = getRightItemNode().execute(other, key);
-                    if (rightItem == null) {
+                    if (!getRightContainsKeyNode().execute(other, key)) {
                         return false;
                     }
                 }
