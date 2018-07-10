@@ -79,11 +79,11 @@ class TestCase(object):
                 try:
                     from traceback import extract_tb
                     filename, line, func, text = extract_tb(tb)[-1]
-                    self._appendException(
+                    self.exceptions.append(
                         ("In test '%s': %s:%d (%s)" % (code.co_filename, filename, line, func), e)
                     )
                 except BaseException:
-                    self._appendException(
+                    self.exceptions.append(
                         ("%s:%d (%s)" % (code.co_filename, code.co_firstlineno, func), e)
                     )
                 return False
