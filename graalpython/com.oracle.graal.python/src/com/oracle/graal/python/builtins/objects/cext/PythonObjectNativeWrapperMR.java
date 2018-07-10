@@ -415,7 +415,7 @@ public class PythonObjectNativeWrapperMR {
             if (object instanceof PythonAbstractObject) {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
-                PythonLanguage.getLogger().log(Level.WARNING, "read of Python struct native member", key);
+                PythonLanguage.getLogger().log(Level.FINE, "read of Python struct native member " + key);
                 return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), key);
             }
             throw UnknownIdentifierException.raise(key);
@@ -534,7 +534,7 @@ public class PythonObjectNativeWrapperMR {
             if (object instanceof PythonAbstractObject) {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
-                PythonLanguage.getLogger().log(Level.WARNING, "write of Python struct native member", key);
+                PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
                 getSetItemNode().execute(null, nativeWrapper.createNativeMemberStore(), key, value);
                 return value;
             }

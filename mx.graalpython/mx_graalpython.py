@@ -422,11 +422,11 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
-            _apptest_suite = _suite.import_suite(
-                "graalpython-apptests",
-                urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
-            )
-            mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
+            # _apptest_suite = _suite.import_suite(
+            #     "graalpython-apptests",
+            #     urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
+            # )
+            # mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
