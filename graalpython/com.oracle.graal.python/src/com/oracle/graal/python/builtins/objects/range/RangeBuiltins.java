@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.range;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -39,11 +40,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -174,4 +177,32 @@ public class RangeBuiltins extends PythonBuiltins {
             return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep());
         }
     }
+
+    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
+
+        @Specialization
+        Object doPRange(PRange primary, int idx) {
+            return primary.getItemNormalized(normalize.forRange(idx, primary.len()));
+        }
+
+        @Specialization
+        Object doPRange(PRange primary, long idx) {
+            return primary.getItemNormalized(normalize.forRange(idx, primary.len()));
+        }
+
+        @Specialization
+        Object doPRange(PRange range, PSlice slice) {
+            return range.getSlice(factory(), slice);
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object range, @SuppressWarnings("unused") Object idx) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+    }
+
 }
