@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.str;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
@@ -38,6 +39,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -66,17 +68,19 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetIt
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
@@ -85,6 +89,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -589,6 +594,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = "translate", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(SpecialMethodNames.class)
     public abstract static class TranslateNode extends PythonBuiltinNode {
         @Specialization
         public String translate(String self, String table) {
@@ -605,7 +611,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         public String translate(String self, PDict table,
-                        @Cached("create()") GetItemNode getItemNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             char[] translatedChars = new char[self.length()];
 
@@ -613,7 +619,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 char original = self.charAt(i);
                 Object translated = null;
                 try {
-                    translated = getItemNode.execute(table, (int) original);
+                    translated = getItemNode.executeObject(table, (int) original);
                 } catch (PException e) {
                     e.expect(KeyError, getCore(), errorProfile);
                 }
@@ -1396,4 +1402,73 @@ public final class StringBuiltins extends PythonBuiltins {
 
         }
     }
+
+    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class StrGetItemNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public String doString(String primary, PSlice slice) {
+            SliceInfo info = slice.computeActualIndices(primary.length());
+            final int start = info.start;
+            int stop = info.stop;
+            int step = info.step;
+
+            if (step > 0 && stop < start) {
+                stop = start;
+            }
+            if (step == 1) {
+                return getSubString(primary, start, stop);
+            } else {
+                char[] newChars = new char[info.length];
+                int j = 0;
+                for (int i = start; j < info.length; i += step) {
+                    newChars[j++] = primary.charAt(i);
+                }
+
+                return new String(newChars);
+            }
+        }
+
+        @Specialization
+        public String doString(String primary, int idx) {
+            try {
+                int index = idx;
+
+                if (idx < 0) {
+                    index += primary.length();
+                }
+
+                return charAtToString(primary, index);
+            } catch (StringIndexOutOfBoundsException | ArithmeticException e) {
+                throw raise(IndexError, "IndexError: string index out of range");
+            }
+        }
+
+        @Specialization
+        public String doString(String primary, PInt idx) {
+            return doString(primary, idx.intValue());
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @TruffleBoundary
+        private static String getSubString(String origin, int start, int stop) {
+            char[] chars = new char[stop - start];
+            origin.getChars(start, stop, chars, 0);
+            return new String(chars);
+        }
+
+        @TruffleBoundary
+        private static String charAtToString(String primary, int index) {
+            char charactor = primary.charAt(index);
+            return new String(new char[]{charactor});
+        }
+    }
+
 }

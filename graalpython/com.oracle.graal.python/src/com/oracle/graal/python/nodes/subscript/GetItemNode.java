@@ -38,7 +38,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
@@ -98,29 +97,6 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     }
 
     @Specialization
-    public String doString(String primary, PSlice slice) {
-        SliceInfo info = slice.computeActualIndices(primary.length());
-        final int start = info.start;
-        int stop = info.stop;
-        int step = info.step;
-
-        if (step > 0 && stop < start) {
-            stop = start;
-        }
-        if (step == 1) {
-            return getSubString(primary, start, stop);
-        } else {
-            char[] newChars = new char[info.length];
-            int j = 0;
-            for (int i = start; j < info.length; i += step) {
-                newChars[j++] = primary.charAt(i);
-            }
-
-            return new String(newChars);
-        }
-    }
-
-    @Specialization
     public Object doPRange(PRange range, PSlice slice) {
         return range.getSlice(factory(), slice);
     }
@@ -128,26 +104,6 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     @Specialization
     public Object doPArray(PArray primary, PSlice slice) {
         return primary.getSlice(factory(), slice);
-    }
-
-    @Specialization
-    public String doString(String primary, int idx) {
-        try {
-            int index = idx;
-
-            if (idx < 0) {
-                index += primary.length();
-            }
-
-            return charAtToString(primary, index);
-        } catch (StringIndexOutOfBoundsException | ArithmeticException e) {
-            throw raise(IndexError, "IndexError: string index out of range");
-        }
-    }
-
-    @Specialization
-    public String doString(String primary, PInt idx) {
-        return doString(primary, toInt(idx));
     }
 
     @Specialization
@@ -236,14 +192,4 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         return callGetitemNode.executeObject(primary, index);
     }
 
-    private static String getSubString(String origin, int start, int stop) {
-        char[] chars = new char[stop - start];
-        origin.getChars(start, stop, chars, 0);
-        return new String(chars);
-    }
-
-    private static String charAtToString(String primary, int index) {
-        char charactor = primary.charAt(index);
-        return new String(new char[]{charactor});
-    }
 }
