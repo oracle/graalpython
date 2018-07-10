@@ -167,6 +167,11 @@ class SRE_Pattern():
         def __call__(self, original_result, pattern, start_pos):
             return SRE_Pattern.InternalSREPattern(self._sre_result.match(pattern, start_pos))
 
+    def __tregex_compile(self):
+        try:
+            return self.__tregex_engine(self.pattern, self.jsflags)
+        except RuntimeError:
+            return None
 
     def __fallback_engine(self, pattern, flags):
         try:
@@ -220,16 +225,19 @@ class SRE_Pattern():
         return "re.compile(%s%s%s)" % (self.pattern, sep, sflags)
 
     def _search(self, pattern, string, pos, endpos):
-        pattern = self.__tregex_engine(self.pattern, self.jsflags)
-        string = self._decode_string(string)
-        if endpos == -1 or endpos >= len(string):
-            result = pattern.exec(string, pos)
+        pattern = self.__tregex_compile()
+        if pattern is not None:
+            string = self._decode_string(string)
+            if endpos == -1 or endpos >= len(string):
+                result = pattern.exec(string, pos)
+            else:
+                result = pattern.exec(string[:endpos], pos)
+            if result.isMatch:
+                return SRE_Match(self, pos, endpos, result)
+            else:
+                return None
         else:
-            result = pattern.exec(string[:endpos], pos)
-        if result.isMatch:
-            return SRE_Match(self, pos, endpos, result)
-        else:
-            return None
+            return self.__compile_cpython_sre()._search(pattern, string, pos, endpos)
 
     def search(self, string, pos=0, endpos=-1):
         return self._search(self.pattern, string, pos, endpos)
@@ -249,8 +257,8 @@ class SRE_Pattern():
         return self._search(pattern, string, pos, endpos)
 
     def findall(self, string, pos=0, endpos=-1):
-        try:
-            pattern = self.__tregex_engine(self.pattern, self.jsflags)
+        pattern = self.__tregex_compile()
+        if pattern is not None:
             string = self._decode_string(string)
             if endpos > len(string):
                 endpos = len(string)
@@ -270,34 +278,37 @@ class SRE_Pattern():
                 no_progress = (result.start[0] == result.end[0])
                 pos = result.end[0] + no_progress
             return matchlist
-        except:
+        else:
             # use fallback engine
-            return self.__compile_cpython_sre().finall(string, pos, endpos)
+            return self.__compile_cpython_sre().findall(string, pos, endpos)
             
 
     def sub(self, repl, string, count=0):
         n = 0
         pattern = self.__tregex_engine(self.pattern, self.jsflags)
-        string = self._decode_string(string)
-        result = []
-        pos = 0
-        while (count == 0 or n < count) and pos <= len(string):
-            match = pattern.exec(string, pos)
-            if not match.isMatch:
-                break
-            n += 1
-            start = match.start[0]
-            end = match.end[0]
-            result.append(string[pos:start])
-            if isinstance(repl, str):
-                # TODO: backslash replace groups
-                result.append(repl)
-            else:
-                result.append(repl(SRE_Match(self, pos, -1, match)))
-            no_progress = (start == end)
-            pos = end + no_progress
-        result.append(string[pos:])
-        return "".join(result)
+        if pattern is not None:
+            string = self._decode_string(string)
+            result = []
+            pos = 0
+            while (count == 0 or n < count) and pos <= len(string):
+                match = pattern.exec(string, pos)
+                if not match.isMatch:
+                    break
+                n += 1
+                start = match.start[0]
+                end = match.end[0]
+                result.append(string[pos:start])
+                if isinstance(repl, str):
+                    # TODO: backslash replace groups
+                    result.append(repl)
+                else:
+                    result.append(repl(SRE_Match(self, pos, -1, match)))
+                no_progress = (start == end)
+                pos = end + no_progress
+            result.append(string[pos:])
+            return "".join(result)
+        else:
+            return self.__compile_cpython_sre().sub(repl, string, count)
 
 
 compile = SRE_Pattern
