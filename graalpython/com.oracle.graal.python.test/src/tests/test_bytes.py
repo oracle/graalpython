@@ -191,6 +191,18 @@ def test_delitem():
     assert b == bytearray(range(1, 9))
     del b[4]
     assert b == bytearray([1, 2, 3, 4, 6, 7, 8])
+    b = bytearray(range(10))
+    del b[0:10]
+    assert b == bytearray()
+    b = bytearray(range(10))
+    del b[0:10000]
+    assert b == bytearray()
+    b = bytearray(range(10))
+    del b[0:-10000]
+    assert b == bytearray(range(10))
+    b = bytearray(range(10))
+    del b[-1000:1000]
+    assert b == bytearray()
 
 
 def test_subclass():

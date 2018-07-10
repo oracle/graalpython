@@ -163,28 +163,28 @@ public class SequenceUtil {
 
     public static final int MISSING_INDEX = Integer.MIN_VALUE;
 
-    public static int normalizeSliceStart(PSlice slice, int size, String outOfBoundsMessage) {
-        return normalizeSliceStart(slice.getStart(), slice.getStep() == MISSING_INDEX ? 1 : slice.getStep(), size, outOfBoundsMessage);
+    public static int normalizeSliceStart(PSlice slice, int size) {
+        return normalizeSliceStart(slice.getStart(), slice.getStep() == MISSING_INDEX ? 1 : slice.getStep(), size);
     }
 
-    public static int normalizeSliceStart(int start, int step, int size, String outOfBoundsMessage) {
+    public static int normalizeSliceStart(int start, int step, int size) {
         if (start == MISSING_INDEX) {
             return step < 0 ? size - 1 : 0;
         }
 
-        return normalizeIndex(start, size, outOfBoundsMessage);
+        return normalizeIndexUnchecked(start, size);
     }
 
-    public static int normalizeSliceStop(PSlice slice, int size, String outOfBoundsMessage) {
-        return normalizeSliceStop(slice.getStop(), slice.getStep() == MISSING_INDEX ? 1 : slice.getStep(), size, outOfBoundsMessage);
+    public static int normalizeSliceStop(PSlice slice, int size) {
+        return normalizeSliceStop(slice.getStop(), slice.getStep() == MISSING_INDEX ? 1 : slice.getStep(), size);
     }
 
-    public static int normalizeSliceStop(int stop, int step, int size, String outOfBoundsMessage) {
+    public static int normalizeSliceStop(int stop, int step, int size) {
         if (stop == MISSING_INDEX) {
             return step < 0 ? -1 : size;
         }
 
-        return normalizeIndex(stop, size, outOfBoundsMessage);
+        return normalizeIndexUnchecked(stop, size);
     }
 
     public static int normalizeSliceStep(PSlice slice) {
@@ -242,14 +242,14 @@ public class SequenceUtil {
     }
 
     public static int normalizeIndex(int index, int length, String outOfBoundsMessage) {
-        int idx = index;
-        if (idx < 0) {
-            idx += length;
-        }
-        if (idx < 0 || idx > length) {
+        int normalized = normalizeIndexUnchecked(index, length);
+        if (normalized < 0 || normalized >= length) {
             throw PythonLanguage.getCore().raise(PythonErrorType.IndexError, outOfBoundsMessage);
         }
-        return idx;
+        return normalized;
     }
 
+    private static int normalizeIndexUnchecked(int index, int length) {
+        return index < 0 ? index + length : index;
+    }
 }

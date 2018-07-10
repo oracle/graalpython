@@ -95,8 +95,8 @@ public final class PByteArray extends PArray implements PIBytesLike {
 
     @Override
     public void setSlice(int start, int stop, int step, PSequence value) {
-        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length(), "array assignment index out of range");
-        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length(), "array assignment index out of range");
+        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length());
+        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length());
 
         if (normalizedStop < normalizedStart) {
             normalizedStop = normalizedStart;
@@ -174,6 +174,9 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     public final boolean equals(PSequence other) {
+        if (len() == 0 && other.len() == 0) {
+            return true;
+        }
         SequenceStorage otherStore = other.getSequenceStorage();
         return store.equals(otherStore);
     }
@@ -203,8 +206,8 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     public final void delSlice(PSlice slice) {
-        int start = SequenceUtil.normalizeSliceStart(slice, store.length(), "array index out of range");
-        final int stop = SequenceUtil.normalizeSliceStop(slice, store.length(), "array index out of range");
+        int start = Math.max(0, SequenceUtil.normalizeSliceStart(slice, store.length()));
+        final int stop = Math.min(store.length(), SequenceUtil.normalizeSliceStop(slice, store.length()));
         final int step = SequenceUtil.normalizeSliceStep(slice);
         store.delSlice(start, stop, step);
     }
