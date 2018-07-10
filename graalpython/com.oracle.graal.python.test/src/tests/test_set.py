@@ -57,20 +57,32 @@ def check_pass_thru():
     yield 1
 
 
-def test_set_or():
+def test_set_or_union():
     s1 = {1, 2, 3}
     s2 = {4, 5, 6}
     s3 = {1, 2, 4}
     s4 = {1, 2, 3}
 
-    union = s1 | s2
-    assert union == {1, 2, 3, 4, 5, 6}
+    or_result = s1 | s2
+    union_result = s1.union(s2)
+    assert or_result == {1, 2, 3, 4, 5, 6}
+    assert union_result == {1, 2, 3, 4, 5, 6}
 
-    union = s1 | s3
-    assert union == {1, 2, 3, 4}
+    or_result = s1 | s3
+    union_result = s1.union(s3)
+    assert or_result == {1, 2, 3, 4}
+    assert union_result == {1, 2, 3, 4}
 
-    union = s1 | s4
-    assert union == {1, 2, 3}
+    or_result = s1 | s4
+    union_result = s1.union(s4)
+    assert or_result == {1, 2, 3}
+    assert union_result == {1, 2, 3}
+
+
+def test_set_union():
+    assert {1, 2, 3}.union({1: 'a', 2: 'b', 4: 'd'}) == {1, 2, 3, 4}
+    assert {1, 2, 3}.union([2, 3, 4, 5]) == {1, 2, 3, 4, 5}
+    assert {1, 2, 3}.union((3, 4, 5, 6)) == {1, 2, 3, 4, 5, 6}
 
 
 def test_set_remove():
