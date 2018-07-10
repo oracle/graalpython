@@ -1085,7 +1085,7 @@ def PyTruffle_Type(type_name):
     elif type_name == "PyCapsule":
         return PyCapsule
     elif type_name == "function":
-        return type(getattr)
+        return type(PyTruffle_Type)
     elif type_name == "ellipsis":
         return type(Py_Ellipsis())
     elif type_name == "method":
