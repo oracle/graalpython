@@ -162,11 +162,9 @@ class SRE_Pattern():
 
     class RegexResult:
         def __init__(self, cpython_sre_result):
-            __tdebug__(cpython_sre_result)
             self._sre_result = cpython_sre_result
 
         def __call__(self, original_result, pattern, start_pos):
-            __tdebug__(original_result, pattern, start_pos)
             return SRE_Pattern.InternalSREPattern(self._sre_result.match(pattern, start_pos))
 
 
@@ -179,7 +177,6 @@ class SRE_Pattern():
 
     def __compile_cpython_sre(self):
         if not self.__compiled_sre_pattern:
-            print("IMPORTING SRE_COMPILE")
             import _cpython_sre
             self.__compiled_sre_pattern = _cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
         return self.__compiled_sre_pattern
