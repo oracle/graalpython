@@ -47,3 +47,10 @@ int _Py_CheckRecursionLimit = Py_DEFAULT_RECURSION_LIMIT;
 PyObject* PyEval_CallObjectWithKeywords(PyObject *func, PyObject *args, PyObject *kwargs) {
     return PyObject_Call(func, args, kwargs);
 }
+
+PyThreadState* PyEval_SaveThread() {
+    return NULL;
+}
+
+void PyEval_RestoreThread(PyThreadState *ptr) {
+}
