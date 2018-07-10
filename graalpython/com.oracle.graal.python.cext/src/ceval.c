@@ -54,3 +54,7 @@ PyThreadState* PyEval_SaveThread() {
 
 void PyEval_RestoreThread(PyThreadState *ptr) {
 }
+
+void* PyThread_allocate_lock() {
+    return NULL;
+}
