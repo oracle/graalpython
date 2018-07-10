@@ -433,3 +433,18 @@ class TestPyUnicode(CPyExtTestCase):
         callfunction="wrap_PyUnicode_FindChar",
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyUnicode_Substring = CPyExtFunction(
+        lambda args: args[0][args[1]:args[2]],
+        lambda: (
+            ("hello", 0, 5),
+            ("hello", 0, 0),
+            ("hello", 0, 1),
+            ("hello", 4, 5),
+            ("hello", 1, 4),
+        ),
+        resultspec="O",
+        argspec='Onn',
+        arguments=["PyObject* str", "Py_ssize_t start", "Py_ssize_t end"],
+        cmpfunc=unhandled_error_compare
+    )

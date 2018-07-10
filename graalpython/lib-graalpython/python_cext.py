@@ -560,6 +560,12 @@ def PyUnicode_FindChar(string, char, start, end, direction):
         return string.rfind(char, start, end)
 
 
+@may_raise
+def PyUnicode_Substring(string, start, end):
+    if not isinstance(string, str):
+        raise TypeError("Must be str, not %s" % type(format).__name__)
+    return string[start:end]
+
 ##################### CAPSULE
 
 

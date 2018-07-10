@@ -332,5 +332,8 @@ int _PyUnicode_Ready(PyObject *unicode) {
 
 Py_ssize_t PyUnicode_FindChar(PyObject *str, Py_UCS4 ch, Py_ssize_t start, Py_ssize_t end, int direction) {
     return UPCALL_CEXT_L("PyUnicode_FindChar", native_to_java(str), ch, start, end, direction);
+}
 
+PyObject* PyUnicode_Substring(PyObject *self, Py_ssize_t start, Py_ssize_t end) {
+    return UPCALL_CEXT_O("PyUnicode_Substring", native_to_java(self), start, end);
 }
