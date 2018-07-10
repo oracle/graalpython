@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.EqualsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.InitNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.KeysEqualsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -1102,6 +1103,68 @@ public abstract class HashingStorageNodes {
 
         public static EqualsNode create() {
             return EqualsNodeGen.create();
+        }
+    }
+
+    public abstract static class KeysEqualsNode extends DictStorageBaseNode {
+        @Child private GetItemNode getRightItemNode;
+
+        public abstract boolean execute(HashingStorage selfStorage, HashingStorage other);
+
+        private GetItemNode getRightItemNode() {
+            if (getRightItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getRightItemNode = insert(GetItemNode.create());
+            }
+            return getRightItemNode;
+        }
+
+        @Specialization(guards = "selfStorage.length() == other.length()")
+        boolean doKeywordsString(LocalsStorage selfStorage, LocalsStorage other) {
+            if (selfStorage.getFrame().getFrameDescriptor() == other.getFrame().getFrameDescriptor()) {
+                return doKeywordsString(selfStorage, other);
+            }
+            return false;
+        }
+
+        @Specialization(guards = "selfStorage.length() == other.length()")
+        boolean doKeywordsString(DynamicObjectStorage selfStorage, DynamicObjectStorage other) {
+            if (selfStorage.length() == other.length()) {
+                Iterable<Object> keys = selfStorage.keys();
+                for (Object key : keys) {
+                    Object rightItem = getRightItemNode().execute(other, key);
+                    if (rightItem == null) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Specialization(guards = "selfStorage.length() == other.length()")
+        boolean doKeywordsString(HashingStorage selfStorage, HashingStorage other) {
+            if (selfStorage.length() == other.length()) {
+                Iterable<Object> keys = selfStorage.keys();
+                for (Object key : keys) {
+                    Object rightItem = getRightItemNode().execute(other, key);
+                    if (rightItem == null) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        boolean doGeneric(HashingStorage selfStorage, HashingStorage other) {
+            return false;
+        }
+
+        public static KeysEqualsNode create() {
+            return KeysEqualsNodeGen.create();
         }
     }
 

@@ -128,14 +128,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doKeysView(PDictKeysView self, PDictKeysView other,
-                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
             return equalsNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
         }
 
         @Specialization
-        boolean doItemsView(PDictItemsView self, PDictItemsView other,
-                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
-            return equalsNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
+        boolean doItemsView(PDictKeysView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
+            return equalsNode.execute(self.getDict().getDictStorage(), other.getDictStorage());
         }
 
         @Fallback
@@ -202,13 +202,13 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class XorNode extends PythonBuiltinNode {
         @Specialization
         PBaseSet doItemsView(PDictItemsView self, PDictItemsView other,
-                             @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
+                        @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
             return factory().createSet(xorNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage()));
         }
 
         @Specialization
         PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
-                            @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
+                        @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
             return factory().createSet(xorNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage()));
         }
     }

@@ -119,6 +119,7 @@ def test_init():
 
     assert_raises(TypeError, dict.fromkeys, 10)
 
+
 def test_init1():
     try:
         dict([("a", 1), ("b", 2)], [("c", 3), ("d", 4)])
@@ -150,17 +151,22 @@ def test_init4():
     d = dict(pairs)
     assert len(d) == 100000, "invalid length, expected 100.000 but was %d".format(len(d))
 
+
 def test_init5():
     key_set = { 'a', 'b', 'c', 'd' }
+
     class CustomMappingObject:
         def __init__(self, keys):
             self.__keys = keys
+
         def keys(self):
             return self.__keys
+
         def __getitem__(self, key):
             if key in self.__keys:
                 return ord(key)
             raise KeyError(key)
+
         def __len__(self):
             return len(self.keys)
     d = dict(CustomMappingObject(key_set))
@@ -173,8 +179,10 @@ def test_custom_key_object0():
     class CollisionKey:
         def __init__(self, val):
             self.val = val
+
         def __hash__(self):
             return 1234
+
         def __eq__(self, other):
             if type(other) == type(self):
                 return self.val == other.val
@@ -240,6 +248,7 @@ def test_keywords():
         kwargs["a"] = 10
         kwargs["b"] = 20
         return kwargs
+
     def reading(**kwargs):
         assert kwargs["a"] == 1
         assert kwargs["b"] == 2
@@ -258,20 +267,20 @@ def test_fixed_storage():
     obj = Foo()
     d = obj.__dict__
     for i in range(200):
-        attrName = "method" + str(i)
-        d[attrName] = lambda: attrName
+        attr_name = "method" + str(i)
+        d[attr_name] = lambda: attr_name
 
     for i in range(200):
-        attrName = "method" + str(i)
-        method_to_call = getattr(obj, attrName)
-        assert method_to_call() == attrName
+        attr_name = "method" + str(i)
+        method_to_call = getattr(obj, attr_name)
+        assert method_to_call() == attr_name
 
 
 def test_get_default():
     d = {"a": 1}
     assert d.get("a") == 1
     assert d.get("a", 2) == 1
-    assert d.get("b") == None
+    assert d.get("b") is None
     assert d.get("b", 2) == 2
 
 

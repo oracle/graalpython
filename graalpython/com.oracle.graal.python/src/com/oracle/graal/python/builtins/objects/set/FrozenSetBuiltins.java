@@ -81,7 +81,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doSetSameType(PBaseSet self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
             return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
         }
 
