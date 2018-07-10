@@ -337,3 +337,7 @@ Py_ssize_t PyUnicode_FindChar(PyObject *str, Py_UCS4 ch, Py_ssize_t start, Py_ss
 PyObject* PyUnicode_Substring(PyObject *self, Py_ssize_t start, Py_ssize_t end) {
     return UPCALL_CEXT_O("PyUnicode_Substring", native_to_java(self), start, end);
 }
+
+PyObject* PyUnicode_Join(PyObject *separator, PyObject *seq) {
+    return UPCALL_CEXT_O("PyUnicode_Join", native_to_java(separator), native_to_java(seq));
+}

@@ -448,3 +448,17 @@ class TestPyUnicode(CPyExtTestCase):
         arguments=["PyObject* str", "Py_ssize_t start", "Py_ssize_t end"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyUnicode_Join = CPyExtFunction(
+        lambda args: args[0].join(args[1]),
+        lambda: (
+            (", ", [0, 1, 2, 3, 4, 5]),
+            (", ", []),
+            (", ", None),
+            (", ", ("a", "b", "c")),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* str", "PyObject* seq"],
+        cmpfunc=unhandled_error_compare
+    )

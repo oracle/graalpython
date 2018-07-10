@@ -553,7 +553,7 @@ def PyUnicode_Format(format, args):
 @may_raise(-1)
 def PyUnicode_FindChar(string, char, start, end, direction):
     if not isinstance(string, str):
-        raise TypeError("Must be str, not %s" % type(format).__name__)
+        raise TypeError("Must be str, not %s" % type(string).__name__)
     if direction == 1:
         return string.find(char, start, end)
     elif direction == -1:
@@ -563,8 +563,16 @@ def PyUnicode_FindChar(string, char, start, end, direction):
 @may_raise
 def PyUnicode_Substring(string, start, end):
     if not isinstance(string, str):
-        raise TypeError("Must be str, not %s" % type(format).__name__)
+        raise TypeError("Must be str, not %s" % type(string).__name__)
     return string[start:end]
+
+
+@may_raise
+def PyUnicode_Join(separator, seq):
+    if not isinstance(separator, str):
+        raise TypeError("Must be str, not %s" % type(separator).__name__)
+    return separator.join(seq)
+
 
 ##################### CAPSULE
 
