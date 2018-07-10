@@ -554,10 +554,10 @@ def PyUnicode_Format(format, args):
 def PyUnicode_FindChar(string, char, start, end, direction):
     if not isinstance(string, str):
         raise TypeError("Must be str, not %s" % type(string).__name__)
-    if direction == 1:
-        return string.find(char, start, end)
-    elif direction == -1:
-        return string.rfind(char, start, end)
+    if direction > 0:
+        return string.find(chr(char), start, end)
+    else:
+        return string.rfind(chr(char), start, end)
 
 
 @may_raise
