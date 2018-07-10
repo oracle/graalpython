@@ -83,6 +83,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -478,17 +479,17 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object find(String self, String str, int start, @SuppressWarnings("unused") PNone end) {
+        public Object find(String self, String str, long start, @SuppressWarnings("unused") PNone end) {
             return findGeneric(self, str, start, -1);
         }
 
         @Specialization
-        public Object find(String self, String str, @SuppressWarnings("unused") PNone start, int end) {
+        public Object find(String self, String str, @SuppressWarnings("unused") PNone start, long end) {
             return findGeneric(self, str, -1, end);
         }
 
         @Specialization
-        public Object find(String self, String str, int start, int end) {
+        public Object find(String self, String str, long start, long end) {
             return findGeneric(self, str, start, end);
         }
 
@@ -505,12 +506,16 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         protected boolean isNumberOrNone(Object o) {
-            return o instanceof Integer || o instanceof PInt || o instanceof PNone;
+            return o instanceof PInt || o instanceof PNone;
         }
 
-        private static int getIntValue(Object o) {
+        private static int getIntValue(Object o) throws ArithmeticException {
             if (o instanceof Integer) {
                 return (int) o;
+            } else if (o instanceof Long) {
+                return PInt.intValueExact((long) o);
+            } else if (o instanceof Boolean) {
+                return PInt.intValue((boolean) o);
             } else if (o instanceof PInt) {
                 return ((PInt) o).intValueExact();
             } else if (o instanceof PNone) {
@@ -519,11 +524,22 @@ public final class StringBuiltins extends PythonBuiltins {
             throw new IllegalArgumentException();
         }
 
-        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"})
-        public Object findGeneric(String self, String str, Object start, Object end) {
+        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, rewriteOn = ArithmeticException.class)
+        public Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
             int startInt = getIntValue(start);
             int endInt = getIntValue(end);
             return findWithBounds(self, str, startInt, endInt);
+        }
+
+        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, replaces = "findGeneric")
+        public Object findGenericOvf(String self, String str, Object start, Object end) {
+            try {
+                int startInt = getIntValue(start);
+                int endInt = getIntValue(end);
+                return findWithBounds(self, str, startInt, endInt);
+            } catch (ArithmeticException e) {
+                throw raise(ValueError, "cannot fit 'int' into an index-sized integer");
+            }
         }
 
         @Fallback
