@@ -35,6 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import polyglot
 import sys
 import os
 
@@ -44,12 +45,10 @@ sys.path.insert(0, os.sep.join(working_dir_parts[:-1]))
 
 from image_magix import Image
 
-MIME_R = "application/x-r"
-
-load_jpeg = eval(compile("""function(file.name) {
+load_jpeg = polyglot.eval(string="""function(file.name) {
     jimg <- read.csv(gzfile(file.name))
     return (jimg)
-}""", "", MIME_R))
+}""", language="R")
 
 print("stage 1")
 
@@ -57,8 +56,8 @@ working_dir_parts.append("img.csv.gz")
 raw_data = load_jpeg(os.sep.join(working_dir_parts))
 
 # the dimensions are R attributes; define function to access them
-getDim = eval(compile("function(v, pos) dim(v)[[pos]]", "", MIME_R))
-getDataRowMajor = eval(compile("function(v) as.vector(t(v))", "", MIME_R))
+getDim = polyglot.eval(string="function(v, pos) dim(v)[[pos]]", language="R")
+getDataRowMajor = polyglot.eval(string="function(v) as.vector(t(v))", language="R")
 
 print("stage 2")
 
@@ -77,7 +76,7 @@ print("-- finished")
 
 print("stage 3")
 
-draw = eval(compile("""function(processedImgObj) {
+draw = polyglot.eval(string="""function(processedImgObj) {
     require(grDevices)
     require(grid)
     mx <- matrix(processedImgObj$`@data`/255, nrow=processedImgObj$`@height`, ncol=processedImgObj$`@width`)
@@ -85,9 +84,8 @@ draw = eval(compile("""function(processedImgObj) {
     grid.newpage()
     grid.raster(mx, height=unit(nrow(mx),"points"))
     cat("DONE\n")
-}""", "", MIME_R))
+}""", language="R")
 
 draw(result)
 
-eval(compile("dev.off()", "", MIME_R))
-
+polyglot.eval(string="dev.off()", language="R")
