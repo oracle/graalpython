@@ -550,6 +550,16 @@ def PyUnicode_Format(format, args):
     return format % args
 
 
+@may_raise(-1)
+def PyUnicode_FindChar(string, char, start, end, direction):
+    if not isinstance(string, str):
+        raise TypeError("Must be str, not %s" % type(format).__name__)
+    if direction == 1:
+        return string.find(char, start, end)
+    elif direction == -1:
+        return string.rfind(char, start, end)
+
+
 ##################### CAPSULE
 
 

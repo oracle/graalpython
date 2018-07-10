@@ -329,3 +329,8 @@ int _PyUnicode_Ready(PyObject *unicode) {
     // TODO(fa) anything we need to initialize here?
     return 0;
 }
+
+Py_ssize_t PyUnicode_FindChar(PyObject *str, Py_UCS4 ch, Py_ssize_t start, Py_ssize_t end, int direction) {
+    return UPCALL_CEXT_L("PyUnicode_FindChar", native_to_java(str), ch, start, end, direction);
+
+}
