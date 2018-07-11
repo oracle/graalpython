@@ -44,14 +44,23 @@ void* PyMem_Malloc(size_t size) {
     if (size > (size_t)PY_SSIZE_T_MAX) {
         return NULL;
     }
+    if(size == 0) {
+        return malloc(1);
+    }
     return malloc(size);
 }
 
 void* PyMem_RawMalloc(size_t size) {
+    if(size == 0) {
+        return malloc(1);
+    }
     return malloc(size);
 }
 
 void* PyMem_RawCalloc(size_t nelem, size_t elsize) {
+    if(nelem == 0 || elsize == 0) {
+        return calloc(1, elsize);
+    }
     return calloc(nelem, elsize);
 }
 
