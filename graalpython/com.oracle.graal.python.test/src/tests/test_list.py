@@ -392,7 +392,7 @@ class ListTest(list_tests.CommonTest):
     def test_extend_bytes(self):
         l = []
         l.extend(b"asdf")
-        self.assertEqual([97, 115, 100, 102])
+        self.assertEqual([97, 115, 100, 102], l)
 
     def test_remove_spec(self):
         a = [1, 2]
