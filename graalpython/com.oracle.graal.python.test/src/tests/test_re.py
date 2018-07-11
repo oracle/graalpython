@@ -33,7 +33,7 @@ def test_grouping():
 
 def test_grouping2():
     md = re.compile('he(l)l(?:o)').match('hello world')
-    assert md.groups() == ("l", )
+    assert md.groups() == ("l",)
     assert md.group(0) == "hello"
     assert md.group(1) == "l"
     assert md.start(0) == 0
@@ -67,6 +67,7 @@ def test_special_re_compile():
 class S(str):
     def __getitem__(self, index):
         return S(super().__getitem__(index))
+
 
 class B(bytes):
     def __getitem__(self, index):
@@ -134,36 +135,47 @@ class ReTests(unittest.TestCase):
         # self.assertEqual(re.sub('a', r'\t\n\v\r\f\a\b', 'a'), '\t\n\v\r\f\a\b')
         self.assertEqual(re.sub('a', '\t\n\v\r\f\a\b', 'a'), '\t\n\v\r\f\a\b')
         self.assertEqual(re.sub('a', '\t\n\v\r\f\a\b', 'a'),
-                         (chr(9)+chr(10)+chr(11)+chr(13)+chr(12)+chr(7)+chr(8)))
+                         (chr(9) + chr(10) + chr(11) + chr(13) + chr(12) + chr(7) + chr(8)))
 
         # self.assertEqual(re.sub(r'^\s*', 'X', 'test'), 'Xtest')
 
+    def test_backreference(self):
+        compiled = re.compile(r"(.)\1")
+        self.assertTrue(compiled.match("11"))
+        self.assertTrue(compiled.match("22"))
+        self.assertFalse(compiled.match("23"))
 
-def test_escaping():
-    regex = None
-    try:
-        regex = re.compile(r"""        # A numeric string consists of:
-#    \s*
-    (?P<sign>[-+])?              # an optional sign, followed by either...
-    (
-        (?=\d|\.\d)              # ...a number (with at least one digit)
-        (?P<int>\d*)             # having a (possibly empty) integer part
-        (\.(?P<frac>\d*))?       # followed by an optional fractional part
-        (E(?P<exp>[-+]?\d+))?    # followed by an optional exponent, or...
-    |
-        Inf(inity)?              # ...an infinity, or...
-    |
-        (?P<signal>s)?           # ...an (optionally signaling)
-        NaN                      # NaN
-        (?P<diag>\d*)            # with (possibly empty) diagnostic info.
-    )
-#    \s*
-    \Z
-        """, re.VERBOSE)
-    except:
-        assert False
+        compiled = re.compile(r"\b(\w*)\b\W\1")
+        self.assertTrue(compiled.match("hello hello"))
+        self.assertTrue(compiled.match("world*world"))
+        self.assertFalse(compiled.match("oh no"))
 
-    match = regex.search("  -12.1")
-    assert match
-    # assert "frac" in match.groupdict()
-    # assert match.groupdict()["frac"] == "1"
+    def test_escaping(self):
+        regex = None
+        try:
+            regex = re.compile(r"""        # A numeric string consists of:
+    #    \s*
+        (?P<sign>[-+])?              # an optional sign, followed by either...
+        (
+            (?=\d|\.\d)              # ...a number (with at least one digit)
+            (?P<int>\d*)             # having a (possibly empty) integer part
+            (\.(?P<frac>\d*))?       # followed by an optional fractional part
+            (E(?P<exp>[-+]?\d+))?    # followed by an optional exponent, or...
+        |
+            Inf(inity)?              # ...an infinity, or...
+        |
+            (?P<signal>s)?           # ...an (optionally signaling)
+            NaN                      # NaN
+            (?P<diag>\d*)            # with (possibly empty) diagnostic info.
+        )
+    #    \s*
+        \Z
+            """, re.VERBOSE)
+        except:
+            self.fail()
+
+        match = regex.search("  -12.1")
+        self.assertTrue(match)
+        # assert "frac" in match.groupdict()
+        # assert match.groupdict()["frac"] == "1"
+
