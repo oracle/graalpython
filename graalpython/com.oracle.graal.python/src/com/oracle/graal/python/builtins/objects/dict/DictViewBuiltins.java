@@ -182,9 +182,25 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PBaseSet doKeysView(PDictKeysView left, PDictKeysView right,
+        PBaseSet doKeysView(PDictKeysView self, PBaseSet other,
                         @Cached("create()") HashingStorageNodes.DiffNode diffNode) {
-            HashingStorage storage = diffNode.execute(left.getDict().getDictStorage(), right.getDict().getDictStorage());
+            HashingStorage storage = diffNode.execute(self.getDict().getDictStorage(), other.getDictStorage());
+            return factory().createSet(storage);
+        }
+
+        @Specialization
+        PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
+                        @Cached("create()") HashingStorageNodes.DiffNode diffNode) {
+            HashingStorage storage = diffNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
+            return factory().createSet(storage);
+        }
+
+        @Specialization
+        PBaseSet doItemsView(PDictItemsView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.DiffNode diffNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            HashingStorage storage = diffNode.execute(selfSet.getDictStorage(), other.getDictStorage());
             return factory().createSet(storage);
         }
 
@@ -203,9 +219,25 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Specialization
+        PBaseSet doKeysView(PDictKeysView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.IntersectNode intersectNode) {
+            HashingStorage intersectedStorage = intersectNode.execute(self.getDict().getDictStorage(), other.getDictStorage());
+            return factory().createSet(intersectedStorage);
+        }
+
+        @Specialization
         PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
                         @Cached("create()") HashingStorageNodes.IntersectNode intersectNode) {
             HashingStorage intersectedStorage = intersectNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
+            return factory().createSet(intersectedStorage);
+        }
+
+        @Specialization
+        PBaseSet doItemsView(PDictItemsView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.IntersectNode intersectNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            HashingStorage intersectedStorage = intersectNode.execute(selfSet.getDictStorage(), other.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
@@ -224,9 +256,23 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBuiltinNode {
         @Specialization
+        PBaseSet doKeysView(PDictKeysView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
+            return factory().createSet(unionNode.execute(self.getDict().getDictStorage(), other.getDictStorage()));
+        }
+
+        @Specialization
         PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             return factory().createSet(unionNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage()));
+        }
+
+        @Specialization
+        PBaseSet doItemsView(PDictItemsView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.UnionNode unionNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            return factory().createSet(unionNode.execute(selfSet.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization
@@ -243,9 +289,23 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class XorNode extends PythonBuiltinNode {
         @Specialization
+        PBaseSet doKeysView(PDictKeysView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
+            return factory().createSet(xorNode.execute(self.getDict().getDictStorage(), other.getDictStorage()));
+        }
+
+        @Specialization
         PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
                         @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
             return factory().createSet(xorNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage()));
+        }
+
+        @Specialization
+        PBaseSet doItemsView(PDictItemsView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            return factory().createSet(xorNode.execute(selfSet.getDictStorage(), other.getDictStorage()));
         }
 
         @Specialization

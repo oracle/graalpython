@@ -330,3 +330,16 @@ def test_dictview_set_operations_on_items():
     assert k1 | k2 == {(1, 1), (2, 2), (3, 3)}
     assert k1 ^ k2 == {(3, 3)}
     assert k1 ^ k3 == {(1, 1), (2, 2), (4, 4)}
+
+
+def test_dictview_mixed_set_operations():
+    # Just a few for .keys()
+    assert {1: 1}.keys() == {1}
+    assert {1} == {1: 1}.keys()
+    assert {1: 1}.keys() | {2} == {1, 2}
+    assert {2} | {1: 1}.keys() == {1, 2}
+    # And a few for .items()
+    assert {1: 1}.items() == {(1, 1)}
+    assert {(1, 1)} == {1: 1}.items()
+    assert {1: 1}.items() | {2} == {(1, 1), 2}
+    assert {2} | {1: 1}.items() == {(1, 1), 2}

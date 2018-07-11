@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -88,11 +89,17 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @Builtin(name = __OR__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class SetOrNode extends PythonBinaryBuiltinNode {
+    public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doSet(PBaseSet self, PBaseSet other,
                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             return factory().createSet(unionNode.execute(self.getDictStorage(), other.getDictStorage()));
+        }
+
+        @Specialization
+        Object doReverse(PBaseSet self, Object other,
+                        @Cached("create(__OR__)") LookupAndCallBinaryNode callOr) {
+            return callOr.executeObject(other, self);
         }
     }
 
