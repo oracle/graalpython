@@ -131,6 +131,7 @@ class SRE_Match():
 
 class SRE_Pattern():
     def __init__(self, pattern, flags, code, groups=0, groupindex=None, indexgroup=None):
+        self.__was_bytes = isinstance(pattern, bytes)
         self.pattern = self._decode_pattern(pattern, flags)
         self.flags = flags
         self.code = code
@@ -191,6 +192,8 @@ class SRE_Pattern():
         if isinstance(string, str):
             return string
         elif isinstance(string, bytes):
+            return string.decode()
+        elif isinstance(string, bytearray):
             return string.decode()
         raise TypeError("invalid search pattern {!r}".format(string))
 
@@ -297,18 +300,26 @@ class SRE_Pattern():
                 n += 1
                 start = match.start[0]
                 end = match.end[0]
-                result.append(string[pos:start])
-                if isinstance(repl, str):
+                result.append(self._emit(string[pos:start]))
+                if isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray):
                     # TODO: backslash replace groups
                     result.append(repl)
                 else:
-                    result.append(repl(SRE_Match(self, pos, -1, match)))
+                    _srematch = SRE_Match(self, pos, -1, match)
+                    _repl = repl(_srematch)
+                    result.append(_repl)
                 no_progress = (start == end)
                 pos = end + no_progress
-            result.append(string[pos:])
-            return "".join(result)
+            result.append(self._emit(string[pos:]))
+            return self._emit("").join(result)
         else:
             return self.__compile_cpython_sre().sub(repl, string, count)
+
+    def _emit(self, str_like_obj):
+        assert isinstance(str_like_obj, str) or isinstance(str_like_obj, bytes)
+        if self.__was_bytes:
+            return str_like_obj.encode()
+        return str_like_obj
 
 
 compile = SRE_Pattern

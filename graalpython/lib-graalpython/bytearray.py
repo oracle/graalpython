@@ -38,3 +38,5 @@
 # SOFTWARE.
 
 # an empty file for now
+
+bytearray.decode = bytes.decode
