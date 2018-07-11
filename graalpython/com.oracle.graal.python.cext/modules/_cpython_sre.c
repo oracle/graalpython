@@ -1,3 +1,9 @@
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
+
 /*
  * Secret Labs' Regular Expression Engine
  *
@@ -34,6 +40,8 @@
  * CNRI.  Hewlett-Packard provided funding for 1.6 integration and
  * other compatibility work.
  */
+
+// this file was taken from CPython 3.7.0's file '_sre.c'
 
 static const char copyright[] =
     " SRE 2.2.2 Copyright (c) 1997-2002 by Secret Labs AB ";

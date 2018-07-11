@@ -93,6 +93,7 @@ graalpython/com.oracle.graal.python.cext/include/fileobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/floatobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/frameobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/iterobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/listobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/longintrepr.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/longobject.h,python.copyright
@@ -130,9 +131,14 @@ graalpython/com.oracle.graal.python.cext/include/truffle.h,no.copyright
 graalpython/com.oracle.graal.python.cext/include/tupleobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/unicodeobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/warnings.h,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/clinic/_sre.c.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_cpython_sre.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_memoryview.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/sre_constants.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/sre.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/sre_lib.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getcompiler.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
@@ -252,6 +258,7 @@ graalpython/com.oracle.graal.python.test/src/tests/test_mm2d_random_naive_5.py,z
 graalpython/com.oracle.graal.python.test/src/tests/test_raise-try.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_random.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_re.py,python.copyright
+graalpython/com.oracle.graal.python.test/src/tests/test_slice.py,zippy.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_sorted.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_string.py,python.copyright
 graalpython/com.oracle.graal.python.test/src/tests/test_tuple.py,python.copyright
