@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.sequence.SequenceUtil.MISSING_INDEX;
 
 import com.oracle.graal.python.builtins.objects.PNone;
