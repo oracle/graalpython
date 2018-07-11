@@ -168,19 +168,19 @@ public class PySequenceArrayWrapperMR {
             long result = 0;
             result |= barr[i];
             if (i + 1 < len)
-                result |= (barr[i + 1] << 8L) & 0xFF00L;
+                result |= ((long) barr[i + 1] << 8L) & 0xFF00L;
             if (i + 2 < len)
-                result |= (barr[i + 2] << 16L) & 0xFF0000L;
+                result |= ((long) barr[i + 2] << 16L) & 0xFF0000L;
             if (i + 3 < len)
-                result |= (barr[i + 3] << 24L) & 0xFF000000L;
+                result |= ((long) barr[i + 3] << 24L) & 0xFF000000L;
             if (i + 4 < len)
-                result |= (barr[i + 4] << 32L) & 0xFF00000000L;
+                result |= ((long) barr[i + 4] << 32L) & 0xFF00000000L;
             if (i + 5 < len)
-                result |= (barr[i + 5] << 40L) & 0xFF0000000000L;
+                result |= ((long) barr[i + 5] << 40L) & 0xFF0000000000L;
             if (i + 6 < len)
-                result |= (barr[i + 6] << 48L) & 0xFF000000000000L;
+                result |= ((long) barr[i + 6] << 48L) & 0xFF000000000000L;
             if (i + 7 < len)
-                result |= (barr[i + 7] << 56L) & 0xFF00000000000000L;
+                result |= ((long) barr[i + 7] << 56L) & 0xFF00000000000000L;
             return result;
         }
 
