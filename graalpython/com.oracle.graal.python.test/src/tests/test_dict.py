@@ -322,11 +322,11 @@ def test_dictview_set_operations_on_items():
     k3 = {4: 4}.items()
 
     assert k1 - k2 == set()
-    # assert k1 - k3 == {(1, 1), (2, 2)}
-    # assert k2 - k1 == {(3, 3)}
-    # assert k3 - k1 == {(4, 4)}
-    # assert k1 & k2 == {(1, 1), (2, 2)}
-    # assert k1 & k3 == set()
-    # assert k1 | k2 == {(1, 1), (2, 2), (3, 3)}
-    # assert k1 ^ k2 == {(3, 3)}
-    # assert k1 ^ k3 == {(1, 1), (2, 2), (4, 4)}
+    assert k1 - k3 == {(1, 1), (2, 2)}
+    assert k2 - k1 == {(3, 3)}
+    assert k3 - k1 == {(4, 4)}
+    assert k1 & k2 == {(1, 1), (2, 2)}
+    assert k1 & k3 == set()
+    assert k1 | k2 == {(1, 1), (2, 2), (3, 3)}
+    assert k1 ^ k2 == {(3, 3)}
+    assert k1 ^ k3 == {(1, 1), (2, 2), (4, 4)}

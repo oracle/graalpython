@@ -133,6 +133,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.IntersectNode intersectNode;
 
+        private HashingStorageNodes.IntersectNode getIntersectNode() {
+            if (intersectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                intersectNode = insert(HashingStorageNodes.IntersectNode.create());
+            }
+            return intersectNode;
+        }
+
         @Specialization
         PBaseSet doPBaseSet(PSet left, PBaseSet right) {
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), right.getDictStorage());
@@ -143,14 +151,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         PBaseSet doPBaseSet(PFrozenSet left, PBaseSet right) {
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
-        }
-
-        private HashingStorageNodes.IntersectNode getIntersectNode() {
-            if (intersectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                intersectNode = insert(HashingStorageNodes.IntersectNode.create());
-            }
-            return intersectNode;
         }
     }
 
@@ -198,6 +198,22 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @CompilationFinal private ValueProfile setTypeProfile;
 
+        private BinaryUnionNode getBinaryUnionNode() {
+            if (binaryUnionNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                binaryUnionNode = insert(BinaryUnionNode.create());
+            }
+            return binaryUnionNode;
+        }
+
+        private ValueProfile getSetTypeProfile() {
+            if (setTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setTypeProfile = ValueProfile.createClassProfile();
+            }
+            return setTypeProfile;
+        }
+
         @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
         PBaseSet doCached(PBaseSet self, Object[] args,
                         @Cached("args.length") int len,
@@ -225,29 +241,20 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             }
             return factory().createSet(storage);
         }
-
-        private BinaryUnionNode getBinaryUnionNode() {
-            if (binaryUnionNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                binaryUnionNode = insert(BinaryUnionNode.create());
-            }
-            return binaryUnionNode;
-        }
-
-        private ValueProfile getSetTypeProfile() {
-            if (setTypeProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setTypeProfile = ValueProfile.createClassProfile();
-            }
-            return setTypeProfile;
-        }
-
     }
 
     abstract static class BinaryUnionNode extends PBaseNode {
         @Child private Equivalence equivalenceNode;
 
         public abstract PBaseSet execute(PBaseSet container, HashingStorage left, Object right);
+
+        protected Equivalence getEquivalence() {
+            if (equivalenceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                equivalenceNode = insert(new PythonEquivalence());
+            }
+            return equivalenceNode;
+        }
 
         @Specialization
         PBaseSet doHashingCollection(PBaseSet container, EconomicMapStorage selfStorage, PHashingCollection other) {
@@ -275,14 +282,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                 }
                 setItemNode.execute(container, dictStorage, value, PNone.NO_VALUE);
             }
-        }
-
-        protected Equivalence getEquivalence() {
-            if (equivalenceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                equivalenceNode = insert(new PythonEquivalence());
-            }
-            return equivalenceNode;
         }
 
         public static BinaryUnionNode create() {
