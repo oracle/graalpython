@@ -81,7 +81,6 @@ PyObject * PyExc_AssertionError = NULL;
 PyObject * PyExc_UnboundLocalError = NULL;
 PyObject * PyExc_NotImplementedError = NULL;
 PyObject * PyExc_RecursionError = NULL;
-PyObject * PyExc_NotImplementedError = NULL;
 
 void initialize_exceptions() {
     PyExc_AttributeError = PY_EXCEPTION("AttributeError");
