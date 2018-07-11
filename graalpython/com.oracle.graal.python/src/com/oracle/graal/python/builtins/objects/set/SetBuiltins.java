@@ -36,8 +36,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -80,7 +80,7 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @Builtin(name = __HASH__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doGeneric(Object self) {
             throw raise(TypeError, "unhashable type: '%p'", self);
@@ -89,11 +89,17 @@ public final class SetBuiltins extends PythonBuiltins {
 
     @Builtin(name = __OR__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class SetOrNode extends PythonBuiltinNode {
+    public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object doSet(PBaseSet self, PBaseSet other,
                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             return factory().createSet(unionNode.execute(self.getDictStorage(), other.getDictStorage()));
+        }
+
+        @Specialization
+        Object doReverse(PBaseSet self, Object other,
+                        @Cached("create(__OR__)") LookupAndCallBinaryNode callOr) {
+            return callOr.executeObject(other, self);
         }
     }
 
@@ -122,4 +128,5 @@ public final class SetBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
+
 }

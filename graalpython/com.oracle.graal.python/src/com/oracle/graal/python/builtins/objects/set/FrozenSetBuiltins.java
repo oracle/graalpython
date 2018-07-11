@@ -38,18 +38,32 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = {PFrozenSet.class, PSet.class})
 public final class FrozenSetBuiltins extends PythonBuiltins {
@@ -82,7 +96,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doSetSameType(PBaseSet self, PBaseSet other,
-                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
             return equalsNode.execute(self.getDictStorage(), other.getDictStorage());
         }
 
@@ -119,6 +133,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.IntersectNode intersectNode;
 
+        private HashingStorageNodes.IntersectNode getIntersectNode() {
+            if (intersectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                intersectNode = insert(HashingStorageNodes.IntersectNode.create());
+            }
+            return intersectNode;
+        }
+
         @Specialization
         PBaseSet doPBaseSet(PSet left, PBaseSet right) {
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), right.getDictStorage());
@@ -129,14 +151,6 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         PBaseSet doPBaseSet(PFrozenSet left, PBaseSet right) {
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
-        }
-
-        private HashingStorageNodes.IntersectNode getIntersectNode() {
-            if (intersectNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                intersectNode = insert(HashingStorageNodes.IntersectNode.create());
-            }
-            return intersectNode;
         }
     }
 
@@ -174,5 +188,105 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
             return containsKeyNode.execute(self.getDictStorage(), key);
         }
+    }
+
+    @Builtin(name = "union", minNumOfArguments = 1, takesVariableArguments = true)
+    @GenerateNodeFactory
+    abstract static class UnionNode extends PythonBuiltinNode {
+
+        @Child private BinaryUnionNode binaryUnionNode;
+
+        @CompilationFinal private ValueProfile setTypeProfile;
+
+        private BinaryUnionNode getBinaryUnionNode() {
+            if (binaryUnionNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                binaryUnionNode = insert(BinaryUnionNode.create());
+            }
+            return binaryUnionNode;
+        }
+
+        private ValueProfile getSetTypeProfile() {
+            if (setTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setTypeProfile = ValueProfile.createClassProfile();
+            }
+            return setTypeProfile;
+        }
+
+        @Specialization(guards = {"args.length == len", "args.length < 32"}, limit = "3")
+        PBaseSet doCached(PBaseSet self, Object[] args,
+                        @Cached("args.length") int len,
+                        @Cached("create()") HashingStorageNodes.CopyNode copyNode) {
+            PBaseSet result = create(self, copyNode.execute(self.getDictStorage()));
+            for (int i = 0; i < len; i++) {
+                getBinaryUnionNode().execute(result, result.getDictStorage(), args[i]);
+            }
+            return result;
+        }
+
+        @Specialization(replaces = "doCached")
+        PBaseSet doGeneric(PBaseSet self, Object[] args,
+                        @Cached("create()") HashingStorageNodes.CopyNode copyNode) {
+            PBaseSet result = create(self, copyNode.execute(self.getDictStorage()));
+            for (int i = 0; i < args.length; i++) {
+                getBinaryUnionNode().execute(result, result.getDictStorage(), args[i]);
+            }
+            return result;
+        }
+
+        private PBaseSet create(PBaseSet left, HashingStorage storage) {
+            if (getSetTypeProfile().profile(left) instanceof PFrozenSet) {
+                return factory().createFrozenSet(storage);
+            }
+            return factory().createSet(storage);
+        }
+    }
+
+    abstract static class BinaryUnionNode extends PBaseNode {
+        @Child private Equivalence equivalenceNode;
+
+        public abstract PBaseSet execute(PBaseSet container, HashingStorage left, Object right);
+
+        protected Equivalence getEquivalence() {
+            if (equivalenceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                equivalenceNode = insert(new PythonEquivalence());
+            }
+            return equivalenceNode;
+        }
+
+        @Specialization
+        PBaseSet doHashingCollection(PBaseSet container, EconomicMapStorage selfStorage, PHashingCollection other) {
+            for (Object key : other.getDictStorage().keys()) {
+                selfStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
+            }
+            return container;
+        }
+
+        @Specialization
+        PBaseSet doIterable(PBaseSet container, HashingStorage dictStorage, Object iterable,
+                        @Cached("create()") GetIteratorNode getIteratorNode,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
+
+            Object iterator = getIteratorNode.executeWith(iterable);
+            while (true) {
+                Object value;
+                try {
+                    value = next.execute(iterator);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    return container;
+                }
+                setItemNode.execute(container, dictStorage, value, PNone.NO_VALUE);
+            }
+        }
+
+        public static BinaryUnionNode create() {
+            return BinaryUnionNodeGen.create();
+        }
+
     }
 }

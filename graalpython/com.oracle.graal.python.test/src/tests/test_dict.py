@@ -119,6 +119,7 @@ def test_init():
 
     assert_raises(TypeError, dict.fromkeys, 10)
 
+
 def test_init1():
     try:
         dict([("a", 1), ("b", 2)], [("c", 3), ("d", 4)])
@@ -150,17 +151,22 @@ def test_init4():
     d = dict(pairs)
     assert len(d) == 100000, "invalid length, expected 100.000 but was %d".format(len(d))
 
+
 def test_init5():
     key_set = { 'a', 'b', 'c', 'd' }
+
     class CustomMappingObject:
         def __init__(self, keys):
             self.__keys = keys
+
         def keys(self):
             return self.__keys
+
         def __getitem__(self, key):
             if key in self.__keys:
                 return ord(key)
             raise KeyError(key)
+
         def __len__(self):
             return len(self.keys)
     d = dict(CustomMappingObject(key_set))
@@ -173,8 +179,10 @@ def test_custom_key_object0():
     class CollisionKey:
         def __init__(self, val):
             self.val = val
+
         def __hash__(self):
             return 1234
+
         def __eq__(self, other):
             if type(other) == type(self):
                 return self.val == other.val
@@ -240,6 +248,7 @@ def test_keywords():
         kwargs["a"] = 10
         kwargs["b"] = 20
         return kwargs
+
     def reading(**kwargs):
         assert kwargs["a"] == 1
         assert kwargs["b"] == 2
@@ -258,20 +267,20 @@ def test_fixed_storage():
     obj = Foo()
     d = obj.__dict__
     for i in range(200):
-        attrName = "method" + str(i)
-        d[attrName] = lambda: attrName
+        attr_name = "method" + str(i)
+        d[attr_name] = lambda: attr_name
 
     for i in range(200):
-        attrName = "method" + str(i)
-        method_to_call = getattr(obj, attrName)
-        assert method_to_call() == attrName
+        attr_name = "method" + str(i)
+        method_to_call = getattr(obj, attr_name)
+        assert method_to_call() == attr_name
 
 
 def test_get_default():
     d = {"a": 1}
     assert d.get("a") == 1
     assert d.get("a", 2) == 1
-    assert d.get("b") == None
+    assert d.get("b") is None
     assert d.get("b", 2) == 2
 
 
@@ -289,3 +298,48 @@ def test_create_seq_and_kw():
     d = dict(dict(a=1, b=2, c=3), d=4)
     for k in ['a', 'b', 'c', 'd']:
         assert k in d
+
+
+def test_dictview_set_operations_on_keys():
+    k1 = {1: 1, 2: 2}.keys()
+    k2 = {1: 1, 2: 2, 3: 3}.keys()
+    k3 = {4: 4}.keys()
+
+    assert k1 - k2 == set()
+    assert k1 - k3 == {1, 2}
+    assert k2 - k1 == {3}
+    assert k3 - k1 == {4}
+    assert k1 & k2 == {1, 2}
+    assert k1 & k3 == set()
+    assert k1 | k2 == {1, 2, 3}
+    assert k1 ^ k2 == {3}
+    assert k1 ^ k3 == {1, 2, 4}
+
+
+def test_dictview_set_operations_on_items():
+    k1 = {1: 1, 2: 2}.items()
+    k2 = {1: 1, 2: 2, 3: 3}.items()
+    k3 = {4: 4}.items()
+
+    assert k1 - k2 == set()
+    assert k1 - k3 == {(1, 1), (2, 2)}
+    assert k2 - k1 == {(3, 3)}
+    assert k3 - k1 == {(4, 4)}
+    assert k1 & k2 == {(1, 1), (2, 2)}
+    assert k1 & k3 == set()
+    assert k1 | k2 == {(1, 1), (2, 2), (3, 3)}
+    assert k1 ^ k2 == {(3, 3)}
+    assert k1 ^ k3 == {(1, 1), (2, 2), (4, 4)}
+
+
+def test_dictview_mixed_set_operations():
+    # Just a few for .keys()
+    assert {1: 1}.keys() == {1}
+    assert {1} == {1: 1}.keys()
+    assert {1: 1}.keys() | {2} == {1, 2}
+    assert {2} | {1: 1}.keys() == {1, 2}
+    # And a few for .items()
+    assert {1: 1}.items() == {(1, 1)}
+    assert {(1, 1)} == {1: 1}.items()
+    assert {1: 1}.items() | {2} == {(1, 1), 2}
+    assert {2} | {1: 1}.items() == {(1, 1), 2}

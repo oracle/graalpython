@@ -82,12 +82,11 @@ import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.DictItemsBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.DictKeysBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictKeysIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
@@ -216,11 +215,10 @@ public final class Python3Core implements PythonCore {
                     new TruffleObjectBuiltins(),
                     new ListBuiltins(),
                     new DictBuiltins(),
-                    new DictKeysBuiltins(),
-                    new DictKeysIteratorBuiltins(),
+                    new DictViewBuiltins(),
                     new DictValuesBuiltins(),
+                    new DictKeysIteratorBuiltins(),
                     new DictValuesIteratorBuiltins(),
-                    new DictItemsBuiltins(),
                     new DictItemsIteratorBuiltins(),
                     new RangeBuiltins(),
                     new SliceBuiltins(),

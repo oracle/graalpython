@@ -59,7 +59,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.EqualsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.InitNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.KeysEqualsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.UnionNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -160,6 +162,9 @@ public abstract class HashingStorageNodes {
             return callEqNode.executeBool(left, right);
         }
 
+        public static PythonEquivalence create() {
+            return new PythonEquivalence();
+        }
     }
 
     @ImportStatic(PGuards.class)
@@ -1033,6 +1038,7 @@ public abstract class HashingStorageNodes {
     }
 
     public abstract static class EqualsNode extends DictStorageBaseNode {
+
         @Child private GetItemNode getLeftItemNode;
         @Child private GetItemNode getRightItemNode;
 
@@ -1055,9 +1061,9 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
-        boolean doKeywordsString(LocalsStorage selfStorage, LocalsStorage other) {
+        boolean doLocals(LocalsStorage selfStorage, LocalsStorage other) {
             if (selfStorage.getFrame().getFrameDescriptor() == other.getFrame().getFrameDescriptor()) {
-                return doKeywordsString(selfStorage, other);
+                return doGeneric(selfStorage, other);
             }
             return false;
         }
@@ -1079,7 +1085,7 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "selfStorage.length() == other.length()")
-        boolean doKeywordsString(HashingStorage selfStorage, HashingStorage other) {
+        boolean doGeneric(HashingStorage selfStorage, HashingStorage other) {
             if (selfStorage.length() == other.length()) {
                 Iterable<Object> keys = selfStorage.keys();
                 for (Object key : keys) {
@@ -1096,12 +1102,72 @@ public abstract class HashingStorageNodes {
 
         @SuppressWarnings("unused")
         @Fallback
-        boolean doGeneric(HashingStorage selfStorage, HashingStorage other) {
+        boolean doFallback(HashingStorage selfStorage, HashingStorage other) {
             return false;
         }
 
         public static EqualsNode create() {
             return EqualsNodeGen.create();
+        }
+    }
+
+    public abstract static class KeysEqualsNode extends DictStorageBaseNode {
+        @Child private ContainsKeyNode rightContainsKeyNode;
+
+        public abstract boolean execute(HashingStorage selfStorage, HashingStorage other);
+
+        private ContainsKeyNode getRightContainsKeyNode() {
+            if (rightContainsKeyNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                rightContainsKeyNode = insert(ContainsKeyNode.create());
+            }
+            return rightContainsKeyNode;
+        }
+
+        @Specialization(guards = "selfStorage.length() == other.length()")
+        boolean doKeywordsString(LocalsStorage selfStorage, LocalsStorage other) {
+            if (selfStorage.getFrame().getFrameDescriptor() == other.getFrame().getFrameDescriptor()) {
+                return doKeywordsString(selfStorage, other);
+            }
+            return false;
+        }
+
+        @Specialization(guards = "selfStorage.length() == other.length()")
+        boolean doKeywordsString(DynamicObjectStorage selfStorage, DynamicObjectStorage other) {
+            if (selfStorage.length() == other.length()) {
+                Iterable<Object> keys = selfStorage.keys();
+                for (Object key : keys) {
+                    if (!getRightContainsKeyNode().execute(other, key)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Specialization(guards = "selfStorage.length() == other.length()")
+        boolean doKeywordsString(HashingStorage selfStorage, HashingStorage other) {
+            if (selfStorage.length() == other.length()) {
+                Iterable<Object> keys = selfStorage.keys();
+                for (Object key : keys) {
+                    if (!getRightContainsKeyNode().execute(other, key)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        boolean doGeneric(HashingStorage selfStorage, HashingStorage other) {
+            return false;
+        }
+
+        public static KeysEqualsNode create() {
+            return KeysEqualsNodeGen.create();
         }
     }
 
@@ -1263,17 +1329,77 @@ public abstract class HashingStorageNodes {
         }
     }
 
-    public static class UnionNode extends Node {
+    public abstract static class UnionNode extends DictStorageBaseNode {
 
-        public HashingStorage execute(HashingStorage left, HashingStorage right) {
-            EconomicMapStorage newStorage = EconomicMapStorage.create(false);
+        protected final boolean setUnion;
+
+        public UnionNode(boolean setUnion) {
+            this.setUnion = setUnion;
+        }
+
+        public abstract HashingStorage execute(HashingStorage left, HashingStorage right);
+
+        @Specialization(guards = "setUnion")
+        public HashingStorage doGenericSet(HashingStorage left, HashingStorage right) {
+            EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
+            for (Object key : left.keys()) {
+                newStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
+            }
+            for (Object key : right.keys()) {
+                newStorage.setItem(key, PNone.NO_VALUE, getEquivalence());
+            }
+            return newStorage;
+        }
+
+        @Specialization(guards = "!setUnion")
+        public HashingStorage doGeneric(HashingStorage left, HashingStorage right) {
+            EconomicMapStorage newStorage = EconomicMapStorage.create(setUnion);
             newStorage.addAll(left);
             newStorage.addAll(right);
             return newStorage;
         }
 
         public static UnionNode create() {
-            return new UnionNode();
+            return create(false);
+        }
+
+        public static UnionNode create(boolean setUnion) {
+            return UnionNodeGen.create(setUnion);
+        }
+    }
+
+    public static class ExclusiveOrNode extends Node {
+        @Child private ContainsKeyNode containsKeyNode;
+        @Child private SetItemNode setItemNode;
+
+        public HashingStorage execute(HashingStorage left, HashingStorage right) {
+            EconomicMapStorage newStorage = EconomicMapStorage.create(false);
+            if (left.length() != 0 && right.length() != 0) {
+                if (containsKeyNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    containsKeyNode = insert(ContainsKeyNode.create());
+                }
+                if (setItemNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    setItemNode = insert(SetItemNode.create());
+                }
+
+                for (Object leftKey : left.keys()) {
+                    if (!containsKeyNode.execute(right, leftKey)) {
+                        setItemNode.execute(null, newStorage, leftKey, PNone.NO_VALUE);
+                    }
+                }
+                for (Object rightKey : right.keys()) {
+                    if (!containsKeyNode.execute(left, rightKey)) {
+                        setItemNode.execute(null, newStorage, rightKey, PNone.NO_VALUE);
+                    }
+                }
+            }
+            return newStorage;
+        }
+
+        public static ExclusiveOrNode create() {
+            return new ExclusiveOrNode();
         }
     }
 
