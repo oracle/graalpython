@@ -782,7 +782,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable %s()", callee);
             } catch (RuntimeException e) {
                 // wrap any other runtime exception into a PException
-                throw raise(RuntimeError, "unexpected exception occurred when calling foreign object %s: %s", callee, e.getMessage());
+                throw raise(RuntimeError, "unexpected exception occurred when calling foreign object %s: %s", callee, e);
             }
         }
 
