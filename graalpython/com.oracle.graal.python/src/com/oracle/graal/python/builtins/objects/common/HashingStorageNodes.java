@@ -162,6 +162,9 @@ public abstract class HashingStorageNodes {
             return callEqNode.executeBool(left, right);
         }
 
+        public static PythonEquivalence create() {
+            return new PythonEquivalence();
+        }
     }
 
     @ImportStatic(PGuards.class)

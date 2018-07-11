@@ -59,6 +59,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.set.SetNodes;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -68,6 +71,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PDictKeysView.class, PDictItemsView.class})
 public final class DictViewBuiltins extends PythonBuiltins {
@@ -116,9 +120,22 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean contains(PDictView self, Object key,
+        boolean contains(PDictKeysView self, Object key,
                         @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
             return containsKeyNode.execute(self.getDict().getDictStorage(), key);
+        }
+
+        @Specialization
+        boolean contains(PDictItemsView self, PTuple key,
+                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
+                        @Cached("create()") HashingStorageNodes.PythonEquivalence equivalenceNode,
+                        @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile) {
+            if (tupleLenProfile.profile(key.len() != 2)) {
+                return false;
+            }
+            HashingStorage dictStorage = self.getDict().getDictStorage();
+            Object value = getItemNode.execute(dictStorage, key.getItem(0));
+            return value != null && equivalenceNode.equals(value, key.getItem(1));
         }
     }
 
@@ -133,9 +150,25 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doItemsView(PDictKeysView self, PBaseSet other,
+        boolean doKeysView(PDictKeysView self, PBaseSet other,
                         @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
             return equalsNode.execute(self.getDict().getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean doItemsView(PDictItemsView self, PDictItemsView other,
+                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
+            // the items view stores the original dict with K:V pairs so full K:V equality needs to
+            // be tested in this case
+            return equalsNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
+        }
+
+        @Specialization
+        boolean doItemsView(PDictItemsView self, PBaseSet other,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            return equalsNode.execute(selfSet.getDictStorage(), other.getDictStorage());
         }
 
         @Fallback
@@ -149,16 +182,19 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PBaseSet doItemsView(PDictItemsView left, PDictItemsView right,
+        PBaseSet doKeysView(PDictKeysView left, PDictKeysView right,
                         @Cached("create()") HashingStorageNodes.DiffNode diffNode) {
             HashingStorage storage = diffNode.execute(left.getDict().getDictStorage(), right.getDict().getDictStorage());
             return factory().createSet(storage);
         }
 
         @Specialization
-        PBaseSet doKeysView(PDictKeysView left, PDictKeysView right,
-                        @Cached("create()") HashingStorageNodes.DiffNode diffNode) {
-            HashingStorage storage = diffNode.execute(left.getDict().getDictStorage(), right.getDict().getDictStorage());
+        PBaseSet doItemsView(PDictItemsView self, PDictItemsView other,
+                        @Cached("create()") HashingStorageNodes.DiffNode diffNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            PSet otherSet = constructSetNode.executeWith(other);
+            HashingStorage storage = diffNode.execute(selfSet.getDictStorage(), otherSet.getDictStorage());
             return factory().createSet(storage);
         }
     }
@@ -167,16 +203,19 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PBaseSet doItemsView(PDictItemsView left, PDictItemsView right,
+        PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
                         @Cached("create()") HashingStorageNodes.IntersectNode intersectNode) {
-            HashingStorage intersectedStorage = intersectNode.execute(left.getDict().getDictStorage(), right.getDict().getDictStorage());
+            HashingStorage intersectedStorage = intersectNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
             return factory().createSet(intersectedStorage);
         }
 
         @Specialization
-        PBaseSet doKeysView(PDictKeysView left, PDictKeysView right,
-                        @Cached("create()") HashingStorageNodes.IntersectNode intersectNode) {
-            HashingStorage intersectedStorage = intersectNode.execute(left.getDict().getDictStorage(), right.getDict().getDictStorage());
+        PBaseSet doItemsView(PDictItemsView self, PDictItemsView other,
+                        @Cached("create()") HashingStorageNodes.IntersectNode intersectNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            PSet otherSet = constructSetNode.executeWith(other);
+            HashingStorage intersectedStorage = intersectNode.execute(selfSet.getDictStorage(), otherSet.getDictStorage());
             return factory().createSet(intersectedStorage);
         }
     }
@@ -185,15 +224,18 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBuiltinNode {
         @Specialization
-        PBaseSet doItemsView(PDictItemsView self, PDictItemsView other,
+        PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
             return factory().createSet(unionNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
-                        @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
-            return factory().createSet(unionNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage()));
+        PBaseSet doItemsView(PDictItemsView self, PDictItemsView other,
+                        @Cached("create()") HashingStorageNodes.UnionNode unionNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            PSet otherSet = constructSetNode.executeWith(other);
+            return factory().createSet(unionNode.execute(selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
     }
 
@@ -201,15 +243,18 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class XorNode extends PythonBuiltinNode {
         @Specialization
-        PBaseSet doItemsView(PDictItemsView self, PDictItemsView other,
+        PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
                         @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
             return factory().createSet(xorNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage()));
         }
 
         @Specialization
-        PBaseSet doKeysView(PDictKeysView self, PDictKeysView other,
-                        @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
-            return factory().createSet(xorNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage()));
+        PBaseSet doItemsView(PDictItemsView self, PDictItemsView other,
+                        @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            PSet otherSet = constructSetNode.executeWith(other);
+            return factory().createSet(xorNode.execute(selfSet.getDictStorage(), otherSet.getDictStorage()));
         }
     }
 }

@@ -57,6 +57,10 @@ public abstract class PDictView extends PythonBuiltinObject {
         return dict;
     }
 
+    public int size() {
+        return dict.size();
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     //
     // the keys
