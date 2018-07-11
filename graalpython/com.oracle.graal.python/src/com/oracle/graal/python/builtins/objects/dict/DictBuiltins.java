@@ -110,7 +110,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // setdefault(key[, default])
-    @Builtin(name = "setdefault", fixedNumOfArguments = 3)
+    @Builtin(name = "setdefault", minNumOfArguments = 2, keywordArguments = {"default"})
     @GenerateNodeFactory
     public abstract static class SetDefaultNode extends PythonBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
@@ -127,6 +127,14 @@ public final class DictBuiltins extends PythonBuiltins {
         public Object setDefault(PDict dict, Object key, @SuppressWarnings("unused") Object defaultValue,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(dict.getDictStorage(), key);
+        }
+
+        @Specialization(guards = "!containsKey(dict.getDictStorage(), key)")
+        public Object setDefault(PDict dict, Object key, @SuppressWarnings("unused") PNone defaultValue,
+                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
+
+            setItemNode.execute(dict, dict.getDictStorage(), key, PNone.NONE);
+            return PNone.NONE;
         }
 
         @Specialization(guards = "!containsKey(dict.getDictStorage(), key)")

@@ -343,3 +343,34 @@ def test_dictview_mixed_set_operations():
     assert {(1, 1)} == {1: 1}.items()
     assert {1: 1}.items() | {2} == {(1, 1), 2}
     assert {2} | {1: 1}.items() == {(1, 1), 2}
+
+
+def test_setdefault():
+    # dict.setdefault()
+    d = {}
+    none = d.setdefault('key0')
+    assert d.setdefault('key0') is None
+    d.setdefault('key0', [])
+    assert d.setdefault('key0') is None
+    d.setdefault('key', []).append(3)
+    assert d['key'][0] == 3
+    d.setdefault('key', []).append(4)
+    assert len(d['key']) == 2
+    assert_raises(TypeError, d.setdefault)
+
+    class Exc(Exception):
+        pass
+
+    class BadHash(object):
+        fail = False
+
+        def __hash__(self):
+            if self.fail:
+                raise Exc()
+            else:
+                return 42
+
+    x = BadHash()
+    d[x] = 42
+    x.fail = True
+    assert_raises(Exc, d.setdefault, x, [])
