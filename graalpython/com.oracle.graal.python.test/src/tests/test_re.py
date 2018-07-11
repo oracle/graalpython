@@ -13,7 +13,7 @@ def test_match():
     assert md.group(0) == "hello"
 
     assert re.compile("hi").match("hello") is None
-    # assert re.compile("ello").match("hello") is None
+    assert re.compile("ello").match("hello") is None
     assert re.compile("^hello").match("hello")
     assert re.compile("^hello").search("hello")
     assert re.compile("ello").search("hello")
@@ -149,6 +149,9 @@ class ReTests(unittest.TestCase):
         self.assertTrue(compiled.match("hello hello"))
         self.assertTrue(compiled.match("world*world"))
         self.assertFalse(compiled.match("oh no"))
+
+        compiled = re.compile(r"(\d).\d.\d-\1")
+        self.assertEqual((0, 7), compiled.match("1.2.3-1").span())
 
     def test_escaping(self):
         regex = None
