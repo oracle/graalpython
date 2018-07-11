@@ -425,86 +425,54 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    // str.rfind(str[, start[, end]])
-    @Builtin(name = "rfind", minNumOfArguments = 2, maxNumOfArguments = 4)
-    @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class RFindNode extends PythonBuiltinNode {
+    abstract static class FindBaseNode extends PythonBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        @SuppressWarnings("unused")
-        public Object rfind(String self, String str, PNone start, PNone end) {
-            return self.lastIndexOf(str);
+        Object find(String self, String str, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return find(self, str);
         }
 
         @Specialization
-        @TruffleBoundary
-        public Object rfind(String self, String str, int start, @SuppressWarnings("unused") PNone end) {
-            return self.substring(start).lastIndexOf(str);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public Object rfind(String self, String str, @SuppressWarnings("unused") PNone start, int end) {
-            return self.substring(0, end).lastIndexOf(str);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public Object rfind(String self, String str, int start, int end) {
-            return self.substring(start, end).lastIndexOf(str);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        public Object endsWith(Object self, Object str, Object start, Object end) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException("rfind is not supported for " + self + " " + self.getClass() + " prefix " + str);
-        }
-    }
-
-    // str.find(str[, start[, end]])
-    @Builtin(name = "find", minNumOfArguments = 2, maxNumOfArguments = 4)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class FindNode extends PythonBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        @SuppressWarnings("unused")
-        public Object find(String self, String str, PNone start, PNone end) {
-            return self.indexOf(str);
-        }
-
-        @Specialization
-        public Object find(String self, String str, long start, @SuppressWarnings("unused") PNone end) {
+        Object find(String self, String str, long start, @SuppressWarnings("unused") PNone end) {
             return findGeneric(self, str, start, -1);
         }
 
         @Specialization
-        public Object find(String self, String str, @SuppressWarnings("unused") PNone start, long end) {
+        Object find(String self, String str, @SuppressWarnings("unused") PNone start, long end) {
             return findGeneric(self, str, -1, end);
         }
 
         @Specialization
-        public Object find(String self, String str, long start, long end) {
+        Object find(String self, String str, long start, long end) {
             return findGeneric(self, str, start, end);
         }
 
-        @TruffleBoundary
-        private static Object findWithBounds(String self, String str, int start, int end) {
-            if (start != -1 && end != -1) {
-                return self.substring(0, end).indexOf(str, start);
-            } else if (start != -1) {
-                return self.indexOf(str, start);
-            } else {
-                assert end != -1;
-                return self.substring(0, end).indexOf(str);
+        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, rewriteOn = ArithmeticException.class)
+        Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
+            int startInt = getIntValue(start);
+            int endInt = getIntValue(end);
+            return findWithBounds(self, str, startInt, endInt);
+        }
+
+        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, replaces = "findGeneric")
+        Object findGenericOvf(String self, String str, Object start, Object end) {
+            try {
+                int startInt = getIntValue(start);
+                int endInt = getIntValue(end);
+                return findWithBounds(self, str, startInt, endInt);
+            } catch (ArithmeticException e) {
+                throw raise(ValueError, "cannot fit 'int' into an index-sized integer");
             }
         }
 
-        protected boolean isNumberOrNone(Object o) {
+        @Fallback
+        @SuppressWarnings("unused")
+        Object findFail(Object self, Object str, Object start, Object end) {
+            throw raise(TypeError, "must be str, not %p", str);
+        }
+
+        protected static boolean isNumberOrNone(Object o) {
             return o instanceof PInt || o instanceof PNone;
         }
 
@@ -523,28 +491,64 @@ public final class StringBuiltins extends PythonBuiltins {
             throw new IllegalArgumentException();
         }
 
-        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, rewriteOn = ArithmeticException.class)
-        public Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
-            int startInt = getIntValue(start);
-            int endInt = getIntValue(end);
-            return findWithBounds(self, str, startInt, endInt);
+        @SuppressWarnings("unused")
+        protected int find(String self, String findStr) {
+            throw new AssertionError("must not be reached");
         }
 
-        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, replaces = "findGeneric")
-        public Object findGenericOvf(String self, String str, Object start, Object end) {
-            try {
-                int startInt = getIntValue(start);
-                int endInt = getIntValue(end);
-                return findWithBounds(self, str, startInt, endInt);
-            } catch (ArithmeticException e) {
-                throw raise(ValueError, "cannot fit 'int' into an index-sized integer");
+        @SuppressWarnings("unused")
+        protected int findWithBounds(String self, String str, int start, int end) {
+            throw new AssertionError("must not be reached");
+        }
+    }
+
+    // str.rfind(str[, start[, end]])
+    @Builtin(name = "rfind", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @GenerateNodeFactory
+    public abstract static class RFindNode extends FindBaseNode {
+
+        @Override
+        @TruffleBoundary
+        protected int find(String self, String findStr) {
+            return self.lastIndexOf(findStr);
+        }
+
+        @Override
+        @TruffleBoundary
+        protected int findWithBounds(String self, String str, int start, int end) {
+            if (start != -1 && end != -1) {
+                return self.substring(start, end).lastIndexOf(str);
+            } else if (start != -1) {
+                return self.substring(start).lastIndexOf(str);
+            } else {
+                assert end != -1;
+                return self.substring(0, end).lastIndexOf(str);
             }
         }
+    }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        public Object findFail(Object self, Object str, Object start, Object end) {
-            throw raise(TypeError, "must be str, not %p", str);
+    // str.find(str[, start[, end]])
+    @Builtin(name = "find", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @GenerateNodeFactory
+    public abstract static class FindNode extends FindBaseNode {
+
+        @Override
+        @TruffleBoundary
+        protected int find(String self, String findStr) {
+            return self.indexOf(findStr);
+        }
+
+        @Override
+        @TruffleBoundary
+        protected int findWithBounds(String self, String str, int start, int end) {
+            if (start != -1 && end != -1) {
+                return self.substring(0, end).indexOf(str, start);
+            } else if (start != -1) {
+                return self.indexOf(str, start);
+            } else {
+                assert end != -1;
+                return self.substring(0, end).indexOf(str);
+            }
         }
     }
 
