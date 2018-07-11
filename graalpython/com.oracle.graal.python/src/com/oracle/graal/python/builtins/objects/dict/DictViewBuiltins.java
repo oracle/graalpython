@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -83,7 +82,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LEN__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonBuiltinNode {
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object len(PDictView self) {
             return self.getDict().size();
@@ -112,7 +111,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class ContainsNode extends PythonBuiltinNode {
+    public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "self.getDict().size() == 0")
         boolean containsEmpty(PDictView self, Object key) {
@@ -141,7 +140,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         boolean doKeysView(PDictKeysView self, PDictKeysView other,
@@ -254,7 +253,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __OR__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class OrNode extends PythonBuiltinNode {
+    public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
         PBaseSet doKeysView(PDictKeysView self, PBaseSet other,
                         @Cached("create()") HashingStorageNodes.UnionNode unionNode) {
@@ -287,7 +286,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
     @Builtin(name = __XOR__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class XorNode extends PythonBuiltinNode {
+    public abstract static class XorNode extends PythonBinaryBuiltinNode {
         @Specialization
         PBaseSet doKeysView(PDictKeysView self, PBaseSet other,
                         @Cached("create()") HashingStorageNodes.ExclusiveOrNode xorNode) {
