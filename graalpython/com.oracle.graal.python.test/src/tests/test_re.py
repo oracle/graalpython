@@ -111,7 +111,7 @@ class ReTests(unittest.TestCase):
         # for y in ("\xe0", "\u0430", "\U0001d49c"):
         #     self.assertEqual(re.sub(y, 'a', 'x%sz' % y), 'xaz')
 
-        # self.assertEqual(re.sub("(?i)b+", "x", "bbbb BBBB"), 'x x')
+        self.assertEqual(re.sub("(?i)b+", "x", "bbbb BBBB"), 'x x')
         self.assertEqual(re.sub(r'\d+', self.bump_num, '08.2 -2 23x99y'),
                          '9.3 -3 24x100y')
         self.assertEqual(re.sub(r'\d+', self.bump_num, '08.2 -2 23x99y', 3),
