@@ -167,9 +167,9 @@ class SRE_Pattern():
         def __call__(self, original_result, pattern, start_pos):
             return SRE_Pattern.InternalSREPattern(self._sre_result.match(pattern, start_pos))
 
-    def __tregex_compile(self):
+    def __tregex_compile(self, pattern):
         try:
-            return self.__tregex_engine(self.pattern, self.jsflags)
+            return self.__tregex_engine(pattern, self.jsflags)
         except RuntimeError:
             return None
 
@@ -225,7 +225,7 @@ class SRE_Pattern():
         return "re.compile(%s%s%s)" % (self.pattern, sep, sflags)
 
     def _search(self, pattern, string, pos, endpos):
-        pattern = self.__tregex_compile()
+        pattern = self.__tregex_compile(pattern)
         if pattern is not None:
             string = self._decode_string(string)
             if endpos == -1 or endpos >= len(string):
@@ -257,7 +257,7 @@ class SRE_Pattern():
         return self._search(pattern, string, pos, endpos)
 
     def findall(self, string, pos=0, endpos=-1):
-        pattern = self.__tregex_compile()
+        pattern = self.__tregex_compile(self.pattern)
         if pattern is not None:
             string = self._decode_string(string)
             if endpos > len(string):
