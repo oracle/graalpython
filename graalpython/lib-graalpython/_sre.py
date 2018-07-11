@@ -288,7 +288,7 @@ class SRE_Pattern():
 
     def sub(self, repl, string, count=0):
         n = 0
-        pattern = self.__tregex_engine(self.pattern, self.jsflags)
+        pattern = self.__tregex_compile(self.pattern)
         if pattern is not None:
             string = self._decode_string(string)
             result = []
