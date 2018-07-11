@@ -60,6 +60,8 @@ def _reference_findchar(args):
     start = args[2]
     end = args[3]
     direction = args[4]
+    if sys.version_info.minor < 7 and end >= len(string):
+        return -1
     if not isinstance(string, str):
         return -1
     if direction == 1:
