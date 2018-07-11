@@ -150,7 +150,7 @@ class SRE_Pattern():
         def __init__(self, match_result):
             self._match_result = match_result
             self.isMatch = match_result != None
-            self.regex = match_result.re
+            self.regex = match_result.re if match_result else None
 
         @property
         def start(self):
