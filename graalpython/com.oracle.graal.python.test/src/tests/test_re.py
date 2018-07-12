@@ -122,9 +122,9 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.sub('.', lambda m: r"\n", 'x'), '\\n')
         # self.assertEqual(re.sub('.', r"\n", 'x'), '\n')
 
-        # s = r"\1\1"
-        # self.assertEqual(re.sub('(.)', s, 'x'), 'xx')
-        # self.assertEqual(re.sub('(.)', s.replace('\\', r'\\'), 'x'), s)
+        s = r"\1\1"
+        self.assertEqual(re.sub('(.)', s, 'x'), 'xx')
+        self.assertEqual(re.sub('(.)', s.replace('\\', r'\\'), 'x'), s)
         # self.assertEqual(re.sub('(.)', lambda m: s, 'x'), s)
 
         # self.assertEqual(re.sub('(?P<a>x)', r'\g<a>\g<a>', 'xx'), 'xxxx')

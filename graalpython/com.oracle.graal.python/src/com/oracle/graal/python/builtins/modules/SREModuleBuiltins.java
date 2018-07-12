@@ -159,7 +159,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object run(String str) {
             if (containsBackslash(str)) {
-                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), str, false);
+                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), str, true);
                 return sb.toString();
             }
             return str;
@@ -186,7 +186,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private byte[] doBytes(byte[] str) {
             try {
-                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, "ascii"), false);
+                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, "ascii"), true);
                 return sb.toString().getBytes("ascii");
             } catch (UnsupportedEncodingException e) {
             }

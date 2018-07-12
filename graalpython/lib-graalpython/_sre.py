@@ -275,17 +275,21 @@ class SRE_Pattern():
         n = len(repl)
         result = self._emit("")
         start = 0
-        pos = repl.find(self._emit('\\'), start)
+        backslash = self._emit('\\')
+        pos = repl.find(backslash, start)
         while pos != -1 and start < n:
-            if pos+1 < n and repl[pos+1].isdigit():
-                group_nr = int(repl[pos+1])
-                if group_nr >= match_result.groupCount:
-                    raise ValueError("invalid group reference %s at position %s" % (group_nr, pos))
-                group_start = match_result.start[group_nr]
-                group_end = match_result.end[group_nr]
-                result += repl[start:pos] + self._emit(string[group_start:group_end])
+            if pos+1 < n:
+                if repl[pos+1].isdigit():
+                    group_nr = int(repl[pos+1])
+                    if group_nr >= match_result.groupCount:
+                        raise ValueError("invalid group reference %s at position %s" % (group_nr, pos))
+                    group_start = match_result.start[group_nr]
+                    group_end = match_result.end[group_nr]
+                    result += repl[start:pos] + self._emit(string[group_start:group_end])
+                elif repl[pos+1] == backslash:
+                    result += repl[start:pos] + backslash
             start = pos + 2
-            pos = repl.find('\\', start)
+            pos = repl.find(backslash, start)
         result += repl[start:]
         return result
 

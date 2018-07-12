@@ -136,7 +136,7 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary
-    public static StringBuilder decodeEscapes(PythonCore core, String string, boolean octal) {
+    public static StringBuilder decodeEscapes(PythonCore core, String string, boolean regexMode) {
         // see _PyBytes_DecodeEscape from
         // https://github.com/python/cpython/blob/master/Objects/bytesobject.c
         // TODO: for the moment we assume ASCII
@@ -159,6 +159,9 @@ public final class BytesUtils {
                 case '\n':
                     break;
                 case '\\':
+                    if (regexMode) {
+                        charList.append('\\');
+                    }
                     charList.append('\\');
                     break;
                 case '\'':
@@ -196,7 +199,7 @@ public final class BytesUtils {
                 case '5':
                 case '6':
                 case '7':
-                    if (octal) {
+                    if (!regexMode) {
                         int code = chr - '0';
                         if (i < length) {
                             char nextChar = string.charAt(i);
@@ -242,7 +245,7 @@ public final class BytesUtils {
 
     @TruffleBoundary
     public static byte[] decodeEscapeToBytes(PythonCore core, String string) {
-        StringBuilder sb = decodeEscapes(core, string, true);
+        StringBuilder sb = decodeEscapes(core, string, false);
         byte[] bytes = new byte[sb.length()];
         for (int i = 0; i < sb.length(); i++) {
             bytes[i] = (byte) sb.charAt(i);
