@@ -38,14 +38,20 @@
  */
 package com.oracle.graal.python.nodes.datamodel;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class IsHashableNode extends PDataModelEmulationNode {
+    protected PythonClass getBuiltinIntType() {
+        return getCore().lookupType(PythonBuiltinClassType.PInt);
+    }
+
     protected boolean isDouble(Object object) {
         return object instanceof Double || PGuards.isPFloat(object);
     }
@@ -68,9 +74,10 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
     @Specialization
     protected boolean isHashableGeneric(Object object,
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
-                    @Cached("createBinaryProfile()") ConditionProfile isIntHashProfile) {
+                    @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode,
+                    @Cached("getBuiltinIntType()") PythonClass IntType) {
         Object hashValue = lookupHashAttributeNode.executeObject(object);
-        if (isIntHashProfile.profile(hashValue instanceof Integer)) {
+        if (isInstanceNode.executeWith(hashValue, IntType)) {
             return true;
         }
         throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");

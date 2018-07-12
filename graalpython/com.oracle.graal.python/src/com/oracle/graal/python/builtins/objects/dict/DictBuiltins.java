@@ -68,6 +68,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PDict.class)
 public final class DictBuiltins extends PythonBuiltins {
@@ -130,19 +131,15 @@ public final class DictBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!containsKey(dict.getDictStorage(), key)")
-        public Object setDefault(PDict dict, Object key, @SuppressWarnings("unused") PNone defaultValue,
-                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-
-            setItemNode.execute(dict, dict.getDictStorage(), key, PNone.NONE);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "!containsKey(dict.getDictStorage(), key)")
         public Object setDefault(PDict dict, Object key, Object defaultValue,
-                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-
-            setItemNode.execute(dict, dict.getDictStorage(), key, defaultValue);
-            return defaultValue;
+                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode,
+                        @Cached("createBinaryProfile()") ConditionProfile defaultValProfile) {
+            Object value = defaultValue;
+            if (defaultValProfile.profile(defaultValue == PNone.NO_VALUE)) {
+                value = PNone.NONE;
+            }
+            setItemNode.execute(dict, dict.getDictStorage(), key, value);
+            return value;
         }
     }
 

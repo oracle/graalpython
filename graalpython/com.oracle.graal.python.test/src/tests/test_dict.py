@@ -348,7 +348,6 @@ def test_dictview_mixed_set_operations():
 def test_setdefault():
     # dict.setdefault()
     d = {}
-    none = d.setdefault('key0')
     assert d.setdefault('key0') is None
     d.setdefault('key0', [])
     assert d.setdefault('key0') is None
