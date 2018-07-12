@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -158,7 +159,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object run(String str) {
             if (containsBackslash(str)) {
-                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), str);
+                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), str, false);
                 return sb.toString();
             }
             return str;
@@ -185,15 +186,15 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private byte[] doBytes(byte[] str) {
             try {
-                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, "ascii"));
+                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, "ascii"), false);
                 return sb.toString().getBytes("ascii");
             } catch (UnsupportedEncodingException e) {
             }
             return null;
         }
 
-        @TruffleBoundary
         private static boolean containsBackslash(String str) {
+            CompilerAsserts.neverPartOfCompilation();
             for (int i = 0; i < str.length(); i++) {
                 if (str.charAt(i) == '\\') {
                     return true;
