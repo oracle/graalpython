@@ -449,7 +449,34 @@ def test_find():
     assert b.find(i, 1, 3) == 1
     assert b.find(w, 1, 3) == -1
 
+    ba = bytearray(b'mississippi')
+    i = 105
+    w = 119
+
+    assert ba.find(b'ss') == 2
+    assert ba.find(b'w') == -1
+    assert ba.find(b'mississippian') == -1
+
+    assert ba.find(i) == 1
+    assert ba.find(w) == -1
+
+    assert ba.find(b'ss', 3) == 5
+    assert ba.find(b'ss', 1, 7) == 2
+    assert ba.find(b'ss', 1, 3) == -1
+
+    assert ba.find(i, 6) == 7
+    assert ba.find(i, 1, 3) == 1
+    assert ba.find(w, 1, 3) == -1
+
+    try:
+        res = ba.find("ss")
+    except TypeError:
+        assert True
+    else:
+        assert False, "should not reach here"
+
 
 def test_same_id():
     empty_ids = set([id(bytes()) for i in range(100)])
     assert len(empty_ids) == 1
+

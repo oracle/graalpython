@@ -539,6 +539,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         int find(PByteArray self, PIBytesLike sub, int start, int ending) {
             return BytesUtils.find(self, sub, start, ending);
         }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object doGeneric(Object self, Object sub, Object start, Object ending) {
+            throw raise(TypeError, "argument should be integer or bytes-like object, not 'str'");
+        }
     }
 
     @Builtin(name = "translate", minNumOfArguments = 2, maxNumOfArguments = 3)
