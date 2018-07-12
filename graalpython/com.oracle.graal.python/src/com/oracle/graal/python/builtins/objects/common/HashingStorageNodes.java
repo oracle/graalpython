@@ -78,6 +78,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.datamodel.IsHashableNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -170,7 +171,7 @@ public abstract class HashingStorageNodes {
     @ImportStatic(PGuards.class)
     abstract static class DictStorageBaseNode extends PBaseNode {
         @Child private GetClassNode getClassNode;
-        @Child private LookupAndCallUnaryNode lookupHashAttributeNode;
+        @Child private IsHashableNode isHashableNode;
         @Child private Equivalence equivalenceNode;
 
         protected Equivalence getEquivalence() {
@@ -189,8 +190,6 @@ public abstract class HashingStorageNodes {
             return getClassNode.execute(object);
         }
 
-        private final ValueProfile keyTypeProfile = ValueProfile.createClassProfile();
-
         protected boolean isJavaString(Object o) {
             return o instanceof String || o instanceof PString && wrappedString((PString) o);
         }
@@ -205,27 +204,11 @@ public abstract class HashingStorageNodes {
         }
 
         protected boolean isHashable(Object key) {
-            Object profiledKey = keyTypeProfile.profile(key);
-            if (PGuards.isString(profiledKey)) {
-                return true;
-            } else if (PGuards.isInteger(profiledKey)) {
-                return true;
-            } else if (profiledKey instanceof Double || PGuards.isPFloat(profiledKey)) {
-                return true;
-            }
-
-            if (lookupHashAttributeNode == null) {
+            if (isHashableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupHashAttributeNode = insert(LookupAndCallUnaryNode.create(__HASH__));
+                isHashableNode = insert(IsHashableNode.create());
             }
-
-            try {
-                lookupHashAttributeNode.executeObject(key);
-                return true;
-            } catch (PException e) {
-                // ignore
-            }
-            return false;
+            return isHashableNode.execute(key);
         }
 
         protected PException unhashable(Object key) {
