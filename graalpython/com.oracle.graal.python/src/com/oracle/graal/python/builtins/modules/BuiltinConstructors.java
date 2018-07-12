@@ -66,6 +66,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -128,6 +130,7 @@ import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -426,11 +429,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FloatNode extends PythonBuiltinNode {
         private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
 
-        private boolean isPrimitiveFloat(Object cls) {
-            return isPrimitiveProfile.profile(cls == getCore().lookupType(PythonBuiltinClassType.PFloat));
+        protected boolean isPrimitiveFloat(Object cls) {
+            return isPrimitiveProfile.profile(cls == getBuiltinFloatClass());
         }
 
-        @Specialization
+        protected PythonBuiltinClass getBuiltinFloatClass() {
+            return getCore().lookupType(PythonBuiltinClassType.PFloat);
+        }
+
+        @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromInt(PythonClass cls, int arg) {
             if (isPrimitiveFloat(cls)) {
                 return (double) arg;
@@ -438,7 +445,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, arg);
         }
 
-        @Specialization
+        @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromBoolean(PythonClass cls, boolean arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg ? 1d : 0d;
@@ -446,7 +453,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, arg ? 1d : 0d);
         }
 
-        @Specialization
+        @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromLong(PythonClass cls, long arg) {
             if (isPrimitiveFloat(cls)) {
                 return (double) arg;
@@ -454,7 +461,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, arg);
         }
 
-        @Specialization
+        @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromPInt(PythonClass cls, PInt arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg.doubleValue();
@@ -462,7 +469,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, arg.doubleValue());
         }
 
-        @Specialization
+        @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromFloat(PythonClass cls, double arg) {
             if (isPrimitiveFloat(cls)) {
                 return arg;
@@ -470,7 +477,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, arg);
         }
 
-        @Specialization
+        @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromString(PythonClass cls, String arg) {
             double value = JavaTypeConversions.convertStringToDouble(arg);
             if (isPrimitiveFloat(cls)) {
@@ -479,7 +486,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, value);
         }
 
-        @Specialization
+        @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromNone(PythonClass cls, @SuppressWarnings("unused") PNone arg) {
             if (isPrimitiveFloat(cls)) {
                 return 0.0;
@@ -487,24 +494,49 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, 0.0);
         }
 
-        @Specialization
-        Object doPythonObject(PythonClass cls, Object obj,
+        @Specialization(guards = "isPrimitiveFloat(cls)")
+        double doubleFromObject(@SuppressWarnings("unused") PythonClass cls, Object obj,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException) {
             try {
-                return floatFromFloat(cls, callFloatNode.executeDouble(obj));
+                return callFloatNode.executeDouble(obj);
             } catch (UnexpectedResultException e) {
                 gotException.enter();
                 Object result = e.getResult();
                 if (result == PNone.NO_VALUE) {
                     throw raise(TypeError, "must be real number, not %p", obj);
-                } else if (PGuards.isPFloat(result)) {
+                } else if (result instanceof PFloat) {
                     // TODO Issue warning if 'result' is a subclass of Python type 'float'
-                    return result;
+                    return ((PFloat) result).getValue();
                 } else {
                     throw raise(TypeError, "%p.__float__ returned non-float (type %p)", obj, result);
                 }
             }
+        }
+
+        @Specialization(guards = "!isNativeClass(cls)")
+        Object doPythonObject(PythonClass cls, Object obj,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
+                        @Cached("create()") BranchProfile gotException) {
+            return floatFromFloat(cls, doubleFromObject(cls, obj, callFloatNode, gotException));
+        }
+
+        protected CExtNodes.SubtypeNew createSubtypeNew() {
+            return new CExtNodes.SubtypeNew("float");
+        }
+
+        // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
+        // floatobject.c we have to first create a temporary float, then fill it into
+        // a natively allocated subtype structure
+        @Specialization(guards = "isSubtype.execute(cls, floatCls)", limit = "1")
+        Object doPythonObject(PythonNativeClass cls, Object obj,
+                        @Cached("getBuiltinFloatClass()") PythonBuiltinClass floatCls,
+                        @SuppressWarnings("unused") @Cached("create()") IsSubtypeNode isSubtype,
+                        @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
+                        @Cached("create()") BranchProfile gotException,
+                        @Cached("createSubtypeNew()") CExtNodes.SubtypeNew subtypeNew) {
+            double realFloat = doubleFromObject(floatCls, obj, callFloatNode, gotException);
+            return subtypeNew.execute(cls, realFloat);
         }
 
         @Fallback

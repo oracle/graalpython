@@ -75,6 +75,35 @@ import com.oracle.truffle.api.nodes.Node;
 
 public abstract class CExtNodes {
 
+    /**
+     * For some builtin classes, the CPython approach to creating a subclass instance is to just
+     * call the alloc function and then assign some fields. This needs to be done in C. This node
+     * will call that subtype C function with two arguments, the C type object and an object
+     * argument to fill in from.
+     */
+    public static class SubtypeNew extends PBaseNode {
+        private final TruffleObject subtypeFunc;
+        @Child private Node executeNode = Message.createExecute(2).createNode();
+        @Child private ToSulongNode toSulongNode = ToSulongNode.create();
+        @Child private ToJavaNode toJavaNode = ToJavaNode.create();
+
+        /**
+         * @param typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
+         */
+        public SubtypeNew(String typenamePrefix) {
+            subtypeFunc = (TruffleObject) getContext().getEnv().importSymbol(typenamePrefix + "_subtype_new");
+            assert subtypeFunc != null;
+        }
+
+        public Object execute(PythonNativeClass object, Object arg) {
+            try {
+                return toJavaNode.execute(ForeignAccess.sendExecute(executeNode, subtypeFunc, toSulongNode.execute(object), arg));
+            } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+                throw new IllegalStateException("C subtype_new function failed", e);
+            }
+        }
+    }
+
     public static class FromNativeSubclassNode extends PBaseNode {
         private final PythonBuiltinClassType expectedType;
         private final String conversionFuncName;
