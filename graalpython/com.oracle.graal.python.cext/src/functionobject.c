@@ -37,3 +37,7 @@
  * SOFTWARE.
  */
 #include "capi.h"
+
+PyObject* PyClassMethod_New(PyObject* method) {
+    return UPCALL_O(PY_BUILTIN, "classmethod", native_to_java(method));
+}

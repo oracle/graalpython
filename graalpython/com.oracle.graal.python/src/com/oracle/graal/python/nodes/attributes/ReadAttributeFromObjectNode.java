@@ -40,6 +40,7 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -85,6 +86,14 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
         return cachedObject.getStorage().getShape() == cachedShape;
     }
 
+    protected Object attrKey(Object key) {
+        if (key instanceof PString) {
+            return ((PString) key).getValue();
+        } else {
+            return key;
+        }
+    }
+
     @SuppressWarnings("unused")
     @Specialization(limit = "1", //
                     guards = {
@@ -101,12 +110,13 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
     protected Object readDirectFinal(PythonObject object, Object key,
                     @Cached("object") PythonObject cachedObject,
                     @Cached("key") Object cachedKey,
+                    @Cached("attrKey(key)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(key))") Location loc,
+                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
                     @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
                     @Cached("readFinalValue(object, loc)") Object cachedValue) {
-        assert assertFinal(object, key, cachedValue);
+        assert assertFinal(object, attrKey, cachedValue);
         return cachedValue;
     }
 
@@ -125,9 +135,10 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
                     assumptions = "layoutAssumption")
     protected Object readDirect(PythonObject object, Object key,
                     @Cached("key") Object cachedKey,
+                    @Cached("attrKey(cachedKey)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(key))") Location loc) {
+                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
         if (loc == null) {
             return PNone.NO_VALUE;
         } else {
@@ -151,7 +162,7 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
 
     @Specialization(replaces = "readDirect")
     protected Object readIndirect(PythonObject object, Object key) {
-        Object value = object.getStorage().get(key);
+        Object value = object.getStorage().get(attrKey(key));
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -163,7 +174,7 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
     protected Object readForeign(TruffleObject object, Object key,
                     @Cached("createReadNode()") Node readNode) {
         try {
-            return ForeignAccess.sendRead(readNode, object, key);
+            return ForeignAccess.sendRead(readNode, object, attrKey(key));
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             return PNone.NO_VALUE;
         }

@@ -46,6 +46,7 @@
 #define HAVE_SYS_WAIT_H
 
 #define PYPY_VERSION 0
+#define PYPY_VERSION_NUM 0
 
 #include <truffle.h>
 #include <polyglot.h>
@@ -113,6 +114,7 @@
 #include "frameobject.h"
 #include "traceback.h"
 #include "classobject.h"
+#include "pythread.h"
 
 #define PY_TRUFFLE_CEXT ((void*)polyglot_import("python_cext"))
 #define PY_BUILTIN ((void*)polyglot_import("python_builtins"))

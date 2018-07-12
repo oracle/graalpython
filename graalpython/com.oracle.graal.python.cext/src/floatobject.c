@@ -62,3 +62,15 @@ double PyFloat_AsDouble(PyObject *op) {
 PyObject* PyFloat_FromDouble(double fval) {
     return UPCALL_CEXT_O("PyFloat_FromDouble", fval);
 }
+
+// not quite as in CPython, this assumes that x is already a double. The rest of
+// the implementation is in the Float constructor in Java
+PyObject* float_subtype_new(PyTypeObject *type, double x) {
+    PyObject* newobj = type->tp_alloc(type, 0);
+    if (newobj == NULL) {
+        Py_DECREF(tmp);
+        return NULL;
+    }
+    ((PyFloatObject *)newobj)->ob_fval = x;
+    return newobj;
+}

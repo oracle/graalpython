@@ -39,6 +39,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -65,6 +66,14 @@ public abstract class WriteAttributeToObjectNode extends PNode {
         return prop == null ? null : prop.getLocation();
     }
 
+    protected Object attrKey(Object key) {
+        if (key instanceof PString) {
+            return ((PString) key).getValue();
+        } else {
+            return key;
+        }
+    }
+
     @SuppressWarnings("unused")
     @Specialization(guards = {
                     "object.getStorage().getShape() == cachedShape",
@@ -82,7 +91,7 @@ public abstract class WriteAttributeToObjectNode extends PNode {
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
-                                    "cachedKey.equals(key)",
+                                    "cachedKey == key",
                                     "loc != null",
                                     "loc.canSet(value)"
                     }, //
@@ -92,9 +101,10 @@ public abstract class WriteAttributeToObjectNode extends PNode {
                     })
     protected boolean doDirect(PythonObject object, Object key, Object value,
                     @Cached("key") Object cachedKey,
+                    @Cached("attrKey(cachedKey)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(key))") Location loc) {
+                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
         try {
             loc.set(object.getStorage(), value);
         } catch (IncompatibleLocationException | FinalLocationException e) {
@@ -109,7 +119,7 @@ public abstract class WriteAttributeToObjectNode extends PNode {
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
-                                    "cachedKey.equals(key)",
+                                    "cachedKey == key",
                                     "loc == null || !loc.canSet(value)",
                                     "newLoc.canSet(value)"
                     }, //
@@ -119,12 +129,13 @@ public abstract class WriteAttributeToObjectNode extends PNode {
                     })
     protected boolean defineDirect(PythonObject object, Object key, Object value,
                     @Cached("key") Object cachedKey,
+                    @Cached("attrKey(key)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(key))") Location loc,
-                    @Cached("cachedShape.defineProperty(key, value, 0)") Shape newShape,
+                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
+                    @Cached("cachedShape.defineProperty(attrKey, value, 0)") Shape newShape,
                     @Cached("newShape.getValidAssumption()") Assumption newLayoutAssumption,
-                    @Cached("getLocationOrNull(newShape.getProperty(key))") Location newLoc) {
+                    @Cached("getLocationOrNull(newShape.getProperty(attrKey))") Location newLoc) {
         try {
             newLoc.set(object.getStorage(), value, cachedShape, newShape);
         } catch (IncompatibleLocationException e) {
@@ -138,7 +149,7 @@ public abstract class WriteAttributeToObjectNode extends PNode {
     @TruffleBoundary
     @Specialization(replaces = {"doDirect", "defineDirect"}, guards = {"object.getStorage().getShape().isValid()"})
     protected boolean doIndirect(PythonObject object, Object key, Object value) {
-        object.setAttribute(key, value);
+        object.setAttribute(attrKey(key), value);
         return true;
     }
 
