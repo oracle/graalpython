@@ -26,6 +26,8 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -203,7 +205,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // keys()
-    @Builtin(name = "keys", fixedNumOfArguments = 1)
+    @Builtin(name = KEYS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
 
@@ -214,7 +216,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // items()
-    @Builtin(name = "items", fixedNumOfArguments = 1)
+    @Builtin(name = ITEMS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
 

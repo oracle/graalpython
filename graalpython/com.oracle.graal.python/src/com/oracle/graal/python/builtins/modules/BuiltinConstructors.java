@@ -1502,7 +1502,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mappingproxy", constructsClass = {PMappingproxy.class}, base = {PDict.class}, isPublic = false, fixedNumOfArguments = 2)
+    @Builtin(name = "mappingproxy", constructsClass = {PMappingproxy.class}, isPublic = false, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
         @Specialization

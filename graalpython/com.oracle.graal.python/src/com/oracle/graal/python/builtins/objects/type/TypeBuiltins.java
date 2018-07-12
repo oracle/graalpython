@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -373,7 +374,12 @@ public class TypeBuiltins extends PythonBuiltins {
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object dict(PythonClass self) {
-            return factory().createMappingproxy(self);
+            PHashingCollection dict = self.getDict();
+            if (dict == null) {
+                dict = factory().createMappingproxy(self);
+                self.setDict(dict);
+            }
+            return dict;
         }
     }
 

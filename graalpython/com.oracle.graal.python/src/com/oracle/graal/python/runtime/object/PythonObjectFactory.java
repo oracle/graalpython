@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Pyth
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -468,7 +469,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(lookupClass(PythonBuiltinClassType.PDict), storage));
     }
 
-    public PDictView createDictKeysView(PDict dict) {
+    public PDictView createDictKeysView(PHashingCollection dict) {
         return trace(new PDictKeysView(lookupClass(PythonBuiltinClassType.PDictKeysView), dict));
     }
 
@@ -498,12 +499,16 @@ public abstract class PythonObjectFactory extends Node {
                         frameDescriptor, globals, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode));
     }
 
-    public PMappingproxy createMappingproxy(PythonObject self) {
-        return trace(new PMappingproxy(lookupClass(PythonBuiltinClassType.PMappingproxy), self));
+    public PMappingproxy createMappingproxy(PythonObject object) {
+        return trace(new PMappingproxy(lookupClass(PythonBuiltinClassType.PMappingproxy), new PythonObjectDictStorage(object.getStorage())));
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, object));
+        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
+    }
+
+    public PMappingproxy createMappingproxy(PythonClass cls, HashingStorage storage) {
+        return trace(new PMappingproxy(cls, storage));
     }
 
     public PReferenceType createReferenceType(PythonClass cls, PythonObject object, PFunction callback) {
@@ -662,15 +667,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBaseSetIterator(lookupClass(PythonBuiltinClassType.PBaseSetIterator), set));
     }
 
-    public PDictView.PDictItemsIterator createDictItemsIterator(PDict dict) {
+    public PDictView.PDictItemsIterator createDictItemsIterator(PHashingCollection dict) {
         return trace(new PDictView.PDictItemsIterator(lookupClass(PythonBuiltinClassType.PDictItemsIterator), dict));
     }
 
-    public PDictView.PDictKeysIterator createDictKeysIterator(PDict dict) {
+    public PDictView.PDictKeysIterator createDictKeysIterator(PHashingCollection dict) {
         return trace(new PDictView.PDictKeysIterator(lookupClass(PythonBuiltinClassType.PDictKeysIterator), dict));
     }
 
-    public PDictView.PDictValuesIterator createDictValuesIterator(PDict dict) {
+    public PDictView.PDictValuesIterator createDictValuesIterator(PHashingCollection dict) {
         return trace(new PDictView.PDictValuesIterator(lookupClass(PythonBuiltinClassType.PDictValuesIterator), dict));
     }
 

@@ -40,19 +40,32 @@
  */
 package com.oracle.graal.python.builtins.objects.mappingproxy;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.CompilerDirectives;
 
-public class PMappingproxy extends PythonBuiltinObject {
-    private final PythonObject object;
+public class PMappingproxy extends PHashingCollection {
+    private final HashingStorage dictStorage;
 
-    public PMappingproxy(PythonClass klass, PythonObject object) {
+    public PMappingproxy(PythonClass klass, HashingStorage dictStorage) {
         super(klass);
-        this.object = object;
+        this.dictStorage = dictStorage;
     }
 
-    public PythonObject getObject() {
-        return object;
+    @Override
+    public HashingStorage getDictStorage() {
+        return dictStorage;
+    }
+
+    @Override
+    public void setDictStorage(HashingStorage newStorage) {
+        CompilerDirectives.transferToInterpreter();
+        throw new AssertionError();
+    }
+
+    @Override
+    public int size() {
+        return dictStorage.length();
     }
 }

@@ -35,7 +35,7 @@ import java.util.Map;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -49,7 +49,7 @@ import com.oracle.truffle.api.object.Shape;
 public class PythonObject extends PythonAbstractObject {
     protected final PythonClass pythonClass;
     protected final DynamicObject storage;
-    private PDict dict;
+    private PHashingCollection dict;
 
     public PythonObject(PythonClass pythonClass) {
         assert pythonClass != null : getClass().getSimpleName();
@@ -200,11 +200,11 @@ public class PythonObject extends PythonAbstractObject {
     /**
      * Returns the dictionary backed by {@link #storage} (only available for user objects).
      */
-    public PDict getDict() {
+    public PHashingCollection getDict() {
         return dict;
     }
 
-    public void setDict(PDict dict) {
+    public void setDict(PHashingCollection dict) {
         this.dict = dict;
     }
 }

@@ -40,22 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public abstract class PDictView extends PythonBuiltinObject {
-    private final PDict dict;
+    private final PHashingCollection dict;
     private final String name;
 
-    public PDictView(PythonClass clazz, String name, PDict dict) {
+    public PDictView(PythonClass clazz, String name, PHashingCollection dict) {
         super(clazz);
         this.name = name;
         this.dict = dict;
     }
 
     @Override
-    public final PDict getDict() {
+    public final PHashingCollection getDict() {
         return dict;
     }
 
@@ -69,14 +70,14 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public final static class PDictKeysIterator extends PJavaIteratorIterator<Object> {
-        public PDictKeysIterator(PythonClass clazz, PDict dict) {
+        public PDictKeysIterator(PythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.keys().iterator());
         }
     }
 
     public final static class PDictKeysView extends PDictView {
 
-        public PDictKeysView(PythonClass clazz, PDict dict) {
+        public PDictKeysView(PythonClass clazz, PHashingCollection dict) {
             super(clazz, "dict_keys", dict);
         }
     }
@@ -87,14 +88,14 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public final static class PDictValuesIterator extends PJavaIteratorIterator<Object> {
-        public PDictValuesIterator(PythonClass clazz, PDict dict) {
+        public PDictValuesIterator(PythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.items().iterator());
         }
     }
 
     public final static class PDictValuesView extends PDictView {
 
-        public PDictValuesView(PythonClass clazz, PDict dict) {
+        public PDictValuesView(PythonClass clazz, PHashingCollection dict) {
             super(clazz, "dict_values", dict);
         }
     }
@@ -105,14 +106,14 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public final static class PDictItemsIterator extends PJavaIteratorIterator<DictEntry> {
-        public PDictItemsIterator(PythonClass clazz, PDict dict) {
+        public PDictItemsIterator(PythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.entries().iterator());
         }
     }
 
     public static final class PDictItemsView extends PDictView {
 
-        public PDictItemsView(PythonClass clazz, PDict dict) {
+        public PDictItemsView(PythonClass clazz, PHashingCollection dict) {
             super(clazz, "dict_items", dict);
         }
     }

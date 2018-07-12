@@ -26,14 +26,13 @@
 package com.oracle.graal.python.builtins.objects.mappingproxy;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.List;
 
@@ -41,24 +40,21 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PMappingproxy.class)
 public final class MappingproxyBuiltins extends PythonBuiltins {
@@ -102,16 +98,11 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     // keys()
     @Builtin(name = KEYS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class KeysNode extends PythonBuiltinNode {
-        @Specialization
-        public Object keys(PMappingproxy self) {
-            PythonObject object = self.getObject();
-            return factory().createList(createKeys(object));
-        }
+    public abstract static class KeysNode extends PythonUnaryBuiltinNode {
 
-        @TruffleBoundary
-        private static Object[] createKeys(PythonObject object) {
-            return object.getAttributeNames().toArray();
+        @Specialization
+        public PDictView keys(PMappingproxy self) {
+            return factory().createDictKeysView(self);
         }
     }
 
@@ -119,16 +110,26 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = "get", minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBuiltinNode {
+        @Child private HashingStorageNodes.GetItemNode getItemNode;
+
+        @Specialization(guards = "!isNoValue(defaultValue)")
+        public Object doWithDefault(PMappingproxy self, Object key, Object defaultValue) {
+            final Object value = getGetItemNode().execute(self.getDictStorage(), key);
+            return value != null ? value : defaultValue;
+        }
+
         @Specialization
-        public Object get(PMappingproxy self, Object key, Object defaultValue,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            Object value = readNode.execute(self.getObject(), key);
-            if (profile.profile(value == PNone.NO_VALUE)) {
-                return defaultValue;
-            } else {
-                return value;
+        public Object doNoDefault(PMappingproxy self, Object key, @SuppressWarnings("unused") PNone defaultValue) {
+            final Object value = getGetItemNode().execute(self.getDictStorage(), key);
+            return value != null ? value : PNone.NONE;
+        }
+
+        private HashingStorageNodes.GetItemNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(HashingStorageNodes.GetItemNode.create());
             }
+            return getItemNode;
         }
     }
 
@@ -137,10 +138,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBuiltinNode {
         @Specialization
         Object getItem(PMappingproxy self, Object key,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
-            Object result = readNode.execute(self.getObject(), key);
-            if (profile.profile(result == PNone.NO_VALUE)) {
+                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+            final Object result = getItemNode.execute(self.getDictStorage(), key);
+            if (result == null) {
                 throw raise(KeyError, "%s", key);
             }
             return result;
@@ -151,40 +151,20 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonBuiltinNode {
         @Specialization
-        Object run(PMappingproxy self, Object key, Object value,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
-            writeNode.execute(self.getObject(), key, value);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __DELITEM__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonBuiltinNode {
-        @Specialization
-        Object run(PMappingproxy self, Object key,
-                        @Cached("create()") DeleteAttributeNode delAttributeNode) {
-            delAttributeNode.execute(self.getObject(), key);
-            return PNone.NONE;
+        @SuppressWarnings("unused")
+        Object run(PMappingproxy self, Object key, Object value) {
+            throw raise(TypeError, "'mappingproxy' object does not support item assignment");
         }
     }
 
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBuiltinNode {
-        @Specialization
-        boolean contains(PMappingproxy self, Object key,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
-            return readNode.execute(self.getObject(), key) != PNone.NO_VALUE;
-        }
-    }
 
-    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean repr(PMappingproxy self) {
-            return self.getStorage().size() > 0;
+        boolean run(PMappingproxy self, Object key,
+                        @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
+            return containsKeyNode.execute(self.getDictStorage(), key);
         }
     }
 
@@ -193,18 +173,17 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(PMappingproxy self) {
-            return self.getStorage().size();
+            return self.getDictStorage().length();
         }
     }
 
     // copy()
     @Builtin(name = "copy", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class CopyNode extends PythonBuiltinNode {
+    public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization
         public PMappingproxy copy(PMappingproxy proxy) {
-            return factory().createMappingproxy(proxy.getPythonClass(), proxy.getObject());
+            return factory().createMappingproxy(proxy.getPythonClass(), proxy.getDictStorage());
         }
     }
-
 }
