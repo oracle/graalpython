@@ -136,16 +136,16 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary
-    public static byte[] decodeEscapeToBytes(PythonCore core, String string) {
+    public static StringBuilder decodeEscapes(PythonCore core, String string) {
         // see _PyBytes_DecodeEscape from
         // https://github.com/python/cpython/blob/master/Objects/bytesobject.c
         // TODO: for the moment we assume ASCII
-        List<Character> byteList = new ArrayList<>();
+        StringBuilder charList = new StringBuilder();
         int length = string.length();
         for (int i = 0; i < length; i++) {
             char chr = string.charAt(i);
             if (chr != '\\') {
-                byteList.add(chr);
+                charList.append(chr);
                 continue;
             }
 
@@ -159,34 +159,34 @@ public final class BytesUtils {
                 case '\n':
                     break;
                 case '\\':
-                    byteList.add('\\');
+                    charList.append('\\');
                     break;
                 case '\'':
-                    byteList.add('\'');
+                    charList.append('\'');
                     break;
                 case '\"':
-                    byteList.add('\"');
+                    charList.append('\"');
                     break;
                 case 'b':
-                    byteList.add('\b');
+                    charList.append('\b');
                     break;
                 case 'f':
-                    byteList.add('\014');
+                    charList.append('\014');
                     break; /* FF */
                 case 't':
-                    byteList.add('\t');
+                    charList.append('\t');
                     break;
                 case 'n':
-                    byteList.add('\n');
+                    charList.append('\n');
                     break;
                 case 'r':
-                    byteList.add('\r');
+                    charList.append('\r');
                     break;
                 case 'v':
-                    byteList.add('\013');
+                    charList.append('\013');
                     break; /* VT */
                 case 'a':
-                    byteList.add('\007');
+                    charList.append('\007');
                     break; /* BEL */
                 case '0':
                 case '1':
@@ -212,14 +212,14 @@ public final class BytesUtils {
                             }
                         }
                     }
-                    byteList.add((char) code);
+                    charList.append((char) code);
                     break;
                 case 'x':
                     if (i + 2 < length) {
                         try {
                             int b = Integer.parseInt(string.substring(i + 1, i + 3), 16);
                             assert b >= 0x00 && b <= 0xFF;
-                            byteList.add((char) b);
+                            charList.append((char) b);
                             i += 2;
                             break;
                         } catch (NumberFormatException e) {
@@ -230,11 +230,16 @@ public final class BytesUtils {
             }
         }
 
-        byte[] bytes = new byte[byteList.size()];
-        for (int i = 0; i < byteList.size(); i++) {
-            bytes[i] = (byte) byteList.get(i).charValue();
-        }
+        return charList;
+    }
 
+    @TruffleBoundary
+    public static byte[] decodeEscapeToBytes(PythonCore core, String string) {
+        StringBuilder sb = decodeEscapes(core, string);
+        byte[] bytes = new byte[sb.length()];
+        for (int i = 0; i < sb.length(); i++) {
+            bytes[i] = (byte) sb.charAt(i);
+        }
         return bytes;
     }
 

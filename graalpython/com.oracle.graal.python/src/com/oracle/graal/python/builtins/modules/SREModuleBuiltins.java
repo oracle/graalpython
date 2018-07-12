@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,6 +48,9 @@ import java.util.regex.Pattern;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -127,6 +131,75 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
 
             return sb.toString();
+        }
+
+        @Fallback
+        Object run(Object o) {
+            throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
+        }
+
+    }
+
+    /**
+     * Replaces any <it>quoted</it> escape sequence like {@code "\\n"} (two characters; backslash +
+     * 'n') by its single character like {@code "\n"} (one character; newline).
+     */
+    @Builtin(name = "_process_escape_sequences", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
+        @CompilationFinal private Pattern namedCaptGroupPattern;
+
+        @Specialization
+        Object run(PString str) {
+            return run(str.getValue());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object run(String str) {
+            if (containsBackslash(str)) {
+                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), str);
+                return sb.toString();
+            }
+            return str;
+        }
+
+        @Specialization
+        Object run(PBytes str) {
+            byte[] bytes = doBytes(str.getInternalByteArray());
+            if (bytes != null) {
+                return factory().createByteArray(bytes);
+            }
+            return str;
+        }
+
+        @Specialization
+        Object run(PByteArray str) {
+            byte[] bytes = doBytes(str.getInternalByteArray());
+            if (bytes != null) {
+                return factory().createByteArray(bytes);
+            }
+            return str;
+        }
+
+        @TruffleBoundary
+        private byte[] doBytes(byte[] str) {
+            try {
+                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, "ascii"));
+                return sb.toString().getBytes("ascii");
+            } catch (UnsupportedEncodingException e) {
+            }
+            return null;
+        }
+
+        @TruffleBoundary
+        private static boolean containsBackslash(String str) {
+            for (int i = 0; i < str.length(); i++) {
+                if (str.charAt(i) == '\\') {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Fallback

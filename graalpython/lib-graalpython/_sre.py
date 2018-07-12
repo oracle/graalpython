@@ -293,6 +293,9 @@ class SRE_Pattern():
             string = self._decode_string(string)
             result = []
             pos = 0
+            is_string_rep = isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray)
+            if is_string_rep:
+                repl = _process_escape_sequences(repl)
             while (count == 0 or n < count) and pos <= len(string):
                 match = pattern.exec(string, pos)
                 if not match.isMatch:
@@ -301,7 +304,7 @@ class SRE_Pattern():
                 start = match.start[0]
                 end = match.end[0]
                 result.append(self._emit(string[pos:start]))
-                if isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray):
+                if is_string_rep:
                     # TODO: backslash replace groups
                     result.append(repl)
                 else:
