@@ -329,6 +329,12 @@ public class PythonObjectNativeWrapperMR {
             return PyAttributeProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
         }
 
+        @Specialization(guards = "eq(TP_ITERNEXT, key)")
+        Object doTpIternext(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__NEXT__)") LookupInheritedAttributeNode lookupAttrNode) {
+            return getToSulongNode().execute(lookupAttrNode.execute(object));
+        }
+
         @Specialization(guards = "eq(OB_ITEM, key)")
         Object doObItem(PSequence object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object);

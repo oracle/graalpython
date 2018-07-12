@@ -65,6 +65,7 @@ public final class NativeMemberNames {
     public static final String TP_SETATTR = "tp_setattr";
     public static final String TP_GETATTRO = "tp_getattro";
     public static final String TP_SETATTRO = "tp_setattro";
+    public static final String TP_ITERNEXT = "tp_iternext";
     public static final String TP_NEW = "tp_new";
     public static final String TP_DICT = "tp_dict";
     public static final String _BASE = "_base";
