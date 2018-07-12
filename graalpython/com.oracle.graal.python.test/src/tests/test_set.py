@@ -156,3 +156,21 @@ def test_difference_update():
             s = set('abcdefghih')
             s.difference_update(C('cdc'), C('aba'))
             assert s == set('efghih')
+
+
+def test_sub_and_super():
+    for thetype in [set, frozenset]:
+        p, q, r = map(thetype, ['ab', 'abcde', 'def'])
+        assert p < q
+        assert p <= q
+        assert q <= q
+        assert q > p
+        assert q >= p
+        assert not q < r
+        assert not q <= r
+        assert not q > r
+        assert not q >= r
+        assert set('a').issubset('abc')
+        assert set('abc').issuperset('a')
+        assert not set('a').issubset('cbs')
+        assert not set('cbs').issuperset('a')
