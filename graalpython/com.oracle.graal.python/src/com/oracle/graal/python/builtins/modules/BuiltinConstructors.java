@@ -136,7 +136,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
+import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -1504,10 +1504,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mappingproxy", constructsClass = {PMappingproxy.class}, isPublic = false, fixedNumOfArguments = 2)
+    @Builtin(name = "mappingproxy", constructsClass = {PMappingproxy.class}, isPublic = false, minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
-        @Child private IsMappingNode isMappingNode;
+        @Child private IsSequenceNode isMappingNode;
 
         @Specialization
         Object doMapping(PythonClass klass, PHashingCollection obj) {
@@ -1520,9 +1520,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createMappingproxy(klass, initNode.execute(obj, PKeyword.EMPTY_KEYWORDS));
         }
 
-        @Specialization(guards = {"!isMapping(obj)", "!isBuiltinMapping(obj)"})
-        Object call(PythonClass klass, PythonObject obj) {
-            return factory().createMappingproxy(klass, obj);
+        @Specialization(guards = "isNoValue(none)")
+        @SuppressWarnings("unused")
+        Object doMissing(PythonClass klass, PNone none) {
+            throw raise(TypeError, "mappingproxy() missing required argument 'mapping' (pos 1)");
+        }
+
+        @Specialization(guards = {"!isMapping(obj)", "!isNoValue(obj)"})
+        @SuppressWarnings("unused")
+        Object doInvalid(PythonClass klass, Object obj) {
+            throw raise(TypeError, "mappingproxy() argument must be a mapping, not %p", obj);
         }
 
         protected boolean isBuiltinMapping(Object o) {
@@ -1532,7 +1539,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         protected boolean isMapping(Object o) {
             if (isMappingNode == null) {
                 CompilerDirectives.transferToInterpreter();
-                isMappingNode = insert(IsMappingNode.create());
+                isMappingNode = insert(IsSequenceNode.create());
             }
             return isMappingNode.execute(o);
         }

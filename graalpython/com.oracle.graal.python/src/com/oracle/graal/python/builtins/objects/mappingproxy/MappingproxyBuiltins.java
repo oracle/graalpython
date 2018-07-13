@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.mappingproxy;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -41,18 +42,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -70,28 +66,9 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object doPDict(PMappingproxy self, PDict mapping) {
+        Object doPDict(PMappingproxy self, Object mapping) {
             // nothing to do
             return PNone.NONE;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        Object doPTuple(PMappingproxy self, PTuple mapping) {
-            // nothing to do
-            return PNone.NONE;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        Object doPList(PMappingproxy self, PList mapping) {
-            // nothing to do
-            return PNone.NONE;
-        }
-
-        @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self, Object o) {
-            throw raise(PythonErrorType.TypeError, "mappingproxy() argument must be a mapping, not %p", o);
         }
     }
 
@@ -154,6 +131,16 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object run(PMappingproxy self, Object key, Object value) {
             throw raise(TypeError, "'mappingproxy' object does not support item assignment");
+        }
+    }
+
+    @Builtin(name = __DELITEM__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object run(PMappingproxy self, Object key) {
+            throw raise(TypeError, "'mappingproxy' object does not support item deletion");
         }
     }
 
