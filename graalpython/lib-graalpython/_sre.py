@@ -294,13 +294,13 @@ class SRE_Pattern():
                     result += repl[start:pos] + self._emit(group_str)
                     start = pos + 2
                 elif repl[pos + 1] == 'g':
-                    group_name, group_name_end = self.__extract_groupname(repl, pos + 2)
-                    if group_name:
-                        group_str = group(match_result, pattern.groups[group_name], string)
+                    group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
+                    if group_ref:
+                        group_str = group(match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
                         if group_str is None:
-                            raise ValueError("invalid group reference %s at position %s" % (group_name, pos))
+                            raise ValueError("invalid group reference %s at position %s" % (group_ref, pos))
                         result += repl[start:pos] + self._emit(group_str)
-                    start = group_name_end + 1
+                    start = group_ref_end + 1
                 elif repl[pos + 1] == backslash:
                     result += repl[start:pos] + backslash
                     start = pos + 2
@@ -313,14 +313,16 @@ class SRE_Pattern():
 
     def __extract_groupname(self, repl, pos):
         if repl[pos] == '<':
+            digits_only = True
             n = len(repl)
             i = pos + 1
             while i < n and repl[i] != '>':
+                digits_only = digits_only and repl[i].isdigit()
                 i += 1
             if i < n:
                 # found '>'
-                return repl[pos + 1 : i], i
-        return None, pos
+                return repl[pos + 1 : i], i, digits_only
+        return None, pos, False
 
 
     def sub(self, repl, string, count=0):
