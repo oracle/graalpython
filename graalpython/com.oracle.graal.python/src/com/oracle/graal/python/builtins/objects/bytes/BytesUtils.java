@@ -135,7 +135,7 @@ public final class BytesUtils {
         return sb.toString();
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
     public static StringBuilder decodeEscapes(PythonCore core, String string, boolean regexMode) {
         // see _PyBytes_DecodeEscape from
         // https://github.com/python/cpython/blob/master/Objects/bytesobject.c
@@ -237,6 +237,13 @@ public final class BytesUtils {
                         }
                     }
                     throw core.raise(ValueError, "invalid \\x escape at position %d", i);
+                default:
+                    if (regexMode) {
+                        charList.append('\\');
+                        charList.append(chr);
+                    } else {
+                        throw core.raise(ValueError, "invalid escape sequence '\\%s' at position %d", chr, i);
+                    }
             }
         }
 

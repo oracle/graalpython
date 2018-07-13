@@ -71,13 +71,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
         return SREModuleBuiltinsFactory.getFactories();
     }
 
-    /**
-     * Called from C when they actually want a {@code const char*} for a Python string
-     */
-    @Builtin(name = "tregex_preprocess", fixedNumOfArguments = 1)
+    @Builtin(name = "tregex_preprocess_for_verbose", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class TregexPreprocessNode extends PythonUnaryBuiltinNode {
-        @CompilationFinal private Pattern namedCaptGroupPattern;
+    abstract static class TRegexPreprocessVerboseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         Object run(PString str) {
@@ -86,27 +82,15 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(String str) {
-            if (namedCaptGroupPattern == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                namedCaptGroupPattern = Pattern.compile("\\?P\\<(?<GRPNAME>\\w*)\\>");
-            }
             return replaceAll(str);
         }
 
         /**
-         * replaces named capturing groups {@code ?P<name>} by {@code ?<name>}, removes comments and
-         * whitespaces if they are not in a character class, and replaces end-of-string {@code \Z}
-         * by {@code $}.
+         * removes comments and whitespaces if they are not in a character class
          */
         @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
-        private String replaceAll(String r) {
-            Matcher matcher0 = namedCaptGroupPattern.matcher(r);
-            StringBuffer sb = new StringBuffer();
-            while (matcher0.find()) {
-                matcher0.appendReplacement(sb, "?<" + matcher0.group("GRPNAME") + ">");
-            }
-            matcher0.appendTail(sb);
-
+        private static String replaceAll(String r) {
+            StringBuffer sb = new StringBuffer(r);
             int charclassNestingLevel = 0;
             boolean inComment = false;
             for (int i = 0; i < sb.length();) {
@@ -141,6 +125,52 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     }
 
+    @Builtin(name = "tregex_preprocess_default", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class TRegexPreprocessDefaultNode extends PythonUnaryBuiltinNode {
+        @CompilationFinal private Pattern namedCaptGroupPattern;
+
+        @Specialization
+        Object run(PString str) {
+            return run(str.getValue());
+        }
+
+        @Specialization
+        Object run(String str) {
+            if (namedCaptGroupPattern == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                namedCaptGroupPattern = Pattern.compile("\\?P\\<(?<GRPNAME>\\w*)\\>");
+            }
+            return replaceAll(str);
+        }
+
+        /**
+         * replaces named capturing groups {@code ?P<name>} by {@code ?<name>} and replaces
+         * end-of-string {@code \Z} by {@code $}.
+         */
+        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
+        private String replaceAll(String r) {
+            Matcher matcher0 = namedCaptGroupPattern.matcher(r);
+            StringBuffer sb = new StringBuffer();
+            while (matcher0.find()) {
+                matcher0.appendReplacement(sb, "?<" + matcher0.group("GRPNAME") + ">");
+            }
+            matcher0.appendTail(sb);
+
+            for (int idx = sb.indexOf("\\Z"); idx != -1; idx = sb.indexOf("\\Z", idx + 2)) {
+                sb.replace(idx, idx + 2, "$");
+            }
+
+            return sb.toString();
+        }
+
+        @Fallback
+        Object run(Object o) {
+            throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
+        }
+
+    }
+
     /**
      * Replaces any <it>quoted</it> escape sequence like {@code "\\n"} (two characters; backslash +
      * 'n') by its single character like {@code "\n"} (one character; newline).
@@ -156,7 +186,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
+        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
         Object run(String str) {
             if (containsBackslash(str)) {
                 StringBuilder sb = BytesUtils.decodeEscapes(getCore(), str, true);
@@ -183,7 +213,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return str;
         }
 
-        @TruffleBoundary
+        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
         private byte[] doBytes(byte[] str) {
             try {
                 StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, "ascii"), true);

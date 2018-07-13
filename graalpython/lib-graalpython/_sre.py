@@ -179,8 +179,8 @@ class SRE_Pattern():
         # TODO: that's not nearly complete but should be sufficient for now
         from sre_compile import SRE_FLAG_VERBOSE
         if flags & SRE_FLAG_VERBOSE:
-            pattern = tregex_preprocess(pattern)
-        return pattern
+            pattern = tregex_preprocess_for_verbose(pattern)
+        return tregex_preprocess_default(pattern)
 
 
     def __repr__(self):
@@ -271,7 +271,14 @@ class SRE_Pattern():
         return self.__compile_cpython_sre().findall(string, pos, maxsize() if endpos == -1 else endpos)
 
 
-    def __replace_groups(self, repl, string, match_result):
+    def __replace_groups(self, repl, string, match_result, pattern):
+        def group(match_result, group_nr, string):
+            if group_nr >= match_result.groupCount:
+                return None
+            group_start = match_result.start[group_nr]
+            group_end = match_result.end[group_nr]
+            return string[group_start:group_end]
+
         n = len(repl)
         result = self._emit("")
         start = 0
@@ -279,19 +286,41 @@ class SRE_Pattern():
         pos = repl.find(backslash, start)
         while pos != -1 and start < n:
             if pos+1 < n:
-                if repl[pos+1].isdigit():
+                if repl[pos + 1].isdigit():
                     group_nr = int(repl[pos+1])
-                    if group_nr >= match_result.groupCount:
+                    group_str = group(match_result, group_nr, string)
+                    if group_str is None:
                         raise ValueError("invalid group reference %s at position %s" % (group_nr, pos))
-                    group_start = match_result.start[group_nr]
-                    group_end = match_result.end[group_nr]
-                    result += repl[start:pos] + self._emit(string[group_start:group_end])
-                elif repl[pos+1] == backslash:
+                    result += repl[start:pos] + self._emit(group_str)
+                    start = pos + 2
+                elif repl[pos + 1] == 'g':
+                    group_name, group_name_end = self.__extract_groupname(repl, pos + 2)
+                    if group_name:
+                        group_str = group(match_result, pattern.groups[group_name], string)
+                        if group_str is None:
+                            raise ValueError("invalid group reference %s at position %s" % (group_name, pos))
+                        result += repl[start:pos] + self._emit(group_str)
+                    start = group_name_end + 1
+                elif repl[pos + 1] == backslash:
                     result += repl[start:pos] + backslash
-            start = pos + 2
+                    start = pos + 2
+                else:
+                    start = pos + 2
             pos = repl.find(backslash, start)
         result += repl[start:]
         return result
+
+
+    def __extract_groupname(self, repl, pos):
+        if repl[pos] == '<':
+            n = len(repl)
+            i = pos + 1
+            while i < n and repl[i] != '>':
+                i += 1
+            if i < n:
+                # found '>'
+                return repl[pos + 1 : i], i
+        return None, pos
 
 
     def sub(self, repl, string, count=0):
@@ -313,7 +342,7 @@ class SRE_Pattern():
                 end = match_result.end[0]
                 result.append(self._emit(string[pos:start]))
                 if is_string_rep:
-                    result.append(self.__replace_groups(repl, string, match_result))
+                    result.append(self.__replace_groups(repl, string, match_result, pattern))
                 else:
                     _srematch = SRE_Match(self, pos, -1, match_result)
                     _repl = repl(_srematch)
@@ -322,7 +351,7 @@ class SRE_Pattern():
                 pos = end + no_progress
             result.append(self._emit(string[pos:]))
             return self._emit("").join(result)
-        except RuntimeError:
+        except RuntimeError as e:
             # TODO this is a workaround since exceptions are currently not correctly stacked
             pass
         return self.__compile_cpython_sre().sub(repl, string, count)
