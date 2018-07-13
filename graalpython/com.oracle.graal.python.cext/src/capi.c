@@ -145,7 +145,7 @@ static void initialize_globals() {
     truffle_assign_managed(&_Py_FalseStruct, jfalse);
 
     // error marker
-    void *jerrormarker = UPCALL_CEXT_O("Py_ErrorHandler");
+    void *jerrormarker = UPCALL_CEXT_PTR("Py_ErrorHandler");
     force_to_native(jerrormarker);
     truffle_assign_managed(&marker_struct, jerrormarker);
 
