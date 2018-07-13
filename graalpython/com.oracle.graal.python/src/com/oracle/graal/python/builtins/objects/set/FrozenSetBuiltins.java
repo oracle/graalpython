@@ -287,6 +287,41 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         public static BinaryUnionNode create() {
             return BinaryUnionNodeGen.create();
         }
+    }
 
+    @Builtin(name = "issubset", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class IsSubsetNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean isSubSet(PBaseSet self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+            return isSubsetNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean isSubSet(PBaseSet self, String other,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+            PSet otherSet = constructSetNode.executeWith(other);
+            return isSubsetNode.execute(self.getDictStorage(), otherSet.getDictStorage());
+        }
+    }
+
+    @Builtin(name = "issuperset", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class IsSupersetNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean isSuperSet(PBaseSet self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+            return isSupersetNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean isSuperSet(PBaseSet self, String other,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+            PSet otherSet = constructSetNode.executeWith(other);
+            return isSupersetNode.execute(self.getDictStorage(), otherSet.getDictStorage());
+        }
     }
 }
