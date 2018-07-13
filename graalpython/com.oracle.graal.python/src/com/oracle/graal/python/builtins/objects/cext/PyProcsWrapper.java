@@ -42,11 +42,11 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNative
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
-public abstract class PyAttributeProcsWrapper extends PythonNativeWrapper {
+public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     private final Object delegate;
 
-    public PyAttributeProcsWrapper(Object delegate) {
+    public PyProcsWrapper(Object delegate) {
         this.delegate = delegate;
     }
 
@@ -56,15 +56,15 @@ public abstract class PyAttributeProcsWrapper extends PythonNativeWrapper {
     }
 
     static boolean isInstance(TruffleObject o) {
-        return o instanceof PyAttributeProcsWrapper;
+        return o instanceof PyProcsWrapper;
     }
 
     @Override
     public ForeignAccess getForeignAccess() {
-        return PyAttributeProcsWrapperMRForeign.ACCESS;
+        return PyProcsWrapperMRForeign.ACCESS;
     }
 
-    static class GetAttrWrapper extends PyAttributeProcsWrapper {
+    static class GetAttrWrapper extends PyProcsWrapper {
 
         public GetAttrWrapper(Object delegate) {
             super(delegate);
@@ -72,12 +72,18 @@ public abstract class PyAttributeProcsWrapper extends PythonNativeWrapper {
 
     }
 
-    static class SetAttrWrapper extends PyAttributeProcsWrapper {
+    static class SetAttrWrapper extends PyProcsWrapper {
 
         public SetAttrWrapper(Object delegate) {
             super(delegate);
         }
 
+    }
+
+    static class SsizeargfuncWrapper extends PyProcsWrapper {
+        public SsizeargfuncWrapper(Object delegate) {
+            super(delegate);
+        }
     }
 
     public static GetAttrWrapper createGetAttrWrapper(Object getAttrMethod) {
@@ -87,4 +93,9 @@ public abstract class PyAttributeProcsWrapper extends PythonNativeWrapper {
     public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
         return new SetAttrWrapper(setAttrMethod);
     }
+
+    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod) {
+        return new SsizeargfuncWrapper(ssizeArgMethod);
+    }
+
 }

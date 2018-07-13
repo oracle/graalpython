@@ -320,13 +320,13 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(TP_GETATTRO, key)")
         Object doTpGetattro(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__GETATTRIBUTE__)") LookupAttributeInMRONode lookupAttrNode) {
-            return PyAttributeProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
+            return PyProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SETATTRO, key)")
         Object doTpSetattro(PythonClass object, @SuppressWarnings("unused") String key,
                         @Cached("create(__SETATTR__)") LookupAttributeInMRONode lookupAttrNode) {
-            return PyAttributeProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
+            return PyProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_ITERNEXT, key)")

@@ -42,8 +42,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.PyAttributeProcsWrapper.GetAttrWrapper;
-import com.oracle.graal.python.builtins.objects.cext.PyAttributeProcsWrapper.SetAttrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.GetAttrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.SetAttrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.SsizeargfuncWrapper;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -54,8 +55,8 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@MessageResolution(receiverType = PyAttributeProcsWrapper.class)
-public class PyAttributeProcsWrapperMR {
+@MessageResolution(receiverType = PyProcsWrapper.class)
+public class PyProcsWrapperMR {
 
     @Resolve(message = "EXECUTE")
     abstract static class ExecuteNode extends Node {
@@ -90,7 +91,29 @@ public class PyAttributeProcsWrapperMR {
             converted[0] = getToJavaNode().execute(arguments[0]);
             converted[1] = getToJavaNode().execute(arguments[1]);
             converted[2] = getToJavaNode().execute(arguments[2]);
-            return getToSulongNode().execute(getExecuteNode().execute(object.getDelegate(), converted));
+            try {
+                getExecuteNode().execute(object.getDelegate(), converted);
+                return 0;
+            } catch (PException e) {
+                return -1;
+            }
+        }
+
+        public Object access(SsizeargfuncWrapper object, Object[] arguments) {
+            if (arguments.length != 2) {
+                throw ArityException.raise(2, arguments.length);
+            }
+            Object[] converted = new Object[2];
+            converted[0] = getToJavaNode().execute(arguments[0]);
+            assert arguments[1] instanceof Number;
+            converted[1] = arguments[1];
+            Object result;
+            try {
+                result = getExecuteNode().execute(object.getDelegate(), converted);
+            } catch (PException e) {
+                result = PNone.NO_VALUE;
+            }
+            return getToSulongNode().execute(result);
         }
 
         private PythonMessageResolution.ExecuteNode getExecuteNode() {

@@ -53,6 +53,7 @@ public class PySequenceMethodsWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
+        @Child private LookupAttributeInMRONode getSqItemNode;
         @Child private LookupAttributeInMRONode getSqRepeatNode;
         @Child private ToSulongNode toSulongNode;
 
@@ -67,6 +68,12 @@ public class PySequenceMethodsWrapperMR {
                     }
                     result = getSqRepeatNode.execute(delegate);
                     break;
+                case NativeMemberNames.SQ_ITEM:
+                    if (getSqItemNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getSqItemNode = insert(LookupAttributeInMRONode.create(SpecialMethodNames.__GETITEM__));
+                    }
+                    return PyProcsWrapper.createSsizeargfuncWrapper(getSqItemNode.execute(delegate));
                 default:
                     // TODO extend list
                     throw UnknownIdentifierException.raise(key);
