@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.KeysEqualsNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.KeysIsSubsetNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.UnionNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -1383,6 +1384,48 @@ public abstract class HashingStorageNodes {
 
         public static ExclusiveOrNode create() {
             return new ExclusiveOrNode();
+        }
+    }
+
+    public abstract static class KeysIsSubsetNode extends DictStorageBaseNode {
+
+        public abstract boolean execute(HashingStorage left, HashingStorage right);
+
+        @Specialization
+        public boolean isSubset(HashingStorage left, HashingStorage right,
+                        @Cached("create()") ContainsKeyNode containsKeyNode,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(left.length() > right.length())) {
+                return false;
+            }
+
+            for (Object leftKey : left.keys()) {
+                if (!containsKeyNode.execute(right, leftKey)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static KeysIsSubsetNode create() {
+            return KeysIsSubsetNodeGen.create();
+        }
+    }
+
+    public static class KeysIsSupersetNode extends Node {
+        @Child KeysIsSubsetNode isSubsetNode;
+
+        public boolean execute(HashingStorage left, HashingStorage right) {
+            if (isSubsetNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSubsetNode = insert(KeysIsSubsetNode.create());
+            }
+
+            return isSubsetNode.execute(right, left);
+        }
+
+        public static KeysIsSupersetNode create() {
+            return new KeysIsSupersetNode();
         }
     }
 

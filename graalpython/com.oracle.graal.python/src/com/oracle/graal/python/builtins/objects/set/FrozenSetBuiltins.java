@@ -28,9 +28,12 @@ package com.oracle.graal.python.builtins.objects.set;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 
 import java.util.List;
@@ -287,6 +290,115 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         public static BinaryUnionNode create() {
             return BinaryUnionNodeGen.create();
         }
+    }
 
+    @Builtin(name = "issubset", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class IsSubsetNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean isSubSet(PBaseSet self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+            return isSubsetNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean isSubSet(PBaseSet self, String other,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+            PSet otherSet = constructSetNode.executeWith(other);
+            return isSubsetNode.execute(self.getDictStorage(), otherSet.getDictStorage());
+        }
+    }
+
+    @Builtin(name = "issuperset", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class IsSupersetNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean isSuperSet(PBaseSet self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+            return isSupersetNode.execute(self.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean isSuperSet(PBaseSet self, String other,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+            PSet otherSet = constructSetNode.executeWith(other);
+            return isSupersetNode.execute(self.getDictStorage(), otherSet.getDictStorage());
+        }
+    }
+
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LessEqualNode extends IsSubsetNode {
+    }
+
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GreaterEqualNode extends IsSupersetNode {
+    }
+
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LessThanNode extends PythonBinaryBuiltinNode {
+        @Child LessEqualNode lessEqualNode;
+
+        private LessEqualNode getLessEqualNode() {
+            if (lessEqualNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lessEqualNode = insert(FrozenSetBuiltinsFactory.LessEqualNodeFactory.create());
+            }
+            return lessEqualNode;
+        }
+
+        @Specialization
+        boolean isLessThan(PBaseSet self, PBaseSet other,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(self.size() >= other.size())) {
+                return false;
+            }
+            return (Boolean) getLessEqualNode().execute(self, other);
+        }
+
+        @Specialization
+        boolean isLessThan(PBaseSet self, String other,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(self.size() >= other.length())) {
+                return false;
+            }
+            return (Boolean) getLessEqualNode().execute(self, other);
+        }
+    }
+
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GreaterThanNode extends PythonBinaryBuiltinNode {
+        @Child GreaterEqualNode greaterEqualNode;
+
+        private GreaterEqualNode getGreaterEqualNode() {
+            if (greaterEqualNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                greaterEqualNode = insert(FrozenSetBuiltinsFactory.GreaterEqualNodeFactory.create());
+            }
+            return greaterEqualNode;
+        }
+
+        @Specialization
+        boolean isGreaterThan(PBaseSet self, PBaseSet other,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(self.size() <= other.size())) {
+                return false;
+            }
+            return (Boolean) getGreaterEqualNode().execute(self, other);
+        }
+
+        @Specialization
+        boolean isGreaterThan(PBaseSet self, String other,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(self.size() <= other.length())) {
+                return false;
+            }
+            return (Boolean) getGreaterEqualNode().execute(self, other);
+        }
     }
 }
