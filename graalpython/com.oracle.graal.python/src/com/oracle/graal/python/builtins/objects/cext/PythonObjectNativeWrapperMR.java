@@ -283,7 +283,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_HASH, key)")
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__HASH__)") LookupInheritedAttributeNode getHashNode) {
+                        @Cached("create(__HASH__)") LookupAttributeInMRONode getHashNode) {
             return getToSulongNode().execute(getHashNode.execute(object));
         }
 
@@ -295,7 +295,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
         Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(RICHCMP)") LookupInheritedAttributeNode getCmpNode) {
+                        @Cached("create(RICHCMP)") LookupAttributeInMRONode getCmpNode) {
             return getToSulongNode().execute(getCmpNode.execute(object));
         }
 
@@ -319,19 +319,19 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
         Object doTpGetattro(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__GETATTRIBUTE__)") LookupInheritedAttributeNode lookupAttrNode) {
+                        @Cached("create(__GETATTRIBUTE__)") LookupAttributeInMRONode lookupAttrNode) {
             return PyAttributeProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SETATTRO, key)")
         Object doTpSetattro(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__SETATTR__)") LookupInheritedAttributeNode lookupAttrNode) {
+                        @Cached("create(__SETATTR__)") LookupAttributeInMRONode lookupAttrNode) {
             return PyAttributeProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_ITERNEXT, key)")
         Object doTpIternext(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__NEXT__)") LookupInheritedAttributeNode lookupAttrNode) {
+                        @Cached("create(__NEXT__)") LookupAttributeInMRONode lookupAttrNode) {
             return getToSulongNode().execute(lookupAttrNode.execute(object));
         }
 
