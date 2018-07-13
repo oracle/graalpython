@@ -167,6 +167,9 @@ static void initialize_capi() {
     initialize_exceptions();
     initialize_hashes();
     initialize_bufferprocs();
+
+    // we need to make 'memoryview' available
+    PyImport_ImportModule("_memoryview");
 }
 
 __attribute__((always_inline))
