@@ -498,6 +498,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         double doubleFromObject(@SuppressWarnings("unused") PythonClass cls, Object obj,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException) {
+            if (obj instanceof String) {
+                return JavaTypeConversions.convertStringToDouble((String) obj);
+            } else if (obj instanceof PString) {
+                return JavaTypeConversions.convertStringToDouble(((PString) obj).getValue());
+            } else if (obj instanceof PNone) {
+                return 0.0;
+            }
             try {
                 return callFloatNode.executeDouble(obj);
             } catch (UnexpectedResultException e) {
