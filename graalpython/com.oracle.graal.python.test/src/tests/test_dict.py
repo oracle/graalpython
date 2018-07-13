@@ -373,3 +373,53 @@ def test_setdefault():
     d[x] = 42
     x.fail = True
     assert_raises(Exc, d.setdefault, x, [])
+
+
+def test_keys_contained():
+    helper_keys_contained(lambda x: x.keys())
+    helper_keys_contained(lambda x: x.items())
+
+
+def helper_keys_contained(fn):
+    # Test rich comparisons against dict key views, which should behave the
+    # same as sets.
+    empty = fn(dict())
+    empty2 = fn(dict())
+    smaller = fn({1: 1, 2: 2})
+    larger = fn({1: 1, 2: 2, 3: 3})
+    larger2 = fn({1: 1, 2: 2, 3: 3})
+    larger3 = fn({4: 1, 2: 2, 3: 3})
+
+    assert smaller < larger
+    assert smaller <= larger
+    assert larger > smaller
+    assert larger >= smaller
+
+    assert not smaller >= larger
+    assert not smaller > larger
+    assert not larger <= smaller
+    assert not larger < smaller
+
+    assert not smaller < larger3
+    assert not smaller <= larger3
+    assert not larger3 > smaller
+    assert not larger3 >= smaller
+
+    # Inequality strictness
+    assert larger2 >= larger
+    assert larger2 <= larger
+    assert not larger2 > larger
+    assert not larger2 < larger
+
+    assert larger == larger2
+    assert smaller != larger
+
+    # There is an optimization on the zero-element case.
+    assert empty == empty2
+    assert not empty != empty2
+    assert not empty == smaller
+    assert empty != smaller
+
+    # With the same size, an elementwise compare happens
+    assert larger != larger3
+    assert not larger == larger3
