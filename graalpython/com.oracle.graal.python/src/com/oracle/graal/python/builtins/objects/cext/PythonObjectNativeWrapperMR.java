@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
@@ -581,7 +582,13 @@ public class PythonObjectNativeWrapperMR {
             for (int i = 0; i < arguments.length; i++) {
                 converted[i] = getToJavaNode().execute(arguments[i]);
             }
-            return getToSulongNode().execute(executeNode.execute(object.getDelegate(), converted));
+            Object result;
+            try {
+                result = executeNode.execute(object.getDelegate(), converted);
+            } catch (PException e) {
+                result = PNone.NO_VALUE;
+            }
+            return getToSulongNode().execute(result);
         }
 
         private ToJavaNode getToJavaNode() {
