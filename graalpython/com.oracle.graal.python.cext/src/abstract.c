@@ -206,6 +206,10 @@ Py_ssize_t PySequence_Size(PyObject *s) {
     return UPCALL_CEXT_L("PyObject_Size", native_to_java(s));
 }
 
+int PySequence_Contains(PyObject *seq, PyObject *obj) {
+    return UPCALL_CEXT_I("PySequence_Contains", native_to_java(seq), native_to_java(obj));
+}
+
 // taken from CPython "Objects/abstract.c"
 #undef PySequence_Length
 Py_ssize_t PySequence_Length(PyObject *s) {
