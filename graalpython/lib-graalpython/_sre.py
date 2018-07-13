@@ -167,6 +167,9 @@ class SRE_Pattern():
             return string.decode()
         elif isinstance(string, bytearray):
             return string.decode()
+        elif isinstance(string, memoryview):
+            # return bytes(string).decode()
+            raise TypeError("'memoryview' is currently unsupported as search pattern")
         raise TypeError("invalid search pattern {!r}".format(string))
 
 
@@ -335,7 +338,8 @@ class SRE_Pattern():
             is_string_rep = isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray)
             if is_string_rep:
                 repl = _process_escape_sequences(repl)
-            while (count == 0 or n < count) and pos <= len(string):
+            progress = True
+            while (count == 0 or n < count) and pos <= len(string) and progress:
                 match_result = pattern.exec(string, pos)
                 if not match_result.isMatch:
                     break
@@ -349,11 +353,11 @@ class SRE_Pattern():
                     _srematch = SRE_Match(self, pos, -1, match_result)
                     _repl = repl(_srematch)
                     result.append(_repl)
-                no_progress = (start == end)
-                pos = end + no_progress
+                pos = end
+                progress = (start != end)
             result.append(self._emit(string[pos:]))
             return self._emit("").join(result)
-        except RuntimeError as e:
+        except BaseException:
             # TODO this is a workaround since exceptions are currently not correctly stacked
             pass
         return self.__compile_cpython_sre().sub(repl, string, count)

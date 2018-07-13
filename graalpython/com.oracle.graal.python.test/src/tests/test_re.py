@@ -103,9 +103,9 @@ class ReTests(unittest.TestCase):
 
     def test_basic_re_sub(self):
         self.assertTypedEqual(re.sub('y', 'a', 'xyz'), 'xaz')
-        # self.assertTypedEqual(re.sub('y', S('a'), S('xyz')), 'xaz')
-        # self.assertTypedEqual(re.sub(b'y', b'a', b'xyz'), b'xaz')
-        # self.assertTypedEqual(re.sub(b'y', B(b'a'), B(b'xyz')), b'xaz')
+        self.assertTypedEqual(re.sub('y', S('a'), S('xyz')), 'xaz')
+        self.assertTypedEqual(re.sub(b'y', b'a', b'xyz'), b'xaz')
+        self.assertTypedEqual(re.sub(b'y', B(b'a'), B(b'xyz')), b'xaz')
         self.assertTypedEqual(re.sub(b'y', bytearray(b'a'), bytearray(b'xyz')), b'xaz')
         # self.assertTypedEqual(re.sub(b'y', memoryview(b'a'), memoryview(b'xyz')), b'xaz')
         # for y in ("\xe0", "\u0430", "\U0001d49c"):
@@ -129,15 +129,15 @@ class ReTests(unittest.TestCase):
 
         self.assertEqual(re.sub('(?P<a>x)', r'\g<a>\g<a>', 'xx'), 'xxxx')
         self.assertEqual(re.sub('(?P<a>x)', r'\g<a>\g<1>', 'xx'), 'xxxx')
-        # self.assertEqual(re.sub('(?P<unk>x)', r'\g<unk>\g<unk>', 'xx'), 'xxxx')
-        # self.assertEqual(re.sub('(?P<unk>x)', r'\g<1>\g<1>', 'xx'), 'xxxx')
+        self.assertEqual(re.sub('(?P<unk>x)', r'\g<unk>\g<unk>', 'xx'), 'xxxx')
+        self.assertEqual(re.sub('(?P<unk>x)', r'\g<1>\g<1>', 'xx'), 'xxxx')
 
-        # self.assertEqual(re.sub('a', r'\t\n\v\r\f\a\b', 'a'), '\t\n\v\r\f\a\b')
+        self.assertEqual(re.sub('a', r'\t\n\v\r\f\a\b', 'a'), '\t\n\v\r\f\a\b')
         self.assertEqual(re.sub('a', '\t\n\v\r\f\a\b', 'a'), '\t\n\v\r\f\a\b')
         self.assertEqual(re.sub('a', '\t\n\v\r\f\a\b', 'a'),
                          (chr(9) + chr(10) + chr(11) + chr(13) + chr(12) + chr(7) + chr(8)))
 
-        # self.assertEqual(re.sub(r'^\s*', 'X', 'test'), 'Xtest')
+        self.assertEqual(re.sub(r'^\s*', 'X', 'test'), 'Xtest')
 
     def test_backreference(self):
         compiled = re.compile(r"(.)\1")
