@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -135,6 +136,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -565,7 +567,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFrozenSet frozenset(PythonClass cls, String arg) {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             for (int i = 0; i < arg.length(); i++) {
-                getSetItemNode().execute(frozenSet, frozenSet.getDictStorage(), String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
+                frozenSet.setDictStorage(getSetItemNode().execute(frozenSet.getDictStorage(), String.valueOf(arg.charAt(i)), PNone.NO_VALUE));
             }
             return frozenSet;
         }
@@ -581,7 +583,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             while (true) {
                 try {
-                    getSetItemNode().execute(frozenSet, frozenSet.getDictStorage(), next.execute(iterator), PNone.NO_VALUE);
+                    frozenSet.setDictStorage(getSetItemNode().execute(frozenSet.getDictStorage(), next.execute(iterator), PNone.NO_VALUE));
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
                     return frozenSet;
@@ -1505,9 +1507,34 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "mappingproxy", constructsClass = {PMappingproxy.class}, isPublic = false, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
+        @Child private IsMappingNode isMappingNode;
+
         @Specialization
+        Object doMapping(PythonClass klass, PHashingCollection obj) {
+            return factory().createMappingproxy(klass, obj.getDictStorage());
+        }
+
+        @Specialization(guards = {"isMapping(obj)", "!isBuiltinMapping(obj)"})
+        Object doMapping(PythonClass klass, PythonObject obj,
+                        @Cached("create()") HashingStorageNodes.InitNode initNode) {
+            return factory().createMappingproxy(klass, initNode.execute(obj, PKeyword.EMPTY_KEYWORDS));
+        }
+
+        @Specialization(guards = {"!isMapping(obj)", "!isBuiltinMapping(obj)"})
         Object call(PythonClass klass, PythonObject obj) {
             return factory().createMappingproxy(klass, obj);
+        }
+
+        protected boolean isBuiltinMapping(Object o) {
+            return o instanceof PHashingCollection;
+        }
+
+        protected boolean isMapping(Object o) {
+            if (isMappingNode == null) {
+                CompilerDirectives.transferToInterpreter();
+                isMappingNode = insert(IsMappingNode.create());
+            }
+            return isMappingNode.execute(o);
         }
     }
 

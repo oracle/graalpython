@@ -45,6 +45,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PSet.class)
 public final class SetBuiltins extends PythonBuiltins {
@@ -59,8 +60,9 @@ public final class SetBuiltins extends PythonBuiltins {
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object clear(PSet self) {
-            self.clear();
+        public Object clear(PSet self,
+                        @Cached("createClassProfile()") ValueProfile storageProfile) {
+            storageProfile.profile(self.getDictStorage()).clear();
             return PNone.NONE;
         }
     }
@@ -72,8 +74,7 @@ public final class SetBuiltins extends PythonBuiltins {
         @Specialization
         public Object add(PSet self, Object o,
                         @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-
-            setItemNode.execute(self, self.getDictStorage(), o, PNone.NO_VALUE);
+            self.setDictStorage(setItemNode.execute(self.getDictStorage(), o, PNone.NO_VALUE));
             return PNone.NONE;
         }
     }

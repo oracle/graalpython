@@ -548,7 +548,7 @@ public class PythonObjectNativeWrapperMR {
         Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value) {
             PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
-            getSetItemNode().execute(null, nativeWrapper.createNativeMemberStore(), NativeMemberNames.MD_DEF, value);
+            getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), NativeMemberNames.MD_DEF, value);
             return value;
         }
 
@@ -561,7 +561,7 @@ public class PythonObjectNativeWrapperMR {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
                 PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
-                getSetItemNode().execute(null, nativeWrapper.createNativeMemberStore(), key, value);
+                getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), key, value);
                 return value;
             }
             throw UnknownIdentifierException.raise(key);
