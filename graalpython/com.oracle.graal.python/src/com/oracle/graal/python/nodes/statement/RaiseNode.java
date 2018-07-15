@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -49,8 +50,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @NodeChildren({@NodeChild(value = "type", type = PNode.class), @NodeChild(value = "cause", type = PNode.class)})
 public abstract class RaiseNode extends StatementNode {
 
-    private static final String __CAUSE__ = "__cause__";
-
     private final ConditionProfile simpleBaseCheckProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
@@ -65,15 +64,15 @@ public abstract class RaiseNode extends StatementNode {
         throw currentException;
     }
 
-    @Specialization(guards = "isNoValue(cause)")
+    @Specialization
     public Object raise(PBaseException exception, PNone cause) {
         throw getCore().raise(exception, this);
     }
 
-    @Specialization(guards = "!isNoValue(cause)")
+    @Specialization(guards = "!isPNone(cause)")
     public Object raise(PBaseException exception, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
-        writeCause.execute(exception, __CAUSE__, cause);
+        writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
         throw getCore().raise(exception, this);
     }
 
@@ -91,18 +90,18 @@ public abstract class RaiseNode extends StatementNode {
         throw raise(PythonErrorType.TypeError, "exceptions must derive from BaseException");
     }
 
-    @Specialization(guards = "isNoValue(cause)")
+    @Specialization
     public Object raise(PythonClass pythonClass, PNone cause) {
         checkBaseClass(pythonClass);
         throw getCore().raise(factory().createBaseException(pythonClass), this);
     }
 
-    @Specialization(guards = "!isNoValue(cause)")
+    @Specialization(guards = "!isPNone(cause)")
     public Object raise(PythonClass pythonClass, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         checkBaseClass(pythonClass);
         PBaseException pythonException = factory().createBaseException(pythonClass);
-        writeCause.execute(pythonException, __CAUSE__, cause);
+        writeCause.execute(pythonException, SpecialAttributeNames.__CAUSE__, cause);
         throw getCore().raise(pythonException, this);
     }
 
