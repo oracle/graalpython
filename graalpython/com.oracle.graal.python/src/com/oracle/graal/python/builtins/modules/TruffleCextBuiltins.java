@@ -1264,27 +1264,28 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "PyTruffleSlice_GetIndicesEx", fixedNumOfArguments = 4)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class PyTruffleSlice_GetIndicesEx extends NativeBuiltin {
         @Specialization
-        Object doUnpack(int start, int stop, int step, long length) {
+        Object doUnpack(int start, int stop, int step, int length) {
             PSlice tmpSlice = factory().createSlice(start, stop, step);
-            SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+            SliceInfo actualIndices = tmpSlice.computeActualIndices(length);
             return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         Object doUnpackLong(long start, long stop, long step, long length) {
             PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
-            SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+            SliceInfo actualIndices = tmpSlice.computeActualIndices(PInt.intValueExact(length));
             return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
         }
 
-        @Specialization(replaces = "doUnpackLong")
+        @Specialization(replaces = {"doUnpackLong", "doUnpack"})
         Object doUnpackLongOvf(long start, long stop, long step, long length) {
             try {
                 PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
-                SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+                SliceInfo actualIndices = tmpSlice.computeActualIndices(length > Integer.MAX_VALUE ? Integer.MAX_VALUE : PInt.intValueExact(length));
                 return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
             } catch (ArithmeticException e) {
                 throw raiseIndexError();
