@@ -1147,6 +1147,11 @@ def initialize_capi(capi_library):
     initialize_datetime_capi()
 
 
+def import_native_memoryview(capi_library):
+    import _memoryview
+    assert _memoryview is not None
+
+
 def initialize_datetime_capi():
     import datetime
 

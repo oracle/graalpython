@@ -142,6 +142,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @ImportStatic(Message.class)
     public abstract static class CreateDynamic extends PythonBuiltinNode {
         protected static final String INITIALIZE_CAPI = "initialize_capi";
+        protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         private static final String LLVM_LANGUAGE = "llvm";
         @Child private SetItemNode setItemNode;
         @Child private Node isNullNode = Message.IS_NULL.createNode();
@@ -229,6 +230,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
                 callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
                 getContext().setCapiWasLoaded();
+
+                // initialization needs to be finished already but load memoryview implemenation
+                // immediately
+                callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 
