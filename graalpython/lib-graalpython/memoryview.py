@@ -37,13 +37,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# memoryview is implemented in C
-import sys
+# memoryview is mainly implemented in C
 
-class memoryview():
-    def __new__(cls, *args, **kwargs):
+def make_init():
+    def __memoryview_init(self, *args, **kwargs):
         import _memoryview
-        sys.modules['builtins'].memoryview = _memoryview.nativememoryview
-        return _memoryview.nativememoryview(*args, **kwargs)
+        self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
 
-sys.modules['builtins'].memoryview = memoryview
+    return __memoryview_init
+
+def make_getitem():
+    def __memoryview_getitem(self, *args, **kwargs):
+        import _memoryview
+        res = _memoryview.nativememoryview(*args, **kwargs)
+        return memoryview(res) if isinstance(res, _memoryview.nativememoryview) else res
+    return __memoryview_getitem
+
+memoryview.__init__ = make_init()
+memoryview.__repr__ = lambda self: self.__c_memoryview.__repr__()
+memoryview.__len__ = lambda self: self.__c_memoryview.__len__()
+memoryview.__getitem__ = make_getitem()
+memoryview.__setitem__ = lambda self, key, value: self.__c_memoryview.__setitem__(key, value)
+
+del make_init
+del make_getitem

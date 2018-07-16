@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -162,7 +163,7 @@ public class PythonObjectNativeWrapperMR {
     @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ReadNativeMemberNode extends PBaseNode {
-        @Child GetClassNode getClass = GetClassNode.create();
+        @Child GetClassNode getClassNode;
         @Child private ToSulongNode toSulongNode;
         @Child private HashingStorageNodes.GetItemNode getItemNode;
         @Child private CExtNodes.SizeofWCharNode sizeofWcharNode;
@@ -186,7 +187,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(OB_TYPE, key)")
         Object doObType(Object object, @SuppressWarnings("unused") String key) {
-            return getToSulongNode().execute(getClass.execute(object));
+            return getToSulongNode().execute(getClass(object));
         }
 
         @Specialization(guards = "eq(OB_SIZE, key)")
@@ -425,6 +426,12 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(object.getFunction());
         }
 
+// @Specialization(guards = {"isMemoryView(object)", "eq(MEMORYVIEW_FLAGS)" })
+// Object doImFunc(PythonObject object, @SuppressWarnings("unused") String key,
+// @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
+// return readAttrNode.execute(object, NativeMemberNames.MEMORYVIEW_FLAGS);
+// }
+
         @Fallback
         Object doGeneric(Object object, String key) {
             // This is the preliminary generic case: There are native members we know that they
@@ -441,6 +448,11 @@ public class PythonObjectNativeWrapperMR {
 
         protected boolean eq(String expected, String actual) {
             return expected.equals(actual);
+        }
+
+        protected boolean isMemoryView(Object obj) {
+            // TODO
+            return getClass(obj).getName().equals(BuiltinNames.MEMORYVIEW);
         }
 
         public static ReadNativeMemberNode create() {
@@ -469,6 +481,14 @@ public class PythonObjectNativeWrapperMR {
                 sizeofWcharNode = insert(CExtNodes.SizeofWCharNode.create());
             }
             return (int) sizeofWcharNode.execute();
+        }
+
+        private PythonClass getClass(Object obj) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(obj);
         }
     }
 
