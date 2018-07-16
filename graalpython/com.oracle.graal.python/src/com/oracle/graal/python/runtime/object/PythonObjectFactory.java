@@ -84,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -331,6 +332,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public PythonNativeClass createNativeClassWrapper(Object object, PythonClass metaClass, String name, PythonClass[] pythonClasses) {
         return trace(new PythonNativeClass(object, metaClass, name, pythonClasses));
+    }
+
+    public PMemoryView createMemoryView(PythonClass metaclass, Object value) {
+        return trace(new PMemoryView(metaclass, value));
     }
 
     public final PMethod createMethod(PythonClass cls, Object self, PFunction function) {

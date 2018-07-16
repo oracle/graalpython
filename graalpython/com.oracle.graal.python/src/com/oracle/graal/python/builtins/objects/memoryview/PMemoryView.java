@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public class PMemoryView extends PythonBuiltinObject {
 
-    public PMemoryView(PythonClass cls) {
+    public PMemoryView(PythonClass cls, Object obj) {
         super(cls);
     }
 
