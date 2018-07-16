@@ -1272,6 +1272,24 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
             return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
         }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        Object doUnpackLong(long start, long stop, long step, long length) {
+            PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
+            SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+            return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+        }
+
+        @Specialization(replaces = "doUnpackLong")
+        Object doUnpackLongOvf(long start, long stop, long step, long length) {
+            try {
+                PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
+                SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+                return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
     }
 
     @Builtin(name = "PyTruffle_Add_Subclass", fixedNumOfArguments = 3)
