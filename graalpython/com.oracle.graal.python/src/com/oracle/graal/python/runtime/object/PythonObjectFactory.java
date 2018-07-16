@@ -104,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -531,6 +532,11 @@ public abstract class PythonObjectFactory extends Node {
     public PBaseException createBaseException(PythonClass cls, String format, Object[] args) {
         assert format != null;
         return trace(new PBaseException(cls, format, args));
+    }
+
+    public PBaseException createBaseException(PythonErrorType typ, String format, Object[] args) {
+        assert format != null;
+        return trace(new PBaseException(getCore().getErrorClass(typ), format, args));
     }
 
     public PBaseException createBaseException(PythonClass cls) {

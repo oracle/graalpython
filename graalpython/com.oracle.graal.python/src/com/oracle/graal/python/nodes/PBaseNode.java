@@ -40,6 +40,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -72,6 +73,10 @@ public abstract class PBaseNode extends Node {
 
     public final NodeFactory getNodeFactory() {
         return getCore().getLanguage().getNodeFactory();
+    }
+
+    public final PException raise(PBaseException exc) {
+        throw getCore().raise(exc, this);
     }
 
     public final PException raise(PythonErrorType type) {
