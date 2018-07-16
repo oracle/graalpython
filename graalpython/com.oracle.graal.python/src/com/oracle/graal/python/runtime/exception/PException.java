@@ -138,27 +138,35 @@ public final class PException extends RuntimeException implements TruffleExcepti
         return exit;
     }
 
+    private static void popException(PythonCore core) {
+        core.getContext().setCurrentException(null);
+    }
+
     public void expectIndexError(PythonCore core, ConditionProfile profile) {
         if (profile.profile(getType() != core.getErrorClass(PythonErrorType.IndexError))) {
             throw this;
         }
+        popException(core);
     }
 
     public void expectStopIteration(PythonCore core, ConditionProfile profile) {
         if (profile.profile(getType() != core.getErrorClass(PythonErrorType.StopIteration))) {
             throw this;
         }
+        popException(core);
     }
 
     public void expectAttributeError(PythonCore core, ConditionProfile profile) {
         if (profile.profile(getType() != core.getErrorClass(PythonErrorType.AttributeError))) {
             throw this;
         }
+        popException(core);
     }
 
     public void expect(PythonErrorType error, PythonCore core, ConditionProfile profile) {
         if (profile.profile(getType() != core.getErrorClass(error))) {
             throw this;
         }
+        popException(core);
     }
 }
