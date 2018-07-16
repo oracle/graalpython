@@ -3142,7 +3142,6 @@ PyInit__memoryview(void)
 {
     PyObject *m;
 
-    __asm__("int $3");
     m = PyModule_Create(&_memoryviewmodule);
     if (m == NULL)
         return NULL;
