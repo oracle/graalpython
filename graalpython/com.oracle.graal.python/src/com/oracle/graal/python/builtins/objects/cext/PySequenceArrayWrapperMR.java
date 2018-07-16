@@ -109,26 +109,18 @@ public class PySequenceArrayWrapperMR {
     @Resolve(message = "WRITE")
     abstract static class WriteNode extends Node {
         @Child private WriteArrayItemNode writeArrayItemNode;
-        @Child private CExtNodes.ToJavaNode toJavaNode;
 
         public Object access(PySequenceArrayWrapper object, Object key, Object value) {
             if (writeArrayItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 writeArrayItemNode = insert(WriteArrayItemNode.create());
             }
-            writeArrayItemNode.execute(object.getDelegate(), key, getToJavaNode().execute(value));
+            writeArrayItemNode.execute(object.getDelegate(), key, value);
 
             // A C expression assigning to an array returns the assigned value.
             return value;
         }
 
-        private CExtNodes.ToJavaNode getToJavaNode() {
-            if (toJavaNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(CExtNodes.ToJavaNode.create());
-            }
-            return toJavaNode;
-        }
     }
 
     @ImportStatic(SpecialMethodNames.class)
@@ -222,30 +214,48 @@ public class PySequenceArrayWrapperMR {
     @ImportStatic(SpecialMethodNames.class)
     @TypeSystemReference(PythonTypes.class)
     abstract static class WriteArrayItemNode extends Node {
+        @Child private CExtNodes.ToJavaNode toJavaNode;
 
         public abstract Object execute(Object arrayObject, Object idx, Object value);
 
         @Specialization
         Object doTuple(PTuple tuple, long idx, Object value) {
             Object[] store = tuple.getArray();
-            store[(int) idx] = value;
+            // TODO(fa) do proper index conversion
+            store[(int) idx] = getToJavaNode().execute(value);
             return value;
         }
 
         @Specialization
         Object doTuple(PList list, long idx, Object value,
                         @Cached("createListSetItem()") ListBuiltins.SetItemNode setItemNode) {
-            return setItemNode.execute(list, idx, value);
+            return setItemNode.execute(list, idx, getToJavaNode().execute(value));
         }
 
         @Specialization
         Object doTuple(PBytes tuple, long idx, byte value) {
+            // TODO(fa) do proper index conversion
+            tuple.getInternalByteArray()[(int) idx] = value;
+            return value;
+        }
+
+        @Specialization
+        Object doTuple(PByteArray tuple, long idx, byte value) {
+            // TODO(fa) do proper index conversion
             tuple.getInternalByteArray()[(int) idx] = value;
             return value;
         }
 
         protected static ListBuiltins.SetItemNode createListSetItem() {
             return ListBuiltinsFactory.SetItemNodeFactory.create();
+        }
+
+        private CExtNodes.ToJavaNode getToJavaNode() {
+            if (toJavaNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toJavaNode = insert(CExtNodes.ToJavaNode.create());
+            }
+            return toJavaNode;
         }
 
         public static WriteArrayItemNode create() {
