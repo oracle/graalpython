@@ -3153,10 +3153,10 @@ PyInit__memoryview(void)
         return NULL;
 
     Py_INCREF((PyObject*)&PyNativeMemoryView_Type);
-    PyModule_AddObject(m, "nativememoryview", &PyNativeMemoryView_Type);
+    PyModule_AddObject(m, "nativememoryview",(PyObject*) &PyNativeMemoryView_Type);
 
     Py_INCREF((PyObject*)&_PyManagedBuffer_Type);
-    PyModule_AddObject(m, "managedbuffer", (PyObject*)&_PyManagedBuffer_Type);
+    PyModule_AddObject(m, "managedbuffer", (PyObject*) &_PyManagedBuffer_Type);
 
     return m;
 }
