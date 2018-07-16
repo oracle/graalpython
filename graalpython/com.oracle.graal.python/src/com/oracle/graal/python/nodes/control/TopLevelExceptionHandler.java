@@ -72,6 +72,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
+    private final PException exception;
     private final PythonContext context;
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
@@ -80,28 +81,41 @@ public class TopLevelExceptionHandler extends RootNode {
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
-        sourceSection = child.getSourceSection();
-        context = language.getContextReference().get();
-        innerCallTarget = Truffle.getRuntime().createCallTarget(child);
+        this.sourceSection = child.getSourceSection();
+        this.context = language.getContextReference().get();
+        this.innerCallTarget = Truffle.getRuntime().createCallTarget(child);
+        this.exception = null;
+    }
+
+    public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
+        super(language);
+        this.sourceSection = exception.getSourceLocation();
+        this.context = language.getContextReference().get();
+        this.innerCallTarget = null;
+        this.exception = exception;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        Object result = null;
-        try {
-            result = run(frame);
-        } catch (PException e) {
-            printExc(e);
-        } catch (Exception e) {
-            if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
-                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                if (!exitException) {
-                    printStackTrace(e);
+        if (exception != null) {
+            printExc(exception);
+            return null;
+        } else {
+            try {
+                return run(frame);
+            } catch (PException e) {
+                printExc(e);
+                return null;
+            } catch (Exception e) {
+                if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
+                    boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
+                    if (!exitException) {
+                        printStackTrace(e);
+                    }
                 }
+                throw e;
             }
-            throw e;
         }
-        return result;
     }
 
     @Override

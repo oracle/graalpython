@@ -66,7 +66,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CallTarget;
@@ -89,6 +89,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
 @CoreFunctions(defineModule = "_imp")
@@ -325,7 +326,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         public Object run(String path, PythonModule mod) {
             Env env = getContext().getEnv();
             try {
-                PythonParseResult parsedModule;
                 String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
                 String fileName = pathParts[pathParts.length - 1];
                 TruffleFile file = env.getTruffleFile(path);
@@ -339,9 +339,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 if (src == null) {
                     src = Source.newBuilder("").uri(URI.create(path)).mimeType(PythonLanguage.MIME_TYPE).name(fileName).build();
                 }
-                parsedModule = getCore().getParser().parse(getCore(), src);
+                RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
                 if (parsedModule != null) {
-                    CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule.getRootNode());
+                    CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
                     callTarget.call(PArguments.withGlobals(mod));
                 }
             } catch (PException e) {

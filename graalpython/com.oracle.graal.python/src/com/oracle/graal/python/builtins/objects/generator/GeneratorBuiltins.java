@@ -46,9 +46,9 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -181,12 +181,12 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"})
         Object getCode(PGenerator self, @SuppressWarnings("unused") PNone none) {
-            return factory().createCode(new PythonParseResult(self.getGeneratorRootNode()));
+            return factory().createCode(self.getGeneratorRootNode());
         }
 
         @SuppressWarnings("unused")
-        @Specialization
-        Object setCode(PGenerator self, PythonParseResult code) {
+        @Fallback
+        Object setCode(Object self, Object code) {
             throw raise(NotImplementedError, "setting gi_code");
         }
     }

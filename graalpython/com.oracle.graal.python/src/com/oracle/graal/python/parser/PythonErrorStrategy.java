@@ -47,6 +47,9 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.Interval;
 
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
+
 public class PythonErrorStrategy extends DefaultErrorStrategy {
     private static final String LINE_PADDING = "  ";
 
@@ -55,16 +58,20 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         super.recover(recognizer, e);
     }
 
-    static int getLine(Exception e) {
+    static SourceSection getPosition(Source source, Exception e) {
+        RecognitionException r;
         if (e instanceof RecognitionException) {
-            return ((RecognitionException) e).getOffendingToken().getLine();
+            r = (RecognitionException) e;
         } else {
             Throwable cause = e.getCause();
             if (cause instanceof RecognitionException) {
-                return ((RecognitionException) cause).getOffendingToken().getLine();
+                r = (RecognitionException) cause;
+            } else {
+                return source.createUnavailableSection();
             }
-            return -1;
         }
+        Token token = r.getOffendingToken();
+        return source.createSection(token.getStartIndex(), token.getStopIndex() - token.getStartIndex());
     }
 
     private static String getTokeLineText(Parser recognizer, Token token) {

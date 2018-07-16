@@ -41,14 +41,13 @@ package com.oracle.graal.python.parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
-public class PythonTreeTranslator extends PythonBaseTreeTranslator<PythonParseResult> {
+public class PythonTreeTranslator extends PythonBaseTreeTranslator<RootNode> {
 
-    private PythonParseResult result;
+    private RootNode result;
 
     public PythonTreeTranslator(PythonCore core, String name, ParserRuleContext input, TranslationEnvironment environment, Source source) {
         super(core, name, environment, source);
@@ -67,11 +66,11 @@ public class PythonTreeTranslator extends PythonBaseTreeTranslator<PythonParseRe
             t.printStackTrace();
             throw new RuntimeException("Failed in " + this + " with error " + t, t);
         }
-        this.result = new PythonParseResult(rootNode);
+        this.result = rootNode;
     }
 
     @Override
-    public PythonParseResult getTranslationResult() {
+    public RootNode getTranslationResult() {
         return result;
     }
 }

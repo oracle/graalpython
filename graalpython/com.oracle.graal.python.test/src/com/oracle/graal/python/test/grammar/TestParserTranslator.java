@@ -99,10 +99,11 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
 public class TestParserTranslator {
@@ -112,15 +113,15 @@ public class TestParserTranslator {
         context = PythonTests.getContext();
     }
 
-    PythonParseResult parse(String src) {
+    RootNode parse(String src) {
         Source source = Source.newBuilder(src).mimeType(PythonLanguage.MIME_TYPE).name("foo").build();
-        return context.getCore().getParser().parse(context.getCore(), source);
+        return (RootNode) context.getCore().getParser().parse(ParserMode.File, context.getCore(), source, null);
     }
 
     String parseToString(String src) {
-        PythonParseResult result = parse(src);
+        RootNode result = parse(src);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        NodeUtil.printCompactTree(out, result.getRootNode());
+        NodeUtil.printCompactTree(out, result);
         return out.toString();
     }
 
@@ -139,10 +140,6 @@ public class TestParserTranslator {
 
     <T> T getFirstChild(Node result, Class<? extends T> klass) {
         return getChild(result, 0, klass);
-    }
-
-    <T> T getFirstChild(PythonParseResult result, Class<? extends T> klass) {
-        return getFirstChild(result.getRootNode(), klass);
     }
 
     <T> T parseAs(String src, Class<? extends T> klass) {

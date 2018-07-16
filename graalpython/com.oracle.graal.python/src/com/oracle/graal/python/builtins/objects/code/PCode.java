@@ -40,11 +40,10 @@ package com.oracle.graal.python.builtins.objects.code;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public class PCode extends PythonBuiltinObject {
-    private final PythonParseResult result;
+    private final RootNode result;
     private final int argcount;
     private final int kwonlyargcount;
     private final int nlocals;
@@ -61,7 +60,7 @@ public class PCode extends PythonBuiltinObject {
     private final Object freevars;
     private final Object cellvars;
 
-    public PCode(PythonClass cls, PythonParseResult result) {
+    public PCode(PythonClass cls, RootNode result) {
         super(cls);
         this.result = result;
         this.argcount = -1;
@@ -105,11 +104,7 @@ public class PCode extends PythonBuiltinObject {
     }
 
     public RootNode getRootNode() {
-        if (result != null) {
-            return result.getRootNode();
-        } else {
-            return null;
-        }
+        return result;
     }
 
     public Object getFreeVars() {
