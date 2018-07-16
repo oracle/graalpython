@@ -21,6 +21,7 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+from argparse import ArgumentParser
 import os
 import platform
 import re
@@ -754,6 +755,66 @@ def python_checkcopyrights(args):
         os.unlink(listfilename)
 
 
+def import_python_sources(args):
+    # mappings for files that are renamed
+    mapping = {
+        "_memoryview.c": "memoryobject.c",
+    }
+    parser = ArgumentParser(prog='mx python-src-import')
+    parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
+    parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
+    parser.add_argument('--msg', action='store', help='Message for import update commit', required=True)
+    args = parser.parse_args(args)
+
+    python_sources = args.cpython
+    pypy_sources = args.pypy
+    import_version = args.msg
+
+    files = []
+    with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
+        files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
+
+    # move to orphaned branch with sources
+    if _suite.vc.isDirty(_suite.dir):
+        mx.abort("Working dir must be clean")
+    tip = _suite.vc.tip(_suite.dir).strip()
+    _suite.vc.git_command(_suite.dir, ["checkout", "--orphan", "python-import"])
+    _suite.vc.git_command(_suite.dir, ["clean", "-fdx"])
+    shutil.rmtree("graalpython")
+
+    for inlined_file in files:
+        # C files are mostly just copied
+        original_file = None
+        name = os.path.basename(inlined_file)
+        name = mapping.get(name, name)
+        if inlined_file.endswith(".h") or inlined_file.endswith(".c"):
+            for root, dirs, files in os.walk(python_sources):
+                if os.path.basename(name) in files:
+                    original_file = os.path.join(root, name)
+                    try:
+                        os.makedirs(os.path.dirname(inlined_file))
+                    except:
+                        pass
+                    shutil.copy(original_file, inlined_file)
+                    break
+        elif inlined_file.endswith(".py"):
+            # these files don't need to be updated, they inline some unittest code only
+            if name.startswith("test_") or name.endswith("_tests.py"):
+                original_file = inlined_file
+        if original_file is None:
+            mx.warn("Could not update %s - original file not found" % inlined_file)
+
+    # re-copy lib-python
+    libdir = os.path.join(_suite.dir, "graalpython/lib-python/3")
+    shutil.copytree(os.path.join(pypy_sources, "lib-python", "3"), libdir)
+
+    # commit and check back
+    _suite.vc.git_command(_suite.dir, ["add", "."])
+    raw_input("Check that the updated files look as intended, then press RETURN...")
+    _suite.vc.commit(_suite.dir, "Update Python inlined files: %s" % import_version)
+    _suite.vc.update(_suite.dir, rev=tip)
+    _suite.vc.git_command(_suite.dir, ["merge", "python-import"])
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # add the defined python benchmark suites
@@ -828,4 +889,5 @@ mx.update_commands(_suite, {
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],
+    'python-src-import': [import_python_sources, ''],
 })
