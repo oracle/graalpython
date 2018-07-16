@@ -276,7 +276,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class CopySignNode extends PythonBuiltinNode {
+    public abstract static class CopySignNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         public double copySignLL(long magnitude, long sign) {
@@ -323,17 +323,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return Math.copySign(magnitude.getValue().doubleValue(), sign.getValue().doubleValue());
         }
 
-        @Fallback
-        public double copySignOO(Object magnitude, Object sign) {
-            if (!MathGuards.isNumber(magnitude)) {
-                throw raise(TypeError, "must be real number, not %p", magnitude);
-            }
-            throw raise(TypeError, "must be real number, not %p", sign);
+        @Specialization(guards = "!isNumber(magnitude) || !isNumber(sign)")
+        public double copySignOO(Object magnitude, Object sign,
+                        @Cached("create()") CastToDoubleNode castMagnitudeNode,
+                        @Cached("create()") CastToDoubleNode castSignNode) {
+            return copySignDD(castMagnitudeNode.execute(magnitude), castSignNode.execute(sign));
         }
     }
 
     @Builtin(name = "factorial", fixedNumOfArguments = 1)
-    @ImportStatic(Double.class)
+    @ImportStatic({Double.class, MathGuards.class})
     @GenerateNodeFactory
     public abstract static class FactorialNode extends PythonUnaryBuiltinNode {
 
@@ -485,9 +484,11 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return factory().createInt(factorialPart(1, (long) pfValue));
         }
 
-        @Fallback
-        public Object factorialObject(Object value) {
-            throw raise(TypeError, "an integer is required (got type %p)", value);
+        @Specialization(guards = "!isNumber(value)")
+        public Object factorialObject(Object value,
+                        @Cached("create()") CastToIntegerFromIntNode castNode,
+                        @Cached("create()") FactorialNode recursiveNode) {
+            return recursiveNode.execute(castNode.execute(value));
         }
 
         protected boolean isInteger(double value) {
@@ -509,12 +510,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
         protected boolean isOvf(PInt value) {
             return value.getValue().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0;
         }
+
+        protected FactorialNode create() {
+            return MathModuleBuiltinsFactory.FactorialNodeFactory.create();
+        }
     }
 
     @Builtin(name = "floor", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     @ImportStatic(MathGuards.class)
-    public abstract static class FloorNode extends PythonBuiltinNode {
+    public abstract static class FloorNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = {"fitLong(value)"})
         public long floorDL(double value) {
@@ -568,21 +573,26 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isNumber(value)"})
         public Object floor(Object value,
-                        @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor) {
+                        @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor,
+                        @Cached("create()") CastToDoubleNode castNode,
+                        @Cached("create()") FloorNode recursiveNode) {
             Object result = dispatchFloor.executeObject(value);
             if (PNone.NO_VALUE.equals(result)) {
-                throw raise(TypeError, "must be real number, not %p", value);
+                return recursiveNode.execute(castNode.execute(value));
             }
             return result;
         }
 
+        protected FloorNode create() {
+            return MathModuleBuiltinsFactory.FloorNodeFactory.create();
+        }
     }
 
     @Builtin(name = "fmod", fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class FmodNode extends PythonBuiltinNode {
+    public abstract static class FmodNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         public double fmodDD(double left, double right,
@@ -658,12 +668,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNumber(left) || !isNumber(right)"})
-        public double fmodLO(Object left, Object right) {
-            // the right the first one to be complient with python
-            if (!MathGuards.isNumber(right)) {
-                throw raise(PythonErrorType.TypeError, "must be real number, not %p", right);
-            }
-            throw raise(PythonErrorType.TypeError, "must be real number, not %p", left);
+        public double fmodLO(Object left, Object right,
+                        @Cached("create()") CastToDoubleNode castLeftNode,
+                        @Cached("create()") CastToDoubleNode castRightNode,
+                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
+            return fmodDD(castLeftNode.execute(left), castRightNode.execute(right), infProfile, zeroProfile);
         }
 
         protected void raiseMathDomainError(boolean con) {
@@ -776,10 +786,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "isclose", minNumOfArguments = 2, keywordArguments = {"rel_tol", "abs_tol"})
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
     public abstract static class IsCloseNode extends PythonBuiltinNode {
         private static double DEFAULT_REL = 1e-09;
         private static double DEFAULT_ABS = 0.0;
+
+        @Child private CastToDoubleNode castANode;
+        @Child private CastToDoubleNode castBNode;
+        @Child private CastToDoubleNode castRelNode;
+        @Child private CastToDoubleNode castAbsNode;
 
         private boolean isCloseDouble(double a, double b, double rel_tol, double abs_tol) {
             double diff;
@@ -826,14 +842,53 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public boolean isClose(double a, long b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
             return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
         }
+
+        @Specialization
+        public boolean isClose(long a, long b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+            return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
+        }
+
+        @Specialization
+        public boolean isClose(long a, double b, double rel_tol, @SuppressWarnings("unused") PNone abs_tol) {
+            return isCloseDouble(a, b, rel_tol, DEFAULT_ABS);
+        }
+
+        @Specialization
+        public boolean isClose(long a, double b, double rel_tol, double abs_tol) {
+            return isCloseDouble(a, b, rel_tol, abs_tol);
+        }
+
+        @Specialization
+        public boolean isClose(long a, long b, double rel_tol, double abs_tol) {
+            return isCloseDouble(a, b, rel_tol, abs_tol);
+        }
+
+        @Fallback
+        public boolean isClose(Object a, Object b, Object rel_tol, Object abs_tol) {
+            if (castANode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castANode = insert(CastToDoubleNode.create());
+                castBNode = insert(CastToDoubleNode.create());
+                castRelNode = insert(CastToDoubleNode.create());
+                castAbsNode = insert(CastToDoubleNode.create());
+            }
+            double a_value = castANode.execute(a);
+            double b_value = castBNode.execute(b);
+            double rel_tol_value = PGuards.isNoValue(rel_tol) ? DEFAULT_REL : castRelNode.execute(rel_tol);
+            double abs_tol_value = PGuards.isNoValue(abs_tol) ? DEFAULT_ABS : castAbsNode.execute(abs_tol);
+            return isCloseDouble(a_value, b_value, rel_tol_value, abs_tol_value);
+        }
+
     }
 
     @Builtin(name = "ldexp", fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class LdexpNode extends PythonBuiltinNode {
+    public abstract static class LdexpNode extends PythonBinaryBuiltinNode {
 
         private static final String EXPECTED_INT_MESSAGE = "Expected an int as second argument to ldexp.";
+
+        abstract double execute(double mantissa, Object exp);
 
         private static int makeInt(long x) {
             long result = x;
@@ -916,12 +971,24 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return exceptInfinity(Math.scalb(dm, makeInt(exp)), dm);
         }
 
+        @Child private CastToDoubleNode castNode;
+        @Child private LdexpNode recursiveNode;
+
         @Fallback
-        public double ldexpOO(Object mantissa, @SuppressWarnings("unused") Object exp) {
-            if (!MathGuards.isNumber(mantissa)) {
-                throw raise(TypeError, "must be real number, not %p", mantissa);
+        public double ldexpOO(Object mantissa, Object exp) {
+            if (PGuards.isInteger(exp) || PGuards.isPInt(exp) || (exp instanceof Boolean)) {
+                if (castNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    castNode = insert(CastToDoubleNode.create());
+                    recursiveNode = insert(LdexpNode.create());
+                }
+                return recursiveNode.execute(castNode.execute(mantissa), exp);
             }
             throw raise(TypeError, EXPECTED_INT_MESSAGE);
+        }
+
+        static LdexpNode create() {
+            return MathModuleBuiltinsFactory.LdexpNodeFactory.create();
         }
 
     }
@@ -952,12 +1019,12 @@ public class MathModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PTuple frexpPI(PInt value) {
+        public PTuple modfPI(PInt value) {
             return modfD(value.doubleValue());
         }
 
         @Specialization(guards = "!isNumber(value)")
-        public PTuple frexpO(Object value,
+        public PTuple modfO(Object value,
                         @Cached("create()") CastToDoubleNode convertToFloatNode) {
             return modfD(convertToFloatNode.execute(value));
         }
@@ -1144,8 +1211,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
         Object gcd(Object x, Object y,
-                        @Cached("create()") CastToIntNode xCast,
-                        @Cached("create()") CastToIntNode yCast,
+                        @Cached("create()") CastToIntegerFromIndexNode xCast,
+                        @Cached("create()") CastToIntegerFromIndexNode yCast,
                         @Cached("create()") GcdNode recursiveNode) {
             Object xValue = xCast.execute(x);
             Object yValue = yCast.execute(y);
@@ -1663,13 +1730,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "fabs", fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
-    public abstract static class FabsNode extends PythonBuiltinNode {
-
-        @Specialization
-        public double fabs(int value) {
-            return Math.abs((long) value);
-        }
+    public abstract static class FabsNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         public double fabs(long value) {
@@ -1688,19 +1752,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
             return Math.abs(value);
         }
 
-        @Specialization
-        public double fabs(PFloat value) {
-            return Math.abs(value.getValue());
-        }
-
-        @Specialization
-        public double fabs(boolean value) {
-            return value ? 1.0 : 0.0;
-        }
-
-        @Fallback
-        public double fabs(Object value) {
-            throw raise(TypeError, "must be real number, not %p", value);
+        @Specialization(guards = "!isNumber(value)")
+        public double fabs(Object value,
+                        @Cached("create()") CastToDoubleNode castValueNode) {
+            return fabs(castValueNode.execute(value));
         }
     }
 

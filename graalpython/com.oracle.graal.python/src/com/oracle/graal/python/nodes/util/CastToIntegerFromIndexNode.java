@@ -55,14 +55,14 @@ import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CastToIntNode extends PBaseNode {
+public abstract class CastToIntegerFromIndexNode extends PBaseNode {
 
     @Node.Child private LookupAndCallUnaryNode callIndexNode;
 
     public abstract Object execute(Object x);
 
-    public static CastToIntNode create() {
-        return CastToIntNodeGen.create();
+    public static CastToIntegerFromIndexNode create() {
+        return CastToIntegerFromIndexNodeGen.create();
     }
 
     @Specialization
@@ -76,8 +76,8 @@ public abstract class CastToIntNode extends PBaseNode {
     }
 
     @Specialization
-    public long toInt(@SuppressWarnings("unused") double x) {
-        throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+    public long toInt(double x) {
+        throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
     }
 
     @Specialization(guards = "!isNumber(x)")
