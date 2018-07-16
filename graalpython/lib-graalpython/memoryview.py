@@ -47,10 +47,9 @@ def make_init():
     return __memoryview_init
 
 def make_getitem():
-    def __memoryview_getitem(self, *args, **kwargs):
-        import _memoryview
-        res = _memoryview.nativememoryview(*args, **kwargs)
-        return memoryview(res) if isinstance(res, _memoryview.nativememoryview) else res
+    def __memoryview_getitem(self, key):
+        res = self.__c_memoryview.__getitem__(key)
+        return memoryview(res) if isinstance(res, type(self.__c_memoryview)) else res
     return __memoryview_getitem
 
 memoryview.__init__ = make_init()
