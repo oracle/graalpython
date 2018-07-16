@@ -52,11 +52,24 @@ def make_getitem():
         return memoryview(res) if isinstance(res, type(self.__c_memoryview)) else res
     return __memoryview_getitem
 
+def make_readonly():
+    class Dummy:
+        @property
+        def readonly(self):
+            return self.__c_memoryview.readonly
+
+        @readonly.setter
+        def readonly(self, value):
+            raise AttributeError("attribute 'readonly' of 'memoryview' objects is not writable")
+    return Dummy.readonly
+
 memoryview.__init__ = make_init()
 memoryview.__repr__ = lambda self: self.__c_memoryview.__repr__()
 memoryview.__len__ = lambda self: self.__c_memoryview.__len__()
 memoryview.__getitem__ = make_getitem()
 memoryview.__setitem__ = lambda self, key, value: self.__c_memoryview.__setitem__(key, value)
+memoryview.readonly = make_readonly()
 
 del make_init
 del make_getitem
+del make_readonly
