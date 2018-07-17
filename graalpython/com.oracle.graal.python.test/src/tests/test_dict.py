@@ -441,4 +441,5 @@ def test_object_set_item_single_instance_non_str_key():
 
     bar.__dict__[1] = 1
     bar.a = 'a'
-    assert bar.__dict__ == {1: 1, 'a': 'a'}
+    assert 1 in bar.__dict__
+    assert 'a' in bar.__dict__

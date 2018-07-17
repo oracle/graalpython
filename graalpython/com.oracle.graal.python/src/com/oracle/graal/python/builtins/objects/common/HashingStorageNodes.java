@@ -490,6 +490,11 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = "!isJavaString(name)")
+        protected boolean readUncached(PythonObjectHybridDictStorage storage, Object name) {
+            return storage.hasKey(name, getEquivalence());
+        }
+
+        @Specialization(guards = "!isJavaString(name)")
         @SuppressWarnings("unused")
         protected boolean readUncached(DynamicObjectStorage storage, Object name) {
             return false;
