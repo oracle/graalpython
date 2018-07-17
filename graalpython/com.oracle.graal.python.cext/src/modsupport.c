@@ -728,3 +728,69 @@ int _PyArg_UnpackStack(PyObject *const *args, Py_ssize_t nargs, const char *name
 #define _PyArg_UnpackStack _backup_PyArg_UnpackStack
 #undef _backup_PyArg_UnpackStack
 #endif
+
+int PyTruffle_Arg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t max, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9, void* v10, void* v11, void* v12, void* v13, void* v14, void* v15, void* v16, void* v17, void* v18, void* v19) {
+    Py_ssize_t i, l;
+    PyObject **o;
+
+    assert(min >= 0);
+    assert(min <= max);
+    if (!PyTuple_Check(args)) {
+        PyErr_SetString(PyExc_SystemError,
+            "PyArg_UnpackTuple() argument list is not a tuple");
+        return 0;
+    }
+    l = PyTuple_GET_SIZE(args);
+    if (l < min) {
+        if (name != NULL)
+            PyErr_Format(
+                PyExc_TypeError,
+                "%s expected %s%zd arguments, got %zd",
+                name, (min == max ? "" : "at least "), min, l);
+        else
+            PyErr_Format(
+                PyExc_TypeError,
+                "unpacked tuple should have %s%zd elements,"
+                " but has %zd",
+                (min == max ? "" : "at least "), min, l);
+        return 0;
+    }
+    if (l == 0)
+        return 1;
+    if (l > max) {
+        if (name != NULL)
+            PyErr_Format(
+                PyExc_TypeError,
+                "%s expected %s%zd arguments, got %zd",
+                name, (min == max ? "" : "at most "), max, l);
+        else
+            PyErr_Format(
+                PyExc_TypeError,
+                "unpacked tuple should have %s%zd elements,"
+                " but has %zd",
+                (min == max ? "" : "at most "), max, l);
+        return 0;
+    }
+
+    for (i = 0; i < l; i++) {
+        o = PyTruffle_ArgN(i);
+        *o = PyTuple_GET_ITEM(args, i);
+    }
+    return 1;
+}
+
+#ifdef PyArg_UnpackTuple
+#define _backup_PyArg_UnpackTuple PyArg_UnpackTuple
+#undef PyArg_UnpackTuple
+#endif
+// partially taken from CPython 3.6.4 "Python/getargs.c"
+int PyArg_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t max, ...) {
+#define ARG(__i__) ((__i__)+4 < n ? polyglot_get_arg((__i__)+4) : NULL)
+    int n = polyglot_get_arg_count();
+    return PyTruffle_Arg_UnpackTuple(args, name, min, max, n-4, ARG(0), ARG(1), ARG(2), ARG(3), ARG(4), ARG(5), ARG(6), ARG(7), ARG(8), ARG(8), ARG(10), ARG(11), ARG(12), ARG(13), ARG(14), ARG(15), ARG(16), ARG(17), ARG(18), ARG(19));
+#undef ARG
+}
+#ifdef _backup_PyArg_UnpackTuple
+#define PyArg_UnpackTuple _backup_PyArg_UnpackTuple
+#undef _backup_PyArg_UnpackTuple
+#endif
