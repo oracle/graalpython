@@ -435,3 +435,10 @@ def test_object_set_item_single_instance_non_str_key():
     f.__dict__[1] = 1
     f.a = 'a'
     assert f.__dict__ == {1: 1, 'a': 'a'}
+
+    def bar():
+        pass
+
+    bar.__dict__[1] = 1
+    bar.a = 'a'
+    assert bar.__dict__ == {1: 1, 'a': 'a'}
