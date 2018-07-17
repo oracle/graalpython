@@ -41,7 +41,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -173,7 +172,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             if (rootNode == null) {
                 return PNone.NONE;
             } else {
-                return factory().createCode(new PythonParseResult(rootNode));
+                return factory().createCode(rootNode);
             }
         }
     }

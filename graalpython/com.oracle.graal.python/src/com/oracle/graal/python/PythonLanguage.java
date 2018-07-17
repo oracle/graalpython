@@ -48,7 +48,8 @@ import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -248,18 +249,24 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (!pythonCore.isInitialized()) {
             pythonCore.initialize();
         }
-        context.initializeMainModule(request.getSource().getPath());
+        Source source = request.getSource();
+        context.initializeMainModule(source.getPath());
 
         // if we are running the interpreter, module 'site' is automatically imported
-        if (request.getSource().isInteractive()) {
+        if (source.isInteractive()) {
             CompilerAsserts.neverPartOfCompilation();
             // no frame required
             new ImportNode("site").execute(null);
         }
-        PythonParseResult parseResult = pythonCore.getParser().parse(pythonCore, request.getSource());
-        RootNode root = parseResult.getRootNode();
-        root = new TopLevelExceptionHandler(this, root);
-        return Truffle.getRuntime().createCallTarget(root);
+        RootNode root;
+        try {
+            root = (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
+        } catch (PException e) {
+            // handle PException during parsing (PIncompleteSourceException will propagate through)
+            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            throw e;
+        }
+        return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
     }
 
     @Override
@@ -310,7 +317,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     protected static PNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
         PythonCore pythonCore = context.getCore();
-        return pythonCore.getParser().parseInline(pythonCore, code, lexicalContextFrame);
+        return (PNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame);
     }
 
     @Override

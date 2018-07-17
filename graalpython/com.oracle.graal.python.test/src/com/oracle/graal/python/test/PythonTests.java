@@ -53,12 +53,13 @@ import org.junit.BeforeClass;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.test.interop.JavaInteropTest;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.MissingMIMETypeException;
 import com.oracle.truffle.api.source.MissingNameException;
 import com.oracle.truffle.api.source.Source;
@@ -260,15 +261,15 @@ public class PythonTests {
         return ret;
     }
 
-    public static PythonParseResult getParseResult(com.oracle.truffle.api.source.Source source, PrintStream out, PrintStream err) {
+    public static RootNode getParseResult(com.oracle.truffle.api.source.Source source, PrintStream out, PrintStream err) {
         PythonTests.ensureContext();
         PythonContext ctx = PythonLanguage.getContext();
         ctx.setOut(out);
         ctx.setErr(err);
-        return ctx.getCore().getParser().parse(ctx.getCore(), source);
+        return (RootNode) ctx.getCore().getParser().parse(ParserMode.File, ctx.getCore(), source, null);
     }
 
-    public static PythonParseResult getParseResult(String code) {
+    public static RootNode getParseResult(String code) {
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         Builder<RuntimeException, MissingMIMETypeException, MissingNameException> newBuilder = Source.newBuilder(code);
         newBuilder.mimeType(PythonLanguage.MIME_TYPE);

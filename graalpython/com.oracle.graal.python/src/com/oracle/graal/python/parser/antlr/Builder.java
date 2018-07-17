@@ -38,9 +38,7 @@
  */
 package com.oracle.graal.python.parser.antlr;
 
-import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
 public final class Builder {
@@ -51,62 +49,13 @@ public final class Builder {
     private Builder() {
     }
 
-    public static final class Lexer {
-
-        private Python3Lexer lexer;
-
-        public Lexer(String input) {
-            this(CharStreams.fromString(input));
-        }
-
-        public Lexer(CharStream input) {
-            this.lexer = new Python3Lexer(input);
-            this.lexer.removeErrorListeners();
-            this.lexer.addErrorListener(ERROR_LISTENER);
-        }
-
-        public Lexer withErrorListener(ANTLRErrorListener listener) {
-            this.lexer.removeErrorListeners();
-            this.lexer.addErrorListener(listener);
-            return this;
-        }
-
-        public Python3Lexer build() {
-            return this.lexer;
-        }
-    }
-
-    public static final class Parser {
-
-        private Python3Parser parser;
-
-        public Parser(String input) {
-            this(CharStreams.fromString(input));
-        }
-
-        public Parser(CharStream input) {
-            Python3Lexer lexer = new Python3Lexer(input);
-            lexer.removeErrorListeners();
-            lexer.addErrorListener(ERROR_LISTENER);
-            this.parser = new Python3Parser(new CommonTokenStream(lexer));
-            this.parser.removeErrorListeners();
-            this.parser.addErrorListener(ERROR_LISTENER);
-        }
-
-        public Parser(Python3Lexer lexer) {
-            this.parser = new Python3Parser(new CommonTokenStream(lexer));
-            this.parser.removeErrorListeners();
-            this.parser.addErrorListener(ERROR_LISTENER);
-        }
-
-        public Parser withErrorListener(ANTLRErrorListener listener) {
-            this.parser.removeErrorListeners();
-            this.parser.addErrorListener(listener);
-            return this;
-        }
-
-        public Python3Parser build() {
-            return this.parser;
-        }
+    public static Python3Parser createParser(CharStream input) {
+        Python3Lexer lexer = new Python3Lexer(input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(ERROR_LISTENER);
+        Python3Parser parser = new Python3Parser(new CommonTokenStream(lexer));
+        parser.removeErrorListeners();
+        parser.addErrorListener(ERROR_LISTENER);
+        return parser;
     }
 }

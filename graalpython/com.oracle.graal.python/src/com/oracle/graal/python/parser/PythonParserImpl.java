@@ -27,163 +27,86 @@ package com.oracle.graal.python.parser;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
+import java.util.function.Consumer;
 
 import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CodePointCharStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.parser.ScopeTranslator.ScopeTranslatorFactory;
 import com.oracle.graal.python.parser.antlr.Builder;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public final class PythonParserImpl implements PythonParser {
-    private static final ConcurrentHashMap<String, ParserRuleContext> cachedParseTrees = new ConcurrentHashMap<>();
-
-    private static Python3Parser getPython3Parser(CodePointCharStream fromString) {
-        Python3Parser parser = new Builder.Parser(fromString).build();
-        parser.setErrorHandler(new PythonErrorStrategy());
-        return parser;
-    }
 
     private static Python3Parser getPython3Parser(String string) {
-        Python3Parser parser = new Builder.Parser(string).build();
+        Python3Parser parser = Builder.createParser(CharStreams.fromString(string));
         parser.setErrorHandler(new PythonErrorStrategy());
         return parser;
     }
 
+    @Override
     @TruffleBoundary
-    private static ParserRuleContext preParseWithAntlr(PythonCore core, Source source) {
-        String path = source.getURI().toString();
-        String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
-        String fileDirAndName = pathParts[pathParts.length - 2] + PythonCore.FILE_SEPARATOR + pathParts[pathParts.length - 1];
-        CodePointCharStream fromString = CharStreams.fromString(source.getCharacters().toString(), fileDirAndName);
-        Python3Parser parser = getPython3Parser(fromString);
+    public Node parse(ParserMode mode, PythonCore core, Source source, Frame currentFrame) {
+        Python3Parser parser = getPython3Parser(source.getCharacters().toString());
         ParserRuleContext input;
-        if (!core.isInitialized()) {
-            input = cachedParseTrees.computeIfAbsent(fileDirAndName, (key) -> parser.file_input());
-        } else {
-            try {
-                if (source.isInteractive()) {
-                    input = parser.single_input();
-                } else {
+        try {
+            switch (mode) {
+                case Eval:
+                    input = parser.eval_input();
+                    break;
+                case File:
                     input = parser.file_input();
-                }
-            } catch (Exception e) {
+                    break;
+                case InteractiveStatement:
+                case InlineEvaluation:
+                case Statement:
+                    input = parser.single_input();
+                    break;
+                default:
+                    throw new RuntimeException("unexpected mode: " + mode);
+            }
+        } catch (Exception e) {
+            if (mode == ParserMode.InteractiveStatement || mode == ParserMode.InlineEvaluation) {
                 try {
                     parser.reset();
                     input = parser.eval_input();
                 } catch (Exception e2) {
-                    if (source.isInteractive() && e instanceof PIncompleteSourceException) {
+                    if (mode == ParserMode.InteractiveStatement && e instanceof PIncompleteSourceException) {
                         ((PIncompleteSourceException) e).setSource(source);
                         throw e;
                     }
-                    Node location = getLocation(source, PythonErrorStrategy.getLine(e));
-                    throw core.raise(SyntaxError, location, e.getMessage());
+                    throw handleParserError(core, source, e);
                 }
+            } else {
+                throw handleParserError(core, source, e);
             }
         }
-        return input;
-    }
-
-    @TruffleBoundary
-    private static ParserRuleContext preParseInlineWithAntlr(PythonCore core, Source source) {
-        Python3Parser parser = getPython3Parser(source.getCharacters().toString());
-        ParserRuleContext input;
-        try {
-            input = parser.single_input();
-        } catch (Exception e) {
-            try {
-                parser.reset();
-                input = parser.eval_input();
-            } catch (Exception e2) {
-                Node location = getLocation(source, PythonErrorStrategy.getLine(e));
-                throw core.raise(SyntaxError, location, e.getMessage());
-            }
-        }
-        return input;
-    }
-
-    private static Node getLocation(Source source, int line) {
-        if (line <= 0 || line > source.getLineCount()) {
-            return null;
+        // ensure builtins patches are loaded before parsing
+        core.loadBuiltinsPatches();
+        TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
+        Node result;
+        Consumer<TranslationEnvironment> environmentConsumer = (env) -> env.setFreeVarsInRootScope(currentFrame);
+        if (mode == ParserMode.InlineEvaluation) {
+            ScopeTranslatorFactory scopeTranslator = (env, trackCells) -> new InlineScopeTranslator<>(core, env, currentFrame.getFrameDescriptor(), trackCells);
+            ScopeTranslator.accept(input, environment, scopeTranslator, environmentConsumer);
+            result = new PythonInlineTreeTranslator(core, source.getName(), input, environment, source).getTranslationResult();
         } else {
-            SourceSection section = source.createSection(line);
-            return new Node() {
-                @Override
-                public SourceSection getSourceSection() {
-                    return section;
-                }
-            };
+            ScopeTranslatorFactory scopeTranslator = (env, trackCells) -> new ScopeTranslator<>(core, env, source.isInteractive(), trackCells);
+            ScopeTranslator.accept(input, environment, scopeTranslator, environmentConsumer);
+            result = new PythonTreeTranslator(core, source.getName(), input, environment, source).getTranslationResult();
         }
-    }
-
-    @Override
-    @TruffleBoundary
-    public PythonParseResult parse(PythonCore core, Source source) {
-        return translateParseResult(core, source.getName(), preParseWithAntlr(core, source), source);
-    }
-
-    @Override
-    @TruffleBoundary
-    public PNode parseInline(PythonCore core, Source source, Frame curFrame) {
-        return translateInlineParseResult(core, source.getName(), preParseInlineWithAntlr(core, source), source, curFrame);
-    }
-
-    @Override
-    @TruffleBoundary
-    public PythonParseResult parseEval(PythonCore core, String expression, String filename) {
-        Python3Parser parser = getPython3Parser(expression);
-        ParserRuleContext input;
-        try {
-            input = parser.eval_input();
-        } catch (Exception e) {
-            throw handleParserError(core, e);
-        }
-        Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
-        Frame callerFrame = Truffle.getRuntime().getCallerFrame().getFrame(FrameInstance.FrameAccess.READ_ONLY);
-        return translateParseResult(core, filename, input, source, callerFrame);
-    }
-
-    @Override
-    @TruffleBoundary
-    public PythonParseResult parseExec(PythonCore core, String expression, String filename) {
-        Python3Parser parser = getPython3Parser(expression);
-        ParserRuleContext input;
-        try {
-            input = parser.file_input();
-        } catch (Exception e) {
-            throw handleParserError(core, e);
-        }
-        Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
-        return translateParseResult(core, filename, input, source);
-    }
-
-    @Override
-    @TruffleBoundary
-    public PythonParseResult parseSingle(PythonCore core, String expression, String filename) {
-        Python3Parser parser = getPython3Parser(expression);
-        ParserRuleContext input;
-        try {
-            input = parser.single_input();
-        } catch (Exception e) {
-            throw handleParserError(core, e);
-        }
-        Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
-        return translateParseResult(core, filename, input, source);
+        return result;
     }
 
     @Override
@@ -199,36 +122,23 @@ public final class PythonParserImpl implements PythonParser {
         return input.NAME() != null;
     }
 
-    private static PException handleParserError(PythonCore core, Exception e) {
-        return core.raise(SyntaxError, e.getMessage());
+    private static PException handleParserError(PythonCore core, Source source, Exception e) {
+        SourceSection section = PythonErrorStrategy.getPosition(source, e);
+        Node location = new Node() {
+            @Override
+            public SourceSection getSourceSection() {
+                return section;
+            }
+        };
+        PBaseException instance;
+        PythonClass exceptionType = core.getErrorClass(SyntaxError);
+        instance = PythonObjectFactory.get().createBaseException(exceptionType, "invalid syntax", new Object[0]);
+        String path = source.getPath();
+        instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
+        instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");
+        instance.setAttribute("lineno", section.getStartLine());
+        instance.setAttribute("offset", section.getStartColumn());
+        instance.setAttribute("msg", section.getCharIndex() == source.getLength() ? "unexpected EOF while parsing" : "invalid syntax");
+        throw core.raise(instance, location);
     }
-
-    private static PythonParseResult translateParseResult(PythonCore core, String name, ParserRuleContext input, Source source) {
-        return translateParseResult(core, name, input, source, null);
-    }
-
-    private static PythonParseResult translateParseResult(PythonCore core, String name, ParserRuleContext input, Source source, Frame frame) {
-        // ensure builtins patches are loaded before parsing
-        core.loadBuiltinsPatches();
-        TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
-        ScopeTranslator.accept(input, environment,
-                        (env, trackCells) -> new ScopeTranslator<>(core, env, source.isInteractive(), trackCells),
-                        (env) -> env.setFreeVarsInRootScope(frame));
-
-        PythonTreeTranslator treeTranslator = new PythonTreeTranslator(core, name, input, environment, source);
-        return treeTranslator.getTranslationResult();
-    }
-
-    private static PNode translateInlineParseResult(PythonCore core, String name, ParserRuleContext input, Source source, Frame currentFrame) {
-        // ensure builtins patches are loaded before parsing
-        core.loadBuiltinsPatches();
-        TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
-        ScopeTranslator.accept(input, environment,
-                        (env, trackCells) -> new InlineScopeTranslator<>(core, env, currentFrame.getFrameDescriptor(), trackCells),
-                        (env) -> env.setFreeVarsInRootScope(currentFrame));
-
-        PythonInlineTreeTranslator pythonInlineTreeTranslator = new PythonInlineTreeTranslator(core, name, input, environment, source);
-        return pythonInlineTreeTranslator.getTranslationResult();
-    }
-
 }
