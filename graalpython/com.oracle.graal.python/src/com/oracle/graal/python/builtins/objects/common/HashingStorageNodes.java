@@ -837,7 +837,6 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        @SuppressWarnings("unused")
         protected void doDynamicObjectGeneralize(PHashingCollection container, PythonObjectDictStorage storage, Object key, Object value) {
             switchToHybridDictStorage(container, storage).setItem(key, value, getEquivalence());
         }
