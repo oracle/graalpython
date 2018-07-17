@@ -45,7 +45,7 @@ class TestSRE:
     def test_sre_import(self):
         if GRAALPYTHON:
             import _cpython_sre
-            assert set(_cpython_sre.__dict__.keys()) == {'__name__', '__doc__', '__package__', 'compile', 'getcodesize', 'ascii_iscased', 'unicode_iscased', 'ascii_tolower', 'unicode_tolower', 'MAGIC', 'CODESIZE', 'MAXREPEAT', 'MAXGROUPS', 'copyright', '__file__', '__loader__', '__spec__'}
+            assert set(_cpython_sre.__dict__.keys()) == {'__name__', '__doc__', '__package__', '__loader__', '__spec__', '__file__', 'compile', 'getcodesize', 'getlower', 'MAGIC', 'CODESIZE', 'MAXREPEAT', 'MAXGROUPS', 'copyright'}, "was: %s" % set(_cpython_sre.__dict__.keys())
 
     def test_backreference(self):
         import re
