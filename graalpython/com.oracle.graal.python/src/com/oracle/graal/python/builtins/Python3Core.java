@@ -34,7 +34,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -781,8 +780,7 @@ public final class Python3Core implements PythonCore {
             try {
                 return env.newSourceBuilder(file).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
             } catch (SecurityException | IOException t) {
-                // TODO: XXX: This will only work if we already have cached parse trees
-                return Source.newBuilder("").uri(URI.create(file.getPath())).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
+                throw new RuntimeException("Could not read core library from " + file);
             }
         }
     }
