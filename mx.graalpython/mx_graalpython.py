@@ -516,7 +516,11 @@ def run_shared_lib_test(args=None):
             }
             status = poly_context_builder_option(isolate_thread, builder, "python.VerboseFlag", "true");
             if (status != poly_ok) {
-                return status;
+            return status;
+            }
+            status = poly_context_builder_allow_io(isolate_thread, builder, true);
+            if (status != poly_ok) {
+            return status;
             }
             status = poly_context_builder_build(isolate_thread, builder, &context);
             if (status != poly_ok) {
@@ -595,7 +599,9 @@ def run_shared_lib_test(args=None):
         mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
         mx.run(["ls", "-l", progname])
         mx.run(["ls", "-l", svm_lib_path])
-        mx.run([progname], env={"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": os.environ["GRAAL_PYTHONHOME"]})
+        run_env = {"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": os.environ["GRAAL_PYTHONHOME"]}
+        print(run_env)
+        mx.run([progname], env=run_env)
     finally:
         try:
             os.unlink(progname)
