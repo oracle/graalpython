@@ -557,8 +557,10 @@ def main():
     known_paths = venv(known_paths)
     if ENABLE_USER_SITE is None:
         ENABLE_USER_SITE = check_enableusersite()
-    known_paths = addusersitepackages(known_paths)
-    known_paths = addsitepackages(known_paths)
+
+    # TRUFFLE TODO requires _sysconfigdata__* modules
+    #known_paths = addusersitepackages(known_paths)
+    #known_paths = addsitepackages(known_paths)
     setquit()
     setcopyright()
     sethelper()

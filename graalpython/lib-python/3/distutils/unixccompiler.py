@@ -62,7 +62,8 @@ class UnixCCompiler(CCompiler):
                    'ranlib'       : None,
                   }
 
-    if sys.platform[:6] == "darwin":
+    if sys.platform[:6] == "darwin" \
+       and False: # TODO: Truffle remove-me
         import platform
         if platform.machine() == 'i386':
             if platform.architecture()[0] == '32bit':

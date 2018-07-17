@@ -57,8 +57,16 @@ generator = type((lambda: (yield))())
 async def _coro(): pass
 _coro = _coro()
 coroutine = type(_coro)
-_coro.close()  # Prevent ResourceWarning
+# TODO: remove me
+# _coro.close()  # Prevent ResourceWarning
 del _coro
+## asynchronous generator ##
+## This should be reverted, once async generators are supported.
+## Temporary fix.
+#async def _ag(): yield
+#_ag = _ag()
+#async_generator = type(_ag)
+#del _ag
 
 
 ### ONE-TRICK PONIES ###

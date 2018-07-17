@@ -1,4 +1,8 @@
-
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 /* POSIX module implementation */
 
 /* This file is also used for Windows NT/MS-Win.  In that case the
@@ -393,8 +397,8 @@ static int win32_can_symlink = 0;
 #define INITFUNC PyInit_nt
 #define MODNAME "nt"
 #else
-#define INITFUNC PyInit_posix
-#define MODNAME "posix"
+#define INITFUNC PyInit_posixmodule
+#define MODNAME "posixmodule" // TRUFFLE TODO
 #endif
 
 #ifdef MS_WINDOWS
@@ -7922,63 +7926,63 @@ os_read_impl(PyObject *module, int fd, Py_ssize_t length)
     return buffer;
 }
 
-#if (defined(HAVE_SENDFILE) && (defined(__FreeBSD__) || defined(__DragonFly__) \
-    || defined(__APPLE__))) || defined(HAVE_READV) || defined(HAVE_WRITEV)
-static Py_ssize_t
-iov_setup(struct iovec **iov, Py_buffer **buf, PyObject *seq, Py_ssize_t cnt, int type)
-{
-    Py_ssize_t i, j;
-    Py_ssize_t blen, total = 0;
-
-    *iov = PyMem_New(struct iovec, cnt);
-    if (*iov == NULL) {
-        PyErr_NoMemory();
-        return -1;
-    }
-
-    *buf = PyMem_New(Py_buffer, cnt);
-    if (*buf == NULL) {
-        PyMem_Del(*iov);
-        PyErr_NoMemory();
-        return -1;
-    }
-
-    for (i = 0; i < cnt; i++) {
-        PyObject *item = PySequence_GetItem(seq, i);
-        if (item == NULL)
-            goto fail;
-        if (PyObject_GetBuffer(item, &(*buf)[i], type) == -1) {
-            Py_DECREF(item);
-            goto fail;
-        }
-        Py_DECREF(item);
-        (*iov)[i].iov_base = (*buf)[i].buf;
-        blen = (*buf)[i].len;
-        (*iov)[i].iov_len = blen;
-        total += blen;
-    }
-    return total;
-
-fail:
-    PyMem_Del(*iov);
-    for (j = 0; j < i; j++) {
-        PyBuffer_Release(&(*buf)[j]);
-    }
-    PyMem_Del(*buf);
-    return -1;
-}
-
-static void
-iov_cleanup(struct iovec *iov, Py_buffer *buf, int cnt)
-{
-    int i;
-    PyMem_Del(iov);
-    for (i = 0; i < cnt; i++) {
-        PyBuffer_Release(&buf[i]);
-    }
-    PyMem_Del(buf);
-}
-#endif
+//#if (defined(HAVE_SENDFILE) && (defined(__FreeBSD__) || defined(__DragonFly__) \
+//    || defined(__APPLE__))) || defined(HAVE_READV) || defined(HAVE_WRITEV)
+//static Py_ssize_t
+//iov_setup(struct iovec **iov, Py_buffer **buf, PyObject *seq, Py_ssize_t cnt, int type)
+//{
+//    Py_ssize_t i, j;
+//    Py_ssize_t blen, total = 0;
+//
+//    *iov = PyMem_New(struct iovec, cnt);
+//    if (*iov == NULL) {
+//        PyErr_NoMemory();
+//        return -1;
+//    }
+//
+//    *buf = PyMem_New(Py_buffer, cnt);
+//    if (*buf == NULL) {
+//        PyMem_Del(*iov);
+//        PyErr_NoMemory();
+//        return -1;
+//    }
+//
+//    for (i = 0; i < cnt; i++) {
+//        PyObject *item = PySequence_GetItem(seq, i);
+//        if (item == NULL)
+//            goto fail;
+//        if (PyObject_GetBuffer(item, &(*buf)[i], type) == -1) {
+//            Py_DECREF(item);
+//            goto fail;
+//        }
+//        Py_DECREF(item);
+//        (*iov)[i].iov_base = (*buf)[i].buf;
+//        blen = (*buf)[i].len;
+//        (*iov)[i].iov_len = blen;
+//        total += blen;
+//    }
+//    return total;
+//
+//fail:
+//    PyMem_Del(*iov);
+//    for (j = 0; j < i; j++) {
+//        PyBuffer_Release(&(*buf)[j]);
+//    }
+//    PyMem_Del(*buf);
+//    return -1;
+//}
+//
+//static void
+//iov_cleanup(struct iovec *iov, Py_buffer *buf, int cnt)
+//{
+//    int i;
+//    PyMem_Del(iov);
+//    for (i = 0; i < cnt; i++) {
+//        PyBuffer_Release(&buf[i]);
+//    }
+//    PyMem_Del(buf);
+//}
+//#endif
 
 
 #ifdef HAVE_READV
@@ -8108,6 +8112,7 @@ os_write_impl(PyObject *module, int fd, Py_buffer *data)
     return _Py_write(fd, data->buf, data->len);
 }
 
+#undef HAVE_SENDFILE
 #ifdef HAVE_SENDFILE
 PyDoc_STRVAR(posix_sendfile__doc__,
 "sendfile(out, in, offset, count) -> byteswritten\n\
@@ -13055,167 +13060,169 @@ INITFUNC(void)
         return NULL;
     Py_DECREF(v);
 
-    if (all_ins(m))
-        return NULL;
-
-    if (setup_confname_tables(m))
-        return NULL;
-
-    Py_INCREF(PyExc_OSError);
-    PyModule_AddObject(m, "error", PyExc_OSError);
-
-#ifdef HAVE_PUTENV
-    if (posix_putenv_garbage == NULL)
-        posix_putenv_garbage = PyDict_New();
-#endif
-
-    if (!initialized) {
-#if defined(HAVE_WAITID) && !defined(__APPLE__)
-        waitid_result_desc.name = MODNAME ".waitid_result";
-        if (PyStructSequence_InitType2(&WaitidResultType, &waitid_result_desc) < 0)
-            return NULL;
-#endif
-
-        stat_result_desc.name = "os.stat_result"; /* see issue #19209 */
-        stat_result_desc.fields[7].name = PyStructSequence_UnnamedField;
-        stat_result_desc.fields[8].name = PyStructSequence_UnnamedField;
-        stat_result_desc.fields[9].name = PyStructSequence_UnnamedField;
-        if (PyStructSequence_InitType2(&StatResultType, &stat_result_desc) < 0)
-            return NULL;
-        structseq_new = StatResultType.tp_new;
-        StatResultType.tp_new = statresult_new;
-
-        statvfs_result_desc.name = "os.statvfs_result"; /* see issue #19209 */
-        if (PyStructSequence_InitType2(&StatVFSResultType,
-                                       &statvfs_result_desc) < 0)
-            return NULL;
-#ifdef NEED_TICKS_PER_SECOND
-#  if defined(HAVE_SYSCONF) && defined(_SC_CLK_TCK)
-        ticks_per_second = sysconf(_SC_CLK_TCK);
-#  elif defined(HZ)
-        ticks_per_second = HZ;
-#  else
-        ticks_per_second = 60; /* magic fallback value; may be bogus */
-#  endif
-#endif
-
-#if defined(HAVE_SCHED_SETPARAM) || defined(HAVE_SCHED_SETSCHEDULER)
-        sched_param_desc.name = MODNAME ".sched_param";
-        if (PyStructSequence_InitType2(&SchedParamType, &sched_param_desc) < 0)
-            return NULL;
-        SchedParamType.tp_new = os_sched_param;
-#endif
-
-        /* initialize TerminalSize_info */
-        if (PyStructSequence_InitType2(&TerminalSizeType,
-                                       &TerminalSize_desc) < 0)
-            return NULL;
-
-        /* initialize scandir types */
-        if (PyType_Ready(&ScandirIteratorType) < 0)
-            return NULL;
-        if (PyType_Ready(&DirEntryType) < 0)
-            return NULL;
-    }
-#if defined(HAVE_WAITID) && !defined(__APPLE__)
-    Py_INCREF((PyObject*) &WaitidResultType);
-    PyModule_AddObject(m, "waitid_result", (PyObject*) &WaitidResultType);
-#endif
-    Py_INCREF((PyObject*) &StatResultType);
-    PyModule_AddObject(m, "stat_result", (PyObject*) &StatResultType);
-    Py_INCREF((PyObject*) &StatVFSResultType);
-    PyModule_AddObject(m, "statvfs_result",
-                       (PyObject*) &StatVFSResultType);
-
-#if defined(HAVE_SCHED_SETPARAM) || defined(HAVE_SCHED_SETSCHEDULER)
-    Py_INCREF(&SchedParamType);
-    PyModule_AddObject(m, "sched_param", (PyObject *)&SchedParamType);
-#endif
-
-    times_result_desc.name = MODNAME ".times_result";
-    if (PyStructSequence_InitType2(&TimesResultType, &times_result_desc) < 0)
-        return NULL;
-    PyModule_AddObject(m, "times_result", (PyObject *)&TimesResultType);
-
-    uname_result_desc.name = MODNAME ".uname_result";
-    if (PyStructSequence_InitType2(&UnameResultType, &uname_result_desc) < 0)
-        return NULL;
-    PyModule_AddObject(m, "uname_result", (PyObject *)&UnameResultType);
-
-#ifdef __APPLE__
-    /*
-     * Step 2 of weak-linking support on Mac OS X.
-     *
-     * The code below removes functions that are not available on the
-     * currently active platform.
-     *
-     * This block allow one to use a python binary that was build on
-     * OSX 10.4 on OSX 10.3, without losing access to new APIs on
-     * OSX 10.4.
-     */
-#ifdef HAVE_FSTATVFS
-    if (fstatvfs == NULL) {
-        if (PyObject_DelAttrString(m, "fstatvfs") == -1) {
-            return NULL;
-        }
-    }
-#endif /* HAVE_FSTATVFS */
-
-#ifdef HAVE_STATVFS
-    if (statvfs == NULL) {
-        if (PyObject_DelAttrString(m, "statvfs") == -1) {
-            return NULL;
-        }
-    }
-#endif /* HAVE_STATVFS */
-
-# ifdef HAVE_LCHOWN
-    if (lchown == NULL) {
-        if (PyObject_DelAttrString(m, "lchown") == -1) {
-            return NULL;
-        }
-    }
-#endif /* HAVE_LCHOWN */
-
-
-#endif /* __APPLE__ */
-
-    Py_INCREF(&TerminalSizeType);
-    PyModule_AddObject(m, "terminal_size", (PyObject*) &TerminalSizeType);
-
-    billion = PyLong_FromLong(1000000000);
-    if (!billion)
-        return NULL;
-
-    /* suppress "function not used" warnings */
-    {
-    int ignored;
-    fd_specified("", -1);
-    follow_symlinks_specified("", 1);
-    dir_fd_and_follow_symlinks_invalid("chmod", DEFAULT_DIR_FD, 1);
-    dir_fd_converter(Py_None, &ignored);
-    dir_fd_unavailable(Py_None, &ignored);
-    }
-
-    /*
-     * provide list of locally available functions
-     * so os.py can populate support_* lists
-     */
-    list = PyList_New(0);
-    if (!list)
-        return NULL;
-    for (trace = have_functions; *trace; trace++) {
-        PyObject *unicode = PyUnicode_DecodeASCII(*trace, strlen(*trace), NULL);
-        if (!unicode)
-            return NULL;
-        if (PyList_Append(list, unicode))
-            return NULL;
-        Py_DECREF(unicode);
-    }
-    PyModule_AddObject(m, "_have_functions", list);
-
-    Py_INCREF((PyObject *) &DirEntryType);
-    PyModule_AddObject(m, "DirEntry", (PyObject *)&DirEntryType);
+/* 
+ *     if (all_ins(m))
+ *         return NULL;
+ * 
+ *     if (setup_confname_tables(m))
+ *         return NULL;
+ * 
+ *     Py_INCREF(PyExc_OSError);
+ *     PyModule_AddObject(m, "error", PyExc_OSError);
+ * 
+ * #ifdef HAVE_PUTENV
+ *     if (posix_putenv_garbage == NULL)
+ *         posix_putenv_garbage = PyDict_New();
+ * #endif
+ * 
+ *     if (!initialized) {
+ * #if defined(HAVE_WAITID) && !defined(__APPLE__)
+ *         waitid_result_desc.name = MODNAME ".waitid_result";
+ *         if (PyStructSequence_InitType2(&WaitidResultType, &waitid_result_desc) < 0)
+ *             return NULL;
+ * #endif
+ * 
+ *         stat_result_desc.name = "os.stat_result"; /\* see issue #19209 *\/
+ *         stat_result_desc.fields[7].name = PyStructSequence_UnnamedField;
+ *         stat_result_desc.fields[8].name = PyStructSequence_UnnamedField;
+ *         stat_result_desc.fields[9].name = PyStructSequence_UnnamedField;
+ *         if (PyStructSequence_InitType2(&StatResultType, &stat_result_desc) < 0)
+ *             return NULL;
+ *         structseq_new = StatResultType.tp_new;
+ *         StatResultType.tp_new = statresult_new;
+ * 
+ *         statvfs_result_desc.name = "os.statvfs_result"; /\* see issue #19209 *\/
+ *         if (PyStructSequence_InitType2(&StatVFSResultType,
+ *                                        &statvfs_result_desc) < 0)
+ *             return NULL;
+ * #ifdef NEED_TICKS_PER_SECOND
+ * #  if defined(HAVE_SYSCONF) && defined(_SC_CLK_TCK)
+ *         ticks_per_second = sysconf(_SC_CLK_TCK);
+ * #  elif defined(HZ)
+ *         ticks_per_second = HZ;
+ * #  else
+ *         ticks_per_second = 60; /\* magic fallback value; may be bogus *\/
+ * #  endif
+ * #endif
+ * 
+ * #if defined(HAVE_SCHED_SETPARAM) || defined(HAVE_SCHED_SETSCHEDULER)
+ *         sched_param_desc.name = MODNAME ".sched_param";
+ *         if (PyStructSequence_InitType2(&SchedParamType, &sched_param_desc) < 0)
+ *             return NULL;
+ *         SchedParamType.tp_new = os_sched_param;
+ * #endif
+ * 
+ *         /\* initialize TerminalSize_info *\/
+ *         if (PyStructSequence_InitType2(&TerminalSizeType,
+ *                                        &TerminalSize_desc) < 0)
+ *             return NULL;
+ * 
+ *         /\* initialize scandir types *\/
+ *         if (PyType_Ready(&ScandirIteratorType) < 0)
+ *             return NULL;
+ *         if (PyType_Ready(&DirEntryType) < 0)
+ *             return NULL;
+ *     }
+ * #if defined(HAVE_WAITID) && !defined(__APPLE__)
+ *     Py_INCREF((PyObject*) &WaitidResultType);
+ *     PyModule_AddObject(m, "waitid_result", (PyObject*) &WaitidResultType);
+ * #endif
+ *     Py_INCREF((PyObject*) &StatResultType);
+ *     PyModule_AddObject(m, "stat_result", (PyObject*) &StatResultType);
+ *     Py_INCREF((PyObject*) &StatVFSResultType);
+ *     PyModule_AddObject(m, "statvfs_result",
+ *                        (PyObject*) &StatVFSResultType);
+ * 
+ * #if defined(HAVE_SCHED_SETPARAM) || defined(HAVE_SCHED_SETSCHEDULER)
+ *     Py_INCREF(&SchedParamType);
+ *     PyModule_AddObject(m, "sched_param", (PyObject *)&SchedParamType);
+ * #endif
+ * 
+ *     times_result_desc.name = MODNAME ".times_result";
+ *     if (PyStructSequence_InitType2(&TimesResultType, &times_result_desc) < 0)
+ *         return NULL;
+ *     PyModule_AddObject(m, "times_result", (PyObject *)&TimesResultType);
+ * 
+ *     uname_result_desc.name = MODNAME ".uname_result";
+ *     if (PyStructSequence_InitType2(&UnameResultType, &uname_result_desc) < 0)
+ *         return NULL;
+ *     PyModule_AddObject(m, "uname_result", (PyObject *)&UnameResultType);
+ * 
+ * #ifdef __APPLE__
+ *     /\*
+ *      * Step 2 of weak-linking support on Mac OS X.
+ *      *
+ *      * The code below removes functions that are not available on the
+ *      * currently active platform.
+ *      *
+ *      * This block allow one to use a python binary that was build on
+ *      * OSX 10.4 on OSX 10.3, without losing access to new APIs on
+ *      * OSX 10.4.
+ *      *\/
+ * #ifdef HAVE_FSTATVFS
+ *     if (fstatvfs == NULL) {
+ *         if (PyObject_DelAttrString(m, "fstatvfs") == -1) {
+ *             return NULL;
+ *         }
+ *     }
+ * #endif /\* HAVE_FSTATVFS *\/
+ * 
+ * #ifdef HAVE_STATVFS
+ *     if (statvfs == NULL) {
+ *         if (PyObject_DelAttrString(m, "statvfs") == -1) {
+ *             return NULL;
+ *         }
+ *     }
+ * #endif /\* HAVE_STATVFS *\/
+ * 
+ * # ifdef HAVE_LCHOWN
+ *     if (lchown == NULL) {
+ *         if (PyObject_DelAttrString(m, "lchown") == -1) {
+ *             return NULL;
+ *         }
+ *     }
+ * #endif /\* HAVE_LCHOWN *\/
+ * 
+ * 
+ * #endif /\* __APPLE__ *\/
+ * 
+ *     Py_INCREF(&TerminalSizeType);
+ *     PyModule_AddObject(m, "terminal_size", (PyObject*) &TerminalSizeType);
+ * 
+ *     billion = PyLong_FromLong(1000000000);
+ *     if (!billion)
+ *         return NULL;
+ * 
+ *     /\* suppress "function not used" warnings *\/
+ *     {
+ *     int ignored;
+ *     fd_specified("", -1);
+ *     follow_symlinks_specified("", 1);
+ *     dir_fd_and_follow_symlinks_invalid("chmod", DEFAULT_DIR_FD, 1);
+ *     dir_fd_converter(Py_None, &ignored);
+ *     dir_fd_unavailable(Py_None, &ignored);
+ *     }
+ * 
+ *     /\*
+ *      * provide list of locally available functions
+ *      * so os.py can populate support_* lists
+ *      *\/
+ *     list = PyList_New(0);
+ *     if (!list)
+ *         return NULL;
+ *     for (trace = have_functions; *trace; trace++) {
+ *         PyObject *unicode = PyUnicode_DecodeASCII(*trace, strlen(*trace), NULL);
+ *         if (!unicode)
+ *             return NULL;
+ *         if (PyList_Append(list, unicode))
+ *             return NULL;
+ *         Py_DECREF(unicode);
+ *     }
+ *     PyModule_AddObject(m, "_have_functions", list);
+ * 
+ *     Py_INCREF((PyObject *) &DirEntryType);
+ *     PyModule_AddObject(m, "DirEntry", (PyObject *)&DirEntryType);
+ */
 
     initialized = 1;
 

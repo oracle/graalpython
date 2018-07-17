@@ -220,6 +220,8 @@ def _compile(code, pattern, flags):
 
 def _compile_charset(charset, flags, code, fixup=None, fixes=None):
     # compile charset subprogram
+    # TODO: Truffle revert-me
+    return None
     emit = code.append
     for op, av in _optimize_charset(charset, fixup, fixes):
         emit(op)

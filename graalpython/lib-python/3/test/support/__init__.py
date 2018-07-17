@@ -13,52 +13,75 @@ import gc
 import importlib
 import importlib.util
 import logging.handlers
-import nntplib
+# TODO: Truffle reenable me once supported (GR-9138)
+# import nntplib
 import os
 import platform
 import re
-import shutil
-import socket
+# TODO: Truffle reenable me once supported (GR-9139)
+# import shutil
+# TODO: Truffle reenable me once supported (GR-9140)
+# import socket
 import stat
 import struct
-import subprocess
+# TODO: Truffle reenable me once supported (GR-9141)
+# import subprocess
 import sys
 import sysconfig
-import tempfile
+# TODO: Truffle reenable me once supported (GR-9142)
+# import tempfile
 import time
+import types
 import unittest
-import urllib.error
+# TODO: Truffle reenable me once supported (GR-9143)
+# import urllib.error
 import warnings
 
-try:
-    import _thread, threading
-except ImportError:
-    _thread = None
-    threading = None
-try:
-    import multiprocessing.process
-except ImportError:
-    multiprocessing = None
 
-try:
-    import zlib
-except ImportError:
-    zlib = None
+# TODO: Truffle reenable me once supported  (GR-9144)
+# try:
+#     import _thread, threading
+# except ImportError:
+#     _thread = None
+#     threading = None
+_thread = None
+threading = None
 
-try:
-    import gzip
-except ImportError:
-    gzip = None
+# TODO: Truffle reenable me once supported (GR-9145)
+# try:
+#     import multiprocessing.process
+# except ImportError:
+#     multiprocessing = None
+multiprocessing = None
 
-try:
-    import bz2
-except ImportError:
-    bz2 = None
+# TODO: Truffle reenable me once supported (GR-9146)
+# try:
+#     import zlib
+# except ImportError:
+#     zlib = None
+zlib = None
 
-try:
-    import lzma
-except ImportError:
-    lzma = None
+# TODO: Truffle reenable me once supported (GR-9147)
+# try:
+#     import gzip
+# except ImportError:
+#     gzip = None
+gzip = None
+
+
+# TODO: Truffle reenable me once supported (GR-9148)
+# try:
+#     import bz2
+# except ImportError:
+#     bz2 = None
+bz2 = None
+
+# TODO: Truffle reenable me once supported (GR-9149)
+# try:
+#     import lzma
+# except ImportError:
+#     lzma = None
+lzma = None
 
 try:
     import resource

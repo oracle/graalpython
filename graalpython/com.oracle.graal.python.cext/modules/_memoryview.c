@@ -1,7 +1,16 @@
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
+
 /* Memoryview object implementation */
 
 #include "Python.h"
-#include "pystrhex.h"
+#include <limits.h>
+/* #include "internal/mem.h" */
+/* #include "internal/pystate.h" */
+/* #include "pystrhex.h" */
 #include <stddef.h>
 
 
@@ -112,8 +121,9 @@ mbuf_dealloc(_PyManagedBufferObject *self)
 {
     assert(self->exports == 0);
     mbuf_release(self);
-    if (self->flags&_Py_MANAGED_BUFFER_FREE_FORMAT)
-        PyMem_Free(self->master.format);
+    // TODO: TRUFFLE: Revert-me
+    /* if (self->flags&_Py_MANAGED_BUFFER_FREE_FORMAT) */
+        /* PyMem_Free(self->master.format); */
     PyObject_GC_Del(self);
 }
 
@@ -792,9 +802,13 @@ PyMemoryView_FromObject(PyObject *v)
         return ret;
     }
 
-    PyErr_Format(PyExc_TypeError,
-        "memoryview: a bytes-like object is required, not '%.200s'",
-        Py_TYPE(v)->tp_name);
+    // TODO: remove me once PyErr_XXX functions are supported
+    printf("memoryview: a bytes-like object is required, not '%.200s'", Py_TYPE(v)->tp_name);
+    PyErr_SetString(PyExc_TypeError, Py_TYPE(v)->tp_name);
+
+//    PyErr_Format(PyExc_TypeError,
+//        "memoryview: a bytes-like object is required, not '%.200s'",
+//        Py_TYPE(v)->tp_name);
     return NULL;
 }
 
@@ -809,7 +823,8 @@ mbuf_copy_format(_PyManagedBufferObject *mbuf, const char *fmt)
             return -1;
         }
         mbuf->master.format = strcpy(cp, fmt);
-        mbuf->flags |= _Py_MANAGED_BUFFER_FREE_FORMAT;
+        // TODO: TRUFFLE: Revert-me
+        // mbuf->flags |= _Py_MANAGED_BUFFER_FREE_FORMAT;
     }
 
     return 0;
@@ -2143,7 +2158,7 @@ memory_hex(PyMemoryViewObject *self, PyObject *dummy)
     if (bytes == NULL)
         return NULL;
 
-    ret = _Py_strhex(PyBytes_AS_STRING(bytes), Py_SIZE(bytes));
+    ret = _Py_strhex(PyBytes_AS_STRING(bytes), PyBytes_GET_SIZE(bytes));
     Py_DECREF(bytes);
 
     return ret;
@@ -3112,3 +3127,39 @@ PyTypeObject PyMemoryView_Type = {
     0,                                        /* tp_alloc */
     memory_new,                               /* tp_new */
 };
+
+static struct PyModuleDef _memoryviewmodule = {
+    PyModuleDef_HEAD_INIT,
+    "_memoryview",
+    "",
+    -1,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+PyMODINIT_FUNC
+PyInit__memoryview(void)
+{
+    PyObject *m;
+
+    m = PyModule_Create(&_memoryviewmodule);
+    if (m == NULL)
+        return NULL;
+
+    if (PyType_Ready(&PyMemoryView_Type) < 0)
+        return NULL;
+
+    if (PyType_Ready(&_PyManagedBuffer_Type) < 0)
+        return NULL;
+
+    Py_INCREF((PyObject*)&PyMemoryView_Type);
+    PyModule_AddObject(m, "memoryview", (PyObject*)&PyMemoryView_Type);
+
+    Py_INCREF((PyObject*)&_PyManagedBuffer_Type);
+    PyModule_AddObject(m, "managedbuffer", (PyObject*)&_PyManagedBuffer_Type);
+
+    return m;
+}

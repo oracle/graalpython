@@ -1,4 +1,8 @@
-
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 /* Capsule objects let you wrap a C "void *" pointer in a Python
    object.  They're a way of passing data through the Python interpreter
    without creating your own custom type.

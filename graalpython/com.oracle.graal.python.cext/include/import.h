@@ -1,3 +1,8 @@
+/* Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2017 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 
 /* Module definition and import interface */
 
@@ -8,7 +13,11 @@ extern "C" {
 #endif
 
 #ifndef Py_LIMITED_API
-PyAPI_FUNC(void) _PyImportZip_Init(void);
+/* (tfel): commented out, because we don't want to provide the _PyInitError
+ * struct right now
+ *
+ * PyAPI_FUNC(_PyInitError) _PyImportZip_Init(void);
+ */
 
 PyMODINIT_FUNC PyInit_imp(void);
 #endif /* !Py_LIMITED_API */
