@@ -45,7 +45,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public class PMemoryView extends PythonBuiltinObject {
 
-    public PMemoryView(PythonClass cls, Object obj) {
+    public PMemoryView(PythonClass cls, @SuppressWarnings("unused") Object obj) {
         super(cls);
     }
 

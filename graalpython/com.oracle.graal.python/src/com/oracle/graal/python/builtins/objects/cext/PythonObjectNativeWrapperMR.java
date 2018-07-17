@@ -426,12 +426,6 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(object.getFunction());
         }
 
-// @Specialization(guards = {"isMemoryView(object)", "eq(MEMORYVIEW_FLAGS)" })
-// Object doImFunc(PythonObject object, @SuppressWarnings("unused") String key,
-// @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
-// return readAttrNode.execute(object, NativeMemberNames.MEMORYVIEW_FLAGS);
-// }
-
         @Fallback
         Object doGeneric(Object object, String key) {
             // This is the preliminary generic case: There are native members we know that they
