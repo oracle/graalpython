@@ -595,7 +595,7 @@ def run_shared_lib_test(args=None):
         mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
         mx.run(["ls", "-l", progname])
         mx.run(["ls", "-l", svm_lib_path])
-        mx.run([progname], env={"LD_LIBRARY_PATH": svm_lib_path})
+        mx.run([progname], env={"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": os.environ["GRAAL_PYTHONHOME"]})
     finally:
         try:
             os.unlink(progname)
