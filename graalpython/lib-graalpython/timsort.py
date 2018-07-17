@@ -166,12 +166,8 @@ class TimSort(object):
             while ofs < maxofs:
                 if lower(a.getitem(p + ofs), key):
                     lastofs = ofs
-                    try:
-                        ofs = ofs << 1
-                    except OverflowError:
-                        ofs = maxofs
-                    else:
-                        ofs = ofs + 1
+                    ofs = ofs << 1
+                    ofs = ofs + 1
                 else:  # key <= a[hint + ofs]
                     break
 
@@ -191,12 +187,8 @@ class TimSort(object):
                 else:
                     # key <= a[hint - ofs]
                     lastofs = ofs
-                    try:
-                        ofs = ofs << 1
-                    except OverflowError:
-                        ofs = maxofs
-                    else:
-                        ofs = ofs + 1
+                    ofs = ofs << 1
+                    ofs = ofs + 1
             if ofs > maxofs:
                 ofs = maxofs
             # Translate back to positive offsets relative to a.
