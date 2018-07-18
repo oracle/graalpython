@@ -103,6 +103,7 @@ public class TopLevelExceptionHandler extends RootNode {
             printExc(exception);
             return null;
         } else {
+            assert context.getCurrentException() == null;
             try {
                 return run(frame);
             } catch (PException e) {
@@ -116,6 +117,8 @@ public class TopLevelExceptionHandler extends RootNode {
                     }
                 }
                 throw e;
+            } finally {
+                context.setCurrentException(null);
             }
         }
     }

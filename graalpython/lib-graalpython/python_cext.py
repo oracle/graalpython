@@ -61,8 +61,12 @@ def may_raise(error_result=error_handler):
     else:
         def decorator(fun):
             def wrapper(*args):
-                with error_handler:
+                typ = val = tb = None
+                try:
                     return fun(*args)
+                except BaseException as e:
+                    typ, val, tb = sys.exc_info()
+                PyErr_Restore(typ, val, tb)
                 return error_result
             wrapper.__name__ = fun.__name__
             return wrapper
@@ -141,7 +145,7 @@ def PyDict_Size(dictObj):
 @may_raise(None)
 def PyDict_Copy(dictObj):
     if not isinstance(dictObj, dict):
-        _PyErr_BadInternalCall(None, None, dictObj)
+        __bad_internal_call(None, None, dictObj)
     return dictObj.copy()
 
 
@@ -171,7 +175,7 @@ def PyDict_DelItem(dictObj, key):
 @may_raise(-1)
 def PyDict_Contains(dictObj, key):
     if not isinstance(dictObj, dict):
-        _PyErr_BadInternalCall(None, None, dictObj)
+        __bad_internal_call(None, None, dictObj)
     return key in dictObj
 
 
@@ -264,14 +268,14 @@ def PyBytes_FromFormat(fmt, args):
 @may_raise
 def PyList_New(size):
     if size < 0:
-        _PyErr_BadInternalCall(None, None, None)
+        __bad_internal_call(None, None, None)
     return [None] * size
 
 
 @may_raise
 def PyList_GetItem(listObj, pos):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     if pos < 0:
         raise IndexError("list index out of range")
     return listObj[pos]
@@ -280,7 +284,7 @@ def PyList_GetItem(listObj, pos):
 @may_raise(-1)
 def PyList_SetItem(listObj, pos, newitem):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     if pos < 0:
         raise IndexError("list assignment index out of range")
     listObj[pos] = newitem
@@ -290,7 +294,7 @@ def PyList_SetItem(listObj, pos, newitem):
 @may_raise(-1)
 def PyList_Append(listObj, newitem):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     listObj.append(newitem)
     return 0
 
@@ -305,14 +309,14 @@ def PyList_AsTuple(listObj):
 @may_raise
 def PyList_GetSlice(listObj, ilow, ihigh):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     return listObj[ilow:ihigh]
 
 
 @may_raise(-1)
 def PyList_Size(listObj):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     return len(listObj)
 
 
@@ -792,21 +796,21 @@ def PyTuple_New(size):
 @may_raise
 def PyTuple_GetItem(t, n):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return t[n]
 
 
 @may_raise(-1)
 def PyTuple_Size(t):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return len(t)
 
 
 @may_raise
 def PyTuple_GetSlice(t, start, end):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return t[start:end]
 
 
@@ -908,6 +912,11 @@ def PyErr_CreateAndSetException(exception_type, msg):
 
 @may_raise(None)
 def _PyErr_BadInternalCall(filename, lineno, obj):
+    __bad_internal_call(filename, lineno, obj)
+
+
+# IMPORTANT: only call from functions annotated with 'may_raise'
+def __bad_internal_call(filename, lineno, obj):
     if filename is not None and lineno is not None:
         msg = "{!s}:{!s}: bad argument to internal function".format(filename, lineno)
     else:
