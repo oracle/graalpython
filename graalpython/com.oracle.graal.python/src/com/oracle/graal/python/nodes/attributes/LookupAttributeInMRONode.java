@@ -104,8 +104,8 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
     public abstract Object execute(PythonClass klass);
 
     final static class PythonClassAssumptionPair {
-        public PythonClass cls;
-        public Assumption assumption;
+        public final PythonClass cls;
+        public final Assumption assumption;
 
         PythonClassAssumptionPair(PythonClass cls, Assumption assumption) {
             this.cls = cls;
@@ -131,16 +131,15 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         return new PythonClassAssumptionPair(null, attrAssumption);
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "cachedAttrKlass != null"}, limit = "5", assumptions = {"lookupStable", "attributeInMROFinalAssumption"}, rewriteOn = IllegalStateException.class)
+    @Specialization(guards = {"klass == cachedKlass", "cachedAttributeClassAssumptionPair.cls != null"}, limit = "5", assumptions = {"lookupStable",
+                    "cachedAttributeClassAssumptionPair.assumption"}, rewriteOn = IllegalStateException.class)
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClassAssumptionPair cachedPair,
-                    @Cached("cachedPair.cls") PythonClass cachedAttrKlass,
-                    @Cached("cachedPair.assumption") @SuppressWarnings("unused") Assumption attributeInMROFinalAssumption,
+                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClassAssumptionPair cachedAttributeClassAssumptionPair,
                     @Cached("createBinaryProfile()") ConditionProfile attributeDeletedProfile) {
-        Object value = readAttrNode.execute(cachedAttrKlass, key);
+        Object value = readAttrNode.execute(cachedAttributeClassAssumptionPair.cls, key);
         if (attributeDeletedProfile.profile(value == PNone.NO_VALUE)) {
             // in case the attribute was deleted
             throw new IllegalStateException();
