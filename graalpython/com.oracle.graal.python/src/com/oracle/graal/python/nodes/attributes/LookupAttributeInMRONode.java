@@ -84,7 +84,7 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         }
     }
 
-    private final String key;
+    protected final String key;
 
     public LookupAttributeInMRONode(String key) {
         this.key = key;
@@ -133,14 +133,15 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         return new PythonClassAssumptionPair(null, attrAssumption);
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "cachedAttributeStableInMROInfo.cls != null"}, limit = "5", assumptions = {"lookupStable",
-                    "cachedAttributeStableInMROInfo.assumption"})
+    @Specialization(guards = {"klass == cachedKlass", "cachedClassInMROInfo.cls != null"}, limit = "5", assumptions = {"lookupStable",
+                    "cachedClassInMROInfo.assumption"})
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
-                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClassAssumptionPair cachedAttributeStableInMROInfo) {
-        return readAttrNode.execute(cachedAttributeStableInMROInfo.cls, key);
+                    @Cached("create()") @SuppressWarnings("unused") ReadAttributeFromObjectNode readAttributeNode,
+                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClassAssumptionPair cachedClassInMROInfo,
+                    @Cached("readAttributeNode.execute(cachedClassInMROInfo.cls, key)") Object value) {
+        return value;
     }
 
     protected ReadAttributeFromObjectNode[] create(int size) {
