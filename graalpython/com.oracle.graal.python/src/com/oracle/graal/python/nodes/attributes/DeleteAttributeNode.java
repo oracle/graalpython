@@ -66,10 +66,10 @@ public abstract class DeleteAttributeNode extends PNode {
     protected Object doIt(Object object, Object key,
                     @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create(__DELATTR__)") LookupAttributeInMRONode lookupDelAttr,
-                    @Cached("create()") CallBinaryMethodNode dispatchSetAttribute) {
+                    @Cached("create(__DELATTR__)") LookupAttributeInMRONode delAttributeLookup,
+                    @Cached("create()") CallBinaryMethodNode callDelAttr) {
         PythonClass type = getClassNode.execute(object);
-        Object descr = setAttributeProfile.profile(lookupDelAttr.execute(type));
-        return dispatchSetAttribute.executeObject(descr, object, key);
+        Object descr = setAttributeProfile.profile(delAttributeLookup.execute(type));
+        return callDelAttr.executeObject(descr, object, key);
     }
 }
