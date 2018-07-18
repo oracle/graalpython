@@ -27,6 +27,7 @@
 got_kbd_int = False
 got_finally = False
 
+
 def divide(x, y):
     global got_kbd_int, got_finally
     try:
@@ -43,6 +44,60 @@ def divide(x, y):
 
 
 def test_raise():
-    divide(1,1)
+    divide(1, 1)
     assert got_kbd_int
     assert got_finally
+
+
+def test_exception_restoring():
+    import sys
+    trace = []
+    try:
+        try:
+            assert sys.exc_info() == (None, None, None)
+            trace.append(1)
+            raise ValueError("1")
+        except ValueError:
+            assert sys.exc_info()[0] == ValueError
+            try:
+                trace.append(2)
+                raise KeyError("2")
+            except KeyError:
+                assert sys.exc_info()[0] == KeyError
+                trace.append(3)
+            trace.append(4)
+            raise
+    except ValueError:
+        assert sys.exc_info()[0] == ValueError, "IS: %s" % sys.exc_info()[0]
+        trace.append(5)
+    assert trace == [1, 2, 3, 4, 5]
+
+
+def test_exception_restoring_with_return():
+    import sys
+    trace = []
+    def handler():
+        try:
+            trace.append(2)
+            raise KeyError("2")
+        except KeyError:
+            assert sys.exc_info()[0] == KeyError
+            trace.append(3)
+            return
+            trace.append(-1)
+        trace.append(-1)
+
+    try:
+        try:
+            assert sys.exc_info() == (None, None, None)
+            trace.append(1)
+            raise ValueError("1")
+        except ValueError:
+            assert sys.exc_info()[0] == ValueError
+            handler()
+            trace.append(4)
+            raise
+    except ValueError:
+        assert sys.exc_info()[0] == ValueError, "IS: %s" % sys.exc_info()[0]
+        trace.append(5)
+    assert trace == [1, 2, 3, 4, 5]
