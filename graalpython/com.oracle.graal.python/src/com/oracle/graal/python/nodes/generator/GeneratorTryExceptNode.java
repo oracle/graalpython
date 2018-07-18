@@ -65,8 +65,10 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     public Object execute(VirtualFrame frame) {
         Object result = PNone.NONE;
 
+        PException exceptionState = getContext().getCurrentException();
+
         if (isActive(frame, exceptFlag)) {
-            catchException(frame, getActiveException(frame));
+            catchException(frame, getActiveException(frame), exceptionState);
             return doReturn(frame, result);
         }
 
@@ -80,7 +82,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         } catch (PException ex) {
             setActive(frame, exceptFlag, true);
             setActiveException(frame, ex);
-            catchException(frame, ex);
+            catchException(frame, ex, exceptionState);
             return doReturn(frame, result);
         }
 
@@ -95,7 +97,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     }
 
     @ExplodeLoop
-    private void catchException(VirtualFrame frame, PException exception) {
+    private void catchException(VirtualFrame frame, PException exception, PException exceptionState) {
         ExceptNode[] exceptNodes = getExceptNodes();
         final int matchingExceptNodeIndex = getIndex(frame, exceptIndex);
         boolean wasHandled = false;
@@ -108,7 +110,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                     ExceptNode exceptNode = exceptNodes[i];
                     setIndex(frame, exceptIndex, i + 1);
                     if (exceptNode.matchesException(frame, exception)) {
-                        runExceptionHandler(frame, exception, exceptNode);
+                        runExceptionHandler(frame, exception, exceptNode, exceptionState);
                         wasHandled = true;
                     }
                 }
@@ -117,7 +119,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             // we already found the right except handler, jump back into
             // it directly
             ExceptNode exceptNode = exceptNodes[matchingExceptNodeIndex - 1];
-            runExceptionHandler(frame, exception, exceptNode);
+            runExceptionHandler(frame, exception, exceptNode, exceptionState);
             wasHandled = true;
         }
         reset(frame);
@@ -127,11 +129,15 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         }
     }
 
-    private static void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode) {
+    private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, PException exceptionState) {
         try {
             exceptNode.executeExcept(frame, exception);
         } catch (ExceptionHandledException e) {
             return;
+        } finally {
+            // restore previous exception state, this won't happen if the except block raises an
+            // exception
+            getContext().setCurrentException(exceptionState);
         }
     }
 

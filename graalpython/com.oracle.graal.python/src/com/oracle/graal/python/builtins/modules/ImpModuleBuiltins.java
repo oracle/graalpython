@@ -191,8 +191,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
+                // save current exception state
+                PException exceptionState = getContext().getCurrentException();
+                // clear current exception such that native code has clean environment
+                getContext().setCurrentException(null);
+
                 Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
                 TruffleCextBuiltins.checkFunctionResult(getContext(), isNullNode, "PyInit_" + basename, nativeResult);
+
+                // restore previous exception state
+                getContext().setCurrentException(exceptionState);
+
                 Object result = AsPythonObjectNode.doSlowPath(nativeResult);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)

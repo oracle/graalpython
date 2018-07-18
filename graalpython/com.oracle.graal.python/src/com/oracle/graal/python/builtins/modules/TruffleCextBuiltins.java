@@ -548,6 +548,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     public static Object checkFunctionResult(PythonContext context, Node isNullNode, String name, Object result) {
         PException currentException = context.getCurrentException();
+        // consume exception
+        context.setCurrentException(null);
         boolean errOccurred = currentException != null;
         if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
             if (!errOccurred) {
@@ -613,7 +615,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 }
                 // save current exception state
                 PException exceptionState = getContext().getCurrentException();
+                // clear current exception such that native code has clean environment
+                getContext().setCurrentException(null);
+
                 Object result = fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+
+                // restore previous exception state
                 getContext().setCurrentException(exceptionState);
                 return result;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {

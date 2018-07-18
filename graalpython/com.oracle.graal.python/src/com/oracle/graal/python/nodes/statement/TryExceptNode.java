@@ -60,10 +60,12 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
 
     @Override
     public Object execute(VirtualFrame frame) {
+        // store current exception state for later restore
+        PException exceptionState = getContext().getCurrentException();
         try {
             body.execute(frame);
         } catch (PException ex) {
-            catchException(frame, ex);
+            catchException(frame, ex, exceptionState);
             return PNone.NONE;
         } catch (Exception e) {
             if (!seenException) {
@@ -78,7 +80,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                     PException pe = new PException(getBaseException(e), this);
                     pe.getExceptionObject().setException(pe);
                     try {
-                        catchException(frame, pe);
+                        catchException(frame, pe, exceptionState);
                     } catch (PException pe_thrown) {
                         if (pe_thrown != pe) {
                             throw e;
@@ -98,7 +100,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @ExplodeLoop
-    private void catchException(VirtualFrame frame, PException exception) {
+    private void catchException(VirtualFrame frame, PException exception, PException exceptionState) {
         boolean wasHandled = false;
         for (ExceptNode exceptNode : exceptNodes) {
             // we want a constant loop iteration count for ExplodeLoop to work,
@@ -109,6 +111,10 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                         exceptNode.executeExcept(frame, exception);
                     } catch (ExceptionHandledException e) {
                         wasHandled = true;
+                    } finally {
+                        // restore previous exception state, this won't happen if the except block
+                        // raises an exception
+                        getContext().setCurrentException(exceptionState);
                     }
                 }
             }
