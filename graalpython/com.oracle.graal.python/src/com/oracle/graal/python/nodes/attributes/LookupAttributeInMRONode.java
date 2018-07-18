@@ -107,7 +107,7 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         public PythonClass cls;
         public Assumption assumption;
 
-        public PythonClassAssumptionPair(PythonClass cls, Assumption assumption) {
+        PythonClassAssumptionPair(PythonClass cls, Assumption assumption) {
             this.cls = cls;
             this.assumption = assumption;
         }
@@ -117,15 +117,15 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         PythonClass[] mro = klass.getMethodResolutionOrder();
         Assumption attrAssumption = null;
         for (int i = 0; i < mro.length; i++) {
-            PythonClass kls = mro[i];
+            PythonClass cls = mro[i];
             if (attrAssumption == null) {
-                attrAssumption = kls.createAttributeInMROFinalAssumption(key);
+                attrAssumption = cls.createAttributeInMROFinalAssumption(key);
             } else {
-                kls.setAttributesInMROFinalAssumption(key, attrAssumption);
+                cls.setAttributeInMROFinalAssumption(key, attrAssumption);
             }
 
-            if (kls.getStorage().containsKey(key)) {
-                return new PythonClassAssumptionPair(kls, attrAssumption);
+            if (cls.getStorage().containsKey(key)) {
+                return new PythonClassAssumptionPair(cls, attrAssumption);
             }
         }
         return new PythonClassAssumptionPair(null, attrAssumption);
@@ -148,17 +148,25 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         return value;
     }
 
+    protected ReadAttributeFromObjectNode[] create(int size) {
+        ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
+        for (int i = 0; i < size; i++) {
+            nodes[i] = ReadAttributeFromObjectNode.create();
+        }
+        return nodes;
+    }
+
     @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "5", assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
-                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
                     @Cached(value = "cachedKlass.getMethodResolutionOrder()", dimensions = 1) PythonClass[] mro,
-                    @Cached("mro.length") @SuppressWarnings("unused") int mroLength) {
+                    @Cached("mro.length") @SuppressWarnings("unused") int mroLength,
+                    @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
         for (int i = 0; i < mro.length; i++) {
             PythonClass kls = mro[i];
-            Object value = readAttrNode.execute(kls, key);
+            Object value = readAttrNodes[i].execute(kls, key);
             if (value != PNone.NO_VALUE) {
                 return value;
             }

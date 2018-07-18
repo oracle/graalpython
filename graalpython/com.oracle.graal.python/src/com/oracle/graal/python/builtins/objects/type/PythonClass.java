@@ -127,7 +127,7 @@ public class PythonClass extends PythonObject {
     }
 
     @TruffleBoundary
-    public void setAttributesInMROFinalAssumption(Object name, Assumption assumption) {
+    public void setAttributeInMROFinalAssumption(Object name, Assumption assumption) {
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
             attrAssumptions = new ArrayList<>();
