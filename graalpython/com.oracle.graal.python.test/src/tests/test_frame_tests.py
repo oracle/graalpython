@@ -44,7 +44,7 @@ import sys
 # This test checks that lineno works on frames,
 # it MUST stay on this line!
 def test_lineno():
-    assert sys._getframe(0).f_lineno == 45
+    assert sys._getframe(0).f_lineno == 47
 
 
 def test_read_and_write_locals():

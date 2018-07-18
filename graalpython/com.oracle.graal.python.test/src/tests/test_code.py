@@ -50,4 +50,4 @@ def test_filename():
 
 
 def test_firstlineno():
-    assert a_function.__code__.co_firstlineno == 38
+    assert a_function.__code__.co_firstlineno == 40
