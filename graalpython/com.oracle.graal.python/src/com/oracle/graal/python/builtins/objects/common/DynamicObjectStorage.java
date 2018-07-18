@@ -171,4 +171,118 @@ public abstract class DynamicObjectStorage extends HashingStorage {
         }
     }
 
+    public static class PythonObjectHybridDictStorage extends DynamicObjectStorage {
+        private final EconomicMapStorage nonAttributesStorage;
+
+        public PythonObjectHybridDictStorage(PythonObjectDictStorage storage) {
+            this(storage.getStore());
+        }
+
+        public PythonObjectHybridDictStorage(DynamicObject store) {
+            this(store, EconomicMapStorage.create(false));
+        }
+
+        PythonObjectHybridDictStorage(DynamicObject store, EconomicMapStorage nonAttributesStorage) {
+            super(store);
+            this.nonAttributesStorage = nonAttributesStorage;
+        }
+
+        @Override
+        public int length() {
+            return super.length() + nonAttributesStorage.length();
+        }
+
+        @Override
+        public boolean hasKey(Object key, Equivalence eq) {
+            if (super.hasKey(key, DEFAULT_EQIVALENCE)) {
+                return true;
+            }
+            return nonAttributesStorage.hasKey(key, eq);
+        }
+
+        @Override
+        public Object getItem(Object key, Equivalence eq) {
+            Object value = super.getItem(key, DEFAULT_EQIVALENCE);
+            if (value != null) {
+                return value;
+            }
+            return this.nonAttributesStorage.getItem(key, eq);
+        }
+
+        @Override
+        public void setItem(Object key, Object value, Equivalence eq) {
+            if (key instanceof String) {
+                super.setItem(key, value, DEFAULT_EQIVALENCE);
+            } else {
+                this.nonAttributesStorage.setItem(key, value, eq);
+            }
+        }
+
+        @Override
+        public boolean remove(Object key, Equivalence eq) {
+            if (super.remove(key, DEFAULT_EQIVALENCE)) {
+                return true;
+            }
+            return this.nonAttributesStorage.remove(key, eq);
+        }
+
+        @Override
+        public Iterable<Object> keys() {
+            if (this.nonAttributesStorage.length() == 0) {
+                return super.keys();
+            } else {
+                ArrayList<Object> entries = new ArrayList<>(this.length());
+                for (Object entry : super.keys()) {
+                    entries.add(entry);
+                }
+                for (Object entry : this.nonAttributesStorage.keys()) {
+                    entries.add(entry);
+                }
+                return wrapJavaIterable(entries);
+            }
+        }
+
+        @Override
+        public Iterable<Object> values() {
+            if (this.nonAttributesStorage.length() == 0) {
+                return super.values();
+            } else {
+                ArrayList<Object> entries = new ArrayList<>(this.length());
+                for (Object entry : super.values()) {
+                    entries.add(entry);
+                }
+                for (Object entry : this.nonAttributesStorage.values()) {
+                    entries.add(entry);
+                }
+                return wrapJavaIterable(entries);
+            }
+        }
+
+        @Override
+        public Iterable<DictEntry> entries() {
+            if (this.nonAttributesStorage.length() == 0) {
+                return super.entries();
+            } else {
+                ArrayList<DictEntry> entries = new ArrayList<>(this.length());
+                for (DictEntry entry : super.entries()) {
+                    entries.add(entry);
+                }
+                for (DictEntry entry : this.nonAttributesStorage.entries()) {
+                    entries.add(entry);
+                }
+                return wrapJavaIterable(entries);
+            }
+        }
+
+        @Override
+        public void clear() {
+            super.clear();
+            this.nonAttributesStorage.clear();
+        }
+
+        @Override
+        public HashingStorage copy(Equivalence eq) {
+            return new PythonObjectHybridDictStorage(getStore().copy(getStore().getShape()), (EconomicMapStorage) nonAttributesStorage.copy(eq));
+        }
+    }
 }

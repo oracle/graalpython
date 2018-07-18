@@ -425,3 +425,21 @@ def helper_keys_contained(fn):
     # With the same size, an elementwise compare happens
     assert larger != larger3
     assert not larger == larger3
+
+
+def test_object_set_item_single_instance_non_str_key():
+    class Foo(object):
+        pass
+
+    f = Foo()
+    f.__dict__[1] = 1
+    f.a = 'a'
+    assert f.__dict__ == {1: 1, 'a': 'a'}
+
+    def bar():
+        pass
+
+    bar.__dict__[1] = 1
+    bar.a = 'a'
+    assert 1 in bar.__dict__
+    assert 'a' in bar.__dict__

@@ -26,7 +26,12 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 
 import java.util.List;
 
@@ -34,8 +39,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -73,7 +76,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__self__", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __SELF__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfNode extends PythonBuiltinNode {
         @Specialization
@@ -87,7 +90,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__func__", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __FUNC__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FuncNode extends PythonBuiltinNode {
         @Specialization
@@ -101,27 +104,32 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialAttributeNames.__NAME__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __NAME__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__NAME__);
+            return getCode.executeObject(self.getFunction(), __NAME__);
+        }
+
+        @Specialization
+        protected Object doIt(PBuiltinMethod self) {
+            return self.getName();
         }
     }
 
-    @Builtin(name = SpecialAttributeNames.__CODE__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CODE__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__CODE__);
+            return getCode.executeObject(self.getFunction(), __CODE__);
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization

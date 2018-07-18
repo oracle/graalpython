@@ -56,7 +56,7 @@ public class BaseExceptionTest {
     }
 
     @Test
-    public void testUnsupportedKey() {
+    public void testClassAsKey() {
         String source = "try:\n" +
                         "    class MyClass:\n" +
                         "        def __hash__(self):\n" +
@@ -66,7 +66,7 @@ public class BaseExceptionTest {
                         "    sysdict[MyClass()] = lambda x: x\n" +
                         "except KeyError as e:\n" +
                         "    print(str(e))\n";
-        assertPrints("unsupported key: MyClass\n", source);
+        assertPrints("", source);
     }
 
     @Test

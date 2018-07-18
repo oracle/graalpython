@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.generator;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -48,7 +47,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -176,18 +174,12 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gi_code", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = "gi_code", fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
-        @Specialization(guards = {"isNoValue(none)"})
-        Object getCode(PGenerator self, @SuppressWarnings("unused") PNone none) {
+        @Specialization
+        Object getCode(PGenerator self) {
             return factory().createCode(self.getGeneratorRootNode());
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object setCode(Object self, Object code) {
-            throw raise(NotImplementedError, "setting gi_code");
         }
     }
 }
