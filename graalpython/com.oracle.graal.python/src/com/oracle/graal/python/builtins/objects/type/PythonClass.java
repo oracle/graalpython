@@ -121,7 +121,7 @@ public class PythonClass extends PythonObject {
             attributesInMROFinalAssumptions.put(name, attrAssumptions);
         }
 
-        Assumption assumption = Truffle.getRuntime().createAssumption(className + "." + name);
+        Assumption assumption = Truffle.getRuntime().createAssumption(name.toString());
         attrAssumptions.add(assumption);
         return assumption;
     }
@@ -141,7 +141,7 @@ public class PythonClass extends PythonObject {
     public void invalidateAttributeInMROFinalAssumptions(Object name) {
         List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, new ArrayList<>());
         for (Assumption assumption : assumptions) {
-            assumption.invalidate();
+            assumption.invalidate(className + "." + name);
         }
     }
 
