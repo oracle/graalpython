@@ -92,20 +92,20 @@ public abstract class SetAttributeNode extends PNode implements WriteNode {
     protected Object doClass(PythonClass cls, Object key, Object value,
                     @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
                     @Cached("create(__SETATTR__)") LookupAttributeInMRONode setAttributeLookup,
-                    @Cached("create()") CallTernaryMethodNode callSetattr) {
+                    @Cached("create()") CallTernaryMethodNode callSetAttribute) {
         cls.invalidateAttributeInMROFinalAssumptions(key);
         Object descr = setAttributeProfile.profile(setAttributeLookup.execute(cls));
-        return callSetattr.execute(descr, cls, key, value);
+        return callSetAttribute.execute(descr, cls, key, value);
     }
 
-    @Specialization
+    @Specialization(guards = "!isClass(object)")
     protected Object doIt(Object object, Object key, Object value,
                     @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create(__SETATTR__)") LookupAttributeInMRONode setAttributeLookup,
-                    @Cached("create()") CallTernaryMethodNode callSetattr) {
+                    @Cached("create()") CallTernaryMethodNode callSetAttribute) {
         PythonClass type = getClassNode.execute(object);
         Object descr = setAttributeProfile.profile(setAttributeLookup.execute(type));
-        return callSetattr.execute(descr, object, key, value);
+        return callSetAttribute.execute(descr, object, key, value);
     }
 }
