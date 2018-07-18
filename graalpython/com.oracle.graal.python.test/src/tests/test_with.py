@@ -127,3 +127,47 @@ def test_with_return_and_exception():
                     "value: None",
                     "a = 11",
     ], "was: " + str(LOG3)
+
+
+def test_with_restore():
+    import sys
+    log = []
+    try:
+        log.append("raise")
+        raise ValueError("1")
+    except:
+        assert sys.exc_info()[0] == ValueError
+        with Context(log, True, False) as sample:
+            assert sys.exc_info()[0] == ValueError
+            log.append("with body")
+        assert sys.exc_info()[0] == ValueError
+        log.append("except exit")
+    assert log == [  "raise"
+                   , "__enter__"
+                   , "with body"
+                   , "type: None"
+                   , "value: None"
+                   , "except exit"], "was: %s" % log
+
+
+def test_with_restore_raise():
+    import sys
+    log = []
+    try:
+        log.append("raise")
+        raise ValueError("1")
+    except:
+        assert sys.exc_info()[0] == ValueError
+        with Context(log, True, False) as sample:
+            assert sys.exc_info()[0] == ValueError
+            log.append("with body")
+            raise TypeError
+            log.append("INVALID")
+        assert sys.exc_info()[0] == ValueError
+        log.append("except exit")
+    assert log == [  "raise"
+                   , "__enter__"
+                   , "with body"
+                   , "type: <class 'TypeError'>"
+                   , "value: "
+                   , "except exit"], "was: %s" % log

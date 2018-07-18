@@ -89,6 +89,7 @@ public abstract class WithNode extends StatementNode {
                     @Cached("create()") IsCallableNode isCallableNode,
                     @Cached("create()") IsCallableNode isExitCallableNode) {
 
+        PException exceptionState = getContext().getCurrentException();
         boolean gotException = false;
         // CPython first looks up '__exit__
         Object exitCallable = exitGetter.executeObject(withObject, "__exit__");
@@ -113,6 +114,7 @@ public abstract class WithNode extends StatementNode {
                     throw raise(TypeError, "%p is not callable", exitCallable);
                 }
             }
+            getContext().setCurrentException(exceptionState);
         }
         return PNone.NONE;
     }

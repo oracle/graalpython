@@ -42,12 +42,14 @@ import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public class TryExceptNode extends StatementNode implements TruffleObject {
     @Child private PNode body;
     @Children private final ExceptNode[] exceptNodes;
     @Child private PNode orelse;
     @CompilationFinal private TryExceptNodeMessageResolution.CatchesFunction catchesFunction;
+    @CompilationFinal private ValueProfile exceptionStateProfile;
 
     @CompilationFinal boolean seenException;
 
@@ -111,10 +113,11 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                         exceptNode.executeExcept(frame, exception);
                     } catch (ExceptionHandledException e) {
                         wasHandled = true;
-                    } finally {
+                    } catch (ControlFlowException e) {
                         // restore previous exception state, this won't happen if the except block
                         // raises an exception
                         getContext().setCurrentException(exceptionState);
+                        throw e;
                     }
                 }
             }
@@ -122,6 +125,9 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         if (!wasHandled) {
             throw exception;
         }
+        // restore previous exception state, this won't happen if the except block
+        // raises an exception
+        getContext().setCurrentException(exceptionState);
     }
 
     public PNode getBody() {

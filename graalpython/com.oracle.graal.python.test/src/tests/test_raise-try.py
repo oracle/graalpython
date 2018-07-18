@@ -73,6 +73,53 @@ def test_exception_restoring():
     assert trace == [1, 2, 3, 4, 5]
 
 
+def test_exception_restoring_finally():
+    import sys
+    trace = []
+    try:
+        try:
+            assert sys.exc_info() == (None, None, None)
+            trace.append(1)
+            raise ValueError("1")
+        except ValueError:
+            assert sys.exc_info()[0] == ValueError
+            trace.append(2)
+            raise KeyError("2")
+        finally:
+            assert sys.exc_info()[0] == KeyError, "was: %s" % sys.exc_info()[0]
+            trace.append(3)
+    except KeyError:
+        assert sys.exc_info()[0] == KeyError, "was: %s" % sys.exc_info()[0]
+        trace.append(4)
+    assert trace == [1, 2, 3, 4]
+
+
+def test_exception_restoring_raise_finally():
+    import sys
+    trace = []
+    try:
+        try:
+            try:
+                assert sys.exc_info() == (None, None, None)
+                trace.append(1)
+                raise ValueError("1")
+            except ValueError:
+                assert sys.exc_info()[0] == ValueError
+                trace.append(2)
+                raise KeyError("2")
+            finally:
+                assert sys.exc_info()[0] == KeyError, "was: %s" % sys.exc_info()[0]
+                trace.append(3)
+                raise TypeError
+        finally:
+            assert sys.exc_info()[0] == TypeError, "was: %s" % sys.exc_info()[0]
+            trace.append(4)
+    except TypeError:
+        assert sys.exc_info()[0] == TypeError, "was: %s" % sys.exc_info()[0]
+        trace.append(5)
+    assert trace == [1, 2, 3, 4, 5]
+
+
 def test_exception_restoring_with_return():
     import sys
     trace = []
@@ -98,6 +145,6 @@ def test_exception_restoring_with_return():
             trace.append(4)
             raise
     except ValueError:
-        assert sys.exc_info()[0] == ValueError, "IS: %s" % sys.exc_info()[0]
+        assert sys.exc_info()[0] == ValueError
         trace.append(5)
     assert trace == [1, 2, 3, 4, 5]

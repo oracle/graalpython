@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorControlNode {
@@ -127,6 +128,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             // we tried and haven't found a matching except node
             throw exception;
         }
+        getContext().setCurrentException(exceptionState);
     }
 
     private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, PException exceptionState) {
@@ -134,10 +136,11 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             exceptNode.executeExcept(frame, exception);
         } catch (ExceptionHandledException e) {
             return;
-        } finally {
+        } catch (ControlFlowException e) {
             // restore previous exception state, this won't happen if the except block raises an
             // exception
             getContext().setCurrentException(exceptionState);
+            throw e;
         }
     }
 

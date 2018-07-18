@@ -56,6 +56,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     @Override
     public Object execute(VirtualFrame frame) {
+        PException exceptionState = getContext().getCurrentException();
         PException exception = null;
         if (isActive(frame, finallyFlag)) {
             getFinalbody().execute(frame);
@@ -72,6 +73,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
         if (exception != null) {
             throw exception;
         }
+        getContext().setCurrentException(exceptionState);
         return PNone.NONE;
     }
 
