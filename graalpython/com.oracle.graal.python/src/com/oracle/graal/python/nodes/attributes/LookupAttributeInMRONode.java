@@ -48,7 +48,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class LookupAttributeInMRONode extends PBaseNode {
 
@@ -118,10 +117,13 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         Assumption attrAssumption = null;
         for (int i = 0; i < mro.length; i++) {
             PythonClass cls = mro[i];
-            if (attrAssumption == null) {
-                attrAssumption = cls.createAttributeInMROFinalAssumption(key);
-            } else {
-                cls.setAttributeInMROFinalAssumption(key, attrAssumption);
+            if (i > 0) {
+                assert cls != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
+                if (attrAssumption == null) {
+                    attrAssumption = cls.createAttributeInMROFinalAssumption(key);
+                } else {
+                    cls.addAttributeInMROFinalAssumption(key, attrAssumption);
+                }
             }
 
             if (cls.getStorage().containsKey(key)) {
@@ -131,20 +133,14 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         return new PythonClassAssumptionPair(null, attrAssumption);
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "cachedAttributeClassAssumptionPair.cls != null"}, limit = "5", assumptions = {"lookupStable",
-                    "cachedAttributeClassAssumptionPair.assumption"}, rewriteOn = IllegalStateException.class)
+    @Specialization(guards = {"klass == cachedKlass", "cachedAttributeStableInMROInfo.cls != null"}, limit = "5", assumptions = {"lookupStable",
+                    "cachedAttributeStableInMROInfo.assumption"})
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
-                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClassAssumptionPair cachedAttributeClassAssumptionPair,
-                    @Cached("createBinaryProfile()") ConditionProfile attributeDeletedProfile) {
-        Object value = readAttrNode.execute(cachedAttributeClassAssumptionPair.cls, key);
-        if (attributeDeletedProfile.profile(value == PNone.NO_VALUE)) {
-            // in case the attribute was deleted
-            throw new IllegalStateException();
-        }
-        return value;
+                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClassAssumptionPair cachedAttributeStableInMROInfo) {
+        return readAttrNode.execute(cachedAttributeStableInMROInfo.cls, key);
     }
 
     protected ReadAttributeFromObjectNode[] create(int size) {
