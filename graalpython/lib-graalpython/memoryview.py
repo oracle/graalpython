@@ -69,9 +69,15 @@ for p in ["nbytes", "readonly", "itemsize", "format", "ndim", "shape", "strides"
     setattr(memoryview, p, make_property(p))
 
 
+def make_delegate0(p):
+    def delegate(self):
+        return getattr(self.__c_memoryview, p)()
+    delegate.__name__ = p
+    return delegate
+
 for p in ["__repr__", "__len__", "release", "tobytes", "hex", "tolist",
           "__enter__", "__exit__"]:
-    setattr(memoryview, p, lambda self: getattr(self.__c_memoryview, p)())
+    setattr(memoryview, p, make_delegate0(p))
 
 
 # other delegate methods
