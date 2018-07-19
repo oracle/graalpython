@@ -80,6 +80,7 @@ PyObject * PyExc_BufferError = NULL;
 PyObject * PyExc_AssertionError = NULL;
 PyObject * PyExc_UnboundLocalError = NULL;
 PyObject * PyExc_NotImplementedError = NULL;
+PyObject * PyExc_RecursionError = NULL;
 
 void initialize_exceptions() {
     PyExc_AttributeError = PY_EXCEPTION("AttributeError");
@@ -114,6 +115,8 @@ void initialize_exceptions() {
     PyExc_StopIteration = PY_EXCEPTION("StopIteration");
     PyExc_BufferError = PY_EXCEPTION("BufferError");
     PyExc_UnboundLocalError = PY_EXCEPTION("UnboundLocalError");
+    PyExc_NotImplementedError = PY_EXCEPTION("NotImplementedError");
+    PyExc_RecursionError = PY_EXCEPTION("RecursionError");
     PyExc_NotImplementedError = PY_EXCEPTION("NotImplementedError");
 }
 

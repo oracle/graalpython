@@ -37,6 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# an empty file for now
+import sys
 
-bytearray.decode = bytes.decode
+
+def test_eq():
+    # same start, just one element (the start) => step does not matter
+    assert range(10, 20, 10) == range(10, 30, 20)
+
+    # empty ranges are always equal
+    assert range(10, 20, -30) == range(20, 30, -40)

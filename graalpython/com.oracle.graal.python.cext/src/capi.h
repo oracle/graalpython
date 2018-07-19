@@ -74,7 +74,6 @@ typedef struct {
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 
-
 // TODO cache landing function ?
 #define PY_TRUFFLE_LANDING ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)))
 #define PY_TRUFFLE_LANDING_L ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)))
@@ -156,40 +155,40 @@ void initialize_hashes();
 void* wrap_direct(PyCFunction fun, ...);
 int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, void *closure);
 void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
-void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
 void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
-void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames);
+void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
+void* wrap_fastcall(_PyCFunctionFast        fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
 void* wrap_unsupported(void *fun, ...);
 
 #define TDEBUG __asm__("int $3")
 #define get_method_flags_wrapper(flags)                                 \
     (((flags) < 0) ?                                                    \
      truffle_read(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \
-     (((flags) & METH_KEYWORDS) ?                                       \
-      truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
-      (((flags) & METH_VARARGS) ?                                       \
-       truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
-       (((flags) & METH_NOARGS) ?                                       \
-        truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                  \
-        (((flags) & METH_O) ?                                           \
-         truffle_read(PY_TRUFFLE_CEXT, "METH_O") :                      \
-         (((flags) & METH_FASTCALL) ?                                   \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :              \
+     (((flags) & METH_FASTCALL) ?                                       \
+      truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                  \
+      (((flags) & METH_KEYWORDS) ?                                       \
+       truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
+       (((flags) & METH_VARARGS) ?                                       \
+        truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
+        (((flags) & METH_NOARGS) ?                                           \
+         truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                      \
+         (((flags) & METH_O) ?                                   \
+          truffle_read(PY_TRUFFLE_CEXT, "METH_O") :              \
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
 #define get_method_flags_cwrapper(flags)                                \
     (void*)((((flags) < 0) ?                                            \
      wrap_direct :                                                      \
-     (((flags) & METH_KEYWORDS) ?                                       \
-      wrap_keywords :                                                   \
-      (((flags) & METH_VARARGS) ?                                       \
-       wrap_varargs :                                                   \
-       (((flags) & METH_NOARGS) ?                                       \
-        wrap_noargs :                                                   \
-        (((flags) & METH_O) ?                                           \
-         wrap_direct :                                                  \
-         (((flags) & METH_FASTCALL) ?                                   \
-          wrap_fastcall :                                               \
+     (((flags) & METH_FASTCALL) ?                                       \
+      wrap_fastcall :                                                   \
+      (((flags) & METH_KEYWORDS) ?                                      \
+       wrap_keywords :                                                   \
+       (((flags) & METH_VARARGS) ?                                       \
+        wrap_varargs :                                                   \
+        (((flags) & METH_NOARGS) ?                                           \
+         wrap_noargs :                                                  \
+         (((flags) & METH_O) ?                                   \
+          wrap_direct :                                               \
           wrap_unsupported)))))))
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
@@ -285,8 +284,9 @@ extern PyObject marker_struct;
 /* DICT */
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
 
-/* BYTES */
+/* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
 
 /* Like 'memcpy' but can read/write from/to managed objects. */
 int bytes_copy2mem(char* target, char* source, size_t nbytes);

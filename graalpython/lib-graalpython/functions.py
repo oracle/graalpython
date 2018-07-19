@@ -103,8 +103,9 @@ def all(iterable):
 
 def filter(func, iterable):
     result = []
+    predicate = func if func is not None else lambda a: a
     for i in iterable:
-        if func(i):
+        if predicate(i):
             result.append(i)
     return tuple(result)
 

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -73,7 +74,7 @@ public abstract class NativeWrappers {
         }
 
         static boolean isInstance(TruffleObject o) {
-            return o instanceof PythonNativeWrapper;
+            return o instanceof PythonObjectNativeWrapper || o instanceof TruffleObjectNativeWrapper;
         }
 
         @Override
@@ -194,13 +195,21 @@ public abstract class NativeWrappers {
 
         private final Object delegate;
 
-        public PySequenceArrayWrapper(Object delegate) {
+        /** Number of bytes that constitute a single element. */
+        private final int elementAccessSize;
+
+        public PySequenceArrayWrapper(Object delegate, int elementAccessSize) {
             this.delegate = delegate;
+            this.elementAccessSize = elementAccessSize;
         }
 
         @Override
         public Object getDelegate() {
             return delegate;
+        }
+
+        public int getElementAccessSize() {
+            return elementAccessSize;
         }
 
         static boolean isInstance(TruffleObject o) {
@@ -233,5 +242,48 @@ public abstract class NativeWrappers {
         public Object getDelegate() {
             return foreignObject;
         }
+    }
+
+    abstract static class PyUnicodeWrapper extends PythonNativeWrapper {
+        private final PString delegate;
+
+        public PyUnicodeWrapper(PString delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public PString getDelegate() {
+            return delegate;
+        }
+
+        @Override
+        public ForeignAccess getForeignAccess() {
+            return PyUnicodeWrapperMRForeign.ACCESS;
+        }
+
+        static boolean isInstance(TruffleObject o) {
+            return o instanceof PyUnicodeWrapper;
+        }
+    }
+
+    /**
+     * A native wrapper for the {@code data} member of {@code PyUnicodeObject}.
+     */
+    public static class PyUnicodeData extends PyUnicodeWrapper {
+        public PyUnicodeData(PString delegate) {
+            super(delegate);
+        }
+
+    }
+
+    /**
+     * A native wrapper for the {@code state} member of {@code PyASCIIObject}.
+     */
+    public static class PyUnicodeState extends PyUnicodeWrapper {
+
+        public PyUnicodeState(PString delegate) {
+            super(delegate);
+        }
+
     }
 }

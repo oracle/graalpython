@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -69,6 +70,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -508,6 +510,33 @@ public abstract class CExtNodes {
 
         public static GetNativeClassNode create() {
             return new GetNativeClassNode();
+        }
+    }
+
+    public static class SizeofWCharNode extends CExtBaseNode {
+
+        @CompilationFinal long wcharSize = -1;
+
+        public long execute() {
+            if (wcharSize < 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                try {
+                    wcharSize = (long) ForeignAccess.sendExecute(Message.createExecute(0).createNode(), getNativeFunction());
+                    assert wcharSize >= 0L;
+                } catch (InteropException e) {
+                    throw e.raise();
+                }
+            }
+            return wcharSize;
+        }
+
+        TruffleObject getNativeFunction() {
+            CompilerAsserts.neverPartOfCompilation();
+            return (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_WHCAR_SIZE);
+        }
+
+        public static SizeofWCharNode create() {
+            return new SizeofWCharNode();
         }
     }
 }

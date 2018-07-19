@@ -286,7 +286,7 @@ public abstract class ListNodes {
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
             if (value.len() > 0) {
                 PList pvalue = factory().createList(((PTuple) value).getArray());
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(pvalue.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(pvalue.getSequenceStorage().getIndicativeValue(), pvalue.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 setSlice(list, slice, pvalue, wrongLength);
             }
@@ -305,7 +305,7 @@ public abstract class ListNodes {
         public PNone doPListEmpty(PList list, PSlice slice, PSequence value,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
             if (value.len() > 0) {
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 setSlice(list, slice, value, wrongLength);
             }
@@ -323,7 +323,7 @@ public abstract class ListNodes {
         @Specialization(guards = {"!areTheSameType(list, value)"})
         public PNone doPList(PList list, PSlice slice, PSequence value,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
-            SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+            SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
             list.setSequenceStorage(newStorage);
             setSlice(list, slice, value, wrongLength);
             return PNone.NONE;
@@ -354,7 +354,7 @@ public abstract class ListNodes {
             try {
                 setSlice(list, slice, value, wrongLength);
             } catch (SequenceStoreException e) {
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 try {
                     setSlice(list, slice, value, wrongLength);

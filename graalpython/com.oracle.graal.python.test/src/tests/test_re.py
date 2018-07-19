@@ -13,7 +13,7 @@ def test_match():
     assert md.group(0) == "hello"
 
     assert re.compile("hi").match("hello") is None
-    # assert re.compile("ello").match("hello") is None
+    assert re.compile("ello").match("hello") is None
     assert re.compile("^hello").match("hello")
     assert re.compile("^hello").search("hello")
     assert re.compile("ello").search("hello")
@@ -33,7 +33,7 @@ def test_grouping():
 
 def test_grouping2():
     md = re.compile('he(l)l(?:o)').match('hello world')
-    assert md.groups() == ("l", )
+    assert md.groups() == ("l",)
     assert md.group(0) == "hello"
     assert md.group(1) == "l"
     assert md.start(0) == 0
@@ -67,6 +67,7 @@ def test_special_re_compile():
 class S(str):
     def __getitem__(self, index):
         return S(super().__getitem__(index))
+
 
 class B(bytes):
     def __getitem__(self, index):
@@ -105,12 +106,12 @@ class ReTests(unittest.TestCase):
         # self.assertTypedEqual(re.sub('y', S('a'), S('xyz')), 'xaz')
         # self.assertTypedEqual(re.sub(b'y', b'a', b'xyz'), b'xaz')
         # self.assertTypedEqual(re.sub(b'y', B(b'a'), B(b'xyz')), b'xaz')
-        # self.assertTypedEqual(re.sub(b'y', bytearray(b'a'), bytearray(b'xyz')), b'xaz')
+        self.assertTypedEqual(re.sub(b'y', bytearray(b'a'), bytearray(b'xyz')), b'xaz')
         # self.assertTypedEqual(re.sub(b'y', memoryview(b'a'), memoryview(b'xyz')), b'xaz')
         # for y in ("\xe0", "\u0430", "\U0001d49c"):
         #     self.assertEqual(re.sub(y, 'a', 'x%sz' % y), 'xaz')
 
-        # self.assertEqual(re.sub("(?i)b+", "x", "bbbb BBBB"), 'x x')
+        self.assertEqual(re.sub("(?i)b+", "x", "bbbb BBBB"), 'x x')
         self.assertEqual(re.sub(r'\d+', self.bump_num, '08.2 -2 23x99y'),
                          '9.3 -3 24x100y')
         self.assertEqual(re.sub(r'\d+', self.bump_num, '08.2 -2 23x99y', 3),
@@ -134,36 +135,50 @@ class ReTests(unittest.TestCase):
         # self.assertEqual(re.sub('a', r'\t\n\v\r\f\a\b', 'a'), '\t\n\v\r\f\a\b')
         self.assertEqual(re.sub('a', '\t\n\v\r\f\a\b', 'a'), '\t\n\v\r\f\a\b')
         self.assertEqual(re.sub('a', '\t\n\v\r\f\a\b', 'a'),
-                         (chr(9)+chr(10)+chr(11)+chr(13)+chr(12)+chr(7)+chr(8)))
+                         (chr(9) + chr(10) + chr(11) + chr(13) + chr(12) + chr(7) + chr(8)))
 
         # self.assertEqual(re.sub(r'^\s*', 'X', 'test'), 'Xtest')
 
+    def test_backreference(self):
+        compiled = re.compile(r"(.)\1")
+        self.assertTrue(compiled.match("11"))
+        self.assertTrue(compiled.match("22"))
+        self.assertFalse(compiled.match("23"))
 
-def test_escaping():
-    regex = None
-    try:
-        regex = re.compile(r"""        # A numeric string consists of:
-#    \s*
-    (?P<sign>[-+])?              # an optional sign, followed by either...
-    (
-        (?=\d|\.\d)              # ...a number (with at least one digit)
-        (?P<int>\d*)             # having a (possibly empty) integer part
-        (\.(?P<frac>\d*))?       # followed by an optional fractional part
-        (E(?P<exp>[-+]?\d+))?    # followed by an optional exponent, or...
-    |
-        Inf(inity)?              # ...an infinity, or...
-    |
-        (?P<signal>s)?           # ...an (optionally signaling)
-        NaN                      # NaN
-        (?P<diag>\d*)            # with (possibly empty) diagnostic info.
-    )
-#    \s*
-    \Z
-        """, re.VERBOSE)
-    except:
-        assert False
+        compiled = re.compile(r"\b(\w*)\b\W\1")
+        self.assertTrue(compiled.match("hello hello"))
+        self.assertTrue(compiled.match("world*world"))
+        self.assertFalse(compiled.match("oh no"))
 
-    match = regex.search("  -12.1")
-    assert match
-    # assert "frac" in match.groupdict()
-    # assert match.groupdict()["frac"] == "1"
+        compiled = re.compile(r"(\d).\d.\d-\1")
+        self.assertEqual((0, 7), compiled.match("1.2.3-1").span())
+
+    def test_escaping(self):
+        regex = None
+        try:
+            regex = re.compile(r"""        # A numeric string consists of:
+    #    \s*
+        (?P<sign>[-+])?              # an optional sign, followed by either...
+        (
+            (?=\d|\.\d)              # ...a number (with at least one digit)
+            (?P<int>\d*)             # having a (possibly empty) integer part
+            (\.(?P<frac>\d*))?       # followed by an optional fractional part
+            (E(?P<exp>[-+]?\d+))?    # followed by an optional exponent, or...
+        |
+            Inf(inity)?              # ...an infinity, or...
+        |
+            (?P<signal>s)?           # ...an (optionally signaling)
+            NaN                      # NaN
+            (?P<diag>\d*)            # with (possibly empty) diagnostic info.
+        )
+    #    \s*
+        \Z
+            """, re.VERBOSE)
+        except:
+            self.fail()
+
+        match = regex.search("  -12.1")
+        self.assertTrue(match)
+        # assert "frac" in match.groupdict()
+        # assert match.groupdict()["frac"] == "1"
+

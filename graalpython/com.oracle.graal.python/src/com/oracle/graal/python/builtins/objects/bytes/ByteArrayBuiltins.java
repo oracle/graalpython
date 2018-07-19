@@ -39,6 +39,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -559,15 +561,59 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class GetitemNode extends PythonBinaryBuiltinNode {
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getitem(PByteArray self, int idx) {
+        Object doInt(PByteArray self, int idx) {
             return self.getItem(idx);
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        Object doLongExact(PByteArray self, long idx) {
+            return self.getItem(PInt.intValueExact(idx));
+        }
+
+        @Specialization
+        Object doLongGeneric(PByteArray self, long idx) {
+            try {
+                return self.getItem(PInt.intValueExact(idx));
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        Object doPIntExact(PByteArray self, PInt idx) {
+            return self.getItem(idx.intValueExact());
+        }
+
+        @Specialization
+        Object doPIntGeneric(PByteArray self, PInt idx) {
+            try {
+                return self.getItem(idx.intValueExact());
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
         }
 
         @Specialization
         Object getitem(PByteArray self, PSlice slice) {
             return self.getSlice(factory(), slice);
+        }
+    }
+
+    @Builtin(name = __SETITEM__, fixedNumOfArguments = 3)
+    @GenerateNodeFactory
+    abstract static class SetItemNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        PNone doScalar(PByteArray self, int idx, Object value) {
+            self.setItem(idx, value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        PNone doSlice(PByteArray self, PSlice slice, PSequence value) {
+            self.setSlice(slice, value);
+            return PNone.NONE;
         }
     }
 

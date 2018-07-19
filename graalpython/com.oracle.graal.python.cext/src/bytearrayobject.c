@@ -42,3 +42,17 @@
 
 PyTypeObject PyByteArray_Type = PY_TRUFFLE_TYPE("bytearray", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyByteArrayObject));
 char _PyByteArray_empty_string[] = "";
+
+// taken from CPython 3.7.0 "Objects/bytearrayobject.c"
+int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags) {
+    void *ptr;
+    if (view == NULL) {
+        PyErr_SetString(PyExc_BufferError,
+            "bytearray_getbuffer: view==NULL argument is obsolete");
+        return -1;
+    }
+    ptr = (void *) PyByteArray_AS_STRING(obj);
+    /* cannot fail if view != NULL and readonly == 0 */
+    (void)PyBuffer_FillInfo(view, (PyObject*)obj, ptr, Py_SIZE(obj), 0, flags);
+    return 0;
+}

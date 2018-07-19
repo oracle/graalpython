@@ -360,12 +360,35 @@ PyObject* _PyObject_New(PyTypeObject *tp) {
     return PyObject_INIT(op, tp);
 }
 
+PyVarObject *
+_PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
+{
+    PyVarObject *op;
+    const size_t size = _PyObject_VAR_SIZE(tp, nitems);
+    op = (PyVarObject *) PyObject_MALLOC(size);
+    if (op == NULL)
+        return (PyVarObject *)PyErr_NoMemory();
+    return PyObject_INIT_VAR(op, tp, nitems);
+}
+
 PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     if (op == NULL) {
         return PyErr_NoMemory();
     }
     Py_TYPE(op) = tp;
     _Py_NewReference(op);
+    return op;
+}
+
+// taken from CPython 3.6.4 "Objects/object.c"
+PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size) {
+    if (op == NULL) {
+        return (PyVarObject *) PyErr_NoMemory();
+    }
+    /* Any changes should be reflected in PyObject_INIT_VAR */
+    op->ob_size = size;
+    Py_TYPE(op) = tp;
+    _Py_NewReference((PyObject *)op);
     return op;
 }
 

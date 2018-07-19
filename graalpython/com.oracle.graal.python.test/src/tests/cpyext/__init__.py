@@ -331,9 +331,9 @@ class CPyExtFunction():
                 presult = e
 
             if not self.cmpfunc:
-                assert cresult == presult, ("%r == %r in %s" % (cresult, presult, self.name))
+                assert cresult == presult, ("%r == %r in %s(%s)" % (cresult, presult, self.name, pargs[i]))
             else:
-                assert self.cmpfunc(cresult, presult), ("%r == %r in %s" % (cresult, presult, self.name))
+                assert self.cmpfunc(cresult, presult), ("%r == %r in %s(%s)" % (cresult, presult, self.name, pargs[i]))
 
     def __get__(self, instance, typ=None):
         if typ is None:

@@ -37,6 +37,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# an empty file for now
+import sys
 
-bytearray.decode = bytes.decode
+GRAALPYTHON = sys.implementation.name == "graalpython"
+
+
+class TestSRE:
+
+    def test_sre_import(self):
+        if GRAALPYTHON:
+            import _cpython_sre
+            assert set(_cpython_sre.__dict__.keys()) == {'__name__', '__doc__', '__package__', '__loader__', '__spec__', '__file__', 'compile', 'getcodesize', 'getlower', 'MAGIC', 'CODESIZE', 'MAXREPEAT', 'MAXGROUPS', 'copyright'}, "was: %s" % set(_cpython_sre.__dict__.keys())
+
+    def test_backreference(self):
+        import re
+        compiled = re.compile(r"(.)\1")
+        assert compiled.match("11")
+        assert compiled.match("22")
+        assert not compiled.match("23")

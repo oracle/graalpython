@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -53,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -117,11 +120,17 @@ abstract class AccessForeignItemNodes {
 
     protected abstract static class GetForeignItemNode extends AccessForeignItemBaseNode {
 
+        @Child private Node hasSizeNode;
+        @Child private LookupAndCallUnaryNode indexNode;
+        @Child private PTypeToForeignNode ptypeToForeignNode;
+        @Child private PForeignToPTypeNode toPythonNode;
+
         public abstract Object execute(TruffleObject object, Object idx);
 
-        @Specialization
+        @Specialization(guards = "isArray(object) == isArray")
         public Object doForeignObjectSlice(TruffleObject object, PSlice idxSlice,
                         @Cached("READ.createNode()") Node foreignRead,
+                        @Cached("isArray(object)") boolean isArray,
                         @Cached("GET_SIZE.createNode()") Node getSizeNode,
                         @Cached("create()") PForeignToPTypeNode foreign2PTypeNode,
                         @Cached("create()") PythonObjectFactory factory) {
@@ -134,33 +143,80 @@ abstract class AccessForeignItemNodes {
             }
             Object[] values = new Object[mslice.length];
             for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
-                values[j] = readForeignValue(object, i, foreignRead, foreign2PTypeNode);
+                values[j] = readForeignValue(object, i, foreignRead, isArray);
             }
             return factory.createList(values);
         }
 
-        @Specialization(guards = "!isSlice(idx)")
+        @Specialization(guards = {"!isSlice(idx)", "isArray(object) == isArray"})
         public Object doForeignObject(TruffleObject object, Object idx,
-                        @Cached("READ.createNode()") Node foreignRead,
-                        @Cached("create()") PTypeToForeignNode ptypeToForeignNode,
-                        @Cached("create()") PForeignToPTypeNode foreign2PTypeNode) {
-            Object convertedIdx = ptypeToForeignNode.executeConvert(idx);
-            return readForeignValue(object, convertedIdx, foreignRead, foreign2PTypeNode);
+                        @Cached("isArray(object)") boolean isArray,
+                        @Cached("READ.createNode()") Node foreignRead) {
+            Object convertedIdx = getToForeignNode().executeConvert(idx);
+            return readForeignValue(object, convertedIdx, foreignRead, isArray);
         }
 
-        private Object readForeignValue(TruffleObject object, Object idx, Node foreignRead, PForeignToPTypeNode foreign2PTypeNode) {
+        private Object readForeignValue(TruffleObject object, Object key, Node foreignRead, boolean indexed) {
+            Object index = indexed ? checkNumber(getIndexNode().executeObject(key)) : key;
             try {
-                return foreign2PTypeNode.executeConvert(ForeignAccess.sendRead(foreignRead, object, idx));
+                return getToPythonNode().executeConvert(ForeignAccess.sendRead(foreignRead, object, getToForeignNode().executeConvert(index)));
             } catch (UnsupportedMessageException ex) {
                 throw raise(AttributeError, "%s instance has no attribute '__getitem__'", object);
+            } catch (IndexOutOfBoundsException ex) {
+                // TODO remove this; workaround for TRegex
+                throw raise(IndexError, "invalid index %s", index);
             } catch (UnknownIdentifierException ex) {
-                throw raise(KeyError, "%s instance has no attribute '__getitem__'", object);
+                if (indexed) {
+                    throw raise(IndexError, "invalid index %s", index);
+                } else {
+                    throw raise(KeyError, "invalid key %s", key);
+                }
             }
+        }
+
+        private Object checkNumber(Object object) {
+            if (object instanceof Number || PTypeToForeignNode.isBoxed(object)) {
+                return object;
+            }
+            throw raiseIndexError();
+        }
+
+        protected boolean isArray(TruffleObject o) {
+            if (hasSizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                hasSizeNode = insert(Message.HAS_SIZE.createNode());
+            }
+            return ForeignAccess.sendHasSize(hasSizeNode, o);
+        }
+
+        private LookupAndCallUnaryNode getIndexNode() {
+            if (indexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                indexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
+            }
+            return indexNode;
+        }
+
+        private PTypeToForeignNode getToForeignNode() {
+            if (ptypeToForeignNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                ptypeToForeignNode = insert(PTypeToForeignNode.create());
+            }
+            return ptypeToForeignNode;
+        }
+
+        private PForeignToPTypeNode getToPythonNode() {
+            if (toPythonNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toPythonNode = insert(PForeignToPTypeNode.create());
+            }
+            return toPythonNode;
         }
 
         public static GetForeignItemNode create() {
             return GetForeignItemNodeGen.create();
         }
+
     }
 
     protected abstract static class SetForeignItemNode extends AccessForeignItemBaseNode {

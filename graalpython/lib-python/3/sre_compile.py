@@ -222,8 +222,6 @@ def _compile(code, pattern, flags):
 
 def _compile_charset(charset, flags, code, fixup=None, fixes=None):
     # compile charset subprogram
-    # TODO: Truffle revert-me
-    return None
     emit = code.append
     for op, av in _optimize_charset(charset, fixup, fixes):
         emit(op)
@@ -382,11 +380,7 @@ def _mk_bitmap(bits, _CODEBITS=_CODEBITS, _int=int):
 
 def _bytes_to_codes(b):
     # Convert block indices to word array
-    if _sre.CODESIZE == 2:
-        code = 'H'
-    else:
-        code = 'I'
-    a = memoryview(b).cast(code)
+    a = memoryview(b).cast('I')
     assert a.itemsize == _sre.CODESIZE
     assert len(a) * a.itemsize == len(b)
     return a.tolist()

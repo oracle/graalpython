@@ -42,7 +42,38 @@
 
 PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS, sizeof(PyUnicodeObject));
 
-// partially taken vom CPython "Objects/unicodeobject.c"
+// partially taken from CPython "Objects/unicodeobject.c"
+const unsigned char _Py_ascii_whitespace[] = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+/*     case 0x0009: * CHARACTER TABULATION */
+/*     case 0x000A: * LINE FEED */
+/*     case 0x000B: * LINE TABULATION */
+/*     case 0x000C: * FORM FEED */
+/*     case 0x000D: * CARRIAGE RETURN */
+    0, 1, 1, 1, 1, 1, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+/*     case 0x001C: * FILE SEPARATOR */
+/*     case 0x001D: * GROUP SEPARATOR */
+/*     case 0x001E: * RECORD SEPARATOR */
+/*     case 0x001F: * UNIT SEPARATOR */
+    0, 0, 0, 0, 1, 1, 1, 1,
+/*     case 0x0020: * SPACE */
+    1, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0
+};
+
+// partially taken from CPython "Objects/unicodeobject.c"
 static Py_ssize_t unicode_aswidechar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
     Py_ssize_t res;
     const wchar_t *wstr;
@@ -162,6 +193,10 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
 
 
 PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
+    if (u == NULL) {
+        return to_sulong(polyglot_from_string_n("", 0, "utf-16le"));
+    }
+
     switch(Py_UNICODE_SIZE) {
     case 2:
         return to_sulong(polyglot_from_string_n((const char*)u, size*2, "utf-16le"));
@@ -290,33 +325,23 @@ Py_UNICODE* PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size) {
     return NULL;
 }
 
-/* Fast detection of the most frequent whitespace characters */
-const unsigned char _Py_ascii_whitespace[] = {
-    0, 0, 0, 0, 0, 0, 0, 0,
-/*     case 0x0009: * CHARACTER TABULATION */
-/*     case 0x000A: * LINE FEED */
-/*     case 0x000B: * LINE TABULATION */
-/*     case 0x000C: * FORM FEED */
-/*     case 0x000D: * CARRIAGE RETURN */
-    0, 1, 1, 1, 1, 1, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-/*     case 0x001C: * FILE SEPARATOR */
-/*     case 0x001D: * GROUP SEPARATOR */
-/*     case 0x001E: * RECORD SEPARATOR */
-/*     case 0x001F: * UNIT SEPARATOR */
-    0, 0, 0, 0, 1, 1, 1, 1,
-/*     case 0x0020: * SPACE */
-    1, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
+int _PyUnicode_Ready(PyObject *unicode) {
+    // TODO(fa) anything we need to initialize here?
+    return 0;
+}
 
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
-};
+Py_ssize_t PyUnicode_FindChar(PyObject *str, Py_UCS4 ch, Py_ssize_t start, Py_ssize_t end, int direction) {
+    return UPCALL_CEXT_L("PyUnicode_FindChar", native_to_java(str), ch, start, end, direction);
+}
+
+PyObject* PyUnicode_Substring(PyObject *self, Py_ssize_t start, Py_ssize_t end) {
+    return UPCALL_CEXT_O("PyUnicode_Substring", native_to_java(self), start, end);
+}
+
+PyObject* PyUnicode_Join(PyObject *separator, PyObject *seq) {
+    return UPCALL_CEXT_O("PyUnicode_Join", native_to_java(separator), native_to_java(seq));
+}
+
+PyObject* PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar) {
+    return to_sulong(polyglot_from_string("", "ascii"));
+}

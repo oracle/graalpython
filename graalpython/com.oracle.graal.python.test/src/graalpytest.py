@@ -75,9 +75,17 @@ class TestCase(object):
                 if print_immediately:
                     print("Exception during setup occurred: %s\n" % e)
                 code = func.__code__
-                self.exceptions.append(
-                    ("%s:%d (%s)" % (code.co_filename, code.co_firstlineno, func), e)
-                )
+                _, _, tb = sys.exc_info()
+                try:
+                    from traceback import extract_tb
+                    filename, line, func, text = extract_tb(tb)[-1]
+                    self.exceptions.append(
+                        ("In test '%s': %s:%d (%s)" % (code.co_filename, filename, line, func), e)
+                    )
+                except BaseException:
+                    self.exceptions.append(
+                        ("%s:%d (%s)" % (code.co_filename, code.co_firstlineno, func), e)
+                    )
                 return False
         else:
             return True
@@ -239,7 +247,15 @@ class TestRunner(object):
                         test_module = getattr(test_module, p)
                     test_module = getattr(test_module, name)
                 except BaseException as e:
-                    self.exceptions.append((testfile, e))
+                    _, _, tb = sys.exc_info()
+                    try:
+                        from traceback import extract_tb
+                        filename, line, func, text = extract_tb(tb)[-1]
+                        self.exceptions.append(
+                            ("In test '%s': Exception occurred in %s:%d" % (testfile, filename, line), e)
+                        )
+                    except BaseException:
+                        self.exceptions.append((testfile, e))
                 else:
                     yield test_module
                 sys.path.pop(0)
@@ -273,6 +289,14 @@ class TestRunner(object):
         print("\n\nRan %d tests (%d passes, %d failures)" % (self.passed + self.failed, self.passed, self.failed))
         for e in self.exceptions:
             print(e)
+            if verbose:
+                msg, exc = e
+                try:
+                    import traceback
+                    traceback.print_tb(exc.__traceback__)
+                except BaseException:
+                    pass
+
         if self.exceptions or self.failed:
             os._exit(1)
 

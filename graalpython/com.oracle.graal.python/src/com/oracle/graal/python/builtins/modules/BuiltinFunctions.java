@@ -1011,6 +1011,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             return chr.charAt(0);
         }
+
+        @Specialization
+        public int ord(PBytes chr) {
+            if (chr.len() != 1) {
+                raise(TypeError, "ord() expected a character, but string of length %d found", chr.len());
+            }
+
+            return chr.getInternalByteArray()[0];
+        }
     }
 
     // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)

@@ -260,6 +260,9 @@ PyAPI_FUNC(PyObject *) _PyObject_FastCallKeywords(
 #define _PyObject_CallNoArg(func) \
     _PyObject_FastCallDict((func), NULL, 0, NULL)
 
+#define _PyObject_CallArg1(func, arg) \
+    _PyObject_FastCall((func), &(arg), 1)
+
 PyAPI_FUNC(PyObject *) _PyObject_Call_Prepend(
     PyObject *callable,
     PyObject *obj,

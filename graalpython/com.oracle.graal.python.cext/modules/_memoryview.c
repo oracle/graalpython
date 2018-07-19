@@ -57,6 +57,7 @@
      releasebufferprocs must NOT decrement view.obj.
 */
 
+extern PyTypeObject PyNativeMemoryView_Type;
 
 #define CHECK_MBUF_RELEASED(mbuf) \
     if (((_PyManagedBufferObject *)mbuf)->flags&_Py_MANAGED_BUFFER_RELEASED) { \
@@ -72,7 +73,7 @@ mbuf_alloc(void)
     _PyManagedBufferObject *mbuf;
 
     mbuf = (_PyManagedBufferObject *)
-        PyObject_GC_New(_PyManagedBufferObject, &_PyManagedBuffer_Type);
+        PyObject_New(_PyManagedBufferObject, &_PyManagedBuffer_Type);
     if (mbuf == NULL)
         return NULL;
     mbuf->flags = 0;
@@ -630,7 +631,7 @@ memory_alloc(int ndim)
     PyMemoryViewObject *mv;
 
     mv = (PyMemoryViewObject *)
-        PyObject_GC_NewVar(PyMemoryViewObject, &PyMemoryView_Type, 3*ndim);
+        PyObject_NewVar(PyMemoryViewObject, &PyNativeMemoryView_Type, 3*ndim);
     if (mv == NULL)
         return NULL;
 
@@ -802,13 +803,9 @@ PyMemoryView_FromObject(PyObject *v)
         return ret;
     }
 
-    // TODO: remove me once PyErr_XXX functions are supported
-    printf("memoryview: a bytes-like object is required, not '%.200s'", Py_TYPE(v)->tp_name);
-    PyErr_SetString(PyExc_TypeError, Py_TYPE(v)->tp_name);
-
-//    PyErr_Format(PyExc_TypeError,
-//        "memoryview: a bytes-like object is required, not '%.200s'",
-//        Py_TYPE(v)->tp_name);
+    PyErr_Format(PyExc_TypeError,
+        "memoryview: a bytes-like object is required, not '%.200s'",
+        Py_TYPE(v)->tp_name);
     return NULL;
 }
 
@@ -3087,9 +3084,9 @@ static PyMethodDef memory_methods[] = {
 };
 
 
-PyTypeObject PyMemoryView_Type = {
+PyTypeObject PyNativeMemoryView_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    "memoryview",                             /* tp_name */
+    "nativememoryview",                       /* tp_name */
     offsetof(PyMemoryViewObject, ob_array),   /* tp_basicsize */
     sizeof(Py_ssize_t),                       /* tp_itemsize */
     (destructor)memory_dealloc,               /* tp_dealloc */
@@ -3149,17 +3146,17 @@ PyInit__memoryview(void)
     if (m == NULL)
         return NULL;
 
-    if (PyType_Ready(&PyMemoryView_Type) < 0)
+    if (PyType_Ready(&PyNativeMemoryView_Type) < 0)
         return NULL;
 
     if (PyType_Ready(&_PyManagedBuffer_Type) < 0)
         return NULL;
 
-    Py_INCREF((PyObject*)&PyMemoryView_Type);
-    PyModule_AddObject(m, "memoryview", (PyObject*)&PyMemoryView_Type);
+    Py_INCREF((PyObject*)&PyNativeMemoryView_Type);
+    PyModule_AddObject(m, "nativememoryview",(PyObject*) &PyNativeMemoryView_Type);
 
     Py_INCREF((PyObject*)&_PyManagedBuffer_Type);
-    PyModule_AddObject(m, "managedbuffer", (PyObject*)&_PyManagedBuffer_Type);
+    PyModule_AddObject(m, "managedbuffer", (PyObject*) &_PyManagedBuffer_Type);
 
     return m;
 }

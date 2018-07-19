@@ -120,14 +120,11 @@ public final class PRange extends PImmutableSequence {
 
     @Override
     public Object getSlice(PythonObjectFactory factory, int sliceStart, int sliceStop, int sliceStep, int slicelength) {
-        if (step != sliceStep) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException();
-        }
-
-        final int newStart = sliceStart == SequenceUtil.MISSING_INDEX ? start : start + sliceStart;
-        final int newStop = sliceStop == SequenceUtil.MISSING_INDEX ? stop : Math.min(stop, start + sliceStop);
-        return factory.createRange(newStart, newStop, step);
+        // Parameters 'sliceStart', 'sliceStop', ... are again a range but of indices.
+        int newStep = step * sliceStep;
+        int newStart = sliceStart == SequenceUtil.MISSING_INDEX ? start : start + sliceStart * step;
+        int newStop = sliceStop == SequenceUtil.MISSING_INDEX ? stop : Math.min(stop, newStart + slicelength * newStep);
+        return factory.createRange(newStart, newStop, newStep);
     }
 
     @Override

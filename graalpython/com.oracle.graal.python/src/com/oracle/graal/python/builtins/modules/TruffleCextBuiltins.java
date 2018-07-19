@@ -548,6 +548,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     public static Object checkFunctionResult(PythonContext context, Node isNullNode, String name, Object result) {
         PException currentException = context.getCurrentException();
+        // consume exception
+        context.setCurrentException(null);
         boolean errOccurred = currentException != null;
         if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
             if (!errOccurred) {
@@ -611,7 +613,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
                     }
                 }
-                return fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                // save current exception state
+                PException exceptionState = getContext().getCurrentException();
+                // clear current exception such that native code has clean environment
+                getContext().setCurrentException(null);
+
+                Object result = fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+
+                // restore previous exception state
+                getContext().setCurrentException(exceptionState);
+                return result;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException(e.toString());
@@ -1264,13 +1275,32 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "PyTruffleSlice_GetIndicesEx", fixedNumOfArguments = 4)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class PyTruffleSlice_GetIndicesEx extends NativeBuiltin {
         @Specialization
-        Object doUnpack(int start, int stop, int step, long length) {
+        Object doUnpack(int start, int stop, int step, int length) {
             PSlice tmpSlice = factory().createSlice(start, stop, step);
-            SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+            SliceInfo actualIndices = tmpSlice.computeActualIndices(length);
             return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        Object doUnpackLong(long start, long stop, long step, long length) {
+            PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
+            SliceInfo actualIndices = tmpSlice.computeActualIndices(PInt.intValueExact(length));
+            return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+        }
+
+        @Specialization(replaces = {"doUnpackLong", "doUnpack"})
+        Object doUnpackLongOvf(long start, long stop, long step, long length) {
+            try {
+                PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
+                SliceInfo actualIndices = tmpSlice.computeActualIndices(length > Integer.MAX_VALUE ? Integer.MAX_VALUE : PInt.intValueExact(length));
+                return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
         }
     }
 

@@ -103,11 +103,8 @@ typedef struct _PyArg_Parser {
 #endif
 PyAPI_FUNC(int) _PyArg_ParseTupleAndKeywordsFast(PyObject *, PyObject *,
                                                  struct _PyArg_Parser *, ...);
-PyAPI_FUNC(int) _PyArg_ParseStack(
-    PyObject *const *args,
-    Py_ssize_t nargs,
-    const char *format,
-    ...);
+PyAPI_FUNC(int) _PyArg_ParseStack(PyObject **args, Py_ssize_t nargs, PyObject *kwnames,
+                                  struct _PyArg_Parser *, ...);
 PyAPI_FUNC(int) _PyArg_ParseStackAndKeywords(
     PyObject *const *args,
     Py_ssize_t nargs,

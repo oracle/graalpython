@@ -52,6 +52,7 @@ public final class NativeMemberNames {
     public static final String OB_TYPE = "ob_type";
     public static final String OB_SIZE = "ob_size";
     public static final String OB_SVAL = "ob_sval";
+    public static final String OB_START = "ob_start";
     public static final String TP_FLAGS = "tp_flags";
     public static final String TP_NAME = "tp_name";
     public static final String TP_BASE = "tp_base";
@@ -72,6 +73,12 @@ public final class NativeMemberNames {
     public static final String _BASE = "_base";
     public static final String OB_ITEM = "ob_item";
     public static final String MA_USED = "ma_used";
+    public static final String UNICODE_LENGTH = "length";
+    public static final String UNICODE_DATA = "data";
+    public static final String UNICODE_DATA_ANY = "any";
+    public static final String UNICODE_DATA_LATIN1 = "latin1";
+    public static final String UNICODE_DATA_UCS2 = "ucs2";
+    public static final String UNICODE_DATA_UCS4 = "ucs4";
     public static final String UNICODE_WSTR = "wstr";
     public static final String UNICODE_WSTR_LENGTH = "wstr_length";
     public static final String UNICODE_STATE = "state";
@@ -96,6 +103,7 @@ public final class NativeMemberNames {
     public static final String IM_FUNC = "im_func";
     public static final String IM_SELF = "im_self";
     public static final String SQ_REPEAT = "sq_repeat";
+    public static final String MEMORYVIEW_FLAGS = "flags";
 
     @CompilationFinal(dimensions = 1) public static final String[] values;
     static {

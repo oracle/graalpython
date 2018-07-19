@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -87,7 +88,10 @@ public abstract class AbstractImportNode extends StatementNode {
     protected Object importModule(String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         if (!getCore().isInitialized()) {
-            return getCore().lookupBuiltinModule(name);
+            PythonModule builtinModule = getCore().lookupBuiltinModule(name);
+            if (builtinModule != null) {
+                return builtinModule;
+            }
         }
         return __import__(name, globals, fromList, level);
     }
