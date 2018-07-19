@@ -179,6 +179,6 @@ class ReTests(unittest.TestCase):
 
         match = regex.search("  -12.1")
         self.assertTrue(match)
-        # assert "frac" in match.groupdict()
-        # assert match.groupdict()["frac"] == "1"
+        assert "frac" in match.groupdict()
+        assert match.groupdict()["frac"] == "1"
 

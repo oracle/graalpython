@@ -427,6 +427,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Child private Node isBoxedNode;
         @Child private Node hasSizeNode;
         @Child private Node unboxNode;
+        @Child private Node hasKeysNode;
 
         private final ValueProfile unboxedTypeLeftProfile = ValueProfile.createClassProfile();
         private final ValueProfile unboxedRightTypeProfile = ValueProfile.createClassProfile();
@@ -498,6 +499,17 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     hasSizeNode = insert(Message.HAS_SIZE.createNode());
                 }
                 return ForeignAccess.sendHasSize(hasSizeNode, receiver);
+            }
+            return false;
+        }
+
+        protected boolean isForeignMapping(TruffleObject receiver) {
+            if (PGuards.isForeignObject(receiver)) {
+                if (hasKeysNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    hasKeysNode = insert(Message.HAS_KEYS.createNode());
+                }
+                return ForeignAccess.sendHasKeys(hasKeysNode, receiver);
             }
             return false;
         }
@@ -707,6 +719,24 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 Object unboxed = unboxLeft(iterable);
                 if (unboxed instanceof String) {
                     return factory().createStringIterator((String) unboxed);
+                }
+            } catch (UnsupportedMessageException e) {
+                // fall through
+            }
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "isForeignMapping(mapping)")
+        Object doForeignMapping(TruffleObject mapping,
+                        @Cached("GET_SIZE.createNode()") Node sizeNode,
+                        @Cached("KEYS.createNode()") Node keysNode) {
+            try {
+                Object keysObj = ForeignAccess.sendKeys(keysNode, mapping);
+                if (keysObj instanceof TruffleObject) {
+                    Object size = ForeignAccess.sendGetSize(sizeNode, (TruffleObject) keysObj);
+                    if (size instanceof Integer) {
+                        return factory().createForeignArrayIterator((TruffleObject) keysObj, (int) size);
+                    }
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
