@@ -499,7 +499,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/JavaType
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonCore.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonParseResult.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonParser.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/exception/BreakException.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/exception/ContinueException.java,zippy.copyright

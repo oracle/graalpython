@@ -30,8 +30,14 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public final class PBaseSetIterator extends PJavaIteratorIterator<Object> {
+    private final PBaseSet set;
 
     public PBaseSetIterator(PythonClass clazz, PBaseSet set) {
         super(clazz, set.getDictStorage().keys().iterator());
+        this.set = set;
+    }
+
+    public PBaseSet getSet() {
+        return set;
     }
 }
