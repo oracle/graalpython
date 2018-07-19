@@ -50,18 +50,18 @@ def __memoryview_getitem(self, key):
     return memoryview(res) if isinstance(res, type(self.__c_memoryview)) else res
 
 
+getsetdescriptor = type(type(__memoryview_init).__code__)
+
+
 def make_property(name):
-    @property
     def getter(self):
         return getattr(self.__c_memoryview, name)
 
     error_string = "attribute '%s' of 'memoryview' objects is not writable" % name
-    @getter.setter
     def setter(self, value):
         raise AttributeError(error_string)
 
-    getter.__name__ = name
-    return getter
+    return getsetdescriptor(fget=getter, fset=setter, name=name, owner=memoryview)
 
 
 for p in ["nbytes", "readonly", "itemsize", "format", "ndim", "shape", "strides",
