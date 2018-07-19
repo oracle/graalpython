@@ -39,76 +39,43 @@
 
 # memoryview is mainly implemented in C
 
-def make_init():
-    def __memoryview_init(self, *args, **kwargs):
-        import _memoryview
-        self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
 
-    return __memoryview_init
+def __memoryview_init(self, *args, **kwargs):
+    import _memoryview
+    self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
 
 
-def make_getitem():
-    def __memoryview_getitem(self, key):
-        res = self.__c_memoryview.__getitem__(key)
-        return memoryview(res) if isinstance(res, type(self.__c_memoryview)) else res
-    return __memoryview_getitem
+def __memoryview_getitem(self, key):
+    res = self.__c_memoryview.__getitem__(key)
+    return memoryview(res) if isinstance(res, type(self.__c_memoryview)) else res
 
 
 def make_property(name):
-    template = """def {0}_getter(self):
-    return self.__c_memoryview.{0}
+    @property
+    def getter(self):
+        return getattr(self.__c_memoryview, name)
 
-{0} = property({0}_getter)
+    error_string = "attribute '%s' of 'memoryview' objects is not writable" % name
+    @getter.setter
+    def setter(self, value):
+        raise AttributeError(error_string)
 
-def {0}_setter(self, value):
-    raise AttributeError("attribute '{0}' of 'memoryview' objects is not writable")
-
-{0} = {0}.setter({0}_setter)"""
-    # use dict for globals and locals to avoid name conflicts
-    _globals = dict(globals())
-    _locals = dict()
-    exec(template.format(name), _globals, _locals)
-    return eval(name, _globals, _locals)
+    getter.__name__ = name
+    return getter
 
 
-# delegate methods
-memoryview.__init__ = make_init()
-memoryview.__repr__ = lambda self: self.__c_memoryview.__repr__()
-memoryview.__len__ = lambda self: self.__c_memoryview.__len__()
-memoryview.__getitem__ = make_getitem()
+for p in ["nbytes", "readonly", "itemsize", "format", "ndim", "shape", "strides",
+          "suboffsets", "c_contiguous", "f_contiguous", "contiguous"]:
+    setattr(memoryview, p, make_property(p))
+
+
+for p in ["__repr__", "__len__", "release", "tobytes", "hex", "tolist",
+          "__enter__", "__exit__"]:
+    setattr(memoryview, p, lambda self: getattr(self.__c_memoryview, p)())
+
+
+# other delegate methods
+memoryview.__init__ = __memoryview_init
+memoryview.__getitem__ = __memoryview_getitem
 memoryview.__setitem__ = lambda self, key, value: self.__c_memoryview.__setitem__(key, value)
-memoryview.release = lambda self: self.__c_memoryview.release()
-memoryview.tobytes = lambda self: self.__c_memoryview.tobytes()
-memoryview.hex = lambda self: self.__c_memoryview.hex()
-memoryview.tolist = lambda self: self.__c_memoryview.tolist()
 memoryview.cast = lambda self, *args: self.__c_memoryview.cast(*args)
-memoryview.__enter__ = lambda self: self.__c_memoryview.__enter__()
-memoryview.__exit__ = lambda self: self.__c_memoryview.__exit__()
-
-# delegate properties
-memoryview.nbytes = make_property("nbytes")
-memoryview.readonly = make_property("readonly")
-memoryview.itemsize = make_property("itemsize")
-memoryview.format = make_property("format")
-memoryview.ndim = make_property("ndim")
-memoryview.shape = make_property("shape")
-memoryview.strides = make_property("strides")
-memoryview.suboffsets = make_property("suboffsets")
-memoryview.c_contiguous = make_property("c_contiguous")
-memoryview.f_contiguous = make_property("f_contiguous")
-memoryview.contiguous = make_property("contiguous")
-
-
-del make_init
-del make_getitem
-# del make_nbytes
-# del make_readonly
-# del make_itemsize
-# del make_format
-# del make_ndim
-# del make_shape
-# del make_strides
-# del make_suboffsets
-# del make_c_contiguous
-# del make_f_contiguous
-# del make_contiguous
