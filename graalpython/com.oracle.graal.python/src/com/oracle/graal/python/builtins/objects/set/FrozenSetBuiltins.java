@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Pytho
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -366,11 +368,29 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @Builtin(name = __LE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LessEqualNode extends IsSubsetNode {
+        @Specialization
+        Object isLessEqual(PBaseSet self, Object other,
+                        @Cached("create(__GE__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
+            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            throw raise(PythonErrorType.TypeError, "unorderable types: %p <= %p", self, other);
+        }
     }
 
     @Builtin(name = __GE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class GreaterEqualNode extends IsSupersetNode {
+        @Specialization
+        Object isGreaterEqual(PBaseSet self, Object other,
+                        @Cached("create(__LE__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
+            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            throw raise(PythonErrorType.TypeError, "unorderable types: %p >= %p", self, other);
+        }
     }
 
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
@@ -403,6 +423,16 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             }
             return (Boolean) getLessEqualNode().execute(self, other);
         }
+
+        @Specialization
+        Object isLessThan(PBaseSet self, Object other,
+                        @Cached("create(__GT__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
+            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            throw raise(PythonErrorType.TypeError, "unorderable types: %p < %p", self, other);
+        }
     }
 
     @Builtin(name = __GT__, fixedNumOfArguments = 2)
@@ -434,6 +464,16 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                 return false;
             }
             return (Boolean) getGreaterEqualNode().execute(self, other);
+        }
+
+        @Specialization
+        Object isLessThan(PBaseSet self, Object other,
+                        @Cached("create(__LT__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
+            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            throw raise(PythonErrorType.TypeError, "unorderable types: %p > %p", self, other);
         }
     }
 }

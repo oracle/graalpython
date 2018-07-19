@@ -215,3 +215,40 @@ def test_intersection():
 def test_same_id():
     empty_ids = set([id(frozenset()) for i in range(100)])
     assert len(empty_ids) == 1
+
+
+def test_rich_compare():
+    class TestRichSetCompare:
+        def __gt__(self, some_set):
+            self.gt_called = True
+            return False
+        def __lt__(self, some_set):
+            self.lt_called = True
+            return False
+        def __ge__(self, some_set):
+            self.ge_called = True
+            return False
+        def __le__(self, some_set):
+            self.le_called = True
+            return False
+
+    # This first tries the builtin rich set comparison, which doesn't know
+    # how to handle the custom object. Upon returning NotImplemented, the
+    # corresponding comparison on the right object is invoked.
+    myset = {1, 2, 3}
+
+    myobj = TestRichSetCompare()
+    myset < myobj
+    assert myobj.gt_called
+
+    myobj = TestRichSetCompare()
+    myset > myobj
+    assert myobj.lt_called
+
+    myobj = TestRichSetCompare()
+    myset <= myobj
+    assert myobj.ge_called
+
+    myobj = TestRichSetCompare()
+    myset >= myobj
+    assert myobj.le_called
