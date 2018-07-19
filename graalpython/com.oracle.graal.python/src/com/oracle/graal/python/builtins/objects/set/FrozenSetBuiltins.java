@@ -218,6 +218,11 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             HashingStorage storage = getDiffNode().execute(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(storage);
         }
+
+        @Fallback
+        Object doSub(Object self, Object other) {
+            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for -: %p and %p", self, other);
+        }
     }
 
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
