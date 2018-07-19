@@ -154,7 +154,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Child private HashingStorageNodes.IntersectNode intersectNode;
 
         @TruffleBoundary
-        private HashingStorage getStringAsHashingStorage(String str) {
+        private static HashingStorage getStringAsHashingStorage(String str) {
             HashingStorage storage = EconomicMapStorage.create(str.length(), true);
             for (int i = 0; i < str.length(); i++) {
                 String key = String.valueOf(str.charAt(i));
@@ -191,6 +191,11 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         PBaseSet doPBaseSet(PFrozenSet left, PBaseSet right) {
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
+        }
+
+        @Fallback
+        Object doAnd(Object self, Object other) {
+            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for &=: '%p' and '%p'", self, other);
         }
     }
 

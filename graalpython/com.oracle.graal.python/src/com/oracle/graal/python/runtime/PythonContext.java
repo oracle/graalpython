@@ -106,6 +106,7 @@ public class PythonContext {
         return emptyImmutableObjectsIdCache[idx];
     }
 
+    @TruffleBoundary(allowInlining = true)
     public long getNextGlobalId() {
         return globalId.incrementAndGet();
     }

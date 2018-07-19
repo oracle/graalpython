@@ -63,6 +63,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeChildren({@NodeChild(value = "splat", type = PNode.class)})
 public abstract class ExecutePositionalStarargsNode extends PNode {
+    @Override
     public abstract Object[] execute(VirtualFrame frame);
 
     public abstract Object[] executeWith(Object starargs);
