@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -59,6 +58,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -191,25 +191,17 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.join(iterable)
     @Builtin(name = "join", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class JoinNode extends PythonBuiltinNode {
+    public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PBytes join(PBytes bytes, PSequence seq) {
-            return factory().createBytes(BytesUtils.join(getCore(), bytes.getInternalByteArray(), seq.getSequenceStorage().getInternalArray()));
-        }
-
-        @Specialization
-        public PBytes join(PBytes bytes, PSet set) {
-            Object[] values = new Object[set.size()];
-            int i = 0;
-            for (Object value : set.getDictStorage().keys()) {
-                values[i++] = value;
-            }
-            return factory().createBytes(BytesUtils.join(getCore(), bytes.getInternalByteArray(), values));
+        public PBytes join(PBytes bytes, Object iterable,
+                        @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
+            return factory().createBytes(bytesJoinNode.execute(bytes.getInternalByteArray(), iterable));
         }
 
         @Fallback
-        public PBytes join(Object self, Object arg) {
-            throw new RuntimeException("invalid arguments type for join(): self " + self + ", arg " + arg);
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object arg) {
+            throw raise(TypeError, "can only join an iterable");
         }
     }
 

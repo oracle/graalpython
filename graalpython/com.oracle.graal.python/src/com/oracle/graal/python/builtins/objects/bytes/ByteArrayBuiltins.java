@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
@@ -467,25 +466,17 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     // bytearray.join(iterable)
     @Builtin(name = "join", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class JoinNode extends PythonBuiltinNode {
+    public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PByteArray join(PByteArray byteArray, PSequence seq) {
-            return factory().createByteArray(byteArray.join(getCore(), seq.getSequenceStorage().getInternalArray()));
-        }
-
-        @Specialization
-        public PByteArray join(PByteArray byteArray, PSet set) {
-            Object[] values = new Object[set.size()];
-            int i = 0;
-            for (Object value : set.getDictStorage().keys()) {
-                values[i++] = value;
-            }
-            return factory().createByteArray(byteArray.join(getCore(), values));
+        public PByteArray join(PByteArray bytes, Object iterable,
+                        @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
+            return factory().createByteArray(bytesJoinNode.execute(bytes.getInternalByteArray(), iterable));
         }
 
         @Fallback
-        public PByteArray join(Object self, Object arg) {
-            throw new RuntimeException("invalid arguments type for join(): self " + self + ", arg " + arg);
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object arg) {
+            throw raise(TypeError, "can only join an iterable");
         }
     }
 

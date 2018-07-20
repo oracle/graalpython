@@ -31,14 +31,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class BytesUtils {
@@ -258,38 +254,6 @@ public final class BytesUtils {
             bytes[i] = (byte) sb.charAt(i);
         }
         return bytes;
-    }
-
-    public static byte[] join(PythonCore core, byte[] bytes, Object... values) {
-        List<byte[]> parts = new ArrayList<>();
-        int totalSize = 0;
-        for (int i = 0; i < values.length; i++) {
-            Object value = values[i];
-            if (value == null) {
-                // end of internal storage array
-                break;
-            } else if (value instanceof PSequence && ((PSequence) value).getSequenceStorage() instanceof ByteSequenceStorage) {
-                byte[] internalByteArray = ((ByteSequenceStorage) ((PSequence) value).getSequenceStorage()).getInternalByteArray();
-                parts.add(internalByteArray);
-                totalSize += internalByteArray.length;
-            } else {
-                throw core.raise(TypeError, "sequence item %s: expected a bytes-like object, %s found", i, core.lookupType(value.getClass()));
-            }
-
-            if (bytes != null && i < values.length - 1) {
-                parts.add(bytes);
-                totalSize += bytes.length;
-            }
-        }
-
-        byte[] joinedBytes = new byte[totalSize];
-        int offset = 0;
-        for (byte[] array : parts) {
-            System.arraycopy(array, 0, joinedBytes, offset, array.length);
-            offset += array.length;
-        }
-
-        return joinedBytes;
     }
 
     private static int normalizeIndex(int index, int length) {

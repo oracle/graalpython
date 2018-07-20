@@ -267,3 +267,7 @@ int bytes_copy2mem(char* target, char* source, size_t nbytes) {
     }
     return 0;
 }
+
+PyObject *_PyBytes_Join(PyObject *sep, PyObject *x) {
+    return UPCALL_CEXT_O("PyBytes_Join", native_to_java(sep), native_to_java(x));
+}

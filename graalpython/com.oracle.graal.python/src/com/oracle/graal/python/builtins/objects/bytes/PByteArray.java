@@ -34,7 +34,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
@@ -44,7 +43,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PByteArray extends PArray implements PIBytesLike {
 
@@ -223,11 +221,6 @@ public final class PByteArray extends PArray implements PIBytesLike {
         } else {
             throw new UnsupportedOperationException("this case is not yet supported!");
         }
-    }
-
-    @TruffleBoundary
-    public byte[] join(PythonCore core, Object... values) {
-        return BytesUtils.join(core, getBytesExact(), values);
     }
 
     @Override

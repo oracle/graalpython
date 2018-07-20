@@ -32,7 +32,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -122,10 +121,6 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     @Override
     public final int hashCode() {
         return Arrays.hashCode(store.getInternalByteArray());
-    }
-
-    public byte[] join(PythonCore core, Object... values) {
-        return BytesUtils.join(core, store.getInternalByteArray(), values);
     }
 
     @Override
