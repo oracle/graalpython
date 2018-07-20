@@ -42,6 +42,8 @@
 
 def __memoryview_init(self, *args, **kwargs):
     import _memoryview
+    # NOTE: DO NOT CHANGE THE NAME OF THIS PROPERTY
+    # it is also referenced in native code
     self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
 
 

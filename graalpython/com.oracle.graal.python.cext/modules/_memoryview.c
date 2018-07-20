@@ -6,7 +6,7 @@
 
 /* Memoryview object implementation */
 
-#include "Python.h"
+#include "../src/capi.h"
 #include <limits.h>
 /* #include "internal/mem.h" */
 /* #include "internal/pystate.h" */
@@ -1413,11 +1413,24 @@ error:
 /*                               getbuffer                                */
 /**************************************************************************/
 
+static PyMemoryViewObject* PyTruffle_MemoryView_GetDelegate(PyObject* managed_self) {
+    return (PyMemoryViewObject*) PyObject_GetAttrString(managed_self, "__c_memoryview");
+}
+
 static int
-memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
+memory_getbuf(PyMemoryViewObject *managed_self, Py_buffer *view, int flags)
 {
-    Py_buffer *base = &self->view;
-    int baseflags = self->flags;
+    PyMemoryViewObject *self = NULL;
+    Py_buffer *base = NULL;
+    int baseflags = 0;
+
+    assert(PyMemoryView_Check(managed_self));
+
+    // we need to get the native delegate of the managed memoryview object
+    self = PyTruffle_MemoryView_GetDelegate(managed_self);
+
+    base = &self->view;
+    baseflags = self->flags;
 
     CHECK_RELEASED_INT(self);
 
@@ -3157,6 +3170,10 @@ PyInit__memoryview(void)
 
     Py_INCREF((PyObject*)&_PyManagedBuffer_Type);
     PyModule_AddObject(m, "managedbuffer", (PyObject*) &_PyManagedBuffer_Type);
+
+
+    // register buffer procs
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyMemoryView_Type), (getbufferproc)memory_getbuf, (releasebufferproc)memory_releasebuf);
 
     return m;
 }
