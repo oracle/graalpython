@@ -107,7 +107,7 @@ class ReTests(unittest.TestCase):
         self.assertTypedEqual(re.sub(b'y', b'a', b'xyz'), b'xaz')
         self.assertTypedEqual(re.sub(b'y', B(b'a'), B(b'xyz')), b'xaz')
         self.assertTypedEqual(re.sub(b'y', bytearray(b'a'), bytearray(b'xyz')), b'xaz')
-        # self.assertTypedEqual(re.sub(b'y', memoryview(b'a'), memoryview(b'xyz')), b'xaz')
+        self.assertTypedEqual(re.sub(b'y', memoryview(b'a'), memoryview(b'xyz')), b'xaz')
         # for y in ("\xe0", "\u0430", "\U0001d49c"):
         #     self.assertEqual(re.sub(y, 'a', 'x%sz' % y), 'xaz')
 
