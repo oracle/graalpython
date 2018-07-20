@@ -630,7 +630,9 @@ HOST = "127.0.0.1"
 HOSTv6 = "::1"
 
 
-def find_unused_port(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
+# TODO: revert me once socket is implemented (GR-9140)
+# def find_unused_port(family=socket.AF_INET, socktype=socket.SOCK_STREAM):
+def find_unused_port(family, socktype):
     """Returns an unused port that should be suitable for binding.  This is
     achieved by creating a temporary socket with the same family and type as
     the 'sock' parameter (default is AF_INET, SOCK_STREAM), and binding it to
@@ -729,22 +731,33 @@ def bind_port(sock, host=HOST):
     port = sock.getsockname()[1]
     return port
 
-def _is_ipv6_enabled():
-    """Check whether IPv6 is enabled on this host."""
-    if socket.has_ipv6:
-        sock = None
-        try:
-            sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-            sock.bind((HOSTv6, 0))
-            return True
-        except OSError:
-            pass
-        finally:
-            if sock:
-                sock.close()
-    return False
+def bind_unix_socket(sock, addr):
+    """Bind a unix socket, raising SkipTest if PermissionError is raised."""
+    assert sock.family == socket.AF_UNIX
+    try:
+        sock.bind(addr)
+    except PermissionError:
+        sock.close()
+        raise unittest.SkipTest('cannot bind AF_UNIX sockets')
 
-IPV6_ENABLED = _is_ipv6_enabled()
+# TODO: reenable me once socket is implemented (GR-9140)
+# def _is_ipv6_enabled():
+#     """Check whether IPv6 is enabled on this host."""
+#     if socket.has_ipv6:
+#         sock = None
+#         try:
+#             sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+#             sock.bind((HOSTv6, 0))
+#             return True
+#         except OSError:
+#             pass
+#         finally:
+#             if sock:
+#                 sock.close()
+#     return False
+#
+# IPV6_ENABLED = _is_ipv6_enabled()
+IPV6_ENABLED = False
 
 def system_must_validate_cert(f):
     """Skip the test on TLS certificate validation failures."""
@@ -787,6 +800,17 @@ requires_bz2 = unittest.skipUnless(bz2, 'requires bz2')
 requires_lzma = unittest.skipUnless(lzma, 'requires lzma')
 
 is_jython = sys.platform.startswith('java')
+
+# TODO: reenable me once sysconfig is properly implemented (GR-9150)
+# _ANDROID_API_LEVEL = sysconfig.get_config_var('ANDROID_API_LEVEL')
+# is_android = (_ANDROID_API_LEVEL is not None and _ANDROID_API_LEVEL > 0)
+is_android = False
+android_not_root = (is_android and os.geteuid() != 0)
+
+if sys.platform != 'win32':
+    unix_shell = '/system/bin/sh' if is_android else '/bin/sh'
+else:
+    unix_shell = None
 
 # Filename used for testing
 if os.name == 'java':
@@ -1924,9 +1948,12 @@ def run_unittest(*classes):
 def _check_docstrings():
     """Just used to check if docstrings are enabled"""
 
-MISSING_C_DOCSTRINGS = (check_impl_detail() and
-                        sys.platform != 'win32' and
-                        not sysconfig.get_config_var('WITH_DOC_STRINGS'))
+
+#TODO reenable me once platform and sysconfig are implemented/supported
+# MISSING_C_DOCSTRINGS = (check_impl_detail() and
+#                         sys.platform != 'win32' and
+#                         not sysconfig.get_config_var('WITH_DOC_STRINGS'))
+MISSING_C_DOCSTRINGS = False
 
 HAVE_DOCSTRINGS = (_check_docstrings.__doc__ is not None and
                    not MISSING_C_DOCSTRINGS)
@@ -2264,7 +2291,7 @@ def can_xattr():
                     os.setxattr(fp.fileno(), b"user.test", b"")
                     # Kernels < 2.6.39 don't respect setxattr flags.
                     kernel_version = platform.release()
-                    m = re.match("2.6.(\d{1,2})", kernel_version)
+                    m = re.match(r"2.6.(\d{1,2})", kernel_version)
                     can = m is None or int(m.group(1)) >= 39
                 except OSError:
                     can = False
