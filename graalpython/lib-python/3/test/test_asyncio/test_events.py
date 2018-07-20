@@ -1,6 +1,7 @@
 """Tests for events.py."""
 
 import collections.abc
+import concurrent.futures
 import functools
 import gc
 import io
@@ -55,6 +56,15 @@ def osx_tiger():
     version = platform.mac_ver()[0]
     version = tuple(map(int, version.split('.')))
     return version < (10, 5)
+
+
+def _test_get_event_loop_new_process__sub_proc():
+    async def doit():
+        return 'hello'
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    return loop.run_until_complete(doit())
 
 
 ONLYCERT = data_file('ssl_cert.pem')
@@ -248,8 +258,8 @@ class EventLoopTestsMixin:
         if not self.loop.is_closed():
             test_utils.run_briefly(self.loop)
 
-        self.loop.close()
-        gc.collect()
+        self.doCleanups()
+        support.gc_collect()
         super().tearDown()
 
     def test_run_until_complete_nesting(self):
@@ -908,15 +918,9 @@ class EventLoopTestsMixin:
         server = self.loop.run_until_complete(f)
         self.assertEqual(len(server.sockets), 1)
         sock = server.sockets[0]
-        try:
-            self.assertFalse(
-                sock.getsockopt(
-                    socket.SOL_SOCKET, socket.SO_REUSEPORT))
-        except OSError:
-            raise unittest.SkipTest(
-                "Python's socket module was compiled using modern headers "
-                "thus defining SO_REUSEPORT but this process is running "
-                "under an older kernel that does not support SO_REUSEPORT.")
+        self.assertFalse(
+            sock.getsockopt(
+                socket.SOL_SOCKET, socket.SO_REUSEPORT))
         server.close()
 
         test_utils.run_briefly(self.loop)
@@ -1529,6 +1533,7 @@ class EventLoopTestsMixin:
         self.assertEqual(5, proto.nbytes)
 
         os.close(slave)
+        proto.transport.close()
         self.loop.run_until_complete(proto.done)
         self.assertEqual(
             ['INITIAL', 'CONNECTED', 'EOF', 'CLOSED'], proto.state)
@@ -1976,19 +1981,26 @@ class SubprocessTestsMixin:
 
     @unittest.skipIf(sys.platform == 'win32', "Don't have SIGHUP")
     def test_subprocess_send_signal(self):
-        prog = os.path.join(os.path.dirname(__file__), 'echo.py')
+        # bpo-31034: Make sure that we get the default signal handler (killing
+        # the process). The parent process may have decided to ignore SIGHUP,
+        # and signal handlers are inherited.
+        old_handler = signal.signal(signal.SIGHUP, signal.SIG_DFL)
+        try:
+            prog = os.path.join(os.path.dirname(__file__), 'echo.py')
 
-        connect = self.loop.subprocess_exec(
-                        functools.partial(MySubprocessProtocol, self.loop),
-                        sys.executable, prog)
-        transp, proto = self.loop.run_until_complete(connect)
-        self.assertIsInstance(proto, MySubprocessProtocol)
-        self.loop.run_until_complete(proto.connected)
+            connect = self.loop.subprocess_exec(
+                            functools.partial(MySubprocessProtocol, self.loop),
+                            sys.executable, prog)
+            transp, proto = self.loop.run_until_complete(connect)
+            self.assertIsInstance(proto, MySubprocessProtocol)
+            self.loop.run_until_complete(proto.connected)
 
-        transp.send_signal(signal.SIGHUP)
-        self.loop.run_until_complete(proto.completed)
-        self.assertEqual(-signal.SIGHUP, proto.returncode)
-        transp.close()
+            transp.send_signal(signal.SIGHUP)
+            self.loop.run_until_complete(proto.completed)
+            self.assertEqual(-signal.SIGHUP, proto.returncode)
+            transp.close()
+        finally:
+            signal.signal(signal.SIGHUP, old_handler)
 
     def test_subprocess_stderr(self):
         prog = os.path.join(os.path.dirname(__file__), 'echo2.py')
@@ -2186,6 +2198,20 @@ else:
         def tearDown(self):
             asyncio.set_child_watcher(None)
             super().tearDown()
+
+        def test_get_event_loop_new_process(self):
+            async def main():
+                pool = concurrent.futures.ProcessPoolExecutor()
+                result = await self.loop.run_in_executor(
+                    pool, _test_get_event_loop_new_process__sub_proc)
+                pool.shutdown()
+                return result
+
+            self.unpatch_get_running_loop()
+
+            self.assertEqual(
+                self.loop.run_until_complete(main()),
+                'hello')
 
     if hasattr(selectors, 'KqueueSelector'):
         class KqueueEventLoopTests(UnixEventLoopTestsMixin,

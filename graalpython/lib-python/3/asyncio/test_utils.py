@@ -33,6 +33,7 @@ from . import selectors
 from . import tasks
 from .coroutines import coroutine
 from .log import logger
+from test import support
 
 
 if sys.platform == 'win32':  # pragma: no cover
@@ -119,10 +120,10 @@ class SSLWSGIServerMixin:
                                 'test', 'test_asyncio')
         keyfile = os.path.join(here, 'ssl_key.pem')
         certfile = os.path.join(here, 'ssl_cert.pem')
-        ssock = ssl.wrap_socket(request,
-                                keyfile=keyfile,
-                                certfile=certfile,
-                                server_side=True)
+        context = ssl.SSLContext()
+        context.load_cert_chain(certfile, keyfile)
+
+        ssock = context.wrap_socket(request, server_side=True)
         try:
             self.RequestHandlerClass(ssock, client_address, self)
             ssock.close()
@@ -437,30 +438,45 @@ def get_function_source(func):
 
 
 class TestCase(unittest.TestCase):
+    @staticmethod
+    def close_loop(loop):
+        executor = loop._default_executor
+        if executor is not None:
+            executor.shutdown(wait=True)
+        loop.close()
+
     def set_event_loop(self, loop, *, cleanup=True):
         assert loop is not None
         # ensure that the event loop is passed explicitly in asyncio
         events.set_event_loop(None)
         if cleanup:
-            self.addCleanup(loop.close)
+            self.addCleanup(self.close_loop, loop)
 
     def new_test_loop(self, gen=None):
         loop = TestLoop(gen)
         self.set_event_loop(loop)
         return loop
 
+    def unpatch_get_running_loop(self):
+        events._get_running_loop = self._get_running_loop
+
     def setUp(self):
         self._get_running_loop = events._get_running_loop
         events._get_running_loop = lambda: None
+        self._thread_cleanup = support.threading_setup()
 
     def tearDown(self):
-        events._get_running_loop = self._get_running_loop
+        self.unpatch_get_running_loop()
 
         events.set_event_loop(None)
 
         # Detect CPython bug #23353: ensure that yield/yield-from is not used
         # in an except block of a generator
         self.assertEqual(sys.exc_info(), (None, None, None))
+
+        self.doCleanups()
+        support.threading_cleanup(*self._thread_cleanup)
+        support.reap_children()
 
     if not compat.PY34:
         # Python 3.3 compatibility

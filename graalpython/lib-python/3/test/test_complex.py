@@ -1,5 +1,7 @@
 import unittest
 from test import support
+from test.test_grammar import (VALID_UNDERSCORE_LITERALS,
+                               INVALID_UNDERSCORE_LITERALS)
 
 from random import random
 from math import atan2, isnan, copysign
@@ -110,9 +112,8 @@ class ComplexTest(unittest.TestCase):
             self.assertTrue(isnan(z.imag))
 
     def test_floordiv(self):
-        import operator
-        self.assertRaises(TypeError, operator.__floordiv__, 3+0j, 1.5+0j)
-        self.assertRaises(TypeError, operator.__floordiv__, 3+0j, 0+0j)
+        self.assertRaises(TypeError, complex.__floordiv__, 3+0j, 1.5+0j)
+        self.assertRaises(TypeError, complex.__floordiv__, 3+0j, 0+0j)
 
     def test_richcompare(self):
         self.assertIs(complex.__eq__(1+1j, 1<<10000), False)
@@ -158,11 +159,10 @@ class ComplexTest(unittest.TestCase):
         check(2 ** 53, range(-100, 0), lambda delta: True)
 
     def test_mod(self):
-        import operator
         # % is no longer supported on complex numbers
-        self.assertRaises(TypeError, operator.__mod__, (1+1j), 0+0j)
+        self.assertRaises(TypeError, (1+1j).__mod__, 0+0j)
         self.assertRaises(TypeError, lambda: (3.33+4.43j) % 0)
-        self.assertRaises(TypeError, operator.__mod__, (1+1j), 4.3j)
+        self.assertRaises(TypeError, (1+1j).__mod__, 4.3j)
 
     def test_divmod(self):
         self.assertRaises(TypeError, divmod, 1+1j, 1+0j)
@@ -310,7 +310,7 @@ class ComplexTest(unittest.TestCase):
         self.assertRaises(TypeError, float, 5+3j)
         self.assertRaises(ValueError, complex, "")
         self.assertRaises(TypeError, complex, None)
-        self.assertRaisesRegex(TypeError, " 'NoneType'", complex, None)
+        self.assertRaisesRegex(TypeError, "not 'NoneType'", complex, None)
         self.assertRaises(ValueError, complex, "\0")
         self.assertRaises(ValueError, complex, "3\09")
         self.assertRaises(TypeError, complex, "1", "2")
@@ -330,13 +330,11 @@ class ComplexTest(unittest.TestCase):
         self.assertRaises(ValueError, complex, ")1+2j(")
         self.assertRaisesRegex(
             TypeError,
-            "first argument must be a string or a number, not 'dict'"  # cpython
-            "|unsupported operand type for float\(\): 'dict'",         # pypy
+            "first argument must be a string or a number, not 'dict'",
             complex, {1:2}, 1)
         self.assertRaisesRegex(
             TypeError,
-            "second argument must be a number, not 'dict'"          # cpython
-            "|unsupported operand type for float\(\): 'dict'",      # pypy
+            "second argument must be a number, not 'dict'",
             complex, 1, {1:2})
         # the following three are accepted by Python 2.6
         self.assertRaises(ValueError, complex, "1..1j")
@@ -388,6 +386,41 @@ class ComplexTest(unittest.TestCase):
         self.assertAlmostEqual(complex(complex0(1j)), 42j)
         self.assertAlmostEqual(complex(complex1(1j)), 2j)
         self.assertRaises(TypeError, complex, complex2(1j))
+
+    @support.requires_IEEE_754
+    def test_constructor_special_numbers(self):
+        class complex2(complex):
+            pass
+        for x in 0.0, -0.0, INF, -INF, NAN:
+            for y in 0.0, -0.0, INF, -INF, NAN:
+                with self.subTest(x=x, y=y):
+                    z = complex(x, y)
+                    self.assertFloatsAreIdentical(z.real, x)
+                    self.assertFloatsAreIdentical(z.imag, y)
+                    z = complex2(x, y)
+                    self.assertIs(type(z), complex2)
+                    self.assertFloatsAreIdentical(z.real, x)
+                    self.assertFloatsAreIdentical(z.imag, y)
+                    z = complex(complex2(x, y))
+                    self.assertIs(type(z), complex)
+                    self.assertFloatsAreIdentical(z.real, x)
+                    self.assertFloatsAreIdentical(z.imag, y)
+                    z = complex2(complex(x, y))
+                    self.assertIs(type(z), complex2)
+                    self.assertFloatsAreIdentical(z.real, x)
+                    self.assertFloatsAreIdentical(z.imag, y)
+
+    def test_underscores(self):
+        # check underscores
+        for lit in VALID_UNDERSCORE_LITERALS:
+            if not any(ch in lit for ch in 'xXoObB'):
+                self.assertEqual(complex(lit), eval(lit))
+                self.assertEqual(complex(lit), complex(lit.replace('_', '')))
+        for lit in INVALID_UNDERSCORE_LITERALS:
+            if lit in ('0_7', '09_99'):  # octals are not recognized here
+                continue
+            if not any(ch in lit for ch in 'xXoObB'):
+                self.assertRaises(ValueError, complex, lit)
 
     def test_hash(self):
         for x in range(-30, 30):

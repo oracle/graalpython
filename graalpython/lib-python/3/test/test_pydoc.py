@@ -7,7 +7,7 @@ import inspect
 import pydoc
 import py_compile
 import keyword
-import pickle
+import _pickle
 import pkgutil
 import re
 import stat
@@ -25,7 +25,7 @@ from io import StringIO
 from collections import namedtuple
 from test.support.script_helper import assert_python_ok
 from test.support import (
-    TESTFN, rmtree, check_impl_detail,
+    TESTFN, rmtree,
     reap_children, reap_threads, captured_output, captured_stdout,
     captured_stderr, unlink, requires_docstrings
 )
@@ -84,6 +84,8 @@ CLASSES
      |  Data and other attributes defined here:
      |\x20\x20
      |  NO_MEANING = 'eggs'
+     |\x20\x20
+     |  __annotations__ = {'NO_MEANING': <class 'str'>}
 \x20\x20\x20\x20
     class C(builtins.object)
      |  Methods defined here:
@@ -133,23 +135,7 @@ FILE
 expected_text_data_docstrings = tuple('\n     |      ' + s if s else ''
                                       for s in expected_data_docstrings)
 
-if check_impl_detail(pypy=True):
-    # pydoc_mod.__builtins__ is always a module on PyPy (but a dict on
-    # CPython), hence an extra 'Modules' section
-    module_section = """
-<table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="section">
-<tr bgcolor="#aa55cc">
-<td colspan=3 valign=bottom>&nbsp;<br>
-<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
-
-<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%%"><table width="100%%" summary="list"><tr><td width="25%%" valign=top><a href="builtins.html">builtins</a><br>
-</td><td width="25%%" valign=top></td><td width="25%%" valign=top></td><td width="25%%" valign=top></td></tr></table></td></tr></table><p>
-"""
-else:
-    module_section = ""
-
-expected_html_pattern = ("""
+expected_html_pattern = """
 <table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="heading">
 <tr bgcolor="#7799ee">
 <td valign=bottom>&nbsp;<br>
@@ -157,7 +143,7 @@ expected_html_pattern = ("""
 ><td align=right valign=bottom
 ><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:%s">%s</a>%s</font></td></tr></table>
     <p><tt>This&nbsp;is&nbsp;a&nbsp;test&nbsp;module&nbsp;for&nbsp;test_pydoc</tt></p>
-<p>""" + module_section + """\
+<p>
 <table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -211,6 +197,8 @@ Data descriptors defined here:<br>
 <hr>
 Data and other attributes defined here:<br>
 <dl><dt><strong>NO_MEANING</strong> = 'eggs'</dl>
+
+<dl><dt><strong>__annotations__</strong> = {'NO_MEANING': &lt;class 'str'&gt;}</dl>
 
 </td></tr></table> <p>
 <table width="100%%" cellspacing=0 cellpadding=2 border=0 summary="section">
@@ -268,7 +256,7 @@ war</tt></dd></dl>
 \x20\x20\x20\x20
 <tr><td bgcolor="#7799ee"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
 <td width="100%%">Nobody</td></tr></table>
-""").strip() # ' <- emacs turd
+""".strip() # ' <- emacs turd
 
 expected_html_data_docstrings = tuple(s.replace(' ', '&nbsp;')
                                       for s in expected_data_docstrings)
@@ -280,7 +268,7 @@ Use help() to get the interactive help utility.
 Use help(str) for help on the str class.'''.replace('\n', os.linesep)
 
 # output pattern for module with bad imports
-badimport_pattern = "problem in %s - ImportError: No module named %r"
+badimport_pattern = "problem in %s - ModuleNotFoundError: No module named %r"
 
 expected_dynamicattribute_pattern = """
 Help on class DA in module %s:
@@ -373,7 +361,7 @@ def get_pydoc_html(module):
 def get_pydoc_link(module):
     "Returns a documentation web link of a module"
     dirname = os.path.dirname
-    basedir = dirname(dirname(__file__))
+    basedir = dirname(dirname(os.path.realpath(__file__)))
     doc = pydoc.TextDoc()
     loc = doc.getdocloc(module, basedir=basedir)
     return loc
@@ -649,16 +637,15 @@ class PydocDocTest(unittest.TestCase):
 
         # What we expect to get back: everything on object...
         expected = dict(vars(object))
-        # __new__'s descriptor can be a staticmethod on PyPy
-        expected['__new__'] = object.__new__
         # ...plus our unbound method...
         expected['method_returning_true'] = TestClass.method_returning_true
         # ...but not the non-methods on object.
         del expected['__doc__']
         del expected['__class__']
         # inspect resolves descriptors on type into methods, but vars doesn't,
-        # so we need to update __subclasshook__.
+        # so we need to update __subclasshook__ and __init_subclass__.
         expected['__subclasshook__'] = TestClass.__subclasshook__
+        expected['__init_subclass__'] = TestClass.__init_subclass__
 
         methods = pydoc.allmethods(TestClass)
         self.assertDictEqual(methods, expected)
@@ -877,7 +864,7 @@ class TestDescriptions(unittest.TestCase):
 
     @requires_docstrings
     def test_unbound_builtin_method(self):
-        self.assertEqual(self._get_summary_line(pickle.Pickler.dump),
+        self.assertEqual(self._get_summary_line(_pickle.Pickler.dump),
             "dump(self, obj, /)")
 
     # these no longer include "self"
@@ -886,10 +873,26 @@ class TestDescriptions(unittest.TestCase):
         self.assertEqual(self._get_summary_line(t.wrap),
             "wrap(text) method of textwrap.TextWrapper instance")
 
+    def test_field_order_for_named_tuples(self):
+        Person = namedtuple('Person', ['nickname', 'firstname', 'agegroup'])
+        s = pydoc.render_doc(Person)
+        self.assertLess(s.index('nickname'), s.index('firstname'))
+        self.assertLess(s.index('firstname'), s.index('agegroup'))
+
+        class NonIterableFields:
+            _fields = None
+
+        class NonHashableFields:
+            _fields = [[]]
+
+        # Make sure these doesn't fail
+        pydoc.render_doc(NonIterableFields)
+        pydoc.render_doc(NonHashableFields)
+
     @requires_docstrings
     def test_bound_builtin_method(self):
         s = StringIO()
-        p = pickle.Pickler(s)
+        p = _pickle.Pickler(s)
         self.assertEqual(self._get_summary_line(p.dump),
             "dump(obj, /) method of _pickle.Pickler instance")
 

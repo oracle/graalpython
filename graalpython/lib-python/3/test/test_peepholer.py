@@ -1,10 +1,8 @@
 import dis
 import re
 import sys
-from io import StringIO
+import textwrap
 import unittest
-from math import copysign
-from test.support import cpython_only, impl_detail
 
 from test.bytecode_helper import BytecodeTestCase
 
@@ -31,22 +29,25 @@ class TestTranforms(BytecodeTestCase):
 
     def test_global_as_constant(self):
         # LOAD_GLOBAL None/True/False  -->  LOAD_CONST None/True/False
-        def f(x):
-            None
-            None
+        def f():
+            x = None
+            x = None
             return x
-        def g(x):
-            True
+        def g():
+            x = True
             return x
-        def h(x):
-            False
+        def h():
+            x = False
             return x
+
         for func, elem in ((f, None), (g, True), (h, False)):
             self.assertNotInBytecode(func, 'LOAD_GLOBAL')
             self.assertInBytecode(func, 'LOAD_CONST', elem)
+
         def f():
             'Adding a docstring made this test fail in Py2.5.0'
             return None
+
         self.assertNotInBytecode(f, 'LOAD_GLOBAL')
         self.assertInBytecode(f, 'LOAD_CONST', None)
 
@@ -62,13 +63,10 @@ class TestTranforms(BytecodeTestCase):
             self.assertInBytecode(f, elem)
 
     def test_pack_unpack(self):
-        # On PyPy, "a, b = ..." is even more optimized, by removing
-        # the ROT_TWO.  But the ROT_TWO is not removed if assigning
-        # to more complex expressions, so check that.
         for line, elem in (
             ('a, = a,', 'LOAD_CONST',),
-            ('a[1], b = a, b', 'ROT_TWO',),
-            ('a, b[2], c = a, b, c', 'ROT_THREE',),
+            ('a, b = a, b', 'ROT_TWO',),
+            ('a, b, c = a, b, c', 'ROT_THREE',),
             ):
             code = compile(line,'','single')
             self.assertInBytecode(code, elem)
@@ -84,11 +82,6 @@ class TestTranforms(BytecodeTestCase):
             ('((1, 2), 3, 4)', ((1, 2), 3, 4)),
             ):
             code = compile(line,'','single')
-            if line == 'a,b,c = 1,2,3' and impl_detail(pypy=True):
-                # On CPython, "a,b,c=1,2,3" turns into
-                # "a,b,c=<constant (1,2,3)>"
-                # but on PyPy, it turns into "a=1;b=2;c=3".
-                continue
             self.assertInBytecode(code, 'LOAD_CONST', elem)
             self.assertNotInBytecode(code, 'BUILD_TUPLE')
 
@@ -185,10 +178,16 @@ class TestTranforms(BytecodeTestCase):
         self.assertInBytecode(code, 'LOAD_CONST', 'b')
 
         # Verify that large sequences do not result from folding
-        code = compile('a="x"*1000', '', 'single')
+        code = compile('a="x"*10000', '', 'single')
+        self.assertInBytecode(code, 'LOAD_CONST', 10000)
+        self.assertNotIn("x"*10000, code.co_consts)
+        code = compile('a=1<<1000', '', 'single')
         self.assertInBytecode(code, 'LOAD_CONST', 1000)
+        self.assertNotIn(1<<1000, code.co_consts)
+        code = compile('a=2**1000', '', 'single')
+        self.assertInBytecode(code, 'LOAD_CONST', 1000)
+        self.assertNotIn(2**1000, code.co_consts)
 
-    @cpython_only # we currently not bother to implement that
     def test_binary_subscr_on_unicode(self):
         # valid code get optimized
         code = compile('"foo"[0]', '', 'single')

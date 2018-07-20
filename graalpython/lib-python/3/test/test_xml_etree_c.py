@@ -1,5 +1,5 @@
 # xml.etree test for cElementTree
-import sys, struct
+import struct
 from test import support
 from test.support import import_fresh_module
 import types
@@ -64,6 +64,58 @@ class MiscTests(unittest.TestCase):
         del root
         support.gc_collect()
 
+    def test_parser_ref_cycle(self):
+        # bpo-31499: xmlparser_dealloc() crashed with a segmentation fault when
+        # xmlparser_gc_clear() was called previously by the garbage collector,
+        # when the parser was part of a reference cycle.
+
+        def parser_ref_cycle():
+            parser = cET.XMLParser()
+            # Create a reference cycle using an exception to keep the frame
+            # alive, so the parser will be destroyed by the garbage collector
+            try:
+                raise ValueError
+            except ValueError as exc:
+                err = exc
+
+        # Create a parser part of reference cycle
+        parser_ref_cycle()
+        # Trigger an explicit garbage collection to break the reference cycle
+        # and so destroy the parser
+        support.gc_collect()
+
+    def test_bpo_31728(self):
+        # A crash or an assertion failure shouldn't happen, in case garbage
+        # collection triggers a call to clear() or a reading of text or tail,
+        # while a setter or clear() or __setstate__() is already running.
+        elem = cET.Element('elem')
+        class X:
+            def __del__(self):
+                elem.text
+                elem.tail
+                elem.clear()
+
+        elem.text = X()
+        elem.clear()  # shouldn't crash
+
+        elem.tail = X()
+        elem.clear()  # shouldn't crash
+
+        elem.text = X()
+        elem.text = X()  # shouldn't crash
+        elem.clear()
+
+        elem.tail = X()
+        elem.tail = X()  # shouldn't crash
+        elem.clear()
+
+        elem.text = X()
+        elem.__setstate__({'tag': 42})  # shouldn't cause an assertion failure
+        elem.clear()
+
+        elem.tail = X()
+        elem.__setstate__({'tag': 42})  # shouldn't cause an assertion failure
+
 
 @unittest.skipUnless(cET, 'requires _elementtree')
 class TestAliasWorking(unittest.TestCase):
@@ -118,7 +170,7 @@ class SizeofTest(unittest.TestCase):
                              struct.calcsize('8P'))
 
 def test_main():
-    from test import test_xml_etree, test_xml_etree_c
+    from test import test_xml_etree
 
     # Run the tests specific to the C implementation
     support.run_unittest(

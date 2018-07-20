@@ -8,6 +8,7 @@ import io
 import linecache
 import os
 from os.path import normcase
+import _pickle
 import pickle
 import re
 import shutil
@@ -29,7 +30,7 @@ from test.support import MISSING_C_DOCSTRINGS, cpython_only
 from test.support.script_helper import assert_python_ok, assert_python_failure
 from test import inspect_fodder as mod
 from test import inspect_fodder2 as mod2
-from test.support import check_impl_detail
+from test import support
 
 from test.test_import import _ready_to_import
 
@@ -38,7 +39,7 @@ from test.test_import import _ready_to_import
 # ismodule, isclass, ismethod, isfunction, istraceback, isframe, iscode,
 # isbuiltin, isroutine, isgenerator, isgeneratorfunction, getmembers,
 # getdoc, getfile, getmodule, getsourcefile, getcomments, getsource,
-# getclasstree, getargspec, getargvalues, formatargspec, formatargvalues,
+# getclasstree, getargvalues, formatargspec, formatargvalues,
 # currentframe, stack, trace, isdatadescriptor
 
 # NOTE: There are some additional tests relating to interaction with
@@ -64,7 +65,8 @@ class IsTestBase(unittest.TestCase):
                       inspect.isframe, inspect.isfunction, inspect.ismethod,
                       inspect.ismodule, inspect.istraceback,
                       inspect.isgenerator, inspect.isgeneratorfunction,
-                      inspect.iscoroutine, inspect.iscoroutinefunction])
+                      inspect.iscoroutine, inspect.iscoroutinefunction,
+                      inspect.isasyncgen, inspect.isasyncgenfunction])
 
     def istest(self, predicate, exp):
         obj = eval(exp)
@@ -72,6 +74,7 @@ class IsTestBase(unittest.TestCase):
 
         for other in self.predicates - set([predicate]):
             if (predicate == inspect.isgeneratorfunction or \
+               predicate == inspect.isasyncgenfunction or \
                predicate == inspect.iscoroutinefunction) and \
                other == inspect.isfunction:
                 continue
@@ -79,6 +82,10 @@ class IsTestBase(unittest.TestCase):
 
 def generator_function_example(self):
     for i in range(2):
+        yield i
+
+async def async_generator_function_example(self):
+    async for i in range(2):
         yield i
 
 async def coroutine_function_example(self):
@@ -98,8 +105,7 @@ class TestPredicates(IsTestBase):
     def test_excluding_predicates(self):
         global tb
         self.istest(inspect.isbuiltin, 'sys.exit')
-        if check_impl_detail():
-            self.istest(inspect.isbuiltin, '[].append')
+        self.istest(inspect.isbuiltin, '[].append')
         self.istest(inspect.iscode, 'mod.spam.__code__')
         try:
             1/0
@@ -122,6 +128,10 @@ class TestPredicates(IsTestBase):
         self.istest(inspect.isdatadescriptor, 'collections.defaultdict.default_factory')
         self.istest(inspect.isgenerator, '(x for x in range(2))')
         self.istest(inspect.isgeneratorfunction, 'generator_function_example')
+        self.istest(inspect.isasyncgen,
+                    'async_generator_function_example(1)')
+        self.istest(inspect.isasyncgenfunction,
+                    'async_generator_function_example')
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -129,8 +139,7 @@ class TestPredicates(IsTestBase):
             self.istest(inspect.iscoroutinefunction, 'coroutine_function_example')
 
         if hasattr(types, 'MemberDescriptorType'):
-            self.istest(inspect.ismemberdescriptor,
-                        'type(lambda: None).__globals__')
+            self.istest(inspect.ismemberdescriptor, 'datetime.timedelta.days')
         else:
             self.assertFalse(inspect.ismemberdescriptor(datetime.timedelta.days))
 
@@ -222,6 +231,30 @@ class TestPredicates(IsTestBase):
         self.assertFalse(inspect.isabstract(a))
         self.assertFalse(inspect.isabstract(int))
         self.assertFalse(inspect.isabstract(5))
+
+    def test_isabstract_during_init_subclass(self):
+        from abc import ABCMeta, abstractmethod
+        isabstract_checks = []
+        class AbstractChecker(metaclass=ABCMeta):
+            def __init_subclass__(cls):
+                isabstract_checks.append(inspect.isabstract(cls))
+        class AbstractClassExample(AbstractChecker):
+            @abstractmethod
+            def foo(self):
+                pass
+        class ClassExample(AbstractClassExample):
+            def foo(self):
+                pass
+        self.assertEqual(isabstract_checks, [True, False])
+
+        isabstract_checks.clear()
+        class AbstractChild(AbstractClassExample):
+            pass
+        class AbstractGrandchild(AbstractChild):
+            pass
+        class ConcreteGrandchild(ClassExample):
+            pass
+        self.assertEqual(isabstract_checks, [True, True, False])
 
 
 class TestInterpreterStack(IsTestBase):
@@ -378,6 +411,11 @@ class TestRetrievingSourceCode(GetSourceBase):
     def test_getcomments(self):
         self.assertEqual(inspect.getcomments(mod), '# line 1\n')
         self.assertEqual(inspect.getcomments(mod.StupidGit), '# line 20\n')
+        # If the object source file is not available, return None.
+        co = compile('x=1', '_non_existing_filename.py', 'exec')
+        self.assertIsNone(inspect.getcomments(co))
+        # If the object has been defined in C, return None.
+        self.assertIsNone(inspect.getcomments(list))
 
     def test_getmodule(self):
         # Check actual module
@@ -407,7 +445,7 @@ class TestRetrievingSourceCode(GetSourceBase):
         self.assertEqual(normcase(inspect.getsourcefile(mod.spam)), modfile)
         self.assertEqual(normcase(inspect.getsourcefile(git.abuse)), modfile)
         fn = "_non_existing_filename_used_for_sourcefile_test.py"
-        co = compile("None", fn, "exec")
+        co = compile("x=1", fn, "exec")
         self.assertEqual(inspect.getsourcefile(co), None)
         linecache.cache[co.co_filename] = (1, None, "None", co.co_filename)
         try:
@@ -755,7 +793,6 @@ class TestClassesAndFunctions(unittest.TestCase):
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_getfullargspec_builtin_methods(self):
-        import _pickle
         self.assertFullArgSpecEquals(_pickle.Pickler.dump,
                                      args_e=['self', 'obj'], formatted='(self, obj)')
 
@@ -989,14 +1026,7 @@ class TestClassesAndFunctions(unittest.TestCase):
             class Empty(object):
                 pass
             def wrapped(x):
-                xname = None
-                if '__name__' in dir(x):
-                    xname = x.__name__
-                elif isinstance(x, (classmethod, staticmethod)):
-                    # Some of PyPy's standard descriptors are
-                    # class/staticmethods
-                    xname = x.__func__.__name__
-                if xname is not None and hasattr(Empty, xname):
+                if '__name__' in dir(x) and hasattr(Empty, x.__name__):
                     return False
                 return pred(x)
             return wrapped
@@ -1534,7 +1564,7 @@ class TestGetattrStatic(unittest.TestCase):
         foo.__dict__['d'] = 1
         self.assertEqual(inspect.getattr_static(foo, 'd'), 1)
 
-        # if the descriptor is a data-desciptor we should return the
+        # if the descriptor is a data-descriptor we should return the
         # descriptor
         descriptor.__set__ = lambda s, i, v: None
         self.assertEqual(inspect.getattr_static(foo, 'd'), Foo.__dict__['d'])
@@ -1959,12 +1989,46 @@ class TestSignatureObject(unittest.TestCase):
                            ('kwargs', ..., int, "var_keyword")),
                           ...))
 
+    def test_signature_without_self(self):
+        def test_args_only(*args):  # NOQA
+            pass
+
+        def test_args_kwargs_only(*args, **kwargs):  # NOQA
+            pass
+
+        class A:
+            @classmethod
+            def test_classmethod(*args):  # NOQA
+                pass
+
+            @staticmethod
+            def test_staticmethod(*args):  # NOQA
+                pass
+
+            f1 = functools.partialmethod((test_classmethod), 1)
+            f2 = functools.partialmethod((test_args_only), 1)
+            f3 = functools.partialmethod((test_staticmethod), 1)
+            f4 = functools.partialmethod((test_args_kwargs_only),1)
+
+        self.assertEqual(self.signature(test_args_only),
+                         ((('args', ..., ..., 'var_positional'),), ...))
+        self.assertEqual(self.signature(test_args_kwargs_only),
+                         ((('args', ..., ..., 'var_positional'),
+                           ('kwargs', ..., ..., 'var_keyword')), ...))
+        self.assertEqual(self.signature(A.f1),
+                         ((('args', ..., ..., 'var_positional'),), ...))
+        self.assertEqual(self.signature(A.f2),
+                         ((('args', ..., ..., 'var_positional'),), ...))
+        self.assertEqual(self.signature(A.f3),
+                         ((('args', ..., ..., 'var_positional'),), ...))
+        self.assertEqual(self.signature(A.f4),
+                         ((('args', ..., ..., 'var_positional'),
+                            ('kwargs', ..., ..., 'var_keyword')), ...))
     @cpython_only
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_signature_on_builtins(self):
         import _testcapi
-        import _pickle
 
         def test_unbound_method(o):
             """Use this to test unbound methods (things that should have a self)"""
@@ -2462,6 +2526,16 @@ class TestSignatureObject(unittest.TestCase):
                            ('c', 1, ..., 'keyword_only')),
                           'spam'))
 
+        class Spam:
+            def test(self: 'anno', x):
+                pass
+
+            g = partialmethod(test, 1)
+
+        self.assertEqual(self.signature(Spam.g),
+                         ((('self', ..., 'anno', 'positional_or_keyword'),),
+                          ...))
+
     def test_signature_on_fake_partialmethod(self):
         def foo(a): pass
         foo._partialmethod = 'spam'
@@ -2635,7 +2709,6 @@ class TestSignatureObject(unittest.TestCase):
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_signature_on_builtin_class(self):
-        import _pickle
         self.assertEqual(str(inspect.signature(_pickle.Pickler)),
                          '(file, protocol=None, fix_imports=True)')
 
@@ -2796,11 +2869,11 @@ class TestSignatureObject(unittest.TestCase):
         self.assertNotEqual(hash(foo_sig), hash(inspect.signature(bar)))
 
         def foo(a={}): pass
-        with self.assertRaisesRegex(TypeError, 'unhashable'):
+        with self.assertRaisesRegex(TypeError, 'unhashable type'):
             hash(inspect.signature(foo))
 
         def foo(a) -> {}: pass
-        with self.assertRaisesRegex(TypeError, 'unhashable'):
+        with self.assertRaisesRegex(TypeError, 'unhashable type'):
             hash(inspect.signature(foo))
 
     def test_signature_str(self):
@@ -2884,7 +2957,6 @@ class TestSignatureObject(unittest.TestCase):
     @unittest.skipIf(MISSING_C_DOCSTRINGS,
                      "Signature information for builtins requires docstrings")
     def test_signature_from_callable_builtin_obj(self):
-        import _pickle
         class MySignature(inspect.Signature): pass
         sig = MySignature.from_callable(_pickle.Pickler)
         self.assertTrue(isinstance(sig, MySignature))
@@ -2919,6 +2991,10 @@ class TestParameterObject(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,
                                     'is not a valid parameter name'):
             inspect.Parameter('$', kind=inspect.Parameter.VAR_KEYWORD)
+
+        with self.assertRaisesRegex(ValueError,
+                                    'is not a valid parameter name'):
+            inspect.Parameter('.a', kind=inspect.Parameter.VAR_KEYWORD)
 
         with self.assertRaisesRegex(ValueError, 'cannot have default values'):
             inspect.Parameter('a', default=42,
@@ -3002,6 +3078,17 @@ class TestParameterObject(unittest.TestCase):
     def test_signature_parameter_positional_only(self):
         with self.assertRaisesRegex(TypeError, 'name must be a str'):
             inspect.Parameter(None, kind=inspect.Parameter.POSITIONAL_ONLY)
+
+    @cpython_only
+    def test_signature_parameter_implicit(self):
+        with self.assertRaisesRegex(ValueError,
+                                    'implicit arguments must be passed in as'):
+            inspect.Parameter('.0', kind=inspect.Parameter.POSITIONAL_ONLY)
+
+        param = inspect.Parameter(
+            '.0', kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        self.assertEqual(param.kind, inspect.Parameter.POSITIONAL_ONLY)
+        self.assertEqual(param.name, 'implicit0')
 
     def test_signature_parameter_immutability(self):
         p = inspect.Parameter('spam', kind=inspect.Parameter.KEYWORD_ONLY)
@@ -3251,13 +3338,24 @@ class TestSignatureBind(unittest.TestCase):
         ba = sig.bind(args=1)
         self.assertEqual(ba.arguments, {'kwargs': {'args': 1}})
 
+    @cpython_only
+    def test_signature_bind_implicit_arg(self):
+        # Issue #19611: getcallargs should work with set comprehensions
+        def make_set():
+            return {z * z for z in range(5)}
+        setcomp_code = make_set.__code__.co_consts[1]
+        setcomp_func = types.FunctionType(setcomp_code, {})
+
+        iterator = iter(range(5))
+        self.assertEqual(self.call(setcomp_func, iterator), {0, 1, 4, 9, 16})
+
 
 class TestBoundArguments(unittest.TestCase):
     def test_signature_bound_arguments_unhashable(self):
         def foo(a): pass
         ba = inspect.signature(foo).bind(1)
 
-        with self.assertRaisesRegex(TypeError, 'unhashable'):
+        with self.assertRaisesRegex(TypeError, 'unhashable type'):
             hash(ba)
 
     def test_signature_bound_arguments_equality(self):
@@ -3469,6 +3567,19 @@ class TestSignatureDefinitions(unittest.TestCase):
                 self.assertIsNone(obj.__text_signature__)
 
 
+class NTimesUnwrappable:
+    def __init__(self, n):
+        self.n = n
+        self._next = None
+
+    @property
+    def __wrapped__(self):
+        if self.n <= 0:
+            raise Exception("Unwrapped too many times")
+        if self._next is None:
+            self._next = NTimesUnwrappable(self.n - 1)
+        return self._next
+
 class TestUnwrap(unittest.TestCase):
 
     def test_unwrap_one(self):
@@ -3524,6 +3635,11 @@ class TestUnwrap(unittest.TestCase):
             __wrapped__ = func
         self.assertIsNone(inspect.unwrap(C()))
 
+    def test_recursion_limit(self):
+        obj = NTimesUnwrappable(sys.getrecursionlimit() + 1)
+        with self.assertRaisesRegex(ValueError, 'wrapper loop'):
+            inspect.unwrap(obj)
+
 class TestMain(unittest.TestCase):
     def test_only_source(self):
         module = importlib.import_module('unittest')
@@ -3561,14 +3677,14 @@ class TestMain(unittest.TestCase):
 
     def test_details(self):
         module = importlib.import_module('unittest')
-        rc, out, err = assert_python_ok('-m', 'inspect',
+        args = support.optim_args_from_interpreter_flags()
+        rc, out, err = assert_python_ok(*args, '-m', 'inspect',
                                         'unittest', '--details')
         output = out.decode()
         # Just a quick sanity check on the output
         self.assertIn(module.__name__, output)
         self.assertIn(module.__file__, output)
-        if not sys.flags.optimize:
-            self.assertIn(module.__cached__, output)
+        self.assertIn(module.__cached__, output)
         self.assertEqual(err, b'')
 
 

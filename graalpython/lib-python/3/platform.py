@@ -13,7 +13,6 @@
 #    Python bug tracker (http://bugs.python.org) and assign them to "lemburg".
 #
 #    Still needed:
-#    * more support for WinCE
 #    * support for MS-DOS (PythonDX ?)
 #    * support for Amiga and other still unsupported platforms running Python
 #    * support for additional Linux distributions
@@ -254,13 +253,13 @@ def _dist_try_harder(distname, version, id):
 
 _release_filename = re.compile(r'(\w+)[-_](release|version)', re.ASCII)
 _lsb_release_version = re.compile(r'(.+)'
-                                   ' release '
-                                   '([\d.]+)'
-                                   '[^(]*(?:\((.+)\))?', re.ASCII)
+                                  r' release '
+                                  r'([\d.]+)'
+                                  r'[^(]*(?:\((.+)\))?', re.ASCII)
 _release_version = re.compile(r'([^0-9]+)'
-                               '(?: release )?'
-                               '([\d.]+)'
-                               '[^(]*(?:\((.+)\))?', re.ASCII)
+                              r'(?: release )?'
+                              r'([\d.]+)'
+                              r'[^(]*(?:\((.+)\))?', re.ASCII)
 
 # See also http://www.novell.com/coolsolutions/feature/11251.html
 # and http://linuxmafia.com/faq/Admin/release-files.html
@@ -511,7 +510,7 @@ def win32_ver(release='', version='', csd='', ptype=''):
         from _winreg import OpenKeyEx, QueryValueEx, CloseKey, HKEY_LOCAL_MACHINE
 
     winver = getwindowsversion()
-    maj, min, build = winver._platform_version or winver[:3]
+    maj, min, build = winver.platform_version or winver[:3]
     version = '{0}.{1}.{2}'.format(maj, min, build)
 
     release = (_WIN32_CLIENT_RELEASES.get((maj, min)) or
@@ -1201,7 +1200,9 @@ def _sys_version(sys_version=None):
         elif buildtime:
             builddate = builddate + ' ' + buildtime
 
-    if hasattr(sys, '_mercurial'):
+    if hasattr(sys, '_git'):
+        _, branch, revision = sys._git
+    elif hasattr(sys, '_mercurial'):
         _, branch, revision = sys._mercurial
     elif hasattr(sys, 'subversion'):
         # sys.subversion was added in Python 2.5
@@ -1347,7 +1348,7 @@ def platform(aliased=0, terse=0):
             # see issue #1322 for more information
             warnings.filterwarnings(
                 'ignore',
-                'dist\(\) and linux_distribution\(\) '
+                r'dist\(\) and linux_distribution\(\) '
                 'functions are deprecated .*',
                 PendingDeprecationWarning,
             )

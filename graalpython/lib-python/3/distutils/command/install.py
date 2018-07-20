@@ -43,13 +43,6 @@ INSTALL_SCHEMES = {
         'data'   : '$base',
         },
     'nt': WINDOWS_SCHEME,
-    'pypy': {
-        'purelib': '$base/site-packages',
-        'platlib': '$base/site-packages',
-        'headers': '$base/include',
-        'scripts': '$base/bin',
-        'data'   : '$base',
-        },
     }
 
 # user site schemes
@@ -182,6 +175,7 @@ class install(Command):
         self.compile = None
         self.optimize = None
 
+        # Deprecated
         # These two are for putting non-packagized distributions into their
         # own directory and creating a .pth file if it makes sense.
         # 'extra_path' comes from the setup file; 'install_path_file' can
@@ -297,8 +291,8 @@ class install(Command):
                             'dist_version': self.distribution.get_version(),
                             'dist_fullname': self.distribution.get_fullname(),
                             'py_version': py_version,
-                            'py_version_short': py_version[0:3],
-                            'py_version_nodot': py_version[0] + py_version[2],
+                            'py_version_short': '%d.%d' % sys.version_info[:2],
+                            'py_version_nodot': '%d%d' % sys.version_info[:2],
                             'sys_prefix': prefix,
                             'prefix': prefix,
                             'sys_exec_prefix': exec_prefix,
@@ -351,6 +345,7 @@ class install(Command):
                            'scripts', 'data', 'headers',
                            'userbase', 'usersite')
 
+        # Deprecated
         # Well, we're not actually fully completely finalized yet: we still
         # have to deal with 'extra_path', which is the hack for allowing
         # non-packagized module distributions (hello, Numerical Python!) to
@@ -392,7 +387,7 @@ class install(Command):
             else:
                 opt_name = opt_name.translate(longopt_xlate)
                 val = getattr(self, opt_name)
-            log.debug("  %s: %s" % (opt_name, val))
+            log.debug("  %s: %s", opt_name, val)
 
     def finalize_unix(self):
         """Finalizes options for posix platforms."""
@@ -459,9 +454,6 @@ class install(Command):
     def select_scheme(self, name):
         """Sets the install directories by applying the install schemes."""
         # it's the caller's problem if they supply a bad name!
-        if (hasattr(sys, 'pypy_version_info') and
-            not name.endswith(('_user', '_home'))):
-            name = 'pypy'
         scheme = INSTALL_SCHEMES[name]
         for key in SCHEME_KEYS:
             attrname = 'install_' + key
@@ -500,6 +492,10 @@ class install(Command):
             self.extra_path = self.distribution.extra_path
 
         if self.extra_path is not None:
+            log.warn(
+                "Distribution option extra_path is deprecated. "
+                "See issue27919 for details."
+            )
             if isinstance(self.extra_path, str):
                 self.extra_path = self.extra_path.split(',')
 

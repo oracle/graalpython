@@ -118,10 +118,16 @@ class _AttributeHolder(object):
     def __repr__(self):
         type_name = type(self).__name__
         arg_strings = []
+        star_args = {}
         for arg in self._get_args():
             arg_strings.append(repr(arg))
         for name, value in self._get_kwargs():
-            arg_strings.append('%s=%r' % (name, value))
+            if name.isidentifier():
+                arg_strings.append('%s=%r' % (name, value))
+            else:
+                star_args[name] = value
+        if star_args:
+            arg_strings.append('**%s' % repr(star_args))
         return '%s(%s)' % (type_name, ', '.join(arg_strings))
 
     def _get_kwargs(self):
@@ -176,7 +182,7 @@ class HelpFormatter(object):
         self._root_section = self._Section(self, None)
         self._current_section = self._root_section
 
-        self._whitespace_matcher = _re.compile(r'\s+')
+        self._whitespace_matcher = _re.compile(r'\s+', _re.ASCII)
         self._long_break_matcher = _re.compile(r'\n\n\n+')
 
     # ===============================
@@ -204,8 +210,6 @@ class HelpFormatter(object):
             if self.parent is not None:
                 self.formatter._indent()
             join = self.formatter._join_parts
-            for func, args in self.items:
-                func(*args)
             item_help = join([func(*args) for func, args in self.items])
             if self.parent is not None:
                 self.formatter._dedent()
@@ -1818,19 +1822,7 @@ class ArgumentParser(_AttributeHolder, _ActionsContainer):
             # error if this argument is not allowed with other previously
             # seen arguments, assuming that actions that use the default
             # value don't really count as "present"
-
-            # XXX PyPy bug-to-bug compatibility: "is" on primitive types
-            # is not consistent in CPython.  We'll assume it is close
-            # enough for ints (which is true only for "small ints"), but
-            # for floats and longs and complexes we'll go for the option
-            # of forcing "is" to say False, like it usually does on
-            # CPython.  A fix is pending on CPython trunk
-            # (http://bugs.python.org/issue18943) but that might change
-            # the details of the semantics and so not be applied to 2.7.
-            # See the line AA below.
-
-            if (argument_values is not action.default or
-                    type(argument_values) in (float, int, complex)):  # AA
+            if argument_values is not action.default:
                 seen_non_default_actions.add(action)
                 for conflict_action in action_conflicts.get(action, []):
                     if conflict_action in seen_non_default_actions:

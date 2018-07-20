@@ -670,7 +670,6 @@ class MSVCCompiler(CCompiler) :
         temp_manifest = os.path.join(
                 build_temp,
                 os.path.basename(output_filename) + ".manifest")
-        ld_args.append('/MANIFEST')
         ld_args.append('/MANIFESTFILE:' + temp_manifest)
 
     def manifest_get_embed_info(self, target_desc, ld_args):
@@ -717,7 +716,7 @@ class MSVCCompiler(CCompiler) :
                 r"""VC\d{2}\.CRT("|').*?(/>|</assemblyIdentity>)""",
                 re.DOTALL)
             manifest_buf = re.sub(pattern, "", manifest_buf)
-            pattern = "<dependentAssembly>\s*</dependentAssembly>"
+            pattern = r"<dependentAssembly>\s*</dependentAssembly>"
             manifest_buf = re.sub(pattern, "", manifest_buf)
             # Now see if any other assemblies are referenced - if not, we
             # don't want a manifest embedded.

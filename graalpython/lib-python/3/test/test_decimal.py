@@ -35,7 +35,7 @@ import locale
 from test.support import (run_unittest, run_doctest, is_resource_enabled,
                           requires_IEEE_754, requires_docstrings)
 from test.support import (check_warnings, import_fresh_module, TestFailed,
-                          run_with_locale, cpython_only, check_impl_detail)
+                          run_with_locale, cpython_only)
 import random
 import time
 import warnings
@@ -554,6 +554,10 @@ class ExplicitConstructionTest(unittest.TestCase):
         self.assertEqual(str(Decimal('  -7.89')), '-7.89')
         self.assertEqual(str(Decimal("  3.45679  ")), '3.45679')
 
+        # underscores
+        self.assertEqual(str(Decimal('1_3.3e4_0')), '1.33E+41')
+        self.assertEqual(str(Decimal('1_0_0_0')), '1000')
+
         # unicode whitespace
         for lead in ["", ' ', '\u00a0', '\u205f']:
             for trail in ["", ' ', '\u00a0', '\u205f']:
@@ -577,6 +581,9 @@ class ExplicitConstructionTest(unittest.TestCase):
 
             # embedded NUL
             self.assertRaises(InvalidOperation, Decimal, "12\u00003")
+
+            # underscores don't prevent errors
+            self.assertRaises(InvalidOperation, Decimal, "1_2_\u00003")
 
     @cpython_only
     def test_from_legacy_strings(self):
@@ -772,6 +779,9 @@ class ExplicitConstructionTest(unittest.TestCase):
         self.assertRaises(InvalidOperation, nc.create_decimal, "xyz")
         self.assertRaises(ValueError, nc.create_decimal, (1, "xyz", -25))
         self.assertRaises(TypeError, nc.create_decimal, "1234", "5678")
+        # no whitespace and underscore stripping is done with this method
+        self.assertRaises(InvalidOperation, nc.create_decimal, " 1234")
+        self.assertRaises(InvalidOperation, nc.create_decimal, "12_34")
 
         # too many NaN payload digits
         nc.prec = 3
@@ -1604,6 +1614,9 @@ class ThreadingTest(unittest.TestCase):
         for sig in Signals[self.decimal]:
             self.assertFalse(DefaultContext.flags[sig])
 
+        th1.join()
+        th2.join()
+
         DefaultContext.prec = save_prec
         DefaultContext.Emax = save_emax
         DefaultContext.Emin = save_emin
@@ -2046,6 +2059,39 @@ class UsabilityTest(unittest.TestCase):
         self.assertEqual(d.as_tuple(), (0, (0,), 'F'))
         d = Decimal( (1, (0, 2, 7, 1), 'F') )
         self.assertEqual(d.as_tuple(), (1, (0,), 'F'))
+
+    def test_as_integer_ratio(self):
+        Decimal = self.decimal.Decimal
+
+        # exceptional cases
+        self.assertRaises(OverflowError,
+                          Decimal.as_integer_ratio, Decimal('inf'))
+        self.assertRaises(OverflowError,
+                          Decimal.as_integer_ratio, Decimal('-inf'))
+        self.assertRaises(ValueError,
+                          Decimal.as_integer_ratio, Decimal('-nan'))
+        self.assertRaises(ValueError,
+                          Decimal.as_integer_ratio, Decimal('snan123'))
+
+        for exp in range(-4, 2):
+            for coeff in range(1000):
+                for sign in '+', '-':
+                    d = Decimal('%s%dE%d' % (sign, coeff, exp))
+                    pq = d.as_integer_ratio()
+                    p, q = pq
+
+                    # check return type
+                    self.assertIsInstance(pq, tuple)
+                    self.assertIsInstance(p, int)
+                    self.assertIsInstance(q, int)
+
+                    # check normalization:  q should be positive;
+                    # p should be relatively prime to q.
+                    self.assertGreater(q, 0)
+                    self.assertEqual(math.gcd(p, q), 1)
+
+                    # check that p/q actually gives the correct value
+                    self.assertEqual(Decimal(p) / Decimal(q), d)
 
     def test_subclassing(self):
         # Different behaviours when subclassing Decimal
@@ -4042,11 +4088,6 @@ class ContextInputValidation(unittest.TestCase):
         self.assertRaises(TypeError, Context, flags=(0,1))
         self.assertRaises(TypeError, Context, traps=(1,0))
 
-    def test_context_from_signaldict(self):
-        ctx = self.decimal.Context()
-        ctx2 = self.decimal.Context(flags=ctx.flags)
-        assert ctx.flags == ctx2.flags
-
 class CContextInputValidation(ContextInputValidation):
     decimal = C
 class PyContextInputValidation(ContextInputValidation):
@@ -4188,9 +4229,7 @@ class CheckAttributes(unittest.TestCase):
 
         x = [s for s in dir(C.Context()) if '__' in s or not s.startswith('_')]
         y = [s for s in dir(P.Context()) if '__' in s or not s.startswith('_')]
-        extra = set(x) - set(y)
-        extra.discard('__slots__')
-        self.assertEqual(extra, set())
+        self.assertEqual(set(x) - set(y), set())
 
     def test_decimal_attributes(self):
 
@@ -4813,24 +4852,15 @@ class CWhitebox(unittest.TestCase):
         self.assertRaises(OverflowError, Context, Emax=int_max+1)
         self.assertRaises(OverflowError, Context, Emin=-int_max-2)
         self.assertRaises(OverflowError, Context, clamp=int_max+1)
-        self.assertRaises((OverflowError, ValueError),
-                                         Context, capitals=int_max+1)
+        self.assertRaises(OverflowError, Context, capitals=int_max+1)
 
         # OverflowError, general ValueError
         for attr in ('prec', 'Emin', 'Emax', 'capitals', 'clamp'):
-            if attr == 'capitals':
-                err = (OverflowError, ValueError)
-            else:
-                err = OverflowError
-            self.assertRaises(err, setattr, c, attr, int_max+1)
-            self.assertRaises(err, setattr, c, attr, -int_max-2)
+            self.assertRaises(OverflowError, setattr, c, attr, int_max+1)
+            self.assertRaises(OverflowError, setattr, c, attr, -int_max-2)
             if sys.platform != 'win32':
-                if attr == 'clamp':
-                    err = (ValueError, OverflowError)
-                else:
-                    err = ValueError
-                self.assertRaises(err, setattr, c, attr, int_max)
-                self.assertRaises(err, setattr, c, attr, -int_max-1)
+                self.assertRaises(ValueError, setattr, c, attr, int_max)
+                self.assertRaises(ValueError, setattr, c, attr, -int_max-1)
 
         # OverflowError: _unsafe_setprec, _unsafe_setemin, _unsafe_setemax
         if C.MAX_PREC == 425000000:
@@ -4859,9 +4889,8 @@ class CWhitebox(unittest.TestCase):
             self.assertRaises(ValueError, setattr, c, attr, 2)
             self.assertRaises(TypeError, setattr, c, attr, [1,2,3])
             if HAVE_CONFIG_64:
-                err = (ValueError, OverflowError)
-                self.assertRaises(err, setattr, c, attr, 2**32)
-                self.assertRaises(err, setattr, c, attr, 2**32+1)
+                self.assertRaises(ValueError, setattr, c, attr, 2**32)
+                self.assertRaises(ValueError, setattr, c, attr, 2**32+1)
 
         # Invalid local context
         self.assertRaises(TypeError, exec, 'with localcontext("xyz"): pass',
@@ -4875,8 +4904,6 @@ class CWhitebox(unittest.TestCase):
         self.assertRaises(TypeError, setcontext, "xyz")
         setcontext(saved_context)
 
-    # pypy does not keep interned strings
-    @cpython_only
     def test_rounding_strings_interned(self):
 
         self.assertIs(C.ROUND_UP, P.ROUND_UP)
@@ -5403,7 +5430,6 @@ class CWhitebox(unittest.TestCase):
             x = (1, (0, 1), "N")
             self.assertEqual(str(Decimal(x)), '-sNaN1')
 
-    @cpython_only
     def test_sizeof(self):
         Decimal = C.Decimal
         HAVE_CONFIG_64 = (C.MAX_PREC > 425000000)
@@ -5483,7 +5509,6 @@ class SignatureTest(unittest.TestCase):
 
         POS = inspect._ParameterKind.POSITIONAL_ONLY
         POS_KWD = inspect._ParameterKind.POSITIONAL_OR_KEYWORD
-        KWONLY = inspect._ParameterKind.KEYWORD_ONLY
 
         # Type heuristic (type annotations would help!):
         pdict = {C: {'other': C.Decimal(1),
@@ -5521,8 +5546,6 @@ class SignatureTest(unittest.TestCase):
                     args.append(pdict[module][name])
                 elif param.kind == POS_KWD:
                     kwargs[name] = pdict[module][name]
-                elif param.kind == KWONLY:
-                    pass
                 else:
                     raise TestFailed("unexpected parameter kind")
             return args, kwargs
@@ -5551,26 +5574,15 @@ class SignatureTest(unittest.TestCase):
                     p_names = list(p_sig.parameters.keys())
                     c_names = [tr(x) for x in c_sig.parameters.keys()]
 
-                    p_kind = [x.kind for x in p_sig.parameters.values()]
-                    c_kind = [x.kind for x in c_sig.parameters.values()]
-
-                    if check_impl_detail(pypy=True):
-                        # PyPy only: _decimal.py has some methods with
-                        # an extra keyword-only argument 'strict', which
-                        # we ignore here
-                        if c_names[-1:] == ['strict'] and c_kind[-1] == KWONLY:
-                            del c_names[-1]
-                            del c_kind[-1]
-
                     self.assertEqual(c_names, p_names,
                                      msg="parameter name mismatch in %s" % p_func)
 
+                    p_kind = [x.kind for x in p_sig.parameters.values()]
+                    c_kind = [x.kind for x in c_sig.parameters.values()]
+
                     # 'self' parameter:
                     self.assertIs(p_kind[0], POS_KWD)
-                    if check_impl_detail(cpython=True):
-                        self.assertIs(c_kind[0], POS)
-                    else:
-                        self.assertIs(c_kind[0], POS_KWD)
+                    self.assertIs(c_kind[0], POS)
 
                     # remaining parameters:
                     if ty == 'Decimal':

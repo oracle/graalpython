@@ -3,28 +3,6 @@ Virtual environment (venv) package for Python. Based on PEP 405.
 
 Copyright (C) 2011-2014 Vinay Sajip.
 Licensed to the PSF under a contributor agreement.
-
-usage: python -m venv [-h] [--system-site-packages] [--symlinks] [--clear]
-            [--upgrade]
-            ENV_DIR [ENV_DIR ...]
-
-Creates virtual Python environments in one or more target directories.
-
-positional arguments:
-  ENV_DIR               A directory to create the environment in.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --system-site-packages
-                        Give the virtual environment access to the system
-                        site-packages dir.
-  --symlinks            Attempt to symlink rather than copy.
-  --clear               Delete the contents of the environment directory if it
-                        already exists, before environment creation.
-  --upgrade             Upgrade the environment directory to use this version
-                        of Python, assuming Python has been upgraded in-place.
-  --without-pip         Skips installing or upgrading pip in the virtual
-                        environment (pip is bootstrapped by default)
 """
 import logging
 import os
@@ -58,15 +36,17 @@ class EnvBuilder:
     :param upgrade: If True, upgrade an existing virtual environment.
     :param with_pip: If True, ensure pip is installed in the virtual
                      environment
+    :param prompt: Alternative terminal prefix for the environment.
     """
 
     def __init__(self, system_site_packages=False, clear=False,
-                 symlinks=False, upgrade=False, with_pip=False):
+                 symlinks=False, upgrade=False, with_pip=False, prompt=None):
         self.system_site_packages = system_site_packages
         self.clear = clear
         self.symlinks = symlinks
         self.upgrade = upgrade
         self.with_pip = with_pip
+        self.prompt = prompt
 
     def create(self, env_dir):
         """
@@ -77,6 +57,10 @@ class EnvBuilder:
         """
         env_dir = os.path.abspath(env_dir)
         context = self.ensure_directories(env_dir)
+        # See issue 24875. We need system_site_packages to be False
+        # until after pip is installed.
+        true_system_site_packages = self.system_site_packages
+        self.system_site_packages = False
         self.create_configuration(context)
         self.setup_python(context)
         if self.with_pip:
@@ -84,6 +68,11 @@ class EnvBuilder:
         if not self.upgrade:
             self.setup_scripts(context)
             self.post_setup(context)
+        if true_system_site_packages:
+            # We had set it to False before, now
+            # restore it and rewrite the configuration
+            self.system_site_packages = True
+            self.create_configuration(context)
 
     def clear_directory(self, path):
         for fn in os.listdir(path):
@@ -112,23 +101,14 @@ class EnvBuilder:
         context = types.SimpleNamespace()
         context.env_dir = env_dir
         context.env_name = os.path.split(env_dir)[1]
-        context.prompt = '(%s) ' % context.env_name
+        prompt = self.prompt if self.prompt is not None else context.env_name
+        context.prompt = '(%s) ' % prompt
         create_if_needed(env_dir)
         env = os.environ
         if sys.platform == 'darwin' and '__PYVENV_LAUNCHER__' in env:
             executable = os.environ['__PYVENV_LAUNCHER__']
         else:
             executable = sys.executable
-        #
-        # PyPy extension: resolve 'executable' if it is a symlink
-        try:
-            for i in range(10):
-                executable = os.path.abspath(executable)
-                executable = os.path.join(os.path.dirname(executable),
-                                          os.readlink(executable))
-        except OSError:
-            pass
-        #
         dirname, exename = os.path.split(os.path.abspath(executable))
         context.executable = executable
         context.python_dir = dirname
@@ -227,19 +207,6 @@ class EnvBuilder:
                     copier(context.env_exe, path, relative_symlinks_ok=True)
                     if not os.path.islink(path):
                         os.chmod(path, 0o755)
-            #
-            # PyPy extension: also copy the main library, not just the
-            # small executable
-            for libname in ['libpypy3-c.so', 'libpypy3-c.dylib']:
-                dest_library = os.path.join(binpath, libname)
-                src_library = os.path.join(os.path.dirname(context.executable),
-                                           libname)
-                if (not os.path.exists(dest_library) and
-                        os.path.exists(src_library)):
-                    copier(src_library, dest_library)
-                    if not os.path.islink(dest_library):
-                        os.chmod(dest_library, 0o755)
-            #
         else:
             subdir = 'DLLs'
             include = self.include_binary
@@ -353,44 +320,27 @@ class EnvBuilder:
                 dstfile = os.path.join(dstdir, f)
                 with open(srcfile, 'rb') as f:
                     data = f.read()
-                if srcfile.endswith('.exe'):
-                    mode = 'wb'
-                else:
-                    mode = 'w'
+                if not srcfile.endswith('.exe'):
                     try:
                         data = data.decode('utf-8')
                         data = self.replace_variables(data, context)
-                    except UnicodeDecodeError as e:
+                        data = data.encode('utf-8')
+                    except UnicodeError as e:
                         data = None
                         logger.warning('unable to copy script %r, '
                                        'may be binary: %s', srcfile, e)
                 if data is not None:
-                    with open(dstfile, mode) as f:
+                    with open(dstfile, 'wb') as f:
                         f.write(data)
                     shutil.copymode(srcfile, dstfile)
 
 
 def create(env_dir, system_site_packages=False, clear=False,
-                    symlinks=False, with_pip=False):
-    """
-    Create a virtual environment in a directory.
-
-    By default, makes the system (global) site-packages dir *un*available to
-    the created environment, and uses copying rather than symlinking for files
-    obtained from the source Python installation.
-
-    :param env_dir: The target directory to create an environment in.
-    :param system_site_packages: If True, the system (global) site-packages
-                                 dir is available to the environment.
-    :param clear: If True, delete the contents of the environment directory if
-                  it already exists, before environment creation.
-    :param symlinks: If True, attempt to symlink rather than copy files into
-                     virtual environment.
-    :param with_pip: If True, ensure pip is installed in the virtual
-                     environment
-    """
+                    symlinks=False, with_pip=False, prompt=None):
+    """Create a virtual environment in a directory."""
     builder = EnvBuilder(system_site_packages=system_site_packages,
-                         clear=clear, symlinks=symlinks, with_pip=with_pip)
+                         clear=clear, symlinks=symlinks, with_pip=with_pip,
+                         prompt=prompt)
     builder.create(env_dir)
 
 def main(args=None):
@@ -450,6 +400,9 @@ def main(args=None):
                             help='Skips installing or upgrading pip in the '
                                  'virtual environment (pip is bootstrapped '
                                  'by default)')
+        parser.add_argument('--prompt',
+                            help='Provides an alternative prompt prefix for '
+                                 'this environment.')
         options = parser.parse_args(args)
         if options.upgrade and options.clear:
             raise ValueError('you cannot supply --upgrade and --clear together.')
@@ -457,7 +410,8 @@ def main(args=None):
                              clear=options.clear,
                              symlinks=options.symlinks,
                              upgrade=options.upgrade,
-                             with_pip=options.with_pip)
+                             with_pip=options.with_pip,
+                             prompt=options.prompt)
         for d in options.dirs:
             builder.create(d)
 

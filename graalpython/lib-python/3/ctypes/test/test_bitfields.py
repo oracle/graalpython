@@ -3,7 +3,6 @@ from ctypes.test import need_symbol
 import unittest
 import os
 
-import ctypes
 import _ctypes_test
 
 class BITS(Structure):
@@ -116,34 +115,29 @@ class BitFieldTest(unittest.TestCase):
     def test_nonint_types(self):
         # bit fields are not allowed on non-integer types.
         result = self.fail_fields(("a", c_char_p, 1))
-        self.assertEqual(result[0], TypeError)
-        self.assertIn('bit fields not allowed for type', result[1])
+        self.assertEqual(result, (TypeError, 'bit fields not allowed for type c_char_p'))
 
         result = self.fail_fields(("a", c_void_p, 1))
-        self.assertEqual(result[0], TypeError)
-        self.assertIn('bit fields not allowed for type', result[1])
+        self.assertEqual(result, (TypeError, 'bit fields not allowed for type c_void_p'))
 
         if c_int != c_long:
             result = self.fail_fields(("a", POINTER(c_int), 1))
-            self.assertEqual(result[0], TypeError)
-            self.assertIn('bit fields not allowed for type', result[1])
+            self.assertEqual(result, (TypeError, 'bit fields not allowed for type LP_c_int'))
 
         result = self.fail_fields(("a", c_char, 1))
-        self.assertEqual(result[0], TypeError)
-        self.assertIn('bit fields not allowed for type', result[1])
+        self.assertEqual(result, (TypeError, 'bit fields not allowed for type c_char'))
 
         class Dummy(Structure):
             _fields_ = []
 
         result = self.fail_fields(("a", Dummy, 1))
-        self.assertEqual(result[0], TypeError)
-        self.assertIn('bit fields not allowed for type', result[1])
+        self.assertEqual(result, (TypeError, 'bit fields not allowed for type Dummy'))
 
     @need_symbol('c_wchar')
     def test_c_wchar(self):
         result = self.fail_fields(("a", c_wchar, 1))
-        self.assertEqual(result[0], TypeError)
-        self.assertIn('bit fields not allowed for type', result[1])
+        self.assertEqual(result,
+                (TypeError, 'bit fields not allowed for type c_wchar'))
 
     def test_single_bitfield_size(self):
         for c_typ in int_types:
@@ -202,7 +196,7 @@ class BitFieldTest(unittest.TestCase):
         class X(Structure):
             _fields_ = [("a", c_byte, 4),
                         ("b", c_int, 4)]
-        if os.name in ("nt", "ce"):
+        if os.name == "nt":
             self.assertEqual(sizeof(X), sizeof(c_int)*2)
         else:
             self.assertEqual(sizeof(X), sizeof(c_int))
@@ -230,7 +224,7 @@ class BitFieldTest(unittest.TestCase):
         # MSVC does NOT combine c_short and c_int into one field, GCC
         # does (unless GCC is run with '-mms-bitfields' which
         # produces code compatible with MSVC).
-        if os.name in ("nt", "ce"):
+        if os.name == "nt":
             self.assertEqual(sizeof(X), sizeof(c_int) * 4)
         else:
             self.assertEqual(sizeof(X), sizeof(c_int) * 2)
