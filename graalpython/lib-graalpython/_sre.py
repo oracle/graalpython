@@ -188,6 +188,7 @@ class SRE_Pattern():
 
     def __repr__(self):
         flags = self.flags
+        flag_items = []
         for i,name in enumerate(FLAG_NAMES):
             if flags & (1 << i):
                 flags -= (1 << i)
@@ -289,7 +290,7 @@ class SRE_Pattern():
         pos = repl.find(backslash, start)
         while pos != -1 and start < n:
             if pos+1 < n:
-                if repl[pos + 1].isdigit():
+                if repl[pos + 1].isdigit() and match_result.groupCount > 0:
                     group_nr = int(repl[pos+1])
                     group_str = group(match_result, group_nr, string)
                     if group_str is None:
