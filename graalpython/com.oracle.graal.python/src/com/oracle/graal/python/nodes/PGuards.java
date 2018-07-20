@@ -131,11 +131,11 @@ public abstract class PGuards {
         return list.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
-    public static boolean isIntStorage(PArray array) {
+    public static boolean isIntStorage(PSequence array) {
         return array.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
-    public static boolean isByteStorage(PArray array) {
+    public static boolean isByteStorage(PSequence array) {
         return array.getSequenceStorage() instanceof ByteSequenceStorage;
     }
 

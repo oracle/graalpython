@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.argument.positional;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -54,6 +53,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
@@ -119,13 +119,14 @@ public abstract class ExecutePositionalStarargsNode extends PNode {
     }
 
     @Specialization
+    @TruffleBoundary(allowInlining = true)
     Object[] starargs(Object object,
                     @Cached("create()") GetIteratorNode getIterator,
                     @Cached("create()") GetNextNode next,
                     @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
         Object iterator = getIterator.executeWith(object);
         if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
-            List<Object> internalStorage = new ArrayList<>();
+            ArrayList<Object> internalStorage = new ArrayList<>();
             while (true) {
                 try {
                     internalStorage.add(next.execute(iterator));
