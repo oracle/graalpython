@@ -137,6 +137,9 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.sub('a', '\t\n\v\r\f\a\b', 'a'),
                          (chr(9) + chr(10) + chr(11) + chr(13) + chr(12) + chr(7) + chr(8)))
 
+        for c in 'cdehijklmopqsuwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ':
+            self.assertEqual(re.sub('a', '\\' + c, 'a'), '\\' + c)
+
         self.assertEqual(re.sub(r'^\s*', 'X', 'test'), 'Xtest')
 
     def test_backreference(self):

@@ -308,6 +308,7 @@ class SRE_Pattern():
                     result += repl[start:pos] + backslash
                     start = pos + 2
                 else:
+                    result += repl[start:pos + 2]
                     start = pos + 2
             pos = repl.find(backslash, start)
         result += repl[start:]
