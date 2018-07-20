@@ -171,7 +171,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BytesNode extends PythonBuiltinNode {
 
-        @Specialization
+        @Specialization(guards = "isNoValue(source)")
         public PBytes bytes(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return factory().createBytes(cls, new byte[0]);
         }

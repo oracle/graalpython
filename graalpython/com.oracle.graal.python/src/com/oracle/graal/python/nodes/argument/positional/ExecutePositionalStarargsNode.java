@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.argument.positional;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -48,14 +49,21 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.control.GetIteratorNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeChildren({@NodeChild(value = "splat", type = PNode.class)})
-public abstract class ExecutePositionalStarargsNode extends Node {
+public abstract class ExecutePositionalStarargsNode extends PNode {
+    @Override
     public abstract Object[] execute(VirtualFrame frame);
 
     public abstract Object[] executeWith(Object starargs);
@@ -108,6 +116,27 @@ public abstract class ExecutePositionalStarargsNode extends Node {
     @Specialization
     Object[] starargs(PNone none) {
         return new Object[0];
+    }
+
+    @Specialization
+    @TruffleBoundary(allowInlining = true)
+    Object[] starargs(Object object,
+                    @Cached("create()") GetIteratorNode getIterator,
+                    @Cached("create()") GetNextNode next,
+                    @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+        Object iterator = getIterator.executeWith(object);
+        if (iterator != PNone.NO_VALUE && iterator != PNone.NONE) {
+            ArrayList<Object> internalStorage = new ArrayList<>();
+            while (true) {
+                try {
+                    internalStorage.add(next.execute(iterator));
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    return internalStorage.toArray();
+                }
+            }
+        }
+        throw raise(PythonErrorType.TypeError, "argument after * must be an iterable, not %p", object);
     }
 
     public static ExecutePositionalStarargsNode create() {

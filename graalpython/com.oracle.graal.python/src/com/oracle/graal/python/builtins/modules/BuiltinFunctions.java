@@ -53,6 +53,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BREAKPOINT__;
+import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonImmutableBuiltinType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -87,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -144,7 +147,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
@@ -637,8 +639,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * The next available global id. We reserve space for all integers to be their own id +
          * offset.
          */
-        private static long GLOBAL_ID = Integer.MAX_VALUE * 2 + 4L;
-        private static HiddenKey idKey = new HiddenKey("object_id");
 
         @Child private ReadAttributeFromObjectNode readId = null;
         @Child private WriteAttributeToObjectNode writeId = null;
@@ -690,7 +690,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return Double.hashCode(value);
         }
 
-        @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)"})
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyTuple(PTuple value) {
+            return getId(value, PythonImmutableBuiltinType.PTuple);
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyBytes(PBytes value) {
+            return getId(value, PythonImmutableBuiltinType.PBytes);
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyFrozenSet(PFrozenSet value) {
+            return getId(value, PythonImmutableBuiltinType.PFrozenSet);
+        }
+
+        protected boolean isEmptyImmutableBuiltin(Object object) {
+            return (object instanceof PTuple && PGuards.isEmpty((PTuple) object)) ||
+                            (object instanceof PBytes && PGuards.isEmpty((PBytes) object)) ||
+                            (object instanceof PFrozenSet && PGuards.isEmpty((PFrozenSet) object));
+        }
+
+        @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
         Object doId(PythonObject obj) {
             return getId(obj);
         }
@@ -701,15 +722,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private Object getId(PythonObject obj) {
+            return getId(obj, null);
+        }
+
+        private Object getId(PythonObject obj, PythonImmutableBuiltinType immutableType) {
             if (readId == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readId = insert(ReadAttributeFromObjectNode.create());
                 writeId = insert(WriteAttributeToObjectNode.create());
             }
-            Object id = readId.execute(obj, idKey);
+            Object id = readId.execute(obj, ID_KEY);
             if (id == NO_VALUE) {
-                id = GLOBAL_ID++;
-                writeId.execute(obj, idKey, id);
+                if (immutableType != null) {
+                    id = getContext().getEmptyImmutableObjectGlobalId(immutableType);
+                } else {
+                    id = getContext().getNextGlobalId();
+                }
+                writeId.execute(obj, ID_KEY, id);
             }
             return id;
         }

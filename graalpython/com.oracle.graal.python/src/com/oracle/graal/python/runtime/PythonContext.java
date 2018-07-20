@@ -31,11 +31,13 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonImmutableBuiltinType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -55,6 +57,9 @@ public class PythonContext {
     private PythonModule mainModule;
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
+    private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
+
+    private final long[] emptyImmutableObjectsIdCache = new long[PythonImmutableBuiltinType.values().length];
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -87,6 +92,23 @@ public class PythonContext {
             this.out = env.out();
             this.err = env.err();
         }
+    }
+
+    public long getEmptyImmutableObjectGlobalId(PythonImmutableBuiltinType immutableType) {
+        int idx = immutableType.ordinal();
+        if (emptyImmutableObjectsIdCache[idx] == 0) {
+            synchronized (emptyImmutableObjectsIdCache) {
+                if (emptyImmutableObjectsIdCache[idx] == 0) {
+                    emptyImmutableObjectsIdCache[idx] = getNextGlobalId();
+                }
+            }
+        }
+        return emptyImmutableObjectsIdCache[idx];
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public long getNextGlobalId() {
+        return globalId.incrementAndGet();
     }
 
     public OptionValues getOptions() {

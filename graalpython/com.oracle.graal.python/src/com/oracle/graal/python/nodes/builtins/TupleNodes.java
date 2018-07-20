@@ -85,8 +85,7 @@ public abstract class TupleNodes {
         public abstract PTuple execute(Object cls, Object value);
 
         @Specialization(guards = "isNoValue(none)")
-        @SuppressWarnings("unused")
-        public PTuple tuple(PythonClass cls, PNone none) {
+        public PTuple tuple(PythonClass cls, @SuppressWarnings("unused") PNone none) {
             return factory().createEmptyTuple(cls);
         }
 
