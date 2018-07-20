@@ -150,6 +150,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -1031,7 +1032,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = STR, minNumOfArguments = 1, keywordArguments = {"object", "encoding", "errors"}, takesVariableKeywords = true, constructsClass = PString.class)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonBuiltinNode {
+        @Child private LookupAndCallTernaryNode callDecodeNode;
+
+        protected static String DECODE = "decode";
+        protected static String TO_BYTES = "tobytes";
         private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
+
+        @CompilationFinal private ConditionProfile isStringProfile;
+        @CompilationFinal private ConditionProfile isPStringProfile;
 
         private Object asPString(Object cls, String str) {
             if (isPrimitiveProfile.profile(cls == getCore().lookupType(PythonBuiltinClassType.PString))) {
@@ -1055,32 +1063,60 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public Object str(Object strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode callNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isString,
-                        @Cached("createBinaryProfile()") ConditionProfile isPString) {
+                        @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
             Object result = callNode.executeObject(obj);
-            if (isString.profile(result instanceof String)) {
+            if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
-            } else if (isPString.profile(result instanceof PString)) {
+            } else if (getIsPStringProfile().profile(result instanceof PString)) {
                 return result;
             }
             throw raise(PythonErrorType.TypeError, "__str__ returned non-string (type %p)", result);
         }
 
-        protected static String DECODE = "decode";
-
         @Specialization(guards = "!isNoValue(encoding)")
-        public Object str(Object strClass, PIBytesLike obj, Object encoding, Object errors,
-                        @Cached("createBinaryProfile()") ConditionProfile isString,
-                        @Cached("createBinaryProfile()") ConditionProfile isPString,
-                        @Cached("create(DECODE)") LookupAndCallTernaryNode callDecode) {
-            Object result = callDecode.execute(obj, encoding, errors);
-            if (isString.profile(result instanceof String)) {
+        public Object doBytesLike(Object strClass, PIBytesLike obj, Object encoding, Object errors) {
+            Object result = getCallDecodeNode().execute(obj, encoding, errors);
+            if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
-            } else if (isPString.profile(result instanceof PString)) {
+            } else if (getIsPStringProfile().profile(result instanceof PString)) {
                 return result;
             }
             throw raise(PythonErrorType.TypeError, "%p.decode returned non-string (type %p)", obj, result);
+        }
+
+        @Specialization(guards = "!isNoValue(encoding)")
+        public Object doMemoryView(Object strClass, PMemoryView obj, Object encoding, Object errors,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create(TO_BYTES)") LookupAndCallUnaryNode callToBytes) {
+            Object result = callToBytes.executeObject(obj);
+            if (isBytesProfile.profile(result instanceof PBytes)) {
+                return doBytesLike(strClass, (PBytes) result, encoding, errors);
+            }
+            throw raise(PythonErrorType.TypeError, "%p.tobytes returned non-bytes object (type %p)", obj, result);
+        }
+
+        private LookupAndCallTernaryNode getCallDecodeNode() {
+            if (callDecodeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callDecodeNode = insert(LookupAndCallTernaryNode.create(DECODE));
+            }
+            return callDecodeNode;
+        }
+
+        private ConditionProfile getIsStringProfile() {
+            if (isStringProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isStringProfile = ConditionProfile.createBinaryProfile();
+            }
+            return isStringProfile;
+        }
+
+        private ConditionProfile getIsPStringProfile() {
+            if (isPStringProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isPStringProfile = ConditionProfile.createBinaryProfile();
+            }
+            return isPStringProfile;
         }
     }
 
