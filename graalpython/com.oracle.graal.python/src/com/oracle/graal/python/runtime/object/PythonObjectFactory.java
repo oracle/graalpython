@@ -699,7 +699,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public Object createCode(RootNode result) {
-        return trace(new PCode(lookupClass(PythonBuiltinClassType.PCode), result));
+        return trace(new PCode(lookupClass(PythonBuiltinClassType.PCode), result, getCore()));
     }
 
     public Object createCode(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, String codestring, Object constants, Object names, Object[] varnames,

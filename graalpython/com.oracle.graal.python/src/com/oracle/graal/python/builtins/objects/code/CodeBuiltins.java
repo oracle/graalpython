@@ -115,7 +115,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetArgCountNode extends PythonBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            return self.getArgcount();
         }
     }
 
@@ -124,7 +124,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetKnownlyArgCountNode extends PythonBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            return self.getKwonlyargcount();
         }
     }
 
@@ -133,7 +133,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNLocalsNode extends PythonBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            return self.getNlocals();
         }
     }
 
@@ -187,7 +187,11 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetVarNamesNode extends PythonBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            Object[] varNames = self.getVarnames();
+            if (varNames != null) {
+                return factory().createTuple(varNames);
+            }
+            return PNone.NONE;
         }
     }
 

@@ -41,14 +41,21 @@
 package com.oracle.graal.python.builtins.objects.code;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -70,24 +77,36 @@ public class PCode extends PythonBuiltinObject {
     private final Object[] freevars;
     private final Object[] cellvars;
 
-    public PCode(PythonClass cls, RootNode result) {
+    @TruffleBoundary
+    public PCode(PythonClass cls, RootNode result, PythonCore core) {
         super(cls);
         this.result = result;
-        this.argcount = -1;
-        this.kwonlyargcount = -1;
-        this.nlocals = -1;
+        // file stats
+        this.filename = getFileName(this.result);
+        this.name = getName(this.result);
+        this.firstlineno = getFirstLineno(this.result);
+        // arg stats
+        ArgStats argStats = getArgStats(this.result);
+        this.argcount = argStats.argCnt;
+        this.kwonlyargcount = argStats.kwOnlyArgCnt;
+        // var stats
+        String[] freevars = getFreeVars(this.result);
+        String[] cellvars = getCellVars(this.result);
+        Set<String> freeVarsSet = asSet(freevars);
+        Set<String> cellVarsSet = asSet(cellvars);
+        ArrayList<String> varNames = getVarNames(this.result, freeVarsSet, cellVarsSet, core);
+
+        this.freevars = freevars;
+        this.cellvars = cellvars;
+        this.varnames = varNames.toArray();
+        this.nlocals = this.varnames.length;
+
         this.stacksize = -1;
         this.flags = -1;
         this.codestring = null;
         this.constants = null;
         this.names = null;
-        this.varnames = null;
-        this.filename = getFileName(this.result);
-        this.name = getName(this.result);
-        this.firstlineno = getFirstLineno(this.result);
         this.lnotab = null;
-        this.freevars = getFreeVars(this.result);
-        this.cellvars = getCellVars(this.result);
     }
 
     public PCode(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
@@ -111,6 +130,10 @@ public class PCode extends PythonBuiltinObject {
         this.lnotab = lnotab;
         this.freevars = freevars;
         this.cellvars = cellvars;
+    }
+
+    private static Set<String> asSet(String[] values) {
+        return (values != null) ? new HashSet<>(Arrays.asList(values)) : new HashSet<>();
     }
 
     private static String[] getFreeVars(RootNode rootNode) {
@@ -144,7 +167,6 @@ public class PCode extends PythonBuiltinObject {
         }
     }
 
-    @TruffleBoundary
     private static int getFirstLineno(RootNode rootNode) {
         SourceSection sourceSection = rootNode.getSourceSection();
         if (sourceSection == null) {
@@ -166,14 +188,42 @@ public class PCode extends PythonBuiltinObject {
         return name;
     }
 
-    private static Object[] getVarNames(RootNode rootNode, PythonCore core) {
+    private static ArrayList<String> getVarNames(RootNode rootNode, Set<String> freeVarsSet, Set<String> cellVarsSet, PythonCore core) {
+        // tuple of names of arguments and local variables
         ArrayList<String> variableNames = new ArrayList<>();
-        for (Object ident : rootNode.getFrameDescriptor().getIdentifiers()) {
-            if (ident instanceof String && core.getParser().isIdentifier(core, (String) ident)) {
-                variableNames.add((String) ident);
+        for (Object identifier : rootNode.getFrameDescriptor().getIdentifiers()) {
+            if (identifier instanceof String) {
+                String varName = (String) identifier;
+                if (core.getParser().isIdentifier(core, varName) && !freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
+                    variableNames.add(varName);
+                }
             }
         }
-        return variableNames.toArray();
+        return variableNames;
+    }
+
+    private final static class ArgStats {
+        public final int argCnt;
+        private final int kwOnlyArgCnt;
+
+        private ArgStats(int argCnt, int kwOnlyArgCnt) {
+            this.argCnt = argCnt;
+            this.kwOnlyArgCnt = kwOnlyArgCnt;
+        }
+    }
+
+    private static ArgStats getArgStats(RootNode rootNode) {
+        int argC = NodeUtil.findAllNodeInstances(rootNode, ReadIndexedArgumentNode.class).size();
+        int kwOnlyArgC = 0;
+        List<ReadKeywordNode> kwNodes = NodeUtil.findAllNodeInstances(rootNode, ReadKeywordNode.class);
+        for (ReadKeywordNode kwNode : kwNodes) {
+            if (kwNode.canBePositional()) {
+                argC++;
+            } else {
+                kwOnlyArgC++;
+            }
+        }
+        return new ArgStats(argC, kwOnlyArgC);
     }
 
     public RootNode getRootNode() {
