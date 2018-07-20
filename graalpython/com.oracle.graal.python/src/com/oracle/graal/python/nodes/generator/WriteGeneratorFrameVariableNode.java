@@ -121,7 +121,7 @@ public abstract class WriteGeneratorFrameVariableNode extends FrameSlotNode impl
     @Specialization(guards = {"isLongOrObjectKind(frame)", "isPrimitiveInt(value)"}, rewriteOn = ArithmeticException.class)
     public PInt writePIntAsLong(VirtualFrame frame, PInt value) {
         Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        frameSlot.setKind(FrameSlotKind.Long);
+        generatorFrame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Long);
         generatorFrame.setLong(frameSlot, value.longValueExact());
         return value;
     }
@@ -129,7 +129,7 @@ public abstract class WriteGeneratorFrameVariableNode extends FrameSlotNode impl
     @Specialization(guards = "isLongOrObjectKind(frame)")
     public PInt writePIntAsObject(VirtualFrame frame, PInt value) {
         Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        frameSlot.setKind(FrameSlotKind.Object);
+        generatorFrame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
         generatorFrame.setObject(frameSlot, value);
         return value;
     }
