@@ -362,6 +362,7 @@ getstring(PyObject* string, Py_ssize_t* p_length,
     return view->buf;
 }
 
+
 LOCAL(PyObject*)
 state_init(SRE_STATE* state, PatternObject* pattern, PyObject* string,
            Py_ssize_t start, Py_ssize_t end)
@@ -1055,6 +1056,19 @@ error:
 
 }
 
+__attribute__((always_inline))
+inline static void *_memchr(const void *s, int c, Py_ssize_t n) {
+    unsigned char *p = (unsigned char*)s;
+    while(n--) {
+        if(*p != (unsigned char)c) {
+            p++;
+        } else {
+            return p;
+        }
+    }
+    return 0;
+}
+
 static PyObject*
 pattern_subx(PatternObject* self, PyObject* ptemplate, PyObject* string,
              Py_ssize_t count, Py_ssize_t subn)
@@ -1086,7 +1100,7 @@ pattern_subx(PatternObject* self, PyObject* ptemplate, PyObject* string,
         b = charsize;
         if (ptr) {
             if (charsize == 1)
-                literal = memchr(ptr, '\\', n) == NULL;
+                literal = _memchr(ptr, '\\', n) == NULL;
             else
                 literal = PyUnicode_FindChar(ptemplate, '\\', 0, n, 1) == -1;
         } else {
