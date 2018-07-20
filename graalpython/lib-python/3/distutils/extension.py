@@ -4,6 +4,7 @@ Provides the Extension class, used to describe C/C++ extension
 modules in setup scripts."""
 
 import os
+import sys
 import warnings
 
 # This class is really only used by the "build_ext" command, so it might

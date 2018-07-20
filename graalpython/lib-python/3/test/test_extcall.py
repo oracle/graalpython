@@ -57,7 +57,7 @@ Here we add keyword arguments
     Traceback (most recent call last):
         ...
     TypeError: ...got multiple values for keyword argument 'a'
-    >>> f(1, 2, a=3, **{'a': 4}, **{'a': 5})
+    >>> f(1, 2, a=3, **{'a': 4}, **{'a': 5})               #doctest: +ELLIPSIS
     Traceback (most recent call last):
         ...
     TypeError: ...got multiple values for keyword argument 'a'
@@ -228,62 +228,17 @@ What about willful misconduct?
       ...
     TypeError: h() got an unexpected keyword argument 'e'
 
-    >>> h(*h)
-    Traceback (most recent call last):
-      ...
-    TypeError: h() argument after * must be an iterable, not function
-
-    >>> h(1, *h)
-    Traceback (most recent call last):
-      ...
-    TypeError: h() argument after * must be an iterable, not function
-
-    >>> h(*[1], *h)
-    Traceback (most recent call last):
-      ...
-    TypeError: h() argument after * must be an iterable, not function
-
-    >>> dir(*h)
-    Traceback (most recent call last):
-      ...
-    TypeError: dir() argument after * must be an iterable, not function
-
-    >>> None(*h)
+    >>> h(*h)                                  #doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...
     TypeError: ...argument after * must be an iterable, not function
 
-    >>> h(**h)
+    >>> h(1, *h)                               #doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...
-    TypeError: h() argument after ** must be a mapping, not function
+    TypeError: ...argument after * must be an iterable, not function
 
-    >>> h(**[])
-    Traceback (most recent call last):
-      ...
-    TypeError: h() argument after ** must be a mapping, not list
-
-    >>> h(a=1, **h)
-    Traceback (most recent call last):
-      ...
-    TypeError: h() argument after ** must be a mapping, not function
-
-    >>> h(a=1, **[])
-    Traceback (most recent call last):
-      ...
-    TypeError: h() argument after ** must be a mapping, not list
-
-    >>> h(**{'a': 1}, **h)
-    Traceback (most recent call last):
-      ...
-    TypeError: h() argument after ** must be a mapping, not function
-
-    >>> h(**{'a': 1}, **[])
-    Traceback (most recent call last):
-      ...
-    TypeError: h() argument after ** must be a mapping, not list
-
-    >>> dir(**h)
+    >>> dir(*h)                                #doctest: +ELLIPSIS
     Traceback (most recent call last):
       ...
     TypeError: ...argument after * must be an iterable, not function
@@ -297,6 +252,31 @@ What about willful misconduct?
     Traceback (most recent call last):
       ...
     TypeError: ...argument after ** must be a mapping, not function
+
+    >>> h(**[])                                #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    TypeError: ...argument after ** must be a mapping, not list
+
+    >>> h(a=1, **h)                            #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    TypeError: ...argument after ** must be a mapping, not function
+
+    >>> h(a=1, **[])                           #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    TypeError: ...argument after ** must be a mapping, not list
+
+    >>> h(**{'a': 1}, **h)                     #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    TypeError: ...argument after ** must be a mapping, not function
+
+    >>> h(**{'a': 1}, **[])                    #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    TypeError: ...argument after ** must be a mapping, not list
 
     >>> dir(**h)                               #doctest: +ELLIPSIS
     Traceback (most recent call last):

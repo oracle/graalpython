@@ -3,6 +3,28 @@ Virtual environment (venv) package for Python. Based on PEP 405.
 
 Copyright (C) 2011-2014 Vinay Sajip.
 Licensed to the PSF under a contributor agreement.
+
+usage: python -m venv [-h] [--system-site-packages] [--symlinks] [--clear]
+            [--upgrade]
+            ENV_DIR [ENV_DIR ...]
+
+Creates virtual Python environments in one or more target directories.
+
+positional arguments:
+  ENV_DIR               A directory to create the environment in.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --system-site-packages
+                        Give the virtual environment access to the system
+                        site-packages dir.
+  --symlinks            Attempt to symlink rather than copy.
+  --clear               Delete the contents of the environment directory if it
+                        already exists, before environment creation.
+  --upgrade             Upgrade the environment directory to use this version
+                        of Python, assuming Python has been upgraded in-place.
+  --without-pip         Skips installing or upgrading pip in the virtual
+                        environment (pip is bootstrapped by default)
 """
 import logging
 import os
@@ -36,17 +58,15 @@ class EnvBuilder:
     :param upgrade: If True, upgrade an existing virtual environment.
     :param with_pip: If True, ensure pip is installed in the virtual
                      environment
-    :param prompt: Alternative terminal prefix for the environment.
     """
 
     def __init__(self, system_site_packages=False, clear=False,
-                 symlinks=False, upgrade=False, with_pip=False, prompt=None):
+                 symlinks=False, upgrade=False, with_pip=False):
         self.system_site_packages = system_site_packages
         self.clear = clear
         self.symlinks = symlinks
         self.upgrade = upgrade
         self.with_pip = with_pip
-        self.prompt = prompt
 
     def create(self, env_dir):
         """
@@ -57,10 +77,6 @@ class EnvBuilder:
         """
         env_dir = os.path.abspath(env_dir)
         context = self.ensure_directories(env_dir)
-        # See issue 24875. We need system_site_packages to be False
-        # until after pip is installed.
-        true_system_site_packages = self.system_site_packages
-        self.system_site_packages = False
         self.create_configuration(context)
         self.setup_python(context)
         if self.with_pip:
@@ -68,11 +84,6 @@ class EnvBuilder:
         if not self.upgrade:
             self.setup_scripts(context)
             self.post_setup(context)
-        if true_system_site_packages:
-            # We had set it to False before, now
-            # restore it and rewrite the configuration
-            self.system_site_packages = True
-            self.create_configuration(context)
 
     def clear_directory(self, path):
         for fn in os.listdir(path):
@@ -101,8 +112,7 @@ class EnvBuilder:
         context = types.SimpleNamespace()
         context.env_dir = env_dir
         context.env_name = os.path.split(env_dir)[1]
-        prompt = self.prompt if self.prompt is not None else context.env_name
-        context.prompt = '(%s) ' % prompt
+        context.prompt = '(%s) ' % context.env_name
         create_if_needed(env_dir)
         env = os.environ
         if sys.platform == 'darwin' and '__PYVENV_LAUNCHER__' in env:
@@ -343,27 +353,44 @@ class EnvBuilder:
                 dstfile = os.path.join(dstdir, f)
                 with open(srcfile, 'rb') as f:
                     data = f.read()
-                if not srcfile.endswith('.exe'):
+                if srcfile.endswith('.exe'):
+                    mode = 'wb'
+                else:
+                    mode = 'w'
                     try:
                         data = data.decode('utf-8')
                         data = self.replace_variables(data, context)
-                        data = data.encode('utf-8')
-                    except UnicodeError as e:
+                    except UnicodeDecodeError as e:
                         data = None
                         logger.warning('unable to copy script %r, '
                                        'may be binary: %s', srcfile, e)
                 if data is not None:
-                    with open(dstfile, 'wb') as f:
+                    with open(dstfile, mode) as f:
                         f.write(data)
                     shutil.copymode(srcfile, dstfile)
 
 
 def create(env_dir, system_site_packages=False, clear=False,
-                    symlinks=False, with_pip=False, prompt=None):
-    """Create a virtual environment in a directory."""
+                    symlinks=False, with_pip=False):
+    """
+    Create a virtual environment in a directory.
+
+    By default, makes the system (global) site-packages dir *un*available to
+    the created environment, and uses copying rather than symlinking for files
+    obtained from the source Python installation.
+
+    :param env_dir: The target directory to create an environment in.
+    :param system_site_packages: If True, the system (global) site-packages
+                                 dir is available to the environment.
+    :param clear: If True, delete the contents of the environment directory if
+                  it already exists, before environment creation.
+    :param symlinks: If True, attempt to symlink rather than copy files into
+                     virtual environment.
+    :param with_pip: If True, ensure pip is installed in the virtual
+                     environment
+    """
     builder = EnvBuilder(system_site_packages=system_site_packages,
-                         clear=clear, symlinks=symlinks, with_pip=with_pip,
-                         prompt=prompt)
+                         clear=clear, symlinks=symlinks, with_pip=with_pip)
     builder.create(env_dir)
 
 def main(args=None):
@@ -423,9 +450,6 @@ def main(args=None):
                             help='Skips installing or upgrading pip in the '
                                  'virtual environment (pip is bootstrapped '
                                  'by default)')
-        parser.add_argument('--prompt',
-                            help='Provides an alternative prompt prefix for '
-                                 'this environment.')
         options = parser.parse_args(args)
         if options.upgrade and options.clear:
             raise ValueError('you cannot supply --upgrade and --clear together.')
@@ -433,8 +457,7 @@ def main(args=None):
                              clear=options.clear,
                              symlinks=options.symlinks,
                              upgrade=options.upgrade,
-                             with_pip=options.with_pip,
-                             prompt=options.prompt)
+                             with_pip=options.with_pip)
         for d in options.dirs:
             builder.create(d)
 

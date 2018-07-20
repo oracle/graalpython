@@ -352,10 +352,7 @@ class IOTest(unittest.TestCase):
     def large_file_ops(self, f):
         assert f.readable()
         assert f.writable()
-        try:
-            self.assertEqual(f.seek(self.LARGE), self.LARGE)
-        except (OverflowError, ValueError):
-            self.skipTest("no largefile support")
+        self.assertEqual(f.seek(self.LARGE), self.LARGE)
         self.assertEqual(f.tell(), self.LARGE)
         self.assertEqual(f.write(b"xxx"), 3)
         self.assertEqual(f.tell(), self.LARGE + 3)
@@ -501,11 +498,7 @@ class IOTest(unittest.TestCase):
     def test_open_handles_NUL_chars(self):
         fn_with_NUL = 'foo\0bar'
         self.assertRaises(ValueError, self.open, fn_with_NUL, 'w')
-
-        bytes_fn = bytes(fn_with_NUL, 'ascii')
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            self.assertRaises(ValueError, self.open, bytes_fn, 'w')
+        self.assertRaises(ValueError, self.open, bytes(fn_with_NUL, 'ascii'), 'w')
 
     def test_raw_file_io(self):
         with self.open(support.TESTFN, "wb", buffering=0) as f:
@@ -864,32 +857,6 @@ class IOTest(unittest.TestCase):
                 buffer = byteslike(5)
                 self.assertEqual(getattr(stream, method)(buffer), 5)
                 self.assertEqual(bytes(buffer), b"12345")
-
-    def test_fspath_support(self):
-        class PathLike:
-            def __init__(self, path):
-                self.path = path
-
-            def __fspath__(self):
-                return self.path
-
-        def check_path_succeeds(path):
-            with self.open(path, "w") as f:
-                f.write("egg\n")
-
-            with self.open(path, "r") as f:
-                self.assertEqual(f.read(), "egg\n")
-
-        check_path_succeeds(PathLike(support.TESTFN))
-        check_path_succeeds(PathLike(support.TESTFN.encode('utf-8')))
-
-        bad_path = PathLike(TypeError)
-        with self.assertRaises(TypeError):
-            self.open(bad_path, 'w')
-
-        # ensure that refcounting is correct with some error conditions
-        with self.assertRaisesRegex(ValueError, 'read/write/append mode'):
-            self.open(PathLike(support.TESTFN), 'rwxa')
 
 
 class CIOTest(IOTest):
@@ -1822,7 +1789,7 @@ class BufferedRWPairTest(unittest.TestCase):
             with self.subTest(method):
                 pair = self.tp(self.BytesIO(b"abcdef"), self.MockRawIO())
 
-                data = byteslike(b'\0' * 5)
+                data = byteslike(5)
                 self.assertEqual(getattr(pair, method)(data), 5)
                 self.assertEqual(bytes(data), b"abcde")
 
@@ -3287,7 +3254,8 @@ class CTextIOWrapperTest(TextIOWrapperTest):
 
 class PyTextIOWrapperTest(TextIOWrapperTest):
     io = pyio
-    shutdown_error = "LookupError: unknown encoding: ascii"
+    #shutdown_error = "LookupError: unknown encoding: ascii"
+    shutdown_error = "TypeError: 'NoneType' object is not iterable"
 
 
 class IncrementalNewlineDecoderTest(unittest.TestCase):

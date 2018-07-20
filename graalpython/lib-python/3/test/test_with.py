@@ -109,7 +109,7 @@ class FailureTestCase(unittest.TestCase):
             with foo: pass
         self.assertRaises(NameError, fooNotDeclared)
 
-    def testEnterAttributeError1(self):
+    def testEnterAttributeError(self):
         class LacksEnter(object):
             def __exit__(self, type, value, traceback):
                 pass
@@ -117,16 +117,7 @@ class FailureTestCase(unittest.TestCase):
         def fooLacksEnter():
             foo = LacksEnter()
             with foo: pass
-        self.assertRaisesRegex(AttributeError, '__enter__', fooLacksEnter)
-
-    def testEnterAttributeError2(self):
-        class LacksEnterAndExit(object):
-            pass
-
-        def fooLacksEnterAndExit():
-            foo = LacksEnterAndExit()
-            with foo: pass
-        self.assertRaisesRegex(AttributeError, '__enter__', fooLacksEnterAndExit)
+        self.assertRaises(AttributeError, fooLacksEnter)
 
     def testExitAttributeError(self):
         class LacksExit(object):
@@ -136,7 +127,7 @@ class FailureTestCase(unittest.TestCase):
         def fooLacksExit():
             foo = LacksExit()
             with foo: pass
-        self.assertRaisesRegex(AttributeError, '__exit__', fooLacksExit)
+        self.assertRaises(AttributeError, fooLacksExit)
 
     def assertRaisesSyntaxError(self, codestr):
         def shouldRaiseSyntaxError(s):
@@ -147,6 +138,11 @@ class FailureTestCase(unittest.TestCase):
         self.assertRaisesSyntaxError('with mock as None:\n  pass')
         self.assertRaisesSyntaxError(
             'with mock as (None):\n'
+            '  pass')
+
+    def testAssignmentToEmptyTupleError(self):
+        self.assertRaisesSyntaxError(
+            'with mock as ():\n'
             '  pass')
 
     def testAssignmentToTupleOnlyContainingNoneError(self):
@@ -458,7 +454,7 @@ class ExceptionalTestCase(ContextmanagerAssertionMixin, unittest.TestCase):
             with cm():
                 raise StopIteration("from with")
 
-        with self.assertWarnsRegex(DeprecationWarning, "StopIteration"):
+        with self.assertWarnsRegex(PendingDeprecationWarning, "StopIteration"):
             self.assertRaises(StopIteration, shouldThrow)
 
     def testRaisedStopIteration2(self):
@@ -486,7 +482,7 @@ class ExceptionalTestCase(ContextmanagerAssertionMixin, unittest.TestCase):
             with cm():
                 raise next(iter([]))
 
-        with self.assertWarnsRegex(DeprecationWarning, "StopIteration"):
+        with self.assertWarnsRegex(PendingDeprecationWarning, "StopIteration"):
             self.assertRaises(StopIteration, shouldThrow)
 
     def testRaisedGeneratorExit1(self):

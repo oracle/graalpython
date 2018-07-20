@@ -385,30 +385,9 @@ class StackSummary(list):
         resulting list corresponds to a single frame from the stack.
         Each string ends in a newline; the strings may contain internal
         newlines as well, for those items with source text lines.
-
-        For long sequences of the same frame and line, the first few
-        repetitions are shown, followed by a summary line stating the exact
-        number of further repetitions.
         """
         result = []
-        last_file = None
-        last_line = None
-        last_name = None
-        count = 0
         for frame in self:
-            if (last_file is not None and last_file == frame.filename and
-                last_line is not None and last_line == frame.lineno and
-                last_name is not None and last_name == frame.name):
-                count += 1
-            else:
-                if count > 3:
-                    result.append(f'  [Previous line repeated {count-3} more times]\n')
-                last_file = frame.filename
-                last_line = frame.lineno
-                last_name = frame.name
-                count = 0
-            if count >= 3:
-                continue
             row = []
             row.append('  File "{}", line {}, in {}\n'.format(
                 frame.filename, frame.lineno, frame.name))
@@ -418,8 +397,6 @@ class StackSummary(list):
                 for name, value in sorted(frame.locals.items()):
                     row.append('    {name} = {value}\n'.format(name=name, value=value))
             result.append(''.join(row))
-        if count > 3:
-            result.append(f'  [Previous line repeated {count-3} more times]\n')
         return result
 
 
@@ -510,9 +487,10 @@ class TracebackException:
             self._load_lines()
 
     @classmethod
-    def from_exception(cls, exc, *args, **kwargs):
+    def from_exception(self, exc, *args, **kwargs):
         """Create a TracebackException from an exception."""
-        return cls(type(exc), exc, exc.__traceback__, *args, **kwargs)
+        return TracebackException(
+            type(exc), exc, exc.__traceback__, *args, **kwargs)
 
     def _load_lines(self):
         """Private API. force all lines in the stack to be loaded."""
@@ -588,18 +566,13 @@ class TracebackException:
         """
         if chain:
             if self.__cause__ is not None:
-                # TODO(ls): revert this loop to "yield from"
-                for __x in self.__cause__.format(chain=chain): yield __x
+                yield from self.__cause__.format(chain=chain)
                 yield _cause_message
             elif (self.__context__ is not None and
                 not self.__suppress_context__):
-                # TODO(ls): revert this loop to "yield from"
-                for __x in self.__context__.format(chain=chain): yield __x
+                yield from self.__context__.format(chain=chain)
                 yield _context_message
         if self.exc_traceback is not None:
             yield 'Traceback (most recent call last):\n'
-        # TODO(ls): revert this loop to "yield from"
-        for __x in self.stack.format(): yield __x
-        # TODO(ls): revert this loop to "yield from"
-        for __x in self.format_exception_only(): yield __x
-
+        yield from self.stack.format()
+        yield from self.format_exception_only()

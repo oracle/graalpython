@@ -1,5 +1,5 @@
-from idlelib.delegator import Delegator
-from idlelib.redirector import WidgetRedirector
+from idlelib.WidgetRedirector import WidgetRedirector
+from idlelib.Delegator import Delegator
 
 
 class Percolator:
@@ -57,6 +57,7 @@ class Percolator:
 
 def _percolator(parent):  # htest #
     import tkinter as tk
+    import re
 
     class Tracer(Delegator):
         def __init__(self, name):
@@ -73,8 +74,8 @@ def _percolator(parent):  # htest #
 
     box = tk.Toplevel(parent)
     box.title("Test Percolator")
-    x, y = map(int, parent.geometry().split('+')[1:])
-    box.geometry("+%d+%d" % (x, y + 175))
+    width, height, x, y = list(map(int, re.split('[x+]', parent.geometry())))
+    box.geometry("+%d+%d" % (x, y + 150))
     text = tk.Text(box)
     p = Percolator(text)
     pin = p.insertfilter
@@ -88,10 +89,10 @@ def _percolator(parent):  # htest #
         (pin if var2.get() else pout)(t2)
 
     text.pack()
-    var1 = tk.IntVar(parent)
+    var1 = tk.IntVar()
     cb1 = tk.Checkbutton(box, text="Tracer1", command=toggle1, variable=var1)
     cb1.pack()
-    var2 = tk.IntVar(parent)
+    var2 = tk.IntVar()
     cb2 = tk.Checkbutton(box, text="Tracer2", command=toggle2, variable=var2)
     cb2.pack()
 

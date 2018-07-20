@@ -28,7 +28,7 @@ ascii_letters = ascii_lowercase + ascii_uppercase
 digits = '0123456789'
 hexdigits = digits + 'abcdef' + 'ABCDEF'
 octdigits = '01234567'
-punctuation = r"""!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"""
+punctuation = """!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"""
 printable = digits + ascii_letters + punctuation + whitespace
 
 # Functions which aren't available as string methods.
@@ -116,7 +116,10 @@ class Template(metaclass=_TemplateMetaclass):
             # Check the most common path first.
             named = mo.group('named') or mo.group('braced')
             if named is not None:
-                return str(mapping[named])
+                val = mapping[named]
+                # We use this idiom instead of str() because the latter will
+                # fail if val is a Unicode containing non-ASCII characters.
+                return '%s' % (val,)
             if mo.group('escaped') is not None:
                 return self.delimiter
             if mo.group('invalid') is not None:
@@ -143,7 +146,9 @@ class Template(metaclass=_TemplateMetaclass):
             named = mo.group('named') or mo.group('braced')
             if named is not None:
                 try:
-                    return str(mapping[named])
+                    # We use this idiom instead of str() because the latter
+                    # will fail if val is a Unicode containing non-ASCII
+                    return '%s' % (mapping[named],)
                 except KeyError:
                     return mo.group()
             if mo.group('escaped') is not None:

@@ -16,7 +16,7 @@ Here are some of the useful functions provided by this module:
     getmodule() - determine the module that an object came from
     getclasstree() - arrange classes so as to represent their hierarchy
 
-    getargvalues(), getcallargs() - get info about function arguments
+    getargspec(), getargvalues(), getcallargs() - get info about function arguments
     getfullargspec() - same, with support for Python 3 features
     formatargspec(), formatargvalues() - format an argument spec
     getouterframes(), getinnerframes() - get info about frames
@@ -179,23 +179,11 @@ def isgeneratorfunction(object):
 def iscoroutinefunction(object):
     """Return true if the object is a coroutine function.
 
-    Coroutine functions are defined with "async def" syntax.
+    Coroutine functions are defined with "async def" syntax,
+    or generators decorated with "types.coroutine".
     """
     return bool((isfunction(object) or ismethod(object)) and
                 object.__code__.co_flags & CO_COROUTINE)
-
-def isasyncgenfunction(object):
-    """Return true if the object is an asynchronous generator function.
-
-    Asynchronous generator functions are defined with "async def"
-    syntax and have "yield" expressions in their body.
-    """
-    return bool((isfunction(object) or ismethod(object)) and
-                object.__code__.co_flags & CO_ASYNC_GENERATOR)
-
-def isasyncgen(object):
-    """Return true if the object is an asynchronous generator."""
-    return isinstance(object, types.AsyncGeneratorType)
 
 def isgenerator(object):
     """Return true if the object is a generator.
@@ -635,6 +623,23 @@ def getfile(object):
     raise TypeError('{!r} is not a module, class, method, '
                     'function, traceback, frame, or code object'.format(object))
 
+ModuleInfo = namedtuple('ModuleInfo', 'name suffix mode module_type')
+
+def getmoduleinfo(path):
+    """Get the module name, suffix, mode, and module type for a given file."""
+    warnings.warn('inspect.getmoduleinfo() is deprecated', DeprecationWarning,
+                  2)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', PendingDeprecationWarning)
+        import imp
+    filename = os.path.basename(path)
+    suffixes = [(-len(suffix), suffix, mode, mtype)
+                    for suffix, mode, mtype in imp.get_suffixes()]
+    suffixes.sort() # try longest suffixes first, in case they overlap
+    for neglen, suffix, mode, mtype in suffixes:
+        if filename[neglen:] == suffix:
+            return ModuleInfo(filename[:neglen], suffix, mode, mtype)
+
 def getmodulename(path):
     """Return the module name for a given file, or None."""
     fname = os.path.basename(path)
@@ -1025,30 +1030,24 @@ def _getfullargs(co):
 ArgSpec = namedtuple('ArgSpec', 'args varargs keywords defaults')
 
 def getargspec(func):
-    """Get the names and default values of a function's parameters.
+    """Get the names and default values of a function's arguments.
 
     A tuple of four things is returned: (args, varargs, keywords, defaults).
     'args' is a list of the argument names, including keyword-only argument names.
-    'varargs' and 'keywords' are the names of the * and ** parameters or None.
-    'defaults' is an n-tuple of the default values of the last n parameters.
+    'varargs' and 'keywords' are the names of the * and ** arguments or None.
+    'defaults' is an n-tuple of the default values of the last n arguments.
 
-    This function is deprecated, as it does not support annotations or
-    keyword-only parameters and will raise ValueError if either is present
-    on the supplied callable.
-
-    For a more structured introspection API, use inspect.signature() instead.
-
-    Alternatively, use getfullargspec() for an API with a similar namedtuple
-    based interface, but full support for annotations and keyword-only
-    parameters.
+    Use the getfullargspec() API for Python 3 code, as annotations
+    and keyword arguments are supported. getargspec() will raise ValueError
+    if the func has either annotations or keyword arguments.
     """
     warnings.warn("inspect.getargspec() is deprecated, "
-                  "use inspect.signature() or inspect.getfullargspec()",
-                  DeprecationWarning, stacklevel=2)
+                  "use inspect.signature() instead", DeprecationWarning,
+                  stacklevel=2)
     args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, ann = \
         getfullargspec(func)
     if kwonlyargs or ann:
-        raise ValueError("Function has keyword-only parameters or annotations"
+        raise ValueError("Function has keyword-only arguments or annotations"
                          ", use getfullargspec() API which can support them")
     return ArgSpec(args, varargs, varkw, defaults)
 
@@ -1056,20 +1055,20 @@ FullArgSpec = namedtuple('FullArgSpec',
     'args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations')
 
 def getfullargspec(func):
-    """Get the names and default values of a callable object's parameters.
+    """Get the names and default values of a callable object's arguments.
 
     A tuple of seven things is returned:
-    (args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations).
-    'args' is a list of the parameter names.
-    'varargs' and 'varkw' are the names of the * and ** parameters or None.
-    'defaults' is an n-tuple of the default values of the last n parameters.
-    'kwonlyargs' is a list of keyword-only parameter names.
+    (args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults annotations).
+    'args' is a list of the argument names.
+    'varargs' and 'varkw' are the names of the * and ** arguments or None.
+    'defaults' is an n-tuple of the default values of the last n arguments.
+    'kwonlyargs' is a list of keyword-only argument names.
     'kwonlydefaults' is a dictionary mapping names from kwonlyargs to defaults.
-    'annotations' is a dictionary mapping parameter names to annotations.
+    'annotations' is a dictionary mapping argument names to annotations.
 
-    Notable differences from inspect.signature():
-      - the "self" parameter is always reported, even for bound methods
-      - wrapper chains defined by __wrapped__ *not* unwrapped automatically
+    The first four items in the tuple correspond to getargspec().
+
+    This function is deprecated, use inspect.signature() instead.
     """
 
     try:
@@ -1181,7 +1180,8 @@ def formatargspec(args, varargs=None, varkw=None, defaults=None,
                   formatvalue=lambda value: '=' + repr(value),
                   formatreturns=lambda text: ' -> ' + text,
                   formatannotation=formatannotation):
-    """Format an argument spec from the values returned by getfullargspec.
+    """Format an argument spec from the values returned by getargspec
+    or getfullargspec.
 
     The first seven arguments are (args, varargs, varkw, defaults,
     kwonlyargs, kwonlydefaults, annotations).  The other five arguments
@@ -1422,6 +1422,7 @@ def getframeinfo(frame, context=1):
         except OSError:
             lines = index = None
         else:
+            start = max(start, 0)
             start = max(0, min(start, len(lines) - context))
             lines = lines[start:start+context]
             index = lineno - 1 - start
@@ -1666,6 +1667,8 @@ _NonUserDefinedCallables = (_WrapperDescriptor,
                             _ClassMethodWrapper,
                             types.BuiltinFunctionType)
 
+_builtin_code_type = type(dict.update.__code__)
+
 def _signature_get_user_defined_method(cls, method_name):
     """Private helper. Checks if ``cls`` has an attribute
     named ``method_name`` and returns it only if it is a
@@ -1676,7 +1679,14 @@ def _signature_get_user_defined_method(cls, method_name):
     except AttributeError:
         return
     else:
-        if not isinstance(meth, _NonUserDefinedCallables):
+        # The particular check cpython uses to determine if a particular method
+        # is a builtin or not doesn't work on pypy. The following code is
+        # pypy-specific.
+        try:
+            code = meth.__code__
+        except AttributeError:
+            return
+        if not isinstance(code, _builtin_code_type):
             # Once '__signature__' will be added to 'C'-level
             # callables, this check won't be necessary
             return meth
@@ -2441,20 +2451,6 @@ class Parameter:
 
         if not isinstance(name, str):
             raise TypeError("name must be a str, not a {!r}".format(name))
-
-        if name[0] == '.' and name[1:].isdigit():
-            # These are implicit arguments generated by comprehensions. In
-            # order to provide a friendlier interface to users, we recast
-            # their name as "implicitN" and treat them as positional-only.
-            # See issue 19611.
-            if kind != _POSITIONAL_OR_KEYWORD:
-                raise ValueError(
-                    'implicit arguments must be passed in as {}'.format(
-                        _POSITIONAL_OR_KEYWORD
-                    )
-                )
-            self._kind = _POSITIONAL_ONLY
-            name = 'implicit{}'.format(name[1:])
 
         if not name.isidentifier():
             raise ValueError('{!r} is not a valid parameter name'.format(name))

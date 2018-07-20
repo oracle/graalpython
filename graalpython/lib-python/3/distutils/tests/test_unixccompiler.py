@@ -1,4 +1,5 @@
 """Tests for distutils.unixccompiler."""
+import os
 import sys
 import unittest
 from test.support import EnvironmentVarGuard, run_unittest

@@ -42,6 +42,7 @@ enumerate(iter('abc')).
 """
 
 import unittest
+from test import support
 from itertools import repeat
 from collections import deque
 from operator import length_hint

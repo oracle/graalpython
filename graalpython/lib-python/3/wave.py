@@ -73,7 +73,7 @@ is destroyed.
 
 import builtins
 
-__all__ = ["open", "openfp", "Error", "Wave_read", "Wave_write"]
+__all__ = ["open", "openfp", "Error"]
 
 class Error(Exception):
     pass

@@ -51,10 +51,6 @@ class BeepTest(unittest.TestCase):
         for i in range(100, 2000, 100):
             safe_Beep(i, 75)
 
-    def test_keyword_args(self):
-        safe_Beep(duration=75, frequency=2000)
-
-
 class MessageBeepTest(unittest.TestCase):
 
     def tearDown(self):
@@ -80,9 +76,6 @@ class MessageBeepTest(unittest.TestCase):
     def test_question(self):
         safe_MessageBeep(winsound.MB_ICONQUESTION)
 
-    def test_keyword_args(self):
-        safe_MessageBeep(type=winsound.MB_OK)
-
 
 class PlaySoundTest(unittest.TestCase):
 
@@ -94,25 +87,6 @@ class PlaySoundTest(unittest.TestCase):
             winsound.PlaySound,
             "none", winsound.SND_ASYNC | winsound.SND_MEMORY
         )
-        self.assertRaises(TypeError, winsound.PlaySound, b"bad", 0)
-        self.assertRaises(TypeError, winsound.PlaySound, "bad",
-                          winsound.SND_MEMORY)
-        self.assertRaises(TypeError, winsound.PlaySound, 1, 0)
-
-    def test_keyword_args(self):
-        safe_PlaySound(flags=winsound.SND_ALIAS, sound="SystemExit")
-
-    def test_snd_memory(self):
-        with open(support.findfile('pluck-pcm8.wav',
-                                   subdir='audiodata'), 'rb') as f:
-            audio_data = f.read()
-        safe_PlaySound(audio_data, winsound.SND_MEMORY)
-        audio_data = bytearray(audio_data)
-        safe_PlaySound(audio_data, winsound.SND_MEMORY)
-
-    def test_snd_filename(self):
-        fn = support.findfile('pluck-pcm8.wav', subdir='audiodata')
-        safe_PlaySound(fn, winsound.SND_FILENAME | winsound.SND_NODEFAULT)
 
     def test_aliases(self):
         aliases = [

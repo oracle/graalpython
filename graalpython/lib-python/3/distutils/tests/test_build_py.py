@@ -168,8 +168,7 @@ class BuildPyTestCase(support.TempdirManager,
         finally:
             sys.dont_write_bytecode = old_dont_write_bytecode
 
-        self.assertIn('byte-compiling is disabled',
-                      self.logs[0][1] % self.logs[0][2])
+        self.assertIn('byte-compiling is disabled', self.logs[0][1])
 
 
 def test_suite():

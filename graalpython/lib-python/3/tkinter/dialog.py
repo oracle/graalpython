@@ -3,7 +3,10 @@
 from tkinter import *
 from tkinter import _cnfmerge
 
-DIALOG_ICON = 'questhead'
+if TkVersion <= 3.6:
+    DIALOG_ICON = 'warning'
+else:
+    DIALOG_ICON = 'questhead'
 
 
 class Dialog(Widget):

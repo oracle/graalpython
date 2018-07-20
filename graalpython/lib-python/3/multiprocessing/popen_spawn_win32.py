@@ -4,8 +4,9 @@ import signal
 import sys
 import _winapi
 
-from .context import reduction, get_spawning_popen, set_spawning_popen
+from . import context
 from . import spawn
+from . import reduction
 from . import util
 
 __all__ = ['Popen']
@@ -59,15 +60,15 @@ class Popen(object):
             util.Finalize(self, _winapi.CloseHandle, (self.sentinel,))
 
             # send information to child
-            set_spawning_popen(self)
+            context.set_spawning_popen(self)
             try:
                 reduction.dump(prep_data, to_child)
                 reduction.dump(process_obj, to_child)
             finally:
-                set_spawning_popen(None)
+                context.set_spawning_popen(None)
 
     def duplicate_for_child(self, handle):
-        assert self is get_spawning_popen()
+        assert self is context.get_spawning_popen()
         return reduction.duplicate(handle, self.sentinel)
 
     def wait(self, timeout=None):

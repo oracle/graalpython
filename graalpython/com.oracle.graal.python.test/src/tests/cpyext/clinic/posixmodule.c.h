@@ -1,8 +1,3 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
- *
- * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
- */
 /*[clinic input]
 preserve
 [clinic start generated code]*/
@@ -3716,7 +3711,6 @@ os_fstat(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"fd", NULL};
-    // TRUFFLE_TODO
     static _PyArg_Parser _parser = {"i:fstat", _keywords, 0};
     int fd;
 

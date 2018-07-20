@@ -77,7 +77,7 @@ class HMAC:
         if len(key) > blocksize:
             key = self.digest_cons(key).digest()
 
-        key = key.ljust(blocksize, b'\0')
+        key = key + bytes(blocksize - len(key))
         self.outer.update(key.translate(trans_5C))
         self.inner.update(key.translate(trans_36))
         if msg is not None:

@@ -3,6 +3,7 @@
 Implements the Distutils 'sdist' command (create a source distribution)."""
 
 import os
+import string
 import sys
 from types import *
 from glob import glob
@@ -91,6 +92,9 @@ class sdist(Command):
     negative_opt = {'no-defaults': 'use-defaults',
                     'no-prune': 'prune' }
 
+    default_format = {'posix': 'gztar',
+                      'nt': 'zip' }
+
     sub_commands = [('check', checking_metadata)]
 
     def initialize_options(self):
@@ -107,7 +111,7 @@ class sdist(Command):
         self.manifest_only = 0
         self.force_manifest = 0
 
-        self.formats = ['gztar']
+        self.formats = None
         self.keep_temp = 0
         self.dist_dir = None
 
@@ -123,6 +127,13 @@ class sdist(Command):
             self.template = "MANIFEST.in"
 
         self.ensure_string_list('formats')
+        if self.formats is None:
+            try:
+                self.formats = [self.default_format[os.name]]
+            except KeyError:
+                raise DistutilsPlatformError(
+                      "don't know how to create source distributions "
+                      "on platform %s" % os.name)
 
         bad_format = archive_util.check_archive_formats(self.formats)
         if bad_format:
@@ -412,7 +423,7 @@ class sdist(Command):
             log.info(msg)
         for file in files:
             if not os.path.isfile(file):
-                log.warn("'%s' not a regular file -- skipping", file)
+                log.warn("'%s' not a regular file -- skipping" % file)
             else:
                 dest = os.path.join(base_dir, file)
                 self.copy_file(file, dest, link=link)

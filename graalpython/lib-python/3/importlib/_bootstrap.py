@@ -36,6 +36,23 @@ def _new_module(name):
     return type(sys)(name)
 
 
+class _ManageReload:
+
+    """Manages the possible clean-up of sys.modules for load_module()."""
+
+    def __init__(self, name):
+        self._name = name
+
+    def __enter__(self):
+        self._is_reload = self._name in sys.modules
+
+    def __exit__(self, *args):
+        if any(arg is not None for arg in args) and not self._is_reload:
+            try:
+                del sys.modules[self._name]
+            except KeyError:
+                pass
+
 # Module-level locking ########################################################
 
 # A dict mapping module names to weakrefs of _ModuleLock instances
@@ -254,7 +271,7 @@ def _load_module_shim(self, fullname):
 # Module specifications #######################################################
 
 def _module_repr(module):
-    # The implementation of ModuleType.__repr__().
+    # The implementation of ModuleType__repr__().
     loader = getattr(module, '__loader__', None)
     if hasattr(loader, 'module_repr'):
         # As soon as BuiltinImporter, FrozenImporter, and NamespaceLoader
@@ -305,12 +322,6 @@ class _installed_safely:
     def __exit__(self, *args):
         try:
             spec = self._spec
-            for arg in args:
-                if arg is not None:
-                    try:
-                        del sys.modules[spec.name]
-                    except KeyError:
-                        pass
             if any(arg is not None for arg in args):
                 try:
                     del sys.modules[spec.name]
@@ -566,8 +577,9 @@ def module_from_spec(spec):
         # module creation should be used.
         module = spec.loader.create_module(spec)
     elif hasattr(spec.loader, 'exec_module'):
-        raise ImportError('loaders that define exec_module() '
-                          'must also define create_module()')
+        _warnings.warn('starting in Python 3.6, loaders defining exec_module() '
+                       'must also define create_module()',
+                       DeprecationWarning, stacklevel=2)
     if module is None:
         module = _new_module(spec.name)
     _init_module_attrs(spec, module)
@@ -592,7 +604,7 @@ def _module_repr_from_spec(spec):
 
 # Used by importlib.reload() and _load_module_shim().
 def _exec(spec, module):
-    """Execute the spec's specified module in an existing module's namespace."""
+    """Execute the spec in an existing module's namespace."""
     name = spec.name
     _imp.acquire_lock()
     with _ModuleLockManager(name):
@@ -866,21 +878,14 @@ def _find_spec_legacy(finder, name, path):
 
 
 def _find_spec(name, path, target=None):
-    """Find a module's spec."""
-    meta_path = sys.meta_path
-    if meta_path is None:
-        # PyImport_Cleanup() is running or has been called.
-        raise ImportError("sys.meta_path is None, Python is likely "
-                          "shutting down")
-
-    if not meta_path:
+    """Find a module's loader."""
+    if sys.meta_path is not None and not sys.meta_path:
         _warnings.warn('sys.meta_path is empty', ImportWarning)
-
     # We check sys.modules here for the reload case.  While a passed-in
     # target will usually indicate a reload there is no guarantee, whereas
     # sys.modules provides one.
     is_reload = name in sys.modules
-    for finder in meta_path:
+    for finder in sys.meta_path:
         with _ImportLockContext():
             try:
                 find_spec = finder.find_spec
@@ -921,9 +926,6 @@ def _sanity_check(name, package, level):
     if level > 0:
         if not isinstance(package, str):
             raise TypeError('__package__ not set to a string')
-        elif not package:
-            raise ImportError('attempted relative import with no known parent '
-                              'package')
         elif package not in sys.modules:
             msg = ('Parent module {!r} not loaded, cannot perform relative '
                    'import')
@@ -949,10 +951,10 @@ def _find_and_load_unlocked(name, import_):
             path = parent_module.__path__
         except AttributeError:
             msg = (_ERR_MSG + '; {!r} is not a package').format(name, parent)
-            raise ModuleNotFoundError(msg, name=name) from None
+            raise ImportError(msg, name=name) from None
     spec = _find_spec(name, path)
     if spec is None:
-        raise ModuleNotFoundError(_ERR_MSG.format(name), name=name)
+        raise ImportError(_ERR_MSG.format(name), name=name)
     else:
         module = _load_unlocked(spec)
     if parent:
@@ -988,10 +990,9 @@ def _gcd_import(name, package=None, level=0):
         _imp.release_lock()
         message = ('import of {} halted; '
                    'None in sys.modules'.format(name))
-        raise ModuleNotFoundError(message, name=name)
+        raise ImportError(message, name=name)
     _lock_unlock_module(name)
     return module
-
 
 def _handle_fromlist(module, fromlist, import_):
     """Figure out what __import__ should return.
@@ -1014,12 +1015,13 @@ def _handle_fromlist(module, fromlist, import_):
                 from_name = '{}.{}'.format(module.__name__, x)
                 try:
                     _call_with_frames_removed(import_, from_name)
-                except ModuleNotFoundError as exc:
+                except ImportError as exc:
                     # Backwards-compatibility dictates we ignore failed
                     # imports triggered by fromlist for modules that don't
                     # exist.
-                    if exc.name == from_name:
-                        continue
+                    if str(exc).startswith(_ERR_MSG_PREFIX):
+                        if exc.name == from_name:
+                            continue
                     raise
     return module
 
@@ -1032,19 +1034,7 @@ def _calc___package__(globals):
 
     """
     package = globals.get('__package__')
-    spec = globals.get('__spec__')
-    if package is not None:
-        if spec is not None and package != spec.parent:
-            _warnings.warn("__package__ != __spec__.parent "
-                           f"({package!r} != {spec.parent!r})",
-                           ImportWarning, stacklevel=3)
-        return package
-    elif spec is not None:
-        return spec.parent
-    else:
-        _warnings.warn("can't resolve package from __spec__ or __package__, "
-                       "falling back on __name__ and __path__",
-                       ImportWarning, stacklevel=3)
+    if package is None:
         package = globals['__name__']
         if '__path__' not in globals:
             package = package.rpartition('.')[0]

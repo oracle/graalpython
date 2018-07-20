@@ -8,6 +8,7 @@ from test.support import (verbose, import_module, cpython_only,
 from test.support.script_helper import assert_python_ok, assert_python_failure
 
 import random
+import re
 import sys
 _thread = import_module('_thread')
 threading = import_module('threading')
@@ -18,7 +19,6 @@ import os
 import subprocess
 
 from test import lock_tests
-from test import support
 
 
 # Between fork() and exec(), only async-safe functions are allowed (issues
@@ -170,9 +170,6 @@ class ThreadTests(BaseTestCase):
         mutex.acquire()
         self.assertIn(tid, threading._active)
         self.assertIsInstance(threading._active[tid], threading._DummyThread)
-        #Issue 29376
-        self.assertTrue(threading._active[tid].is_alive())
-        self.assertRegex(repr(threading._active[tid]), '_DummyThread')
         del threading._active[tid]
 
     # PyThreadState_SetAsyncExc() is a CPython-only gimmick, not (currently)
@@ -1134,13 +1131,6 @@ class BoundedSemaphoreTests(lock_tests.BoundedSemaphoreTests):
 
 class BarrierTests(lock_tests.BarrierTests):
     barriertype = staticmethod(threading.Barrier)
-
-class MiscTestCase(unittest.TestCase):
-    def test__all__(self):
-        extra = {"ThreadError"}
-        blacklist = {'currentThread', 'activeCount'}
-        support.check__all__(self, threading, ('threading', '_thread'),
-                             extra=extra, blacklist=blacklist)
 
 if __name__ == "__main__":
     unittest.main()

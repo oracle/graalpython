@@ -13,6 +13,7 @@
 #    Python bug tracker (http://bugs.python.org) and assign them to "lemburg".
 #
 #    Still needed:
+#    * more support for WinCE
 #    * support for MS-DOS (PythonDX ?)
 #    * support for Amiga and other still unsupported platforms running Python
 #    * support for additional Linux distributions
@@ -110,12 +111,10 @@ __copyright__ = """
 
 """
 
-__version__ = '1.0.8'
+__version__ = '1.0.7'
 
 import collections
-# TODO: Truffle reenable me once subprocess is supported (GR-9141)
-# import sys, os, re, subprocess
-import sys, os, re
+import sys, os, re, subprocess
 
 import warnings
 
@@ -253,13 +252,13 @@ def _dist_try_harder(distname, version, id):
 
 _release_filename = re.compile(r'(\w+)[-_](release|version)', re.ASCII)
 _lsb_release_version = re.compile(r'(.+)'
-                                  r' release '
-                                  r'([\d.]+)'
-                                  r'[^(]*(?:\((.+)\))?', re.ASCII)
+                                   ' release '
+                                   '([\d.]+)'
+                                   '[^(]*(?:\((.+)\))?', re.ASCII)
 _release_version = re.compile(r'([^0-9]+)'
-                              r'(?: release )?'
-                              r'([\d.]+)'
-                              r'[^(]*(?:\((.+)\))?', re.ASCII)
+                               '(?: release )?'
+                               '([\d.]+)'
+                               '[^(]*(?:\((.+)\))?', re.ASCII)
 
 # See also http://www.novell.com/coolsolutions/feature/11251.html
 # and http://linuxmafia.com/faq/Admin/release-files.html
@@ -409,8 +408,8 @@ def _norm_version(version, build=''):
     return version
 
 _ver_output = re.compile(r'(?:([\w ]+) ([\w.]+) '
-                         r'.*'
-                         r'\[.* ([\d.]+)\])')
+                         '.*'
+                         '\[.* ([\d.]+)\])')
 
 # Examples of VER command output:
 #
@@ -510,7 +509,7 @@ def win32_ver(release='', version='', csd='', ptype=''):
         from _winreg import OpenKeyEx, QueryValueEx, CloseKey, HKEY_LOCAL_MACHINE
 
     winver = getwindowsversion()
-    maj, min, build = winver.platform_version or winver[:3]
+    maj, min, build = winver._platform_version or winver[:3]
     version = '{0}.{1}.{2}'.format(maj, min, build)
 
     release = (_WIN32_CLIENT_RELEASES.get((maj, min)) or
@@ -1096,22 +1095,22 @@ _sys_version_parser = re.compile(
 
 _ironpython_sys_version_parser = re.compile(
     r'IronPython\s*'
-    r'([\d\.]+)'
-    r'(?: \(([\d\.]+)\))?'
-    r' on (.NET [\d\.]+)', re.ASCII)
+    '([\d\.]+)'
+    '(?: \(([\d\.]+)\))?'
+    ' on (.NET [\d\.]+)', re.ASCII)
 
 # IronPython covering 2.6 and 2.7
 _ironpython26_sys_version_parser = re.compile(
     r'([\d.]+)\s*'
-    r'\(IronPython\s*'
-    r'[\d.]+\s*'
-    r'\(([\d.]+)\) on ([\w.]+ [\d.]+(?: \(\d+-bit\))?)\)'
+    '\(IronPython\s*'
+    '[\d.]+\s*'
+    '\(([\d.]+)\) on ([\w.]+ [\d.]+(?: \(\d+-bit\))?)\)'
 )
 
 _pypy_sys_version_parser = re.compile(
     r'([\w.+]+)\s*'
-    r'\(#?([^,]+),\s*([\w ]+),\s*([\w :]+)\)\s*'
-    r'\[PyPy [^\]]+\]?')
+    '\(#?([^,]+),\s*([\w ]+),\s*([\w :]+)\)\s*'
+    '\[PyPy [^\]]+\]?')
 
 _sys_version_cache = {}
 
@@ -1200,9 +1199,7 @@ def _sys_version(sys_version=None):
         elif buildtime:
             builddate = builddate + ' ' + buildtime
 
-    if hasattr(sys, '_git'):
-        _, branch, revision = sys._git
-    elif hasattr(sys, '_mercurial'):
+    if hasattr(sys, '_mercurial'):
         _, branch, revision = sys._mercurial
     elif hasattr(sys, 'subversion'):
         # sys.subversion was added in Python 2.5
@@ -1348,7 +1345,7 @@ def platform(aliased=0, terse=0):
             # see issue #1322 for more information
             warnings.filterwarnings(
                 'ignore',
-                r'dist\(\) and linux_distribution\(\) '
+                'dist\(\) and linux_distribution\(\) '
                 'functions are deprecated .*',
                 PendingDeprecationWarning,
             )

@@ -277,6 +277,7 @@ class SmallPtyTests(unittest.TestCase):
         socketpair = self._socketpair()
         masters = [s.fileno() for s in socketpair]
 
+        os.close(masters[1])
         socketpair[1].close()
         os.close(write_to_stdin_fd)
 

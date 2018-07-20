@@ -81,9 +81,8 @@ class PkgutilTests(unittest.TestCase):
         self.assertEqual(res2, RESOURCE_DATA)
 
         names = []
-        for moduleinfo in pkgutil.iter_modules([zip_file]):
-            self.assertIsInstance(moduleinfo, pkgutil.ModuleInfo)
-            names.append(moduleinfo.name)
+        for loader, name, ispkg in pkgutil.iter_modules([zip_file]):
+            names.append(name)
         self.assertEqual(names, ['test_getdata_zipfile'])
 
         del sys.path[0]
@@ -414,7 +413,6 @@ class ImportlibMigrationTests(unittest.TestCase):
             self.assertIsNotNone(pkgutil.get_loader("test.support"))
             self.assertEqual(len(w.warnings), 0)
 
-    @unittest.skipIf(__name__ == '__main__', 'not compatible with __main__')
     def test_get_loader_handles_missing_loader_attribute(self):
         global __loader__
         this_loader = __loader__

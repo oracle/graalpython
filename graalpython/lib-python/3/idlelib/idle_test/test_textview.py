@@ -1,21 +1,21 @@
-'''Test idlelib.textview.
+'''Test idlelib.textView.
 
 Since all methods and functions create (or destroy) a TextViewer, which
 is a widget containing multiple widgets, all tests must be gui tests.
 Using mock Text would not change this.  Other mocks are used to retrieve
 information about calls.
 
-Coverage: 94%.
+The coverage is essentially 100%.
 '''
-from idlelib import textview as tv
 from test.support import requires
 requires('gui')
 
 import unittest
 import os
 from tkinter import Tk
+from idlelib import textView as tv
 from idlelib.idle_test.mock_idle import Func
-from idlelib.idle_test.mock_tk import Mbox_func
+from idlelib.idle_test.mock_tk import Mbox
 
 def setUpModule():
     global root
@@ -64,17 +64,17 @@ class TextViewTest(unittest.TestCase):
         view.destroy()
 
 
-class ViewFunctionTest(unittest.TestCase):
+class textviewTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.orig_error = tv.showerror
-        tv.showerror = Mbox_func()
+        cls.orig_mbox = tv.tkMessageBox
+        tv.tkMessageBox = Mbox
 
     @classmethod
     def tearDownClass(cls):
-        tv.showerror = cls.orig_error
-        del cls.orig_error
+        tv.tkMessageBox = cls.orig_mbox
+        del cls.orig_mbox
 
     def test_view_text(self):
         # If modal True, get tk error 'can't invoke "event" command'.
@@ -90,7 +90,7 @@ class ViewFunctionTest(unittest.TestCase):
         self.assertIn('Test', view.textView.get('1.0', '1.end'))
         view.Ok()
 
-        # Mock showerror will be used; view_file will return None.
+        # Mock messagebox will be used and view_file will not return anything
         testfile = os.path.join(test_dir, '../notthere.py')
         view = tv.view_file(root, 'Title', testfile, modal=False)
         self.assertIsNone(view)

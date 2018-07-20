@@ -1,29 +1,28 @@
-"""autocomplete.py - An IDLE extension for automatically completing names.
+"""AutoComplete.py - An IDLE extension for automatically completing names.
 
 This extension can complete either attribute names or file names. It can pop
 a window with all available names, for the user to select from.
 """
 import os
-import string
 import sys
+import string
 
-# These constants represent the two different types of completions.
-# They must be defined here so autocomple_w can import them.
+from idlelib.configHandler import idleConf
+
+# This string includes all chars that may be in an identifier
+ID_CHARS = string.ascii_letters + string.digits + "_"
+
+# These constants represent the two different types of completions
 COMPLETE_ATTRIBUTES, COMPLETE_FILES = range(1, 2+1)
 
-from idlelib import autocomplete_w
-from idlelib.config import idleConf
-from idlelib.hyperparser import HyperParser
-import __main__
+from idlelib import AutoCompleteWindow
+from idlelib.HyperParser import HyperParser
 
-# This string includes all chars that may be in an identifier.
-# TODO Update this here and elsewhere.
-ID_CHARS = string.ascii_letters + string.digits + "_"
+import __main__
 
 SEPS = os.sep
 if os.altsep:  # e.g. '/' on Windows...
     SEPS += os.altsep
-
 
 class AutoComplete:
 
@@ -38,17 +37,19 @@ class AutoComplete:
 
     def __init__(self, editwin=None):
         self.editwin = editwin
-        if editwin is not None:  # not in subprocess or test
-            self.text = editwin.text
-            self.autocompletewindow = None
-            # id of delayed call, and the index of the text insert when
-            # the delayed call was issued. If _delayed_completion_id is
-            # None, there is no delayed call.
-            self._delayed_completion_id = None
-            self._delayed_completion_index = None
+        if editwin is None:  # subprocess and test
+            return
+        self.text = editwin.text
+        self.autocompletewindow = None
+
+        # id of delayed call, and the index of the text insert when the delayed
+        # call was issued. If _delayed_completion_id is None, there is no
+        # delayed call.
+        self._delayed_completion_id = None
+        self._delayed_completion_index = None
 
     def _make_autocomplete_window(self):
-        return autocomplete_w.AutoCompleteWindow(self.text)
+        return AutoCompleteWindow.AutoCompleteWindow(self.text)
 
     def _remove_autocomplete_window(self, event=None):
         if self.autocompletewindow:
@@ -79,17 +80,16 @@ class AutoComplete:
         open a completion list after that (if there is more than one
         completion)
         """
-        if hasattr(event, "mc_state") and event.mc_state or\
-                not self.text.get("insert linestart", "insert").strip():
-            # A modifier was pressed along with the tab or
-            # there is only previous whitespace on this line, so tab.
-            return None
+        if hasattr(event, "mc_state") and event.mc_state:
+            # A modifier was pressed along with the tab, continue as usual.
+            return
         if self.autocompletewindow and self.autocompletewindow.is_active():
             self.autocompletewindow.complete()
             return "break"
         else:
             opened = self.open_completions(False, True, True)
-            return "break" if opened else None
+            if opened:
+                return "break"
 
     def _open_completions_later(self, *args):
         self._delayed_completion_index = self.text.index("insert")
@@ -101,8 +101,9 @@ class AutoComplete:
 
     def _delayed_open_completions(self, *args):
         self._delayed_completion_id = None
-        if self.text.index("insert") == self._delayed_completion_index:
-            self.open_completions(*args)
+        if self.text.index("insert") != self._delayed_completion_index:
+            return
+        self.open_completions(*args)
 
     def open_completions(self, evalfuncs, complete, userWantsWin, mode=None):
         """Find the completions and create the AutoCompleteWindow.
@@ -147,17 +148,17 @@ class AutoComplete:
                 comp_what = hp.get_expression()
                 if not comp_what or \
                    (not evalfuncs and comp_what.find('(') != -1):
-                    return None
+                    return
             else:
                 comp_what = ""
         else:
-            return None
+            return
 
         if complete and not comp_what and not comp_start:
-            return None
+            return
         comp_lists = self.fetch_completions(comp_what, mode)
         if not comp_lists[0]:
-            return None
+            return
         self.autocompletewindow = self._make_autocomplete_window()
         return not self.autocompletewindow.show_window(
                 comp_lists, "insert-%dc" % len(comp_start),

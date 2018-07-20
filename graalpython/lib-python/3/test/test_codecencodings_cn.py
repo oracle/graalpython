@@ -3,6 +3,7 @@
 #   Codec encoding tests for PRC encodings.
 #
 
+from test import support
 from test import multibytecodec_support
 import unittest
 

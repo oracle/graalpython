@@ -1,16 +1,7 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
- *
- * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
- */
-
 /* Memoryview object implementation */
 
 #include "Python.h"
-#include <limits.h>
-/* #include "internal/mem.h" */
-/* #include "internal/pystate.h" */
-/* #include "pystrhex.h" */
+#include "pystrhex.h"
 #include <stddef.h>
 
 
@@ -57,7 +48,6 @@
      releasebufferprocs must NOT decrement view.obj.
 */
 
-extern PyTypeObject PyNativeMemoryView_Type;
 
 #define CHECK_MBUF_RELEASED(mbuf) \
     if (((_PyManagedBufferObject *)mbuf)->flags&_Py_MANAGED_BUFFER_RELEASED) { \
@@ -73,7 +63,7 @@ mbuf_alloc(void)
     _PyManagedBufferObject *mbuf;
 
     mbuf = (_PyManagedBufferObject *)
-        PyObject_New(_PyManagedBufferObject, &_PyManagedBuffer_Type);
+        PyObject_GC_New(_PyManagedBufferObject, &_PyManagedBuffer_Type);
     if (mbuf == NULL)
         return NULL;
     mbuf->flags = 0;
@@ -122,9 +112,8 @@ mbuf_dealloc(_PyManagedBufferObject *self)
 {
     assert(self->exports == 0);
     mbuf_release(self);
-    // TODO: TRUFFLE: Revert-me
-    /* if (self->flags&_Py_MANAGED_BUFFER_FREE_FORMAT) */
-        /* PyMem_Free(self->master.format); */
+    if (self->flags&_Py_MANAGED_BUFFER_FREE_FORMAT)
+        PyMem_Free(self->master.format);
     PyObject_GC_Del(self);
 }
 
@@ -631,7 +620,7 @@ memory_alloc(int ndim)
     PyMemoryViewObject *mv;
 
     mv = (PyMemoryViewObject *)
-        PyObject_NewVar(PyMemoryViewObject, &PyNativeMemoryView_Type, 3*ndim);
+        PyObject_GC_NewVar(PyMemoryViewObject, &PyMemoryView_Type, 3*ndim);
     if (mv == NULL)
         return NULL;
 
@@ -820,8 +809,7 @@ mbuf_copy_format(_PyManagedBufferObject *mbuf, const char *fmt)
             return -1;
         }
         mbuf->master.format = strcpy(cp, fmt);
-        // TODO: TRUFFLE: Revert-me
-        // mbuf->flags |= _Py_MANAGED_BUFFER_FREE_FORMAT;
+        mbuf->flags |= _Py_MANAGED_BUFFER_FREE_FORMAT;
     }
 
     return 0;
@@ -2155,7 +2143,7 @@ memory_hex(PyMemoryViewObject *self, PyObject *dummy)
     if (bytes == NULL)
         return NULL;
 
-    ret = _Py_strhex(PyBytes_AS_STRING(bytes), PyBytes_GET_SIZE(bytes));
+    ret = _Py_strhex(PyBytes_AS_STRING(bytes), Py_SIZE(bytes));
     Py_DECREF(bytes);
 
     return ret;
@@ -3084,9 +3072,9 @@ static PyMethodDef memory_methods[] = {
 };
 
 
-PyTypeObject PyNativeMemoryView_Type = {
+PyTypeObject PyMemoryView_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    "nativememoryview",                       /* tp_name */
+    "memoryview",                             /* tp_name */
     offsetof(PyMemoryViewObject, ob_array),   /* tp_basicsize */
     sizeof(Py_ssize_t),                       /* tp_itemsize */
     (destructor)memory_dealloc,               /* tp_dealloc */
@@ -3124,39 +3112,3 @@ PyTypeObject PyNativeMemoryView_Type = {
     0,                                        /* tp_alloc */
     memory_new,                               /* tp_new */
 };
-
-static struct PyModuleDef _memoryviewmodule = {
-    PyModuleDef_HEAD_INIT,
-    "_memoryview",
-    "",
-    -1,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-};
-
-PyMODINIT_FUNC
-PyInit__memoryview(void)
-{
-    PyObject *m;
-
-    m = PyModule_Create(&_memoryviewmodule);
-    if (m == NULL)
-        return NULL;
-
-    if (PyType_Ready(&PyNativeMemoryView_Type) < 0)
-        return NULL;
-
-    if (PyType_Ready(&_PyManagedBuffer_Type) < 0)
-        return NULL;
-
-    Py_INCREF((PyObject*)&PyNativeMemoryView_Type);
-    PyModule_AddObject(m, "nativememoryview",(PyObject*) &PyNativeMemoryView_Type);
-
-    Py_INCREF((PyObject*)&_PyManagedBuffer_Type);
-    PyModule_AddObject(m, "managedbuffer", (PyObject*) &_PyManagedBuffer_Type);
-
-    return m;
-}

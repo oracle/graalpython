@@ -21,7 +21,6 @@ from abc import get_cache_token
 from collections import namedtuple
 from types import MappingProxyType
 from weakref import WeakKeyDictionary
-from reprlib import recursive_repr
 try:
     from _thread import RLock
 except ImportError:
@@ -238,83 +237,26 @@ except ImportError:
 ################################################################################
 
 # Purely functional, no descriptor behaviour
-class partial:
+def partial(func, *args, **keywords):
     """New function with partial application of the given arguments
     and keywords.
     """
+    if hasattr(func, 'func'):
+        args = func.args + args
+        tmpkw = func.keywords.copy()
+        tmpkw.update(keywords)
+        keywords = tmpkw
+        del tmpkw
+        func = func.func
 
-    __slots__ = "func", "args", "keywords", "__dict__", "__weakref__"
-
-    def __new__(*args, **keywords):
-        if not args:
-            raise TypeError("descriptor '__new__' of partial needs an argument")
-        if len(args) < 2:
-            raise TypeError("type 'partial' takes at least one argument")
-        cls, func, *args = args
-        if not callable(func):
-            raise TypeError("the first argument must be callable")
-        args = tuple(args)
-
-        if hasattr(func, "func"):
-            args = func.args + args
-            tmpkw = func.keywords.copy()
-            tmpkw.update(keywords)
-            keywords = tmpkw
-            del tmpkw
-            func = func.func
-
-        self = super(partial, cls).__new__(cls)
-
-        self.func = func
-        self.args = args
-        self.keywords = keywords
-        return self
-
-    def __call__(*args, **keywords):
-        if not args:
-            raise TypeError("descriptor '__call__' of partial needs an argument")
-        self, *args = args
-        newkeywords = self.keywords.copy()
-        newkeywords.update(keywords)
-        return self.func(*self.args, *args, **newkeywords)
-
-    @recursive_repr()
-    def __repr__(self):
-        qualname = type(self).__qualname__
-        args = [repr(self.func)]
-        args.extend(repr(x) for x in self.args)
-        args.extend(f"{k}={v!r}" for (k, v) in self.keywords.items())
-        if type(self).__module__ == "functools":
-            return f"functools.{qualname}({', '.join(args)})"
-        return f"{qualname}({', '.join(args)})"
-
-    def __reduce__(self):
-        return type(self), (self.func,), (self.func, self.args,
-               self.keywords or None, self.__dict__ or None)
-
-    def __setstate__(self, state):
-        if not isinstance(state, tuple):
-            raise TypeError("argument to __setstate__ must be a tuple")
-        if len(state) != 4:
-            raise TypeError(f"expected 4 items in state, got {len(state)}")
-        func, args, kwds, namespace = state
-        if (not callable(func) or not isinstance(args, tuple) or
-           (kwds is not None and not isinstance(kwds, dict)) or
-           (namespace is not None and not isinstance(namespace, dict))):
-            raise TypeError("invalid partial state")
-
-        args = tuple(args) # just in case it's a subclass
-        if kwds is None:
-            kwds = {}
-        elif type(kwds) is not dict: # XXX does it need to be *exactly* dict?
-            kwds = dict(kwds)
-        if namespace is None:
-            namespace = {}
-
-        self.__dict__ = namespace
-        self.func = func
-        self.args = args
-        self.keywords = kwds
+    def newfunc(*fargs, **fkeywords):
+        newkeywords = keywords.copy()
+        newkeywords.update(fkeywords)
+        return func(*(args + fargs), **newkeywords)
+    newfunc.func = func
+    newfunc.args = args
+    newfunc.keywords = keywords
+    return newfunc
 
 try:
     from _functools import partial
@@ -421,7 +363,7 @@ class _HashedSeq(list):
 def _make_key(args, kwds, typed,
              kwd_mark = (object(),),
              fasttypes = {int, str, frozenset, type(None)},
-             tuple=tuple, type=type, len=len):
+             sorted=sorted, tuple=tuple, type=type, len=len):
     """Make a cache key from optionally typed positional and keyword arguments
 
     The key is constructed in a way that is flat as possible rather than
@@ -434,13 +376,14 @@ def _make_key(args, kwds, typed,
     """
     key = args
     if kwds:
+        sorted_items = sorted(kwds.items())
         key += kwd_mark
-        for item in kwds.items():
+        for item in sorted_items:
             key += item
     if typed:
         key += tuple(type(v) for v in args)
         if kwds:
-            key += tuple(type(v) for v in kwds.values())
+            key += tuple(type(v) for k, v in sorted_items)
     elif len(key) == 1 and type(key[0]) in fasttypes:
         return key[0]
     return _HashedSeq(key)
@@ -492,7 +435,6 @@ def _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo):
     hits = misses = 0
     full = False
     cache_get = cache.get    # bound method to lookup a key or return None
-    cache_len = cache.__len__  # get cache size without calling len()
     lock = RLock()           # because linkedlist updates aren't threadsafe
     root = []                # root of the circular doubly linked list
     root[:] = [root, root, None, None]     # initialize by pointing to self
@@ -574,16 +516,16 @@ def _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo):
                     last = root[PREV]
                     link = [last, root, key, result]
                     last[NEXT] = root[PREV] = cache[key] = link
-                    # Use the cache_len bound method instead of the len() function
+                    # Use the __len__() method instead of the len() function
                     # which could potentially be wrapped in an lru_cache itself.
-                    full = (cache_len() >= maxsize)
+                    full = (cache.__len__() >= maxsize)
                 misses += 1
             return result
 
     def cache_info():
         """Report cache statistics"""
         with lock:
-            return _CacheInfo(hits, misses, maxsize, cache_len())
+            return _CacheInfo(hits, misses, maxsize, cache.__len__())
 
     def cache_clear():
         """Clear the cache and cache statistics"""

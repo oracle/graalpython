@@ -5,6 +5,7 @@
 
 import os
 import re
+import pprint
 import subprocess
 import sys
 import sysconfig
@@ -110,7 +111,6 @@ HAS_PYUP_PYDOWN = gdb_has_frame_select()
 
 BREAKPOINT_FN='builtin_id'
 
-@unittest.skipIf(support.PGO, "not useful for PGO")
 class DebuggerTests(unittest.TestCase):
 
     """Test that the debugger can debug Python."""
@@ -177,7 +177,6 @@ class DebuggerTests(unittest.TestCase):
         args = ['--eval-command=%s' % cmd for cmd in commands]
         args += ["--args",
                  sys.executable]
-        args.extend(subprocess._args_from_interpreter_flags())
 
         if not import_site:
             # -S suppresses the default 'import site'
@@ -241,7 +240,7 @@ class DebuggerTests(unittest.TestCase):
         # gdb can insert additional '\n' and space characters in various places
         # in its output, depending on the width of the terminal it's connected
         # to (using its "wrap_here" function)
-        m = re.match(r'.*#0\s+builtin_id\s+\(self\=.*,\s+v=\s*(.*?)\)\s+at\s+\S*Python/bltinmodule.c.*',
+        m = re.match('.*#0\s+builtin_id\s+\(self\=.*,\s+v=\s*(.*?)\)\s+at\s+\S*Python/bltinmodule.c.*',
                      gdb_output, re.DOTALL)
         if not m:
             self.fail('Unexpected gdb output: %r\n%s' % (gdb_output, gdb_output))
@@ -293,8 +292,7 @@ class PrettyPrintTests(DebuggerTests):
         'Verify the pretty-printing of dictionaries'
         self.assertGdbRepr({})
         self.assertGdbRepr({'foo': 'bar'}, "{'foo': 'bar'}")
-        # Python preserves insertion order since 3.6
-        self.assertGdbRepr({'foo': 'bar', 'douglas': 42}, "{'foo': 'bar', 'douglas': 42}")
+        self.assertGdbRepr({'foo': 'bar', 'douglas': 42}, "{'douglas': 42, 'foo': 'bar'}")
 
     def test_lists(self):
         'Verify the pretty-printing of lists'
@@ -357,12 +355,9 @@ class PrettyPrintTests(DebuggerTests):
         'Verify the pretty-printing of sets'
         if (gdb_major_version, gdb_minor_version) < (7, 3):
             self.skipTest("pretty-printing of sets needs gdb 7.3 or later")
-        self.assertGdbRepr(set(), "set()")
-        self.assertGdbRepr(set(['a']), "{'a'}")
-        # PYTHONHASHSEED is need to get the exact frozenset item order
-        if not sys.flags.ignore_environment:
-            self.assertGdbRepr(set(['a', 'b']), "{'a', 'b'}")
-            self.assertGdbRepr(set([4, 5, 6]), "{4, 5, 6}")
+        self.assertGdbRepr(set(), 'set()')
+        self.assertGdbRepr(set(['a', 'b']), "{'a', 'b'}")
+        self.assertGdbRepr(set([4, 5, 6]), "{4, 5, 6}")
 
         # Ensure that we handle sets containing the "dummy" key value,
         # which happens on deletion:
@@ -375,12 +370,9 @@ id(s)''')
         'Verify the pretty-printing of frozensets'
         if (gdb_major_version, gdb_minor_version) < (7, 3):
             self.skipTest("pretty-printing of frozensets needs gdb 7.3 or later")
-        self.assertGdbRepr(frozenset(), "frozenset()")
-        self.assertGdbRepr(frozenset(['a']), "frozenset({'a'})")
-        # PYTHONHASHSEED is need to get the exact frozenset item order
-        if not sys.flags.ignore_environment:
-            self.assertGdbRepr(frozenset(['a', 'b']), "frozenset({'a', 'b'})")
-            self.assertGdbRepr(frozenset([4, 5, 6]), "frozenset({4, 5, 6})")
+        self.assertGdbRepr(frozenset(), 'frozenset()')
+        self.assertGdbRepr(frozenset(['a', 'b']), "frozenset({'a', 'b'})")
+        self.assertGdbRepr(frozenset([4, 5, 6]), "frozenset({4, 5, 6})")
 
     def test_exceptions(self):
         # Test a RuntimeError
@@ -509,10 +501,6 @@ id(foo)''')
 
     def test_builtins_help(self):
         'Ensure that the new-style class _Helper in site.py can be handled'
-
-        if sys.flags.no_site:
-            self.skipTest("need site module, but -S option was used")
-
         # (this was the issue causing tracebacks in
         #  http://bugs.python.org/issue8032#msg100537 )
         gdb_repr, gdb_output = self.get_gdb_repr('id(__builtins__.help)', import_site=True)
@@ -548,7 +536,7 @@ class Foo:
 foo = Foo()
 foo.an_attr = foo
 id(foo)''')
-        self.assertTrue(re.match(r'<Foo\(an_attr=<\.\.\.>\) at remote 0x-?[0-9a-f]+>',
+        self.assertTrue(re.match('<Foo\(an_attr=<\.\.\.>\) at remote 0x-?[0-9a-f]+>',
                                  gdb_repr),
                         'Unexpected gdb representation: %r\n%s' % \
                             (gdb_repr, gdb_output))
@@ -561,7 +549,7 @@ class Foo(object):
 foo = Foo()
 foo.an_attr = foo
 id(foo)''')
-        self.assertTrue(re.match(r'<Foo\(an_attr=<\.\.\.>\) at remote 0x-?[0-9a-f]+>',
+        self.assertTrue(re.match('<Foo\(an_attr=<\.\.\.>\) at remote 0x-?[0-9a-f]+>',
                                  gdb_repr),
                         'Unexpected gdb representation: %r\n%s' % \
                             (gdb_repr, gdb_output))
@@ -575,7 +563,7 @@ b = Foo()
 a.an_attr = b
 b.an_attr = a
 id(a)''')
-        self.assertTrue(re.match(r'<Foo\(an_attr=<Foo\(an_attr=<\.\.\.>\) at remote 0x-?[0-9a-f]+>\) at remote 0x-?[0-9a-f]+>',
+        self.assertTrue(re.match('<Foo\(an_attr=<Foo\(an_attr=<\.\.\.>\) at remote 0x-?[0-9a-f]+>\) at remote 0x-?[0-9a-f]+>',
                                  gdb_repr),
                         'Unexpected gdb representation: %r\n%s' % \
                             (gdb_repr, gdb_output))
@@ -610,7 +598,7 @@ id(a)''')
 
     def test_builtin_method(self):
         gdb_repr, gdb_output = self.get_gdb_repr('import sys; id(sys.stdout.readlines)')
-        self.assertTrue(re.match(r'<built-in method readlines of _io.TextIOWrapper object at remote 0x-?[0-9a-f]+>',
+        self.assertTrue(re.match('<built-in method readlines of _io.TextIOWrapper object at remote 0x-?[0-9a-f]+>',
                                  gdb_repr),
                         'Unexpected gdb representation: %r\n%s' % \
                             (gdb_repr, gdb_output))
@@ -625,7 +613,7 @@ id(foo.__code__)''',
                                           breakpoint='builtin_id',
                                           cmds_after_breakpoint=['print (PyFrameObject*)(((PyCodeObject*)v)->co_zombieframe)']
                                           )
-        self.assertTrue(re.match(r'.*\s+\$1 =\s+Frame 0x-?[0-9a-f]+, for file <string>, line 3, in foo \(\)\s+.*',
+        self.assertTrue(re.match('.*\s+\$1 =\s+Frame 0x-?[0-9a-f]+, for file <string>, line 3, in foo \(\)\s+.*',
                                  gdb_output,
                                  re.DOTALL),
                         'Unexpected gdb representation: %r\n%s' % (gdb_output, gdb_output))
@@ -679,7 +667,7 @@ class StackNavigationTests(DebuggerTests):
     def test_pyup_command(self):
         'Verify that the "py-up" command works'
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up', 'py-up'])
+                                  cmds_after_breakpoint=['py-up'])
         self.assertMultilineMatches(bt,
                                     r'''^.*
 #[0-9]+ Frame 0x-?[0-9a-f]+, for file .*gdb_sample.py, line 7, in bar \(a=1, b=2, c=3\)
@@ -698,7 +686,7 @@ $''')
     def test_up_at_top(self):
         'Verify handling of "py-up" at the top of the stack'
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up'] * 5)
+                                  cmds_after_breakpoint=['py-up'] * 4)
         self.assertEndsWith(bt,
                             'Unable to find an older python frame\n')
 
@@ -708,7 +696,7 @@ $''')
     def test_up_then_down(self):
         'Verify "py-up" followed by "py-down"'
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up', 'py-up', 'py-down'])
+                                  cmds_after_breakpoint=['py-up', 'py-down'])
         self.assertMultilineMatches(bt,
                                     r'''^.*
 #[0-9]+ Frame 0x-?[0-9a-f]+, for file .*gdb_sample.py, line 7, in bar \(a=1, b=2, c=3\)
@@ -727,7 +715,6 @@ class PyBtTests(DebuggerTests):
         self.assertMultilineMatches(bt,
                                     r'''^.*
 Traceback \(most recent call first\):
-  <built-in method id of module object .*>
   File ".*gdb_sample.py", line 10, in baz
     id\(42\)
   File ".*gdb_sample.py", line 7, in bar
@@ -854,7 +841,7 @@ class PyPrintTests(DebuggerTests):
     def test_basic_command(self):
         'Verify that the "py-print" command works'
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up', 'py-print args'])
+                                  cmds_after_breakpoint=['py-print args'])
         self.assertMultilineMatches(bt,
                                     r".*\nlocal 'args' = \(1, 2, 3\)\n.*")
 
@@ -863,7 +850,7 @@ class PyPrintTests(DebuggerTests):
     @unittest.skipUnless(HAS_PYUP_PYDOWN, "test requires py-up/py-down commands")
     def test_print_after_up(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up', 'py-up', 'py-print c', 'py-print b', 'py-print a'])
+                                  cmds_after_breakpoint=['py-up', 'py-print c', 'py-print b', 'py-print a'])
         self.assertMultilineMatches(bt,
                                     r".*\nlocal 'c' = 3\nlocal 'b' = 2\nlocal 'a' = 1\n.*")
 
@@ -871,7 +858,7 @@ class PyPrintTests(DebuggerTests):
                      "Python was compiled with optimizations")
     def test_printing_global(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up', 'py-print __name__'])
+                                  cmds_after_breakpoint=['py-print __name__'])
         self.assertMultilineMatches(bt,
                                     r".*\nglobal '__name__' = '__main__'\n.*")
 
@@ -879,7 +866,7 @@ class PyPrintTests(DebuggerTests):
                      "Python was compiled with optimizations")
     def test_printing_builtin(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up', 'py-print len'])
+                                  cmds_after_breakpoint=['py-print len'])
         self.assertMultilineMatches(bt,
                                     r".*\nbuiltin 'len' = <built-in method len of module object at remote 0x-?[0-9a-f]+>\n.*")
 
@@ -888,7 +875,7 @@ class PyLocalsTests(DebuggerTests):
                      "Python was compiled with optimizations")
     def test_basic_command(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up', 'py-locals'])
+                                  cmds_after_breakpoint=['py-locals'])
         self.assertMultilineMatches(bt,
                                     r".*\nargs = \(1, 2, 3\)\n.*")
 
@@ -897,7 +884,7 @@ class PyLocalsTests(DebuggerTests):
                      "Python was compiled with optimizations")
     def test_locals_after_up(self):
         bt = self.get_stack_trace(script=self.get_sample_script(),
-                                  cmds_after_breakpoint=['py-up', 'py-up', 'py-locals'])
+                                  cmds_after_breakpoint=['py-up', 'py-locals'])
         self.assertMultilineMatches(bt,
                                     r".*\na = 1\nb = 2\nc = 3\n.*")
 

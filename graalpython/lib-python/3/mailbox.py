@@ -23,10 +23,9 @@ try:
 except ImportError:
     fcntl = None
 
-__all__ = ['Mailbox', 'Maildir', 'mbox', 'MH', 'Babyl', 'MMDF',
-           'Message', 'MaildirMessage', 'mboxMessage', 'MHMessage',
-           'BabylMessage', 'MMDFMessage', 'Error', 'NoSuchMailboxError',
-           'NotEmptyError', 'ExternalClashError', 'FormatError']
+__all__ = [ 'Mailbox', 'Maildir', 'mbox', 'MH', 'Babyl', 'MMDF',
+            'Message', 'MaildirMessage', 'mboxMessage', 'MHMessage',
+            'BabylMessage', 'MMDFMessage']
 
 linesep = os.linesep.encode('ascii')
 
@@ -313,12 +312,11 @@ class Maildir(Mailbox):
         # final position in order to prevent race conditions with changes
         # from other programs
         try:
-            try:
+            if hasattr(os, 'link'):
                 os.link(tmp_file.name, dest)
-            except (AttributeError, PermissionError):
-                os.rename(tmp_file.name, dest)
-            else:
                 os.remove(tmp_file.name)
+            else:
+                os.rename(tmp_file.name, dest)
         except OSError as e:
             os.remove(tmp_file.name)
             if e.errno == errno.EEXIST:
@@ -1201,14 +1199,13 @@ class MH(Mailbox):
         for key in self.iterkeys():
             if key - 1 != prev:
                 changes.append((key, prev + 1))
-                try:
+                if hasattr(os, 'link'):
                     os.link(os.path.join(self._path, str(key)),
                             os.path.join(self._path, str(prev + 1)))
-                except (AttributeError, PermissionError):
+                    os.unlink(os.path.join(self._path, str(key)))
+                else:
                     os.rename(os.path.join(self._path, str(key)),
                               os.path.join(self._path, str(prev + 1)))
-                else:
-                    os.unlink(os.path.join(self._path, str(key)))
             prev += 1
         self._next_key = prev + 1
         if len(changes) == 0:
@@ -2078,14 +2075,13 @@ def _lock_file(f, dotlock=True):
                 else:
                     raise
             try:
-                try:
+                if hasattr(os, 'link'):
                     os.link(pre_lock.name, f.name + '.lock')
                     dotlock_done = True
-                except (AttributeError, PermissionError):
+                    os.unlink(pre_lock.name)
+                else:
                     os.rename(pre_lock.name, f.name + '.lock')
                     dotlock_done = True
-                else:
-                    os.unlink(pre_lock.name)
             except FileExistsError:
                 os.remove(pre_lock.name)
                 raise ExternalClashError('dot lock unavailable: %s' %

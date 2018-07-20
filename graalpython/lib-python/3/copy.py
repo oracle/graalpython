@@ -51,6 +51,7 @@ __getstate__() and __setstate__().  See the documentation for module
 import types
 import weakref
 from copyreg import dispatch_table
+import builtins
 
 class Error(Exception):
     pass
@@ -101,33 +102,37 @@ def copy(x):
             else:
                 raise Error("un(shallow)copyable object of type %s" % cls)
 
-    if isinstance(rv, str):
-        return x
-    return _reconstruct(x, None, *rv)
+    return _reconstruct(x, rv, 0)
 
 
 _copy_dispatch = d = {}
 
 def _copy_immutable(x):
     return x
-for t in (type(None), int, float, bool, complex, str, tuple,
-          bytes, frozenset, type, range, slice,
-          types.BuiltinFunctionType, type(Ellipsis), type(NotImplemented),
+for t in (type(None), int, float, bool, str, tuple,
+          bytes, frozenset, type, range,
+          types.BuiltinFunctionType, type(Ellipsis),
           types.FunctionType, weakref.ref):
     d[t] = _copy_immutable
 t = getattr(types, "CodeType", None)
 if t is not None:
     d[t] = _copy_immutable
+for name in ("complex", "unicode"):
+    t = getattr(builtins, name, None)
+    if t is not None:
+        d[t] = _copy_immutable
 
-d[list] = list.copy
-d[dict] = dict.copy
-d[set] = set.copy
-d[bytearray] = bytearray.copy
+def _copy_with_constructor(x):
+    return type(x)(x)
+for t in (list, dict, set):
+    d[t] = _copy_with_constructor
 
+def _copy_with_copy_method(x):
+    return x.copy()
 if PyStringMap is not None:
-    d[PyStringMap] = PyStringMap.copy
+    d[PyStringMap] = _copy_with_copy_method
 
-del d, t
+del d
 
 def deepcopy(x, memo=None, _nil=[]):
     """Deep copy operation on arbitrary Python objects.
@@ -174,10 +179,7 @@ def deepcopy(x, memo=None, _nil=[]):
                         else:
                             raise Error(
                                 "un(deep)copyable object of type %s" % cls)
-                if isinstance(rv, str):
-                    y = x
-                else:
-                    y = _reconstruct(x, memo, *rv)
+                y = _reconstruct(x, rv, 1, memo)
 
     # If is its own copy, don't memoize.
     if y is not x:
@@ -191,11 +193,13 @@ def _deepcopy_atomic(x, memo):
     return x
 d[type(None)] = _deepcopy_atomic
 d[type(Ellipsis)] = _deepcopy_atomic
-d[type(NotImplemented)] = _deepcopy_atomic
 d[int] = _deepcopy_atomic
 d[float] = _deepcopy_atomic
 d[bool] = _deepcopy_atomic
-d[complex] = _deepcopy_atomic
+try:
+    d[complex] = _deepcopy_atomic
+except NameError:
+    pass
 d[bytes] = _deepcopy_atomic
 d[str] = _deepcopy_atomic
 try:
@@ -207,16 +211,15 @@ d[types.BuiltinFunctionType] = _deepcopy_atomic
 d[types.FunctionType] = _deepcopy_atomic
 d[weakref.ref] = _deepcopy_atomic
 
-def _deepcopy_list(x, memo, deepcopy=deepcopy):
+def _deepcopy_list(x, memo):
     y = []
     memo[id(x)] = y
-    append = y.append
     for a in x:
-        append(deepcopy(a, memo))
+        y.append(deepcopy(a, memo))
     return y
 d[list] = _deepcopy_list
 
-def _deepcopy_tuple(x, memo, deepcopy=deepcopy):
+def _deepcopy_tuple(x, memo):
     y = [deepcopy(a, memo) for a in x]
     # We're not going to put the tuple in the memo, but it's still important we
     # check for it, in case the tuple contains recursive mutable structures.
@@ -233,7 +236,7 @@ def _deepcopy_tuple(x, memo, deepcopy=deepcopy):
     return y
 d[tuple] = _deepcopy_tuple
 
-def _deepcopy_dict(x, memo, deepcopy=deepcopy):
+def _deepcopy_dict(x, memo):
     y = {}
     memo[id(x)] = y
     for key, value in x.items():
@@ -245,9 +248,7 @@ if PyStringMap is not None:
 
 def _deepcopy_method(x, memo): # Copy instance methods
     return type(x)(x.__func__, deepcopy(x.__self__, memo))
-d[types.MethodType] = _deepcopy_method
-
-del d
+_deepcopy_dispatch[types.MethodType] = _deepcopy_method
 
 def _keep_alive(x, memo):
     """Keeps a reference to the object x in the memo.
@@ -265,15 +266,31 @@ def _keep_alive(x, memo):
         # aha, this is the first one :-)
         memo[id(memo)]=[x]
 
-def _reconstruct(x, memo, func, args,
-                 state=None, listiter=None, dictiter=None,
-                 deepcopy=deepcopy):
-    deep = memo is not None
-    if deep and args:
-        args = (deepcopy(arg, memo) for arg in args)
-    y = func(*args)
+def _reconstruct(x, info, deep, memo=None):
+    if isinstance(info, str):
+        return x
+    assert isinstance(info, tuple)
+    if memo is None:
+        memo = {}
+    n = len(info)
+    assert n in (2, 3, 4, 5)
+    callable, args = info[:2]
+    if n > 2:
+        state = info[2]
+    else:
+        state = None
+    if n > 3:
+        listiter = info[3]
+    else:
+        listiter = None
+    if n > 4:
+        dictiter = info[4]
+    else:
+        dictiter = None
     if deep:
-        memo[id(x)] = y
+        args = deepcopy(args, memo)
+    y = callable(*args)
+    memo[id(x)] = y
 
     if state is not None:
         if deep:
@@ -292,22 +309,22 @@ def _reconstruct(x, memo, func, args,
                     setattr(y, key, value)
 
     if listiter is not None:
-        if deep:
-            for item in listiter:
+        for item in listiter:
+            if deep:
                 item = deepcopy(item, memo)
-                y.append(item)
-        else:
-            for item in listiter:
-                y.append(item)
+            y.append(item)
     if dictiter is not None:
-        if deep:
-            for key, value in dictiter:
+        for key, value in dictiter:
+            if deep:
                 key = deepcopy(key, memo)
                 value = deepcopy(value, memo)
-                y[key] = value
-        else:
-            for key, value in dictiter:
-                y[key] = value
+            y[key] = value
     return y
 
-del types, weakref, PyStringMap
+del d
+
+del types
+
+# Helper for instance creation without calling __init__
+class _EmptyClass:
+    pass

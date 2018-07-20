@@ -53,6 +53,10 @@ class SMTPDServerTest(unittest.TestCase):
         write_line(b'DATA')
         self.assertRaises(NotImplementedError, write_line, b'spam\r\n.\r\n')
 
+    def test_decode_data_default_warns(self):
+        with self.assertWarns(DeprecationWarning):
+            smtpd.SMTPServer((support.HOST, 0), ('b', 0))
+
     def test_decode_data_and_enable_SMTPUTF8_raises(self):
         self.assertRaises(
             ValueError,
@@ -104,9 +108,10 @@ class DebuggingServerTest(unittest.TestCase):
              """))
 
     def test_process_message_with_decode_data_false(self):
-        server = smtpd.DebuggingServer((support.HOST, 0), ('b', 0))
+        server = smtpd.DebuggingServer((support.HOST, 0), ('b', 0),
+                                       decode_data=False)
         conn, addr = server.accept()
-        channel = smtpd.SMTPChannel(server, conn, addr)
+        channel = smtpd.SMTPChannel(server, conn, addr, decode_data=False)
         with support.captured_stdout() as s:
             self.send_data(channel, b'From: test\n\nh\xc3\xa9llo\xff\n')
         stdout = s.getvalue()
@@ -170,11 +175,13 @@ class TestFamilyDetection(unittest.TestCase):
 
     @unittest.skipUnless(support.IPV6_ENABLED, "IPv6 not enabled")
     def test_socket_uses_IPv6(self):
-        server = smtpd.SMTPServer((support.HOSTv6, 0), (support.HOST, 0))
+        server = smtpd.SMTPServer((support.HOSTv6, 0), (support.HOST, 0),
+                                  decode_data=False)
         self.assertEqual(server.socket.family, socket.AF_INET6)
 
     def test_socket_uses_IPv4(self):
-        server = smtpd.SMTPServer((support.HOST, 0), (support.HOSTv6, 0))
+        server = smtpd.SMTPServer((support.HOST, 0), (support.HOSTv6, 0),
+                                  decode_data=False)
         self.assertEqual(server.socket.family, socket.AF_INET)
 
 
@@ -197,18 +204,18 @@ class TestRcptOptionParsing(unittest.TestCase):
         channel.handle_read()
 
     def test_params_rejected(self):
-        server = DummyServer((support.HOST, 0), ('b', 0))
+        server = DummyServer((support.HOST, 0), ('b', 0), decode_data=False)
         conn, addr = server.accept()
-        channel = smtpd.SMTPChannel(server, conn, addr)
+        channel = smtpd.SMTPChannel(server, conn, addr, decode_data=False)
         self.write_line(channel, b'EHLO example')
         self.write_line(channel, b'MAIL from: <foo@example.com> size=20')
         self.write_line(channel, b'RCPT to: <foo@example.com> foo=bar')
         self.assertEqual(channel.socket.last, self.error_response)
 
     def test_nothing_accepted(self):
-        server = DummyServer((support.HOST, 0), ('b', 0))
+        server = DummyServer((support.HOST, 0), ('b', 0), decode_data=False)
         conn, addr = server.accept()
-        channel = smtpd.SMTPChannel(server, conn, addr)
+        channel = smtpd.SMTPChannel(server, conn, addr, decode_data=False)
         self.write_line(channel, b'EHLO example')
         self.write_line(channel, b'MAIL from: <foo@example.com> size=20')
         self.write_line(channel, b'RCPT to: <foo@example.com>')
@@ -250,9 +257,9 @@ class TestMailOptionParsing(unittest.TestCase):
         self.assertEqual(channel.socket.last, b'250 OK\r\n')
 
     def test_with_decode_data_false(self):
-        server = DummyServer((support.HOST, 0), ('b', 0))
+        server = DummyServer((support.HOST, 0), ('b', 0), decode_data=False)
         conn, addr = server.accept()
-        channel = smtpd.SMTPChannel(server, conn, addr)
+        channel = smtpd.SMTPChannel(server, conn, addr, decode_data=False)
         self.write_line(channel, b'EHLO example')
         for line in [
             b'MAIL from: <foo@example.com> size=20 SMTPUTF8',
@@ -758,6 +765,13 @@ class SMTPDChannelTest(unittest.TestCase):
         with support.check_warnings(('', DeprecationWarning)):
             self.channel._SMTPChannel__addr = 'spam'
 
+    def test_decode_data_default_warning(self):
+        with self.assertWarns(DeprecationWarning):
+            server = DummyServer((support.HOST, 0), ('b', 0))
+        conn, addr = self.server.accept()
+        with self.assertWarns(DeprecationWarning):
+            smtpd.SMTPChannel(server, conn, addr)
+
 @unittest.skipUnless(support.IPV6_ENABLED, "IPv6 not enabled")
 class SMTPDChannelIPv6Test(SMTPDChannelTest):
     def setUp(self):
@@ -831,9 +845,12 @@ class SMTPDChannelWithDecodeDataFalse(unittest.TestCase):
         smtpd.socket = asyncore.socket = mock_socket
         self.old_debugstream = smtpd.DEBUGSTREAM
         self.debug = smtpd.DEBUGSTREAM = io.StringIO()
-        self.server = DummyServer((support.HOST, 0), ('b', 0))
+        self.server = DummyServer((support.HOST, 0), ('b', 0),
+                                  decode_data=False)
         conn, addr = self.server.accept()
-        self.channel = smtpd.SMTPChannel(self.server, conn, addr)
+        # Set decode_data to False
+        self.channel = smtpd.SMTPChannel(self.server, conn, addr,
+                decode_data=False)
 
     def tearDown(self):
         asyncore.close_all()
@@ -997,17 +1014,6 @@ class SMTPDChannelTestWithEnableSMTPUTF8True(unittest.TestCase):
             self.assertEqual(self.channel.socket.last[0:3], b'354')
             self.write_line(b'test\r\n.')
             self.assertEqual(self.channel.socket.last[0:3], b'250')
-
-
-class MiscTestCase(unittest.TestCase):
-    def test__all__(self):
-        blacklist = {
-            "program", "Devnull", "DEBUGSTREAM", "NEWLINE", "COMMASPACE",
-            "DATA_SIZE_DEFAULT", "usage", "Options", "parseargs",
-
-        }
-        support.check__all__(self, smtpd, blacklist=blacklist)
-
 
 if __name__ == "__main__":
     unittest.main()

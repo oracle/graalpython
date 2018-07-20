@@ -717,7 +717,7 @@ class MSVCCompiler(CCompiler) :
                 r"""VC\d{2}\.CRT("|').*?(/>|</assemblyIdentity>)""",
                 re.DOTALL)
             manifest_buf = re.sub(pattern, "", manifest_buf)
-            pattern = r"<dependentAssembly>\s*</dependentAssembly>"
+            pattern = "<dependentAssembly>\s*</dependentAssembly>"
             manifest_buf = re.sub(pattern, "", manifest_buf)
             # Now see if any other assemblies are referenced - if not, we
             # don't want a manifest embedded.

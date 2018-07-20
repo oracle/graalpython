@@ -16,14 +16,11 @@ class FinderTests:
 
     """Tests for PathFinder."""
 
-    find = None
-    check_found = None
-
     def test_failure(self):
         # Test None returned upon not finding a suitable loader.
         module = '<test module>'
         with util.import_state():
-            self.assertIsNone(self.find(module))
+            self.assertIsNone(self.machinery.PathFinder.find_module(module))
 
     def test_sys_path(self):
         # Test that sys.path is used when 'path' is None.
@@ -33,8 +30,8 @@ class FinderTests:
         importer = util.mock_spec(module)
         with util.import_state(path_importer_cache={path: importer},
                                path=[path]):
-            found = self.find(module)
-            self.check_found(found, importer)
+            loader = self.machinery.PathFinder.find_module(module)
+            self.assertIs(loader, importer)
 
     def test_path(self):
         # Test that 'path' is used when set.
@@ -43,8 +40,8 @@ class FinderTests:
         path = '<test path>'
         importer = util.mock_spec(module)
         with util.import_state(path_importer_cache={path: importer}):
-            found = self.find(module, [path])
-            self.check_found(found, importer)
+            loader = self.machinery.PathFinder.find_module(module, [path])
+            self.assertIs(loader, importer)
 
     def test_empty_list(self):
         # An empty list should not count as asking for sys.path.
@@ -53,7 +50,7 @@ class FinderTests:
         importer = util.mock_spec(module)
         with util.import_state(path_importer_cache={path: importer},
                                path=[path]):
-            self.assertIsNone(self.find('module', []))
+            self.assertIsNone(self.machinery.PathFinder.find_module('module', []))
 
     def test_path_hooks(self):
         # Test that sys.path_hooks is used.
@@ -63,8 +60,8 @@ class FinderTests:
         importer = util.mock_spec(module)
         hook = util.mock_path_hook(path, importer=importer)
         with util.import_state(path_hooks=[hook]):
-            found = self.find(module, [path])
-            self.check_found(found, importer)
+            loader = self.machinery.PathFinder.find_module(module, [path])
+            self.assertIs(loader, importer)
             self.assertIn(path, sys.path_importer_cache)
             self.assertIs(sys.path_importer_cache[path], importer)
 
@@ -76,7 +73,7 @@ class FinderTests:
                                path=[path_entry]):
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter('always')
-                self.assertIsNone(self.find('os'))
+                self.assertIsNone(self.machinery.PathFinder.find_module('os'))
                 self.assertIsNone(sys.path_importer_cache[path_entry])
                 self.assertEqual(len(w), 1)
                 self.assertTrue(issubclass(w[-1].category, ImportWarning))
@@ -88,8 +85,8 @@ class FinderTests:
         importer = util.mock_spec(module)
         hook = util.mock_path_hook(os.getcwd(), importer=importer)
         with util.import_state(path=[path], path_hooks=[hook]):
-            found = self.find(module)
-            self.check_found(found, importer)
+            loader = self.machinery.PathFinder.find_module(module)
+            self.assertIs(loader, importer)
             self.assertIn(os.getcwd(), sys.path_importer_cache)
 
     def test_None_on_sys_path(self):
@@ -185,49 +182,14 @@ class FinderTests:
             self.assertIsNone(self.machinery.PathFinder.find_spec('whatever'))
 
 
-class FindModuleTests(FinderTests):
-    def find(self, *args, **kwargs):
-        return self.machinery.PathFinder.find_module(*args, **kwargs)
-    def check_found(self, found, importer):
-        self.assertIs(found, importer)
 
 
-(Frozen_FindModuleTests,
- Source_FindModuleTests
-) = util.test_both(FindModuleTests, importlib=importlib, machinery=machinery)
-
-
-class FindSpecTests(FinderTests):
-    def find(self, *args, **kwargs):
-        return self.machinery.PathFinder.find_spec(*args, **kwargs)
-    def check_found(self, found, importer):
-        self.assertIs(found.loader, importer)
-
-
-(Frozen_FindSpecTests,
- Source_FindSpecTests
- ) = util.test_both(FindSpecTests, importlib=importlib, machinery=machinery)
+(Frozen_FinderTests,
+ Source_FinderTests
+ ) = util.test_both(FinderTests, importlib=importlib, machinery=machinery)
 
 
 class PathEntryFinderTests:
-
-    def test_finder_with_failing_find_spec(self):
-        # PathEntryFinder with find_module() defined should work.
-        # Issue #20763.
-        class Finder:
-            path_location = 'test_finder_with_find_module'
-            def __init__(self, path):
-                if path != self.path_location:
-                    raise ImportError
-
-            @staticmethod
-            def find_module(fullname):
-                return None
-
-
-        with util.import_state(path=[Finder.path_location]+sys.path[:],
-                               path_hooks=[Finder]):
-            self.machinery.PathFinder.find_spec('importlib')
 
     def test_finder_with_failing_find_module(self):
         # PathEntryFinder with find_module() defined should work.
@@ -245,7 +207,7 @@ class PathEntryFinderTests:
 
         with util.import_state(path=[Finder.path_location]+sys.path[:],
                                path_hooks=[Finder]):
-            self.machinery.PathFinder.find_module('importlib')
+            self.machinery.PathFinder.find_spec('importlib')
 
 
 (Frozen_PEFTests,

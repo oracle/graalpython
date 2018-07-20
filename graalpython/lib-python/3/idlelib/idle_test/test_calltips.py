@@ -1,5 +1,5 @@
 import unittest
-import idlelib.calltips as ct
+import idlelib.CallTips as ct
 import textwrap
 import types
 

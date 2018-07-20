@@ -1,7 +1,7 @@
 # Copyright (C) 2005 Martin v. Löwis
 # Licensed to PSF under a Contributor Agreement.
 from _msi import *
-import fnmatch
+import glob
 import os
 import re
 import string
@@ -289,7 +289,7 @@ class Directory:
     def make_short(self, file):
         oldfile = file
         file = file.replace('+', '_')
-        file = ''.join(c for c in file if not c in r' "/\[]:;=,')
+        file = ''.join(c for c in file if not c in ' "/\[]:;=,')
         parts = file.split(".")
         if len(parts) > 1:
             prefix = "".join(parts[:-1]).upper()
@@ -379,13 +379,7 @@ class Directory:
     def glob(self, pattern, exclude = None):
         """Add a list of files to the current component as specified in the
         glob pattern. Individual files can be excluded in the exclude list."""
-        try:
-            files = os.listdir(self.absolute)
-        except OSError:
-            return []
-        if pattern[:1] != '.':
-            files = (f for f in files if f[0] != '.')
-        files = fnmatch.filter(files, pattern)
+        files = glob.glob1(self.absolute, pattern)
         for f in files:
             if exclude and f in exclude: continue
             self.add_file(f)

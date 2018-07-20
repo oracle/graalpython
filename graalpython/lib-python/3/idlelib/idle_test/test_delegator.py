@@ -1,5 +1,5 @@
 import unittest
-from idlelib.delegator import Delegator
+from idlelib.Delegator import Delegator
 
 class DelegatorTest(unittest.TestCase):
 

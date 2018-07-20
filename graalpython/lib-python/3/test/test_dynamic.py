@@ -1,6 +1,7 @@
 # Test the most dynamic corner cases of Python's runtime semantics.
 
 import builtins
+import contextlib
 import unittest
 
 from test.support import swap_item, swap_attr

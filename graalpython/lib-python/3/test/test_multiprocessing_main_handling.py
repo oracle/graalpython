@@ -6,6 +6,7 @@ support.import_module('_multiprocessing')
 
 import importlib
 import importlib.machinery
+import zipimport
 import unittest
 import sys
 import os
@@ -14,10 +15,7 @@ import py_compile
 
 from test.support.script_helper import (
     make_pkg, make_script, make_zip_pkg, make_zip_script,
-    assert_python_ok)
-
-if support.PGO:
-    raise unittest.SkipTest("test is not helpful for PGO")
+    assert_python_ok, assert_python_failure, spawn_python, kill_python)
 
 # Look up which start methods are available to test
 import multiprocessing

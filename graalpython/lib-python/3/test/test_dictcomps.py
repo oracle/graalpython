@@ -1,5 +1,7 @@
 import unittest
 
+from test import support
+
 # For scope testing.
 g = "Global variable"
 

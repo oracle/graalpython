@@ -1663,8 +1663,7 @@ order (MRO) for bases """
         self.assertEqual(b.foo, 3)
         self.assertEqual(b.__class__, D)
 
-    #@unittest.expectedFailure --- on CPython.  On PyPy, the test passes
-    @support.impl_detail(cpython=False)
+    @unittest.expectedFailure
     def test_bad_new(self):
         self.assertRaises(TypeError, object.__new__)
         self.assertRaises(TypeError, object.__new__, '')
@@ -4847,8 +4846,11 @@ class PicklingTests(unittest.TestCase):
                 return (args, kwargs)
         obj = C3()
         for proto in protocols:
-            if proto >= 2:
+            if proto >= 4:
                 self._check_reduce(proto, obj, args, kwargs)
+            elif proto >= 2:
+                with self.assertRaises(ValueError):
+                    obj.__reduce_ex__(proto)
 
         class C4:
             def __getnewargs_ex__(self):
@@ -5167,6 +5169,10 @@ class PicklingTests(unittest.TestCase):
                 kwargs = getattr(cls, 'KWARGS', {})
                 obj = cls(*cls.ARGS, **kwargs)
                 proto = pickle_copier.proto
+                if 2 <= proto < 4 and hasattr(cls, '__getnewargs_ex__'):
+                    with self.assertRaises(ValueError):
+                        pickle_copier.dumps(obj, proto)
+                    continue
                 objcopy = pickle_copier.copy(obj)
                 self._assert_is_copy(obj, objcopy)
                 # For test classes that supports this, make sure we didn't go
@@ -5225,14 +5231,12 @@ class SharedKeyTests(unittest.TestCase):
         a, b = A(), B()
         self.assertEqual(sys.getsizeof(vars(a)), sys.getsizeof(vars(b)))
         self.assertLess(sys.getsizeof(vars(a)), sys.getsizeof({}))
-        # Initial hash table can contain at most 5 elements.
-        # Set 6 attributes to cause internal resizing.
-        a.x, a.y, a.z, a.w, a.v, a.u = range(6)
+        a.x, a.y, a.z, a.w = range(4)
         self.assertNotEqual(sys.getsizeof(vars(a)), sys.getsizeof(vars(b)))
         a2 = A()
         self.assertEqual(sys.getsizeof(vars(a)), sys.getsizeof(vars(a2)))
         self.assertLess(sys.getsizeof(vars(a)), sys.getsizeof({}))
-        b.u, b.v, b.w, b.t, b.s, b.r = range(6)
+        b.u, b.v, b.w, b.t = range(4)
         self.assertLess(sys.getsizeof(vars(b)), sys.getsizeof({}))
 
 

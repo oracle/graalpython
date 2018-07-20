@@ -1,3 +1,5 @@
+import sys
+
 def is_instance(obj, klass):
     """Version of is_instance that doesn't access __class__"""
     return issubclass(type(obj), klass)

@@ -33,7 +33,6 @@ class PlatformTest(unittest.TestCase):
                 'import platform; print(platform.architecture())']
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
             return p.communicate()
-
         real = os.path.realpath(sys.executable)
         link = os.path.abspath(support.TESTFN)
         os.symlink(real, link)
@@ -67,12 +66,12 @@ class PlatformTest(unittest.TestCase):
 
     def setUp(self):
         self.save_version = sys.version
-        self.save_git = sys._git
+        self.save_mercurial = sys._mercurial
         self.save_platform = sys.platform
 
     def tearDown(self):
         sys.version = self.save_version
-        sys._git = self.save_git
+        sys._mercurial = self.save_mercurial
         sys.platform = self.save_platform
 
     def test_sys_version(self):
@@ -102,7 +101,7 @@ class PlatformTest(unittest.TestCase):
              ('CPython', '2.4.3', '', '', 'truncation', '', 'GCC')),
             ):
             # branch and revision are not "parsed", but fetched
-            # from sys._git.  Ignore them
+            # from sys._mercurial.  Ignore them
             (name, version, branch, revision, buildno, builddate, compiler) \
                    = platform._sys_version(input)
             self.assertEqual(
@@ -149,10 +148,10 @@ class PlatformTest(unittest.TestCase):
                 sys_versions.items():
             sys.version = version_tag
             if subversion is None:
-                if hasattr(sys, "_git"):
-                    del sys._git
+                if hasattr(sys, "_mercurial"):
+                    del sys._mercurial
             else:
-                sys._git = subversion
+                sys._mercurial = subversion
             if sys_platform is not None:
                 sys.platform = sys_platform
             self.assertEqual(platform.python_implementation(), info[0])
@@ -263,7 +262,7 @@ class PlatformTest(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 'ignore',
-                r'dist\(\) and linux_distribution\(\) '
+                'dist\(\) and linux_distribution\(\) '
                 'functions are deprecated .*',
                 PendingDeprecationWarning,
             )
@@ -339,7 +338,7 @@ class PlatformTest(unittest.TestCase):
                 with warnings.catch_warnings():
                     warnings.filterwarnings(
                         'ignore',
-                        r'dist\(\) and linux_distribution\(\) '
+                        'dist\(\) and linux_distribution\(\) '
                         'functions are deprecated .*',
                         PendingDeprecationWarning,
                     )

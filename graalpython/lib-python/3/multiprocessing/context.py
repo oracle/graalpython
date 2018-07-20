@@ -3,7 +3,6 @@ import sys
 import threading
 
 from . import process
-from . import reduction
 
 __all__ = []            # things are copied from here to __init__.py
 
@@ -199,16 +198,6 @@ class BaseContext(object):
     def set_start_method(self, method, force=False):
         raise ValueError('cannot set start method of concrete context')
 
-    @property
-    def reducer(self):
-        '''Controls how objects will be reduced to a form that can be
-        shared with other processes.'''
-        return globals().get('reduction')
-
-    @reducer.setter
-    def reducer(self, reduction):
-        globals()['reduction'] = reduction
-
     def _check_available(self):
         pass
 
@@ -256,6 +245,7 @@ class DefaultContext(BaseContext):
         if sys.platform == 'win32':
             return ['spawn']
         else:
+            from . import reduction
             if reduction.HAVE_SEND_HANDLE:
                 return ['fork', 'spawn', 'forkserver']
             else:
@@ -302,6 +292,7 @@ if sys.platform != 'win32':
         _name = 'forkserver'
         Process = ForkServerProcess
         def _check_available(self):
+            from . import reduction
             if not reduction.HAVE_SEND_HANDLE:
                 raise ValueError('forkserver start method not available')
 

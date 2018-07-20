@@ -9,7 +9,7 @@ import threading
 
 from . import connection
 from . import process
-from .context import reduction
+from . import reduction
 from . import semaphore_tracker
 from . import spawn
 from . import util

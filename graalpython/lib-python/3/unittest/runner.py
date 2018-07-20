@@ -167,7 +167,7 @@ class TextTestRunner(object):
                 if self.warnings in ['default', 'always']:
                     warnings.filterwarnings('module',
                             category=DeprecationWarning,
-                            message=r'Please use assert\w+ instead.')
+                            message='Please use assert\w+ instead.')
             startTime = time.time()
             startTestRun = getattr(result, 'startTestRun', None)
             if startTestRun is not None:

@@ -10,6 +10,7 @@ import unittest
 import test.support
 
 # Local imports
+from lib2to3 import refactor
 from . import support
 
 

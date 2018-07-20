@@ -258,7 +258,7 @@ class IntegrationTests(TestCase):
 
         def app(environ, start_response):
             start_response("200 OK", [])
-            return [b'\0' * support.SOCK_MAX_SIZE]
+            return [bytes(support.SOCK_MAX_SIZE)]
 
         class WsgiHandler(NoLogRequestHandler, WSGIRequestHandler):
             pass

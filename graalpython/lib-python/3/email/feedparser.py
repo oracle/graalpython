@@ -24,14 +24,15 @@ __all__ = ['FeedParser', 'BytesFeedParser']
 import re
 
 from email import errors
+from email import message
 from email._policybase import compat32
 from collections import deque
 from io import StringIO
 
-NLCRE = re.compile(r'\r\n|\r|\n')
-NLCRE_bol = re.compile(r'(\r\n|\r|\n)')
-NLCRE_eol = re.compile(r'(\r\n|\r|\n)\Z')
-NLCRE_crack = re.compile(r'(\r\n|\r|\n)')
+NLCRE = re.compile('\r\n|\r|\n')
+NLCRE_bol = re.compile('(\r\n|\r|\n)')
+NLCRE_eol = re.compile('(\r\n|\r|\n)\Z')
+NLCRE_crack = re.compile('(\r\n|\r|\n)')
 # RFC 2822 $3.6.8 Optional fields.  ftext is %d33-57 / %d59-126, Any character
 # except controls, SP, and ":".
 headerRE = re.compile(r'^(From |[\041-\071\073-\176]*:|[\t ])')
@@ -147,11 +148,13 @@ class FeedParser:
         self.policy = policy
         self._old_style_factory = False
         if _factory is None:
-            if policy.message_factory is None:
-                from email.message import Message
-                self._factory = Message
+            # What this should be:
+            #self._factory = policy.default_message_factory
+            # but, because we are post 3.4 feature freeze, fix with temp hack:
+            if self.policy is compat32:
+                self._factory = message.Message
             else:
-                self._factory = policy.message_factory
+                self._factory = message.EmailMessage
         else:
             self._factory = _factory
             try:

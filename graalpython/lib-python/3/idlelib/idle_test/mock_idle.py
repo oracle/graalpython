@@ -33,7 +33,7 @@ class Func:
 
 
 class Editor:
-    '''Minimally imitate editor.EditorWindow class.
+    '''Minimally imitate EditorWindow.EditorWindow class.
     '''
     def __init__(self, flist=None, filename=None, key=None, root=None):
         self.text = Text()
@@ -46,7 +46,7 @@ class Editor:
 
 
 class UndoDelegator:
-    '''Minimally imitate undo.UndoDelegator class.
+    '''Minimally imitate UndoDelegator,UndoDelegator class.
     '''
     # A real undo block is only needed for user interaction.
     def undo_block_start(*args):

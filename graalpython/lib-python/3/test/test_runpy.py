@@ -577,14 +577,13 @@ from ..uncle.cousin import nephew
         self.addCleanup(self._del_pkg, pkg_dir)
         for depth in range(2, max_depth+1):
             self._add_relative_modules(pkg_dir, "", depth)
-        for moduleinfo in pkgutil.walk_packages([pkg_dir]):
-            self.assertIsInstance(moduleinfo, pkgutil.ModuleInfo)
-            self.assertIsInstance(moduleinfo.module_finder,
+        for finder, mod_name, ispkg in pkgutil.walk_packages([pkg_dir]):
+            self.assertIsInstance(finder,
                                   importlib.machinery.FileFinder)
-            if moduleinfo.ispkg:
-                expected_packages.remove(moduleinfo.name)
+            if ispkg:
+                expected_packages.remove(mod_name)
             else:
-                expected_modules.remove(moduleinfo.name)
+                expected_modules.remove(mod_name)
         self.assertEqual(len(expected_packages), 0, expected_packages)
         self.assertEqual(len(expected_modules), 0, expected_modules)
 

@@ -209,18 +209,6 @@ def classify_class_attrs(object):
         results.append((name, kind, cls, value))
     return results
 
-def sort_attributes(attrs, object):
-    'Sort the attrs list in-place by _fields and then alphabetically by name'
-    # This allows data descriptors to be ordered according
-    # to a _fields attribute if present.
-    fields = getattr(object, '_fields', [])
-    try:
-        field_order = {name : i-len(fields) for (i, name) in enumerate(fields)}
-    except TypeError:
-        field_order = {}
-    keyfunc = lambda attr: (field_order.get(attr[0], 0), attr[0])
-    attrs.sort(key=keyfunc)
-
 # ----------------------------------------------------- module manipulation
 
 def ispackage(path):
@@ -350,7 +338,7 @@ def safeimport(path, forceload=0, cache={}):
         elif exc is SyntaxError:
             # A SyntaxError occurred before we could execute the module.
             raise ErrorDuringImport(value.filename, info)
-        elif issubclass(exc, ImportError) and value.name == path:
+        elif exc is ImportError and value.name == path:
             # No such module in the path.
             return None
         else:
@@ -880,7 +868,8 @@ class HTMLDoc(Doc):
                                                            object.__module__)
             tag += ':<br>\n'
 
-            sort_attributes(attrs, object)
+            # Sort attrs by name.
+            attrs.sort(key=lambda t: t[0])
 
             # Pump out the attrs, segregated by kind.
             attrs = spill('Methods %s' % tag, attrs,
@@ -1298,8 +1287,8 @@ location listed above.
             else:
                 tag = "inherited from %s" % classname(thisclass,
                                                       object.__module__)
-
-            sort_attributes(attrs, object)
+            # Sort attrs by name.
+            attrs.sort()
 
             # Pump out the attrs, segregated by kind.
             attrs = spill("Methods %s:\n" % tag, attrs,
@@ -1429,14 +1418,13 @@ def getpager():
         return plainpager
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         return plainpager
-    use_pager = os.environ.get('MANPAGER') or os.environ.get('PAGER')
-    if use_pager:
+    if 'PAGER' in os.environ:
         if sys.platform == 'win32': # pipes completely broken in Windows
-            return lambda text: tempfilepager(plain(text), use_pager)
+            return lambda text: tempfilepager(plain(text), os.environ['PAGER'])
         elif os.environ.get('TERM') in ('dumb', 'emacs'):
-            return lambda text: pipepager(plain(text), use_pager)
+            return lambda text: pipepager(plain(text), os.environ['PAGER'])
         else:
-            return lambda text: pipepager(text, use_pager)
+            return lambda text: pipepager(text, os.environ['PAGER'])
     if os.environ.get('TERM') in ('dumb', 'emacs'):
         return plainpager
     if sys.platform == 'win32':
@@ -1913,10 +1901,10 @@ has the same effect as typing a particular string at the help> prompt.
 
     def intro(self):
         self.output.write('''
-Welcome to Python {0}'s help utility!
+Welcome to Python %s's help utility!
 
 If this is your first time using Python, you should definitely check out
-the tutorial on the Internet at http://docs.python.org/{0}/tutorial/.
+the tutorial on the Internet at http://docs.python.org/%s/tutorial/.
 
 Enter the name of any module, keyword, or topic to get help on writing
 Python programs and using Python modules.  To quit this help utility and
@@ -1926,7 +1914,7 @@ To get a list of available modules, keywords, symbols, or topics, type
 "modules", "keywords", "symbols", or "topics".  Each module also comes
 with a one-line summary of what it does; to list the modules whose name
 or summary contain a given string such as "spam", type "modules spam".
-'''.format('%d.%d' % sys.version_info[:2]))
+''' % tuple([sys.version[:3]]*2))
 
     def list(self, items, columns=4, width=80):
         items = list(sorted(items))

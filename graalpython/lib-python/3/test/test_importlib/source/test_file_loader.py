@@ -217,7 +217,7 @@ class SimpleTest(abc.LoaderTests):
             # PEP 302
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', DeprecationWarning)
-                mod = loader.load_module('_temp')
+                mod = loader.load_module('_temp') # XXX
             # Sanity checks.
             self.assertEqual(mod.__cached__, compiled)
             self.assertEqual(mod.x, 5)
@@ -245,7 +245,12 @@ class SimpleTest(abc.LoaderTests):
 class BadBytecodeTest:
 
     def import_(self, file, module_name):
-        raise NotImplementedError
+        loader = self.loader(module_name, file)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', DeprecationWarning)
+            # XXX Change to use exec_module().
+            module = loader.load_module(module_name)
+        self.assertIn(module_name, sys.modules)
 
     def manipulate_bytecode(self, name, mapping, manipulator, *,
                             del_source=False):

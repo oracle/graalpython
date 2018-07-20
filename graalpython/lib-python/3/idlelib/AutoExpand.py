@@ -12,8 +12,8 @@ its state.
 
 This is an extension file and there is only one instance of AutoExpand.
 '''
-import re
 import string
+import re
 
 ###$ event <<expand-word>>
 ###$ win <Alt-slash>
@@ -31,7 +31,6 @@ class AutoExpand:
 
     def __init__(self, editwin):
         self.text = editwin.text
-        self.bell = self.text.bell
         self.state = None
 
     def expand_word_event(self, event):
@@ -47,14 +46,14 @@ class AutoExpand:
                 words = self.getwords()
                 index = 0
         if not words:
-            self.bell()
+            self.text.bell()
             return "break"
         word = self.getprevword()
         self.text.delete("insert - %d chars" % len(word), "insert")
         newword = words[index]
         index = (index + 1) % len(words)
         if index == 0:
-            self.bell()            # Warn we cycled around
+            self.text.bell()            # Warn we cycled around
         self.text.insert("insert", newword)
         curinsert = self.text.index("insert")
         curline = self.text.get("insert linestart", "insert lineend")

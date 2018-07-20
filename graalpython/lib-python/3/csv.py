@@ -11,15 +11,13 @@ from _csv import Error, __version__, writer, reader, register_dialect, \
                  __doc__
 from _csv import Dialect as _Dialect
 
-from collections import OrderedDict
 from io import StringIO
 
-__all__ = ["QUOTE_MINIMAL", "QUOTE_ALL", "QUOTE_NONNUMERIC", "QUOTE_NONE",
-           "Error", "Dialect", "__doc__", "excel", "excel_tab",
-           "field_size_limit", "reader", "writer",
-           "register_dialect", "get_dialect", "list_dialects", "Sniffer",
-           "unregister_dialect", "__version__", "DictReader", "DictWriter",
-           "unix_dialect"]
+__all__ = [ "QUOTE_MINIMAL", "QUOTE_ALL", "QUOTE_NONNUMERIC", "QUOTE_NONE",
+            "Error", "Dialect", "__doc__", "excel", "excel_tab",
+            "field_size_limit", "reader", "writer",
+            "register_dialect", "get_dialect", "list_dialects", "Sniffer",
+            "unregister_dialect", "__version__", "DictReader", "DictWriter" ]
 
 class Dialect:
     """Describe a CSV dialect.
@@ -117,7 +115,7 @@ class DictReader:
         # values
         while row == []:
             row = next(self.reader)
-        d = OrderedDict(zip(self.fieldnames, row))
+        d = dict(zip(self.fieldnames, row))
         lf = len(self.fieldnames)
         lr = len(row)
         if lf < lr:
@@ -145,7 +143,7 @@ class DictWriter:
 
     def _dict_to_list(self, rowdict):
         if self.extrasaction == "raise":
-            wrong_fields = rowdict.keys() - self.fieldnames
+            wrong_fields = [k for k in rowdict if k not in self.fieldnames]
             if wrong_fields:
                 raise ValueError("dict contains fields not in fieldnames: "
                                  + ", ".join([repr(x) for x in wrong_fields]))
@@ -215,10 +213,10 @@ class Sniffer:
         """
 
         matches = []
-        for restr in (r'(?P<delim>[^\w\n"\'])(?P<space> ?)(?P<quote>["\']).*?(?P=quote)(?P=delim)', # ,".*?",
-                      r'(?:^|\n)(?P<quote>["\']).*?(?P=quote)(?P<delim>[^\w\n"\'])(?P<space> ?)',   #  ".*?",
-                      r'(?P<delim>>[^\w\n"\'])(?P<space> ?)(?P<quote>["\']).*?(?P=quote)(?:$|\n)',  # ,".*?"
-                      r'(?:^|\n)(?P<quote>["\']).*?(?P=quote)(?:$|\n)'):                            #  ".*?" (no delim, no space)
+        for restr in ('(?P<delim>[^\w\n"\'])(?P<space> ?)(?P<quote>["\']).*?(?P=quote)(?P=delim)', # ,".*?",
+                      '(?:^|\n)(?P<quote>["\']).*?(?P=quote)(?P<delim>[^\w\n"\'])(?P<space> ?)',   #  ".*?",
+                      '(?P<delim>>[^\w\n"\'])(?P<space> ?)(?P<quote>["\']).*?(?P=quote)(?:$|\n)',  # ,".*?"
+                      '(?:^|\n)(?P<quote>["\']).*?(?P=quote)(?:$|\n)'):                            #  ".*?" (no delim, no space)
             regexp = re.compile(restr, re.DOTALL | re.MULTILINE)
             matches = regexp.findall(data)
             if matches:

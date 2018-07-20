@@ -23,8 +23,7 @@ import zipfile
 import warnings
 
 from test import support
-from test.support import (TESTFN, check_warnings, captured_stdout,
-                          android_not_root)
+from test.support import TESTFN, check_warnings, captured_stdout
 
 TESTFN2 = TESTFN + "2"
 
@@ -116,7 +115,9 @@ class TestShutil(unittest.TestCase):
         write_file(os.path.join(victim, 'somefile'), 'foo')
         victim = os.fsencode(victim)
         self.assertIsInstance(victim, bytes)
-        shutil.rmtree(victim)
+        win = (os.name == 'nt')
+        with self.assertWarns(DeprecationWarning) if win else ExitStack():
+            shutil.rmtree(victim)
 
     @support.skip_unless_symlink
     def test_rmtree_fails_on_symlink(self):
@@ -771,7 +772,6 @@ class TestShutil(unittest.TestCase):
 
     @unittest.skipIf(os.name == 'nt', 'temporarily disabled on Windows')
     @unittest.skipUnless(hasattr(os, 'link'), 'requires os.link')
-    @unittest.skipIf(android_not_root, "hard links not allowed, non root user")
     def test_dont_copy_file_onto_link_to_itself(self):
         # bug 851123.
         os.mkdir(TESTFN)
@@ -824,7 +824,6 @@ class TestShutil(unittest.TestCase):
 
     # Issue #3002: copyfile and copytree block indefinitely on named pipes
     @unittest.skipUnless(hasattr(os, "mkfifo"), 'requires os.mkfifo()')
-    @unittest.skipIf(android_not_root, "mkfifo not allowed, non root user")
     def test_copyfile_named_pipe(self):
         os.mkfifo(TESTFN)
         try:
@@ -835,7 +834,6 @@ class TestShutil(unittest.TestCase):
         finally:
             os.remove(TESTFN)
 
-    @unittest.skipIf(android_not_root, "mkfifo not allowed, non root user")
     @unittest.skipUnless(hasattr(os, "mkfifo"), 'requires os.mkfifo()')
     @support.skip_unless_symlink
     def test_copytree_named_pipe(self):
@@ -1314,10 +1312,10 @@ class TestShutil(unittest.TestCase):
             shutil.chown(filename)
 
         with self.assertRaises(LookupError):
-            shutil.chown(filename, user='non-existing username')
+            shutil.chown(filename, user='non-exising username')
 
         with self.assertRaises(LookupError):
-            shutil.chown(filename, group='non-existing groupname')
+            shutil.chown(filename, group='non-exising groupname')
 
         with self.assertRaises(TypeError):
             shutil.chown(filename, b'spam')
@@ -1866,8 +1864,7 @@ class TermsizeTests(unittest.TestCase):
         """
         try:
             size = subprocess.check_output(['stty', 'size']).decode().split()
-        except (FileNotFoundError, PermissionError,
-                subprocess.CalledProcessError):
+        except (FileNotFoundError, subprocess.CalledProcessError):
             self.skipTest("stty invocation failed")
         expected = (int(size[1]), int(size[0])) # reversed order
 

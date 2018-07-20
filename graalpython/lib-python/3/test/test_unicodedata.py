@@ -20,7 +20,7 @@ errors = 'surrogatepass'
 class UnicodeMethodsTest(unittest.TestCase):
 
     # update this, if the database changes
-    expectedchecksum = 'c1fa98674a683aa8a8d8dee0c84494f8d36346e6'
+    expectedchecksum = '5971760872b2f98bb9c701e6c0db3273d756b3ec'
 
     def test_method_checksum(self):
         h = hashlib.sha1()
@@ -80,7 +80,7 @@ class UnicodeFunctionsTest(UnicodeDatabaseTest):
 
     # Update this if the database changes. Make sure to do a full rebuild
     # (e.g. 'make distclean && make') to get the correct checksum.
-    expectedchecksum = 'f891b1e6430c712531b9bc935a38e22d78ba1bf3'
+    expectedchecksum = '5e74827cd07f9e546a30f34b7bcf6cc2eac38c8c'
     def test_function_checksum(self):
         data = []
         h = hashlib.sha1()
@@ -221,10 +221,6 @@ class UnicodeFunctionsTest(UnicodeDatabaseTest):
         self.assertEqual(eaw('\uFF1F'), 'F')
         self.assertEqual(eaw('\u2010'), 'A')
         self.assertEqual(eaw('\U00020000'), 'W')
-
-    def test_east_asian_width_9_0_changes(self):
-        self.assertEqual(self.db.ucd_3_2_0.east_asian_width('\u231a'), 'N')
-        self.assertEqual(self.db.east_asian_width('\u231a'), 'W')
 
 class UnicodeMiscTest(UnicodeDatabaseTest):
 

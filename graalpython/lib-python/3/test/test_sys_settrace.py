@@ -350,8 +350,8 @@ class TraceTestCase(unittest.TestCase):
 
     def test_14_onliner_if(self):
         def onliners():
-            if True: x=False
-            else: x=True
+            if True: False
+            else: True
             return 0
         self.run_and_compare(
             onliners,

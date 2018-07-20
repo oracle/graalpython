@@ -5,6 +5,7 @@ import errno
 import os
 import select
 import socket
+import sys
 import time
 import unittest
 

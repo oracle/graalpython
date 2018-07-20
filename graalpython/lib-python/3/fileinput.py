@@ -75,10 +75,12 @@ XXX Possible additions:
 import sys, os
 
 __all__ = ["input", "close", "nextfile", "filename", "lineno", "filelineno",
-           "fileno", "isfirstline", "isstdin", "FileInput", "hook_compressed",
-           "hook_encoded"]
+           "isfirstline", "isstdin", "FileInput"]
 
 _state = None
+
+# No longer used
+DEFAULT_BUFSIZE = 8*1024
 
 def input(files=None, inplace=False, backup="", bufsize=0,
           mode="r", openhook=None):
@@ -199,10 +201,6 @@ class FileInput:
         self._files = files
         self._inplace = inplace
         self._backup = backup
-        if bufsize:
-            import warnings
-            warnings.warn('bufsize is deprecated and ignored',
-                          DeprecationWarning, stacklevel=2)
         self._savestdout = None
         self._output = None
         self._filename = None
@@ -400,9 +398,9 @@ def hook_compressed(filename, mode):
         return open(filename, mode)
 
 
-def hook_encoded(encoding, errors=None):
+def hook_encoded(encoding):
     def openhook(filename, mode):
-        return open(filename, mode, encoding=encoding, errors=errors)
+        return open(filename, mode, encoding=encoding)
     return openhook
 
 

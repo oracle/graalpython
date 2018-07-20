@@ -398,8 +398,7 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
         packdir2 = packdir + TESTPACK2 + os.sep
         files = {packdir + "__init__" + pyc_ext: (NOW, test_pyc),
                  packdir2 + "__init__" + pyc_ext: (NOW, test_pyc),
-                 packdir2 + TESTMOD + pyc_ext: (NOW, test_pyc),
-                 "spam" + pyc_ext: (NOW, test_pyc)}
+                 packdir2 + TESTMOD + pyc_ext: (NOW, test_pyc)}
 
         z = ZipFile(TEMP_ZIP, "w")
         try:
@@ -413,14 +412,6 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
             zi = zipimport.zipimporter(TEMP_ZIP)
             self.assertEqual(zi.archive, TEMP_ZIP)
             self.assertEqual(zi.is_package(TESTPACK), True)
-
-            find_mod = zi.find_module('spam')
-            self.assertIsNotNone(find_mod)
-            self.assertIsInstance(find_mod, zipimport.zipimporter)
-            self.assertFalse(find_mod.is_package('spam'))
-            load_mod = find_mod.load_module('spam')
-            self.assertEqual(find_mod.get_filename('spam'), load_mod.__file__)
-
             mod = zi.load_module(TESTPACK)
             self.assertEqual(zi.get_filename(TESTPACK), mod.__file__)
 
@@ -479,16 +470,6 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
                 zi.is_package(TESTPACK2 + os.sep + '__init__'), False)
             self.assertEqual(
                 zi.is_package(TESTPACK2 + os.sep + TESTMOD), False)
-
-            pkg_path = TEMP_ZIP + os.sep + packdir + TESTPACK2
-            zi2 = zipimport.zipimporter(pkg_path)
-            find_mod_dotted = zi2.find_module(TESTMOD)
-            self.assertIsNotNone(find_mod_dotted)
-            self.assertIsInstance(find_mod_dotted, zipimport.zipimporter)
-            self.assertFalse(zi2.is_package(TESTMOD))
-            load_mod = find_mod_dotted.load_module(TESTMOD)
-            self.assertEqual(
-                find_mod_dotted.get_filename(TESTMOD), load_mod.__file__)
 
             mod_path = TESTPACK2 + os.sep + TESTMOD
             mod_name = module_path_to_dotted_name(mod_path)
@@ -642,10 +623,8 @@ class UncompressedZipImportTestCase(ImportHooksBaseTestCase):
 
         zipimport.zipimporter(filename)
         zipimport.zipimporter(os.fsencode(filename))
-        with self.assertWarns(DeprecationWarning):
-            zipimport.zipimporter(bytearray(os.fsencode(filename)))
-        with self.assertWarns(DeprecationWarning):
-            zipimport.zipimporter(memoryview(os.fsencode(filename)))
+        zipimport.zipimporter(bytearray(os.fsencode(filename)))
+        zipimport.zipimporter(memoryview(os.fsencode(filename)))
 
 
 @support.requires_zlib

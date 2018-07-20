@@ -1,6 +1,6 @@
 import unittest
 
-import sys, io, subprocess
+import sys, os, io, subprocess
 import quopri
 
 

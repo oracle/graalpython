@@ -1,8 +1,7 @@
 """Test relative imports (PEP 328)."""
 from .. import util
+import sys
 import unittest
-import warnings
-
 
 class RelativeImports:
 
@@ -66,11 +65,9 @@ class RelativeImports:
                 uncache_names.append(name[:-len('.__init__')])
         with util.mock_spec(*create) as importer:
             with util.import_state(meta_path=[importer]):
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    for global_ in globals_:
-                        with util.uncache(*uncache_names):
-                            callback(global_)
+                for global_ in globals_:
+                    with util.uncache(*uncache_names):
+                        callback(global_)
 
 
     def test_module_from_module(self):
@@ -207,18 +204,11 @@ class RelativeImports:
 
     def test_relative_import_no_globals(self):
         # No globals for a relative import is an error.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            with self.assertRaises(KeyError):
-                self.__import__('sys', level=1)
-
-    def test_relative_import_no_package(self):
-        with self.assertRaises(ImportError):
-            self.__import__('a', {'__package__': '', '__spec__': None},
-                            level=1)
+        with self.assertRaises(KeyError):
+            self.__import__('sys', level=1)
 
     def test_relative_import_no_package_exists_absolute(self):
-        with self.assertRaises(ImportError):
+        with self.assertRaises(SystemError):
             self.__import__('sys', {'__package__': '', '__spec__': None},
                             level=1)
 

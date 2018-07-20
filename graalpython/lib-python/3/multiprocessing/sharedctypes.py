@@ -13,8 +13,8 @@ import weakref
 from . import heap
 from . import get_context
 
-from .context import reduction, assert_spawning
-_ForkingPickler = reduction.ForkingPickler
+from .context import assert_spawning
+from .reduction import ForkingPickler
 
 __all__ = ['RawValue', 'RawArray', 'Value', 'Array', 'copy', 'synchronized']
 
@@ -134,7 +134,7 @@ def reduce_ctype(obj):
 def rebuild_ctype(type_, wrapper, length):
     if length is not None:
         type_ = type_ * length
-    _ForkingPickler.register(type_, reduce_ctype)
+    ForkingPickler.register(type_, reduce_ctype)
     buf = wrapper.create_memoryview()
     obj = type_.from_buffer(buf)
     obj._wrapper = wrapper

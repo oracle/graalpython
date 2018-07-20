@@ -84,7 +84,7 @@ test_conv_no_sign = [
         ('', ValueError),
         (' ', ValueError),
         ('  \t\t  ', ValueError),
-        (str(br'\u0663\u0661\u0664 ','raw-unicode-escape'), 314),
+        (str(b'\u0663\u0661\u0664 ','raw-unicode-escape'), 314),
         (chr(0x200), ValueError),
 ]
 
@@ -106,7 +106,7 @@ test_conv_sign = [
         ('', ValueError),
         (' ', ValueError),
         ('  \t\t  ', ValueError),
-        (str(br'\u0663\u0661\u0664 ','raw-unicode-escape'), 314),
+        (str(b'\u0663\u0661\u0664 ','raw-unicode-escape'), 314),
         (chr(0x200), ValueError),
 ]
 
@@ -1632,16 +1632,6 @@ class TestSorted(unittest.TestCase):
         self.assertEqual(data, sorted(copy, reverse=1))
         self.assertNotEqual(data, copy)
 
-    def test_bad_arguments(self):
-        # Issue #29327: The first argument is positional-only.
-        sorted([])
-        with self.assertRaises(TypeError):
-            sorted(iterable=[])
-        # Other arguments are keyword-only
-        sorted([], key=None)
-        with self.assertRaises(TypeError):
-            sorted([], None)
-
     def test_inputtypes(self):
         s = 'abracadabra'
         types = [list, tuple, str]
@@ -1725,11 +1715,21 @@ class TestType(unittest.TestCase):
         self.assertEqual(x.spam(), 'spam42')
         self.assertEqual(x.to_bytes(2, 'little'), b'\x2a\x00')
 
-    def test_type_nokwargs(self):
-        with self.assertRaises(TypeError):
-            type('a', (), {}, x=5)
-        with self.assertRaises(TypeError):
-            type('a', (), dict={})
+    def test_type_new_keywords(self):
+        class B:
+            def ham(self):
+                return 'ham%d' % self
+        C = type.__new__(type,
+                         name='C',
+                         bases=(B, int),
+                         dict={'spam': lambda self: 'spam%s' % self})
+        self.assertEqual(C.__name__, 'C')
+        self.assertEqual(C.__qualname__, 'C')
+        self.assertEqual(C.__module__, __name__)
+        self.assertEqual(C.__bases__, (B, int))
+        self.assertIs(C.__base__, int)
+        self.assertIn('spam', C.__dict__)
+        self.assertNotIn('ham', C.__dict__)
 
     def test_type_name(self):
         for name in 'A', '\xc4', '\U0001f40d', 'B.A', '42', '':
@@ -1842,9 +1842,8 @@ class TestType(unittest.TestCase):
 
 
 def load_tests(loader, tests, pattern):
-    # TODO: Truffle revertme once doctest is supported (once io can read text files) (GR-9151)
-    # from doctest import DocTestSuite
-    # tests.addTest(DocTestSuite(builtins))
+    from doctest import DocTestSuite
+    tests.addTest(DocTestSuite(builtins))
     return tests
 
 if __name__ == "__main__":

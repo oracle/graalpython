@@ -1,8 +1,3 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
- *
- * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
- */
 
 /* Interfaces to parse and execute pieces of python code */
 
@@ -21,6 +16,12 @@ extern "C" {
 #define PyCF_DONT_IMPLY_DEDENT 0x0200
 #define PyCF_ONLY_AST 0x0400
 #define PyCF_IGNORE_COOKIE 0x0800
+
+#ifndef Py_LIMITED_API
+typedef struct {
+    int cf_flags;  /* bitmask of CO_xxx flags relevant to future */
+} PyCompilerFlags;
+#endif
 
 #ifndef Py_LIMITED_API
 PyAPI_FUNC(int) PyRun_SimpleStringFlags(const char *, PyCompilerFlags *);
@@ -189,12 +190,6 @@ PyAPI_DATA(PyThreadState*) _PyOS_ReadlineTState;
 /* Check that we aren't overflowing our stack */
 PyAPI_FUNC(int) PyOS_CheckStack(void);
 #endif
-
-// taken from compile.h
-#define Py_single_input 256
-#define Py_file_input 257
-#define Py_eval_input 258
-
 
 #ifdef __cplusplus
 }

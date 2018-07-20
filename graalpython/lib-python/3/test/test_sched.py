@@ -2,6 +2,7 @@ import queue
 import sched
 import time
 import unittest
+from test import support
 try:
     import threading
 except ImportError:
@@ -172,23 +173,17 @@ class TestCase(unittest.TestCase):
         self.assertEqual(scheduler.queue, [e1, e2, e3, e4, e5])
 
     def test_args_kwargs(self):
-        seq = []
-        def fun(*a, **b):
-            seq.append((a, b))
+        flag = []
 
-        now = time.time()
+        def fun(*a, **b):
+            flag.append(None)
+            self.assertEqual(a, (1,2,3))
+            self.assertEqual(b, {"foo":1})
+
         scheduler = sched.scheduler(time.time, time.sleep)
-        scheduler.enterabs(now, 1, fun)
-        scheduler.enterabs(now, 1, fun, argument=(1, 2))
-        scheduler.enterabs(now, 1, fun, argument=('a', 'b'))
-        scheduler.enterabs(now, 1, fun, argument=(1, 2), kwargs={"foo": 3})
+        z = scheduler.enterabs(0.01, 1, fun, argument=(1,2,3), kwargs={"foo":1})
         scheduler.run()
-        self.assertCountEqual(seq, [
-            ((), {}),
-            ((1, 2), {}),
-            (('a', 'b'), {}),
-            ((1, 2), {'foo': 3})
-        ])
+        self.assertEqual(flag, [None])
 
     def test_run_non_blocking(self):
         l = []

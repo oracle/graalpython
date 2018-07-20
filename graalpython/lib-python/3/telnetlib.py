@@ -637,12 +637,6 @@ class Telnet:
             raise EOFError
         return (-1, None, text)
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.close()
-
 
 def test():
     """Test program for telnetlib.
@@ -666,10 +660,11 @@ def test():
             port = int(portstr)
         except ValueError:
             port = socket.getservbyname(portstr, 'tcp')
-    with Telnet() as tn:
-        tn.set_debuglevel(debuglevel)
-        tn.open(host, port, timeout=0.5)
-        tn.interact()
+    tn = Telnet()
+    tn.set_debuglevel(debuglevel)
+    tn.open(host, port, timeout=0.5)
+    tn.interact()
+    tn.close()
 
 if __name__ == '__main__':
     test()

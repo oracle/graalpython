@@ -119,10 +119,9 @@ This module also defines an exception 'error'.
 
 """
 
-import enum
+import sys
 import sre_compile
 import sre_parse
-import functools
 try:
     import _locale
 except ImportError:
@@ -139,26 +138,18 @@ __all__ = [
 
 __version__ = "2.2.1"
 
-class RegexFlag(enum.IntFlag):
-    ASCII = sre_compile.SRE_FLAG_ASCII # assume ascii "locale"
-    IGNORECASE = sre_compile.SRE_FLAG_IGNORECASE # ignore case
-    LOCALE = sre_compile.SRE_FLAG_LOCALE # assume current 8-bit locale
-    UNICODE = sre_compile.SRE_FLAG_UNICODE # assume unicode "locale"
-    MULTILINE = sre_compile.SRE_FLAG_MULTILINE # make anchors look for newline
-    DOTALL = sre_compile.SRE_FLAG_DOTALL # make dot match newline
-    VERBOSE = sre_compile.SRE_FLAG_VERBOSE # ignore whitespace and comments
-    A = ASCII
-    I = IGNORECASE
-    L = LOCALE
-    U = UNICODE
-    M = MULTILINE
-    S = DOTALL
-    X = VERBOSE
-    # sre extensions (experimental, don't rely on these)
-    TEMPLATE = sre_compile.SRE_FLAG_TEMPLATE # disable backtracking
-    T = TEMPLATE
-    DEBUG = sre_compile.SRE_FLAG_DEBUG # dump pattern after compilation
-globals().update(RegexFlag.__members__)
+# flags
+A = ASCII = sre_compile.SRE_FLAG_ASCII # assume ascii "locale"
+I = IGNORECASE = sre_compile.SRE_FLAG_IGNORECASE # ignore case
+L = LOCALE = sre_compile.SRE_FLAG_LOCALE # assume current 8-bit locale
+U = UNICODE = sre_compile.SRE_FLAG_UNICODE # assume unicode "locale"
+M = MULTILINE = sre_compile.SRE_FLAG_MULTILINE # make anchors look for newline
+S = DOTALL = sre_compile.SRE_FLAG_DOTALL # make dot match newline
+X = VERBOSE = sre_compile.SRE_FLAG_VERBOSE # ignore whitespace and comments
+
+# sre extensions (experimental, don't rely on these)
+T = TEMPLATE = sre_compile.SRE_FLAG_TEMPLATE # disable backtracking
+DEBUG = sre_compile.SRE_FLAG_DEBUG # dump pattern after compilation
 
 # sre exception
 error = sre_compile.error
@@ -235,7 +226,7 @@ def compile(pattern, flags=0):
 def purge():
     "Clear the regular expression caches"
     _cache.clear()
-    _compile_repl.cache_clear()
+    _cache_repl.clear()
 
 def template(pattern, flags=0):
     "Compile a template pattern, returning a pattern object"
@@ -279,6 +270,7 @@ def escape(pattern):
 # internals
 
 _cache = {}
+_cache_repl = {}
 
 _pattern_type = type(sre_compile.compile("", 0))
 
@@ -311,10 +303,17 @@ def _compile(pattern, flags):
         _cache[type(pattern), pattern, flags] = p, loc
     return p
 
-@functools.lru_cache(_MAXCACHE)
 def _compile_repl(repl, pattern):
     # internal: compile replacement pattern
-    return sre_parse.parse_template(repl, pattern)
+    try:
+        return _cache_repl[repl, pattern]
+    except KeyError:
+        pass
+    p = sre_parse.parse_template(repl, pattern)
+    if len(_cache_repl) >= _MAXCACHE:
+        _cache_repl.clear()
+    _cache_repl[repl, pattern] = p
+    return p
 
 def _expand(pattern, match, template):
     # internal: match.expand implementation hook
@@ -354,7 +353,7 @@ class Scanner:
         for phrase, action in lexicon:
             gid = s.opengroup()
             p.append(sre_parse.SubPattern(s, [
-                (SUBPATTERN, (gid, 0, 0, sre_parse.parse(phrase, flags))),
+                (SUBPATTERN, (gid, sre_parse.parse(phrase, flags))),
                 ]))
             s.closegroup(gid, p[-1])
         p = sre_parse.SubPattern(s, [(BRANCH, (None, p))])

@@ -7,6 +7,7 @@ GetPassWarning - This UserWarning is issued when getpass() cannot prevent
                  echoing of the password contents while reading.
 
 On Windows, the msvcrt module will be used.
+On the Mac EasyDialogs.AskPassword is used, if available.
 
 """
 

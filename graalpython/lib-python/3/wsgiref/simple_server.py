@@ -11,6 +11,7 @@ module.  See also the BaseHTTPServer module docs for other API information.
 """
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from io import BufferedWriter
 import sys
 import urllib.parse
 from wsgiref.handlers import SimpleHandler
@@ -126,11 +127,17 @@ class WSGIRequestHandler(BaseHTTPRequestHandler):
         if not self.parse_request(): # An error code has been sent, just exit
             return
 
-        handler = ServerHandler(
-            self.rfile, self.wfile, self.get_stderr(), self.get_environ()
-        )
-        handler.request_handler = self      # backpointer for logging
-        handler.run(self.server.get_app())
+        # Avoid passing the raw file object wfile, which can do partial
+        # writes (Issue 24291)
+        stdout = BufferedWriter(self.wfile)
+        try:
+            handler = ServerHandler(
+                self.rfile, stdout, self.get_stderr(), self.get_environ()
+            )
+            handler.request_handler = self      # backpointer for logging
+            handler.run(self.server.get_app())
+        finally:
+            stdout.detach()
 
 
 
@@ -156,9 +163,10 @@ def make_server(
 
 
 if __name__ == '__main__':
-    with make_server('', 8000, demo_app) as httpd:
-        sa = httpd.socket.getsockname()
-        print("Serving HTTP on", sa[0], "port", sa[1], "...")
-        import webbrowser
-        webbrowser.open('http://localhost:8000/xyz?abc')
-        httpd.handle_request()  # serve one request, then exit
+    httpd = make_server('', 8000, demo_app)
+    sa = httpd.socket.getsockname()
+    print("Serving HTTP on", sa[0], "port", sa[1], "...")
+    import webbrowser
+    webbrowser.open('http://localhost:8000/xyz?abc')
+    httpd.handle_request()  # serve one request, then exit
+    httpd.server_close()

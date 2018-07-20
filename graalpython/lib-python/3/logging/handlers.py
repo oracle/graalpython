@@ -22,18 +22,14 @@ Copyright (C) 2001-2016 Vinay Sajip. All Rights Reserved.
 
 To use, simply 'import logging.handlers' and log away!
 """
-# TODO: Truffle reenable me once socket is supported (GR-9140)
-# import logging, socket, os, pickle, struct, time, re
-import logging, os, pickle, struct, time, re
+
+import logging, socket, os, pickle, struct, time, re
 from stat import ST_DEV, ST_INO, ST_MTIME
-# TODO: Truffle reenable me once queue and threading is supported (GR-9144)
-# import queue
-# TODO: Truffle reenable me once threading is supported (GR-9144)
-# try:
-#     import threading
-# except ImportError: #pragma: no cover
-#     threading = None
-threading = None
+import queue
+try:
+    import threading
+except ImportError: #pragma: no cover
+    threading = None
 
 #
 # Some constants...
@@ -250,9 +246,6 @@ class TimedRotatingFileHandler(BaseRotatingHandler):
 
         self.extMatch = re.compile(self.extMatch, re.ASCII)
         self.interval = self.interval * interval # multiply by units requested
-        # The following line added because the filename passed in could be a
-        # path object (see Issue #27493), but self.baseFilename will be a string
-        filename = self.baseFilename
         if os.path.exists(filename):
             t = os.stat(filename)[ST_MTIME]
         else:
@@ -447,11 +440,11 @@ class WatchedFileHandler(logging.FileHandler):
             sres = os.fstat(self.stream.fileno())
             self.dev, self.ino = sres[ST_DEV], sres[ST_INO]
 
-    def reopenIfNeeded(self):
+    def emit(self, record):
         """
-        Reopen log file if needed.
+        Emit a record.
 
-        Checks if the underlying file has changed, and if it
+        First check if the underlying file has changed, and if it
         has, close the old stream and reopen the file to get the
         current stream.
         """
@@ -474,15 +467,6 @@ class WatchedFileHandler(logging.FileHandler):
                 # open a new file handle and get new stat info from that fd
                 self.stream = self._open()
                 self._statstream()
-
-    def emit(self, record):
-        """
-        Emit a record.
-
-        If underlying file has changed, reopen the file before emitting the
-        record to it.
-        """
-        self.reopenIfNeeded()
         logging.FileHandler.emit(self, record)
 
 
@@ -1245,25 +1229,17 @@ class MemoryHandler(BufferingHandler):
     flushing them to a target handler. Flushing occurs whenever the buffer
     is full, or when an event of a certain severity or greater is seen.
     """
-    def __init__(self, capacity, flushLevel=logging.ERROR, target=None,
-                 flushOnClose=True):
+    def __init__(self, capacity, flushLevel=logging.ERROR, target=None):
         """
         Initialize the handler with the buffer size, the level at which
         flushing should occur and an optional target.
 
         Note that without a target being set either here or via setTarget(),
         a MemoryHandler is no use to anyone!
-
-        The ``flushOnClose`` argument is ``True`` for backward compatibility
-        reasons - the old behaviour is that when the handler is closed, the
-        buffer is flushed, even if the flush level hasn't been exceeded nor the
-        capacity exceeded. To prevent this, set ``flushOnClose`` to ``False``.
         """
         BufferingHandler.__init__(self, capacity)
         self.flushLevel = flushLevel
         self.target = target
-        # See Issue #26559 for why this has been added
-        self.flushOnClose = flushOnClose
 
     def shouldFlush(self, record):
         """
@@ -1297,12 +1273,10 @@ class MemoryHandler(BufferingHandler):
 
     def close(self):
         """
-        Flush, if appropriately configured, set the target to None and lose the
-        buffer.
+        Flush, set the target to None and lose the buffer.
         """
         try:
-            if self.flushOnClose:
-                self.flush()
+            self.flush()
         finally:
             self.acquire()
             try:

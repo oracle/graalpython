@@ -16,8 +16,7 @@ from _weakref import (
      proxy,
      CallableProxyType,
      ProxyType,
-     ReferenceType
-)
+     ReferenceType)
 
 from _weakrefset import WeakSet, _IterationGuard
 
@@ -126,7 +125,7 @@ class WeakValueDictionary(collections.MutableMapping):
         self, *args = args
         if len(args) > 1:
             raise TypeError('expected at most 1 arguments, got %d' % len(args))
-        def remove(wr, selfref=ref(self), _atomic_removal=_remove_dead_weakref):
+        def remove(wr, selfref=ref(self)):
             self = selfref()
             if self is not None:
                 if self._iterating:

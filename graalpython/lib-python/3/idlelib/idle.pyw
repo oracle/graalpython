@@ -1,10 +1,10 @@
 try:
-    import idlelib.pyshell
+    import idlelib.PyShell
 except ImportError:
-    # IDLE is not installed, but maybe pyshell is on sys.path:
-    from . import pyshell
+    # IDLE is not installed, but maybe PyShell is on sys.path:
+    from . import PyShell
     import os
-    idledir = os.path.dirname(os.path.abspath(pyshell.__file__))
+    idledir = os.path.dirname(os.path.abspath(PyShell.__file__))
     if idledir != os.getcwd():
         # We're not in the IDLE directory, help the subprocess find run.py
         pypath = os.environ.get('PYTHONPATH', '')
@@ -12,6 +12,6 @@ except ImportError:
             os.environ['PYTHONPATH'] = pypath + ':' + idledir
         else:
             os.environ['PYTHONPATH'] = idledir
-    pyshell.main()
+    PyShell.main()
 else:
-    idlelib.pyshell.main()
+    idlelib.PyShell.main()

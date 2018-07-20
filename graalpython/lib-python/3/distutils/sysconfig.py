@@ -19,10 +19,6 @@ if '__pypy__' in sys.builtin_module_names:
     from distutils.sysconfig_pypy import *
     from distutils.sysconfig_pypy import _config_vars # needed by setuptools
     from distutils.sysconfig_pypy import _variable_rx # read_setup_file()
-elif sys.implementation.name == "graalpython":
-    from distutils.sysconfig_graalpython import *
-    from distutils.sysconfig_graalpython import _config_vars # needed by setuptools
-    from distutils.sysconfig_graalpython import _variable_rx # read_setup_file()
 else:
     from distutils.sysconfig_cpython import *
     from distutils.sysconfig_cpython import _config_vars # needed by setuptools

@@ -1,2 +1,3 @@
-from test.libregrtest import main
-main()
+from test import regrtest
+
+regrtest.main_in_temp_cwd()

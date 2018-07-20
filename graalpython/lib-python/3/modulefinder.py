@@ -10,7 +10,7 @@ import types
 import struct
 import warnings
 with warnings.catch_warnings():
-    warnings.simplefilter('ignore', DeprecationWarning)
+    warnings.simplefilter('ignore', PendingDeprecationWarning)
     import imp
 
 LOAD_CONST = dis.opmap['LOAD_CONST']
@@ -336,7 +336,8 @@ class ModuleFinder:
                         fullname = name + "." + sub
                         self._add_badmodule(fullname, caller)
 
-    def scan_opcodes(self, co):
+    def scan_opcodes_25(self, co,
+                     unpack = struct.unpack):
         # Scan the code, and yield 'interesting' opcode combinations
         code = co.co_code
         names = co.co_names
@@ -359,7 +360,7 @@ class ModuleFinder:
 
     def scan_code(self, co, m):
         code = co.co_code
-        scanner = self.scan_opcodes
+        scanner = self.scan_opcodes_25
         for what, args in scanner(co):
             if what == "store":
                 name, = args

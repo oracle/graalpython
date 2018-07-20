@@ -1,5 +1,6 @@
 """Unittests for heapq."""
 
+import sys
 import random
 import unittest
 

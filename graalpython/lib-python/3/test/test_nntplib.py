@@ -1544,10 +1544,8 @@ class LocalServerTests(unittest.TestCase):
                 elif cmd == b'STARTTLS\r\n':
                     reader.close()
                     client.sendall(b'382 Begin TLS negotiation now\r\n')
-                    context = ssl.SSLContext()
-                    context.load_cert_chain(certfile)
-                    client = context.wrap_socket(
-                        client, server_side=True)
+                    client = ssl.wrap_socket(
+                        client, server_side=True, certfile=certfile)
                     cleanup.enter_context(client)
                     reader = cleanup.enter_context(client.makefile('rb'))
                 elif cmd == b'QUIT\r\n':

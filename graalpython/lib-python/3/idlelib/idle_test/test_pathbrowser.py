@@ -2,13 +2,13 @@ import unittest
 import os
 import sys
 import idlelib
-from idlelib import pathbrowser
+from idlelib import PathBrowser
 
 class PathBrowserTest(unittest.TestCase):
 
     def test_DirBrowserTreeItem(self):
         # Issue16226 - make sure that getting a sublist works
-        d = pathbrowser.DirBrowserTreeItem('')
+        d = PathBrowser.DirBrowserTreeItem('')
         d.GetSubList()
         self.assertEqual('', d.GetText())
 
@@ -17,11 +17,11 @@ class PathBrowserTest(unittest.TestCase):
         self.assertEqual(d.ispackagedir(dir + '/Icons'), False)
 
     def test_PathBrowserTreeItem(self):
-        p = pathbrowser.PathBrowserTreeItem()
+        p = PathBrowser.PathBrowserTreeItem()
         self.assertEqual(p.GetText(), 'sys.path')
         sub = p.GetSubList()
         self.assertEqual(len(sub), len(sys.path))
-        self.assertEqual(type(sub[0]), pathbrowser.DirBrowserTreeItem)
+        self.assertEqual(type(sub[0]), PathBrowser.DirBrowserTreeItem)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2, exit=False)

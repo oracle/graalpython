@@ -3,6 +3,7 @@
 #   Codec encoding tests for HongKong encodings.
 #
 
+from test import support
 from test import multibytecodec_support
 import unittest
 

@@ -4,6 +4,7 @@
    Based on an original test by Roger E. Masse.
 """
 import binhex
+import os
 import unittest
 from test import support
 

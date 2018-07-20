@@ -1,4 +1,4 @@
-'''Test idlelib.parenmatch.
+'''Test idlelib.ParenMatch.
 
 This must currently be a gui test because ParenMatch methods use
 several text methods not defined on idlelib.idle_test.mock_tk.Text.
@@ -9,7 +9,7 @@ requires('gui')
 import unittest
 from unittest.mock import Mock
 from tkinter import Tk, Text
-from idlelib.parenmatch import ParenMatch
+from idlelib.ParenMatch import ParenMatch
 
 class DummyEditwin:
     def __init__(self, text):
@@ -38,17 +38,12 @@ class ParenMatchTest(unittest.TestCase):
     def tearDown(self):
         self.text.delete('1.0', 'end')
 
-    def get_parenmatch(self):
-        pm = ParenMatch(self.editwin)
-        pm.bell = lambda: None
-        return pm
-
     def test_paren_expression(self):
         """
         Test ParenMatch with 'expression' style.
         """
         text = self.text
-        pm = self.get_parenmatch()
+        pm = ParenMatch(self.editwin)
         pm.set_style('expression')
 
         text.insert('insert', 'def foobar(a, b')
@@ -71,7 +66,7 @@ class ParenMatchTest(unittest.TestCase):
         Test ParenMatch with 'default' style.
         """
         text = self.text
-        pm = self.get_parenmatch()
+        pm = ParenMatch(self.editwin)
         pm.set_style('default')
 
         text.insert('insert', 'def foobar(a, b')
@@ -91,7 +86,7 @@ class ParenMatchTest(unittest.TestCase):
         These cases force conditional expression and alternate paths.
         """
         text = self.text
-        pm = self.get_parenmatch()
+        pm = ParenMatch(self.editwin)
 
         text.insert('insert', '# this is a commen)')
         self.assertIsNone(pm.paren_closed_event('event'))
@@ -104,7 +99,7 @@ class ParenMatchTest(unittest.TestCase):
         self.assertIsNone(pm.paren_closed_event('event'))
 
     def test_handle_restore_timer(self):
-        pm = self.get_parenmatch()
+        pm = ParenMatch(self.editwin)
         pm.restore_event = Mock()
         pm.handle_restore_timer(0)
         self.assertTrue(pm.restore_event.called)

@@ -9,6 +9,8 @@ from distutils.core import Distribution
 from distutils.command.bdist_rpm import bdist_rpm
 from distutils.tests import support
 from distutils.spawn import find_executable
+from distutils import spawn
+from distutils.errors import DistutilsExecError
 
 SETUP_PY = """\
 from distutils.core import setup

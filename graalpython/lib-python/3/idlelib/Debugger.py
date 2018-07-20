@@ -1,12 +1,9 @@
-import bdb
 import os
-
+import bdb
 from tkinter import *
-from tkinter.ttk import Scrollbar
-
-from idlelib import macosx
-from idlelib.scrolledlist import ScrolledList
-from idlelib.windows import ListedToplevel
+from idlelib.WindowList import ListedToplevel
+from idlelib.ScrolledList import ScrolledList
+from idlelib import macosxSupport
 
 
 class Idb(bdb.Bdb):
@@ -37,10 +34,8 @@ class Idb(bdb.Bdb):
             return True
         else:
             prev_frame = frame.f_back
-            prev_name = prev_frame.f_code.co_filename
-            if 'idlelib' in prev_name and 'debugger' in prev_name:
-                # catch both idlelib/debugger.py and idlelib/debugger_r.py
-                # on both posix and windows
+            if prev_frame.f_code.co_filename.count('Debugger.py'):
+                # (that test will catch both Debugger.py and RemoteDebugger.py)
                 return False
             return self.in_rpc_code(prev_frame)
 
@@ -375,7 +370,7 @@ class Debugger:
 class StackViewer(ScrolledList):
 
     def __init__(self, master, flist, gui):
-        if macosx.isAquaTk():
+        if macosxSupport.isAquaTk():
             # At least on with the stock AquaTk version on OSX 10.4 you'll
             # get a shaking GUI that eventually kills IDLE if the width
             # argument is specified.
@@ -507,7 +502,7 @@ class NamespaceViewer:
             #
             # There is also an obscure bug in sorted(dict) where the
             # interpreter gets into a loop requesting non-existing dict[0],
-            # dict[1], dict[2], etc from the debugger_r.DictProxy.
+            # dict[1], dict[2], etc from the RemoteDebugger.DictProxy.
             ###
             keys_list = dict.keys()
             names = sorted(keys_list)

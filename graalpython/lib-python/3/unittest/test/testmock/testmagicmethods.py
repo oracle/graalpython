@@ -1,4 +1,5 @@
 import unittest
+import inspect
 import sys
 from unittest.mock import Mock, MagicMock, _magics
 

@@ -1,8 +1,3 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
- *
- * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
- */
 #ifndef Py_OBJECT_H
 #define Py_OBJECT_H
 #ifdef __cplusplus
@@ -659,8 +654,6 @@ given type object has a specified feature.
 #define Py_TPFLAGS_DICT_SUBCLASS        (1UL << 29)
 #define Py_TPFLAGS_BASE_EXC_SUBCLASS    (1UL << 30)
 #define Py_TPFLAGS_TYPE_SUBCLASS        (1UL << 31)
-
-
 
 #define Py_TPFLAGS_DEFAULT  ( \
                  Py_TPFLAGS_HAVE_STACKLESS_EXTENSION | \

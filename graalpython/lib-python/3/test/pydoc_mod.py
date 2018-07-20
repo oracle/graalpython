@@ -12,7 +12,7 @@ class A:
         pass
 
 class B(object):
-    NO_MEANING: str = "eggs"
+    NO_MEANING = "eggs"
     pass
 
 class C(object):

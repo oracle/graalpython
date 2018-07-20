@@ -182,7 +182,6 @@ You can get the information from the list type:
      '__iadd__',
      '__imul__',
      '__init__',
-     '__init_subclass__',
      '__iter__',
      '__le__',
      '__len__',

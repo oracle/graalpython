@@ -81,13 +81,12 @@ def _worker(executor_reference, work_queue):
         _base.LOGGER.critical('Exception in worker', exc_info=True)
 
 class ThreadPoolExecutor(_base.Executor):
-    def __init__(self, max_workers=None, thread_name_prefix=''):
+    def __init__(self, max_workers=None):
         """Initializes a new ThreadPoolExecutor instance.
 
         Args:
             max_workers: The maximum number of threads that can be used to
                 execute the given calls.
-            thread_name_prefix: An optional name prefix to give our threads.
         """
         if max_workers is None:
             # Use this number because ThreadPoolExecutor is often
@@ -101,7 +100,6 @@ class ThreadPoolExecutor(_base.Executor):
         self._threads = set()
         self._shutdown = False
         self._shutdown_lock = threading.Lock()
-        self._thread_name_prefix = thread_name_prefix
 
     def submit(self, fn, *args, **kwargs):
         with self._shutdown_lock:
@@ -123,11 +121,8 @@ class ThreadPoolExecutor(_base.Executor):
             q.put(None)
         # TODO(bquinlan): Should avoid creating new threads if there are more
         # idle threads than items in the work queue.
-        num_threads = len(self._threads)
-        if num_threads < self._max_workers:
-            thread_name = '%s_%d' % (self._thread_name_prefix or self,
-                                     num_threads)
-            t = threading.Thread(name=thread_name, target=_worker,
+        if len(self._threads) < self._max_workers:
+            t = threading.Thread(target=_worker,
                                  args=(weakref.ref(self, weakref_cb),
                                        self._work_queue))
             t.daemon = True

@@ -89,7 +89,6 @@ def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0):
     log.info(' '.join(cmd))
     if dry_run:
         return
-    os.system(' '.join(cmd)); return # TODO: Truffle remove-me
     executable = cmd[0]
     exec_fn = search_path and os.execvp or os.execv
     env = None

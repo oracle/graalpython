@@ -1,8 +1,3 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
- *
- * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
- */
 /* The PyObject_ memory family:  high-level object memory interfaces.
    See pymem.h for the low-level PyMem_ family.
 */
@@ -61,7 +56,7 @@ must use the platform malloc heap(s), or shared memory, or C++ local storage or
 operator new), you must first allocate the object with your custom allocator,
 then pass its pointer to PyObject_{Init, InitVar} for filling in its Python-
 specific fields:  reference count, type pointer, possibly others.  You should
-be aware that Python no control over these objects because they don't
+be aware that Python has no control over these objects because they don't
 cooperate with the Python memory manager.  Such objects may not be eligible
 for automatic garbage collection and you have to make sure that they are
 released accordingly whenever their destructor gets called (cf. the specific
@@ -297,36 +292,33 @@ extern PyGC_Head *_PyGC_generation0;
 
 /* Tell the GC to track this object.  NB: While the object is tracked the
  * collector it must be safe to call the ob_traverse method. */
-//#define _PyObject_GC_TRACK(o) do { \
-//    PyGC_Head *g = _Py_AS_GC(o); \
-//    if (_PyGCHead_REFS(g) != _PyGC_REFS_UNTRACKED) \
-//        Py_FatalError("GC object already tracked"); \
-//    _PyGCHead_SET_REFS(g, _PyGC_REFS_REACHABLE); \
-//    g->gc.gc_next = _PyGC_generation0; \
-//    g->gc.gc_prev = _PyGC_generation0->gc.gc_prev; \
-//    g->gc.gc_prev->gc.gc_next = g; \
-//    _PyGC_generation0->gc.gc_prev = g; \
-//    } while (0);
-#define _PyObject_GC_TRACK(o)
+#define _PyObject_GC_TRACK(o) do { \
+    PyGC_Head *g = _Py_AS_GC(o); \
+    if (_PyGCHead_REFS(g) != _PyGC_REFS_UNTRACKED) \
+        Py_FatalError("GC object already tracked"); \
+    _PyGCHead_SET_REFS(g, _PyGC_REFS_REACHABLE); \
+    g->gc.gc_next = _PyGC_generation0; \
+    g->gc.gc_prev = _PyGC_generation0->gc.gc_prev; \
+    g->gc.gc_prev->gc.gc_next = g; \
+    _PyGC_generation0->gc.gc_prev = g; \
+    } while (0);
 
 /* Tell the GC to stop tracking this object.
  * gc_next doesn't need to be set to NULL, but doing so is a good
  * way to provoke memory errors if calling code is confused.
  */
-#define _PyObject_GC_UNTRACK(o)
-//#define _PyObject_GC_UNTRACK(o) do { \
-//    PyGC_Head *g = _Py_AS_GC(o); \
-//    assert(_PyGCHead_REFS(g) != _PyGC_REFS_UNTRACKED); \
-//    _PyGCHead_SET_REFS(g, _PyGC_REFS_UNTRACKED); \
-//    g->gc.gc_prev->gc.gc_next = g->gc.gc_next; \
-//    g->gc.gc_next->gc.gc_prev = g->gc.gc_prev; \
-//    g->gc.gc_next = NULL; \
-//    } while (0);
+#define _PyObject_GC_UNTRACK(o) do { \
+    PyGC_Head *g = _Py_AS_GC(o); \
+    assert(_PyGCHead_REFS(g) != _PyGC_REFS_UNTRACKED); \
+    _PyGCHead_SET_REFS(g, _PyGC_REFS_UNTRACKED); \
+    g->gc.gc_prev->gc.gc_next = g->gc.gc_next; \
+    g->gc.gc_next->gc.gc_prev = g->gc.gc_prev; \
+    g->gc.gc_next = NULL; \
+    } while (0);
 
 /* True if the object is currently tracked by the GC. */
-#define _PyObject_GC_IS_TRACKED(o) 0
-//#define _PyObject_GC_IS_TRACKED(o) \
-//    (_PyGC_REFS(o) != _PyGC_REFS_UNTRACKED)
+#define _PyObject_GC_IS_TRACKED(o) \
+    (_PyGC_REFS(o) != _PyGC_REFS_UNTRACKED)
 
 /* True if the object may be tracked by the GC in the future, or already is.
    This can be useful to implement some optimizations. */

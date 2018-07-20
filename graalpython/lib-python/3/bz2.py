@@ -11,7 +11,6 @@ __author__ = "Nadeem Vawda <nadeem.vawda@gmail.com>"
 
 from builtins import open as _builtin_open
 import io
-import os
 import warnings
 import _compression
 
@@ -43,9 +42,9 @@ class BZ2File(_compression.BaseStream):
     def __init__(self, filename, mode="r", buffering=None, compresslevel=9):
         """Open a bzip2-compressed file.
 
-        If filename is a str, bytes, or PathLike object, it gives the
-        name of the file to be opened. Otherwise, it should be a file
-        object, which will be used to read or write the compressed data.
+        If filename is a str or bytes object, it gives the name
+        of the file to be opened. Otherwise, it should be a file object,
+        which will be used to read or write the compressed data.
 
         mode can be 'r' for reading (default), 'w' for (over)writing,
         'x' for creating exclusively, or 'a' for appending. These can
@@ -92,7 +91,7 @@ class BZ2File(_compression.BaseStream):
         else:
             raise ValueError("Invalid mode: %r" % (mode,))
 
-        if isinstance(filename, (str, bytes, os.PathLike)):
+        if isinstance(filename, (str, bytes)):
             self._fp = _builtin_open(filename, mode)
             self._closefp = True
             self._mode = mode_code
@@ -100,7 +99,7 @@ class BZ2File(_compression.BaseStream):
             self._fp = filename
             self._mode = mode_code
         else:
-            raise TypeError("filename must be a str, bytes, file or PathLike object")
+            raise TypeError("filename must be a str or bytes object, or a file")
 
         if self._mode == _MODE_READ:
             raw = _compression.DecompressReader(self._fp,
@@ -290,9 +289,8 @@ def open(filename, mode="rb", compresslevel=9,
          encoding=None, errors=None, newline=None):
     """Open a bzip2-compressed file in binary or text mode.
 
-    The filename argument can be an actual filename (a str, bytes, or
-    PathLike object), or an existing file object to read from or write
-    to.
+    The filename argument can be an actual filename (a str or bytes
+    object), or an existing file object to read from or write to.
 
     The mode argument can be "r", "rb", "w", "wb", "x", "xb", "a" or
     "ab" for binary mode, or "rt", "wt", "xt" or "at" for text mode.

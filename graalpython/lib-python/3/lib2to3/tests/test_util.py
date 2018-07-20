@@ -3,6 +3,9 @@
 # Testing imports
 from . import support
 
+# Python imports
+import os.path
+
 # Local imports
 from lib2to3.pytree import Node, Leaf
 from lib2to3 import fixer_util

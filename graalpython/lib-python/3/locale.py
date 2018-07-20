@@ -302,16 +302,12 @@ def str(val):
 
 def delocalize(string):
     "Parses a string as a normalized number according to the locale settings."
-
-    conv = localeconv()
-
     #First, get rid of the grouping
-    ts = conv['thousands_sep']
+    ts = localeconv()['thousands_sep']
     if ts:
         string = string.replace(ts, '')
-
     #next, replace the decimal point with a dot
-    dd = conv['decimal_point']
+    dd = localeconv()['decimal_point']
     if dd:
         string = string.replace(dd, '.')
     return string

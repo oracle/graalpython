@@ -3,6 +3,7 @@
 #   Codec encoding tests for ROC encodings.
 #
 
+from test import support
 from test import multibytecodec_support
 import unittest
 

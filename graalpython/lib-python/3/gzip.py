@@ -49,7 +49,7 @@ def open(filename, mode="rb", compresslevel=9,
             raise ValueError("Argument 'newline' not supported in binary mode")
 
     gz_mode = mode.replace("t", "")
-    if isinstance(filename, (str, bytes, os.PathLike)):
+    if isinstance(filename, (str, bytes)):
         binary_file = GzipFile(filename, gz_mode, compresslevel)
     elif hasattr(filename, "read") or hasattr(filename, "write"):
         binary_file = GzipFile(None, gz_mode, compresslevel, filename)
@@ -165,8 +165,6 @@ class GzipFile(_compression.BaseStream):
             filename = getattr(fileobj, 'name', '')
             if not isinstance(filename, (str, bytes)):
                 filename = ''
-        else:
-            filename = os.fspath(filename)
         if mode is None:
             mode = getattr(fileobj, 'mode', 'rb')
 
@@ -359,10 +357,10 @@ class GzipFile(_compression.BaseStream):
             if offset < self.offset:
                 raise OSError('Negative seek in write mode')
             count = offset - self.offset
-            chunk = b'\0' * 1024
+            chunk = bytes(1024)
             for i in range(count // 1024):
                 self.write(chunk)
-            self.write(b'\0' * (count % 1024))
+            self.write(bytes(count % 1024))
         elif self.mode == READ:
             self._check_not_closed()
             return self._buffer.seek(offset, whence)

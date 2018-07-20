@@ -13,9 +13,7 @@ from itertools import repeat
 __all__ = ["IllegalMonthError", "IllegalWeekdayError", "setfirstweekday",
            "firstweekday", "isleap", "leapdays", "weekday", "monthrange",
            "monthcalendar", "prmonth", "month", "prcal", "calendar",
-           "timegm", "month_name", "month_abbr", "day_name", "day_abbr",
-           "Calendar", "TextCalendar", "HTMLCalendar", "LocaleTextCalendar",
-           "LocaleHTMLCalendar", "weekheader"]
+           "timegm", "month_name", "month_abbr", "day_name", "day_abbr"]
 
 # Exception raised for bad input (with string parameter for details)
 error = ValueError
@@ -606,63 +604,51 @@ def timegm(tuple):
 
 
 def main(args):
-    import argparse
-    parser = argparse.ArgumentParser()
-    textgroup = parser.add_argument_group('text only arguments')
-    htmlgroup = parser.add_argument_group('html only arguments')
-    textgroup.add_argument(
+    import optparse
+    parser = optparse.OptionParser(usage="usage: %prog [options] [year [month]]")
+    parser.add_option(
         "-w", "--width",
-        type=int, default=2,
-        help="width of date column (default 2)"
+        dest="width", type="int", default=2,
+        help="width of date column (default 2, text only)"
     )
-    textgroup.add_argument(
+    parser.add_option(
         "-l", "--lines",
-        type=int, default=1,
-        help="number of lines for each week (default 1)"
+        dest="lines", type="int", default=1,
+        help="number of lines for each week (default 1, text only)"
     )
-    textgroup.add_argument(
+    parser.add_option(
         "-s", "--spacing",
-        type=int, default=6,
-        help="spacing between months (default 6)"
+        dest="spacing", type="int", default=6,
+        help="spacing between months (default 6, text only)"
     )
-    textgroup.add_argument(
+    parser.add_option(
         "-m", "--months",
-        type=int, default=3,
-        help="months per row (default 3)"
+        dest="months", type="int", default=3,
+        help="months per row (default 3, text only)"
     )
-    htmlgroup.add_argument(
+    parser.add_option(
         "-c", "--css",
-        default="calendar.css",
-        help="CSS to use for page"
+        dest="css", default="calendar.css",
+        help="CSS to use for page (html only)"
     )
-    parser.add_argument(
+    parser.add_option(
         "-L", "--locale",
-        default=None,
+        dest="locale", default=None,
         help="locale to be used from month and weekday names"
     )
-    parser.add_argument(
+    parser.add_option(
         "-e", "--encoding",
-        default=None,
-        help="encoding to use for output"
+        dest="encoding", default=None,
+        help="Encoding to use for output."
     )
-    parser.add_argument(
+    parser.add_option(
         "-t", "--type",
-        default="text",
+        dest="type", default="text",
         choices=("text", "html"),
         help="output type (text or html)"
     )
-    parser.add_argument(
-        "year",
-        nargs='?', type=int,
-        help="year number (1-9999)"
-    )
-    parser.add_argument(
-        "month",
-        nargs='?', type=int,
-        help="month number (1-12, text only)"
-    )
 
-    options = parser.parse_args(args[1:])
+    (options, args) = parser.parse_args(args)
 
     if options.locale and not options.encoding:
         parser.error("if --locale is specified --encoding is required")
@@ -680,10 +666,10 @@ def main(args):
             encoding = sys.getdefaultencoding()
         optdict = dict(encoding=encoding, css=options.css)
         write = sys.stdout.buffer.write
-        if options.year is None:
+        if len(args) == 1:
             write(cal.formatyearpage(datetime.date.today().year, **optdict))
-        elif options.month is None:
-            write(cal.formatyearpage(options.year, **optdict))
+        elif len(args) == 2:
+            write(cal.formatyearpage(int(args[1]), **optdict))
         else:
             parser.error("incorrect number of arguments")
             sys.exit(1)
@@ -693,15 +679,18 @@ def main(args):
         else:
             cal = TextCalendar()
         optdict = dict(w=options.width, l=options.lines)
-        if options.month is None:
+        if len(args) != 3:
             optdict["c"] = options.spacing
             optdict["m"] = options.months
-        if options.year is None:
+        if len(args) == 1:
             result = cal.formatyear(datetime.date.today().year, **optdict)
-        elif options.month is None:
-            result = cal.formatyear(options.year, **optdict)
+        elif len(args) == 2:
+            result = cal.formatyear(int(args[1]), **optdict)
+        elif len(args) == 3:
+            result = cal.formatmonth(int(args[1]), int(args[2]), **optdict)
         else:
-            result = cal.formatmonth(options.year, options.month, **optdict)
+            parser.error("incorrect number of arguments")
+            sys.exit(1)
         write = sys.stdout.write
         if options.encoding:
             result = result.encode(options.encoding)

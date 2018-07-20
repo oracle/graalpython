@@ -1,9 +1,9 @@
-"""Unittest for idlelib.hyperparser.py."""
+"""Unittest for idlelib.HyperParser"""
 import unittest
 from test.support import requires
 from tkinter import Tk, Text
-from idlelib.editor import EditorWindow
-from idlelib.hyperparser import HyperParser
+from idlelib.EditorWindow import EditorWindow
+from idlelib.HyperParser import HyperParser
 
 class DummyEditwin:
     def __init__(self, text):

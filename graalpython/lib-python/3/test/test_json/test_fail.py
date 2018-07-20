@@ -1,5 +1,6 @@
 from test.test_json import PyTest, CTest
 from test import support
+import re
 
 # 2007-10-05
 JSONDOCS = [

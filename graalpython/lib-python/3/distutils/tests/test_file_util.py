@@ -1,6 +1,7 @@
 """Tests for distutils.file_util."""
 import unittest
 import os
+import shutil
 import errno
 from unittest.mock import patch
 

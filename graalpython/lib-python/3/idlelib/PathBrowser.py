@@ -1,10 +1,10 @@
-import importlib.machinery
 import os
 import sys
+import importlib.machinery
 
-from idlelib.browser import ClassBrowser, ModuleBrowserTreeItem
-from idlelib.pyshell import PyShellFileList
-from idlelib.tree import TreeItem
+from idlelib.TreeWidget import TreeItem
+from idlelib.ClassBrowser import ClassBrowser, ModuleBrowserTreeItem
+from idlelib.PyShell import PyShellFileList
 
 
 class PathBrowser(ClassBrowser):
@@ -24,7 +24,6 @@ class PathBrowser(ClassBrowser):
     def rootnode(self):
         return PathBrowserTreeItem()
 
-
 class PathBrowserTreeItem(TreeItem):
 
     def GetText(self):
@@ -36,7 +35,6 @@ class PathBrowserTreeItem(TreeItem):
             item = DirBrowserTreeItem(dir)
             sublist.append(item)
         return sublist
-
 
 class DirBrowserTreeItem(TreeItem):
 
@@ -96,7 +94,6 @@ class DirBrowserTreeItem(TreeItem):
                         allnames.remove(name)
         sorted.sort()
         return sorted
-
 
 def _path_browser(parent):  # htest #
     flist = PyShellFileList(parent)

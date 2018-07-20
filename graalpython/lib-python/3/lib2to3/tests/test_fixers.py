@@ -2,11 +2,12 @@
 
 # Python imports
 import os
+import unittest
 from itertools import chain
 from operator import itemgetter
 
 # Local imports
-from lib2to3 import pygram, fixer_util
+from lib2to3 import pygram, pytree, refactor, fixer_util
 from lib2to3.tests import support
 
 
@@ -3231,10 +3232,6 @@ class Test_types(FixerTestCase):
 
         b = """types.NoneType"""
         a = """type(None)"""
-        self.check(b, a)
-
-        b = "types.StringTypes"
-        a = "(str,)"
         self.check(b, a)
 
 class Test_idioms(FixerTestCase):

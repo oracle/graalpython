@@ -5,8 +5,7 @@ import subprocess
 import shutil
 from copy import copy
 
-from test.support import (run_unittest,
-                          import_module, TESTFN, unlink, check_warnings,
+from test.support import (run_unittest, TESTFN, unlink, check_warnings,
                           captured_stdout, impl_detail, import_module,
                           skip_unless_symlink, change_cwd)
 
@@ -389,20 +388,17 @@ class TestSysConfig(unittest.TestCase):
         self.assertIsNotNone(vars['SO'])
         self.assertEqual(vars['SO'], vars['EXT_SUFFIX'])
 
-    @unittest.skipUnless(sys.platform == 'linux' and
-                         hasattr(sys.implementation, '_multiarch'),
-                         'multiarch-specific test')
+    @unittest.skipUnless(sys.platform == 'linux', 'Linux-specific test')
     def test_triplet_in_ext_suffix(self):
-        ctypes = import_module('ctypes')
-        import platform, re
+        import ctypes, platform, re
         machine = platform.machine()
         suffix = sysconfig.get_config_var('EXT_SUFFIX')
         if re.match('(aarch64|arm|mips|ppc|powerpc|s390|sparc)', machine):
             self.assertTrue('linux' in suffix, suffix)
         if re.match('(i[3-6]86|x86_64)$', machine):
             if ctypes.sizeof(ctypes.c_char_p()) == 4:
-                self.assertTrue(suffix.endswith('i386-linux-gnu.so') or
-                                suffix.endswith('x86_64-linux-gnux32.so'),
+                self.assertTrue(suffix.endswith('i386-linux-gnu.so') \
+                                or suffix.endswith('x86_64-linux-gnux32.so'),
                                 suffix)
             else: # 8 byte pointer size
                 self.assertTrue(suffix.endswith('x86_64-linux-gnu.so'), suffix)

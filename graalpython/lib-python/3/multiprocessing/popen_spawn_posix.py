@@ -1,8 +1,9 @@
 import io
 import os
 
-from .context import reduction, set_spawning_popen
+from . import context
 from . import popen_fork
+from . import reduction
 from . import spawn
 from . import util
 
@@ -41,12 +42,12 @@ class Popen(popen_fork.Popen):
         self._fds.append(tracker_fd)
         prep_data = spawn.get_preparation_data(process_obj._name)
         fp = io.BytesIO()
-        set_spawning_popen(self)
+        context.set_spawning_popen(self)
         try:
             reduction.dump(prep_data, fp)
             reduction.dump(process_obj, fp)
         finally:
-            set_spawning_popen(None)
+            context.set_spawning_popen(None)
 
         parent_r = child_w = child_r = parent_w = None
         try:

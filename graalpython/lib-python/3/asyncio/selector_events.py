@@ -627,8 +627,7 @@ class _SelectorTransport(transports._FlowControlMixin,
     if compat.PY34:
         def __del__(self):
             if self._sock is not None:
-                warnings.warn("unclosed transport %r" % self, ResourceWarning,
-                              source=self)
+                warnings.warn("unclosed transport %r" % self, ResourceWarning)
                 self._sock.close()
 
     def _fatal_error(self, exc, message='Fatal error on transport'):
