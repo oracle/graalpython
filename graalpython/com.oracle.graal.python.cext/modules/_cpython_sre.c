@@ -1,9 +1,3 @@
-/* Copyright (c) 2018, Oracle and/or its affiliates.
- * Copyright (C) 1996-2017 Python Software Foundation
- *
- * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
- */
-
 /*
  * Secret Labs' Regular Expression Engine
  *
@@ -41,8 +35,6 @@
  * other compatibility work.
  */
 
-// this file was taken from CPython 3.6.4's file '_sre.c'
-
 static const char copyright[] =
     " SRE 2.2.2 Copyright (c) 1997-2002 by Secret Labs AB ";
 
@@ -59,7 +51,7 @@ static const char copyright[] =
 
 /* name of this module, minus the leading underscore */
 #if !defined(SRE_MODULE)
-#define SRE_MODULE "cpython_sre"
+#define SRE_MODULE "sre"
 #endif
 
 #define SRE_PY_MODULE "re"
@@ -2927,7 +2919,7 @@ static struct PyModuleDef sremodule = {
         NULL
 };
 
-PyMODINIT_FUNC PyInit__cpython_sre(void)
+PyMODINIT_FUNC PyInit__sre(void)
 {
     PyObject* m;
     PyObject* d;
