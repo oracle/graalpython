@@ -786,7 +786,8 @@ def import_python_sources(args):
 
     3. We'll stop and wait to give you some time to check if the python-import
        branch looks as you expect. Then we'll commit the updated files to the
-       python-import branch and move back to whatever your HEAD is now.
+       python-import branch, push it, and move back to whatever your HEAD is
+       now.
 
     4. We'll merge the python-import branch back into HEAD. Because these share
        a common ancestroy, git will try to preserve our patches to files, that
@@ -856,6 +857,7 @@ def import_python_sources(args):
     _suite.vc.git_command(_suite.dir, ["add", "."])
     raw_input("Check that the updated files look as intended, then press RETURN...")
     _suite.vc.commit(_suite.dir, "Update Python inlined files: %s" % import_version)
+    _suite.vc.git_command(_suite.dir, ["push", "origin", "python-import:python-import"])
     _suite.vc.update(_suite.dir, rev=tip)
     _suite.vc.git_command(_suite.dir, ["merge", "python-import"])
 
