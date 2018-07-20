@@ -1452,25 +1452,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Specialization
         Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
-                        int flags, String codestring, Object constants, Object names, Object varnames,
-                        String filename, String name, int firstlineno, Object lnotab, Object freevars,
-                        Object cellvars) {
+                        int flags, String codestring, Object constants, Object names, PTuple varnames,
+                        String filename, String name, int firstlineno, Object lnotab, PTuple freevars,
+                        PTuple cellvars) {
             return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
-                            flags, codestring, constants, names, varnames,
-                            filename, name, firstlineno, lnotab, freevars,
-                            cellvars);
+                            flags, codestring, constants, names, varnames.getArray(),
+                            filename, name, firstlineno, lnotab, freevars.getArray(),
+                            cellvars.getArray());
         }
 
         @Specialization
         @TruffleBoundary
         Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
-                        int flags, PBytes codestring, Object constants, Object names, Object varnames,
-                        PString filename, PString name, int firstlineno, Object lnotab, Object freevars,
-                        Object cellvars) {
+                        int flags, PBytes codestring, Object constants, Object names, PTuple varnames,
+                        PString filename, PString name, int firstlineno, Object lnotab, PTuple freevars,
+                        PTuple cellvars) {
             return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
-                            flags, new String(codestring.getInternalByteArray()), constants, names, varnames,
-                            filename.getValue(), name.getValue(), firstlineno, lnotab, freevars,
-                            cellvars);
+                            flags, new String(codestring.getInternalByteArray()), constants, names, varnames.getArray(),
+                            filename.getValue(), name.getValue(), firstlineno, lnotab, freevars.getArray(),
+                            cellvars.getArray());
         }
 
         @SuppressWarnings("unused")

@@ -40,9 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
+import java.util.ArrayList;
+
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.SourceSection;
 
 public class PCode extends PythonBuiltinObject {
     private final RootNode result;
@@ -54,13 +62,13 @@ public class PCode extends PythonBuiltinObject {
     private final String codestring;
     private final Object constants;
     private final Object names;
-    private final Object varnames;
+    private final Object[] varnames;
     private final String filename;
     private final String name;
     private final int firstlineno;
     private final Object lnotab;
-    private final Object freevars;
-    private final Object cellvars;
+    private final Object[] freevars;
+    private final Object[] cellvars;
 
     public PCode(PythonClass cls, RootNode result) {
         super(cls);
@@ -74,18 +82,18 @@ public class PCode extends PythonBuiltinObject {
         this.constants = null;
         this.names = null;
         this.varnames = null;
-        this.filename = null;
-        this.name = null;
-        this.firstlineno = -1;
+        this.filename = getFileName(this.result);
+        this.name = getName(this.result);
+        this.firstlineno = getFirstLineno(this.result);
         this.lnotab = null;
-        this.freevars = null;
-        this.cellvars = null;
+        this.freevars = getFreeVars(this.result);
+        this.cellvars = getCellVars(this.result);
     }
 
     public PCode(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
-                    int flags, String codestring, Object constants, Object names, Object varnames,
-                    String filename, String name, int firstlineno, Object lnotab, Object freevars,
-                    Object cellvars) {
+                    int flags, String codestring, Object constants, Object names, Object[] varnames,
+                    String filename, String name, int firstlineno, Object lnotab, Object[] freevars,
+                    Object[] cellvars) {
         super(cls);
         this.result = null;
         this.argcount = argcount;
@@ -105,19 +113,82 @@ public class PCode extends PythonBuiltinObject {
         this.cellvars = cellvars;
     }
 
+    private static String[] getFreeVars(RootNode rootNode) {
+        if (rootNode instanceof FunctionRootNode) {
+            return ((FunctionRootNode) rootNode).getFreeVars();
+        } else if (rootNode instanceof GeneratorFunctionRootNode) {
+            return ((GeneratorFunctionRootNode) rootNode).getFreeVars();
+        } else {
+            return null;
+        }
+    }
+
+    private static String[] getCellVars(RootNode rootNode) {
+        if (rootNode instanceof FunctionRootNode) {
+            return ((FunctionRootNode) rootNode).getCellVars();
+        } else if (rootNode instanceof GeneratorFunctionRootNode) {
+            return ((GeneratorFunctionRootNode) rootNode).getCellVars();
+        } else {
+            return null;
+        }
+    }
+
+    private static String getFileName(RootNode rootNode) {
+        SourceSection src = rootNode.getSourceSection();
+        if (src != null) {
+            return src.getSource().getName();
+        } else if (rootNode instanceof ModuleRootNode) {
+            return rootNode.getName();
+        } else {
+            return null;
+        }
+    }
+
+    @TruffleBoundary
+    private static int getFirstLineno(RootNode rootNode) {
+        SourceSection sourceSection = rootNode.getSourceSection();
+        if (sourceSection == null) {
+            return 1;
+        } else {
+            return sourceSection.getStartLine();
+        }
+    }
+
+    private static String getName(RootNode rootNode) {
+        String name;
+        if (rootNode instanceof ModuleRootNode) {
+            name = "<module>";
+        } else if (rootNode instanceof FunctionRootNode) {
+            name = ((FunctionRootNode) rootNode).getFunctionName();
+        } else {
+            name = rootNode.getName();
+        }
+        return name;
+    }
+
+    private static Object[] getVarNames(RootNode rootNode, PythonCore core) {
+        ArrayList<String> variableNames = new ArrayList<>();
+        for (Object ident : rootNode.getFrameDescriptor().getIdentifiers()) {
+            if (ident instanceof String && core.getParser().isIdentifier(core, (String) ident)) {
+                variableNames.add((String) ident);
+            }
+        }
+        return variableNames.toArray();
+    }
+
     public RootNode getRootNode() {
         return result;
     }
 
-    public Object getFreeVars() {
+    public Object[] getFreeVars() {
         return freevars;
     }
 
-    public Object getCellVars() {
+    public Object[] getCellVars() {
         return cellvars;
     }
 
-    public Object getFilename() {
+    public String getFilename() {
         return filename;
     }
 
@@ -161,7 +232,7 @@ public class PCode extends PythonBuiltinObject {
         return names;
     }
 
-    public Object getVarnames() {
+    public Object[] getVarnames() {
         return varnames;
     }
 
