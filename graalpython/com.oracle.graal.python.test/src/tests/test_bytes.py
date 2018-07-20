@@ -448,3 +448,8 @@ def test_find():
     assert b.find(i, 6) == 7
     assert b.find(i, 1, 3) == 1
     assert b.find(w, 1, 3) == -1
+
+
+def test_same_id():
+    empty_ids = set([id(bytes()) for i in range(100)])
+    assert len(empty_ids) == 1

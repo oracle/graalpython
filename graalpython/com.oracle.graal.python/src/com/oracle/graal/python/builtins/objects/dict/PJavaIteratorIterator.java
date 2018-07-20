@@ -34,6 +34,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public abstract class PJavaIteratorIterator<T> extends PythonBuiltinObject {
 
     private final Iterator<T> iterator;
+    private int index;
 
     public PJavaIteratorIterator(PythonClass clazz, Iterator<T> iterator) {
         super(clazz);
@@ -47,11 +48,16 @@ public abstract class PJavaIteratorIterator<T> extends PythonBuiltinObject {
     @TruffleBoundary
     public final Object next() {
         assert hasNext();
+        index++;
         return iterator.next();
     }
 
     @TruffleBoundary
     public final boolean hasNext() {
         return iterator.hasNext();
+    }
+
+    public int getIndex() {
+        return index;
     }
 }

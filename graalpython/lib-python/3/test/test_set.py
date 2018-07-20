@@ -1,3 +1,4 @@
+import sys
 import unittest
 from test import support
 import gc
@@ -307,6 +308,7 @@ class TestJointOps:
             self.assertRaises(RuntimeError, s.discard, BadCmp())
             self.assertRaises(RuntimeError, s.remove, BadCmp())
 
+    @unittest.skipIfGraalPython()
     def test_cyclical_repr(self):
         w = ReprWrapper()
         s = self.thetype([w])
@@ -317,6 +319,7 @@ class TestJointOps:
             name = repr(s).partition('(')[0]    # strip class name
             self.assertEqual(repr(s), '%s({%s(...)})' % (name, name))
 
+    @unittest.skipIfGraalPython()
     def test_cyclical_print(self):
         w = ReprWrapper()
         s = self.thetype([w])

@@ -192,57 +192,62 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int next(PIntArrayIterator self) {
+        public int lengthHint(PIntArrayIterator self) {
             return self.array.len() - self.index;
         }
 
         @Specialization
-        public int next(PIntegerSequenceIterator self) {
+        public int lengthHint(PIntegerSequenceIterator self) {
             return self.sequence.length() - self.index;
         }
 
         @Specialization
-        public int next(PRangeIterator self) {
+        public int lengthHint(PRangeIterator self) {
             return self.getStop() - self.getStart();
         }
 
         @Specialization
-        public int next(PRangeReverseIterator self) {
+        public int lengthHint(PRangeReverseIterator self) {
             return self.getStart() - self.getStop();
         }
 
         @Specialization
-        public double next(PDoubleArrayIterator self) {
+        public double lengthHint(PDoubleArrayIterator self) {
             return self.array.len() - self.index;
         }
 
         @Specialization
-        public double next(PDoubleSequenceIterator self) {
+        public double lengthHint(PDoubleSequenceIterator self) {
             return self.sequence.length() - self.index;
         }
 
         @Specialization
-        public long next(PLongArrayIterator self) {
+        public long lengthHint(PLongArrayIterator self) {
             return self.array.len() - self.index;
         }
 
         @Specialization
-        public long next(PLongSequenceIterator self) {
+        public long lengthHint(PLongSequenceIterator self) {
             return self.sequence.length() - self.index;
+        }
+
+        @Specialization
+        public long lengthHint(PBaseSetIterator self) {
+            return self.getSet().size() - self.getIndex();
         }
 
         @Specialization(guards = "self.isPSequence()")
-        public Object next(PSequenceIterator self) {
+        public Object lengthHint(PSequenceIterator self) {
             return self.getPSequence().len() - self.index;
         }
 
         @Specialization
-        public Object next(PStringIterator self) {
+        public Object lengthHint(PStringIterator self) {
             return self.value.length() - self.index;
         }
 
         @Specialization(guards = "!self.isPSequence()")
-        public Object next(PSequenceIterator self,
+        public Object lengthHint(PSequenceIterator self,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__SUB__, __RSUB__)") LookupAndCallBinaryNode callSub) {
             return callSub.executeObject(callLen.executeObject(self.getObject()), self.index);
