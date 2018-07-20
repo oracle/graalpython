@@ -779,7 +779,7 @@ def import_python_sources(args):
     if _suite.vc.isDirty(_suite.dir):
         mx.abort("Working dir must be clean")
     tip = _suite.vc.tip(_suite.dir).strip()
-    _suite.vc.git_command(_suite.dir, ["checkout", "--orphan", "python-import"])
+    _suite.vc.git_command(_suite.dir, ["checkout", "python-import"])
     _suite.vc.git_command(_suite.dir, ["clean", "-fdx"])
     shutil.rmtree("graalpython")
 
