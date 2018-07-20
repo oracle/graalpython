@@ -156,7 +156,7 @@ class SRE_Pattern():
     def __compile_cpython_sre(self):
         if not self.__compiled_sre_pattern:
             import _cpython_sre
-            self.__compiled_sre_pattern = _cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
+            self.__compiled_sre_pattern = _cpython_sre.compile(self._emit(self.pattern), self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
         return self.__compiled_sre_pattern
 
 
@@ -364,7 +364,7 @@ class SRE_Pattern():
 
     def _emit(self, str_like_obj):
         assert isinstance(str_like_obj, str) or isinstance(str_like_obj, bytes)
-        if self.__was_bytes:
+        if self.__was_bytes != isinstance(str_like_obj, bytes):
             return str_like_obj.encode()
         return str_like_obj
 
