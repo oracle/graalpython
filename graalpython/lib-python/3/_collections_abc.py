@@ -62,12 +62,10 @@ coroutine = type(_coro)
 # _coro.close()  # Prevent ResourceWarning
 del _coro
 ## asynchronous generator ##
-## Truffle todo: This should be reverted, once async generators are supported.
-## Temporary fix.
-#async def _ag(): yield
-#_ag = _ag()
-#async_generator = type(_ag)
-#del _ag
+async def _ag(): yield
+_ag = _ag()
+async_generator = type(_ag)
+del _ag
 
 
 ### ONE-TRICK PONIES ###

@@ -536,4 +536,3 @@ if sys.implementation.name == "graalpython":
     # Truffle: import our overrides
     from distutils.sysconfig_graalpython import *
     from distutils.sysconfig_graalpython import _config_vars # needed by setuptools
-    from distutils.sysconfig_graalpython import _variable_rx # read_setup_file()

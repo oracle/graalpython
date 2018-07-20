@@ -340,7 +340,9 @@ class EnumMeta(type):
         is a read-only view of the internal mapping.
 
         """
-        return MappingProxyType(cls._member_map_)
+        # Truffle change
+        # return MappingProxyType(cls._member_map_)
+        return dict(cls._member_map_)
 
     def __repr__(cls):
         return "<enum %r>" % cls.__name__
