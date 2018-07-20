@@ -771,6 +771,49 @@ def import_python_sources(args):
     pypy_sources = args.pypy
     import_version = args.msg
 
+    print """
+    So you think you want to update the inlined sources? Here is how it will go:
+
+    1. We'll first check the copyrights check overrides file to identify the
+       files taken from CPython and we'll remember that list. There's a mapping
+       for files that were renamed, currently this includes:
+       \t{0!r}\n
+
+    2. We'll check out the "python-import" branch. This branch has only files
+       that were inlined from CPython or PyPy. We'll use the sources given on
+       the commandline for that. I hope those are in a state where that makes
+       sense.
+
+    3. We'll stop and wait to give you some time to check if the python-import
+       branch looks as you expect. Then we'll commit the updated files to the
+       python-import branch and move back to whatever your HEAD is now.
+
+    4. We'll merge the python-import branch back into HEAD. Because these share
+       a common ancestroy, git will try to preserve our patches to files, that
+       is, copyright headers and any other source patches.
+
+    5. !IMPORTANT! If files were inlined from CPython during normal development
+       that were not first added to the python-import branch, you will get merge
+       conflicts and git will tell you that the files was added on both
+       branches. You probably should resolve these using:
+
+           git checkout python-import -- path/to/file
+
+        Then check the diff and make sure that any patches that we did to those
+        files are re-applied.
+
+    6. After the merge is completed and any direct merge conflicts are resolved,
+       run this:
+
+           mx python-checkcopyrights --fix
+
+       This will apply copyrights to files that we're newly added from
+       python-import.
+
+    7. Run the tests and fix any remaining issues.
+    """.format(mapping)
+    raw_input("Got it?")
+
     files = []
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
         files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
