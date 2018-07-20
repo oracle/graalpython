@@ -38,6 +38,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.nio.charset.CodingErrorAction;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -340,6 +342,16 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         Object getitem(PBytes self, PSlice slice) {
             return self.getSlice(factory(), slice);
+        }
+    }
+
+    @Builtin(name = __SETITEM__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class SetitemNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object getitem(PBytes self, Object idx, Object value) {
+            throw raise(TypeError, "'bytes' object does not support item assignment");
         }
     }
 }
