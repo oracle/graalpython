@@ -1418,16 +1418,20 @@ static PyMemoryViewObject* PyTruffle_MemoryView_GetDelegate(PyObject* managed_se
 }
 
 static int
-memory_getbuf(PyMemoryViewObject *managed_self, Py_buffer *view, int flags)
+memory_getbuf(PyMemoryViewObject *original_self, Py_buffer *view, int flags)
 {
     PyMemoryViewObject *self = NULL;
     Py_buffer *base = NULL;
     int baseflags = 0;
 
-    assert(PyMemoryView_Check(managed_self));
-
-    // we need to get the native delegate of the managed memoryview object
-    self = PyTruffle_MemoryView_GetDelegate(managed_self);
+    // this code may be reached over different path; self may therefore be the managed wrapper or the native object
+    if (PyMemoryView_Check(original_self)) {
+        // we need to get the native delegate of the managed memoryview object
+        self = PyTruffle_MemoryView_GetDelegate((PyObject*) original_self);
+    } else {
+        self = original_self;
+    }
+    assert(Py_TYPE(self) == &PyNativeMemoryView_Type);
 
     base = &self->view;
     baseflags = self->flags;
