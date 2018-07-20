@@ -857,7 +857,9 @@ def import_python_sources(args):
     _suite.vc.git_command(_suite.dir, ["add", "."])
     raw_input("Check that the updated files look as intended, then press RETURN...")
     _suite.vc.commit(_suite.dir, "Update Python inlined files: %s" % import_version)
-    _suite.vc.git_command(_suite.dir, ["push", "origin", "python-import:python-import"])
+    answer = raw_input("Should we push python-import (y/N)? ")
+    if answer and answer in "Yy":
+        _suite.vc.git_command(_suite.dir, ["push", "origin", "python-import:python-import"])
     _suite.vc.update(_suite.dir, rev=tip)
     _suite.vc.git_command(_suite.dir, ["merge", "python-import"])
 
