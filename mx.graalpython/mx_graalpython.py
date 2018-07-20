@@ -759,6 +759,7 @@ def import_python_sources(args):
     # mappings for files that are renamed
     mapping = {
         "_memoryview.c": "memoryobject.c",
+        "_cpython_sre.c": "_sre.c",
     }
     parser = ArgumentParser(prog='mx python-src-import')
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
