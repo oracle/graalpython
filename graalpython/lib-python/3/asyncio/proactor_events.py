@@ -92,7 +92,8 @@ class _ProactorBasePipeTransport(transports._FlowControlMixin,
     if compat.PY34:
         def __del__(self):
             if self._sock is not None:
-                warnings.warn("unclosed transport %r" % self, ResourceWarning)
+                warnings.warn("unclosed transport %r" % self, ResourceWarning,
+                              source=self)
                 self.close()
 
     def _fatal_error(self, exc, message='Fatal error on pipe transport'):
@@ -231,8 +232,9 @@ class _ProactorBaseWritePipeTransport(_ProactorBasePipeTransport,
 
     def write(self, data):
         if not isinstance(data, (bytes, bytearray, memoryview)):
-            raise TypeError('data argument must be byte-ish (%r)',
-                            type(data))
+            msg = ("data argument must be a bytes-like object, not '%s'" %
+                   type(data).__name__)
+            raise TypeError(msg)
         if self._eof_written:
             raise RuntimeError('write_eof() already called')
 

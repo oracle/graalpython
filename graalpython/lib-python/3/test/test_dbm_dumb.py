@@ -7,6 +7,7 @@ import operator
 import os
 import stat
 import unittest
+import warnings
 import dbm.dumb as dumbdbm
 from test import support
 from functools import partial
@@ -79,6 +80,12 @@ class DumbDBMTestCase(unittest.TestCase):
         self.init_db()
         f = dumbdbm.open(_fname, 'r')
         self.read_helper(f)
+        with self.assertWarnsRegex(DeprecationWarning,
+                                   'The database is opened for reading only'):
+            f[b'g'] = b'x'
+        with self.assertWarnsRegex(DeprecationWarning,
+                                   'The database is opened for reading only'):
+            del f[b'a']
         f.close()
 
     def test_dumbdbm_keys(self):
@@ -149,7 +156,7 @@ class DumbDBMTestCase(unittest.TestCase):
             self.assertEqual(self._dict[key], f[key])
 
     def init_db(self):
-        f = dumbdbm.open(_fname, 'w')
+        f = dumbdbm.open(_fname, 'n')
         for k in self._dict:
             f[k] = self._dict[k]
         f.close()
@@ -235,6 +242,24 @@ class DumbDBMTestCase(unittest.TestCase):
                     pass
             self.assertEqual(stdout.getvalue(), '')
 
+    def test_warn_on_ignored_flags(self):
+        for value in ('r', 'w'):
+            _delete_files()
+            with self.assertWarnsRegex(DeprecationWarning,
+                                       "The database file is missing, the "
+                                       "semantics of the 'c' flag will "
+                                       "be used."):
+                f = dumbdbm.open(_fname, value)
+            f.close()
+
+    def test_invalid_flag(self):
+        for flag in ('x', 'rf', None):
+            with self.assertWarnsRegex(DeprecationWarning,
+                                       "Flag must be one of "
+                                       "'r', 'w', 'c', or 'n'"):
+                f = dumbdbm.open(_fname, flag)
+            f.close()
+
     @unittest.skipUnless(hasattr(os, 'chmod'), 'test needs os.chmod()')
     def test_readonly_files(self):
         with support.temp_dir() as dir:
@@ -249,6 +274,21 @@ class DumbDBMTestCase(unittest.TestCase):
             with dumbdbm.open(fname, 'r') as f:
                 self.assertEqual(sorted(f.keys()), sorted(self._dict))
                 f.close()  # don't write
+
+    @unittest.skipUnless(support.TESTFN_NONASCII,
+                         'requires OS support of non-ASCII encodings')
+    def test_nonascii_filename(self):
+        filename = support.TESTFN_NONASCII
+        for suffix in ['.dir', '.dat', '.bak']:
+            self.addCleanup(support.unlink, filename + suffix)
+        with dumbdbm.open(filename, 'c') as db:
+            db[b'key'] = b'value'
+        self.assertTrue(os.path.exists(filename + '.dat'))
+        self.assertTrue(os.path.exists(filename + '.dir'))
+        with dumbdbm.open(filename, 'r') as db:
+            self.assertEqual(list(db.keys()), [b'key'])
+            self.assertTrue(b'key' in db)
+            self.assertEqual(db[b'key'], b'value')
 
     def tearDown(self):
         _delete_files()

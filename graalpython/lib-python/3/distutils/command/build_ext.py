@@ -11,6 +11,7 @@ import sys
 from distutils.core import Command
 from distutils.errors import *
 from distutils.sysconfig import customize_compiler, get_python_version
+from distutils.sysconfig import get_config_h_filename
 from distutils.dep_util import newer_group
 from distutils.extension import Extension
 from distutils.util import get_platform
@@ -27,11 +28,6 @@ extension_name_re = re.compile \
 def show_compilers ():
     from distutils.ccompiler import show_compilers
     show_compilers()
-
-def _get_c_extension_suffix():
-    import importlib
-    suffixes = importlib.machinery.EXTENSION_SUFFIXES
-    return suffixes[0] if suffixes else None
 
 
 class build_ext(Command):
@@ -203,10 +199,7 @@ class build_ext(Command):
 
             # Append the source distribution include and library directories,
             # this allows distutils on windows to work in the source tree
-            if 0:
-                # pypy has no config_h_filename directory
-                from distutils.sysconfig import get_config_h_filename
-                self.include_dirs.append(os.path.dirname(get_config_h_filename()))
+            self.include_dirs.append(os.path.dirname(get_config_h_filename()))
             _sys_home = getattr(sys, '_home', None)
             if _sys_home:
                 self.library_dirs.append(_sys_home)
@@ -220,8 +213,7 @@ class build_ext(Command):
             new_lib = os.path.join(sys.exec_prefix, 'PCbuild')
             if suffix:
                 new_lib = os.path.join(new_lib, suffix)
-            # pypy has no PCBuild directory
-            # self.library_dirs.append(new_lib)
+            self.library_dirs.append(new_lib)
 
         # for extensions under Cygwin and AtheOS Python's library directory must be
         # appended to library_dirs
@@ -372,9 +364,9 @@ class build_ext(Command):
 
             ext_name, build_info = ext
 
-            log.warn(("old-style (ext_name, build_info) tuple found in "
-                      "ext_modules for extension '%s'"
-                      "-- please convert to Extension instance" % ext_name))
+            log.warn("old-style (ext_name, build_info) tuple found in "
+                     "ext_modules for extension '%s'"
+                     "-- please convert to Extension instance", ext_name)
 
             if not (isinstance(ext_name, str) and
                     extension_name_re.match(ext_name)):
@@ -686,15 +678,7 @@ class build_ext(Command):
         """
         from distutils.sysconfig import get_config_var
         ext_path = ext_name.split('.')
-        # PyPy tweak: first try to get the C extension suffix from
-        # 'imp'.  If it fails we fall back to the 'SO' config var, like
-        # the previous version of this code did.  This should work for
-        # CPython too.  The point is that on PyPy with cpyext, the
-        # config var 'SO' is just ".so" but we want to return
-        # ".pypy-VERSION.so" instead.
-        ext_suffix = _get_c_extension_suffix()
-        if ext_suffix is None:
-            ext_suffix = get_config_var('EXT_SUFFIX')     # fall-back
+        ext_suffix = get_config_var('EXT_SUFFIX')
         return os.path.join(*ext_path) + ext_suffix
 
     def get_export_symbols(self, ext):

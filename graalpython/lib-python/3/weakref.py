@@ -16,7 +16,8 @@ from _weakref import (
      proxy,
      CallableProxyType,
      ProxyType,
-     ReferenceType)
+     ReferenceType,
+     _remove_dead_weakref)
 
 from _weakrefset import WeakSet, _IterationGuard
 
@@ -30,26 +31,6 @@ __all__ = ["ref", "proxy", "getweakrefcount", "getweakrefs",
            "WeakKeyDictionary", "ReferenceType", "ProxyType",
            "CallableProxyType", "ProxyTypes", "WeakValueDictionary",
            "WeakSet", "WeakMethod", "finalize"]
-
-try:
-    from __pypy__ import delitem_if_value_is as _delitem_if_value_is
-except ImportError:
-    def _delitem_if_value_is(d, key, value):
-        try:
-            if self.data[key] is value:  # fall-back: there is a potential
-                #             race condition in multithreaded programs HERE
-                del self.data[key]
-        except KeyError:
-            pass
-
-def _remove_dead_weakref(d, key):
-    try:
-        wr = d[key]
-    except KeyError:
-        pass
-    else:
-        if wr() is None:
-            _delitem_if_value_is(d, key, wr)
 
 
 class WeakMethod(ref):
@@ -125,7 +106,7 @@ class WeakValueDictionary(collections.MutableMapping):
         self, *args = args
         if len(args) > 1:
             raise TypeError('expected at most 1 arguments, got %d' % len(args))
-        def remove(wr, selfref=ref(self)):
+        def remove(wr, selfref=ref(self), _atomic_removal=_remove_dead_weakref):
             self = selfref()
             if self is not None:
                 if self._iterating:
@@ -133,7 +114,7 @@ class WeakValueDictionary(collections.MutableMapping):
                 else:
                     # Atomic removal is necessary since this function
                     # can be called asynchronously by the GC
-                    _delitem_if_value_is(self.data, wr.key, wr)
+                    _atomic_removal(d, wr.key)
         self._remove = remove
         # A list of keys to be removed
         self._pending_removals = []
@@ -167,13 +148,7 @@ class WeakValueDictionary(collections.MutableMapping):
     def __len__(self):
         if self._pending_removals:
             self._commit_removals()
-        # PyPy change: we can't rely on len(self.data) at all, because
-        # the weakref callbacks may be called at an unknown later time.
-        # original code was: return len(self.data)
-        result = 0
-        for wr in self.data.values():
-            result += (wr() is not None)
-        return result
+        return len(self.data)
 
     def __contains__(self, key):
         if self._pending_removals:
@@ -419,18 +394,11 @@ class WeakKeyDictionary(collections.MutableMapping):
         return self.data[ref(key)]
 
     def __len__(self):
-        # PyPy change: we can't rely on len(self.data) at all, because
-        # the weakref callbacks may be called at an unknown later time.
-#        if self._dirty_len and self._pending_removals:
-#            # self._pending_removals may still contain keys which were
-#            # explicitly removed, we have to scrub them (see issue #21173).
-#            self._scrub_removals()
-#        return len(self.data) - len(self._pending_removals)
-#
-        result = 0
-        for wr in self.data:
-            result += (wr() is not None)
-        return result
+        if self._dirty_len and self._pending_removals:
+            # self._pending_removals may still contain keys which were
+            # explicitly removed, we have to scrub them (see issue #21173).
+            self._scrub_removals()
+        return len(self.data) - len(self._pending_removals)
 
     def __repr__(self):
         return "<%s at %#x>" % (self.__class__.__name__, id(self))

@@ -1,10 +1,7 @@
 # This tests the internal _objects attribute
 import unittest
 from ctypes import *
-try:
-    from sys import getrefcount as grc
-except ImportError:
-    grc = None      # e.g. PyPy
+from sys import getrefcount as grc
 
 # XXX This test must be reviewed for correctness!!!
 
@@ -22,8 +19,6 @@ class ObjectsTestCase(unittest.TestCase):
         self.assertEqual(id(a), id(b))
 
     def test_ints(self):
-        if grc is None:
-            return unittest.skip("no sys.getrefcount()")
         i = 42000123
         refcnt = grc(i)
         ci = c_int(i)
@@ -31,8 +26,6 @@ class ObjectsTestCase(unittest.TestCase):
         self.assertEqual(ci._objects, None)
 
     def test_c_char_p(self):
-        if grc is None:
-            return unittest.skip("no sys.getrefcount()")
         s = b"Hello, World"
         refcnt = grc(s)
         cs = c_char_p(s)

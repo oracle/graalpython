@@ -7,7 +7,7 @@ from weakref import proxy
 import io
 import _pyio as pyio
 
-from test.support import TESTFN, run_unittest, gc_collect
+from test.support import TESTFN
 from collections import UserList
 
 class AutoFileTests:
@@ -28,7 +28,6 @@ class AutoFileTests:
         self.assertEqual(self.f.tell(), p.tell())
         self.f.close()
         self.f = None
-        gc_collect()
         self.assertRaises(ReferenceError, getattr, p, 'tell')
 
     def testAttributes(self):
@@ -140,7 +139,7 @@ class OtherFileTests:
 
     def testModeStrings(self):
         # check invalid mode strings
-        for mode in ("", "aU", "wU+"):
+        for mode in ("", "aU", "wU+", "U+", "+U", "rU+"):
             try:
                 f = self.open(TESTFN, mode)
             except ValueError:

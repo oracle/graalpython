@@ -119,7 +119,7 @@ class CommonTestMixin_v4(CommonTestMixin):
 
     def test_bad_packed_length(self):
         def assertBadLength(length):
-            addr = bytes(length)
+            addr = b'\0' * length
             msg = "%r (len %d != 4) is not permitted as an IPv4 address"
             with self.assertAddressError(re.escape(msg % (addr, length))):
                 self.factory(addr)
@@ -139,11 +139,11 @@ class CommonTestMixin_v6(CommonTestMixin):
         self.assertInstancesEqual(3232235521, "::c0a8:1")
 
     def test_packed(self):
-        addr = bytes(12) + bytes.fromhex("00000000")
+        addr = b'\0'*12 + bytes.fromhex("00000000")
         self.assertInstancesEqual(addr, "::")
-        addr = bytes(12) + bytes.fromhex("c0a80001")
+        addr = b'\0'*12 + bytes.fromhex("c0a80001")
         self.assertInstancesEqual(addr, "::c0a8:1")
-        addr = bytes.fromhex("c0a80001") + bytes(12)
+        addr = bytes.fromhex("c0a80001") + b'\0'*12
         self.assertInstancesEqual(addr, "c0a8:1::")
 
     def test_negative_ints_rejected(self):
@@ -158,7 +158,7 @@ class CommonTestMixin_v6(CommonTestMixin):
 
     def test_bad_packed_length(self):
         def assertBadLength(length):
-            addr = bytes(length)
+            addr = b'\0' * length
             msg = "%r (len %d != 16) is not permitted as an IPv6 address"
             with self.assertAddressError(re.escape(msg % (addr, length))):
                 self.factory(addr)
@@ -1176,6 +1176,7 @@ class IpaddrUnitTest(unittest.TestCase):
 
         self.assertEqual(str(self.ipv6_network[5]),
                          '2001:658:22a:cafe::5')
+        self.assertRaises(IndexError, self.ipv6_network.__getitem__, 1 << 64)
 
     def testGetitem(self):
         # http://code.google.com/p/ipaddr-py/issues/detail?id=15
@@ -1404,14 +1405,35 @@ class IpaddrUnitTest(unittest.TestCase):
                         ipaddress.ip_address('::2'))
 
     def testInterfaceComparison(self):
-        self.assertTrue(ipaddress.ip_interface('1.1.1.1') <=
-                        ipaddress.ip_interface('1.1.1.1'))
-        self.assertTrue(ipaddress.ip_interface('1.1.1.1') <=
-                        ipaddress.ip_interface('1.1.1.2'))
-        self.assertTrue(ipaddress.ip_interface('::1') <=
-                        ipaddress.ip_interface('::1'))
-        self.assertTrue(ipaddress.ip_interface('::1') <=
-                        ipaddress.ip_interface('::2'))
+        self.assertTrue(ipaddress.ip_interface('1.1.1.1/24') ==
+                        ipaddress.ip_interface('1.1.1.1/24'))
+        self.assertTrue(ipaddress.ip_interface('1.1.1.1/16') <
+                        ipaddress.ip_interface('1.1.1.1/24'))
+        self.assertTrue(ipaddress.ip_interface('1.1.1.1/24') <
+                        ipaddress.ip_interface('1.1.1.2/24'))
+        self.assertTrue(ipaddress.ip_interface('1.1.1.2/16') <
+                        ipaddress.ip_interface('1.1.1.1/24'))
+        self.assertTrue(ipaddress.ip_interface('1.1.1.1/24') >
+                        ipaddress.ip_interface('1.1.1.1/16'))
+        self.assertTrue(ipaddress.ip_interface('1.1.1.2/24') >
+                        ipaddress.ip_interface('1.1.1.1/24'))
+        self.assertTrue(ipaddress.ip_interface('1.1.1.1/24') >
+                        ipaddress.ip_interface('1.1.1.2/16'))
+
+        self.assertTrue(ipaddress.ip_interface('::1/64') ==
+                        ipaddress.ip_interface('::1/64'))
+        self.assertTrue(ipaddress.ip_interface('::1/64') <
+                        ipaddress.ip_interface('::1/80'))
+        self.assertTrue(ipaddress.ip_interface('::1/64') <
+                        ipaddress.ip_interface('::2/64'))
+        self.assertTrue(ipaddress.ip_interface('::2/48') <
+                        ipaddress.ip_interface('::1/64'))
+        self.assertTrue(ipaddress.ip_interface('::1/80') >
+                        ipaddress.ip_interface('::1/64'))
+        self.assertTrue(ipaddress.ip_interface('::2/64') >
+                        ipaddress.ip_interface('::1/64'))
+        self.assertTrue(ipaddress.ip_interface('::1/64') >
+                        ipaddress.ip_interface('::2/48'))
 
     def testNetworkComparison(self):
         # ip1 and ip2 have the same network address

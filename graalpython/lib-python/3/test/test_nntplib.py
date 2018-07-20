@@ -166,6 +166,7 @@ class NetworkedNNTPTestsMixin:
         # XXX this could exceptionally happen...
         self.assertNotIn(article.lines[-1], (b".", b".\n", b".\r\n"))
 
+    @unittest.skipIf(True, "FIXME: see bpo-32128")
     def test_article_head_body(self):
         resp, count, first, last, name = self.server.group(self.GROUP_NAME)
         # Try to find an available article
@@ -286,7 +287,12 @@ class NetworkedNNTPTests(NetworkedNNTPTestsMixin, unittest.TestCase):
     def setUpClass(cls):
         support.requires("network")
         with support.transient_internet(cls.NNTP_HOST):
-            cls.server = cls.NNTP_CLASS(cls.NNTP_HOST, timeout=TIMEOUT, usenetrc=False)
+            try:
+                cls.server = cls.NNTP_CLASS(cls.NNTP_HOST, timeout=TIMEOUT,
+                                            usenetrc=False)
+            except EOFError:
+                raise unittest.SkipTest(f"{cls} got EOF error on connecting "
+                                        f"to {cls.NNTP_HOST!r}")
 
     @classmethod
     def tearDownClass(cls):
@@ -1544,8 +1550,10 @@ class LocalServerTests(unittest.TestCase):
                 elif cmd == b'STARTTLS\r\n':
                     reader.close()
                     client.sendall(b'382 Begin TLS negotiation now\r\n')
-                    client = ssl.wrap_socket(
-                        client, server_side=True, certfile=certfile)
+                    context = ssl.SSLContext()
+                    context.load_cert_chain(certfile)
+                    client = context.wrap_socket(
+                        client, server_side=True)
                     cleanup.enter_context(client)
                     reader = cleanup.enter_context(client.makefile('rb'))
                 elif cmd == b'QUIT\r\n':

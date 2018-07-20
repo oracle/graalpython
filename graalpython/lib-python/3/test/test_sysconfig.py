@@ -5,9 +5,9 @@ import subprocess
 import shutil
 from copy import copy
 
-from test.support import (run_unittest, TESTFN, unlink, check_warnings,
-                          captured_stdout, impl_detail, import_module,
-                          skip_unless_symlink, change_cwd)
+from test.support import (run_unittest,
+                          import_module, TESTFN, unlink, check_warnings,
+                          captured_stdout, skip_unless_symlink, change_cwd)
 
 import sysconfig
 from sysconfig import (get_paths, get_platform, get_config_vars,
@@ -236,7 +236,7 @@ class TestSysConfig(unittest.TestCase):
 
     def test_get_scheme_names(self):
         wanted = ('nt', 'nt_user', 'osx_framework_user',
-                  'posix_home', 'posix_prefix', 'posix_user', 'pypy')
+                  'posix_home', 'posix_prefix', 'posix_user')
         self.assertEqual(get_scheme_names(), wanted)
 
     @skip_unless_symlink
@@ -289,7 +289,6 @@ class TestSysConfig(unittest.TestCase):
             _main()
         self.assertTrue(len(output.getvalue().split('\n')) > 0)
 
-    @impl_detail("PyPy lacks LDFLAGS/LDSHARED config vars", pypy=False)
     @unittest.skipIf(sys.platform == "win32", "Does not apply to Windows")
     def test_ldshared_value(self):
         ldflags = sysconfig.get_config_var('LDFLAGS')
@@ -340,7 +339,6 @@ class TestSysConfig(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(my_platform, test_platform)
 
-    @impl_detail("Test is not PyPy compatible", pypy=False)
     def test_srcdir(self):
         # See Issues #15322, #15364.
         srcdir = sysconfig.get_config_var('srcdir')
@@ -388,17 +386,20 @@ class TestSysConfig(unittest.TestCase):
         self.assertIsNotNone(vars['SO'])
         self.assertEqual(vars['SO'], vars['EXT_SUFFIX'])
 
-    @unittest.skipUnless(sys.platform == 'linux', 'Linux-specific test')
+    @unittest.skipUnless(sys.platform == 'linux' and
+                         hasattr(sys.implementation, '_multiarch'),
+                         'multiarch-specific test')
     def test_triplet_in_ext_suffix(self):
-        import ctypes, platform, re
+        ctypes = import_module('ctypes')
+        import platform, re
         machine = platform.machine()
         suffix = sysconfig.get_config_var('EXT_SUFFIX')
         if re.match('(aarch64|arm|mips|ppc|powerpc|s390|sparc)', machine):
             self.assertTrue('linux' in suffix, suffix)
         if re.match('(i[3-6]86|x86_64)$', machine):
             if ctypes.sizeof(ctypes.c_char_p()) == 4:
-                self.assertTrue(suffix.endswith('i386-linux-gnu.so') \
-                                or suffix.endswith('x86_64-linux-gnux32.so'),
+                self.assertTrue(suffix.endswith('i386-linux-gnu.so') or
+                                suffix.endswith('x86_64-linux-gnux32.so'),
                                 suffix)
             else: # 8 byte pointer size
                 self.assertTrue(suffix.endswith('x86_64-linux-gnu.so'), suffix)
@@ -410,7 +411,6 @@ class TestSysConfig(unittest.TestCase):
 
 class MakefileTests(unittest.TestCase):
 
-    @impl_detail("Test is not PyPy compatible", pypy=False)
     @unittest.skipIf(sys.platform.startswith('win'),
                      'Test is not Windows compatible')
     def test_get_makefile_filename(self):
