@@ -42,9 +42,13 @@
 
 def __memoryview_init(self, *args, **kwargs):
     import _memoryview
-    # NOTE: DO NOT CHANGE THE NAME OF THIS PROPERTY
+    # NOTE: DO NOT CHANGE THE NAME OF PROPERTY '__c_memoryview'
     # it is also referenced in native code
-    self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
+    if args and isinstance(args[0], _memoryview.nativememoryview):
+        # wrapping case
+        self.__c_memoryview = args[0]
+    else:
+        self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
 
 
 def __memoryview_getitem(self, key):
@@ -86,4 +90,4 @@ for p in ["__repr__", "__len__", "release", "tobytes", "hex", "tolist",
 memoryview.__init__ = __memoryview_init
 memoryview.__getitem__ = __memoryview_getitem
 memoryview.__setitem__ = lambda self, key, value: self.__c_memoryview.__setitem__(key, value)
-memoryview.cast = lambda self, *args: self.__c_memoryview.cast(*args)
+memoryview.cast = lambda self, *args: memoryview(self.__c_memoryview.cast(*args))
