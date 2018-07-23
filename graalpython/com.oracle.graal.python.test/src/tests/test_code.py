@@ -81,7 +81,7 @@ def test_code_attributes():
     assert code.co_kwonlyargcount == 0
     assert code.co_nlocals == 6
     assert code.co_stacksize >= code.co_nlocals
-    # assert code.co_flags
+    assert code.co_flags == 0
     # assert code.co_code
     # assert code.co_consts
     # assert set(code.co_names) == {'set', 'TypeError', 'print'}

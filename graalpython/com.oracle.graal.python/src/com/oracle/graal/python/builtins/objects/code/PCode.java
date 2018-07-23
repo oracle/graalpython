@@ -50,6 +50,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
@@ -70,8 +72,12 @@ public class PCode extends PythonBuiltinObject {
     private final int nlocals;
     // is the required stack size (including local variables)
     private final int stacksize;
-    // bitmap of CO_* flags, read more
-    // (https://docs.python.org/3/library/inspect.html#inspect-module-co-flags)
+    // is an integer encoding a number of flags for the interpreter.
+    //
+    // The following flag bits are defined for co_flags: bit 0x04 is set if the function uses the
+    // *arguments syntax to accept an arbitrary number of positional arguments; bit 0x08 is set if
+    // the function uses the **keywords syntax to accept arbitrary keyword arguments; bit 0x20 is
+    // set if the function is a generator.
     private final int flags;
     // is a string representing the sequence of bytecode instructions
     private final String codestring;
@@ -110,9 +116,9 @@ public class PCode extends PythonBuiltinObject {
         this.cellvars = argStats.cellVars;
         this.varnames = argStats.varNames;
         this.nlocals = argStats.nLocals;
+        this.flags = argStats.flags;
 
         this.stacksize = getStackSize(rootNode);
-        this.flags = -1;
         this.codestring = null;
         this.constants = null;
         this.names = null;
@@ -217,20 +223,22 @@ public class PCode extends PythonBuiltinObject {
     }
 
     private final static class ArgStats {
-        public final int argCnt;
-        private final int kwOnlyArgCnt;
-        private final Object[] varNames;
-        private final Object[] freeVars;
-        private final Object[] cellVars;
-        private final int nLocals;
+        final int argCnt;
+        final int kwOnlyArgCnt;
+        final Object[] varNames;
+        final Object[] freeVars;
+        final Object[] cellVars;
+        final int flags;
+        final int nLocals;
 
-        private ArgStats(int argCnt, int kwOnlyArgCnt, Object[] varNames, Object[] freeVars, Object[] cellVars) {
+        private ArgStats(int argCnt, int kwOnlyArgCnt, Object[] varNames, Object[] freeVars, Object[] cellVars, int flags) {
             this.argCnt = argCnt;
             this.kwOnlyArgCnt = kwOnlyArgCnt;
             this.varNames = varNames;
             this.freeVars = freeVars;
             this.cellVars = cellVars;
             this.nLocals = varNames.length;
+            this.flags = flags;
         }
     }
 
@@ -252,6 +260,7 @@ public class PCode extends PythonBuiltinObject {
 
         int argC = readIndexedArgumentNodes.size();
         int kwOnlyArgC = 0;
+        int flags = 0;
 
         for (ReadKeywordNode kwNode : readKeywordNodes) {
             if (!kwNode.canBePositional()) {
@@ -273,7 +282,22 @@ public class PCode extends PythonBuiltinObject {
                 }
             }
         }
-        return new ArgStats(argC, kwOnlyArgC, varNames.toArray(), freeVars, cellVars);
+
+        // set the flags
+        // 0x04 - *arguments
+        if (NodeUtil.findAllNodeInstances(rootNode, ReadVarArgsNode.class).size() == 1) {
+            flags |= (1 << 2);
+        }
+        // 0x08 - **keywords
+        if (NodeUtil.findAllNodeInstances(rootNode, ReadVarKeywordsNode.class).size() == 1) {
+            flags |= (1 << 3);
+        }
+        // 0x20 - generator
+        if (rootNode instanceof GeneratorFunctionRootNode) {
+            flags |= (1 << 5);
+        }
+
+        return new ArgStats(argC, kwOnlyArgC, varNames.toArray(), freeVars, cellVars, flags);
     }
 
     private static int getStackSize(RootNode rootNode) {
@@ -320,7 +344,7 @@ public class PCode extends PythonBuiltinObject {
         return stacksize;
     }
 
-    public int getFlags() {
+    public long getFlags() {
         return flags;
     }
 

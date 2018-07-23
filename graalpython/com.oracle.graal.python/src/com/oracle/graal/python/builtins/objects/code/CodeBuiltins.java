@@ -150,8 +150,8 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFlagsNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(@SuppressWarnings("unused") PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        protected Object get(PCode self) {
+            return self.getFlags();
         }
     }
 
