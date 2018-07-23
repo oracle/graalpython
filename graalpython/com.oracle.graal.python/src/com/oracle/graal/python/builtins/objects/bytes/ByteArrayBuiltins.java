@@ -539,7 +539,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         @Fallback
         @SuppressWarnings("unused")
         Object doGeneric(Object self, Object sub, Object start, Object ending) {
-            throw raise(TypeError, "argument should be integer or bytes-like object, not 'str'");
+            throw raise(TypeError, "argument should be integer or bytes-like object, not '%p'", sub);
         }
     }
 
