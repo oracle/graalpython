@@ -96,17 +96,19 @@ public abstract class BytesNodes {
 
         @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
         private static byte[] joinArrays(byte[] sep, ArrayList<byte[]> parts, int partsTotalSize) {
-            byte[] joinedBytes = new byte[partsTotalSize + (parts.size() - 1) * sep.length];
-            int offset = 0;
-            byte[] array = parts.get(0);
-            System.arraycopy(array, 0, joinedBytes, offset, array.length);
-            offset += array.length;
-            for (int i = 1; i < parts.size(); i++) {
-                array = parts.get(i);
-                System.arraycopy(sep, 0, joinedBytes, offset, sep.length);
-                offset += sep.length;
+            byte[] joinedBytes = new byte[Math.max(0, partsTotalSize + (parts.size() - 1) * sep.length)];
+            if (parts.size() > 0) {
+                int offset = 0;
+                byte[] array = parts.get(0);
                 System.arraycopy(array, 0, joinedBytes, offset, array.length);
                 offset += array.length;
+                for (int i = 1; i < parts.size(); i++) {
+                    array = parts.get(i);
+                    System.arraycopy(sep, 0, joinedBytes, offset, sep.length);
+                    offset += sep.length;
+                    System.arraycopy(array, 0, joinedBytes, offset, array.length);
+                    offset += array.length;
+                }
             }
             return joinedBytes;
         }

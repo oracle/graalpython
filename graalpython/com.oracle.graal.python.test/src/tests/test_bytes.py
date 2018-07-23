@@ -259,6 +259,8 @@ def _test_join(basetype, type2test):
 def test_join():
     _test_join(bytes, BytesSubclass)
     _test_join(bytearray, ByteArraySubclass)
+    assert b"--".join([]) == b""
+    assert b"--".join([b"hello"]) == b"hello"
 
 
 def test_setslice():
