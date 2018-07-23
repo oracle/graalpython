@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesN
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -115,10 +116,8 @@ public abstract class BytesNodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, SpecialMethodNames.class})
     abstract static class ToBytesNode extends PBaseNode {
-
-        static final String TO_BYTES = "tobytes";
 
         protected final boolean allowRecursive;
 
@@ -146,7 +145,7 @@ public abstract class BytesNodes {
         @Specialization(guards = "allowRecursive")
         byte[] doMemoryView(PMemoryView memoryView,
                         @Cached("createRecursive()") ToBytesNode recursive,
-                        @Cached("create(TO_BYTES)") LookupAndCallUnaryNode callToBytesNode) {
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytesNode) {
             return recursive.execute(callToBytesNode.executeObject(memoryView));
         }
 

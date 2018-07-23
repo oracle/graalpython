@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -123,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -1034,8 +1036,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class StrNode extends PythonBuiltinNode {
         @Child private LookupAndCallTernaryNode callDecodeNode;
 
-        protected static String DECODE = "decode";
-        protected static String TO_BYTES = "tobytes";
         private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
 
         @CompilationFinal private ConditionProfile isStringProfile;
@@ -1087,7 +1087,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(encoding)")
         public Object doMemoryView(Object strClass, PMemoryView obj, Object encoding, Object errors,
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
-                        @Cached("create(TO_BYTES)") LookupAndCallUnaryNode callToBytes) {
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytes) {
             Object result = callToBytes.executeObject(obj);
             if (isBytesProfile.profile(result instanceof PBytes)) {
                 return doBytesLike(strClass, (PBytes) result, encoding, errors);

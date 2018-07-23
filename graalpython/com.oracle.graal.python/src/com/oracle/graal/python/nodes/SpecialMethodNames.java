@@ -158,6 +158,7 @@ public abstract class SpecialMethodNames {
     public static final String VALUES = "values";
     public static final String __FSPATH__ = "__fspath__";
     public static final String TOBYTES = "tobytes";
+    public static String DECODE = "decode";
 
     public static final String RICHCMP = "__truffle_richcompare__";
 }
