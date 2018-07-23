@@ -216,7 +216,7 @@ public class PythonMessageResolution {
                 return factory.createTuple(new Object[0]);
             }
             PythonObject object = (PythonObject) obj;
-            Object[] attributeNames = object.getAttributeNames().toArray();
+            Object[] attributeNames = object.getAllAttributeNames().toArray();
             if (isMapping.execute(object)) {
                 PList keys = castToList.executeWith(keysNode.executeObject(object));
                 Object[] keysArray = keys.getSequenceStorage().getCopyOfInternalArray();
