@@ -45,8 +45,10 @@ def default(value, default):
 def maxsize():
     import sys
     return sys.maxsize
-
-TREGEX_ENGINE = _interop.eval(string="", language="regex")()
+try:
+    TREGEX_ENGINE = _interop.eval(string="", language="regex")()
+except BaseException:
+    TREGEX_ENGINE = None
 
 CODESIZE = 4
 
@@ -150,7 +152,9 @@ class SRE_Pattern():
 
 
     def __tregex_compile(self, pattern):
-        return TREGEX_ENGINE(pattern, self.jsflags)
+        if TREGEX_ENGINE is not None:
+            return TREGEX_ENGINE(pattern, self.jsflags)
+        raise RuntimeError("TREGEX engine not available")
 
 
     def __compile_cpython_sre(self):
@@ -219,9 +223,7 @@ class SRE_Pattern():
         try:
             return self._search(self.pattern, string, pos, default(endpos, -1))
         except RuntimeError:
-            # TODO this is a workaround since exceptions are currently not correctly stacked
-            pass
-        return self.__compile_cpython_sre().search(string, pos, default(endpos, maxsize()))
+            return self.__compile_cpython_sre().search(string, pos, default(endpos, maxsize()))
 
     def match(self, string, pos=0, endpos=None):
         try:
@@ -230,9 +232,7 @@ class SRE_Pattern():
             else:
                 return self._search(self.pattern, string, pos, default(endpos, -1))
         except RuntimeError:
-            # TODO this is a workaround since exceptions are currently not correctly stacked
-            pass
-        return self.__compile_cpython_sre().match(string, pos, default(endpos, maxsize()))
+            return self.__compile_cpython_sre().match(string, pos, default(endpos, maxsize()))
 
     def fullmatch(self, string, pos=0, endpos=None):
         try:
@@ -243,9 +243,7 @@ class SRE_Pattern():
                 pattern = pattern + "$"
             return self._search(pattern, string, pos, default(endpos, -1))
         except RuntimeError:
-            # TODO this is a workaround since exceptions are currently not correctly stacked
-            pass
-        return self.__compile_cpython_sre().fullmatch(string, pos, default(endpos, maxsize()))
+            return self.__compile_cpython_sre().fullmatch(string, pos, default(endpos, maxsize()))
 
     def findall(self, string, pos=0, endpos=-1):
         try:
@@ -270,9 +268,7 @@ class SRE_Pattern():
                 pos = result.end[0] + no_progress
             return matchlist
         except RuntimeError:
-            # TODO this is a workaround since exceptions are currently not correctly stacked
-            pass
-        return self.__compile_cpython_sre().findall(string, pos, maxsize() if endpos == -1 else endpos)
+            return self.__compile_cpython_sre().findall(string, pos, maxsize() if endpos == -1 else endpos)
 
 
     def __replace_groups(self, repl, string, match_result, pattern):
@@ -360,9 +356,7 @@ class SRE_Pattern():
             result.append(self._emit(string[pos:]))
             return self._emit("").join(result)
         except BaseException:
-            # TODO this is a workaround since exceptions are currently not correctly stacked
-            pass
-        return self.__compile_cpython_sre().sub(repl, string, count)
+            return self.__compile_cpython_sre().sub(repl, string, count)
 
     def _emit(self, str_like_obj):
         assert isinstance(str_like_obj, str) or isinstance(str_like_obj, bytes)
