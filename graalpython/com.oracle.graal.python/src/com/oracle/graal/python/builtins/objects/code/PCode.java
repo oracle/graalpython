@@ -44,7 +44,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -195,6 +194,14 @@ public class PCode extends PythonBuiltinObject {
         return name;
     }
 
+    private static Set<String> getKeywordArgumentNames(List<ReadKeywordNode> readKeywordNodes) {
+        Set<String> kwArgNames = new HashSet<>();
+        for (ReadKeywordNode node : readKeywordNodes) {
+            kwArgNames.add(node.getName());
+        }
+        return kwArgNames;
+    }
+
     private static Set<String> getArgumentNames(List<ReadIndexedArgumentNode> readIndexedArgumentNodes) {
         Set<String> argNames = new HashSet<>();
         for (ReadIndexedArgumentNode node : readIndexedArgumentNodes) {
@@ -236,7 +243,7 @@ public class PCode extends PythonBuiltinObject {
         List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(rootNode, ReadKeywordNode.class);
         List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(rootNode, ReadIndexedArgumentNode.class);
 
-        Set<String> kwNames = readKeywordNodes.stream().map(ReadKeywordNode::getName).collect(Collectors.toSet());
+        Set<String> kwNames = getKeywordArgumentNames(readKeywordNodes);
         Set<String> argNames = getArgumentNames(readIndexedArgumentNodes);
 
         Set<String> allArgNames = new HashSet<>();

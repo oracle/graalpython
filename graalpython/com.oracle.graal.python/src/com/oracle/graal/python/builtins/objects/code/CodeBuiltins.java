@@ -150,7 +150,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFlagsNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected Object get(@SuppressWarnings("unused") PCode self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -159,7 +159,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected Object get(@SuppressWarnings("unused") PCode self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -168,7 +168,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetConstsNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected Object get(@SuppressWarnings("unused") PCode self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -177,7 +177,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNamesNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected Object get(@SuppressWarnings("unused") PCode self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -199,7 +199,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetLNoTabNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected Object get(@SuppressWarnings("unused") PCode self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
