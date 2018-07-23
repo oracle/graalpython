@@ -73,13 +73,13 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -104,8 +104,10 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonNativeWrapper.class)
@@ -428,6 +430,22 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(object.getFunction());
         }
 
+        @Specialization
+        Object doMemoryview(PMemoryView object, String key,
+                        @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached("createReadNode()") Node readNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
+            Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
+            if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
+                try {
+                    return ForeignAccess.sendRead(readNode, (TruffleObject) ((PythonNativeObject) delegateObj).object, key);
+                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                    throw e.raise();
+                }
+            }
+            throw new IllegalStateException("delegate of memoryview object is not native");
+        }
+
         @Fallback
         Object doGeneric(Object object, String key) {
             // This is the preliminary generic case: There are native members we know that they
@@ -444,11 +462,6 @@ public class PythonObjectNativeWrapperMR {
 
         protected boolean eq(String expected, String actual) {
             return expected.equals(actual);
-        }
-
-        protected boolean isMemoryView(Object obj) {
-            // TODO
-            return getClass(obj).getName().equals(BuiltinNames.MEMORYVIEW);
         }
 
         public static ReadNativeMemberNode create() {
@@ -485,6 +498,10 @@ public class PythonObjectNativeWrapperMR {
                 getClassNode = insert(GetClassNode.create());
             }
             return getClassNode.execute(obj);
+        }
+
+        protected Node createReadNode() {
+            return Message.READ.createNode();
         }
     }
 
@@ -554,6 +571,22 @@ public class PythonObjectNativeWrapperMR {
             return value;
         }
 
+        @Specialization
+        Object doMemoryview(PMemoryView object, String key, Object value,
+                        @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
+                        @Cached("createWriteNode()") Node writeNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isNativeObject) {
+            Object delegateObj = readAttrNode.execute(object, "__c_memoryview");
+            if (isNativeObject.profile(delegateObj instanceof PythonNativeObject)) {
+                try {
+                    return ForeignAccess.sendWrite(writeNode, (TruffleObject) ((PythonNativeObject) delegateObj).object, key, value);
+                } catch (UnsupportedMessageException | UnknownIdentifierException | UnsupportedTypeException e) {
+                    throw e.raise();
+                }
+            }
+            throw new IllegalStateException("delegate of memoryview object is not native");
+        }
+
         @Fallback
         Object doGeneric(Object object, String key, Object value) {
             // This is the preliminary generic case: There are native members we know that they
@@ -581,10 +614,13 @@ public class PythonObjectNativeWrapperMR {
             return setItemNode;
         }
 
+        protected Node createWriteNode() {
+            return Message.WRITE.createNode();
+        }
+
         public static WriteNativeMemberNode create() {
             return WriteNativeMemberNodeGen.create();
         }
-
     }
 
     @Resolve(message = "EXECUTE")
