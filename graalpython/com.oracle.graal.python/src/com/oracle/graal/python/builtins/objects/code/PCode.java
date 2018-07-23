@@ -40,66 +40,77 @@
  */
 package com.oracle.graal.python.builtins.objects.code;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
+import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class PCode extends PythonBuiltinObject {
-    private final RootNode result;
+    private final RootNode rootNode;
+    // number of arguments (not including keyword only arguments, * or ** args)
     private final int argcount;
+    // number of keyword only arguments (not including ** arg)
     private final int kwonlyargcount;
+    // number of local variables
     private final int nlocals;
+    // virtual machine stack space required
     private final int stacksize;
+    // bitmap of CO_* flags, read more
+    // (https://docs.python.org/3/library/inspect.html#inspect-module-co-flags)
     private final int flags;
+    // string of raw compiled bytecode
     private final String codestring;
+    // tuple of constants used in the bytecode
     private final Object constants;
+    // tuple of names of local variables
     private final Object names;
+    // tuple of names of arguments and local variables
     private final Object[] varnames;
+    // name of file in which this code object was created
     private final String filename;
+    // name with which this code object was defined
     private final String name;
+    // number of first line in Python source code
     private final int firstlineno;
+    // encoded mapping of line numbers to bytecode indices
     private final Object lnotab;
+    // tuple of names of free variables (referenced via a function’s closure)
     private final Object[] freevars;
+    // tuple of names of cell variables (referenced by containing scopes)
     private final Object[] cellvars;
 
     @TruffleBoundary
-    public PCode(PythonClass cls, RootNode result, PythonCore core) {
+    public PCode(PythonClass cls, RootNode rootNode, PythonCore core) {
         super(cls);
-        this.result = result;
+        this.rootNode = rootNode;
         // file stats
-        this.filename = getFileName(this.result);
-        this.name = getName(this.result);
-        this.firstlineno = getFirstLineno(this.result);
+        this.filename = getFileName(this.rootNode);
+        this.name = getName(this.rootNode);
+        this.firstlineno = getFirstLineno(this.rootNode);
         // arg stats
-        ArgStats argStats = getArgStats(this.result);
+        ArgStats argStats = getArgStats(this.rootNode, core);
         this.argcount = argStats.argCnt;
         this.kwonlyargcount = argStats.kwOnlyArgCnt;
-        // var stats
-        String[] freevars = getFreeVars(this.result);
-        String[] cellvars = getCellVars(this.result);
-        Set<String> freeVarsSet = asSet(freevars);
-        Set<String> cellVarsSet = asSet(cellvars);
-        ArrayList<String> varNames = getVarNames(this.result, freeVarsSet, cellVarsSet, core);
-
-        this.freevars = freevars;
-        this.cellvars = cellvars;
-        this.varnames = varNames.toArray();
-        this.nlocals = this.varnames.length;
+        this.freevars = argStats.freeVars;
+        this.cellvars = argStats.cellVars;
+        this.varnames = argStats.varNames;
+        this.nlocals = argStats.nLocals;
 
         this.stacksize = -1;
         this.flags = -1;
@@ -114,7 +125,7 @@ public class PCode extends PythonBuiltinObject {
                     String filename, String name, int firstlineno, Object lnotab, Object[] freevars,
                     Object[] cellvars) {
         super(cls);
-        this.result = null;
+        this.rootNode = null;
         this.argcount = argcount;
         this.kwonlyargcount = kwonlyargcount;
         this.nlocals = nlocals;
@@ -169,11 +180,7 @@ public class PCode extends PythonBuiltinObject {
 
     private static int getFirstLineno(RootNode rootNode) {
         SourceSection sourceSection = rootNode.getSourceSection();
-        if (sourceSection == null) {
-            return 1;
-        } else {
-            return sourceSection.getStartLine();
-        }
+        return (sourceSection != null) ? sourceSection.getStartLine() : 1;
     }
 
     private static String getName(RootNode rootNode) {
@@ -188,46 +195,82 @@ public class PCode extends PythonBuiltinObject {
         return name;
     }
 
-    private static ArrayList<String> getVarNames(RootNode rootNode, Set<String> freeVarsSet, Set<String> cellVarsSet, PythonCore core) {
-        // tuple of names of arguments and local variables
-        ArrayList<String> variableNames = new ArrayList<>();
-        for (Object identifier : rootNode.getFrameDescriptor().getIdentifiers()) {
-            if (identifier instanceof String) {
-                String varName = (String) identifier;
-                if (core.getParser().isIdentifier(core, varName) && !freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
-                    variableNames.add(varName);
+    private static Set<String> getArgumentNames(List<ReadIndexedArgumentNode> readIndexedArgumentNodes) {
+        Set<String> argNames = new HashSet<>();
+        for (ReadIndexedArgumentNode node : readIndexedArgumentNodes) {
+            Node parent = node.getParent();
+            if (parent instanceof WriteIdentifierNode) {
+                Object identifier = ((WriteIdentifierNode) parent).getIdentifier();
+                if (identifier instanceof String) {
+                    argNames.add((String) identifier);
                 }
             }
         }
-        return variableNames;
+        return argNames;
     }
 
     private final static class ArgStats {
         public final int argCnt;
         private final int kwOnlyArgCnt;
+        private final Object[] varNames;
+        private final Object[] freeVars;
+        private final Object[] cellVars;
+        private final int nLocals;
 
-        private ArgStats(int argCnt, int kwOnlyArgCnt) {
+        private ArgStats(int argCnt, int kwOnlyArgCnt, Object[] varNames, Object[] freeVars, Object[] cellVars) {
             this.argCnt = argCnt;
             this.kwOnlyArgCnt = kwOnlyArgCnt;
+            this.varNames = varNames;
+            this.freeVars = freeVars;
+            this.cellVars = cellVars;
+            this.nLocals = varNames.length;
         }
     }
 
-    private static ArgStats getArgStats(RootNode rootNode) {
-        int argC = NodeUtil.findAllNodeInstances(rootNode, ReadIndexedArgumentNode.class).size();
+    private static ArgStats getArgStats(RootNode rootNode, PythonCore core) {
+        String[] freeVars = getFreeVars(rootNode);
+        String[] cellVars = getCellVars(rootNode);
+        Set<String> freeVarsSet = asSet(freeVars);
+        Set<String> cellVarsSet = asSet(cellVars);
+
+        List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(rootNode, ReadKeywordNode.class);
+        List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(rootNode, ReadIndexedArgumentNode.class);
+
+        Set<String> kwNames = readKeywordNodes.stream().map(ReadKeywordNode::getName).collect(Collectors.toSet());
+        Set<String> argNames = getArgumentNames(readIndexedArgumentNodes);
+
+        Set<String> allArgNames = new HashSet<>();
+        allArgNames.addAll(kwNames);
+        allArgNames.addAll(argNames);
+
+        int argC = readIndexedArgumentNodes.size();
         int kwOnlyArgC = 0;
-        List<ReadKeywordNode> kwNodes = NodeUtil.findAllNodeInstances(rootNode, ReadKeywordNode.class);
-        for (ReadKeywordNode kwNode : kwNodes) {
-            if (kwNode.canBePositional()) {
-                argC++;
-            } else {
+
+        for (ReadKeywordNode kwNode : readKeywordNodes) {
+            if (!kwNode.canBePositional()) {
                 kwOnlyArgC++;
             }
         }
-        return new ArgStats(argC, kwOnlyArgC);
+
+        Set<String> varNames = new HashSet<>();
+        for (Object identifier : rootNode.getFrameDescriptor().getIdentifiers()) {
+            if (identifier instanceof String) {
+                String varName = (String) identifier;
+
+                if (core.getParser().isIdentifier(core, varName)) {
+                    if (allArgNames.contains(varName)) {
+                        varNames.add(varName);
+                    } else if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
+                        varNames.add(varName);
+                    }
+                }
+            }
+        }
+        return new ArgStats(argC, kwOnlyArgC, varNames.toArray(), freeVars, cellVars);
     }
 
     public RootNode getRootNode() {
-        return result;
+        return rootNode;
     }
 
     public Object[] getFreeVars() {
