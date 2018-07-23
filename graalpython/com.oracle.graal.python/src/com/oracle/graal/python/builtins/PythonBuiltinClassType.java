@@ -72,6 +72,7 @@ public enum PythonBuiltinClassType {
     PLongArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PLongArrayIterator.class, "iterator"),
     PLongSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator.class, "iterator"),
     PMappingproxy(com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy.class, "mapping_proxy"),
+    PMemoryView(com.oracle.graal.python.builtins.objects.memoryview.PMemoryView.class, "memoryview"),
     PMethod(com.oracle.graal.python.builtins.objects.method.PMethod.class, "method"),
     PNone(com.oracle.graal.python.builtins.objects.PNone.class, "NoneType"),
     PNotImplemented(com.oracle.graal.python.builtins.objects.PNotImplemented.class, "NotImplementedType"),

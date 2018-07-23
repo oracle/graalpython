@@ -39,7 +39,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 
@@ -57,7 +56,6 @@ public interface PythonCore {
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
     static final boolean LIBPOLYGLOT = Boolean.getBoolean("graalvm.libpolyglot");
-    static final boolean AOT = TruffleOptions.AOT;
 
     /**
      * Set up the basic types and classes in Java.
@@ -153,13 +151,7 @@ public interface PythonCore {
         TruffleLanguage.Env env = PythonLanguage.getContext().getEnv();
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         if (coreHome.isEmpty()) {
-            if (!AOT) {
-                throw new RuntimeException(NO_CORE_FATAL);
-            } else {
-                writeWarning(env, NO_CORE_WARNING);
-            }
-            env.getOptions().set(PythonOptions.CoreHome, LIB_GRAALPYTHON);
-            return LIB_GRAALPYTHON;
+            throw new RuntimeException(NO_CORE_FATAL);
         }
         return coreHome;
     }

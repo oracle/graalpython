@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -57,7 +58,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -214,7 +214,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         Object getCode(PFunction self, @SuppressWarnings("unused") PNone none) {
-            return factory().createCode(new PythonParseResult(self.getFunctionRootNode()));
+            return factory().createCode(self.getFunctionRootNode());
         }
 
         @SuppressWarnings("unused")
@@ -235,7 +235,12 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object dict(PFunction self) {
-            return factory().createMappingproxy(self);
+            PDict dict = self.getDict();
+            if (dict == null) {
+                dict = factory().createDictFixedStorage(self);
+                self.setDict(dict);
+            }
+            return dict;
         }
 
         @SuppressWarnings("unused")

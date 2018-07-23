@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -41,8 +43,13 @@ package com.oracle.graal.python.builtins.objects.dict;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
@@ -65,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -168,6 +176,36 @@ public final class DictViewBuiltins extends PythonBuiltins {
                         @Cached("create()") HashingStorageNodes.KeysEqualsNode equalsNode) {
             PSet selfSet = constructSetNode.executeWith(self);
             return equalsNode.execute(selfSet.getDictStorage(), other.getDictStorage());
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class NeNode extends PythonBinaryBuiltinNode {
+        @Child EqNode eqNode;
+
+        private EqNode getEqNode() {
+            if (eqNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                eqNode = insert(DictViewBuiltinsFactory.EqNodeFactory.create());
+            }
+            return eqNode;
+        }
+
+        @Specialization
+        public boolean notEqual(PDictView self, PDictView other) {
+            return !(Boolean) getEqNode().execute(self, other);
+        }
+
+        @Specialization
+        public boolean notEqual(PDictView self, PBaseSet other) {
+            return !(Boolean) getEqNode().execute(self, other);
         }
 
         @Fallback
@@ -314,6 +352,136 @@ public final class DictViewBuiltins extends PythonBuiltins {
             PSet selfSet = constructSetNode.executeWith(self);
             PSet otherSet = constructSetNode.executeWith(other);
             return factory().createSet(xorNode.execute(selfSet.getDictStorage(), otherSet.getDictStorage()));
+        }
+    }
+
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LessEqualNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean lessEqual(PDictKeysView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+            return isSubsetNode.execute(self.getDict().getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean lessEqual(PDictKeysView self, PDictKeysView other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode) {
+            return isSubsetNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
+        }
+
+        @Specialization
+        boolean lessEqual(PDictItemsView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            return isSubsetNode.execute(selfSet.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean lessEqual(PDictItemsView self, PDictItemsView other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSubsetNode isSubsetNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            PSet otherSet = constructSetNode.executeWith(other);
+            return isSubsetNode.execute(selfSet.getDictStorage(), otherSet.getDictStorage());
+        }
+    }
+
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GreaterEqualNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean greaterEqual(PDictKeysView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+            return isSupersetNode.execute(self.getDict().getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean greaterEqual(PDictKeysView self, PDictKeysView other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode) {
+            return isSupersetNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
+        }
+
+        @Specialization
+        boolean greaterEqual(PDictItemsView self, PBaseSet other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            return isSupersetNode.execute(selfSet.getDictStorage(), other.getDictStorage());
+        }
+
+        @Specialization
+        boolean greaterEqual(PDictItemsView self, PDictItemsView other,
+                        @Cached("create()") HashingStorageNodes.KeysIsSupersetNode isSupersetNode,
+                        @Cached("create()") SetNodes.ConstructSetNode constructSetNode) {
+            PSet selfSet = constructSetNode.executeWith(self);
+            PSet otherSet = constructSetNode.executeWith(other);
+            return isSupersetNode.execute(selfSet.getDictStorage(), otherSet.getDictStorage());
+        }
+    }
+
+    @Builtin(name = __LT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LessThanNode extends PythonBinaryBuiltinNode {
+        @Child LessEqualNode lessEqualNode;
+
+        private LessEqualNode getLessEqualNode() {
+            if (lessEqualNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lessEqualNode = insert(DictViewBuiltinsFactory.LessEqualNodeFactory.create());
+            }
+            return lessEqualNode;
+        }
+
+        @Specialization
+        boolean isLessThan(PDictView self, PBaseSet other,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(self.size() >= other.size())) {
+                return false;
+            }
+            return (Boolean) getLessEqualNode().execute(self, other);
+        }
+
+        @Specialization
+        boolean isLessThan(PDictView self, PDictView other,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(self.size() >= other.size())) {
+                return false;
+            }
+            return (Boolean) getLessEqualNode().execute(self, other);
+        }
+    }
+
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GreaterThanNode extends PythonBinaryBuiltinNode {
+        @Child GreaterEqualNode greaterEqualNode;
+
+        private GreaterEqualNode getGreaterEqualNode() {
+            if (greaterEqualNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                greaterEqualNode = insert(DictViewBuiltinsFactory.GreaterEqualNodeFactory.create());
+            }
+            return greaterEqualNode;
+        }
+
+        @Specialization
+        boolean isGreaterThan(PDictView self, PBaseSet other,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(self.size() <= other.size())) {
+                return false;
+            }
+            return (Boolean) getGreaterEqualNode().execute(self, other);
+        }
+
+        @Specialization
+        boolean isGreaterThan(PDictView self, PDictView other,
+                        @Cached("createBinaryProfile()") ConditionProfile sizeProfile) {
+            if (sizeProfile.profile(self.size() <= other.size())) {
+                return false;
+            }
+            return (Boolean) getGreaterEqualNode().execute(self, other);
         }
     }
 }

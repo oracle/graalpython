@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -66,7 +68,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CallTarget;
@@ -89,6 +91,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
 @CoreFunctions(defineModule = "_imp")
@@ -139,6 +142,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @ImportStatic(Message.class)
     public abstract static class CreateDynamic extends PythonBuiltinNode {
         protected static final String INITIALIZE_CAPI = "initialize_capi";
+        protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         private static final String LLVM_LANGUAGE = "llvm";
         @Child private SetItemNode setItemNode;
         @Child private Node isNullNode = Message.IS_NULL.createNode();
@@ -187,8 +191,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
+                // save current exception state
+                PException exceptionState = getContext().getCurrentException();
+                // clear current exception such that native code has clean environment
+                getContext().setCurrentException(null);
+
                 Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
                 TruffleCextBuiltins.checkFunctionResult(getContext(), isNullNode, "PyInit_" + basename, nativeResult);
+
+                // restore previous exception state
+                getContext().setCurrentException(exceptionState);
+
                 Object result = AsPythonObjectNode.doSlowPath(nativeResult);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
@@ -226,6 +239,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
                 callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
                 getContext().setCapiWasLoaded();
+
+                // initialization needs to be finished already but load memoryview implemenation
+                // immediately
+                callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 
@@ -325,7 +342,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         public Object run(String path, PythonModule mod) {
             Env env = getContext().getEnv();
             try {
-                PythonParseResult parsedModule;
                 String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
                 String fileName = pathParts[pathParts.length - 1];
                 TruffleFile file = env.getTruffleFile(path);
@@ -339,9 +355,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 if (src == null) {
                     src = Source.newBuilder("").uri(URI.create(path)).mimeType(PythonLanguage.MIME_TYPE).name(fileName).build();
                 }
-                parsedModule = getCore().getParser().parse(getCore(), src);
+                RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
                 if (parsedModule != null) {
-                    CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule.getRootNode());
+                    CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
                     callTarget.call(PArguments.withGlobals(mod));
                 }
             } catch (PException e) {

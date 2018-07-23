@@ -44,12 +44,11 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PByteArray extends PArray implements PIBytesLike {
 
-    @CompilationFinal private SequenceStorage store;
+    private SequenceStorage store;
 
     public PByteArray(PythonClass cls, byte[] bytes) {
         super(cls);
@@ -71,11 +70,15 @@ public final class PByteArray extends PArray implements PIBytesLike {
         return store.getItemNormalized(idx);
     }
 
+    public void setItem(int idx, Object value) {
+        setItemNormalized(SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range"), value);
+    }
+
     public void setItemNormalized(int index, Object value) {
         try {
             store.setItemNormalized(index, value);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value);
+            store = store.generalizeFor(value, null);
 
             try {
                 store.setItemNormalized(index, value);
@@ -92,20 +95,21 @@ public final class PByteArray extends PArray implements PIBytesLike {
 
     @Override
     public void setSlice(int start, int stop, int step, PSequence value) {
-        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length(), "array assignment index out of range");
-        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length(), "array assignment index out of range");
+        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length());
+        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length());
 
         if (normalizedStop < normalizedStart) {
             normalizedStop = normalizedStart;
         }
 
+        SequenceStorage other = value.getSequenceStorage();
         try {
-            store.setSliceInBound(normalizedStart, normalizedStop, step, value.getSequenceStorage());
+            store.setSliceInBound(normalizedStart, normalizedStop, step, other);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value.getSequenceStorage().getIndicativeValue());
+            store = store.generalizeFor(other.getIndicativeValue(), other);
 
             try {
-                store.setSliceInBound(start, stop, step, value.getSequenceStorage());
+                store.setSliceInBound(start, stop, step, other);
             } catch (SequenceStoreException ex) {
                 throw new IllegalStateException();
             }
@@ -170,6 +174,9 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     public final boolean equals(PSequence other) {
+        if (len() == 0 && other.len() == 0) {
+            return true;
+        }
         SequenceStorage otherStore = other.getSequenceStorage();
         return store.equals(otherStore);
     }
@@ -199,8 +206,8 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     public final void delSlice(PSlice slice) {
-        int start = SequenceUtil.normalizeSliceStart(slice, store.length(), "array index out of range");
-        final int stop = SequenceUtil.normalizeSliceStop(slice, store.length(), "array index out of range");
+        int start = Math.max(0, SequenceUtil.normalizeSliceStart(slice, store.length()));
+        final int stop = Math.min(store.length(), SequenceUtil.normalizeSliceStop(slice, store.length()));
         final int step = SequenceUtil.normalizeSliceStep(slice);
         store.delSlice(start, stop, step);
     }

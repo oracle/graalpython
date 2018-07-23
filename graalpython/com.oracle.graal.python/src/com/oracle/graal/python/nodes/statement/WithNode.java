@@ -30,7 +30,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -86,10 +85,11 @@ public abstract class WithNode extends StatementNode {
     }
 
     @Specialization
-    protected Object runWith(VirtualFrame frame, PythonObject withObject,
+    protected Object runWith(VirtualFrame frame, Object withObject,
                     @Cached("create()") IsCallableNode isCallableNode,
                     @Cached("create()") IsCallableNode isExitCallableNode) {
 
+        PException exceptionState = getContext().getCurrentException();
         boolean gotException = false;
         // CPython first looks up '__exit__
         Object exitCallable = exitGetter.executeObject(withObject, "__exit__");
@@ -114,11 +114,12 @@ public abstract class WithNode extends StatementNode {
                     throw raise(TypeError, "%p is not callable", exitCallable);
                 }
             }
+            getContext().setCurrentException(exceptionState);
         }
         return PNone.NONE;
     }
 
-    private Object handleException(PythonObject withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
+    private Object handleException(Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
         if (!isExitCallableNode.execute(exitCallable)) {
             throw raise(TypeError, "%p is not callable", exitCallable);
         }

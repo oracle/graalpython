@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -358,12 +360,35 @@ PyObject* _PyObject_New(PyTypeObject *tp) {
     return PyObject_INIT(op, tp);
 }
 
+PyVarObject *
+_PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
+{
+    PyVarObject *op;
+    const size_t size = _PyObject_VAR_SIZE(tp, nitems);
+    op = (PyVarObject *) PyObject_MALLOC(size);
+    if (op == NULL)
+        return (PyVarObject *)PyErr_NoMemory();
+    return PyObject_INIT_VAR(op, tp, nitems);
+}
+
 PyObject* PyObject_Init(PyObject *op, PyTypeObject *tp) {
     if (op == NULL) {
         return PyErr_NoMemory();
     }
     Py_TYPE(op) = tp;
     _Py_NewReference(op);
+    return op;
+}
+
+// taken from CPython 3.6.4 "Objects/object.c"
+PyVarObject * PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size) {
+    if (op == NULL) {
+        return (PyVarObject *) PyErr_NoMemory();
+    }
+    /* Any changes should be reflected in PyObject_INIT_VAR */
+    op->ob_size = size;
+    Py_TYPE(op) = tp;
+    _Py_NewReference((PyObject *)op);
     return op;
 }
 

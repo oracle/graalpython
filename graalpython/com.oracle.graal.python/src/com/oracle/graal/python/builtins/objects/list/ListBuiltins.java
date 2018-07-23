@@ -97,6 +97,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.graal.python.runtime.sequence.storage.SetSequenceStorageItem;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -523,11 +524,12 @@ public class ListBuiltins extends PythonBuiltins {
                 try {
                     target.extend(eSource);
                 } catch (SequenceStoreException e) {
-                    target = target.generalizeFor(eSource.getItemNormalized(0));
+                    target = target.generalizeFor(eSource.getItemNormalized(0), eSource);
                     list.setSequenceStorage(target);
                     try {
                         target.extend(eSource);
                     } catch (SequenceStoreException e1) {
+                        CompilerDirectives.transferToInterpreter();
                         throw new IllegalStateException();
                     }
                 }

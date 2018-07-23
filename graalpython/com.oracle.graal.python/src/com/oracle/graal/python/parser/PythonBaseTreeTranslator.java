@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -424,7 +424,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     public Object visitSetmaker(Python3Parser.SetmakerContext ctx) {
         if (ctx.comp_for() == null) {
             List<PNode> nodes = asList(super.visitSetmaker(ctx));
-            Set<PNode> setNodes = new HashSet<>(nodes);
+            Set<PNode> setNodes = new LinkedHashSet<>(nodes);
             return factory.createSetLiteral(setNodes);
         } else {
             return factory.callBuiltin(SET, createComprehensionExpression(ctx));

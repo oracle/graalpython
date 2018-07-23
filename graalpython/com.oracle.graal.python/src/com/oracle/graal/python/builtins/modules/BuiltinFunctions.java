@@ -53,6 +53,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BREAKPOINT__;
+import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.PythonImmutableBuiltinType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -87,6 +89,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -119,12 +122,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToIntNode;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CallTarget;
@@ -144,7 +147,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
@@ -235,7 +237,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public String doO(Object x,
-                        @Cached("create()") CastToIntNode toIntNode,
+                        @Cached("create()") CastToIntegerFromIndexNode toIntNode,
                         @Cached("create()") BinNode recursiveNode) {
             Object value = toIntNode.execute(x);
             return recursiveNode.executeObject(value);
@@ -429,17 +431,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(expression, callerGlobals, callerGlobals, callerClosure);
+            return evalExpression(expression, callerGlobals, callerGlobals, callerClosure, callerFrame);
         }
 
         @Specialization
-        public Object eval(String expression, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
-            return evalExpression(expression, globals, globals, null);
+        public Object eval(VirtualFrame frame, String expression, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            return evalExpression(expression, globals, globals, null, callerFrame);
         }
 
         @Specialization
-        public Object eval(String expression, PythonObject globals, PythonObject locals) {
-            return evalExpression(expression, globals, locals, null);
+        public Object eval(VirtualFrame frame, String expression, PythonObject globals, PythonObject locals) {
+            Frame callerFrame = readCallerFrameNode.executeWith(frame);
+            return evalExpression(expression, globals, locals, null, callerFrame);
         }
 
         @Specialization
@@ -447,7 +451,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
-            return evalExpression(expression, callerGlobals, locals, callerClosure);
+            return evalExpression(expression, callerGlobals, locals, callerClosure, callerFrame);
         }
 
         @Specialization
@@ -487,7 +491,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object evalExpression(String expression, PythonObject globals, PythonObject locals, PCell[] closure) {
+        private Object evalExpression(String expression, PythonObject globals, PythonObject locals, PCell[] closure, Frame callerFrame) {
             String name = "<eval>";
             if (globals instanceof PDict) {
                 Object nameObject = getNameNode.execute(globals, __NAME__);
@@ -496,8 +500,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
             PythonParser parser = getCore().getParser();
-            PythonParseResult parsed = parser.parseEval(getCore(), expression, name);
-            return evalNode(parsed.getRootNode(), globals, locals, closure);
+            Source source = Source.newBuilder(expression).name(name).mimeType(PythonLanguage.MIME_TYPE).build();
+            RootNode parsed = (RootNode) parser.parse(ParserMode.Eval, getCore(), source, callerFrame);
+            return evalNode(parsed, globals, locals, closure);
         }
 
         /**
@@ -527,19 +532,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        Object compile(String source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            PythonParser parser = getCore().getParser();
-            PythonParseResult result;
+        Object compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+            Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
+            ParserMode pm;
             if (mode.equals("exec")) {
-                result = parser.parseExec(getCore(), source, filename);
+                pm = ParserMode.File;
             } else if (mode.equals("eval")) {
-                result = parser.parseEval(getCore(), source, filename);
+                pm = ParserMode.Eval;
             } else if (mode.equals("single")) {
-                result = parser.parseSingle(getCore(), source, filename);
+                pm = ParserMode.Statement;
             } else {
                 throw raise(ValueError, "compile() mode must be 'exec', 'eval' or 'single'");
             }
-            return factory().createCode(result);
+            return factory().createCode((RootNode) getCore().getParser().parse(pm, getCore(), source, null));
         }
 
         @SuppressWarnings("unused")
@@ -634,8 +639,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * The next available global id. We reserve space for all integers to be their own id +
          * offset.
          */
-        private static long GLOBAL_ID = Integer.MAX_VALUE * 2 + 4L;
-        private static HiddenKey idKey = new HiddenKey("object_id");
 
         @Child private ReadAttributeFromObjectNode readId = null;
         @Child private WriteAttributeToObjectNode writeId = null;
@@ -687,7 +690,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return Double.hashCode(value);
         }
 
-        @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)"})
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyTuple(PTuple value) {
+            return getId(value, PythonImmutableBuiltinType.PTuple);
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyBytes(PBytes value) {
+            return getId(value, PythonImmutableBuiltinType.PBytes);
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyFrozenSet(PFrozenSet value) {
+            return getId(value, PythonImmutableBuiltinType.PFrozenSet);
+        }
+
+        protected boolean isEmptyImmutableBuiltin(Object object) {
+            return (object instanceof PTuple && PGuards.isEmpty((PTuple) object)) ||
+                            (object instanceof PBytes && PGuards.isEmpty((PBytes) object)) ||
+                            (object instanceof PFrozenSet && PGuards.isEmpty((PFrozenSet) object));
+        }
+
+        @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
         Object doId(PythonObject obj) {
             return getId(obj);
         }
@@ -698,15 +722,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private Object getId(PythonObject obj) {
+            return getId(obj, null);
+        }
+
+        private Object getId(PythonObject obj, PythonImmutableBuiltinType immutableType) {
             if (readId == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readId = insert(ReadAttributeFromObjectNode.create());
                 writeId = insert(WriteAttributeToObjectNode.create());
             }
-            Object id = readId.execute(obj, idKey);
+            Object id = readId.execute(obj, ID_KEY);
             if (id == NO_VALUE) {
-                id = GLOBAL_ID++;
-                writeId.execute(obj, idKey, id);
+                if (immutableType != null) {
+                    id = getContext().getEmptyImmutableObjectGlobalId(immutableType);
+                } else {
+                    id = getContext().getNextGlobalId();
+                }
+                writeId.execute(obj, ID_KEY, id);
             }
             return id;
         }
@@ -1008,6 +1040,15 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             return chr.charAt(0);
         }
+
+        @Specialization
+        public int ord(PBytes chr) {
+            if (chr.len() != 1) {
+                raise(TypeError, "ord() expected a character, but string of length %d found", chr.len());
+            }
+
+            return chr.getInternalByteArray()[0];
+        }
     }
 
     // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
@@ -1227,8 +1268,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object doIt(String name) {
             PythonModule mod = getCore().isInitialized() ? getContext().getBuiltins() : getCore().lookupBuiltinModule("builtins");
             Source src = getCore().getCoreSource(name);
-            PythonParseResult parsedModule = getCore().getParser().parse(getCore(), src);
-            CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule.getRootNode());
+            RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
+            CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
             callTarget.call(PArguments.withGlobals(mod));
             return PNone.NONE;
         }

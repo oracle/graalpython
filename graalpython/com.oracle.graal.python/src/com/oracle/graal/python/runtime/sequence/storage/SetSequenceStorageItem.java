@@ -52,7 +52,7 @@ public abstract class SetSequenceStorageItem extends Node {
             normalProfile.enter();
         } catch (SequenceStoreException e) {
             if (isEmptyProfile.profile(storage instanceof EmptySequenceStorage)) {
-                SequenceStorage newStorage = ((EmptySequenceStorage) storage).generalizeFor(value);
+                SequenceStorage newStorage = ((EmptySequenceStorage) storage).generalizeFor(value, null);
                 try {
                     newStorage.setItemNormalized(normalize.execute(index, newStorage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
                 } catch (SequenceStoreException ex) {
@@ -61,7 +61,7 @@ public abstract class SetSequenceStorageItem extends Node {
                 list.setSequenceStorage(newStorage);
             } else {
                 assert !(storage instanceof ObjectSequenceStorage);
-                ObjectSequenceStorage newStorage = ((TypedSequenceStorage) storage).generalizeFor(value);
+                ObjectSequenceStorage newStorage = ((TypedSequenceStorage) storage).generalizeFor(value, null);
                 newStorage.setItemNormalized(normalize.execute(index, newStorage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
                 list.setSequenceStorage(newStorage);
             }

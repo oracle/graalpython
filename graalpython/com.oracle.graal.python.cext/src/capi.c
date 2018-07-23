@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -112,6 +114,12 @@ initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
 initialize_type(PyDictProxy_Type, mappingproxy, _object);
 initialize_type(PyEllipsis_Type, ellipsis, _object);
 
+typedef uint8_t ByteArray[0];
+POLYGLOT_DECLARE_TYPE(ByteArray);
+
+typedef PyObject* PtrArray[0];
+POLYGLOT_DECLARE_TYPE(PtrArray);
+
 static void initialize_globals() {
     // None
     PyObject* jnone = UPCALL_CEXT_O("Py_None");
@@ -137,14 +145,18 @@ static void initialize_globals() {
     truffle_assign_managed(&_Py_FalseStruct, jfalse);
 
     // error marker
-    void *jerrormarker = UPCALL_CEXT_O("Py_ErrorHandler");
+    void *jerrormarker = UPCALL_CEXT_PTR("Py_ErrorHandler");
     force_to_native(jerrormarker);
     truffle_assign_managed(&marker_struct, jerrormarker);
+
+    // long constants
+    _PyLong_Zero = PyLong_FromLong(0);
+    _PyLong_One = PyLong_FromLong(1);
 }
 
 static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)NULL, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)bytearray_getbuffer, (releasebufferproc)NULL);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
 }
 
@@ -195,6 +207,16 @@ void* get_ob_type(PyObject* obj) {
     return native_to_java((PyObject*)(obj->ob_type));
 }
 
+/** to be used from Java code only; returns the type ID for a byte array */
+polyglot_typeid get_byte_array_typeid(uint64_t len) {
+    return polyglot_ByteArray_typeid();
+}
+
+/** to be used from Java code only; returns the type ID for a 'PyObject*' array */
+polyglot_typeid get_ptr_array_typeid(uint64_t len) {
+    return polyglot_PtrArray_typeid();
+}
+
 typedef struct PyObjectHandle {
     PyObject_HEAD
 } PyObjectHandle;
@@ -220,7 +242,6 @@ void* PyObjectHandle_ForJavaType(void* ptype) {
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
 void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
-    // TODO do polyglot typecast depending on element_size
     return truffle_deref_handle_for_managed(jobj);
 }
 

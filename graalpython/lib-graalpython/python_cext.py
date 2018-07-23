@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -59,8 +61,12 @@ def may_raise(error_result=error_handler):
     else:
         def decorator(fun):
             def wrapper(*args):
-                with error_handler:
+                typ = val = tb = None
+                try:
                     return fun(*args)
+                except BaseException as e:
+                    typ, val, tb = sys.exc_info()
+                PyErr_Restore(typ, val, tb)
                 return error_result
             wrapper.__name__ = fun.__name__
             return wrapper
@@ -68,7 +74,7 @@ def may_raise(error_result=error_handler):
 
 
 def Py_ErrorHandler():
-    return error_handler
+    return to_sulong(error_handler)
 
 
 def Py_NotImplemented():
@@ -139,7 +145,7 @@ def PyDict_Size(dictObj):
 @may_raise(None)
 def PyDict_Copy(dictObj):
     if not isinstance(dictObj, dict):
-        _PyErr_BadInternalCall(None, None, dictObj)
+        __bad_internal_call(None, None, dictObj)
     return dictObj.copy()
 
 
@@ -169,7 +175,7 @@ def PyDict_DelItem(dictObj, key):
 @may_raise(-1)
 def PyDict_Contains(dictObj, key):
     if not isinstance(dictObj, dict):
-        _PyErr_BadInternalCall(None, None, dictObj)
+        __bad_internal_call(None, None, dictObj)
     return key in dictObj
 
 
@@ -262,14 +268,14 @@ def PyBytes_FromFormat(fmt, args):
 @may_raise
 def PyList_New(size):
     if size < 0:
-        _PyErr_BadInternalCall(None, None, None)
+        __bad_internal_call(None, None, None)
     return [None] * size
 
 
 @may_raise
 def PyList_GetItem(listObj, pos):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     if pos < 0:
         raise IndexError("list index out of range")
     return listObj[pos]
@@ -278,7 +284,7 @@ def PyList_GetItem(listObj, pos):
 @may_raise(-1)
 def PyList_SetItem(listObj, pos, newitem):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     if pos < 0:
         raise IndexError("list assignment index out of range")
     listObj[pos] = newitem
@@ -288,7 +294,7 @@ def PyList_SetItem(listObj, pos, newitem):
 @may_raise(-1)
 def PyList_Append(listObj, newitem):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     listObj.append(newitem)
     return 0
 
@@ -303,14 +309,14 @@ def PyList_AsTuple(listObj):
 @may_raise
 def PyList_GetSlice(listObj, ilow, ihigh):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     return listObj[ilow:ihigh]
 
 
 @may_raise(-1)
 def PyList_Size(listObj):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     return len(listObj)
 
 
@@ -553,6 +559,30 @@ def PyUnicode_Format(format, args):
     return format % args
 
 
+@may_raise(-1)
+def PyUnicode_FindChar(string, char, start, end, direction):
+    if not isinstance(string, str):
+        raise TypeError("Must be str, not %s" % type(string).__name__)
+    if direction > 0:
+        return string.find(chr(char), start, end)
+    else:
+        return string.rfind(chr(char), start, end)
+
+
+@may_raise
+def PyUnicode_Substring(string, start, end):
+    if not isinstance(string, str):
+        raise TypeError("Must be str, not %s" % type(string).__name__)
+    return string[start:end]
+
+
+@may_raise
+def PyUnicode_Join(separator, seq):
+    if not isinstance(separator, str):
+        raise TypeError("Must be str, not %s" % type(separator).__name__)
+    return separator.join(seq)
+
+
 ##################### CAPSULE
 
 
@@ -771,21 +801,21 @@ def PyTuple_New(size):
 @may_raise
 def PyTuple_GetItem(t, n):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return t[n]
 
 
 @may_raise(-1)
 def PyTuple_Size(t):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return len(t)
 
 
 @may_raise
 def PyTuple_GetSlice(t, start, end):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return t[start:end]
 
 
@@ -887,6 +917,11 @@ def PyErr_CreateAndSetException(exception_type, msg):
 
 @may_raise(None)
 def _PyErr_BadInternalCall(filename, lineno, obj):
+    __bad_internal_call(filename, lineno, obj)
+
+
+# IMPORTANT: only call from functions annotated with 'may_raise'
+def __bad_internal_call(filename, lineno, obj):
     if filename is not None and lineno is not None:
         msg = "{!s}:{!s}: bad argument to internal function".format(filename, lineno)
     else:
@@ -1126,6 +1161,11 @@ def initialize_capi(capi_library):
     initialize_datetime_capi()
 
 
+def import_native_memoryview(capi_library):
+    import _memoryview
+    assert _memoryview is not None
+
+
 def initialize_datetime_capi():
     import datetime
 
@@ -1212,9 +1252,10 @@ def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
 
 
-@may_raise
+# called without landing; do conversion manually
+@may_raise(to_sulong(error_handler))
 def PySlice_GetIndicesEx(start, stop, step, length):
-    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
+    return to_sulong(PyTruffleSlice_GetIndicesEx(start, stop, step, length))
 
 
 @may_raise

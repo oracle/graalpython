@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -71,7 +73,6 @@ typedef struct {
 
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
-
 
 // TODO cache landing function ?
 #define PY_TRUFFLE_LANDING ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)))
@@ -154,40 +155,40 @@ void initialize_hashes();
 void* wrap_direct(PyCFunction fun, ...);
 int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, void *closure);
 void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
-void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
 void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);
-void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObject *nargs, PyObject *kwnames);
+void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
+void* wrap_fastcall(_PyCFunctionFast        fun, PyObject *  self, PyObject   **args, PyObject  *nargs, PyObject *kwnames);
 void* wrap_unsupported(void *fun, ...);
 
 #define TDEBUG __asm__("int $3")
 #define get_method_flags_wrapper(flags)                                 \
     (((flags) < 0) ?                                                    \
      truffle_read(PY_TRUFFLE_CEXT, "METH_DIRECT") :                     \
-     (((flags) & METH_KEYWORDS) ?                                       \
-      truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
-      (((flags) & METH_VARARGS) ?                                       \
-       truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
-       (((flags) & METH_NOARGS) ?                                       \
-        truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                  \
-        (((flags) & METH_O) ?                                           \
-         truffle_read(PY_TRUFFLE_CEXT, "METH_O") :                      \
-         (((flags) & METH_FASTCALL) ?                                   \
-          truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :              \
+     (((flags) & METH_FASTCALL) ?                                       \
+      truffle_read(PY_TRUFFLE_CEXT, "METH_FASTCALL") :                  \
+      (((flags) & METH_KEYWORDS) ?                                       \
+       truffle_read(PY_TRUFFLE_CEXT, "METH_KEYWORDS") :                  \
+       (((flags) & METH_VARARGS) ?                                       \
+        truffle_read(PY_TRUFFLE_CEXT, "METH_VARARGS") :                  \
+        (((flags) & METH_NOARGS) ?                                           \
+         truffle_read(PY_TRUFFLE_CEXT, "METH_NOARGS") :                      \
+         (((flags) & METH_O) ?                                   \
+          truffle_read(PY_TRUFFLE_CEXT, "METH_O") :              \
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
 #define get_method_flags_cwrapper(flags)                                \
     (void*)((((flags) < 0) ?                                            \
      wrap_direct :                                                      \
-     (((flags) & METH_KEYWORDS) ?                                       \
-      wrap_keywords :                                                   \
-      (((flags) & METH_VARARGS) ?                                       \
-       wrap_varargs :                                                   \
-       (((flags) & METH_NOARGS) ?                                       \
-        wrap_noargs :                                                   \
-        (((flags) & METH_O) ?                                           \
-         wrap_direct :                                                  \
-         (((flags) & METH_FASTCALL) ?                                   \
-          wrap_fastcall :                                               \
+     (((flags) & METH_FASTCALL) ?                                       \
+      wrap_fastcall :                                                   \
+      (((flags) & METH_KEYWORDS) ?                                      \
+       wrap_keywords :                                                   \
+       (((flags) & METH_VARARGS) ?                                       \
+        wrap_varargs :                                                   \
+        (((flags) & METH_NOARGS) ?                                           \
+         wrap_noargs :                                                  \
+         (((flags) & METH_O) ?                                   \
+          wrap_direct :                                               \
           wrap_unsupported)))))))
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
@@ -283,8 +284,9 @@ extern PyObject marker_struct;
 /* DICT */
 void* PyTruffle_Tuple_GetItem(void* jtuple, Py_ssize_t position);
 
-/* BYTES */
+/* BYTES, BYTEARRAY */
 int bytes_buffer_getbuffer(PyBytesObject *self, Py_buffer *view, int flags);
+int bytearray_getbuffer(PyByteArrayObject *obj, Py_buffer *view, int flags);
 
 /* Like 'memcpy' but can read/write from/to managed objects. */
 int bytes_copy2mem(char* target, char* source, size_t nbytes);

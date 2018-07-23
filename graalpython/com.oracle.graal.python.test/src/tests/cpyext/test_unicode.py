@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -50,6 +52,22 @@ def _reference_fromobject(args):
 
 def _reference_intern(args):
     return sys.intern(args[0])
+
+
+def _reference_findchar(args):
+    string = args[0]
+    char = args[1]
+    start = args[2]
+    end = args[3]
+    direction = args[4]
+    if sys.version_info.minor < 7 and end >= len(string):
+        return -1
+    if not isinstance(string, str):
+        return -1
+    if direction == 1:
+        return string.find(char, start, end)
+    elif direction == -1:
+        return string.rfind(char, start, end)
 
 
 class CustomString(str):
@@ -393,5 +411,56 @@ class TestPyUnicode(CPyExtTestCase):
         argspec='OOO',
         arguments=["PyObject* unicodeObj", "PyObject* expected_16", "PyObject* expected_32"],
         callfunction="wrap_PyUnicode_AsUnicodeAndSize",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_FindChar = CPyExtFunction(
+        _reference_findchar,
+        lambda: (
+            ("hello", "l", 0, 5, 1),
+            ("hello", "l", 0, 5, -1),
+            ("hello", "x", 0, 5, 1),
+            ("hello", "l", 0, 2, 1),
+            ("hello", "l", 3, 5, 1),
+            ("hello", "l", 4, 5, 1),
+        ),
+        code="""Py_ssize_t wrap_PyUnicode_FindChar(PyObject* str, PyObject* c, Py_ssize_t start, Py_ssize_t end, int direction) {
+            Py_UCS4 uc = PyUnicode_4BYTE_DATA(c)[0];
+            return PyUnicode_FindChar(str, uc, start, end, direction);
+        }
+        """,
+        resultspec="n",
+        argspec='OOnni',
+        arguments=["PyObject* str", "PyObject* c", "Py_ssize_t start", "Py_ssize_t end", "int direction"],
+        callfunction="wrap_PyUnicode_FindChar",
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_Substring = CPyExtFunction(
+        lambda args: args[0][args[1]:args[2]],
+        lambda: (
+            ("hello", 0, 5),
+            ("hello", 0, 0),
+            ("hello", 0, 1),
+            ("hello", 4, 5),
+            ("hello", 1, 4),
+        ),
+        resultspec="O",
+        argspec='Onn',
+        arguments=["PyObject* str", "Py_ssize_t start", "Py_ssize_t end"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyUnicode_Join = CPyExtFunction(
+        lambda args: args[0].join(args[1]),
+        lambda: (
+            (", ", [0, 1, 2, 3, 4, 5]),
+            (", ", []),
+            (", ", None),
+            (", ", ("a", "b", "c")),
+        ),
+        resultspec="O",
+        argspec='OO',
+        arguments=["PyObject* str", "PyObject* seq"],
         cmpfunc=unhandled_error_compare
     )

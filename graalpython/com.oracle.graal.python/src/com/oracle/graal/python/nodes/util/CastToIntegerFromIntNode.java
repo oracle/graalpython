@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -55,14 +57,14 @@ import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CastToIntNode extends PBaseNode {
+public abstract class CastToIntegerFromIntNode extends PBaseNode {
 
     @Node.Child private LookupAndCallUnaryNode callIndexNode;
 
     public abstract Object execute(Object x);
 
-    public static CastToIntNode create() {
-        return CastToIntNodeGen.create();
+    public static CastToIntegerFromIntNode create() {
+        return CastToIntegerFromIntNodeGen.create();
     }
 
     @Specialization
@@ -76,15 +78,15 @@ public abstract class CastToIntNode extends PBaseNode {
     }
 
     @Specialization
-    public long toInt(@SuppressWarnings("unused") double x) {
-        throw raise(TypeError, "'float' object cannot be interpreted as an integer");
+    public long toInt(double x) {
+        throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
     }
 
     @Specialization(guards = "!isNumber(x)")
     public Object toInt(Object x) {
         if (callIndexNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INDEX__));
+            callIndexNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__INT__));
         }
         Object result = callIndexNode.executeObject(x);
         if (result == PNone.NONE) {

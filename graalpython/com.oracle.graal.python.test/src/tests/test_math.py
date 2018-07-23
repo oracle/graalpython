@@ -159,6 +159,12 @@ class MyFloat:
     def __float__(self):
         return 0.6
 
+class MyInt(object):
+    def __init__(self, value):
+        self.value = value
+    def __int__(self):
+        return self.value
+
 class MathTests(unittest.TestCase):
 
     def ftest(self, name, got, expected, ulp_tol=5, abs_tol=0.0):
@@ -482,6 +488,11 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.copysign(999999999999999999999.1, 1), 999999999999999999999.1)
         self.assertRaises(TypeError, math.copysign, 'hello', 1)
         self.assertRaises(TypeError, math.copysign, 1, 'hello')
+        
+        self.assertEqual(math.copysign(MyFloat(), 1), 0.6)
+        self.assertEqual(math.copysign(MyFloat(), -1), -0.6)
+        self.assertEqual(math.copysign(1.2, MyFloat()), 1.2)
+        self.assertEqual(math.copysign(MyFloat(), MyFloat()), 0.6)
 
     def test_inf_copysign(self):
         self.assertEqual(math.copysign(1.0, float('inf')), 1.0)
@@ -928,6 +939,8 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.fabs(True), 1.0)
         self.assertEqual(math.fabs(False), 0.0)
 
+        self.assertEqual(math.fabs(MyFloat()), 0.6)
+
     def test_factorial(self):
         self.assertRaises(ValueError, math.factorial, float('nan'))
         self.assertRaises(ValueError, math.factorial, float('inf'))
@@ -953,6 +966,12 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.factorial(13), 6227020800)
         self.assertEqual(math.factorial(30), 265252859812191058636308480000000)
         self.assertRaises(ValueError, math.factorial, -11.1)
+        
+        self.assertEqual(math.factorial(MyInt(4)), 24)
+        self.assertEqual(math.factorial(MyInt(True)), 1)
+        self.assertRaises(TypeError, math.factorial, MyIndexable(4))
+        self.assertRaises(TypeError, math.factorial, MyFloat())
+        self.assertRaises(TypeError, math.factorial, MyInt(0.6))
 
     def testGcd(self):
         if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
@@ -1038,6 +1057,15 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.floor(2432902008176640000999), 2432902008176640000999)
         self.assertEqual(math.floor(2432902008176640000999.99), 2432902008176640000999.99)
 
+        self.assertEqual(math.floor(MyFloat()), 0)
+
+        class MyFloorFloat():
+            def __floor__(self):
+                return 12
+            def __float(self):
+                return 112
+        self.assertEqual(math.floor(MyFloorFloat()), 12)
+
     def test_fmod(self):
         self.assertRaises(TypeError, math.fmod)
         self.ftest('fmod(10, 1)', math.fmod(10, 1), 0.0)
@@ -1102,6 +1130,9 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.fmod(2432902008176640000999, True), 0.0)
         self.assertEqual(math.fmod(2432902008176640000999, 12.12), 10.396369527944033)
         self.assertEqual(math.fmod(-1e-100, 1e100), -1e-100)
+
+        self.assertEqual(math.fmod(MyFloat(), 1), 0.6)
+        self.assertEqual(math.fmod(MyFloat(), MyFloat()), 0.)
 
     def testExp(self):
         self.assertRaises(TypeError, math.exp)
@@ -1174,6 +1205,7 @@ class MathTests(unittest.TestCase):
         testfrexp('frexp(Y(11.11))', math.frexp(Y(11.11)), (0.694375, 4))
         testfrexp('frexp(2**1023)', math.frexp(2**1023), (0.5, 1024))
         self.assertRaises(OverflowError, math.frexp, 2**1024)
+        testfrexp('frexp(MyFloat())', math.frexp(MyFloat()), (0.6, 0))
 
     def test_ldexp(self):
         self.assertRaises(TypeError, math.ldexp)
@@ -1223,6 +1255,13 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.ldexp, 1, 'Hello')
         self.assertEqual(math.ldexp(7589167167882033, -48), 26.962138008038156)
     
+        self.assertRaises(TypeError, math.ldexp, 1, MyIndexable(2))
+        self.assertRaises(TypeError, math.ldexp, 1, MyInt(2))
+        self.assertRaises(TypeError, math.ldexp, 1, MyFloat())
+        self.assertEqual(math.ldexp(0.1, True), 0.2)
+        self.assertEqual(math.ldexp(MyFloat(),True), 1.2)
+        self.assertRaises(TypeError, math.ldexp, MyInt(2), MyFloat())
+
     def test_trunc(self):
         self.assertEqual(math.trunc(1), 1)
         self.assertEqual(math.trunc(-1), -1)
@@ -1595,3 +1634,142 @@ class MathTests(unittest.TestCase):
 
         self.assertRaises(ValueError, math.fsum, [1., 2, INF, NINF])
         self.assertEqual(math.fsum([1., 2, INF, INF]), INF)
+
+if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
+    # math.isclose since 3.5
+    class IsCloseTests(unittest.TestCase):
+        isclose = staticmethod(math.isclose) # sublcasses should override this
+
+        def assertIsClose(self, a, b, *args, **kwargs):
+            self.assertTrue(self.isclose(a, b, *args, **kwargs),
+                            msg="%s and %s should be close!" % (a, b))
+
+        def assertIsNotClose(self, a, b, *args, **kwargs):
+            self.assertFalse(self.isclose(a, b, *args, **kwargs),
+                             msg="%s and %s should not be close!" % (a, b))
+
+        def assertAllClose(self, examples, *args, **kwargs):
+            for a, b in examples:
+                self.assertIsClose(a, b, *args, **kwargs)
+
+        def assertAllNotClose(self, examples, *args, **kwargs):
+            for a, b in examples:
+                self.assertIsNotClose(a, b, *args, **kwargs)
+
+        def test_negative_tolerances(self):
+            # ValueError should be raised if either tolerance is less than zero
+            with self.assertRaises(ValueError):
+                self.assertIsClose(1, 1, rel_tol=-1e-100)
+            with self.assertRaises(ValueError):
+                self.assertIsClose(1, 1, rel_tol=1e-100, abs_tol=-1e10)
+
+        def test_identical(self):
+            # identical values must test as close
+            identical_examples = [(2.0, 2.0),
+                                  (0.1e200, 0.1e200),
+                                  (1.123e-300, 1.123e-300),
+                                  (12345, 12345.0),
+                                  (0.0, -0.0),
+                                  (345678, 345678)]
+            self.assertAllClose(identical_examples, rel_tol=0.0, abs_tol=0.0)
+
+        def test_eight_decimal_places(self):
+            # examples that are close to 1e-8, but not 1e-9
+            eight_decimal_places_examples = [(1e8, 1e8 + 1),
+                                             (-1e-8, -1.000000009e-8),
+                                             (1.12345678, 1.12345679)]
+            self.assertAllClose(eight_decimal_places_examples, rel_tol=1e-8)
+            self.assertAllNotClose(eight_decimal_places_examples, rel_tol=1e-9)
+
+        def test_near_zero(self):
+            # values close to zero
+            near_zero_examples = [(1e-9, 0.0),
+                                  (-1e-9, 0.0),
+                                  (-1e-150, 0.0)]
+            # these should not be close to any rel_tol
+            self.assertAllNotClose(near_zero_examples, rel_tol=0.9)
+            # these should be close to abs_tol=1e-8
+            self.assertAllClose(near_zero_examples, abs_tol=1e-8)
+
+        def test_identical_infinite(self):
+            # these are close regardless of tolerance -- i.e. they are equal
+            self.assertIsClose(INF, INF)
+            self.assertIsClose(INF, INF, abs_tol=0.0)
+            self.assertIsClose(NINF, NINF)
+            self.assertIsClose(NINF, NINF, abs_tol=0.0)
+
+        def test_inf_ninf_nan(self):
+            # these should never be close (following IEEE 754 rules for equality)
+            not_close_examples = [(NAN, NAN),
+                                  (NAN, 1e-100),
+                                  (1e-100, NAN),
+                                  (INF, NAN),
+                                  (NAN, INF),
+                                  (INF, NINF),
+                                  (INF, 1.0),
+                                  (1.0, INF),
+                                  (INF, 1e308),
+                                  (1e308, INF)]
+            # use largest reasonable tolerance
+            self.assertAllNotClose(not_close_examples, abs_tol=0.999999999999999)
+
+        def test_zero_tolerance(self):
+            # test with zero tolerance
+            zero_tolerance_close_examples = [(1.0, 1.0),
+                                             (-3.4, -3.4),
+                                             (-1e-300, -1e-300)]
+            self.assertAllClose(zero_tolerance_close_examples, rel_tol=0.0)
+
+            zero_tolerance_not_close_examples = [(1.0, 1.000000000000001),
+                                                 (0.99999999999999, 1.0),
+                                                 (1.0e200, .999999999999999e200)]
+            self.assertAllNotClose(zero_tolerance_not_close_examples, rel_tol=0.0)
+
+        def test_asymmetry(self):
+            # test the asymmetry example from PEP 485
+            self.assertAllClose([(9, 10), (10, 9)], rel_tol=0.1)
+
+        def test_integers(self):
+            # test with integer values
+            integer_examples = [(100000001, 100000000),
+                                (123456789, 123456788)]
+
+            self.assertAllClose(integer_examples, rel_tol=1e-8)
+            self.assertAllNotClose(integer_examples, rel_tol=1e-9)
+
+        # TODO the test is commented out due to GR-10712
+        '''
+        def test_decimals(self):
+            # test with Decimal values
+            from decimal import Decimal#
+
+            decimal_examples = [(Decimal('1.00000001'), Decimal('1.0')),
+                                (Decimal('1.00000001e-20'), Decimal('1.0e-20')),
+                                (Decimal('1.00000001e-100'), Decimal('1.0e-100')),
+                                (Decimal('1.00000001e20'), Decimal('1.0e20'))]
+            self.assertAllClose(decimal_examples, rel_tol=1e-8)
+            self.assertAllNotClose(decimal_examples, rel_tol=1e-9)
+        '''
+
+        # TODO the test is commented out due to GR-10711
+        '''
+        def test_fractions(self):
+            # test with Fraction values
+            from fractions import Fraction
+
+            fraction_examples = [
+                (Fraction(1, 100000000) + 1, Fraction(1)),
+                (Fraction(100000001), Fraction(100000000)),
+                (Fraction(10**8 + 1, 10**28), Fraction(1, 10**20))]
+            self.assertAllClose(fraction_examples, rel_tol=1e-8)
+            self.assertAllNotClose(fraction_examples, rel_tol=1e-9)
+        '''
+        def test_objects(self):
+            # these are close regardless of tolerance -- i.e. they are equal
+            self.assertIsClose(MyFloat(), MyFloat())
+            self.assertIsClose(MyFloat(), MyFloat(), abs_tol=0.0)
+            self.assertIsClose(MyFloat(), MyFloat(), abs_tol=MyFloat())
+            self.assertIsClose(MyFloat(), MyFloat(), rel_tol=0.0)
+            self.assertIsClose(MyFloat(), MyFloat(), rel_tol=MyFloat())
+
+            self.assertIsNotClose(MyFloat(), 10)

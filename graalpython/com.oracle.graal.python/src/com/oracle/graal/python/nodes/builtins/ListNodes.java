@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -284,7 +286,7 @@ public abstract class ListNodes {
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
             if (value.len() > 0) {
                 PList pvalue = factory().createList(((PTuple) value).getArray());
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(pvalue.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(pvalue.getSequenceStorage().getIndicativeValue(), pvalue.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 setSlice(list, slice, pvalue, wrongLength);
             }
@@ -303,7 +305,7 @@ public abstract class ListNodes {
         public PNone doPListEmpty(PList list, PSlice slice, PSequence value,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
             if (value.len() > 0) {
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 setSlice(list, slice, value, wrongLength);
             }
@@ -321,7 +323,7 @@ public abstract class ListNodes {
         @Specialization(guards = {"!areTheSameType(list, value)"})
         public PNone doPList(PList list, PSlice slice, PSequence value,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
-            SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+            SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
             list.setSequenceStorage(newStorage);
             setSlice(list, slice, value, wrongLength);
             return PNone.NONE;
@@ -352,7 +354,7 @@ public abstract class ListNodes {
             try {
                 setSlice(list, slice, value, wrongLength);
             } catch (SequenceStoreException e) {
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 try {
                     setSlice(list, slice, value, wrongLength);

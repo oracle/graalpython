@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -40,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.builtins.objects.common.HashingStorage.DEFAULT_EQIVALENCE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -50,6 +51,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectHybridDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.ContainsKeyNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.ContainsValueNodeGen;
@@ -231,6 +233,12 @@ public abstract class HashingStorageNodes {
         protected static DynamicObjectStorage switchToFastDictStorage(PHashingCollection container, HashingStorage storage) {
             DynamicObjectStorage newStorage = new FastDictStorage();
             newStorage.addAll(storage, DEFAULT_EQIVALENCE);
+            container.setDictStorage(newStorage);
+            return newStorage;
+        }
+
+        protected static PythonObjectHybridDictStorage switchToHybridDictStorage(PHashingCollection container, PythonObjectDictStorage dictStorage) {
+            PythonObjectHybridDictStorage newStorage = new PythonObjectHybridDictStorage(dictStorage);
             container.setDictStorage(newStorage);
             return newStorage;
         }
@@ -479,6 +487,11 @@ public abstract class HashingStorageNodes {
             CompilerDirectives.transferToInterpreter();
             storage.getStore().updateShape();
             return readUncached(storage, name);
+        }
+
+        @Specialization(guards = "!isJavaString(name)")
+        protected boolean readUncached(PythonObjectHybridDictStorage storage, Object name) {
+            return storage.hasKey(name, getEquivalence());
         }
 
         @Specialization(guards = "!isJavaString(name)")
@@ -824,9 +837,8 @@ public abstract class HashingStorageNodes {
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
-        @SuppressWarnings("unused")
         protected void doDynamicObjectGeneralize(PHashingCollection container, PythonObjectDictStorage storage, Object key, Object value) {
-            throw raise(KeyError, "unsupported key: %p", key);
+            switchToHybridDictStorage(container, storage).setItem(key, value, getEquivalence());
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
@@ -961,6 +973,11 @@ public abstract class HashingStorageNodes {
             CompilerDirectives.transferToInterpreter();
             storage.getStore().updateShape();
             return doDynamicObjectUncachedPString(storage, name);
+        }
+
+        @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})
+        Object doDynamicObject(PythonObjectHybridDictStorage storage, Object key) {
+            return storage.getItem(key, getEquivalence());
         }
 
         @Specialization(guards = {"!isJavaString(key)", "isHashable(key)"})

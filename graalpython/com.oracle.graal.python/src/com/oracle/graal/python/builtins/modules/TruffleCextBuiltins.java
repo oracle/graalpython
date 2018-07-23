@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -546,6 +548,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     public static Object checkFunctionResult(PythonContext context, Node isNullNode, String name, Object result) {
         PException currentException = context.getCurrentException();
+        // consume exception
+        context.setCurrentException(null);
         boolean errOccurred = currentException != null;
         if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
             if (!errOccurred) {
@@ -609,7 +613,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
                     }
                 }
-                return fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                // save current exception state
+                PException exceptionState = getContext().getCurrentException();
+                // clear current exception such that native code has clean environment
+                getContext().setCurrentException(null);
+
+                Object result = fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+
+                // restore previous exception state
+                getContext().setCurrentException(exceptionState);
+                return result;
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();
                 throw new RuntimeException(e.toString());
@@ -1262,13 +1275,32 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "PyTruffleSlice_GetIndicesEx", fixedNumOfArguments = 4)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class PyTruffleSlice_GetIndicesEx extends NativeBuiltin {
         @Specialization
-        Object doUnpack(int start, int stop, int step, long length) {
+        Object doUnpack(int start, int stop, int step, int length) {
             PSlice tmpSlice = factory().createSlice(start, stop, step);
-            SliceInfo actualIndices = tmpSlice.computeActualIndices((int) length);
+            SliceInfo actualIndices = tmpSlice.computeActualIndices(length);
             return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        Object doUnpackLong(long start, long stop, long step, long length) {
+            PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
+            SliceInfo actualIndices = tmpSlice.computeActualIndices(PInt.intValueExact(length));
+            return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+        }
+
+        @Specialization(replaces = {"doUnpackLong", "doUnpack"})
+        Object doUnpackLongOvf(long start, long stop, long step, long length) {
+            try {
+                PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
+                SliceInfo actualIndices = tmpSlice.computeActualIndices(length > Integer.MAX_VALUE ? Integer.MAX_VALUE : PInt.intValueExact(length));
+                return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
         }
     }
 

@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -65,6 +67,17 @@ def frozenset_difference(self, *others):
     return frozenset(difference(self, *others))
 
 
+def intersection(self, *others):
+    intersect_set = self
+    for seq in others:
+        intersect_set = set(el for el in intersect_set if el in set(seq))
+    return intersect_set
+
+
+def frozenset_intersection(self, *others):
+    return frozenset(intersection(self, *others))
+
+
 def set_repr(self):
     if len(self):
         s = "{"
@@ -103,12 +116,32 @@ def frozenset_copy(self):
     return frozenset(self)
 
 
+def frozenset_hash(self):
+    return hash(tuple(self))
+
+
 set.update = update
 set.difference = difference
 set.difference_update = difference_update
+set.intersection = intersection
 set.__repr__ = set_repr
 set.copy = set_copy
 
 frozenset.difference = frozenset_difference
+frozenset.intersection = frozenset_intersection
 frozenset.__repr__ = frozenset_repr
 frozenset.copy = frozenset_copy
+frozenset.__hash__ = frozenset_hash
+
+del update
+del difference
+del difference_update
+del intersection
+del set_repr
+del set_copy
+
+del frozenset_difference
+del frozenset_intersection
+del frozenset_repr
+del frozenset_copy
+del frozenset_hash

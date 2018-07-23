@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -124,7 +126,10 @@ def test_difference():
 def test_difference_update():
     word = 'simsalabim'
     otherword = 'madagascar'
+    letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     s = set(word)
+    d = dict.fromkeys(word)
+
 
     retval = s.difference_update(otherword)
     assert retval == None
@@ -174,3 +179,76 @@ def test_sub_and_super():
         assert set('abc').issuperset('a')
         assert not set('a').issubset('cbs')
         assert not set('cbs').issuperset('a')
+
+
+def test_intersection():
+    word = 'simsalabim'
+    otherword = 'madagascar'
+    letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    s = set(word)
+    d = dict.fromkeys(word)
+
+    i = s.intersection(otherword)
+    for c in letters:
+        assert (c in i) == (c in d and c in otherword)
+
+    assert s == set(word)
+    # assert type(i) == set
+    assert_raises(PassThru, s.intersection, check_pass_thru())
+
+    for C in set, frozenset, dict.fromkeys, str, list, tuple:
+        assert set('abcba').intersection(C('cdc')) == set('cc')
+        assert set('abcba').intersection(C('efgfe')) == set('')
+        assert set('abcba').intersection(C('ccb')) == set('bc')
+        assert set('abcba').intersection(C('ef')) == set('')
+        assert set('abcba').intersection(C('cbcf'), C('bag')) == set('b')
+
+    # TODO: currently the id function behaves a bit differently than the one in cPython
+    # s = set('abcba')
+    # z = s.intersection()
+    # if set == frozenset():
+    #     assert id(s) == id(z)
+    # else:
+    #     assert id(s) != id(z)
+
+
+def test_same_id():
+    empty_ids = set([id(frozenset()) for i in range(100)])
+    assert len(empty_ids) == 1
+
+
+def test_rich_compare():
+    class TestRichSetCompare:
+        def __gt__(self, some_set):
+            self.gt_called = True
+            return False
+        def __lt__(self, some_set):
+            self.lt_called = True
+            return False
+        def __ge__(self, some_set):
+            self.ge_called = True
+            return False
+        def __le__(self, some_set):
+            self.le_called = True
+            return False
+
+    # This first tries the builtin rich set comparison, which doesn't know
+    # how to handle the custom object. Upon returning NotImplemented, the
+    # corresponding comparison on the right object is invoked.
+    myset = {1, 2, 3}
+
+    myobj = TestRichSetCompare()
+    myset < myobj
+    assert myobj.gt_called
+
+    myobj = TestRichSetCompare()
+    myset > myobj
+    assert myobj.lt_called
+
+    myobj = TestRichSetCompare()
+    myset <= myobj
+    assert myobj.ge_called
+
+    myobj = TestRichSetCompare()
+    myset >= myobj
+    assert myobj.le_called

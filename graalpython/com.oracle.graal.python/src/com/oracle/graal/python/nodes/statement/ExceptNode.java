@@ -64,14 +64,7 @@ public class ExceptNode extends StatementNode {
             getCore().setCurrentException(e);
         }
 
-        try {
-            body.execute(frame);
-        } finally {
-            // clear the exception after executing the except body.
-            if (context != null) {
-                context.setCurrentException(null);
-            }
-        }
+        body.execute(frame);
         throw ExceptionHandledException.INSTANCE;
     }
 

@@ -29,40 +29,50 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.TruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public interface PythonParser {
-    /**
-     * Parse the source and return a {@link PythonParseResult} that includes a
-     * {@link com.oracle.truffle.api.nodes.RootNode} ready for interpretation. This method tries
-     * both file ('exec') and expression ('eval') inputs.
-     */
-    PythonParseResult parse(PythonCore core, Source source);
+
+    public enum ParserMode {
+        /**
+         * Parse the given input as a single statement, as required for Python's compile with
+         * mode='single'.
+         */
+        Statement,
+        /**
+         * Parse the given input as a single statement or expression, and throw
+         * {@link PIncompleteSourceException} if appropriate. Return a {@link RootNode} that is
+         * ready for interpretation. This method tries both file ('exec') and expression ('eval')
+         * inputs.
+         */
+        InteractiveStatement,
+        /**
+         * Parse the given input as a single statement or expression and return a {@link PNode}.
+         * This allows to parse code and use it for inline evaluation like in the debugger.
+         * Therefore, you need to provide the environment, i.e., the scope, for the code. This
+         * method uses single input if the source is interactive and additionally tries file
+         * ('exec') and expression ('eval') inputs as fallback.
+         */
+        InlineEvaluation,
+        /**
+         * Parse the given input as a file, as required for Python's compile with mode='exec'.
+         */
+        File,
+        /**
+         * Parse the given input as an expression, as required for Python's compile with
+         * mode='eval'.
+         */
+        Eval;
+    }
 
     /**
-     * Parse the source in the given environment and return a {@link PNode}. This allows to parse
-     * code and use it for inline evaluation like in the debugger. Therefore, you need to provide
-     * the environment, i.e., the scope, for the code. This method uses single input if the source
-     * is interactive and additionally tries file ('exec') and expression ('eval') inputs as
-     * fallback.
+     * Parses the given {@link Source} object according to the requested {@link ParserMode}.
+     *
+     * @return {@link PNode} for {@link ParserMode#InlineEvaluation}, and otherwise {@link RootNode}
      */
-    PNode parseInline(PythonCore core, Source source, Frame curFrame);
-
-    /**
-     * Parse an expression through Python's compile with mode='eval'.
-     */
-    PythonParseResult parseEval(PythonCore core, String expression, String filename);
-
-    /**
-     * Parse code through Python's compile with mode='exec'.
-     */
-    PythonParseResult parseExec(PythonCore core, String code, String filename);
-
-    /**
-     * Parse an expression through Python's compile with mode='single'.
-     */
-    PythonParseResult parseSingle(PythonCore core, String snippet, String filename);
+    Node parse(ParserMode mode, PythonCore core, Source source, Frame currentFrame);
 
     /**
      * Check if an expression can be parsed as an identifier

@@ -34,7 +34,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -94,9 +93,9 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
+import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
-import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -134,8 +133,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -147,6 +146,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
 /**
@@ -188,6 +188,7 @@ public final class Python3Core implements PythonCore {
                     "list",
                     "_codecs",
                     "bytes",
+                    "bytearray",
                     "float",
                     "time",
                     "unicodedata",
@@ -612,7 +613,7 @@ public final class Python3Core implements PythonCore {
             env.exportSymbol("python_builtins", builtinsModule);
 
             // export all exception classes for the C API
-            for (PythonErrorType errorType : PythonErrorType.values()) {
+            for (PythonErrorType errorType : PythonErrorType.VALUES) {
                 PythonClass errorClass = getErrorClass(errorType);
                 env.exportSymbol("python_" + errorClass.getName(), errorClass);
             }
@@ -780,26 +781,25 @@ public final class Python3Core implements PythonCore {
             try {
                 return env.newSourceBuilder(file).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
             } catch (SecurityException | IOException t) {
-                // TODO: XXX: This will only work if we already have cached parse trees
-                return Source.newBuilder("").uri(URI.create(file.getPath())).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
+                throw new RuntimeException("Could not read core library from " + file);
             }
         }
     }
 
     private void loadFile(String s, String prefix) {
-        PythonParseResult parsedModule = getParser().parse(this, getSource(s, prefix));
+        RootNode parsedModule = (RootNode) getParser().parse(ParserMode.File, this, getSource(s, prefix), null);
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
             mod = factory().createPythonModule("__anonymous__");
         }
-        CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule.getRootNode());
+        CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
         callTarget.call(PArguments.withGlobals(mod));
     }
 
     private void findKnownExceptionTypes() {
-        errorClasses = new PythonClass[PythonErrorType.values().length];
-        for (PythonErrorType type : PythonErrorType.values()) {
+        errorClasses = new PythonClass[PythonErrorType.VALUES.length];
+        for (PythonErrorType type : PythonErrorType.VALUES) {
             errorClasses[type.ordinal()] = (PythonClass) builtinsModule.getAttribute(type.name());
         }
     }

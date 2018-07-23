@@ -1,20 +1,21 @@
-#!/usr/bin/env python
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -36,31 +37,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from __future__ import print_function
-import os
 import sys
 
-
-MX = os.environ["MX"]
-GP = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-
-args = sys.argv[1:]
+GRAALPYTHON = sys.implementation.name == "graalpython"
 
 
-gcc = " ".join(["gcc", "-shared"] + args)
-print("GCC: ", gcc)
-retval = os.system(gcc)
+class TestSRE:
 
+    def test_sre_import(self):
+        if GRAALPYTHON:
+            import _cpython_sre
+            assert set(_cpython_sre.__dict__.keys()) == {'__name__', '__doc__', '__package__', '__loader__', '__spec__', '__file__', 'compile', 'getcodesize', 'getlower', 'MAGIC', 'CODESIZE', 'MAXREPEAT', 'MAXGROUPS', 'copyright'}, "was: %s" % set(_cpython_sre.__dict__.keys())
 
-for idx, arg in  enumerate(args):
-    if arg.endswith(".o") or arg.endswith(".so"):
-        args[idx] = arg.replace(".o", ".bc")
-    if arg == "-I/usr/include/python3.6m":
-        args[idx] = "-I%s/graalpython/include" % GP
-
-
-sulong = " ".join([MX, "-p", GP, "python -LD"] + args)
-print("SULONG: ", sulong)
-retval |= os.system(sulong)
-
-os.exit(retval)
+    def test_backreference(self):
+        import re
+        compiled = re.compile(r"(.)\1")
+        assert compiled.match("11")
+        assert compiled.match("22")
+        assert not compiled.match("23")

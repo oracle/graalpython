@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -40,6 +42,7 @@ package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -88,6 +91,14 @@ public abstract class PGuards {
         return set.size() == 0;
     }
 
+    public static boolean isEmpty(PTuple tuple) {
+        return tuple.isEmpty();
+    }
+
+    public static boolean isEmpty(PBytes bytes) {
+        return bytes.len() == 0;
+    }
+
     public static boolean isNone(Object value) {
         return value == PNone.NONE;
     }
@@ -104,11 +115,11 @@ public abstract class PGuards {
         return value instanceof PythonClass;
     }
 
-    public static boolean isEmptyStorage(PList list) {
-        return list.getSequenceStorage() instanceof EmptySequenceStorage;
+    public static boolean isEmptyStorage(PSequence seq) {
+        return seq.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
-    public static boolean isEmptyStorage(PByteArray byteArray) {
+    public static boolean isEmptyStorage(PArray byteArray) {
         return byteArray.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
@@ -120,12 +131,12 @@ public abstract class PGuards {
         return list.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
-    public static boolean isIntStorage(PByteArray byteArray) {
-        return byteArray.getSequenceStorage() instanceof IntSequenceStorage;
+    public static boolean isIntStorage(PSequence array) {
+        return array.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
-    public static boolean isByteStorage(PByteArray byteArray) {
-        return byteArray.getSequenceStorage() instanceof ByteSequenceStorage;
+    public static boolean isByteStorage(PSequence array) {
+        return array.getSequenceStorage() instanceof ByteSequenceStorage;
     }
 
     public static boolean areBothIntStorage(PSequence first, PSequence second) {
