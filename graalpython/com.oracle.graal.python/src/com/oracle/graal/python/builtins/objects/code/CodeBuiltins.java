@@ -142,7 +142,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetStackSizeNode extends PythonBuiltinNode {
         @Specialization
         protected Object get(PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            return self.getStacksize();
         }
     }
 

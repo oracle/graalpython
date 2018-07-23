@@ -69,18 +69,18 @@ public class PCode extends PythonBuiltinObject {
     private final int kwonlyargcount;
     // number of local variables
     private final int nlocals;
-    // virtual machine stack space required
+    // is the required stack size (including local variables)
     private final int stacksize;
     // bitmap of CO_* flags, read more
     // (https://docs.python.org/3/library/inspect.html#inspect-module-co-flags)
     private final int flags;
-    // string of raw compiled bytecode
+    // is a string representing the sequence of bytecode instructions
     private final String codestring;
     // tuple of constants used in the bytecode
     private final Object constants;
-    // tuple of names of local variables
+    // tuple containing the literals used by the bytecode
     private final Object names;
-    // tuple of names of arguments and local variables
+    // is a tuple containing the names of the local variables (starting with the argument names)
     private final Object[] varnames;
     // name of file in which this code object was created
     private final String filename;
@@ -88,7 +88,7 @@ public class PCode extends PythonBuiltinObject {
     private final String name;
     // number of first line in Python source code
     private final int firstlineno;
-    // encoded mapping of line numbers to bytecode indices
+    // is a string encoding the mapping from bytecode offsets to line numbers
     private final Object lnotab;
     // tuple of names of free variables (referenced via a function’s closure)
     private final Object[] freevars;
@@ -112,7 +112,7 @@ public class PCode extends PythonBuiltinObject {
         this.varnames = argStats.varNames;
         this.nlocals = argStats.nLocals;
 
-        this.stacksize = -1;
+        this.stacksize = getStackSize(rootNode);
         this.flags = -1;
         this.codestring = null;
         this.constants = null;
@@ -267,6 +267,10 @@ public class PCode extends PythonBuiltinObject {
             }
         }
         return new ArgStats(argC, kwOnlyArgC, varNames.toArray(), freeVars, cellVars);
+    }
+
+    private static int getStackSize(RootNode rootNode) {
+        return rootNode.getFrameDescriptor().getSize();
     }
 
     public RootNode getRootNode() {
