@@ -41,6 +41,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -52,11 +53,13 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -68,6 +71,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -77,6 +81,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -600,17 +605,84 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SETITEM__, fixedNumOfArguments = 3)
     @GenerateNodeFactory
+    @ImportStatic(SpecialMethodNames.class)
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
+        @Child private NormalizeIndexNode normalize;
+
         @Specialization
-        PNone doScalar(PByteArray self, int idx, Object value) {
-            self.setItem(idx, value);
+        PNone doInt(PByteArray self, int idx, Object value) {
+            self.setItemNormalized(ensureNormalize().forArrayAssign(idx, self.len()), value);
             return PNone.NONE;
         }
 
         @Specialization
-        PNone doSlice(PByteArray self, PSlice slice, PSequence value) {
+        PNone doSliceSequence(PByteArray self, PSlice slice, PSequence value) {
             self.setSlice(slice, value);
             return PNone.NONE;
+        }
+
+        @Specialization
+        PNone doSliceMemoryview(PByteArray self, PSlice slice, PMemoryView value,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytesNode,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
+            Object bytesObj = callToBytesNode.executeObject(value);
+            if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
+                doSliceSequence(self, slice, (PBytes) bytesObj);
+                return PNone.NONE;
+            }
+            throw raise(SystemError, "could not get bytes of memoryview");
+        }
+
+        @Specialization(guards = "isScalar(value)")
+        @SuppressWarnings("unused")
+        PNone doSliceScalar(PByteArray self, PSlice slice, Object value) {
+            throw raise(TypeError, "can assign only bytes, buffers, or iterables of ints in range(0, 256)");
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        public Object doLong(PByteArray primary, long idx, Object value) {
+            return doInt(primary, PInt.intValueExact(idx), value);
+        }
+
+        @Specialization(replaces = "doLong")
+        public Object doLongOvf(PByteArray primary, long idx, Object value) {
+            try {
+                return doInt(primary, PInt.intValueExact(idx), value);
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        public Object doPInt(PByteArray primary, PInt idx, Object value) {
+            return doInt(primary, idx.intValueExact(), value);
+        }
+
+        @Specialization(replaces = "doPInt")
+        public Object doPIntOvf(PByteArray primary, PInt idx, Object value) {
+            try {
+                return doInt(primary, idx.intValueExact(), value);
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object doGeneric(Object self, Object idx, Object value) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        private NormalizeIndexNode ensureNormalize() {
+            if (normalize == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                normalize = insert(NormalizeIndexNode.create());
+            }
+            return normalize;
+        }
+
+        protected boolean isScalar(Object value) {
+            return !(value instanceof PSequence || value instanceof PMemoryView);
         }
     }
 
