@@ -30,9 +30,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
@@ -59,7 +62,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -145,12 +147,77 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
+    abstract static class CmpNode extends PythonBinaryBuiltinNode {
+        int cmp(PBytes self, PBytes other) {
+            byte[] a = self.getInternalByteArray();
+            byte[] b = other.getInternalByteArray();
+            for (int i = 0; i < Math.min(a.length, b.length); i++) {
+                if (a[i] != b[i]) {
+                    // CPython uses 'memcmp'; so do unsigned comparison
+                    return a[i] & 0xFF - b[i] & 0xFF;
+                }
+            }
+            return a.length - b.length;
+        }
+    }
+
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
+    abstract static class LtNode extends CmpNode {
         @Specialization
-        boolean contains(PSequence self, PSequence other) {
-            return self.lessThan(other);
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) < 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) <= 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GtNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) > 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) >= 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

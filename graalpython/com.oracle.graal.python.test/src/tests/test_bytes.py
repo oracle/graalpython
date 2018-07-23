@@ -480,3 +480,15 @@ def test_same_id():
     empty_ids = set([id(bytes()) for i in range(100)])
     assert len(empty_ids) == 1
 
+
+def test_binary_op():
+    assert not (bytes(memoryview(b"123")) != memoryview(b"123").tobytes())
+    assert bytes(memoryview(b"123")) == memoryview(b"123").tobytes()
+    assert b"123" < b"1234"
+    assert not (b"153" < b"1234")
+    assert not (b"123" > b"1234")
+    assert b"153" > b"1234"
+    assert b"123" <= b"123"
+    assert b"123" <= b"1234"
+    assert b"123" >= b"123"
+    assert not (b"123" >= b"1234")
