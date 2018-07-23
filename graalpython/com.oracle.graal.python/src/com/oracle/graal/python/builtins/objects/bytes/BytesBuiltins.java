@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
@@ -100,7 +101,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean eq(PBytes self, PByteArray other) {
             return self.equals(other);
@@ -121,6 +122,29 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class NeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public boolean eq(PBytes self, PByteArray other) {
+            return !self.equals(other);
+        }
+
+        @Specialization
+        public boolean eq(PBytes self, PBytes other) {
+            return !self.equals(other);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object eq(Object self, Object other) {
+            if (self instanceof PBytes) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            throw raise(TypeError, "descriptor '__ne__' requires a 'bytes' object but received a '%p'", self);
+        }
+    }
+
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
@@ -132,7 +156,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class AddNode extends PythonBuiltinNode {
+    public abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object add(PBytes self, PIBytesLike other) {
             return self.concat(factory(), other);
@@ -147,7 +171,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __RADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class RAddNode extends PythonBuiltinNode {
+    public abstract static class RAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object add(PBytes self, PIBytesLike other) {
             return self.concat(factory(), other);
@@ -162,7 +186,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class MulNode extends PythonBuiltinNode {
+    public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object mul(PBytes self, int times) {
             return self.__mul__(factory(), times);
@@ -345,7 +369,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfArguments = 2)
+    @Builtin(name = __SETITEM__, fixedNumOfArguments = 3)
     @GenerateNodeFactory
     abstract static class SetitemNode extends PythonTernaryBuiltinNode {
         @Specialization
