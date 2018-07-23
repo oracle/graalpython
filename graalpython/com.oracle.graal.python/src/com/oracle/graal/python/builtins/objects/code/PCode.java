@@ -125,10 +125,12 @@ public class PCode extends PythonBuiltinObject {
         this.lnotab = null;
     }
 
-    public PCode(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
-                    int flags, String codestring, Object constants, Object names, Object[] varnames,
-                    String filename, String name, int firstlineno, Object lnotab, Object[] freevars,
-                    Object[] cellvars) {
+    public PCode(PythonClass cls, int argcount, int kwonlyargcount,
+                    int nlocals, int stacksize, int flags,
+                    String codestring, Object constants, Object names,
+                    Object[] varnames, Object[] freevars, Object[] cellvars,
+                    String filename, String name, int firstlineno,
+                    Object lnotab) {
         super(cls);
         this.rootNode = null;
         this.argcount = argcount;
