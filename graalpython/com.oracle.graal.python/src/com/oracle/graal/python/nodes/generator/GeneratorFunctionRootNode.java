@@ -58,13 +58,15 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final int numOfGeneratorForNode;
     private final PCell[] closure;
     private final ExecutionCellSlots cellSlots;
+    private final String name;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         super(language, frameDescriptor, executionCellSlots);
         this.callTarget = callTarget;
+        this.name = name;
         this.frameDescriptor = frameDescriptor;
         this.closure = closure;
         this.cellSlots = executionCellSlots;
@@ -80,5 +82,10 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
 
     public RootNode getFunctionRootNode() {
         return callTarget.getRootNode();
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 }

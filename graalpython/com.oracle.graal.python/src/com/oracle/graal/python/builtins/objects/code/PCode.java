@@ -48,6 +48,7 @@ import java.util.Set;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -101,7 +102,6 @@ public class PCode extends PythonBuiltinObject {
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
 
-    @TruffleBoundary
     public PCode(PythonClass cls, RootNode rootNode, PythonCore core) {
         super(cls);
         this.rootNode = rootNode;
@@ -135,11 +135,12 @@ public class PCode extends PythonBuiltinObject {
         this.cellvars = cellvars;
     }
 
+    @TruffleBoundary
     private static Set<String> asSet(String[] values) {
         return (values != null) ? new HashSet<>(Arrays.asList(values)) : new HashSet<>();
     }
 
-    private static String[] getFreeVars(RootNode rootNode) {
+    private static String[] extractFreeVars(RootNode rootNode) {
         if (rootNode instanceof FunctionRootNode) {
             return ((FunctionRootNode) rootNode).getFreeVars();
         } else if (rootNode instanceof GeneratorFunctionRootNode) {
@@ -149,7 +150,7 @@ public class PCode extends PythonBuiltinObject {
         }
     }
 
-    private static String[] getCellVars(RootNode rootNode) {
+    private static String[] extractCellVars(RootNode rootNode) {
         if (rootNode instanceof FunctionRootNode) {
             return ((FunctionRootNode) rootNode).getCellVars();
         } else if (rootNode instanceof GeneratorFunctionRootNode) {
@@ -160,18 +161,20 @@ public class PCode extends PythonBuiltinObject {
     }
 
     private static String extractFileName(RootNode rootNode) {
-        SourceSection src = rootNode.getSourceSection();
+        RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
+        SourceSection src = funcRootNode.getSourceSection();
         if (src != null) {
             return src.getSource().getName();
-        } else if (rootNode instanceof ModuleRootNode) {
-            return rootNode.getName();
+        } else if (funcRootNode instanceof ModuleRootNode) {
+            return funcRootNode.getName();
         } else {
             return null;
         }
     }
 
     private static int extractFirstLineno(RootNode rootNode) {
-        SourceSection sourceSection = rootNode.getSourceSection();
+        RootNode funcRootNode = (rootNode instanceof GeneratorFunctionRootNode) ? ((GeneratorFunctionRootNode) rootNode).getFunctionRootNode() : rootNode;
+        SourceSection sourceSection = funcRootNode.getSourceSection();
         return (sourceSection != null) ? sourceSection.getStartLine() : 1;
     }
 
@@ -187,6 +190,7 @@ public class PCode extends PythonBuiltinObject {
         return name;
     }
 
+    @TruffleBoundary
     private static Set<String> getKeywordArgumentNames(List<ReadKeywordNode> readKeywordNodes) {
         Set<String> kwArgNames = new HashSet<>();
         for (ReadKeywordNode node : readKeywordNodes) {
@@ -195,9 +199,10 @@ public class PCode extends PythonBuiltinObject {
         return kwArgNames;
     }
 
-    private static Set<String> getArgumentNames(List<ReadIndexedArgumentNode> readIndexedArgumentNodes) {
+    @TruffleBoundary
+    private static Set<String> extractArgumentNames(List<? extends PNode> readIndexedArgumentNodes) {
         Set<String> argNames = new HashSet<>();
-        for (ReadIndexedArgumentNode node : readIndexedArgumentNodes) {
+        for (PNode node : readIndexedArgumentNodes) {
             Node parent = node.getParent();
             if (parent instanceof WriteIdentifierNode) {
                 Object identifier = ((WriteIdentifierNode) parent).getIdentifier();
@@ -213,17 +218,35 @@ public class PCode extends PythonBuiltinObject {
         return rootNode.getFrameDescriptor().getSize();
     }
 
+    @TruffleBoundary
     private void extractArgStats() {
-        this.freevars = getFreeVars(rootNode);
-        this.cellvars = getCellVars(rootNode);
-        Set<String> freeVarsSet = asSet((String[])freevars);
-        Set<String> cellVarsSet = asSet((String[])cellvars);
+        // 0x20 - generator
+        this.flags = 0;
+        RootNode funcRootNode = rootNode;
+        if (funcRootNode instanceof GeneratorFunctionRootNode) {
+            flags |= (1 << 5);
+            funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
+        }
 
-        List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(rootNode, ReadKeywordNode.class);
-        List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(rootNode, ReadIndexedArgumentNode.class);
+        // 0x04 - *arguments
+        if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarArgsNode.class).size() == 1) {
+            flags |= (1 << 2);
+        }
+        // 0x08 - **keywords
+        if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarKeywordsNode.class).size() == 1) {
+            flags |= (1 << 3);
+        }
+
+        this.freevars = extractFreeVars(rootNode);
+        this.cellvars = extractCellVars(rootNode);
+        Set<String> freeVarsSet = asSet((String[]) freevars);
+        Set<String> cellVarsSet = asSet((String[]) cellvars);
+
+        List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadKeywordNode.class);
+        List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadIndexedArgumentNode.class);
 
         Set<String> kwNames = getKeywordArgumentNames(readKeywordNodes);
-        Set<String> argNames = getArgumentNames(readIndexedArgumentNodes);
+        Set<String> argNames = extractArgumentNames(readIndexedArgumentNodes);
 
         Set<String> allArgNames = new HashSet<>();
         allArgNames.addAll(kwNames);
@@ -231,7 +254,6 @@ public class PCode extends PythonBuiltinObject {
 
         this.argcount = readIndexedArgumentNodes.size();
         this.kwonlyargcount = 0;
-        this.flags = 0;
 
         for (ReadKeywordNode kwNode : readKeywordNodes) {
             if (!kwNode.canBePositional()) {
@@ -252,22 +274,6 @@ public class PCode extends PythonBuiltinObject {
                     }
                 }
             }
-        }
-
-        // 0x20 - generator
-        RootNode funcRootNode = rootNode;
-        if (funcRootNode instanceof GeneratorFunctionRootNode) {
-            flags |= (1 << 5);
-            funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
-        }
-
-        // 0x04 - *arguments
-        if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarArgsNode.class).size() == 1) {
-            flags |= (1 << 2);
-        }
-        // 0x08 - **keywords
-        if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarKeywordsNode.class).size() == 1) {
-            flags |= (1 << 3);
         }
 
         this.varnames = varnamesSet.toArray();

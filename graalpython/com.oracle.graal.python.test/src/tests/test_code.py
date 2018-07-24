@@ -55,6 +55,7 @@ def wrapper():
 
         try:
             loc_1 &= kwarg_other
+            yield loc_1
         except TypeError:
             pass
         else:
@@ -81,12 +82,14 @@ def test_code_attributes():
     assert code.co_kwonlyargcount == 0
     assert code.co_nlocals == 6
     assert code.co_stacksize >= code.co_nlocals
-    assert code.co_flags == 0
+    assert code.co_flags & (1 << 5)
+    assert not code.co_flags & (1 << 2)
+    assert not code.co_flags & (1 << 3)
     # assert code.co_code
     # assert code.co_consts
     # assert set(code.co_names) == {'set', 'TypeError', 'print'}
     assert set(code.co_varnames) == {'arg_l', 'kwarg_case', 'kwarg_other', 'loc_1', 'loc_3', 'inner_func'}
-    assert code.co_filename == "graalpython/com.oracle.graal.python.test/src/tests/test_code.py"
+    assert code.co_filename.endswith("test_code.py")
     assert code.co_name == "my_func"
     assert code.co_firstlineno == 48
     # assert code.co_lnotab == b'\x00\x01\x0c\x01\x0c\x01\x06\x02\x15\x03\x03\x01\x0e\x01\r\x01\x05\x02'
