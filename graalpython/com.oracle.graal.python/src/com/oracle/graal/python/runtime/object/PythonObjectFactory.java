@@ -473,11 +473,11 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDictKeysView(lookupClass(PythonBuiltinClassType.PDictKeysView), dict));
     }
 
-    public PDictView createDictValuesView(PDict dict) {
+    public PDictView createDictValuesView(PHashingCollection dict) {
         return trace(new PDictValuesView(lookupClass(PythonBuiltinClassType.PDictValuesView), dict));
     }
 
-    public PDictView createDictItemsView(PDict dict) {
+    public PDictView createDictItemsView(PHashingCollection dict) {
         return trace(new PDictItemsView(lookupClass(PythonBuiltinClassType.PDictItemsView), dict));
     }
 

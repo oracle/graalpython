@@ -66,14 +66,12 @@ def test_immutable():
 
 
 def test_views():
-    d = dict()
-    d['a'] = 1
-    d['b'] = 2
-    d['c'] = 3
+    d = {"a": 1, "b": 2, "c": 3}
     mp = _mappingproxy(d)
 
     assert len(mp) == 3
-    # assert d.keys() == {'a', 'b', 'c'}
+    assert d.keys() == {'a', 'b', 'c'}
+    assert mp.keys() == d.keys()
     assert len(mp.keys()) == 3, "keys view has invalid length"
     assert set(mp.keys()) == {'a', 'b', 'c'}, "keys view invalid"
     assert len(mp.values()) == 3, "values view has invalid length"
@@ -122,3 +120,12 @@ def test_init_invalid():
         return _mappingproxy(*args)
     assert_raises(TypeError, mp_init)
     assert_raises(TypeError, mp_init, None)
+
+
+def test_iter():
+    d = {"a": 1, "b": 2, "c": 3}
+    mp = _mappingproxy(d)
+
+    mp_keys = set([k for k in mp])
+    assert d.keys() == mp_keys
+

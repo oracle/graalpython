@@ -25,11 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.mappingproxy;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
@@ -66,9 +68,18 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object doPDict(PMappingproxy self, Object mapping) {
+        Object doPMappingproxy(PMappingproxy self, Object mapping) {
             // nothing to do
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class IterNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object run(PMappingproxy self) {
+            return factory().createDictKeysIterator(self);
         }
     }
 
@@ -80,6 +91,28 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Specialization
         public PDictView keys(PMappingproxy self) {
             return factory().createDictKeysView(self);
+        }
+    }
+
+    // items()
+    @Builtin(name = ITEMS, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        public PDictView items(PMappingproxy self) {
+            return factory().createDictItemsView(self);
+        }
+    }
+
+    // values()
+    @Builtin(name = "values", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        public PDictView values(PMappingproxy self) {
+            return factory().createDictValuesView(self);
         }
     }
 
