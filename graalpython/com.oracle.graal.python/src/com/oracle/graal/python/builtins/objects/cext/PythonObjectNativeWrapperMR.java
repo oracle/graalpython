@@ -59,11 +59,14 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.ToPyObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.WriteNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -80,6 +83,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -377,10 +381,24 @@ public class PythonObjectNativeWrapperMR {
             return new PyUnicodeState(object);
         }
 
-        @Specialization(guards = "eq(MD_DICT, key) || eq(TP_DICT, key)")
+        @Specialization(guards = "eq(MD_DICT, key)")
         Object doMdDict(PythonObject object, @SuppressWarnings("unused") String key,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getDictNode) {
             return getToSulongNode().execute(getDictNode.executeObject(object, SpecialAttributeNames.__DICT__));
+        }
+
+        @Specialization(guards = "eq(TP_DICT, key)")
+        Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key) {
+            PHashingCollection dict = object.getDict();
+            if (!(dict instanceof PDict)) {
+                assert dict instanceof PMappingproxy || dict == null;
+                // If 'dict instanceof PMappingproxy', it seems that someone already used '__dict__'
+                // on this type and created a mappingproxy object. We need to replace it by a dict.
+                dict = factory().createDictFixedStorage(object);
+                object.setDict(dict);
+            }
+            assert dict instanceof PDict;
+            return getToSulongNode().execute(dict);
         }
 
         @Specialization(guards = "eq(MD_DEF, key)")
@@ -519,7 +537,7 @@ public class PythonObjectNativeWrapperMR {
     }
 
     @ImportStatic({NativeMemberNames.class, PGuards.class})
-    abstract static class WriteNativeMemberNode extends Node {
+    abstract static class WriteNativeMemberNode extends PBaseNode {
         @Child private HashingStorageNodes.SetItemNode setItemNode;
 
         abstract Object execute(Object receiver, String key, Object value);
@@ -568,6 +586,30 @@ public class PythonObjectNativeWrapperMR {
             PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
             getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), NativeMemberNames.MD_DEF, value);
+            return value;
+        }
+
+        @Specialization(guards = "eq(TP_DICT, key)")
+        Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
+                        @Cached("create()") CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
+            Object value = asPythonObjectNode.execute(nativeValue);
+            if (value instanceof PDict && ((PDict) value).getPythonClass() == getCore().lookupType(PDict.class)) {
+                // special and fast case: commit items and change store
+                PDict d = (PDict) value;
+                for (Object k : d.keys()) {
+                    writeAttrNode.execute(object, k, d.getItem(k));
+                }
+                PHashingCollection existing = object.getDict();
+                if (existing != null) {
+                    d.setDictStorage(existing.getDictStorage());
+                } else {
+                    d.setDictStorage(new DynamicObjectStorage.PythonObjectDictStorage(object.getStorage()));
+                }
+                object.setDict(d);
+            } else {
+                // TODO custom mapping object
+            }
             return value;
         }
 

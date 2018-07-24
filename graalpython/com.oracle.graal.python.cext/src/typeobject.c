@@ -233,10 +233,10 @@ int PyType_Ready(PyTypeObject* cls) {
     // remember the managed wrapper
     ((PyObject*)cls)->ob_refcnt = truffle_handle_for_managed(javacls);
     if (cls->tp_dict != NULL) {
-        // TODO: (tfel) is this always safe?
-        PyDict_Update(javacls->tp_dict, cls->tp_dict);
+        javacls->tp_dict = native_to_java(cls->tp_dict);
+    } else {
+        cls->tp_dict = javacls->tp_dict;
     }
-    cls->tp_dict = javacls->tp_dict;
 
     PyMethodDef* methods = cls->tp_methods;
     if (methods) {

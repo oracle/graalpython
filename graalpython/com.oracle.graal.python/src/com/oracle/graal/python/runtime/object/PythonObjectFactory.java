@@ -503,6 +503,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PMappingproxy(lookupClass(PythonBuiltinClassType.PMappingproxy), new PythonObjectDictStorage(object.getStorage())));
     }
 
+    public PMappingproxy createMappingproxy(HashingStorage storage) {
+        return trace(new PMappingproxy(lookupClass(PythonBuiltinClassType.PMappingproxy), storage));
+    }
+
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
         return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
     }
