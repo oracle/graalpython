@@ -5,6 +5,7 @@
 import re
 import string
 import unittest
+import sys
 
 
 def test_match():
@@ -197,8 +198,6 @@ class ReTests(unittest.TestCase):
         self.checkPatternError(r'(?P<a>)(?P<a>)',
                                "redefinition of group name 'a' as group 2; "
                                "was group 1")
-        self.checkPatternError(r'(?P<a>(?P=a))',
-                               "cannot refer to an open group", 10)
         self.checkPatternError(r'(?Pxy)', 'unknown extension ?Px')
         self.checkPatternError(r'(?P<a>)(?P=a', 'missing ), unterminated name', 11)
         self.checkPatternError(r'(?P=', 'missing group name', 4)
@@ -216,7 +215,6 @@ class ReTests(unittest.TestCase):
         self.checkPatternError(r'(?(', 'missing group name', 3)
         self.checkPatternError(r'(?())', 'missing group name', 3)
         self.checkPatternError(r'(?(a))', "unknown group name 'a'", 3)
-        self.checkPatternError(r'(?(-1))', "bad character in group name '-1'", 3)
         self.checkPatternError(r'(?(1a))', "bad character in group name '1a'", 3)
         self.checkPatternError(r'(?(a.))', "bad character in group name 'a.'", 3)
         # New valid/invalid identifiers in Python 3
@@ -227,7 +225,11 @@ class ReTests(unittest.TestCase):
         # Support > 100 groups.
         pat = '|'.join('x(?P<a%d>%x)y' % (i, i) for i in range(1, 200 + 1))
         pat = '(?:%s)(?(200)z|t)' % pat
-        self.assertEqual(re.match(pat, 'xc8yz').span(), (0, 5))
+        if sys.version_info.minor >= 6:
+            self.checkPatternError(r'(?P<a>(?P=a))',
+                                   "cannot refer to an open group", 10)
+            self.checkPatternError(r'(?(-1))', "bad character in group name '-1'", 3)
+            self.assertEqual(re.match(pat, 'xc8yz').span(), (0, 5))
 
     def test_ignore_case_set(self):
         self.assertTrue(re.match(r'[19A]', 'A', re.I))
@@ -243,11 +245,12 @@ class ReTests(unittest.TestCase):
         self.assertTrue(re.match(r'[19k]', '\u212a', re.I))
         self.assertTrue(re.match(r'[19\u212a]', 'K', re.I))
         self.assertTrue(re.match(r'[19\u212a]', 'k', re.I))
-        assert '\u017f'.upper() == 'S'  # 'ſ'
-        self.assertTrue(re.match(r'[19S]', '\u017f', re.I))
-        self.assertTrue(re.match(r'[19s]', '\u017f', re.I))
-        self.assertTrue(re.match(r'[19\u017f]', 'S', re.I))
-        self.assertTrue(re.match(r'[19\u017f]', 's', re.I))
+        if sys.version_info.minor >= 6:
+            assert '\u017f'.upper() == 'S'  # 'ſ'
+            self.assertTrue(re.match(r'[19S]', '\u017f', re.I))
+            self.assertTrue(re.match(r'[19s]', '\u017f', re.I))
+            self.assertTrue(re.match(r'[19\u017f]', 'S', re.I))
+            self.assertTrue(re.match(r'[19\u017f]', 's', re.I))
         assert '\ufb05'.upper() == '\ufb06'.upper() == 'ST'  # 'ﬅ', 'ﬆ'
 #         self.assertTrue(re.match(r'[19\ufb05]', '\ufb06', re.I))
 #         self.assertTrue(re.match(r'[19\ufb06]', '\ufb05', re.I))
