@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.mappingproxy;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -164,16 +163,6 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object run(PMappingproxy self, Object key, Object value) {
             throw raise(TypeError, "'mappingproxy' object does not support item assignment");
-        }
-    }
-
-    @Builtin(name = __DELITEM__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        @SuppressWarnings("unused")
-        Object run(PMappingproxy self, Object key) {
-            throw raise(TypeError, "'mappingproxy' object does not support item deletion");
         }
     }
 
