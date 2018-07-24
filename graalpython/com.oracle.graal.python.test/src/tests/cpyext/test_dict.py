@@ -105,6 +105,8 @@ class SubDict(dict):
 
 
 ExampleDict = {}
+
+
 def fresh_dict():
     global ExampleDict
     ExampleDict = {}
@@ -120,10 +122,16 @@ class TestPyDict(CPyExtTestCase):
     # PyDict_SetItem
     test_PyDict_SetItem = CPyExtFunction(
         _reference_set_item,
-        lambda: (({}, "a", "hello"), ({'a': "hello"}, "b", "world")),
+        lambda: (
+            ({}, "a", "hello")
+            , ({'a': "hello"}, "b", "world")
+            # mappingproxy
+            , (type(type.__dict__)({'a': "hello"}), "b", "world")
+            ),
         resultspec="i",
         argspec='OOO',
         arguments=("PyObject* dict", "PyObject* key", "PyObject* val"),
+        cmpfunc=unhandled_error_compare
     )
 
     # PyDict_GetItem
@@ -316,5 +324,5 @@ class TestPyDict(CPyExtTestCase):
             }
         }''',
         callfunction="wrap_PyDict_Update",
-        cmpfunc=lambda cr,pr: (cr == pr or (isinstance(cr, BaseException) and type(cr) == type(pr))) and (ExampleDict.get("a") == 1 or len(ExampleDict) == 0)
+        cmpfunc=lambda cr, pr: (cr == pr or (isinstance(cr, BaseException) and type(cr) == type(pr))) and (ExampleDict.get("a") == 1 or len(ExampleDict) == 0)
     )
