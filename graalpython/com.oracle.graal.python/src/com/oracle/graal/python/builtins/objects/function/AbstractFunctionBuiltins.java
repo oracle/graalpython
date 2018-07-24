@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PFunction.class, PBuiltinFunction.class})
 public class AbstractFunctionBuiltins extends PythonBuiltins {
@@ -213,8 +214,14 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getCode(PFunction self, @SuppressWarnings("unused") PNone none) {
-            return factory().createCode(self.getFunctionRootNode());
+        Object getCode(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
+            PCode code = self.getCode();
+            if (hasCodeProfile.profile(code == null)) {
+                code = factory().createCode(self.getFunctionRootNode());
+                self.setCode(code);
+            }
+            return code;
         }
 
         @SuppressWarnings("unused")

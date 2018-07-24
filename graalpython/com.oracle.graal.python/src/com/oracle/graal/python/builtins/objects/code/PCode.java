@@ -64,65 +64,48 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public class PCode extends PythonBuiltinObject {
     private final RootNode rootNode;
+    private final PythonCore core;
+
     // number of arguments (not including keyword only arguments, * or ** args)
-    private final int argcount;
+    private int argcount = -1;
     // number of keyword only arguments (not including ** arg)
-    private final int kwonlyargcount;
+    private int kwonlyargcount = -1;
     // number of local variables
-    private final int nlocals;
+    private int nlocals = -1;
     // is the required stack size (including local variables)
-    private final int stacksize;
+    private int stacksize = -1;
     // is an integer encoding a number of flags for the interpreter.
-    //
     // The following flag bits are defined for co_flags: bit 0x04 is set if the function uses the
     // *arguments syntax to accept an arbitrary number of positional arguments; bit 0x08 is set if
     // the function uses the **keywords syntax to accept arbitrary keyword arguments; bit 0x20 is
     // set if the function is a generator.
-    private final int flags;
+    private int flags = -1;
     // is a string representing the sequence of bytecode instructions
-    private final String codestring;
+    private String codestring;
     // tuple of constants used in the bytecode
-    private final Object constants;
+    private Object constants;
     // tuple containing the literals used by the bytecode
-    private final Object names;
+    private Object names;
     // is a tuple containing the names of the local variables (starting with the argument names)
-    private final Object[] varnames;
+    private Object[] varnames;
     // name of file in which this code object was created
-    private final String filename;
+    private String filename;
     // name with which this code object was defined
-    private final String name;
+    private String name;
     // number of first line in Python source code
-    private final int firstlineno;
+    private int firstlineno = -1;
     // is a string encoding the mapping from bytecode offsets to line numbers
-    private final Object lnotab;
+    private Object lnotab;
     // tuple of names of free variables (referenced via a function’s closure)
-    private final Object[] freevars;
+    private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
-    private final Object[] cellvars;
+    private Object[] cellvars;
 
     @TruffleBoundary
     public PCode(PythonClass cls, RootNode rootNode, PythonCore core) {
         super(cls);
         this.rootNode = rootNode;
-        // file stats
-        this.filename = getFileName(this.rootNode);
-        this.name = getName(this.rootNode);
-        this.firstlineno = getFirstLineno(this.rootNode);
-        // arg stats
-        ArgStats argStats = getArgStats(this.rootNode, core);
-        this.argcount = argStats.argCnt;
-        this.kwonlyargcount = argStats.kwOnlyArgCnt;
-        this.freevars = argStats.freeVars;
-        this.cellvars = argStats.cellVars;
-        this.varnames = argStats.varNames;
-        this.nlocals = argStats.nLocals;
-        this.flags = argStats.flags;
-
-        this.stacksize = getStackSize(rootNode);
-        this.codestring = null;
-        this.constants = null;
-        this.names = null;
-        this.lnotab = null;
+        this.core = core;
     }
 
     public PCode(PythonClass cls, int argcount, int kwonlyargcount,
@@ -133,6 +116,8 @@ public class PCode extends PythonBuiltinObject {
                     Object lnotab) {
         super(cls);
         this.rootNode = null;
+        this.core = null;
+
         this.argcount = argcount;
         this.kwonlyargcount = kwonlyargcount;
         this.nlocals = nlocals;
@@ -174,7 +159,7 @@ public class PCode extends PythonBuiltinObject {
         }
     }
 
-    private static String getFileName(RootNode rootNode) {
+    private static String extractFileName(RootNode rootNode) {
         SourceSection src = rootNode.getSourceSection();
         if (src != null) {
             return src.getSource().getName();
@@ -185,12 +170,12 @@ public class PCode extends PythonBuiltinObject {
         }
     }
 
-    private static int getFirstLineno(RootNode rootNode) {
+    private static int extractFirstLineno(RootNode rootNode) {
         SourceSection sourceSection = rootNode.getSourceSection();
         return (sourceSection != null) ? sourceSection.getStartLine() : 1;
     }
 
-    private static String getName(RootNode rootNode) {
+    private static String extractName(RootNode rootNode) {
         String name;
         if (rootNode instanceof ModuleRootNode) {
             name = "<module>";
@@ -224,31 +209,15 @@ public class PCode extends PythonBuiltinObject {
         return argNames;
     }
 
-    private final static class ArgStats {
-        final int argCnt;
-        final int kwOnlyArgCnt;
-        final Object[] varNames;
-        final Object[] freeVars;
-        final Object[] cellVars;
-        final int flags;
-        final int nLocals;
-
-        private ArgStats(int argCnt, int kwOnlyArgCnt, Object[] varNames, Object[] freeVars, Object[] cellVars, int flags) {
-            this.argCnt = argCnt;
-            this.kwOnlyArgCnt = kwOnlyArgCnt;
-            this.varNames = varNames;
-            this.freeVars = freeVars;
-            this.cellVars = cellVars;
-            this.nLocals = varNames.length;
-            this.flags = flags;
-        }
+    private static int extractStackSize(RootNode rootNode) {
+        return rootNode.getFrameDescriptor().getSize();
     }
 
-    private static ArgStats getArgStats(RootNode rootNode, PythonCore core) {
-        String[] freeVars = getFreeVars(rootNode);
-        String[] cellVars = getCellVars(rootNode);
-        Set<String> freeVarsSet = asSet(freeVars);
-        Set<String> cellVarsSet = asSet(cellVars);
+    private void extractArgStats() {
+        String[] freevars = getFreeVars(rootNode);
+        String[] cellvars = getCellVars(rootNode);
+        Set<String> freeVarsSet = asSet(freevars);
+        Set<String> cellVarsSet = asSet(cellvars);
 
         List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(rootNode, ReadKeywordNode.class);
         List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(rootNode, ReadIndexedArgumentNode.class);
@@ -260,26 +229,26 @@ public class PCode extends PythonBuiltinObject {
         allArgNames.addAll(kwNames);
         allArgNames.addAll(argNames);
 
-        int argC = readIndexedArgumentNodes.size();
-        int kwOnlyArgC = 0;
+        int argcount = readIndexedArgumentNodes.size();
+        int kwonlyargcount = 0;
         int flags = 0;
 
         for (ReadKeywordNode kwNode : readKeywordNodes) {
             if (!kwNode.canBePositional()) {
-                kwOnlyArgC++;
+                kwonlyargcount++;
             }
         }
 
-        Set<String> varNames = new HashSet<>();
+        Set<String> varnames = new HashSet<>();
         for (Object identifier : rootNode.getFrameDescriptor().getIdentifiers()) {
             if (identifier instanceof String) {
                 String varName = (String) identifier;
 
                 if (core.getParser().isIdentifier(core, varName)) {
                     if (allArgNames.contains(varName)) {
-                        varNames.add(varName);
+                        varnames.add(varName);
                     } else if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
-                        varNames.add(varName);
+                        varnames.add(varName);
                     }
                 }
             }
@@ -299,11 +268,13 @@ public class PCode extends PythonBuiltinObject {
             flags |= (1 << 5);
         }
 
-        return new ArgStats(argC, kwOnlyArgC, varNames.toArray(), freeVars, cellVars, flags);
-    }
-
-    private static int getStackSize(RootNode rootNode) {
-        return rootNode.getFrameDescriptor().getSize();
+        this.argcount = argcount;
+        this.kwonlyargcount = kwonlyargcount;
+        this.freevars = freevars;
+        this.cellvars = cellvars;
+        this.varnames = varnames.toArray();
+        this.nlocals = varnames.size();
+        this.flags = flags;
     }
 
     public RootNode getRootNode() {
@@ -311,43 +282,80 @@ public class PCode extends PythonBuiltinObject {
     }
 
     public Object[] getFreeVars() {
+        if (freevars == null && rootNode != null) {
+            extractArgStats();
+        }
         return freevars;
     }
 
     public Object[] getCellVars() {
+        if (freevars == null && rootNode != null) {
+            extractArgStats();
+        }
         return cellvars;
     }
 
     public String getFilename() {
+        if (filename == null && rootNode != null) {
+            filename = extractFileName(rootNode);
+        }
         return filename;
     }
 
     public int getFirstLineNo() {
+        if (firstlineno == -1 && rootNode != null) {
+            firstlineno = extractFirstLineno(rootNode);
+        }
         return firstlineno;
     }
 
     public String getName() {
+        if (name == null && rootNode != null) {
+            name = extractName(rootNode);
+        }
         return name;
     }
 
     public int getArgcount() {
+        if (argcount == -1 && rootNode != null) {
+            extractArgStats();
+        }
         return argcount;
     }
 
     public int getKwonlyargcount() {
+        if (kwonlyargcount == -1 && rootNode != null) {
+            extractArgStats();
+        }
         return kwonlyargcount;
     }
 
     public int getNlocals() {
+        if (nlocals == -1 && rootNode != null) {
+            extractArgStats();
+        }
         return nlocals;
     }
 
     public int getStacksize() {
+        if (stacksize == -1 && rootNode != null) {
+            stacksize = extractStackSize(rootNode);
+        }
         return stacksize;
     }
 
     public long getFlags() {
+        if (flags == -1 && rootNode != null) {
+            extractArgStats();
+        }
         return flags;
+    }
+
+    public Object[] getVarnames() {
+        if (varnames == null && rootNode != null) {
+            extractArgStats();
+        }
+        return varnames;
     }
 
     public String getCodestring() {
@@ -360,10 +368,6 @@ public class PCode extends PythonBuiltinObject {
 
     public Object getNames() {
         return names;
-    }
-
-    public Object[] getVarnames() {
-        return varnames;
     }
 
     public Object getLnotab() {
