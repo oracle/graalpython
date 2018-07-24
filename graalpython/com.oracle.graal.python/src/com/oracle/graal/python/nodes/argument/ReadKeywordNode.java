@@ -137,4 +137,8 @@ public abstract class ReadKeywordNode extends PNode {
             return profile.profile(keyword.getValue());
         }
     }
+
+    public String getName() {
+        return name;
+    }
 }

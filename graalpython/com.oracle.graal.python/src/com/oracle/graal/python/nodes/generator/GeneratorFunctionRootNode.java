@@ -48,6 +48,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
@@ -57,13 +58,15 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final int numOfGeneratorForNode;
     private final PCell[] closure;
     private final ExecutionCellSlots cellSlots;
+    private final String name;
 
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         super(language, frameDescriptor, executionCellSlots);
         this.callTarget = callTarget;
+        this.name = name;
         this.frameDescriptor = frameDescriptor;
         this.closure = closure;
         this.cellSlots = executionCellSlots;
@@ -75,5 +78,14 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+    }
+
+    public RootNode getFunctionRootNode() {
+        return callTarget.getRootNode();
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 }
