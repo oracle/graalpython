@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -87,7 +86,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonObject.class)
 public class ObjectBuiltins extends PythonBuiltins {
@@ -224,7 +222,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETATTRIBUTE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
         private final BranchProfile hasDescProfile = BranchProfile.create();
         private final BranchProfile isDescProfile = BranchProfile.create();
         private final BranchProfile hasValueProfile = BranchProfile.create();
@@ -232,8 +230,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private final ConditionProfile typeIsObjectProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        private final ValueProfile typeProfile = ValueProfile.createIdentityProfile();
-        @Child private GetClassNode getObjectClassNode;
+        @Child private GetClassNode getObjectClassNode = GetClassNode.create();
         @Child private GetClassNode getDataClassNode;
         @Child private LookupAttributeInMRONode lookupGetNode;
         @Child private LookupAttributeInMRONode lookupSetNode;
@@ -244,7 +241,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(Object object, Object key) {
-            PythonClass type = getObjectClass(object);
+            PythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             PythonClass dataDescClass = null;
             if (descr != PNone.NO_VALUE) {
@@ -336,14 +333,6 @@ public class ObjectBuiltins extends PythonBuiltins {
                 lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
             }
             return lookupSetNode.execute(dataDescClass);
-        }
-
-        private PythonClass getObjectClass(Object object) {
-            if (getObjectClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectClassNode = insert(GetClassNode.create());
-            }
-            return typeProfile.profile(getObjectClassNode.execute(object));
         }
 
         private PythonClass getDataClass(Object descr) {

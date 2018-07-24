@@ -755,10 +755,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (readId == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readId = insert(ReadAttributeFromObjectNode.create());
-                writeId = insert(WriteAttributeToObjectNode.create());
             }
             Object id = readId.execute(obj, ID_KEY);
             if (id == NO_VALUE) {
+                if (writeId == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    writeId = insert(WriteAttributeToObjectNode.create());
+                }
                 id = getContext().getNextGlobalId();
                 writeId.execute(obj, ID_KEY, id);
             }
