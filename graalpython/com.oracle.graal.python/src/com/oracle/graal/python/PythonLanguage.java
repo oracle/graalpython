@@ -73,7 +73,6 @@ import com.oracle.truffle.api.source.Source;
 @TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, DebuggerTags.AlwaysHalt.class})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
-
     public static final String ID = "python";
     public static final String NAME = "Python";
     public static final int MAJOR = 3;
@@ -81,7 +80,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int MICRO = 0;
     public static final String VERSION = MAJOR + "." + MINOR + "." + MICRO;
 
-    public static final String MIME_TYPE = "application/x-python";
+    public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
     @CompilationFinal private PythonCore sharedCore;
