@@ -214,10 +214,10 @@ public class PCode extends PythonBuiltinObject {
     }
 
     private void extractArgStats() {
-        String[] freevars = getFreeVars(rootNode);
-        String[] cellvars = getCellVars(rootNode);
-        Set<String> freeVarsSet = asSet(freevars);
-        Set<String> cellVarsSet = asSet(cellvars);
+        this.freevars = getFreeVars(rootNode);
+        this.cellvars = getCellVars(rootNode);
+        Set<String> freeVarsSet = asSet((String[])freevars);
+        Set<String> cellVarsSet = asSet((String[])cellvars);
 
         List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(rootNode, ReadKeywordNode.class);
         List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(rootNode, ReadIndexedArgumentNode.class);
@@ -229,9 +229,9 @@ public class PCode extends PythonBuiltinObject {
         allArgNames.addAll(kwNames);
         allArgNames.addAll(argNames);
 
-        int argcount = readIndexedArgumentNodes.size();
-        int kwonlyargcount = 0;
-        int flags = 0;
+        this.argcount = readIndexedArgumentNodes.size();
+        this.kwonlyargcount = 0;
+        this.flags = 0;
 
         for (ReadKeywordNode kwNode : readKeywordNodes) {
             if (!kwNode.canBePositional()) {
@@ -239,42 +239,39 @@ public class PCode extends PythonBuiltinObject {
             }
         }
 
-        Set<String> varnames = new HashSet<>();
+        Set<String> varnamesSet = new HashSet<>();
         for (Object identifier : rootNode.getFrameDescriptor().getIdentifiers()) {
             if (identifier instanceof String) {
                 String varName = (String) identifier;
 
                 if (core.getParser().isIdentifier(core, varName)) {
                     if (allArgNames.contains(varName)) {
-                        varnames.add(varName);
+                        varnamesSet.add(varName);
                     } else if (!freeVarsSet.contains(varName) && !cellVarsSet.contains(varName)) {
-                        varnames.add(varName);
+                        varnamesSet.add(varName);
                     }
                 }
             }
         }
 
-        // set the flags
+        // 0x20 - generator
+        RootNode funcRootNode = rootNode;
+        if (funcRootNode instanceof GeneratorFunctionRootNode) {
+            flags |= (1 << 5);
+            funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
+        }
+
         // 0x04 - *arguments
-        if (NodeUtil.findAllNodeInstances(rootNode, ReadVarArgsNode.class).size() == 1) {
+        if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarArgsNode.class).size() == 1) {
             flags |= (1 << 2);
         }
         // 0x08 - **keywords
-        if (NodeUtil.findAllNodeInstances(rootNode, ReadVarKeywordsNode.class).size() == 1) {
+        if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarKeywordsNode.class).size() == 1) {
             flags |= (1 << 3);
         }
-        // 0x20 - generator
-        if (rootNode instanceof GeneratorFunctionRootNode) {
-            flags |= (1 << 5);
-        }
 
-        this.argcount = argcount;
-        this.kwonlyargcount = kwonlyargcount;
-        this.freevars = freevars;
-        this.cellvars = cellvars;
-        this.varnames = varnames.toArray();
-        this.nlocals = varnames.size();
-        this.flags = flags;
+        this.varnames = varnamesSet.toArray();
+        this.nlocals = varnamesSet.size();
     }
 
     public RootNode getRootNode() {
