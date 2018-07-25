@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.generator;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -46,6 +47,7 @@ public final class PGenerator extends PythonBuiltinObject {
     protected final Object[] arguments;
     private final PCell[] closure;
     private boolean finished;
+    private PCode code;
 
     public static PGenerator create(PythonClass clazz, String name, RootCallTarget callTarget, FrameDescriptor frameDescriptor, Object[] arguments, PCell[] closure, ExecutionCellSlots cellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
@@ -124,5 +126,13 @@ public final class PGenerator extends PythonBuiltinObject {
         }
         CompilerDirectives.transferToInterpreter();
         throw new AssertionError("PGenerator required.");
+    }
+
+    public PCode getCode() {
+        return code;
+    }
+
+    public void setCode(PCode code) {
+        this.code = code;
     }
 }

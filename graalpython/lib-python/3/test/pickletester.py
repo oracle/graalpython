@@ -14,7 +14,7 @@ from http.cookies import SimpleCookie
 from test import support
 from test.support import (
     TestFailed, TESTFN, run_with_locale, no_tracing,
-    _2G, _4G, bigmemtest, check_impl_detail, impl_detail
+    _2G, _4G, bigmemtest,
     )
 
 from pickle import bytes_types
@@ -1966,7 +1966,6 @@ class AbstractPickleTests(unittest.TestCase):
                 loaded = self.loads(dumped)
                 self.assert_is_copy(obj, loaded)
 
-    @impl_detail("pypy does not store attribute names", pypy=False)
     def test_attribute_name_interning(self):
         # Test that attribute names of pickled objects are interned when
         # unpickling.
@@ -1981,7 +1980,6 @@ class AbstractPickleTests(unittest.TestCase):
             for x_key, y_key in zip(x_keys, y_keys):
                 self.assertIs(x_key, y_key)
 
-    @impl_detail("This test is too strong indeed", pypy=False)
     def test_pickle_to_2x(self):
         # Pickle non-trivial data with protocol 2, expecting that it yields
         # the same result as Python 2.x did.
@@ -2536,7 +2534,7 @@ class AbstractPickleModuleTests(unittest.TestCase):
         f = open(TESTFN, "wb")
         try:
             f.close()
-            self.assertRaises(ValueError, pickle.dump, 123, f)
+            self.assertRaises(ValueError, self.dump, 123, f)
         finally:
             os.remove(TESTFN)
 
@@ -2545,16 +2543,16 @@ class AbstractPickleModuleTests(unittest.TestCase):
         f = open(TESTFN, "wb")
         try:
             f.close()
-            self.assertRaises(ValueError, pickle.dump, 123, f)
+            self.assertRaises(ValueError, self.dump, 123, f)
         finally:
             os.remove(TESTFN)
 
     def test_load_from_and_dump_to_file(self):
         stream = io.BytesIO()
         data = [123, {}, 124]
-        pickle.dump(data, stream)
+        self.dump(data, stream)
         stream.seek(0)
-        unpickled = pickle.load(stream)
+        unpickled = self.load(stream)
         self.assertEqual(unpickled, data)
 
     def test_highest_protocol(self):
@@ -2564,20 +2562,20 @@ class AbstractPickleModuleTests(unittest.TestCase):
     def test_callapi(self):
         f = io.BytesIO()
         # With and without keyword arguments
-        pickle.dump(123, f, -1)
-        pickle.dump(123, file=f, protocol=-1)
-        pickle.dumps(123, -1)
-        pickle.dumps(123, protocol=-1)
-        pickle.Pickler(f, -1)
-        pickle.Pickler(f, protocol=-1)
+        self.dump(123, f, -1)
+        self.dump(123, file=f, protocol=-1)
+        self.dumps(123, -1)
+        self.dumps(123, protocol=-1)
+        self.Pickler(f, -1)
+        self.Pickler(f, protocol=-1)
 
     def test_bad_init(self):
         # Test issue3664 (pickle can segfault from a badly initialized Pickler).
         # Override initialization without calling __init__() of the superclass.
-        class BadPickler(pickle.Pickler):
+        class BadPickler(self.Pickler):
             def __init__(self): pass
 
-        class BadUnpickler(pickle.Unpickler):
+        class BadUnpickler(self.Unpickler):
             def __init__(self): pass
 
         self.assertRaises(pickle.PicklingError, BadPickler().dump, 0)

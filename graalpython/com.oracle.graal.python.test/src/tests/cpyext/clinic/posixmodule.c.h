@@ -3716,7 +3716,6 @@ os_fstat(PyObject *module, PyObject **args, Py_ssize_t nargs, PyObject *kwnames)
 {
     PyObject *return_value = NULL;
     static const char * const _keywords[] = {"fd", NULL};
-    // TRUFFLE_TODO
     static _PyArg_Parser _parser = {"i:fstat", _keywords, 0};
     int fd;
 

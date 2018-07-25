@@ -37,9 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
 import types
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, GRAALPYTHON
+
+import sys
+
+from . import CPyExtTestCase, CPyExtFunction
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -63,19 +66,23 @@ class TestCodeobject(CPyExtTestCase):
         lambda args: args,
         lambda: (
             (
-                1,2,3,4,0,b"",tuple(),tuple(),tuple(),
-                tuple(),tuple(),"filename","name",1,b"",
+                1, 2,
+                3, 4, 0,
+                b"", tuple(), tuple(),
+                tuple(), tuple(), tuple(),
+                "filename", "name", 1,
+                b"",
             ),
         ),
         resultspec="O",
         argspec="iiiiiOOOOOOOOiO",
         arguments=[
-            "int argcount", "int kwonlyargcount", "int nlocals",
-            "int stacksize", "int flags", "PyObject* code",
-            "PyObject* consts", "PyObject* names", "PyObject* varnames",
-            "PyObject* freevars", "PyObject* cellvars",
+            "int argcount", "int kwonlyargcount",
+            "int nlocals", "int stacksize", "int flags",
+            "PyObject* code", "PyObject* consts", "PyObject* names",
+            "PyObject* varnames", "PyObject* freevars", "PyObject* cellvars",
             "PyObject* filename", "PyObject* name", "int firstlineno",
-            "PyObject* lnotab"
+            "PyObject* lnotab",
         ],
-        cmpfunc=lambda cr,pr: isinstance(cr, types.CodeType),
+        cmpfunc=lambda cr, pr: isinstance(cr, types.CodeType),
     )

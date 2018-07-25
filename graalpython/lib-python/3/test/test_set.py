@@ -335,7 +335,6 @@ class TestJointOps:
             fo.close()
             support.unlink(support.TESTFN)
 
-    @support.impl_detail(pypy=False)
     def test_do_not_rehash_dict_keys(self):
         n = 10
         d = dict.fromkeys(map(HashCountingInt, range(n)))
@@ -611,7 +610,6 @@ class TestSet(TestJointOps, unittest.TestCase):
         p = weakref.proxy(s)
         self.assertEqual(str(p), str(s))
         s = None
-        support.gc_collect()
         self.assertRaises(ReferenceError, str, p)
 
     def test_rich_compare(self):
@@ -681,7 +679,6 @@ class TestFrozenSet(TestJointOps, unittest.TestCase):
         s.__init__(self.otherword)
         self.assertEqual(s, set(self.word))
 
-    @support.impl_detail()
     def test_singleton_empty_frozenset(self):
         f = frozenset()
         efs = [frozenset(), frozenset([]), frozenset(()), frozenset(''),

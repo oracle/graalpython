@@ -18,7 +18,7 @@ from unittest.test.support import (
     TestEquality, TestHashing, LoggingResult, LegacyLoggingResult,
     ResultWithNoStartTestRunStopTestRun
 )
-from test.support import captured_stderr, gc_collect
+from test.support import captured_stderr
 
 
 log_foo = logging.getLogger('foo')
@@ -1273,6 +1273,19 @@ test case
         with self.assertRaises(TypeError):
             self.assertRaises((ValueError, object))
 
+    def testAssertRaisesRefcount(self):
+        # bpo-23890: assertRaises() must not keep objects alive longer
+        # than expected
+        def func() :
+            try:
+                raise ValueError
+            except ValueError:
+                raise ValueError
+
+        refcount = sys.getrefcount(func)
+        self.assertRaises(ValueError, func)
+        self.assertEqual(refcount, sys.getrefcount(func))
+
     def testAssertRaisesRegex(self):
         class ExceptionMock(Exception):
             pass
@@ -1813,7 +1826,6 @@ test case
         for method_name in ('test1', 'test2'):
             testcase = TestCase(method_name)
             testcase.run()
-            gc_collect()
             self.assertEqual(MyException.ninstance, 0)
 
 

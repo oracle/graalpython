@@ -14,14 +14,6 @@ import warnings
 import array
 from array import _array_reconstructor as array_reconstructor
 
-try:
-    # Try to determine availability of long long independently
-    # of the array module under test
-    struct.calcsize('@q')
-    have_long_long = True
-except struct.error:
-    have_long_long = False
-
 sizeof_wchar = array.array('u').itemsize
 
 
@@ -32,9 +24,7 @@ class ArraySubclassWithKwargs(array.array):
     def __init__(self, typecode, newarg=None):
         array.array.__init__(self)
 
-typecodes = "ubBhHiIlLfd"
-if have_long_long:
-    typecodes += 'qQ'
+typecodes = 'ubBhHiIlLfdqQ'
 
 class MiscTest(unittest.TestCase):
 
@@ -453,10 +443,7 @@ class BaseTest:
             if a.itemsize>1:
                 self.assertRaises(ValueError, b.fromstring, "x")
                 nb_warnings += 1
-        if support.check_impl_detail():
-            # PyPy's multimethod dispatch is different from CPython's
-            # on CPython the warning is emitted before checking the arguments
-            self.assertEqual(len(r), nb_warnings)
+        self.assertEqual(len(r), nb_warnings)
 
     def test_tofrombytes(self):
         a = array.array(self.typecode, 2*self.example)
@@ -532,10 +519,9 @@ class BaseTest:
         )
 
         b = array.array(self.badtypecode())
-        with self.assertRaises(TypeError):
-            a + b
-        with self.assertRaises(TypeError):
-            a + 'bad'
+        self.assertRaises(TypeError, a.__add__, b)
+
+        self.assertRaises(TypeError, a.__add__, "bad")
 
     def test_iadd(self):
         a = array.array(self.typecode, self.example[::-1])
@@ -554,10 +540,9 @@ class BaseTest:
         )
 
         b = array.array(self.badtypecode())
-        with self.assertRaises(TypeError):
-            a += b
-        with self.assertRaises(TypeError):
-            a += 'bad'
+        self.assertRaises(TypeError, a.__add__, b)
+
+        self.assertRaises(TypeError, a.__iadd__, "bad")
 
     def test_mul(self):
         a = 5*array.array(self.typecode, self.example)
@@ -590,8 +575,7 @@ class BaseTest:
             array.array(self.typecode, [a[0]] * 5)
         )
 
-        with self.assertRaises(TypeError):
-            a * 'bad'
+        self.assertRaises(TypeError, a.__mul__, "bad")
 
     def test_imul(self):
         a = array.array(self.typecode, self.example)
@@ -620,8 +604,7 @@ class BaseTest:
         a *= -1
         self.assertEqual(a, array.array(self.typecode))
 
-        with self.assertRaises(TypeError):
-            a *= 'bad'
+        self.assertRaises(TypeError, a.__imul__, "bad")
 
     def test_getitem(self):
         a = array.array(self.typecode, self.example)
@@ -1012,10 +995,6 @@ class BaseTest:
         # Resizing is forbidden when there are buffer exports.
         # For issue 4509, we also check after each error that
         # the array was not modified.
-        if support.check_impl_detail(pypy=True):
-            # PyPy export buffers differently, and allows reallocation
-            # of the underlying object.
-            return
         self.assertRaises(BufferError, a.append, a[0])
         self.assertEqual(m.tobytes(), expected)
         self.assertRaises(BufferError, a.extend, a[0:1])
@@ -1047,7 +1026,6 @@ class BaseTest:
         p = weakref.proxy(s)
         self.assertEqual(p.tobytes(), s.tobytes())
         s = None
-        support.gc_collect()
         self.assertRaises(ReferenceError, len, p)
 
     @unittest.skipUnless(hasattr(sys, 'getrefcount'),
@@ -1143,8 +1121,6 @@ class UnicodeTest(StringTest, unittest.TestCase):
         self.assertRaises(TypeError, a.fromunicode)
 
     def test_issue17223(self):
-        if support.check_impl_detail(pypy=True):
-            self.skipTest("specific to flexible string representation")
         # this used to crash
         if sizeof_wchar == 4:
             # U+FFFFFFFF is an invalid code point in Unicode 6.0
@@ -1254,7 +1230,26 @@ class NumberTest(BaseTest):
         b = array.array(self.typecode, a)
         self.assertEqual(a, b)
 
-class SignedNumberTest(NumberTest):
+class IntegerNumberTest(NumberTest):
+    def test_type_error(self):
+        a = array.array(self.typecode)
+        a.append(42)
+        with self.assertRaises(TypeError):
+            a.append(42.0)
+        with self.assertRaises(TypeError):
+            a[0] = 42.0
+
+class Intable:
+    def __init__(self, num):
+        self._num = num
+    def __int__(self):
+        return self._num
+    def __sub__(self, other):
+        return Intable(int(self) - int(other))
+    def __add__(self, other):
+        return Intable(int(self) + int(other))
+
+class SignedNumberTest(IntegerNumberTest):
     example = [-1, 0, 1, 42, 0x7f]
     smallerexample = [-1, 0, 1, 42, 0x7e]
     biggerexample = [-1, 0, 1, 43, 0x7f]
@@ -1265,8 +1260,9 @@ class SignedNumberTest(NumberTest):
         lower = -1 * int(pow(2, a.itemsize * 8 - 1))
         upper = int(pow(2, a.itemsize * 8 - 1)) - 1
         self.check_overflow(lower, upper)
+        self.check_overflow(Intable(lower), Intable(upper))
 
-class UnsignedNumberTest(NumberTest):
+class UnsignedNumberTest(IntegerNumberTest):
     example = [0, 1, 17, 23, 42, 0xff]
     smallerexample = [0, 1, 17, 23, 42, 0xfe]
     biggerexample = [0, 1, 17, 23, 43, 0xff]
@@ -1277,6 +1273,7 @@ class UnsignedNumberTest(NumberTest):
         lower = 0
         upper = int(pow(2, a.itemsize * 8)) - 1
         self.check_overflow(lower, upper)
+        self.check_overflow(Intable(lower), Intable(upper))
 
     def test_bytes_extend(self):
         s = bytes(self.example)
@@ -1328,12 +1325,10 @@ class UnsignedLongTest(UnsignedNumberTest, unittest.TestCase):
     typecode = 'L'
     minitemsize = 4
 
-@unittest.skipIf(not have_long_long, 'need long long support')
 class LongLongTest(SignedNumberTest, unittest.TestCase):
     typecode = 'q'
     minitemsize = 8
 
-@unittest.skipIf(not have_long_long, 'need long long support')
 class UnsignedLongLongTest(UnsignedNumberTest, unittest.TestCase):
     typecode = 'Q'
     minitemsize = 8

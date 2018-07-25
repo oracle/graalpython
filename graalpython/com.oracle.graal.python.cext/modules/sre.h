@@ -3,7 +3,6 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-
 /*
  * Secret Labs' Regular Expression Engine
  *

@@ -22,8 +22,7 @@ class Test_Csv(unittest.TestCase):
     """
     def _test_arg_valid(self, ctor, arg):
         self.assertRaises(TypeError, ctor)
-        # PyPy gets an AttributeError instead of a TypeError
-        self.assertRaises((TypeError, AttributeError), ctor, None)
+        self.assertRaises(TypeError, ctor, None)
         self.assertRaises(TypeError, ctor, arg, bad_attr = 0)
         self.assertRaises(TypeError, ctor, arg, delimiter = 0)
         self.assertRaises(TypeError, ctor, arg, delimiter = 'XX')
@@ -137,8 +136,7 @@ class Test_Csv(unittest.TestCase):
             self.assertEqual(fileobj.read(), '')
 
     def test_write_arg_valid(self):
-        # PyPy gets a TypeError instead of a csv.Error for "not a sequence"
-        self._write_error_test((csv.Error, TypeError), None)
+        self._write_error_test(csv.Error, None)
         self._write_test((), '')
         self._write_test([None], '""')
         self._write_error_test(csv.Error, [None], quoting = csv.QUOTE_NONE)
@@ -209,9 +207,28 @@ class Test_Csv(unittest.TestCase):
         with TemporaryFile("w+", newline='') as fileobj:
             writer = csv.writer(fileobj)
             self.assertRaises(TypeError, writer.writerows, None)
-            writer.writerows([['a','b'],['c','d']])
+            writer.writerows([['a', 'b'], ['c', 'd']])
             fileobj.seek(0)
             self.assertEqual(fileobj.read(), "a,b\r\nc,d\r\n")
+
+    def test_writerows_with_none(self):
+        with TemporaryFile("w+", newline='') as fileobj:
+            writer = csv.writer(fileobj)
+            writer.writerows([['a', None], [None, 'd']])
+            fileobj.seek(0)
+            self.assertEqual(fileobj.read(), "a,\r\n,d\r\n")
+
+        with TemporaryFile("w+", newline='') as fileobj:
+            writer = csv.writer(fileobj)
+            writer.writerows([[None], ['a']])
+            fileobj.seek(0)
+            self.assertEqual(fileobj.read(), '""\r\na\r\n')
+
+        with TemporaryFile("w+", newline='') as fileobj:
+            writer = csv.writer(fileobj)
+            writer.writerows([['a'], [None]])
+            fileobj.seek(0)
+            self.assertEqual(fileobj.read(), 'a\r\n""\r\n')
 
     @support.cpython_only
     def test_writerows_legacy_strings(self):
@@ -239,8 +256,7 @@ class Test_Csv(unittest.TestCase):
                           ['ab\0c'], None, strict = 1)
         self._read_test(['"ab"c'], [['abc']], doublequote = 0)
 
-        # PyPy gets a TypeError instead of a csv.Error for bytes input
-        self.assertRaises((csv.Error, TypeError), self._read_test,
+        self.assertRaises(csv.Error, self._read_test,
                           [b'ab\0c'], None)
 
 
@@ -969,6 +985,16 @@ Stonecutters Seafood and Chop House+ Lemont+ IL+ 12/19/02+ Week Back
         self.assertEqual(sniffer.has_header(self.sample8), False)
         self.assertEqual(sniffer.has_header(self.header2 + self.sample8),
                          True)
+
+    def test_guess_quote_and_delimiter(self):
+        sniffer = csv.Sniffer()
+        for header in (";'123;4';", "'123;4';", ";'123;4'", "'123;4'"):
+            with self.subTest(header):
+                dialect = sniffer.sniff(header, ",;")
+                self.assertEqual(dialect.delimiter, ';')
+                self.assertEqual(dialect.quotechar, "'")
+                self.assertIs(dialect.doublequote, False)
+                self.assertIs(dialect.skipinitialspace, False)
 
     def test_sniff(self):
         sniffer = csv.Sniffer()

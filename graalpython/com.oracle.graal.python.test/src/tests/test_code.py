@@ -37,8 +37,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 def a_function():
     pass
+
+
+def wrapper():
+    values = []
+
+    def my_func(arg_l, kwarg_case="empty set", kwarg_other=19):
+        loc_1 = set(values)
+        loc_2 = set(values)
+        loc_3 = "set()"
+
+        def inner_func():
+            return kwarg_other + loc_2
+
+        try:
+            loc_1 &= kwarg_other
+            yield loc_1
+        except TypeError:
+            pass
+        else:
+            print("expected TypeError")
+
+    return my_func
 
 
 def test_name():
@@ -50,4 +73,25 @@ def test_filename():
 
 
 def test_firstlineno():
-    assert a_function.__code__.co_firstlineno == 40
+    assert a_function.__code__.co_firstlineno == 41
+
+
+def test_code_attributes():
+    code = wrapper().__code__
+    assert code.co_argcount == 3
+    assert code.co_kwonlyargcount == 0
+    assert code.co_nlocals == 6
+    assert code.co_stacksize >= code.co_nlocals
+    assert code.co_flags & (1 << 5)
+    assert not code.co_flags & (1 << 2)
+    assert not code.co_flags & (1 << 3)
+    # assert code.co_code
+    # assert code.co_consts
+    # assert set(code.co_names) == {'set', 'TypeError', 'print'}
+    assert set(code.co_varnames) == {'arg_l', 'kwarg_case', 'kwarg_other', 'loc_1', 'loc_3', 'inner_func'}
+    assert code.co_filename.endswith("test_code.py")
+    assert code.co_name == "my_func"
+    assert code.co_firstlineno == 48
+    # assert code.co_lnotab == b'\x00\x01\x0c\x01\x0c\x01\x06\x02\x15\x03\x03\x01\x0e\x01\r\x01\x05\x02'
+    assert set(code.co_freevars) == {'values'}
+    assert set(code.co_cellvars) == {'kwarg_other', 'loc_2'}

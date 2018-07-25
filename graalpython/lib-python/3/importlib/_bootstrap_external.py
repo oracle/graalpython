@@ -248,15 +248,10 @@ _code_type = type(_write_atomic.__code__)
 # Whenever MAGIC_NUMBER is changed, the ranges in the magic_values array
 # in PC/launcher.c must also be updated.
 
-#MAGIC_NUMBER = (3379).to_bytes(2, 'little') + b'\r\n'
-#
-# GraalPython change: the MAGIC_NUMBER is defined in lib-graalpython/_imp.py
-try:
-    MAGIC_NUMBER
-except NameError:
-    import _imp
-    MAGIC_NUMBER = _imp.get_magic()
-
+# MAGIC_NUMBER = (3379).to_bytes(2, 'little') + b'\r\n'
+# Truffle change: the MAGIC_NUMBER is defined in lib-graalpython/_imp.py
+import _imp
+MAGIC_NUMBER = _imp.get_magic()
 _RAW_MAGIC_NUMBER = int.from_bytes(MAGIC_NUMBER, 'little')  # For import.c
 
 _PYCACHE = '__pycache__'
@@ -683,7 +678,6 @@ class _LoaderBasics:
         if code is None:
             raise ImportError('cannot load module {!r} when get_code() '
                               'returns None'.format(module.__name__))
-        # print(code)
         _bootstrap._call_with_frames_removed(exec, code, module.__dict__)
 
     def load_module(self, fullname):

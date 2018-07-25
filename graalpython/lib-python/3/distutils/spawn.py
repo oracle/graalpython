@@ -58,6 +58,7 @@ def _nt_quote_args(args):
 
 def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0):
     executable = cmd[0]
+    cmd = _nt_quote_args(cmd)
     if search_path:
         # either we find one or it stays the same
         executable = find_executable(executable) or executable
@@ -65,8 +66,7 @@ def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0):
     if not dry_run:
         # spawn for NT requires a full path to the .exe
         try:
-            import subprocess
-            rc = subprocess.call(cmd)
+            rc = os.spawnv(os.P_WAIT, executable, cmd)
         except OSError as exc:
             # this seems to happen when the command isn't found
             if not DEBUG:

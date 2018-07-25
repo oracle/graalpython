@@ -1458,34 +1458,44 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Specialization
-        Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
-                        int flags, String codestring, Object constants, Object names, Object varnames,
-                        String filename, String name, int firstlineno, Object lnotab, Object freevars,
-                        Object cellvars) {
-            return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
-                            flags, codestring, constants, names, varnames,
-                            filename, name, firstlineno, lnotab, freevars,
-                            cellvars);
+        Object call(PythonClass cls, int argcount, int kwonlyargcount,
+                        int nlocals, int stacksize, int flags,
+                        String codestring, PTuple constants, PTuple names,
+                        PTuple varnames, PTuple freevars, PTuple cellvars,
+                        String filename, String name, int firstlineno,
+                        String lnotab) {
+            return factory().createCode(cls, argcount, kwonlyargcount,
+                            nlocals, stacksize, flags,
+                            codestring, constants, names,
+                            varnames.getArray(), freevars.getArray(), cellvars.getArray(),
+                            filename, name, firstlineno,
+                            lnotab);
         }
 
         @Specialization
         @TruffleBoundary
-        Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
-                        int flags, PBytes codestring, Object constants, Object names, Object varnames,
-                        PString filename, PString name, int firstlineno, Object lnotab, Object freevars,
-                        Object cellvars) {
-            return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
-                            flags, new String(codestring.getInternalByteArray()), constants, names, varnames,
-                            filename.getValue(), name.getValue(), firstlineno, lnotab, freevars,
-                            cellvars);
+        Object call(PythonClass cls, int argcount, int kwonlyargcount,
+                        int nlocals, int stacksize, int flags,
+                        PBytes codestring, PTuple constants, PTuple names,
+                        PTuple varnames, PTuple freevars, PTuple cellvars,
+                        PString filename, PString name, int firstlineno,
+                        PBytes lnotab) {
+            return factory().createCode(cls, argcount, kwonlyargcount,
+                            nlocals, stacksize, flags,
+                            new String(codestring.getInternalByteArray()), constants, names,
+                            varnames.getArray(), freevars.getArray(), cellvars.getArray(),
+                            filename.getValue(), name.getValue(), firstlineno,
+                            lnotab);
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object call(Object cls, Object argcount, Object kwonlyargcount, Object nlocals, Object stacksize,
-                        Object flags, Object codestring, Object constants, Object names, Object varnames,
-                        Object filename, Object name, Object firstlineno, Object lnotab, Object freevars,
-                        Object cellvars) {
+        Object call(Object cls, Object argcount, Object kwonlyargcount,
+                        Object nlocals, Object stacksize, Object flags,
+                        Object codestring, Object constants, Object names,
+                        Object varnames, Object freevars, Object cellvars,
+                        Object filename, Object name, Object firstlineno,
+                        Object lnotab) {
             throw raise(PythonErrorType.NotImplementedError, "code object instance from generic arguments");
         }
     }

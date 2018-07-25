@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -49,6 +50,7 @@ public class PFunction extends PythonObject implements PythonCallable {
     private final PythonObject globals;
     private final PCell[] closure;
     private final boolean isStatic;
+    private PCode code;
 
     public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
         super(clazz);
@@ -119,5 +121,13 @@ public class PFunction extends PythonObject implements PythonCallable {
         } else {
             return String.format("<function %s.%s at 0x%x>", enclosingClassName, name, hashCode());
         }
+    }
+
+    public PCode getCode() {
+        return code;
+    }
+
+    public void setCode(PCode code) {
+        this.code = code;
     }
 }

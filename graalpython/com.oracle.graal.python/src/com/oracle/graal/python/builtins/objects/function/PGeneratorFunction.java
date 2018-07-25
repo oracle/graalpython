@@ -41,7 +41,7 @@ public final class PGeneratorFunction extends PFunction {
                     FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
 
-        GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(core.getLanguage(), callTarget,
+        GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(core.getLanguage(), callTarget, name,
                         frameDescriptor, closure, executionCellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
 
         return new PGeneratorFunction(clazz, name, enclosingClassName, arity, Truffle.getRuntime().createCallTarget(generatorFunctionRootNode), frameDescriptor, globals, closure);

@@ -74,8 +74,6 @@ import os
 import builtins
 import _sitebuiltins
 
-is_pypy = '__pypy__' in sys.builtin_module_names
-
 # Prefixes for site-packages; add additional prefixes like /usr/local here
 PREFIXES = [sys.prefix, sys.exec_prefix]
 # Enable per user site-packages directory
@@ -305,9 +303,7 @@ def getsitepackages(prefixes=None):
             continue
         seen.add(prefix)
 
-        if is_pypy:
-            sitepackages.append(os.path.join(prefix, "site-packages"))
-        elif os.sep == '/':
+        if os.sep == '/':
             sitepackages.append(os.path.join(prefix, "lib",
                                         "python%d.%d" % sys.version_info[:2],
                                         "site-packages"))
@@ -352,31 +348,26 @@ def setquit():
 def setcopyright():
     """Set 'copyright' and 'credits' in builtins"""
     builtins.copyright = _sitebuiltins._Printer("copyright", sys.copyright)
-    licenseargs = None
-    if is_pypy:
-        credits = "PyPy is maintained by the PyPy developers: http://pypy.org/"
-        license = "See https://bitbucket.org/pypy/pypy/src/default/LICENSE"
-        licenseargs = (license,)
-    elif sys.platform[:4] == 'java':
-        credits = ("Jython is maintained by the Jython developers "
-                   "(www.jython.org).")
+    if sys.platform[:4] == 'java':
+        builtins.credits = _sitebuiltins._Printer(
+            "credits",
+            "Jython is maintained by the Jython developers (www.jython.org).")
     else:
-        credits = """\
+        builtins.credits = _sitebuiltins._Printer("credits", """\
     Thanks to CWI, CNRI, BeOpen.com, Zope Corporation and a cast of thousands
-    for supporting Python development.  See www.python.org for more information."""
-    if licenseargs is None:
-        files, dirs = [], []
-        # Not all modules are required to have a __file__ attribute.  See
-        # PEP 420 for more details.
-        if hasattr(os, '__file__'):
-            here = os.path.dirname(os.__file__)
-            files.extend(["LICENSE.txt", "LICENSE"])
-            dirs.extend([os.path.join(here, os.pardir), here, os.curdir])
-        license = "See https://www.python.org/psf/license/"
-        licenseargs = (license, files, dirs)
+    for supporting Python development.  See www.python.org for more information.""")
+    files, dirs = [], []
+    # Not all modules are required to have a __file__ attribute.  See
+    # PEP 420 for more details.
+    if hasattr(os, '__file__'):
+        here = os.path.dirname(os.__file__)
+        files.extend(["LICENSE.txt", "LICENSE"])
+        dirs.extend([os.path.join(here, os.pardir), here, os.curdir])
+    builtins.license = _sitebuiltins._Printer(
+        "license",
+        "See https://www.python.org/psf/license/",
+        files, dirs)
 
-    builtins.credits = _sitebuiltins._Printer("credits", credits)
-    builtins.license = _sitebuiltins._Printer("license", *licenseargs)
 
 def sethelper():
     builtins.help = _sitebuiltins._Helper()
@@ -407,9 +398,7 @@ def enablerlcompleter():
             readline.parse_and_bind('tab: complete')
 
         try:
-            # Unimplemented on PyPy
-            #readline.read_init_file()
-            pass
+            readline.read_init_file()
         except OSError:
             # An OSError here could have many causes, but the most likely one
             # is that there's no .inputrc file (or .editrc file in the case of
@@ -542,17 +531,14 @@ def main():
     # TRUFFLE TODO requires _sysconfigdata__* modules
     #known_paths = addusersitepackages(known_paths)
     #known_paths = addsitepackages(known_paths)
-
     setquit()
     setcopyright()
     sethelper()
     if not sys.flags.isolated:
         enablerlcompleter()
-
-    # TRUFFLE TODO
-    #execsitecustomize()
-    #if ENABLE_USER_SITE:
-    #    execusercustomize()
+    execsitecustomize()
+    if ENABLE_USER_SITE:
+        execusercustomize()
 
 # Prevent extending of sys.path when python was started with -S and
 # site is imported later.

@@ -698,15 +698,20 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable));
     }
 
-    public Object createCode(RootNode result) {
-        return trace(new PCode(lookupClass(PythonBuiltinClassType.PCode), result));
+    public PCode createCode(RootNode result) {
+        return trace(new PCode(lookupClass(PythonBuiltinClassType.PCode), result, getCore()));
     }
 
-    public Object createCode(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, String codestring, Object constants, Object names, Object varnames,
-                    String filename, String name, int firstlineno, Object lnotab, Object freevars, Object cellvars) {
-        return trace(new PCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
-                        flags, codestring, constants, names, varnames,
-                        filename, name, firstlineno, lnotab, freevars,
-                        cellvars));
+    public PCode createCode(PythonClass cls, int argcount, int kwonlyargcount,
+                    int nlocals, int stacksize, int flags,
+                    String codestring, Object constants, Object names,
+                    Object[] varnames, Object[] freevars, Object[] cellvars,
+                    String filename, String name, int firstlineno,
+                    Object lnotab) {
+        return trace(new PCode(cls, argcount, kwonlyargcount,
+                        nlocals, stacksize, flags,
+                        codestring, constants, names,
+                        varnames, freevars, cellvars,
+                        filename, name, firstlineno, lnotab));
     }
 }

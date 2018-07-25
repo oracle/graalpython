@@ -1,7 +1,6 @@
 from ctypes import *
 import unittest
 import struct
-from ctypes.test import xfail
 
 def valid_ranges(*types):
     # given a sequence of numeric types, collect their _type_
@@ -91,14 +90,12 @@ class NumberTestCase(unittest.TestCase):
             self.assertRaises(ValueError, t, l-1)
             self.assertRaises(ValueError, t, h+1)
 
-    @xfail
     def test_from_param(self):
         # the from_param class method attribute always
         # returns PyCArgObject instances
         for t in signed_types + unsigned_types + float_types:
             self.assertEqual(ArgType, type(t.from_param(0)))
 
-    @xfail
     def test_byref(self):
         # calling byref returns also a PyCArgObject instance
         for t in signed_types + unsigned_types + float_types + bool_types:

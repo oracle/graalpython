@@ -311,12 +311,10 @@ class AggregateTests(unittest.TestCase):
             self.con.create_function("bla", -100, AggrSum)
 
     def CheckAggrNoStep(self):
-        # XXX it's better to raise OperationalError in order to stop
-        # the query earlier.
         cur = self.con.cursor()
         with self.assertRaises(AttributeError) as cm:
             cur.execute("select nostep(t) from test")
-        self.assertEqual(str(cm.exception), "user-defined aggregate's 'step' method raised error")
+        self.assertEqual(str(cm.exception), "'AggrNoStep' object has no attribute 'step'")
 
     def CheckAggrNoFinalize(self):
         cur = self.con.cursor()

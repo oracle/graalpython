@@ -68,6 +68,14 @@ def dash_R(the_module, test, indirect_test, huntrleaks):
         for obj in abc.__subclasses__() + [abc]:
             abcs[obj] = obj._abc_registry.copy()
 
+    # bpo-31217: Integer pool to get a single integer object for the same
+    # value. The pool is used to prevent false alarm when checking for memory
+    # block leaks. Fill the pool with values in -1000..1000 which are the most
+    # common (reference, memory block, file descriptor) differences.
+    int_pool = {value: value for value in range(-1000, 1000)}
+    def get_pooled_int(value):
+        return int_pool.setdefault(value, value)
+
     nwarmup, ntracked, fname = huntrleaks
     fname = os.path.join(support.SAVEDCWD, fname)
     repcount = nwarmup + ntracked
@@ -84,34 +92,46 @@ def dash_R(the_module, test, indirect_test, huntrleaks):
         indirect_test()
         alloc_after, rc_after, fd_after = dash_R_cleanup(fs, ps, pic, zdc,
                                                          abcs)
-        print('.', end='', flush=True)
+        print('.', end='', file=sys.stderr, flush=True)
         if i >= nwarmup:
-            rc_deltas[i] = rc_after - rc_before
-            alloc_deltas[i] = alloc_after - alloc_before
-            fd_deltas[i] = fd_after - fd_before
+            rc_deltas[i] = get_pooled_int(rc_after - rc_before)
+            alloc_deltas[i] = get_pooled_int(alloc_after - alloc_before)
+            fd_deltas[i] = get_pooled_int(fd_after - fd_before)
         alloc_before = alloc_after
         rc_before = rc_after
         fd_before = fd_after
     print(file=sys.stderr)
+
     # These checkers return False on success, True on failure
     def check_rc_deltas(deltas):
+        # Checker for reference counters and memomry blocks.
+        #
+        # bpo-30776: Try to ignore false positives:
+        #
+        #   [3, 0, 0]
+        #   [0, 1, 0]
+        #   [8, -8, 1]
+        #
+        # Expected leaks:
+        #
+        #   [5, 5, 6]
+        #   [10, 1, 1]
+        return all(delta >= 1 for delta in deltas)
+
+    def check_fd_deltas(deltas):
         return any(deltas)
-    def check_alloc_deltas(deltas):
-        # At least 1/3rd of 0s
-        if 3 * deltas.count(0) < len(deltas):
-            return True
-        # Nothing else than 1s, 0s and -1s
-        if not set(deltas) <= {1,0,-1}:
-            return True
-        return False
+
     failed = False
     for deltas, item_name, checker in [
         (rc_deltas, 'references', check_rc_deltas),
-        (alloc_deltas, 'memory blocks', check_alloc_deltas),
-        (fd_deltas, 'file descriptors', check_rc_deltas)]:
+        (alloc_deltas, 'memory blocks', check_rc_deltas),
+        (fd_deltas, 'file descriptors', check_fd_deltas)
+    ]:
+        # ignore warmup runs
+        deltas = deltas[nwarmup:]
         if checker(deltas):
             msg = '%s leaked %s %s, sum=%s' % (
-                test, deltas[nwarmup:], item_name, sum(deltas))
+                test, deltas, item_name, sum(deltas))
             print(msg, file=sys.stderr, flush=True)
             with open(fname, "a") as refrep:
                 print(msg, file=refrep)
@@ -143,9 +163,14 @@ def dash_R_cleanup(fs, ps, pic, zdc, abcs):
     sys._clear_type_cache()
 
     # Clear ABC registries, restoring previously saved ABC registries.
-    for abc in [getattr(collections.abc, a) for a in collections.abc.__all__]:
-        if not isabstract(abc):
-            continue
+    abs_classes = [getattr(collections.abc, a) for a in collections.abc.__all__]
+    abs_classes = filter(isabstract, abs_classes)
+    if 'typing' in sys.modules:
+        t = sys.modules['typing']
+        # These classes require special treatment because they do not appear
+        # in direct subclasses of collections.abc classes
+        abs_classes = list(abs_classes) + [t.ChainMap, t.Counter, t.DefaultDict]
+    for abc in abs_classes:
         for obj in abc.__subclasses__() + [abc]:
             obj._abc_registry = abcs.get(obj, WeakSet()).copy()
             obj._abc_cache.clear()

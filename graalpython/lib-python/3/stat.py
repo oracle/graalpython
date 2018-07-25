@@ -30,7 +30,6 @@ def S_IFMT(mode):
     """
     return mode & 0o170000
 
-
 # Constants used as S_IFMT() for various file types
 # (not all are implemented on all systems)
 

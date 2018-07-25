@@ -177,7 +177,6 @@ class ThreadTests(BaseTestCase):
 
     # PyThreadState_SetAsyncExc() is a CPython-only gimmick, not (currently)
     # exposed at the Python level.  This test relies on ctypes to get at it.
-    @test.support.cpython_only
     def test_PyThreadState_SetAsyncExc(self):
         ctypes = import_module("ctypes")
 
@@ -278,7 +277,6 @@ class ThreadTests(BaseTestCase):
         finally:
             threading._start_new_thread = _start_new_thread
 
-    @test.support.cpython_only
     def test_finalize_runnning_thread(self):
         # Issue 1402: the PyGILState_Ensure / _Release functions may be called
         # very late on python exit: on deallocation of a running thread for
@@ -361,15 +359,10 @@ class ThreadTests(BaseTestCase):
         # Try hard to trigger #1703448: a thread is still returned in
         # threading.enumerate() after it has been join()ed.
         enum = threading.enumerate
-        newgil = hasattr(sys, 'getswitchinterval')
-        if newgil:
-            geti, seti = sys.getswitchinterval, sys.setswitchinterval
-        else:
-            geti, seti = sys.getcheckinterval, sys.setcheckinterval
-        old_interval = geti()
+        old_interval = sys.getswitchinterval()
         try:
             for i in range(1, 100):
-                seti(i * 0.0002 if newgil else i // 5)
+                sys.setswitchinterval(i * 0.0002)
                 t = threading.Thread(target=lambda: None)
                 t.start()
                 t.join()
@@ -377,9 +370,8 @@ class ThreadTests(BaseTestCase):
                 self.assertNotIn(t, l,
                     "#1703448 triggered after %d trials: %s" % (i, l))
         finally:
-            seti(old_interval)
+            sys.setswitchinterval(old_interval)
 
-    @test.support.cpython_only
     def test_no_refcycle_through_target(self):
         class RunSelfFunction(object):
             def __init__(self, should_raise):
@@ -469,27 +461,24 @@ class ThreadTests(BaseTestCase):
     def test_is_alive_after_fork(self):
         # Try hard to trigger #18418: is_alive() could sometimes be True on
         # threads that vanished after a fork.
-        newgil = hasattr(sys, 'getswitchinterval')
-        if newgil:
-            geti, seti = sys.getswitchinterval, sys.setswitchinterval
-        else:
-            geti, seti = sys.getcheckinterval, sys.setcheckinterval
-        old_interval = geti()
-        self.addCleanup(seti, old_interval)
+        old_interval = sys.getswitchinterval()
+        self.addCleanup(sys.setswitchinterval, old_interval)
 
         # Make the bug more likely to manifest.
-        seti(1e-6 if newgil else 1)
+        test.support.setswitchinterval(1e-6)
 
         for i in range(20):
             t = threading.Thread(target=lambda: None)
             t.start()
-            self.addCleanup(t.join)
             pid = os.fork()
             if pid == 0:
-                os._exit(1 if t.is_alive() else 0)
+                os._exit(11 if t.is_alive() else 10)
             else:
+                t.join()
+
                 pid, status = os.waitpid(pid, 0)
-                self.assertEqual(0, status)
+                self.assertTrue(os.WIFEXITED(status))
+                self.assertEqual(10, os.WEXITSTATUS(status))
 
     def test_main_thread(self):
         main = threading.main_thread()
@@ -553,6 +542,35 @@ class ThreadTests(BaseTestCase):
         self.assertEqual(err, b"")
         self.assertEqual(data, "Thread-1\nTrue\nTrue\n")
 
+    def test_main_thread_during_shutdown(self):
+        # bpo-31516: current_thread() should still point to the main thread
+        # at shutdown
+        code = """if 1:
+            import gc, threading
+
+            main_thread = threading.current_thread()
+            assert main_thread is threading.main_thread()  # sanity check
+
+            class RefCycle:
+                def __init__(self):
+                    self.cycle = self
+
+                def __del__(self):
+                    print("GC:",
+                          threading.current_thread() is main_thread,
+                          threading.main_thread() is main_thread,
+                          threading.enumerate() == [main_thread])
+
+            RefCycle()
+            gc.collect()  # sanity check
+            x = RefCycle()
+        """
+        _, out, err = assert_python_ok("-c", code)
+        data = out.decode()
+        self.assertEqual(err, b"")
+        self.assertEqual(data.splitlines(),
+                         ["GC: True True True"] * 2)
+
     def test_tstate_lock(self):
         # Test an implementation detail of Thread objects.
         started = _thread.allocate_lock()
@@ -586,6 +604,7 @@ class ThreadTests(BaseTestCase):
         self.assertFalse(t.is_alive())
         # And verify the thread disposed of _tstate_lock.
         self.assertIsNone(t._tstate_lock)
+        t.join()
 
     def test_repr_stopped(self):
         # Verify that "stopped" shows up in repr(Thread) appropriately.
@@ -612,6 +631,7 @@ class ThreadTests(BaseTestCase):
                 break
             time.sleep(0.01)
         self.assertIn(LOOKING_FOR, repr(t)) # we waited at least 5 seconds
+        t.join()
 
     def test_BoundedSemaphore_limit(self):
         # BoundedSemaphore should raise ValueError if released too often.
@@ -840,7 +860,6 @@ class ThreadJoinOnShutdown(BaseTestCase):
 
 class SubinterpThreadingTests(BaseTestCase):
 
-    @cpython_only
     def test_threads_join(self):
         # Non-daemon threads should be joined at subinterpreter shutdown
         # (issue #18808)
@@ -864,7 +883,6 @@ class SubinterpThreadingTests(BaseTestCase):
         # The thread was joined properly.
         self.assertEqual(os.read(r, 1), b"x")
 
-    @cpython_only
     def test_threads_join_2(self):
         # Same as above, but a delay gets introduced after the thread's
         # Python code returned but before the thread state is deleted.
@@ -928,6 +946,7 @@ class ThreadingExceptionTests(BaseTestCase):
         thread = threading.Thread()
         thread.start()
         self.assertRaises(RuntimeError, thread.start)
+        thread.join()
 
     def test_joining_current_thread(self):
         current_thread = threading.current_thread()
@@ -941,6 +960,7 @@ class ThreadingExceptionTests(BaseTestCase):
         thread = threading.Thread()
         thread.start()
         self.assertRaises(RuntimeError, setattr, thread, "daemon", True)
+        thread.join()
 
     def test_releasing_unacquired_lock(self):
         lock = threading.Lock()
@@ -1079,6 +1099,8 @@ class ThreadingExceptionTests(BaseTestCase):
         thread.join()
         self.assertIsNotNone(thread.exc)
         self.assertIsInstance(thread.exc, RuntimeError)
+        # explicitly break the reference cycle to not leak a dangling thread
+        thread.exc = None
 
 class TimerTests(BaseTestCase):
 
@@ -1101,6 +1123,8 @@ class TimerTests(BaseTestCase):
         self.callback_event.wait()
         self.assertEqual(len(self.callback_args), 2)
         self.assertEqual(self.callback_args, [((), {}), ((), {})])
+        timer1.join()
+        timer2.join()
 
     def _callback_spy(self, *args, **kwargs):
         self.callback_args.append((args[:], kwargs.copy()))

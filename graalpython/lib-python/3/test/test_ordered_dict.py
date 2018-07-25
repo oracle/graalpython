@@ -13,7 +13,7 @@ from test import mapping_tests, support
 
 
 py_coll = support.import_fresh_module('collections', blocked=['_collections'])
-c_coll = support.import_fresh_module('_collections', fresh=['_collections'])
+c_coll = support.import_fresh_module('collections', fresh=['_collections'])
 
 
 @contextlib.contextmanager
@@ -355,6 +355,20 @@ class OrderedDictTests:
         self.assertEqual(repr(od),
             "OrderedDict([('a', None), ('b', None), ('c', None), ('x', ...)])")
 
+    def test_repr_recursive_values(self):
+        OrderedDict = self.OrderedDict
+        od = OrderedDict()
+        od[42] = od.values()
+        r = repr(od)
+        # Cannot perform a stronger test, as the contents of the repr
+        # are implementation-dependent.  All we can say is that we
+        # want a str result, not an exception of any sort.
+        self.assertIsInstance(r, str)
+        od[42] = od.items()
+        r = repr(od)
+        # Again.
+        self.assertIsInstance(r, str)
+
     def test_setdefault(self):
         OrderedDict = self.OrderedDict
         pairs = [('c', 1), ('b', 2), ('a', 3), ('d', 4), ('e', 5), ('f', 6)]
@@ -420,7 +434,6 @@ class OrderedDictTests:
         od.move_to_end('c')
         self.assertEqual(list(od), list('bac'))
 
-    @support.impl_detail(pypy=False)
     def test_sizeof(self):
         OrderedDict = self.OrderedDict
         # Wimpy test: Just verify the reported size is larger than a regular dict
@@ -466,9 +479,7 @@ class OrderedDictTests:
             obj = MyOD([(None, obj)])
             obj.i = i
         del obj
-        # PyPy change: we only collect 1 MyOD instance per GC
-        for _ in range(100):
-            gc.collect()
+        support.gc_collect()
         self.assertEqual(deleted, list(reversed(range(100))))
 
     def test_delitem_hash_collision(self):
@@ -522,24 +533,15 @@ class OrderedDictTests:
             key = Key()
             od[key] = i
 
-        # These should not crash harder than by raising KeyError
-        # (they do on CPython, but not on PyPy)
-        try:
+        # These should not crash.
+        with self.assertRaises(KeyError):
             list(od.values())
-        except KeyError:
-            pass
-        try:
+        with self.assertRaises(KeyError):
             list(od.items())
-        except KeyError:
-            pass
-        try:
+        with self.assertRaises(KeyError):
             repr(od)
-        except KeyError:
-            pass
-        try:
+        with self.assertRaises(KeyError):
             od.copy()
-        except KeyError:
-            pass
 
     def test_issue24348(self):
         OrderedDict = self.OrderedDict
@@ -590,10 +592,8 @@ class OrderedDictTests:
         od['spam'] = 1
         od['ham'] = 2
         dict.__delitem__(od, 'spam')
-        try:
+        with self.assertRaises(KeyError):
             repr(od)
-        except KeyError:      # on CPython, not on PyPy
-            pass
 
     def test_dict_clear(self):
         OrderedDict = self.OrderedDict
@@ -609,10 +609,8 @@ class OrderedDictTests:
         od['spam'] = 1
         od['ham'] = 2
         dict.pop(od, 'spam')
-        try:
+        with self.assertRaises(KeyError):
             repr(od)
-        except KeyError:      # on CPython, not on PyPy
-            pass
 
     def test_dict_popitem(self):
         OrderedDict = self.OrderedDict
@@ -620,10 +618,8 @@ class OrderedDictTests:
         od['spam'] = 1
         od['ham'] = 2
         dict.popitem(od)
-        try:
+        with self.assertRaises(KeyError):
             repr(od)
-        except KeyError:      # on CPython, not on PyPy
-            pass
 
     def test_dict_setdefault(self):
         OrderedDict = self.OrderedDict
@@ -680,11 +676,11 @@ for method in (
 del method
 
 
-@unittest.skipUnless(hasattr(c_coll, 'OrderedDict'), 'requires the C version of the collections module')
+@unittest.skipUnless(c_coll, 'requires the C version of the collections module')
 class CPythonOrderedDictTests(OrderedDictTests, unittest.TestCase):
 
     module = c_coll
-    OrderedDict = getattr(c_coll, 'OrderedDict', None)
+    OrderedDict = c_coll.OrderedDict
     check_sizeof = support.check_sizeof
 
     @support.cpython_only
@@ -724,14 +720,10 @@ class CPythonOrderedDictTests(OrderedDictTests, unittest.TestCase):
 
         od = OrderedDict.fromkeys('abcde')
         self.assertEqual(list(od), list('abcde'))
-        try:
+        with self.assertRaises(RuntimeError):
             for i, k in enumerate(od):
                 od.move_to_end(k)
                 self.assertLess(i, 5)
-        except RuntimeError:
-            pass     # XXX on PyPy the change is not detected, as
-                     # the total length of the dict doesn't change
-        od = OrderedDict.fromkeys('bcdea')
         with self.assertRaises(RuntimeError):
             for k in od:
                 od['f'] = None
@@ -751,9 +743,8 @@ class PurePythonOrderedDictSubclassTests(PurePythonOrderedDictTests):
 class CPythonOrderedDictSubclassTests(CPythonOrderedDictTests):
 
     module = c_coll
-    if hasattr(c_coll, 'OrderedDict'):
-        class OrderedDict(c_coll.OrderedDict):
-            pass
+    class OrderedDict(c_coll.OrderedDict):
+        pass
 
 
 class PurePythonGeneralMappingTests(mapping_tests.BasicTestMappingProtocol):
@@ -767,7 +758,7 @@ class PurePythonGeneralMappingTests(mapping_tests.BasicTestMappingProtocol):
         self.assertRaises(KeyError, d.popitem)
 
 
-@unittest.skipUnless(hasattr(c_coll, 'OrderedDict'), 'requires the C version of the collections module')
+@unittest.skipUnless(c_coll, 'requires the C version of the collections module')
 class CPythonGeneralMappingTests(mapping_tests.BasicTestMappingProtocol):
 
     @classmethod
@@ -792,7 +783,7 @@ class PurePythonSubclassMappingTests(mapping_tests.BasicTestMappingProtocol):
         self.assertRaises(KeyError, d.popitem)
 
 
-@unittest.skipUnless(hasattr(c_coll, 'OrderedDict'), 'requires the C version of the collections module')
+@unittest.skipUnless(c_coll, 'requires the C version of the collections module')
 class CPythonSubclassMappingTests(mapping_tests.BasicTestMappingProtocol):
 
     @classmethod

@@ -44,7 +44,7 @@ PyAPI_FUNC(PyObject *) PyMemoryView_GetContiguous(PyObject *base,
    and functions instead! */
 #ifndef Py_LIMITED_API
 #define _Py_MANAGED_BUFFER_RELEASED    0x001  /* access to exporter blocked */
-#define _Py_MhANAGED_BUFFER_FREE_FORMAT 0x002  /* free format */
+#define _Py_MANAGED_BUFFER_FREE_FORMAT 0x002  /* free format */
 typedef struct {
     PyObject_HEAD
     int flags;          /* state flags */
@@ -76,4 +76,3 @@ typedef struct {
 }
 #endif
 #endif /* !Py_MEMORYOBJECT_H */
-

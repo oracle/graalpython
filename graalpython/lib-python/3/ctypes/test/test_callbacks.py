@@ -1,7 +1,6 @@
 import functools
 import unittest
 from ctypes import *
-from ctypes.test import xfail
 from ctypes.test import need_symbol
 import _ctypes_test
 
@@ -96,7 +95,6 @@ class Callbacks(unittest.TestCase):
         self.check_type(c_char_p, "abc")
         self.check_type(c_char_p, "def")
 
-    @xfail
     def test_pyobject(self):
         o = ()
         from sys import getrefcount as grc
@@ -246,6 +244,7 @@ class SampleCallbacksTestCase(unittest.TestCase):
     def test_callback_large_struct(self):
         class Check: pass
 
+        # This should mirror the structure in Modules/_ctypes/_ctypes_test.c
         class X(Structure):
             _fields_ = [
                 ('first', c_ulong),
@@ -257,6 +256,11 @@ class SampleCallbacksTestCase(unittest.TestCase):
             check.first = s.first
             check.second = s.second
             check.third = s.third
+            # See issue #29565.
+            # The structure should be passed by value, so
+            # any changes to it should not be reflected in
+            # the value passed
+            s.first = s.second = s.third = 0x0badf00d
 
         check = Check()
         s = X()
