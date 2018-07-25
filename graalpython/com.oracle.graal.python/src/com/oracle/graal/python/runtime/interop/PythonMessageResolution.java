@@ -304,7 +304,7 @@ public class PythonMessageResolution {
     @Resolve(message = "WRITE")
     abstract static class WriteNode extends Node {
         @Child private SetItemNode setItemNode = SetItemNode.create();
-        @Child private SetAttributeNode writeNode = SetAttributeNode.create();
+        @Child private SetAttributeNode.Dynamic writeNode = new SetAttributeNode.Dynamic();
         @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private HasSetItem hasSetItem = new HasSetItem();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();

@@ -40,12 +40,13 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
+
+import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
@@ -53,35 +54,48 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class), @NodeChild(value = "rhs", type = PNode.class)})
+@NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "rhs", type = PNode.class)})
 public abstract class SetAttributeNode extends PNode implements WriteNode {
-    protected abstract PNode getObject();
 
-    protected abstract PNode getKey();
+    public static final class Dynamic extends PBaseNode {
+        private final ValueProfile setAttributeProfile = ValueProfile.createIdentityProfile();
+        @Child private GetClassNode getClassNode = GetClassNode.create();
+        @Child private LookupAttributeInMRONode setAttributeLookup = LookupAttributeInMRONode.create(__SETATTR__);
+        @Child private CallTernaryMethodNode callSetAttribute = CallTernaryMethodNode.create();
+
+        public Object execute(Object object, Object key, Object value) {
+            Object descr = setAttributeProfile.profile(setAttributeLookup.execute(getClassNode.execute(object)));
+            return callSetAttribute.execute(descr, object, key, value);
+        }
+    }
+
+    private final String key;
+
+    protected SetAttributeNode(String key) {
+        this.key = key;
+    }
+
+    protected abstract PNode getObject();
 
     public abstract PNode getRhs();
 
-    public static SetAttributeNode create() {
-        return create(null, null, null);
+    public static SetAttributeNode create(String key) {
+        return create(key, null, null);
     }
 
-    public static SetAttributeNode create(PNode object, PNode key, PNode rhs) {
-        return SetAttributeNodeGen.create(object, key, rhs);
+    public static SetAttributeNode create(String key, PNode object, PNode rhs) {
+        return SetAttributeNodeGen.create(key, object, rhs);
     }
 
-    public Object doWrite(VirtualFrame frame, Object value) {
-        return execute(getObject().execute(frame), getKey().execute(frame), value);
+    @Override
+    public final Object doWrite(VirtualFrame frame, Object value) {
+        return execute(getObject().execute(frame), value);
     }
 
-    public abstract Object execute(Object object, Object key, Object value);
+    public abstract Object execute(Object object, Object value);
 
     public String getAttributeId() {
-        Object key = getKey().execute(null);
-        if (!(key instanceof String)) {
-            CompilerDirectives.transferToInterpreter();
-            throw new AssertionError();
-        }
-        return (String) key;
+        return key;
     }
 
     public PNode getPrimaryNode() {
@@ -89,13 +103,12 @@ public abstract class SetAttributeNode extends PNode implements WriteNode {
     }
 
     @Specialization
-    protected Object doIt(Object object, Object key, Object value,
+    protected Object doIt(Object object, Object value,
                     @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create(__SETATTR__)") LookupAttributeInMRONode setAttributeLookup,
                     @Cached("create()") CallTernaryMethodNode callSetAttribute) {
-        PythonClass type = getClassNode.execute(object);
-        Object descr = setAttributeProfile.profile(setAttributeLookup.execute(type));
+        Object descr = setAttributeProfile.profile(setAttributeLookup.execute(getClassNode.execute(object)));
         return callSetAttribute.execute(descr, object, key, value);
     }
 }

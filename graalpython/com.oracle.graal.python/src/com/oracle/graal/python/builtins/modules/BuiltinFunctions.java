@@ -1145,7 +1145,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class SetAttrNode extends PythonBuiltinNode {
         @Specialization
         public Object setAttr(Object object, Object key, Object value,
-                        @Cached("create()") SetAttributeNode setAttrNode) {
+                        @Cached("new()") SetAttributeNode.Dynamic setAttrNode) {
             return setAttrNode.execute(object, key, value);
         }
     }

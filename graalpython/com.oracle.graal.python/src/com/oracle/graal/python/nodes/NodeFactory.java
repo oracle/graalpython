@@ -394,7 +394,7 @@ public class NodeFactory {
     }
 
     public PNode createGetAttribute(PNode primary, String name) {
-        return GetAttributeNode.create(primary, createStringLiteral(name));
+        return GetAttributeNode.create(name, primary);
     }
 
     public PNode createGetItem(PNode primary, String name) {
@@ -522,7 +522,7 @@ public class NodeFactory {
     }
 
     public PNode createSetAttribute(PNode object, String key, PNode rhs) {
-        return SetAttributeNode.create(object, createStringLiteral(key), rhs);
+        return SetAttributeNode.create(key, object, rhs);
     }
 
     public PNode createDestructuringAssignment(PNode rhs, List<ReadNode> slots, int starredIndex, PNode[] assignments) {

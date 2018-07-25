@@ -87,8 +87,7 @@ public abstract class PythonCallNode extends PNode {
         if (calleeNode instanceof ReadGlobalOrBuiltinNode) {
             calleeName = ((ReadGlobalOrBuiltinNode) calleeNode).getAttributeId();
         } else if (calleeNode instanceof GetAttributeNode) {
-            PNode key = ((GetAttributeNode) calleeNode).getKey();
-            getCallableNode = GetCallAttributeNodeGen.create(((StringLiteralNode) key).getValue(), ((GetAttributeNode) calleeNode).getObject());
+            getCallableNode = GetCallAttributeNodeGen.create(((GetAttributeNode) calleeNode).getKey(), ((GetAttributeNode) calleeNode).getObject());
         }
         KeywordArgumentsNode keywordArgumentsNode = kwArgs == null && keywords.length == 0 ? null : KeywordArgumentsNode.create(keywords, kwArgs);
         if (starArgs == null) {
