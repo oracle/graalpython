@@ -27,7 +27,9 @@ except ImportError:
     ndarray = None
 
 try:
-    import struct
+    # skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
+    # import struct
+    struct = None
 except ImportError:
     struct = None
 
@@ -41,7 +43,6 @@ try:
         from numpy import ndarray as numpy_array
 except ImportError:
     numpy_array = None
-
 
 SHORT_TEST = True
 
