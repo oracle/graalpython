@@ -153,7 +153,7 @@ class SRE_Pattern():
 
     def __tregex_compile(self, pattern):
         if TREGEX_ENGINE is not None:
-            return TREGEX_ENGINE(pattern, self.jsflags)
+            return tregex_call_safe(TREGEX_ENGINE, pattern, self.jsflags)
         raise RuntimeError("TREGEX engine not available")
 
 
@@ -211,9 +211,9 @@ class SRE_Pattern():
         pattern = self.__tregex_compile(pattern)
         string = self._decode_string(string)
         if endpos == -1 or endpos >= len(string):
-            result = pattern.exec(string, pos)
+            result = tregex_call_safe(pattern.exec, string, pos)
         else:
-            result = pattern.exec(string[:endpos], pos)
+            result = tregex_call_safe(pattern.exec, string[:endpos], pos)
         if result.isMatch:
             return SRE_Match(self, pos, endpos, result)
         else:
@@ -255,7 +255,7 @@ class SRE_Pattern():
                 endpos = endpos % len(string) + 1
             matchlist = []
             while pos < endpos:
-                result = pattern.exec(string, pos)
+                result = tregex_call_safe(pattern.exec, string, pos)
                 if not result.isMatch:
                     break
                 elif self.num_groups == 0:
@@ -338,7 +338,7 @@ class SRE_Pattern():
                 repl = _process_escape_sequences(repl)
             progress = True
             while (count == 0 or n < count) and pos <= len(string) and progress:
-                match_result = pattern.exec(string, pos)
+                match_result = tregex_call_safe(pattern.exec, string, pos)
                 if not match_result.isMatch:
                     break
                 n += 1

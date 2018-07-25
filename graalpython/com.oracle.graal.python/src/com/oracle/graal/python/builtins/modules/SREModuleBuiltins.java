@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -53,16 +56,26 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
@@ -236,6 +249,31 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Fallback
         Object run(Object o) {
             throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
+        }
+
+    }
+
+    @Builtin(name = "tregex_call_safe", minNumOfArguments = 1, takesVariableArguments = true)
+    @GenerateNodeFactory
+    abstract static class TRegexCallSafe extends PythonBuiltinNode {
+        @Specialization(guards = "isForeignObject(callable)")
+        Object call(TruffleObject callable, Object[] arguments,
+                        @Cached("create()") BranchProfile runtimeError,
+                        @Cached("create()") BranchProfile typeError,
+                        @Cached("createExecute()") Node invokeNode) {
+            try {
+                return ForeignAccess.sendExecute(invokeNode, callable, arguments);
+            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
+                typeError.enter();
+                throw raise(TypeError, e.getMessage());
+            } catch (RuntimeException e) {
+                runtimeError.enter();
+                throw raise(RuntimeError, e.getMessage());
+            }
+        }
+
+        protected static Node createExecute() {
+            return Message.createExecute(0).createNode();
         }
 
     }
