@@ -361,6 +361,7 @@ class MemoryTestMixin:
             memio = self.ioclass()
             memio.foo = 1
 
+    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_pickling(self):
         buf = self.buftype("1234567890")
         memio = self.ioclass(buf)
@@ -445,6 +446,7 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         self.assertRaises(TypeError, memio.read1)
         self.assertEqual(memio.read(), buf)
 
+    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_readinto(self):
         buf = self.buftype("1234567890")
         memio = self.ioclass(buf)
