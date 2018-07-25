@@ -56,7 +56,11 @@ def _reference_set_item(args):
         d[args[1]] = args[2]
         return 0
     except:
-        raise SystemError
+
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            return -1
 
 
 def _reference_del_item(args):
