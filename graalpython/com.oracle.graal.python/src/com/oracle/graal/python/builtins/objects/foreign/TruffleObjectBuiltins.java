@@ -504,6 +504,13 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         protected boolean isForeignMapping(TruffleObject receiver) {
             if (PGuards.isForeignObject(receiver)) {
+                if (hasSizeNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    hasSizeNode = insert(Message.HAS_SIZE.createNode());
+                }
+                if (!ForeignAccess.sendHasSize(hasSizeNode, receiver)) {
+                    return false;
+                }
                 if (hasKeysNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     hasKeysNode = insert(Message.HAS_KEYS.createNode());
