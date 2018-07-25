@@ -601,7 +601,7 @@ public final class StringBuiltins extends PythonBuiltins {
             for (int i = 0; i < from.length(); i++) {
                 int key = from.charAt(i);
                 int value = to.charAt(i);
-                setItemNode.execute(translation, translation.getDictStorage(), key, value);
+                translation.setDictStorage(setItemNode.execute(translation.getDictStorage(), key, value));
             }
 
             return translation;

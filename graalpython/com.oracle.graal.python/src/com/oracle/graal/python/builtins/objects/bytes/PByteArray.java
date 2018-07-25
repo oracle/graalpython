@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.__repr__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.Arrays;
@@ -34,7 +35,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
@@ -44,7 +44,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PByteArray extends PArray implements PIBytesLike {
 
@@ -106,19 +105,14 @@ public final class PByteArray extends PArray implements PIBytesLike {
         try {
             store.setSliceInBound(normalizedStart, normalizedStop, step, other);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(other.getIndicativeValue(), other);
-
-            try {
-                store.setSliceInBound(start, stop, step, other);
-            } catch (SequenceStoreException ex) {
-                throw new IllegalStateException();
-            }
+            throw PythonLanguage.getCore().raise(TypeError, "an integer is required");
         }
     }
 
     @Override
     public void setSlice(PSlice slice, PSequence value) {
-        setSlice(slice.getStart(), slice.getStop(), slice.getStep(), value);
+        PSlice.SliceInfo sliceInfo = slice.computeActualIndices(len());
+        setSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step, value);
     }
 
     @Override
@@ -223,11 +217,6 @@ public final class PByteArray extends PArray implements PIBytesLike {
         } else {
             throw new UnsupportedOperationException("this case is not yet supported!");
         }
-    }
-
-    @TruffleBoundary
-    public byte[] join(PythonCore core, Object... values) {
-        return BytesUtils.join(core, getBytesExact(), values);
     }
 
     @Override

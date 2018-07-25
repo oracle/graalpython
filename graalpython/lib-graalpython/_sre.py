@@ -39,11 +39,16 @@
 
 import polyglot as _interop
 
-# just test if TREGEX is available
+def default(value, default):
+    return default if not value else value
+
+def maxsize():
+    import sys
+    return sys.maxsize
 try:
-    _tregex_available = _interop.eval(string="", language="regex")() != None
-except NotImplementedError as e:
-    _tregex_available = False
+    TREGEX_ENGINE = _interop.eval(string="", language="regex")()
+except BaseException:
+    TREGEX_ENGINE = None
 
 CODESIZE = 4
 
@@ -103,7 +108,8 @@ class SRE_Match():
 
     def groupdict(self, default=None):
         d = {}
-        for k in self.compiled_regex.groups:
+        assert _interop.__has_keys__(self.compiled_regex.groups)
+        for k in _interop.__keys__(self.compiled_regex.groups):
             idx = self.compiled_regex.groups[k]
             d[k] = self.__group__(idx)
         return d
@@ -144,47 +150,18 @@ class SRE_Pattern():
             if flags & (1 << i):
                 jsflags.append(jsflag)
         self.jsflags = "".join(jsflags)
-        if _tregex_available:
-            self.__tregex_engine = _interop.eval(string="", language="regex")("", self.__fallback_engine)
 
-    class InternalSREPattern:
-        def __init__(self, match_result):
-            self._match_result = match_result
-            self.isMatch = match_result != None
-            self.regex = match_result.re if match_result else None
-
-        @property
-        def start(self):
-            return [self._match_result.start()]
-
-        @property
-        def end(self):
-            return [self._match_result.end()]
-
-    class RegexResult:
-        def __init__(self, cpython_sre_result):
-            self._sre_result = cpython_sre_result
-
-        def __call__(self, original_result, pattern, start_pos):
-            return SRE_Pattern.InternalSREPattern(self._sre_result.match(pattern, start_pos))
 
     def __tregex_compile(self, pattern):
-        try:
-            return self.__tregex_engine(pattern, self.jsflags)
-        except RuntimeError:
-            return None
+        if TREGEX_ENGINE is not None:
+            return tregex_call_safe(TREGEX_ENGINE, pattern, self.jsflags)
+        raise RuntimeError("TREGEX engine not available")
 
-    def __fallback_engine(self, pattern, flags):
-        try:
-            return self.RegexResult(self.__compile_cpython_sre())
-        except:
-            # TODO reporting ?
-            raise
 
     def __compile_cpython_sre(self):
         if not self.__compiled_sre_pattern:
             import _cpython_sre
-            self.__compiled_sre_pattern = _cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
+            self.__compiled_sre_pattern = _cpython_sre.compile(self._emit(self.pattern), self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
         return self.__compiled_sre_pattern
 
 
@@ -195,6 +172,9 @@ class SRE_Pattern():
             return string.decode()
         elif isinstance(string, bytearray):
             return string.decode()
+        elif isinstance(string, memoryview):
+            # return bytes(string).decode()
+            raise TypeError("'memoryview' is currently unsupported as search pattern")
         raise TypeError("invalid search pattern {!r}".format(string))
 
 
@@ -207,12 +187,13 @@ class SRE_Pattern():
         # TODO: that's not nearly complete but should be sufficient for now
         from sre_compile import SRE_FLAG_VERBOSE
         if flags & SRE_FLAG_VERBOSE:
-            pattern = tregex_preprocess(pattern)
-        return pattern
+            pattern = tregex_preprocess_for_verbose(pattern)
+        return tregex_preprocess_default(pattern)
 
 
     def __repr__(self):
         flags = self.flags
+        flag_items = []
         for i,name in enumerate(FLAG_NAMES):
             if flags & (1 << i):
                 flags -= (1 << i)
@@ -229,39 +210,45 @@ class SRE_Pattern():
 
     def _search(self, pattern, string, pos, endpos):
         pattern = self.__tregex_compile(pattern)
-        if pattern is not None:
-            string = self._decode_string(string)
-            if endpos == -1 or endpos >= len(string):
-                result = pattern.exec(string, pos)
-            else:
-                result = pattern.exec(string[:endpos], pos)
-            if result.isMatch:
-                return SRE_Match(self, pos, endpos, result)
-            else:
-                return None
+        string = self._decode_string(string)
+        if endpos == -1 or endpos >= len(string):
+            result = tregex_call_safe(pattern.exec, string, pos)
         else:
-            return self.__compile_cpython_sre()._search(pattern, string, pos, endpos)
-
-    def search(self, string, pos=0, endpos=-1):
-        return self._search(self.pattern, string, pos, endpos)
-
-    def match(self, string, pos=0, endpos=-1):
-        if not self.pattern.startswith("^"):
-            return self._search("^" + self.pattern, string, pos, endpos)
+            result = tregex_call_safe(pattern.exec, string[:endpos], pos)
+        if result.isMatch:
+            return SRE_Match(self, pos, endpos, result)
         else:
-            return self._search(self.pattern, string, pos, endpos)
+            return None
 
-    def fullmatch(self, string, pos=0, endpos=-1):
-        pattern = self.pattern
-        if not pattern.startswith("^"):
-            pattern = "^" + pattern
-        if not pattern.endswith("$"):
-            pattern = pattern + "$"
-        return self._search(pattern, string, pos, endpos)
+    def search(self, string, pos=0, endpos=None):
+        try:
+            return self._search(self.pattern, string, pos, default(endpos, -1))
+        except RuntimeError:
+            return self.__compile_cpython_sre().search(string, pos, default(endpos, maxsize()))
+
+    def match(self, string, pos=0, endpos=None):
+        try:
+            if not self.pattern.startswith("^"):
+                return self._search("^" + self.pattern, string, pos, default(endpos, -1))
+            else:
+                return self._search(self.pattern, string, pos, default(endpos, -1))
+        except RuntimeError:
+            return self.__compile_cpython_sre().match(string, pos, default(endpos, maxsize()))
+
+    def fullmatch(self, string, pos=0, endpos=None):
+        try:
+            pattern = self.pattern
+            if not pattern.startswith("^"):
+                pattern = "^" + pattern
+            if not pattern.endswith("$"):
+                pattern = pattern + "$"
+            return self._search(pattern, string, pos, default(endpos, -1))
+        except RuntimeError:
+            return self.__compile_cpython_sre().fullmatch(string, pos, default(endpos, maxsize()))
 
     def findall(self, string, pos=0, endpos=-1):
-        pattern = self.__tregex_compile(self.pattern)
-        if pattern is not None:
+        try:
+            pattern = self.__tregex_compile(self.pattern)
             string = self._decode_string(string)
             if endpos > len(string):
                 endpos = len(string)
@@ -269,7 +256,7 @@ class SRE_Pattern():
                 endpos = endpos % len(string) + 1
             matchlist = []
             while pos < endpos:
-                result = pattern.exec(string, pos)
+                result = tregex_call_safe(pattern.exec, string, pos)
                 if not result.isMatch:
                     break
                 elif self.num_groups == 0:
@@ -281,43 +268,100 @@ class SRE_Pattern():
                 no_progress = (result.start[0] == result.end[0])
                 pos = result.end[0] + no_progress
             return matchlist
-        else:
-            # use fallback engine
-            return self.__compile_cpython_sre().findall(string, pos, endpos)
-            
+        except RuntimeError:
+            return self.__compile_cpython_sre().findall(string, pos, maxsize() if endpos == -1 else endpos)
+
+
+    def __replace_groups(self, repl, string, match_result, pattern):
+        def group(match_result, group_nr, string):
+            if group_nr >= match_result.groupCount:
+                return None
+            group_start = match_result.start[group_nr]
+            group_end = match_result.end[group_nr]
+            return string[group_start:group_end]
+
+        n = len(repl)
+        result = self._emit("")
+        start = 0
+        backslash = self._emit('\\')
+        pos = repl.find(backslash, start)
+        while pos != -1 and start < n:
+            if pos+1 < n:
+                if repl[pos + 1].isdigit() and match_result.groupCount > 0:
+                    group_nr = int(repl[pos+1])
+                    group_str = group(match_result, group_nr, string)
+                    if group_str is None:
+                        raise ValueError("invalid group reference %s at position %s" % (group_nr, pos))
+                    result += repl[start:pos] + self._emit(group_str)
+                    start = pos + 2
+                elif repl[pos + 1] == 'g':
+                    group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
+                    if group_ref:
+                        group_str = group(match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
+                        if group_str is None:
+                            raise ValueError("invalid group reference %s at position %s" % (group_ref, pos))
+                        result += repl[start:pos] + self._emit(group_str)
+                    start = group_ref_end + 1
+                elif repl[pos + 1] == backslash:
+                    result += repl[start:pos] + backslash
+                    start = pos + 2
+                else:
+                    result += repl[start:pos + 2]
+                    start = pos + 2
+            pos = repl.find(backslash, start)
+        result += repl[start:]
+        return result
+
+
+    def __extract_groupname(self, repl, pos):
+        if repl[pos] == '<':
+            digits_only = True
+            n = len(repl)
+            i = pos + 1
+            while i < n and repl[i] != '>':
+                digits_only = digits_only and repl[i].isdigit()
+                i += 1
+            if i < n:
+                # found '>'
+                return repl[pos + 1 : i], i, digits_only
+        return None, pos, False
+
 
     def sub(self, repl, string, count=0):
         n = 0
-        pattern = self.__tregex_compile(self.pattern)
-        if pattern is not None:
+        try:
+            pattern = self.__tregex_compile(self.pattern)
             string = self._decode_string(string)
             result = []
             pos = 0
-            while (count == 0 or n < count) and pos <= len(string):
-                match = pattern.exec(string, pos)
-                if not match.isMatch:
+            is_string_rep = isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray)
+            if is_string_rep:
+                repl = _process_escape_sequences(repl)
+            progress = True
+            while (count == 0 or n < count) and pos <= len(string) and progress:
+                match_result = tregex_call_safe(pattern.exec, string, pos)
+                if not match_result.isMatch:
                     break
                 n += 1
-                start = match.start[0]
-                end = match.end[0]
+                start = match_result.start[0]
+                end = match_result.end[0]
                 result.append(self._emit(string[pos:start]))
-                if isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray):
-                    # TODO: backslash replace groups
-                    result.append(repl)
+                if is_string_rep:
+                    result.append(self.__replace_groups(repl, string, match_result, pattern))
                 else:
-                    _srematch = SRE_Match(self, pos, -1, match)
+                    _srematch = SRE_Match(self, pos, -1, match_result)
                     _repl = repl(_srematch)
                     result.append(_repl)
-                no_progress = (start == end)
-                pos = end + no_progress
+                pos = end
+                progress = (start != end)
             result.append(self._emit(string[pos:]))
             return self._emit("").join(result)
-        else:
+        except BaseException:
             return self.__compile_cpython_sre().sub(repl, string, count)
 
     def _emit(self, str_like_obj):
         assert isinstance(str_like_obj, str) or isinstance(str_like_obj, bytes)
-        if self.__was_bytes:
+        if self.__was_bytes != isinstance(str_like_obj, bytes):
             return str_like_obj.encode()
         return str_like_obj
 

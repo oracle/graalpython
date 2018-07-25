@@ -263,6 +263,11 @@ def PyBytes_FromFormat(fmt, args):
     return formatted.encode()
 
 
+@may_raise
+def PyBytes_Join(sep, iterable):
+    return sep.join(iterable)
+
+
 ##################### LIST
 
 @may_raise

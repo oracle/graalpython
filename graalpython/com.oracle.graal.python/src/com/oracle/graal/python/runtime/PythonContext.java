@@ -191,6 +191,7 @@ public class PythonContext {
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         sysModules.setItem(__MAIN__, mainModule);
+        currentException = null;
 
         isInitialized = true;
     }

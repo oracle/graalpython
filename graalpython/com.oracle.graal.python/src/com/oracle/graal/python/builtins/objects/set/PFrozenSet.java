@@ -45,7 +45,10 @@ public class PFrozenSet extends PBaseSet {
 
     @Override
     public void setDictStorage(HashingStorage newStorage) {
-        throw new RuntimeException("frozenSet is unmodifiable");
+        // ignore if storage stays unchanged
+        if (newStorage != getDictStorage()) {
+            throw new RuntimeException("frozenSet is unmodifiable");
+        }
     }
 
 }

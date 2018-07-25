@@ -32,6 +32,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class ByteSequenceStorage extends TypedSequenceStorage {
 
@@ -85,7 +86,12 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return boxed;
     }
 
+    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
     public byte[] getInternalByteArray() {
+        if (length != values.length) {
+            assert length < values.length;
+            return Arrays.copyOf(values, length);
+        }
         return values;
     }
 
@@ -166,22 +172,54 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             setByteSliceInBound(start, stop, step, (ByteSequenceStorage) sequence);
         } else if (sequence instanceof IntSequenceStorage) {
             setByteSliceInBound(start, stop, step, (IntSequenceStorage) sequence);
+        } else if (sequence instanceof EmptySequenceStorage) {
+            setByteSliceInBound(start, stop, step, new IntSequenceStorage(0));
         } else {
             throw new SequenceStoreException();
         }
     }
 
+    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
     public void setByteSliceInBound(int start, int stop, int step, IntSequenceStorage sequence) {
-        ensureCapacity(stop);
-
+        int otherLength = sequence.length();
         int[] seqValues = sequence.getInternalIntArray();
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = ((Integer) seqValues[j]).byteValue();
+
+        // (stop - start) = bytes to be replaced; otherLength = bytes to be written
+        int newLength = length - (stop - start - otherLength);
+
+        ensureCapacity(newLength);
+
+        // if enlarging, we need to move the suffix first
+        if (stop - start < otherLength) {
+            assert length < newLength;
+            for (int j = length - 1, k = newLength - 1; j >= stop; j--, k--) {
+                values[k] = values[j];
+            }
         }
 
-        length = length > stop ? length : stop;
+        int i = start;
+        for (int j = 0; j < otherLength; i += step, j++) {
+            if (seqValues[j] < Byte.MIN_VALUE || seqValues[j] > Byte.MAX_VALUE) {
+                throw PythonLanguage.getCore().raise(ValueError, "byte must be in range(0, 256)");
+            }
+            values[i] = (byte) seqValues[j];
+        }
+
+        // if shrinking, move the suffix afterwards
+        if (stop - start > otherLength) {
+            assert stop >= 0;
+            for (int j = i, k = 0; stop + k < values.length; j++, k++) {
+                values[j] = values[stop + k];
+            }
+        }
+
+        // for security
+        Arrays.fill(values, newLength, values.length, (byte) 0);
+
+        length = newLength;
     }
 
+    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
     public void setByteSliceInBound(int start, int stop, int step, ByteSequenceStorage sequence) {
         int otherLength = sequence.length();
 
@@ -193,13 +231,36 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             return;
         }
 
-        ensureCapacity(stop);
+        // (stop - start) = bytes to be replaced; otherLength = bytes to be written
+        int newLength = length - (stop - start - otherLength);
 
-        for (int i = start, j = 0; i < stop; i += step, j++) {
+        ensureCapacity(newLength);
+
+        // if enlarging, we need to move the suffix first
+        if (stop - start < otherLength) {
+            assert length < newLength;
+            for (int j = length - 1, k = newLength - 1; j >= stop; j--, k--) {
+                values[k] = values[j];
+            }
+        }
+
+        int i = start;
+        for (int j = 0; j < otherLength; i += step, j++) {
             values[i] = sequence.values[j];
         }
 
-        length = length > stop ? length : stop;
+        // if shrinking, move the suffix afterwards
+        if (stop - start > otherLength) {
+            assert stop >= 0;
+            for (int j = i, k = 0; stop + k < values.length; j++, k++) {
+                values[j] = values[stop + k];
+            }
+        }
+
+        // for security
+        Arrays.fill(values, newLength, values.length, (byte) 0);
+
+        length = newLength;
     }
 
     @Override

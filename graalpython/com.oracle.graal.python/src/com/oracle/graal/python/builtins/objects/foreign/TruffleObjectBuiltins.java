@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 
 import java.util.Arrays;
 import java.util.List;
@@ -427,6 +426,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Child private Node isBoxedNode;
         @Child private Node hasSizeNode;
         @Child private Node unboxNode;
+        @Child private Node hasKeysNode;
 
         private final ValueProfile unboxedTypeLeftProfile = ValueProfile.createClassProfile();
         private final ValueProfile unboxedRightTypeProfile = ValueProfile.createClassProfile();
@@ -498,6 +498,24 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     hasSizeNode = insert(Message.HAS_SIZE.createNode());
                 }
                 return ForeignAccess.sendHasSize(hasSizeNode, receiver);
+            }
+            return false;
+        }
+
+        protected boolean isForeignMapping(TruffleObject receiver) {
+            if (PGuards.isForeignObject(receiver)) {
+                if (hasSizeNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    hasSizeNode = insert(Message.HAS_SIZE.createNode());
+                }
+                if (!ForeignAccess.sendHasSize(hasSizeNode, receiver)) {
+                    return false;
+                }
+                if (hasKeysNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    hasKeysNode = insert(Message.HAS_KEYS.createNode());
+                }
+                return ForeignAccess.sendHasKeys(hasKeysNode, receiver);
             }
             return false;
         }
@@ -714,6 +732,24 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             return PNone.NO_VALUE;
         }
 
+        @Specialization(guards = "isForeignMapping(mapping)")
+        Object doForeignMapping(TruffleObject mapping,
+                        @Cached("GET_SIZE.createNode()") Node sizeNode,
+                        @Cached("KEYS.createNode()") Node keysNode) {
+            try {
+                Object keysObj = ForeignAccess.sendKeys(keysNode, mapping);
+                if (keysObj instanceof TruffleObject) {
+                    Object size = ForeignAccess.sendGetSize(sizeNode, (TruffleObject) keysObj);
+                    if (size instanceof Integer) {
+                        return factory().createForeignArrayIterator((TruffleObject) keysObj, (int) size);
+                    }
+                }
+            } catch (UnsupportedMessageException e) {
+                // fall through
+            }
+            return PNone.NO_VALUE;
+        }
+
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object o) {
             return PNone.NO_VALUE;
@@ -780,9 +816,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable %s()", callee);
-            } catch (RuntimeException e) {
-                // wrap any other runtime exception into a PException
-                throw raise(RuntimeError, "unexpected exception occurred when calling foreign object %s: %s", callee, e);
             }
         }
 

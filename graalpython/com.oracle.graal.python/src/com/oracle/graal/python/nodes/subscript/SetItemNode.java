@@ -26,15 +26,12 @@
 package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.array.PCharArray;
 import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
 import com.oracle.graal.python.builtins.objects.array.PIntArray;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -44,7 +41,6 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -87,15 +83,6 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
         return normalize;
     }
 
-    private int toInt(PInt index) {
-        try {
-            return index.intValueExact();
-        } catch (ArithmeticException e) {
-            // anything outside the int range is considered to be "out of range"
-            throw raise(IndexError, "array assignment index out of range");
-        }
-    }
-
     @Override
     public Object doWrite(VirtualFrame frame, boolean value) {
         return executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
@@ -136,26 +123,9 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     public abstract Object executeWith(Object primary, Object slice, Object value);
 
     @Specialization
-    public Object doPByteArray(PByteArray primary, PSlice slice, PSequence value) {
-        primary.setSlice(slice, value);
-        return PNone.NONE;
-    }
-
-    @Specialization
     public Object doPArray(PArray primary, PSlice slice, PArray value) {
         primary.setSlice(slice, value);
         return PNone.NONE;
-    }
-
-    @Specialization
-    public Object doPByteArray1(PByteArray primary, int index, Object value) {
-        primary.setItemNormalized(ensureNormalize().forArrayAssign(index, primary.len()), value);
-        return PNone.NONE;
-    }
-
-    @Specialization
-    public Object doPByteArray(PByteArray primary, PInt index, Object value) {
-        return doPByteArray1(primary, toInt(index), value);
     }
 
     /**

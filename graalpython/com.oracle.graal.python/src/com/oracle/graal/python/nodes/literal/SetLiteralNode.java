@@ -26,8 +26,9 @@
 package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -45,16 +46,16 @@ public final class SetLiteralNode extends LiteralNode {
     @Override
     @ExplodeLoop
     public Object execute(VirtualFrame frame) {
-        PSet set = factory().createSet();
+        HashingStorage storage = PDict.createNewStorage(true, values.length);
 
         if (setItemNode == null && values.length > 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             setItemNode = insert(HashingStorageNodes.SetItemNode.create());
         }
         for (PNode v : this.values) {
-            setItemNode.execute(set, set.getDictStorage(), v.execute(frame), PNone.NO_VALUE);
+            storage = setItemNode.execute(storage, v.execute(frame), PNone.NO_VALUE);
         }
 
-        return set;
+        return factory().createSet(storage);
     }
 }
