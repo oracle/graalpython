@@ -265,10 +265,10 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 return ForeignAccess.sendExecute(invokeNode, callable, arguments);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
-                throw raise(TypeError, e.getMessage());
+                throw raise(TypeError, "%s", e);
             } catch (RuntimeException e) {
                 runtimeError.enter();
-                throw raise(RuntimeError, e.getMessage());
+                throw raise(RuntimeError, "%s", e);
             }
         }
 
