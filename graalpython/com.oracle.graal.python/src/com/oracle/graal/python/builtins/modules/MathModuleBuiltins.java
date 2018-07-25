@@ -68,7 +68,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import java.util.Arrays;
 
-@CoreFunctions(defineModule = "math", nakedModuleFunctions = true)
+@CoreFunctions(defineModule = "math")
 public class MathModuleBuiltins extends PythonBuiltins {
 
     @Override

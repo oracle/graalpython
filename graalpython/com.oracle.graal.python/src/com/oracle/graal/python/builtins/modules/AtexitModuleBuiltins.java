@@ -66,7 +66,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         return AtexitModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "register", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = "register", minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonVarargsBuiltinNode {
         private static class AtExitCallTarget extends RootNode {
@@ -89,18 +89,18 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object register(@SuppressWarnings("unused") Object module, Object callable, Object[] arguments, PKeyword[] keywords) {
+        Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             AtExitCallTarget atExitCallTarget = new AtExitCallTarget(getContext().getLanguage(), callable, arguments, keywords);
             getContext().registerShutdownHook(callable, Truffle.getRuntime().createCallTarget(atExitCallTarget));
             return callable;
         }
     }
 
-    @Builtin(name = "unregister", fixedNumOfArguments = 2)
+    @Builtin(name = "unregister", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class UnregisterNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object register(@SuppressWarnings("unused") Object module, Object callable) {
+        Object register(Object callable) {
             getContext().deregisterShutdownHook(callable);
             return PNone.NONE;
         }

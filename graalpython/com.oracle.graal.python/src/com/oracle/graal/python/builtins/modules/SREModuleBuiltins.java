@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -69,18 +69,18 @@ public class SREModuleBuiltins extends PythonBuiltins {
     /**
      * Called from C when they actually want a {@code const char*} for a Python string
      */
-    @Builtin(name = "tregex_preprocess", fixedNumOfArguments = 2)
+    @Builtin(name = "tregex_preprocess", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class TregexPreprocessNode extends PythonBinaryBuiltinNode {
+    abstract static class TregexPreprocessNode extends PythonUnaryBuiltinNode {
         @CompilationFinal private Pattern namedCaptGroupPattern;
 
         @Specialization
-        Object run(Object module, PString str) {
-            return run(module, str.getValue());
+        Object run(PString str) {
+            return run(str.getValue());
         }
 
         @Specialization
-        Object run(@SuppressWarnings("unused") Object module, String str) {
+        Object run(String str) {
             if (namedCaptGroupPattern == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 namedCaptGroupPattern = Pattern.compile("\\?P\\<(?<GRPNAME>\\w*)\\>");
@@ -130,7 +130,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object run(@SuppressWarnings("unused") Object module, Object o) {
+        Object run(Object o) {
             throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
         }
 

@@ -50,23 +50,23 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         return GcModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "collect", fixedNumOfArguments = 1)
+    @Builtin(name = "collect")
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object collect(@SuppressWarnings("unused") Object module) {
+        Object collect() {
             System.gc();
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "get_count", fixedNumOfArguments = 1)
+    @Builtin(name = "get_count")
     @GenerateNodeFactory
     abstract static class GcCountNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public PTuple count(@SuppressWarnings("unused") Object module) {
+        public PTuple count() {
             List<GarbageCollectorMXBean> garbageCollectorMXBeans = ManagementFactory.getGarbageCollectorMXBeans();
             long count = 0;
             for (GarbageCollectorMXBean gcbean : garbageCollectorMXBeans) {
@@ -79,7 +79,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_tracked", fixedNumOfArguments = 1)
+    @Builtin(name = "is_tracked")
     @GenerateNodeFactory
     abstract static class GcIsTrackedNode extends PythonBuiltinNode {
         @Specialization

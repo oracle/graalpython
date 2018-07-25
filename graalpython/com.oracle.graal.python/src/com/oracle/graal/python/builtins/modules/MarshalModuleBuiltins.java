@@ -45,42 +45,42 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         return MarshalModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "dump", minNumOfArguments = 3, keywordArguments = {"version"})
+    @Builtin(name = "dump", minNumOfArguments = 2, keywordArguments = {"version"})
     @GenerateNodeFactory
     abstract static class DumpNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object doit(Object module, Object value, Object file, Object version) {
+        Object doit(Object value, Object file, Object version) {
             throw raise(NotImplementedError, "marshal.dump");
         }
     }
 
-    @Builtin(name = "dumps", minNumOfArguments = 2, keywordArguments = {"version"})
+    @Builtin(name = "dumps", minNumOfArguments = 1, keywordArguments = {"version"})
     @GenerateNodeFactory
     abstract static class DumpsNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object doit(Object module, Object value, Object version) {
+        Object doit(Object value, Object version) {
             throw raise(NotImplementedError, "marshal.dumps");
         }
     }
 
-    @Builtin(name = "load", fixedNumOfArguments = 2)
+    @Builtin(name = "load", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class LoadNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object doit(Object module, Object file) {
+        Object doit(Object file) {
             throw raise(NotImplementedError, "marshal.load");
         }
     }
 
-    @Builtin(name = "loads", fixedNumOfArguments = 2)
+    @Builtin(name = "loads", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class LoadsNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        Object doit(Object module, Object bytes) {
+        Object doit(Object bytes) {
             throw raise(NotImplementedError, "marshal.loads");
         }
     }

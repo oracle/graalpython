@@ -119,7 +119,7 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -167,31 +167,31 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // abs(x)
-    @Builtin(name = ABS, fixedNumOfArguments = 2)
+    @Builtin(name = ABS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class AbsNode extends PythonBinaryBuiltinNode {
+    public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public boolean absInt(@SuppressWarnings("unused") Object module, boolean arg) {
+        public boolean absInt(boolean arg) {
             return arg;
         }
 
         @Specialization
-        public int absInt(@SuppressWarnings("unused") Object module, int arg) {
+        public int absInt(int arg) {
             return Math.abs(arg);
         }
 
         @Specialization
-        public long absInt(@SuppressWarnings("unused") Object module, long arg) {
+        public long absInt(long arg) {
             return Math.abs(arg);
         }
 
         @Specialization
-        public double absDouble(@SuppressWarnings("unused") Object module, double arg) {
+        public double absDouble(double arg) {
             return Math.abs(arg);
         }
 
         @Specialization
-        public Object absObject(@SuppressWarnings("unused") Object module, Object object,
+        public Object absObject(Object object,
                         @Cached("create(__ABS__)") LookupAndCallUnaryNode callAbsNode) {
             Object result = callAbsNode.executeObject(object);
             if (result == NO_VALUE) {
@@ -202,15 +202,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // bin(object)
-    @Builtin(name = BIN, fixedNumOfArguments = 2)
+    @Builtin(name = BIN, fixedNumOfArguments = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class BinNode extends PythonBuiltinNode {
-        public abstract String executeObject(Object module, Object x);
-
-        public String executeObject(Object x) {
-            return executeObject(null, x);
-        }
+        public abstract String executeObject(Object x);
 
         private static String buildString(boolean isNegative, String number) {
             StringBuilder sb = new StringBuilder();
@@ -223,24 +219,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public String doL(@SuppressWarnings("unused") Object module, long x) {
+        public String doL(long x) {
             return buildString(x < 0, Long.toBinaryString(Math.abs(x)));
         }
 
         @Specialization
-        public String doD(@SuppressWarnings("unused") Object module, double x) {
+        public String doD(double x) {
             throw raise(TypeError, "'%p' object cannot be interpreted as an integer", x);
         }
 
         @Specialization
         @TruffleBoundary
-        public String doPI(@SuppressWarnings("unused") Object module, PInt x) {
+        public String doPI(PInt x) {
             BigInteger value = x.getValue();
             return buildString(value.compareTo(BigInteger.ZERO) == -1, value.abs().toString(2));
         }
 
         @Specialization
-        public String doO(@SuppressWarnings("unused") Object module, Object x,
+        public String doO(Object x,
                         @Cached("create()") CastToIntegerFromIndexNode toIntNode,
                         @Cached("create()") BinNode recursiveNode) {
             Object value = toIntNode.execute(x);
@@ -253,18 +249,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // callable(object)
-    @Builtin(name = CALLABLE, fixedNumOfArguments = 2)
+    @Builtin(name = CALLABLE, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class CallableNode extends PythonBuiltinNode {
+    public abstract static class CallableNode extends PythonUnaryBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization
-        public boolean callable(Object module, PythonCallable callable) {
+        public boolean callable(PythonCallable callable) {
             return true;
         }
 
         @Specialization
-        public boolean callable(@SuppressWarnings("unused") Object module, Object object,
+        public boolean callable(Object object,
                         @Cached("create(__CALL__)") LookupInheritedAttributeNode getAttributeNode) {
             /**
              * Added temporarily to skip translation/execution errors in unit testing
@@ -284,13 +280,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // chr(i)
-    @Builtin(name = CHR, fixedNumOfArguments = 2)
+    @Builtin(name = CHR, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class ChrNode extends PythonBuiltinNode {
+    public abstract static class ChrNode extends PythonUnaryBuiltinNode {
 
         @TruffleBoundary
         @Specialization
-        public String charFromInt(@SuppressWarnings("unused") Object module, int arg) {
+        public String charFromInt(int arg) {
             if (arg >= 0 && arg < 1114111) {
                 return Character.toString((char) arg);
             } else {
@@ -300,7 +296,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        public char charFromObject(@SuppressWarnings("unused") Object module, PInt arg) {
+        public char charFromObject(PInt arg) {
             if (arg.longValue() > Integer.MAX_VALUE) {
                 throw raise(OverflowError, "integer is greater than maximum");
             } else {
@@ -311,13 +307,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @TruffleBoundary
         @Specialization
-        public Object charFromObject(Object module, double arg) {
+        public Object charFromObject(double arg) {
             throw raise(TypeError, "integer argument expected, got float");
         }
 
         @TruffleBoundary
         @Specialization
-        public char charFromObject(@SuppressWarnings("unused") Object module, Object arg) {
+        public char charFromObject(Object arg) {
             if (arg instanceof Double) {
                 throw raise(TypeError, "integer argument expected, got float");
             }
@@ -327,11 +323,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // hash([object])
-    @Builtin(name = HASH, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = HASH, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonBuiltinNode {
+    public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization  // tfel: TODO: this shouldn't be needed!
-        public Object hash(@SuppressWarnings("unused") Object module, PException exception) {
+        public Object hash(PException exception) {
             return exception.hashCode();
         }
 
@@ -340,7 +336,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPException(object)")
-        public Object hash(@SuppressWarnings("unused") Object module, Object object,
+        public Object hash(Object object,
                         @Cached("create(__DIR__)") LookupInheritedAttributeNode lookupDirNode,
                         @Cached("create(__HASH__)") LookupAndCallUnaryNode dispatchHash,
                         @Cached("createIfTrueNode()") CastToBooleanNode trueNode) {
@@ -352,12 +348,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // dir([object])
-    @Builtin(name = DIR, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = DIR, minNumOfArguments = 0, maxNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
-        public Object dir(VirtualFrame frame, Object module, Object object) {
+        public Object dir(VirtualFrame frame, Object object) {
             PList locals = factory().createList();
             FrameDescriptor frameDescriptor = frame.getFrameDescriptor();
             addIdsFromDescriptor(locals, frameDescriptor);
@@ -376,24 +372,24 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(object)")
-        public Object dir(@SuppressWarnings("unused") Object module, Object object,
+        public Object dir(Object object,
                         @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
             return dirNode.executeObject(object);
         }
     }
 
     // divmod(a, b)
-    @Builtin(name = DIVMOD, fixedNumOfArguments = 3)
+    @Builtin(name = DIVMOD, fixedNumOfArguments = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DivModNode extends PythonBuiltinNode {
         @Specialization(guards = "b != 0")
-        public PTuple doLong(@SuppressWarnings("unused") Object module, long a, long b) {
+        public PTuple doLong(long a, long b) {
             return factory().createTuple(new Object[]{Math.floorDiv(a, b), Math.floorMod(a, b)});
         }
 
         @Specialization(replaces = "doLong")
-        public PTuple doLongZero(@SuppressWarnings("unused") Object module, long a, long b) {
+        public PTuple doLongZero(long a, long b) {
             if (b == 0) {
                 throw raise(PythonErrorType.ZeroDivisionError, "ZeroDivisionError: integer division or modulo by zero");
             }
@@ -401,13 +397,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public PTuple doDouble(@SuppressWarnings("unused") Object module, double a, double b) {
+        public PTuple doDouble(double a, double b) {
             double q = Math.floor(a / b);
             return factory().createTuple(new Object[]{q, a % b});
         }
 
         @Specialization
-        public PTuple doObject(@SuppressWarnings("unused") Object module, Object a, Object b,
+        public PTuple doObject(Object a, Object b,
                         @Cached("create(__FLOORDIV__)") LookupAndCallBinaryNode floordivNode,
                         @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
             Object div = floordivNode.executeObject(a, b);
@@ -424,14 +420,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // eval(expression, globals=None, locals=None)
-    @Builtin(name = EVAL, fixedNumOfArguments = 2, keywordArguments = {"globals", "locals"})
+    @Builtin(name = EVAL, fixedNumOfArguments = 1, keywordArguments = {"globals", "locals"})
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
         @Child private GetItemNode getNameNode = GetItemNode.create();
         @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
 
         @Specialization
-        public Object eval(VirtualFrame frame, @SuppressWarnings("unused") Object module, String expression, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
@@ -439,19 +435,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, @SuppressWarnings("unused") Object module, String expression, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, String expression, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             return evalExpression(expression, globals, globals, null, callerFrame);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, @SuppressWarnings("unused") Object module, String expression, PythonObject globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, String expression, PythonObject globals, PythonObject locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             return evalExpression(expression, globals, locals, null, callerFrame);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, @SuppressWarnings("unused") Object module, String expression, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, String expression, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
@@ -459,7 +455,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, @SuppressWarnings("unused") Object module, PCode code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, @SuppressWarnings("unused") PNone locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
@@ -467,21 +463,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, @SuppressWarnings("unused") Object module, PCode code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
+        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, @SuppressWarnings("unused") PNone locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, globals, globals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, @SuppressWarnings("unused") Object module, PCode code, PythonObject globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, PCode code, PythonObject globals, PythonObject locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
             return evalExpression(code, globals, locals, callerClosure);
         }
 
         @Specialization
-        public Object eval(VirtualFrame frame, @SuppressWarnings("unused") Object module, PCode code, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
+        public Object eval(VirtualFrame frame, PCode code, @SuppressWarnings("unused") PNone globals, PythonObject locals) {
             Frame callerFrame = readCallerFrameNode.executeWith(frame);
             PythonObject callerGlobals = PArguments.getGlobals(callerFrame);
             PCell[] callerClosure = PArguments.getClosure(callerFrame);
@@ -524,19 +520,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
-    @Builtin(name = COMPILE, fixedNumOfArguments = 4, keywordArguments = {"flags", "dont_inherit", "optimize"})
+    @Builtin(name = COMPILE, fixedNumOfArguments = 3, keywordArguments = {"flags", "dont_inherit", "optimize"})
     @GenerateNodeFactory
     public abstract static class CompileNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object compile(Object module, PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            return compile(module, new String(source.getInternalByteArray()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
+        Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+            return compile(new String(source.getInternalByteArray()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @SuppressWarnings("unused")
         @Specialization
         @TruffleBoundary
-        Object compile(Object module, String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
+        Object compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
             Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
             ParserMode pm;
             if (mode.equals("exec")) {
@@ -553,20 +549,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        Object compile(Object module, PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
+        Object compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
             return code;
         }
     }
 
     // getattr(object, name[, default])
-    @Builtin(name = GETATTR, minNumOfArguments = 3, maxNumOfArguments = 4)
+    @Builtin(name = GETATTR, minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
     public abstract static class GetAttrNode extends PythonBuiltinNode {
         public abstract Object executeWithArgs(Object primary, String name, Object defaultValue);
 
         @SuppressWarnings("unused")
         @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"name.equals(cachedName)", "isNoValue(defaultValue)"})
-        public Object getAttrDefault(Object module, Object primary, String name, PNone defaultValue,
+        public Object getAttrDefault(Object primary, String name, PNone defaultValue,
                         @Cached("name") String cachedName,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter) {
             return getter.executeObject(primary, cachedName);
@@ -574,7 +570,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", guards = {"name.equals(cachedName)", "!isNoValue(defaultValue)"})
-        public Object getAttr(Object module, Object primary, String name, Object defaultValue,
+        public Object getAttr(Object primary, String name, Object defaultValue,
                         @Cached("name") String cachedName,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
@@ -587,13 +583,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "isNoValue(defaultValue)")
-        public Object getAttrFromObject(@SuppressWarnings("unused") Object module, Object primary, String name, @SuppressWarnings("unused") PNone defaultValue,
+        public Object getAttrFromObject(Object primary, String name, @SuppressWarnings("unused") PNone defaultValue,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter) {
             return getter.executeObject(primary, name);
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
-        public Object getAttrFromObject(@SuppressWarnings("unused") Object module, Object primary, String name, Object defaultValue,
+        public Object getAttrFromObject(Object primary, String name, Object defaultValue,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             try {
@@ -605,12 +601,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object getAttr(@SuppressWarnings("unused") Object module, Object object, PString name, Object defaultValue) {
+        public Object getAttr(Object object, PString name, Object defaultValue) {
             return executeWithArgs(object, name.getValue(), defaultValue);
         }
 
         @Specialization(guards = "!isString(name)")
-        public Object getAttrGeneric(@SuppressWarnings("unused") Object module, Object primary, Object name, Object defaultValue,
+        public Object getAttrGeneric(Object primary, Object name, Object defaultValue,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getter,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             if (PGuards.isNoValue(defaultValue)) {
@@ -627,7 +623,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // id(object)
-    @Builtin(name = ID, fixedNumOfArguments = 2)
+    @Builtin(name = ID, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class IdNode extends PythonBuiltinNode {
         /**
@@ -649,39 +645,39 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization
-        int doId(Object module, PNone none) {
+        int doId(PNone none) {
             return 0;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        int doId(Object module, PNotImplemented none) {
+        int doId(PNotImplemented none) {
             return 1;
         }
 
         @Specialization
-        int doId(@SuppressWarnings("unused") Object module, boolean value) {
+        int doId(boolean value) {
             return value ? 2 : 3;
         }
 
         @Specialization
-        long doId(@SuppressWarnings("unused") Object module, int integer) {
+        long doId(int integer) {
             return integer + KNOWN_OBJECTS_COUNT;
         }
 
         /**
-         * TODO: {@link #doId(Object, String)} and {@link #doId(Object, double)} are not quite
-         * right, because the hashCode will certainly collide with integer hashes. It should be good
-         * for comparisons between String and String id, though, it'll just look as if we interned
-         * all strings from the Python code's perspective.
+         * TODO: {@link #doId(String)} and {@link #doId(double)} are not quite right, because the
+         * hashCode will certainly collide with integer hashes. It should be good for comparisons
+         * between String and String id, though, it'll just look as if we interned all strings from
+         * the Python code's perspective.
          */
         @Specialization
-        int doId(@SuppressWarnings("unused") Object module, String value) {
+        int doId(String value) {
             return value.hashCode();
         }
 
         @Specialization
-        Object doId(@SuppressWarnings("unused") Object module, PInt value) {
+        Object doId(PInt value) {
             try {
                 return value.intValueExact() + KNOWN_OBJECTS_COUNT;
             } catch (ArithmeticException e) {
@@ -690,22 +686,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        int doId(@SuppressWarnings("unused") Object module, double value) {
+        int doId(double value) {
             return Double.hashCode(value);
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyTuple(@SuppressWarnings("unused") Object module, PTuple value) {
+        Object doEmptyTuple(PTuple value) {
             return getId(value, PythonImmutableBuiltinType.PTuple);
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyBytes(@SuppressWarnings("unused") Object module, PBytes value) {
+        Object doEmptyBytes(PBytes value) {
             return getId(value, PythonImmutableBuiltinType.PBytes);
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyFrozenSet(@SuppressWarnings("unused") Object module, PFrozenSet value) {
+        Object doEmptyFrozenSet(PFrozenSet value) {
             return getId(value, PythonImmutableBuiltinType.PFrozenSet);
         }
 
@@ -716,12 +712,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
-        Object doId(@SuppressWarnings("unused") Object module, PythonObject obj) {
+        Object doId(PythonObject obj) {
             return getId(obj);
         }
 
         @Fallback
-        Object doId(@SuppressWarnings("unused") Object module, Object obj) {
+        Object doId(Object obj) {
             return obj.hashCode();
         }
 
@@ -749,7 +745,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // isinstance(object, classinfo)
-    @Builtin(name = ISINSTANCE, fixedNumOfArguments = 3)
+    @Builtin(name = ISINSTANCE, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class IsInstanceNode extends PythonBuiltinNode {
         @Child private GetClassNode getClassNode = GetClassNode.create();
@@ -766,14 +762,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return instanceCheckResult != NOT_IMPLEMENTED && castToBooleanNode.executeWith(instanceCheckResult);
         }
 
-        public final boolean executeWith(Object instance, Object cls) {
-            return executeWith(null, instance, cls);
-        }
-
-        protected abstract boolean executeWith(Object module, Object instance, Object cls);
+        public abstract boolean executeWith(Object instance, Object cls);
 
         @Specialization
-        public boolean isInstance(@SuppressWarnings("unused") Object module, Object instance, PythonClass cls,
+        public boolean isInstance(Object instance, PythonClass cls,
                         @Cached("create()") IsSubtypeNode isSubtypeNode) {
             PythonClass instanceClass = getClassNode.execute(instance);
             return instanceClass == cls || isSubtypeNode.execute(instanceClass, cls) || isInstanceCheckInternal(instance, cls);
@@ -781,7 +773,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "clsTuple.len() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop
-        public boolean isInstanceTupleConstantLen(@SuppressWarnings("unused") Object module, Object instance, PTuple clsTuple,
+        public boolean isInstanceTupleConstantLen(Object instance, PTuple clsTuple,
                         @Cached("clsTuple.len()") int cachedLen,
                         @Cached("create()") IsInstanceNode isInstanceNode) {
             Object[] array = clsTuple.getArray();
@@ -795,7 +787,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(replaces = "isInstanceTupleConstantLen")
-        public boolean isInstance(@SuppressWarnings("unused") Object module, Object instance, PTuple clsTuple,
+        public boolean isInstance(Object instance, PTuple clsTuple,
                         @Cached("create()") IsInstanceNode instanceNode) {
             for (Object cls : clsTuple.getArray()) {
                 if (instanceNode.executeWith(instance, cls)) {
@@ -806,13 +798,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Fallback
-        public boolean isInstance(@SuppressWarnings("unused") Object module, Object instance, Object cls) {
+        public boolean isInstance(Object instance, Object cls) {
             return isInstanceCheckInternal(instance, cls) || typeInstanceCheckNode.executeWith(cls, instance);
         }
     }
 
     // issubclass(class, classinfo)
-    @Builtin(name = ISSUBCLASS, fixedNumOfArguments = 3)
+    @Builtin(name = ISSUBCLASS, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class IsSubClassNode extends PythonBuiltinNode {
         @Child private LookupAndCallBinaryNode subclassCheckNode = LookupAndCallBinaryNode.create(__SUBCLASSCHECK__);
@@ -832,7 +824,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "clsTuple.len() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop
-        public boolean isSubclassTupleConstantLen(@SuppressWarnings("unused") Object module, Object derived, PTuple clsTuple,
+        public boolean isSubclassTupleConstantLen(Object derived, PTuple clsTuple,
                         @Cached("clsTuple.len()") int cachedLen,
                         @Cached("create()") IsSubClassNode isSubclassNode) {
             Object[] array = clsTuple.getArray();
@@ -846,7 +838,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(replaces = "isSubclassTupleConstantLen")
-        public boolean isSubclass(@SuppressWarnings("unused") Object module, Object derived, PTuple clsTuple,
+        public boolean isSubclass(Object derived, PTuple clsTuple,
                         @Cached("create()") IsSubClassNode isSubclassNode) {
             for (Object cls : clsTuple.getArray()) {
                 if (isSubclassNode.executeWith(derived, cls)) {
@@ -857,31 +849,31 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Fallback
-        public boolean isSubclass(@SuppressWarnings("unused") Object module, Object derived, Object cls) {
+        public boolean isSubclass(Object derived, Object cls) {
             return isInstanceCheckInternal(derived, cls) || isSubtypeNode.execute(derived, cls);
         }
     }
 
     // iter(object[, sentinel])
-    @Builtin(name = ITER, minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = ITER, minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(sentinel)")
-        public Object iter(@SuppressWarnings("unused") Object module, Object object, @SuppressWarnings("unused") PNone sentinel,
+        public Object iter(Object object, @SuppressWarnings("unused") PNone sentinel,
                         @Cached("create()") GetIteratorNode getIterNode) {
             return getIterNode.executeWith(object);
         }
 
         @Specialization(guards = "!isNoValue(sentinel)")
-        public Object iter(@SuppressWarnings("unused") Object module, Object callable, Object sentinel) {
+        public Object iter(Object callable, Object sentinel) {
             return factory().createSentinelIterator(callable, sentinel);
         }
     }
 
     // len(s)
-    @Builtin(name = LEN, fixedNumOfArguments = 2)
+    @Builtin(name = LEN, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class LenNode extends PythonBinaryBuiltinNode {
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         private static Supplier<NoAttributeHandler> NO_LEN = () -> new NoAttributeHandler() {
             @Override
@@ -890,18 +882,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         };
 
-        public final Object executeWith(Object object) {
-            return executeWith(null, object);
-        }
-
-        protected abstract Object executeWith(Object module, Object object);
+        public abstract Object executeWith(Object object);
 
         protected static LookupAndCallUnaryNode createLen() {
             return LookupAndCallUnaryNode.create(__LEN__, NO_LEN);
         }
 
         @Specialization
-        public Object len(@SuppressWarnings("unused") Object module, Object obj,
+        public Object len(Object obj,
                         @Cached("createLen()") LookupAndCallUnaryNode dispatch) {
             return dispatch.executeObject(obj);
         }
@@ -918,17 +906,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length == 0")
-        public Object maxSequence(Object module, PythonObject arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
+        public Object maxSequence(PythonObject arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile1,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile2) {
-            return minmaxSequenceWithKey(module, arg1, args, null, getIterator, next, compare, null, errorProfile1, errorProfile2);
+            return minmaxSequenceWithKey(arg1, args, null, getIterator, next, compare, null, errorProfile1, errorProfile2);
         }
 
         @Specialization(guards = "args.length == 0")
-        public Object minmaxSequenceWithKey(@SuppressWarnings("unused") Object module, PythonObject arg1, @SuppressWarnings("unused") Object[] args, PythonObject keywordArg,
+        public Object minmaxSequenceWithKey(PythonObject arg1, @SuppressWarnings("unused") Object[] args, PythonObject keywordArg,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createComparison()") BinaryComparisonNode compare,
@@ -962,14 +950,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "args.length != 0")
-        public Object minmaxBinary(Object module, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
+        public Object minmaxBinary(Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
-            return minmaxBinaryWithKey(module, arg1, args, null, compare, null, moreThanTwo);
+            return minmaxBinaryWithKey(arg1, args, null, compare, null, moreThanTwo);
         }
 
         @Specialization(guards = "args.length != 0")
-        public Object minmaxBinaryWithKey(@SuppressWarnings("unused") Object module, Object arg1, Object[] args, PythonObject keywordArg,
+        public Object minmaxBinaryWithKey(Object arg1, Object[] args, PythonObject keywordArg,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached("create()") CallNode keyCall,
                         @Cached("createBinaryProfile()") ConditionProfile moreThanTwo) {
@@ -1001,7 +989,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // max(iterable, *[, key])
     // max(arg1, arg2, *args[, key])
-    @Builtin(name = MAX, minNumOfArguments = 2, takesVariableArguments = true, keywordArguments = {"key"})
+    @Builtin(name = MAX, minNumOfArguments = 1, takesVariableArguments = true, keywordArguments = {"key"})
     @GenerateNodeFactory
     public abstract static class MaxNode extends MinMaxNode {
 
@@ -1009,7 +997,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // min(iterable, *[, key])
     // min(arg1, arg2, *args[, key])
-    @Builtin(name = MIN, minNumOfArguments = 2, takesVariableArguments = true, keywordArguments = {"key"})
+    @Builtin(name = MIN, minNumOfArguments = 1, takesVariableArguments = true, keywordArguments = {"key"})
     @GenerateNodeFactory
     public abstract static class MinNode extends MinMaxNode {
 
@@ -1017,12 +1005,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // next(iterator[, default])
     @SuppressWarnings("unused")
-    @Builtin(name = NEXT, minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = NEXT, minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object next(Object module, PythonObject iterator, PNone defaultObject,
+        public Object next(PythonObject iterator, PNone defaultObject,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             try {
@@ -1034,18 +1022,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object next(Object module, Object iterator, Object defaultObject) {
+        public Object next(Object iterator, Object defaultObject) {
             throw new RuntimeException("Unsupported iterator " + iterator);
         }
     }
 
     // ord(c)
-    @Builtin(name = ORD, fixedNumOfArguments = 2)
+    @Builtin(name = ORD, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class OrdNode extends PythonBuiltinNode {
 
         @Specialization
-        public int ord(@SuppressWarnings("unused") Object module, String chr) {
+        public int ord(String chr) {
             if (chr.length() != 1) {
                 raise(TypeError, "ord() expected a character, but string of length %d found", chr.length());
             }
@@ -1064,12 +1052,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
-    @Builtin(name = PRINT, fixedNumOfArguments = 6)
+    @Builtin(name = PRINT, fixedNumOfArguments = 5)
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object print(Object module, PTuple values, String sep, String end, Object file, boolean flush,
+        public Object print(PTuple values, String sep, String end, Object file, boolean flush,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode callStr) {
             try {
                 PythonContext context = getContext();
@@ -1098,12 +1086,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // repr(object)
-    @Builtin(name = REPR, fixedNumOfArguments = 2)
+    @Builtin(name = REPR, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object repr(@SuppressWarnings("unused") Object module, Object obj,
+        public Object repr(Object obj,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprCallNode,
                         @Cached("createBinaryProfile()") ConditionProfile isString,
                         @Cached("createBinaryProfile()") ConditionProfile isPString) {
@@ -1117,32 +1105,32 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // round(number[, ndigits])
-    @Builtin(name = ROUND, minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = ROUND, minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization
-        Object round(@SuppressWarnings("unused") Object module, Object x, Object n,
+        Object round(Object x, Object n,
                         @Cached("create(__ROUND__)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(x, n);
         }
     }
 
     // setattr(object, name, value)
-    @Builtin(name = SETATTR, fixedNumOfArguments = 4)
+    @Builtin(name = SETATTR, fixedNumOfArguments = 3)
     @GenerateNodeFactory
     public abstract static class SetAttrNode extends PythonBuiltinNode {
         @Specialization
-        public Object setAttr(@SuppressWarnings("unused") Object module, Object object, Object key, Object value,
+        public Object setAttr(Object object, Object key, Object value,
                         @Cached("create()") SetAttributeNode setAttrNode) {
             return setAttrNode.execute(object, key, value);
         }
     }
 
-    @Builtin(name = __BREAKPOINT__, fixedNumOfArguments = 1)
+    @Builtin(name = __BREAKPOINT__, fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class BreakPointNode extends PythonBuiltinNode {
         @Specialization
-        public Object doIt(@SuppressWarnings("unused") Object module) {
+        public Object doIt() {
             return PNone.NONE;
         }
     }
@@ -1162,19 +1150,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = POW, minNumOfArguments = 3, keywordArguments = {"z"})
+    @Builtin(name = POW, minNumOfArguments = 2, keywordArguments = {"z"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonBuiltinNode {
         @Child LookupAndCallTernaryNode powNode = TernaryArithmetic.Pow.create();
 
         @Specialization
-        Object doIt(@SuppressWarnings("unused") Object module, Object x, Object y, Object z) {
+        Object doIt(Object x, Object y, Object z) {
             return powNode.execute(x, y, z);
         }
     }
 
     // sum(iterable[, start])
-    @Builtin(name = SUM, fixedNumOfArguments = 2, keywordArguments = {"start"})
+    @Builtin(name = SUM, fixedNumOfArguments = 1, keywordArguments = {"start"})
     @GenerateNodeFactory
     public abstract static class SumFunctionNode extends PythonBuiltinNode {
 
@@ -1187,12 +1175,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private final ConditionProfile errorProfile3 = ConditionProfile.createBinaryProfile();
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        public int sumInt(@SuppressWarnings("unused") Object module, Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {
+        public int sumInt(Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {
             return sumIntInternal(arg1, 0, false);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        public int sumInt(@SuppressWarnings("unused") Object module, Object arg1, int start) throws UnexpectedResultException {
+        public int sumInt(Object arg1, int start) throws UnexpectedResultException {
             return sumIntInternal(arg1, start, true);
         }
 
@@ -1219,12 +1207,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        public double sumDouble(@SuppressWarnings("unused") Object module, Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {
+        public double sumDouble(Object arg1, @SuppressWarnings("unused") PNone start) throws UnexpectedResultException {
             return sumDoubleInternal(arg1, 0, false);
         }
 
         @Specialization(rewriteOn = UnexpectedResultException.class)
-        public double sumDouble(@SuppressWarnings("unused") Object module, Object arg1, double start) throws UnexpectedResultException {
+        public double sumDouble(Object arg1, double start) throws UnexpectedResultException {
             return sumDoubleInternal(arg1, start, true);
         }
 
@@ -1251,7 +1239,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public Object sum(@SuppressWarnings("unused") Object module, Object arg1, Object start,
+        public Object sum(Object arg1, Object start,
                         @Cached("createBinaryProfile()") ConditionProfile hasStart) {
             Object iterator = iter.executeWith(arg1);
             return iterateGeneric(iterator, hasStart.profile(start != NO_VALUE) ? start : 0, errorProfile1);
@@ -1272,12 +1260,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__load_builtins__", fixedNumOfArguments = 2)
+    @Builtin(name = "__load_builtins__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class LoadBuiltinsNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object doIt(@SuppressWarnings("unused") Object module, String name) {
+        public Object doIt(String name) {
             PythonModule mod = getCore().isInitialized() ? getContext().getBuiltins() : getCore().lookupBuiltinModule("builtins");
             Source src = getCore().getCoreSource(name);
             RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
@@ -1287,13 +1275,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__builtin__", fixedNumOfArguments = 2)
+    @Builtin(name = "__builtin__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class BuiltinNode extends PythonBinaryBuiltinNode {
+    public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
         @Child GetItemNode getNameNode = GetItemNode.create();
 
         @Specialization
-        public Object doIt(@SuppressWarnings("unused") Object module, PFunction func) {
+        public Object doIt(PFunction func) {
             /*
              * (tfel): To be compatible with CPython, builtin module functions must be bound to
              * their respective builtin module. We ignore that builtin functions should really be

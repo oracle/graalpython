@@ -101,23 +101,23 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         return ImpModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "acquire_lock", fixedNumOfArguments = 1)
+    @Builtin(name = "acquire_lock")
     @GenerateNodeFactory
     public abstract static class AcquireLock extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object run(@SuppressWarnings("unused") Object module) {
+        public Object run() {
             getContext().getImportLock().lock();
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "release_lock", fixedNumOfArguments = 1)
+    @Builtin(name = "release_lock")
     @GenerateNodeFactory
     public abstract static class ReleaseLockNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object run(@SuppressWarnings("unused") Object module) {
+        public Object run() {
             ReentrantLock importLock = getContext().getImportLock();
             if (importLock.isHeldByCurrentThread()) {
                 importLock.unlock();
@@ -126,18 +126,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "lock_held", fixedNumOfArguments = 1)
+    @Builtin(name = "lock_held")
     @GenerateNodeFactory
     public abstract static class LockHeld extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public boolean run(@SuppressWarnings("unused") Object module) {
+        public boolean run() {
             ReentrantLock importLock = getContext().getImportLock();
             return importLock.isHeldByCurrentThread();
         }
     }
 
-    @Builtin(name = "__create_dynamic__", fixedNumOfArguments = 3)
+    @Builtin(name = "__create_dynamic__", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     @ImportStatic(Message.class)
     public abstract static class CreateDynamic extends PythonBuiltinNode {
@@ -149,7 +149,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object run(@SuppressWarnings("unused") Object module, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
+        public Object run(PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @Cached("createExecute(0).createNode()") Node executeNode,
                         @Cached("READ.createNode()") Node readNode) {
             String name = moduleSpec.getAttribute("name").toString();
@@ -278,22 +278,22 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "exec_dynamic", fixedNumOfArguments = 2)
+    @Builtin(name = "exec_dynamic", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
-        public Object run(@SuppressWarnings("unused") Object module, PythonModule extensionModule) {
+        public Object run(PythonModule extensionModule) {
             // TODO: implement PyModule_ExecDef
             return extensionModule;
         }
     }
 
-    @Builtin(name = "is_builtin", fixedNumOfArguments = 2)
+    @Builtin(name = "is_builtin", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public int run(@SuppressWarnings("unused") Object module, String name) {
+        public int run(String name) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 return 1;
             } else if (getContext() != null && getContext().isInitialized() && getContext().getImportedModules().hasKey(name)) {
@@ -304,17 +304,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int run(@SuppressWarnings("unused") Object module, @SuppressWarnings("unused") Object noName) {
+        public int run(@SuppressWarnings("unused") Object noName) {
             return 0;
         }
     }
 
-    @Builtin(name = "create_builtin", fixedNumOfArguments = 2)
+    @Builtin(name = "create_builtin", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object run(VirtualFrame frame, Object module, PythonObject moduleSpec) {
+        public Object run(VirtualFrame frame, PythonObject moduleSpec) {
             Object origin = moduleSpec.getAttribute("origin");
             Object name = moduleSpec.getAttribute("name");
             if ("built-in".equals(origin)) {
@@ -328,18 +328,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_truffle_bootstrap_file_into_module", fixedNumOfArguments = 3)
+    @Builtin(name = "_truffle_bootstrap_file_into_module", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class TruffleImportStar extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object run(Object module, String path, String modulename) {
-            return run(module, path, getCore().lookupBuiltinModule(modulename));
+        public Object run(String path, String modulename) {
+            return run(path, getCore().lookupBuiltinModule(modulename));
         }
 
         @Specialization
         @TruffleBoundary
-        public Object run(@SuppressWarnings("unused") Object module, String path, PythonModule mod) {
+        public Object run(String path, PythonModule mod) {
             Env env = getContext().getEnv();
             try {
                 String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));

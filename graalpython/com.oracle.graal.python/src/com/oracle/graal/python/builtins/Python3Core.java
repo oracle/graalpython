@@ -658,10 +658,10 @@ public final class Python3Core implements PythonCore {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin, annotation);
+                addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
             }
             for (Class<?> klass : annotation.extendClasses()) {
-                addBuiltinsTo(lookupType(klass), builtin, annotation);
+                addBuiltinsTo(lookupType(klass), builtin);
             }
         }
 
@@ -689,7 +689,7 @@ public final class Python3Core implements PythonCore {
         return mod;
     }
 
-    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtins, CoreFunctions annotation) {
+    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtins) {
         Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
         for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
             String constantName = entry.getKey();
@@ -700,7 +700,7 @@ public final class Python3Core implements PythonCore {
         for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             String methodName = entry.getKey();
             Object value;
-            if (obj instanceof PythonModule && !annotation.nakedModuleFunctions()) {
+            if (obj instanceof PythonModule) {
                 value = factory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
             } else {
                 value = entry.getValue().boundToObject(obj, factory());

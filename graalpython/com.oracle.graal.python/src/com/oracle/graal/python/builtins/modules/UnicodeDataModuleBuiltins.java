@@ -63,7 +63,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
     }
 
     // unicodedata.normalize(form, unistr)
-    @Builtin(name = "normalize", fixedNumOfArguments = 3)
+    @Builtin(name = "normalize", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class NormalizeNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -77,7 +77,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
         @TruffleBoundary
-        public String normalize(@SuppressWarnings("unused") Object module, @SuppressWarnings("unused") String form, String unistr,
+        public String normalize(@SuppressWarnings("unused") String form, String unistr,
                         @SuppressWarnings("unused") @Cached("form") String cachedForm,
                         @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
             if (cachedNormForm == null) {

@@ -81,59 +81,52 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.gmtime([seconds])
-    @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfArguments = 2)
+    @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
         @Specialization
-        public PTuple gmtime(@SuppressWarnings("unused") Object module, double seconds) {
+        public PTuple gmtime(double seconds) {
             return factory().createTuple(getTimeStruct(seconds, false));
         }
     }
 
     // time.localtime([seconds])
-    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfArguments = 2)
+    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
         @Specialization
-        public PTuple localtime(@SuppressWarnings("unused") Object module, double seconds) {
+        public PTuple localtime(double seconds) {
             return factory().createTuple(getTimeStruct(seconds, true));
         }
     }
 
     // time.time()
-    @Builtin(name = "time", fixedNumOfArguments = 1)
+    @Builtin(name = "time")
     @GenerateNodeFactory
     public abstract static class PythonTimeNode extends PythonBuiltinNode {
-
-        /**
-         * The logic is borrowed from Jython.
-         *
-         * @return current system millisecond time in second
-         */
-
         @Specialization
         @TruffleBoundary
-        public double time(@SuppressWarnings("unused") Object module) {
+        public double time() {
             return timeSeconds();
         }
     }
 
     // time.monotonic()
-    @Builtin(name = "monotonic", fixedNumOfArguments = 1)
+    @Builtin(name = "monotonic")
     @GenerateNodeFactory
     public abstract static class PythonMonotonicNode extends PythonBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        public double time(@SuppressWarnings("unused") Object module) {
+        public double time() {
             return System.nanoTime();
         }
     }
 
     // time.clock()
-    @Builtin(name = "clock", fixedNumOfArguments = 1)
+    @Builtin(name = "clock")
     @GenerateNodeFactory
     public abstract static class PythonClockNode extends PythonBuiltinNode {
         /**
@@ -146,20 +139,20 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isAOT", "start == 0"})
         @TruffleBoundary
-        double firstClock(Object module) {
+        double firstClock() {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             start = System.nanoTime();
-            return clock(module);
+            return clock();
         }
 
         @Specialization(replaces = "firstClock")
         @TruffleBoundary
-        double clock(@SuppressWarnings("unused") Object module) {
+        double clock() {
             return (System.nanoTime() - start) / 1000_000_000.0;
         }
     }
 
-    @Builtin(name = "sleep", fixedNumOfArguments = 2)
+    @Builtin(name = "sleep", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SleepNode extends PythonBuiltinNode {
@@ -167,7 +160,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object sleep(@SuppressWarnings("unused") Object module, long seconds) {
+        Object sleep(long seconds) {
             long secs = seconds;
 
             long deadline = (long) timeSeconds() + secs;
@@ -188,7 +181,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object sleep(@SuppressWarnings("unused") Object module, double seconds) {
+        Object sleep(double seconds) {
             double secs = seconds;
 
             double deadline = timeSeconds() + secs;

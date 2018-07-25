@@ -88,36 +88,36 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // getweakrefcount(obj)
-    @Builtin(name = "getweakrefcount", fixedNumOfArguments = 2)
+    @Builtin(name = "getweakrefcount", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class GetWeakRefCountNode extends PythonBuiltinNode {
         @Specialization
-        public Object getCount(Object module, PReferenceType pReferenceType) {
+        public Object getCount(PReferenceType pReferenceType) {
             return pReferenceType.getWeakRefCount();
         }
 
         @Specialization
-        public Object getCount(Object module, PNone none) {
+        public Object getCount(PNone none) {
             return 0;
         }
     }
 
     // getweakrefs()
-    @Builtin(name = "getweakrefs", fixedNumOfArguments = 2)
+    @Builtin(name = "getweakrefs", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class GetWeakRefsNode extends PythonBuiltinNode {
         @Specialization
-        public Object getRefs(Object module, PythonObject pythonObject) {
+        public Object getRefs(PythonObject pythonObject) {
             return PNone.NONE;
         }
     }
 
     // _remove_dead_weakref()
-    @Builtin(name = "_remove_dead_weakref", fixedNumOfArguments = 3)
+    @Builtin(name = "_remove_dead_weakref", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class RemoveDeadWeakRefsNode extends PythonBuiltinNode {
         @Specialization
-        public Object removeDeadRefs(Object module, PDict dict, Object key) {
+        public Object removeDeadRefs(PDict dict, Object key) {
             // TODO: do the removal from the dict ... (_weakref.c:60)
             return PNone.NONE;
         }

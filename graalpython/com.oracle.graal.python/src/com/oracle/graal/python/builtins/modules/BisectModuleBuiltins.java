@@ -47,12 +47,12 @@ final class BisectModuleBuiltins extends PythonBuiltins {
     }
 
     // bisect.bisect(a, x, lo=0, hi=len(a))
-    @Builtin(name = "bisect", fixedNumOfArguments = 3, keywordArguments = {"lo", "hi"})
+    @Builtin(name = "bisect", fixedNumOfArguments = 2, keywordArguments = {"lo", "hi"})
     @GenerateNodeFactory
     public abstract static class PythonBisectNode extends PythonBuiltinNode {
 
         @Specialization
-        public int bisect(@SuppressWarnings("unused") Object module, Object arg1, Object arg2, @SuppressWarnings("unused") PNone lo, @SuppressWarnings("unused") PNone hi) {
+        public int bisect(Object arg1, Object arg2, @SuppressWarnings("unused") PNone lo, @SuppressWarnings("unused") PNone hi) {
             return bisect(arg1, arg2);
         }
 

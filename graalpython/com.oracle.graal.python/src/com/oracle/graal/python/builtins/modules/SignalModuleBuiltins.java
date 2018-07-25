@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -85,24 +85,24 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", fixedNumOfArguments = 2)
+    @Builtin(name = "alarm", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class AlarmNode extends PythonBinaryBuiltinNode {
+    abstract static class AlarmNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int alarm(@SuppressWarnings("unused") Object module, long seconds) {
+        int alarm(long seconds) {
             Signals.scheduleAlarm(seconds);
             return 0;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        int alarm(@SuppressWarnings("unused") Object module, PInt seconds) {
+        int alarm(PInt seconds) {
             Signals.scheduleAlarm(seconds.longValueExact());
             return 0;
         }
 
         @Specialization
-        int alarmOvf(@SuppressWarnings("unused") Object module, PInt seconds) {
+        int alarmOvf(PInt seconds) {
             try {
                 Signals.scheduleAlarm(seconds.longValueExact());
                 return 0;
@@ -112,12 +112,12 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", fixedNumOfArguments = 2)
+    @Builtin(name = "getsignal", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class GetSignalNode extends PythonBinaryBuiltinNode {
+    abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object getsignal(@SuppressWarnings("unused") Object module, int signum) {
+        Object getsignal(int signum) {
             int currentSignalHandler = Signals.getCurrentSignalHandler(signum);
             if (currentSignalHandler == Signals.SIG_UNKNOWN) {
                 if (signalHandlers.containsKey(signum)) {
@@ -131,12 +131,12 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "signal", fixedNumOfArguments = 3)
+    @Builtin(name = "signal", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class SignalNode extends PythonTernaryBuiltinNode {
+    abstract static class SignalNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object signal(@SuppressWarnings("unused") Object module, int signum, int id) {
+        Object signal(int signum, int id) {
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, id);
@@ -157,7 +157,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         // TODO: This needs to be fixed, any object with a "__call__" should work
         @Specialization
         @TruffleBoundary
-        Object signal(@SuppressWarnings("unused") Object module, int signum, PBuiltinFunction handler) {
+        Object signal(int signum, PBuiltinFunction handler) {
             RootCallTarget callTarget = handler.getCallTarget();
             Object[] arguments = PArguments.create(2);
             PArguments.setArgument(arguments, 0, signum);

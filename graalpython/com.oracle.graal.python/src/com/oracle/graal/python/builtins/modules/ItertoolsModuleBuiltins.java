@@ -48,12 +48,12 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     }
 
     // tee(iterable, n=2)
-    @Builtin(name = "tee", minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = "tee", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class TeeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(n)")
-        Object tee(@SuppressWarnings("unused") Object module, Object iterable, PNone n) {
+        Object tee(Object iterable, PNone n) {
             throw raise(NotImplementedError, "tee");
         }
     }
