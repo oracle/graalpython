@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.nodes.call;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
-
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PNode;
@@ -141,9 +139,6 @@ public abstract class PythonCallNode extends PNode {
             // the interop contract is to revert to READ and then EXECUTE
             Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);
             return callNode.execute(member, arguments, keywords);
-        } catch (RuntimeException e) {
-            // convert any other runtime exception to Python RuntimeError
-            throw raise(RuntimeError, "unexpected exception occurred when calling foreign object %s: %s", callable, e);
         }
     }
 

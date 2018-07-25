@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 
 import java.util.Arrays;
 import java.util.List;
@@ -810,9 +809,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, "invalid invocation of foreign callable %s()", callee);
-            } catch (RuntimeException e) {
-                // wrap any other runtime exception into a PException
-                throw raise(RuntimeError, "unexpected exception occurred when calling foreign object %s: %s", callee, e);
             }
         }
 
