@@ -92,7 +92,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @TruffleBoundary
-    private PBaseException getBaseException(Throwable t) {
+    private PBaseException getBaseException(Exception t) {
         return factory().createBaseException(getCore().getErrorClass(PythonErrorType.ValueError), t.getMessage(), new Object[0]);
     }
 

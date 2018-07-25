@@ -42,6 +42,55 @@ PyObject* PyImport_ImportModule(const char *name) {
     return UPCALL_CEXT_O("PyImport_ImportModule", polyglot_from_string(name, SRC_CS));
 }
 
+PyObject* PyImport_Import(PyObject *name) {
+    return UPCALL_CEXT_O("PyImport_ImportModule", native_to_java(name));
+}
+
+PyObject* PyImport_ImportModuleLevelObject(PyObject* name, PyObject* globals, PyObject* locals,
+                                           PyObject* fromlist, int level) {
+    return UPCALL_O(PY_BUILTIN, "__import__", native_to_java(name), native_to_java(globals),
+                    native_to_java(locals), native_to_java(fromlist), level);
+}
+
+PyObject* PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObject *locals,
+                                     PyObject *fromlist, int level) {
+    return PyImport_ImportModuleLevelObject(PyUnicode_FromString(name), globals, locals, fromlist, level);
+}
+
+
 PyObject* PyImport_GetModuleDict() {
     return UPCALL_CEXT_O("PyImport_GetModuleDict");
+}
+
+PyObject* PyImport_AddModuleObject(PyObject *name) {
+    return _PyImport_AddModuleObject(name, PyImport_GetModuleDict());
+}
+
+PyObject* PyImport_AddModule(const char *name) {
+    PyObject *nameobj = PyUnicode_FromString(name);
+    if (nameobj == NULL) {
+        return NULL;
+    }
+    return PyImport_AddModuleObject(nameobj);
+}
+
+PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {
+    PyObject* m = PyObject_GetItem(modules, name);
+    if (PyErr_ExceptionMatches(PyExc_KeyError)) {
+        PyErr_Clear();
+    }
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    if (m != NULL && PyModule_Check(m)) {
+        return m;
+    }
+    m = PyModule_NewObject(name);
+    if (m == NULL) {
+        return NULL;
+    }
+    if (PyObject_SetItem(modules, name, m) != 0) {
+        return NULL;
+    }
+    return m;
 }

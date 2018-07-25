@@ -38,6 +38,6 @@
  */
 #include "capi.h"
 
-typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
-
-PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
+PyObject* PyClassMethod_New(PyObject* method) {
+    return UPCALL_O(PY_BUILTIN, "classmethod", native_to_java(method));
+}

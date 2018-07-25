@@ -82,4 +82,12 @@ public abstract class PClosureRootNode extends PRootNode {
             frame.setObject(freeVarSlots[i], closure[i]);
         }
     }
+
+    public String[] getFreeVars() {
+        String[] freeVars = new String[freeVarSlots.length];
+        for (int i = 0; i < freeVarSlots.length; i++) {
+            freeVars[i] = (String) freeVarSlots[i].getIdentifier();
+        }
+        return freeVars;
+    }
 }

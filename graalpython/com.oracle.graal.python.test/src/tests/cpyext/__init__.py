@@ -70,6 +70,7 @@ class CPyExtTestCase():
 def ccompile(self, name):
     from distutils.core import setup, Extension
     source_file = '%s/%s.c' % (__dir__, name)
+    file_not_empty(source_file)
     module = Extension(name, sources=[source_file])
     args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
     setup(
@@ -81,12 +82,20 @@ def ccompile(self, name):
         ext_modules=[module]
     )
     # ensure file was really written
-    try:
-        stat_result = os.stat(source_file)
-        if stat_result[6] == 0:
-            raise SystemError("empty source file %s" % (source_file,))
-    except FileNotFoundError:
-        raise SystemError("source file %s not available" % (source_file,))
+    binary_file_llvm = '%s/%s.bc' % (__dir__, name)
+    if GRAALPYTHON:
+        file_not_empty(binary_file_llvm)
+
+
+def file_not_empty(path):
+    for i in range(3):
+        try:
+            stat_result = os.stat(path)
+            if stat_result[6] != 0:
+                return
+        except FileNotFoundError:
+            pass
+    raise SystemError("file %s not available" % path)
 
 
 c_template = """
@@ -502,11 +511,21 @@ def CPyExtType(name, code, **kwargs):
     kwargs.setdefault("ready_code", "")
     c_source = UnseenFormatter().format(template, **kwargs)
 
-    with open("%s/%s.c" % (__dir__, name), "wb", buffering=0) as f:
+    source_file = "%s/%s.c" % (__dir__, name)
+    with open(source_file, "wb", buffering=0) as f:
         if GRAALPYTHON:
             f.write(c_source)
         else:
             f.write(bytes(c_source, 'utf-8'))
+
+    # ensure file was really written
+    try:
+        stat_result = os.stat(source_file)
+        if stat_result[6] == 0:
+            raise SystemError("empty source file %s" % (source_file,))
+    except FileNotFoundError:
+        raise SystemError("source file %s not available" % (source_file,))
+
     ccompile(None, name)
     sys.path.insert(0, __dir__)
     try:

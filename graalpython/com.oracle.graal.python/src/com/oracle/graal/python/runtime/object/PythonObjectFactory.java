@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
@@ -102,6 +103,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -318,8 +321,8 @@ public abstract class PythonObjectFactory extends Node {
      * Classes, methods and functions
      */
 
-    public PythonModule createPythonModule(String name, String file) {
-        return trace(new PythonModule(lookupClass(PythonBuiltinClassType.PythonModule), name, file));
+    public PythonModule createPythonModule(String name) {
+        return trace(new PythonModule(lookupClass(PythonBuiltinClassType.PythonModule), name));
     }
 
     public PythonClass createPythonClass(PythonClass metaclass, String name, PythonClass[] bases) {
@@ -348,6 +351,14 @@ public abstract class PythonObjectFactory extends Node {
 
     public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
         return trace(new PFunction(lookupClass(PythonBuiltinClassType.PFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
+    }
+
+    public PBuiltinFunction createFunction(String name, Arity arity, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PFunction), name, arity, callTarget));
+    }
+
+    public PFunction createBuiltinFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
+        return trace(new PFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
     }
 
     public PBuiltinFunction createBuiltinFunction(String name, Arity arity, RootCallTarget callTarget) {
@@ -506,6 +517,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PFrame(lookupClass(PythonBuiltinClassType.PFrame), exception, index));
     }
 
+    public PFrame createPFrame(Object threadState, PCode code, PythonObject globals, Object locals) {
+        return trace(new PFrame(lookupClass(PythonBuiltinClassType.PFrame), threadState, code, globals, locals));
+    }
+
     public PTraceback createTraceback(PBaseException exception, int index) {
         return trace(new PTraceback(lookupClass(PythonBuiltinClassType.PTraceback), exception, index));
     }
@@ -517,6 +532,11 @@ public abstract class PythonObjectFactory extends Node {
     public PBaseException createBaseException(PythonClass cls, String format, Object[] args) {
         assert format != null;
         return trace(new PBaseException(cls, format, args));
+    }
+
+    public PBaseException createBaseException(PythonErrorType typ, String format, Object[] args) {
+        assert format != null;
+        return trace(new PBaseException(getCore().getErrorClass(typ), format, args));
     }
 
     public PBaseException createBaseException(PythonClass cls) {
@@ -671,5 +691,17 @@ public abstract class PythonObjectFactory extends Node {
 
     public PBuffer createBuffer(Object iterable) {
         return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable));
+    }
+
+    public Object createCode(PythonParseResult result) {
+        return trace(new PCode(lookupClass(PythonBuiltinClassType.PCode), result));
+    }
+
+    public Object createCode(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize, int flags, String codestring, Object constants, Object names, Object varnames,
+                    String filename, String name, int firstlineno, Object lnotab, Object freevars, Object cellvars) {
+        return trace(new PCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
+                        flags, codestring, constants, names, varnames,
+                        filename, name, firstlineno, lnotab, freevars,
+                        cellvars));
     }
 }

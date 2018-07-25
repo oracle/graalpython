@@ -82,11 +82,11 @@ public final class PythonParserImpl implements PythonParser {
                 } else {
                     input = parser.file_input();
                 }
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 try {
                     parser.reset();
                     input = parser.eval_input();
-                } catch (Throwable e2) {
+                } catch (Exception e2) {
                     if (source.isInteractive() && e instanceof PIncompleteSourceException) {
                         ((PIncompleteSourceException) e).setSource(source);
                         throw e;
@@ -105,11 +105,11 @@ public final class PythonParserImpl implements PythonParser {
         ParserRuleContext input;
         try {
             input = parser.single_input();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             try {
                 parser.reset();
                 input = parser.eval_input();
-            } catch (Throwable e2) {
+            } catch (Exception e2) {
                 Node location = getLocation(source, PythonErrorStrategy.getLine(e));
                 throw core.raise(SyntaxError, location, e.getMessage());
             }
@@ -150,7 +150,7 @@ public final class PythonParserImpl implements PythonParser {
         ParserRuleContext input;
         try {
             input = parser.eval_input();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw handleParserError(core, e);
         }
         Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
@@ -165,7 +165,7 @@ public final class PythonParserImpl implements PythonParser {
         ParserRuleContext input;
         try {
             input = parser.file_input();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw handleParserError(core, e);
         }
         Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
@@ -179,7 +179,7 @@ public final class PythonParserImpl implements PythonParser {
         ParserRuleContext input;
         try {
             input = parser.single_input();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw handleParserError(core, e);
         }
         Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
@@ -193,13 +193,13 @@ public final class PythonParserImpl implements PythonParser {
         Python3Parser.AtomContext input;
         try {
             input = parser.atom();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             return false;
         }
         return input.NAME() != null;
     }
 
-    private static PException handleParserError(PythonCore core, Throwable e) {
+    private static PException handleParserError(PythonCore core, Exception e) {
         return core.raise(SyntaxError, e.getMessage());
     }
 

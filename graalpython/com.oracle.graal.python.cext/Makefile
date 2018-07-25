@@ -55,8 +55,8 @@ default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 CFLAGS=${LLVM_TARGET_FLAGS} -ggdb -emit-llvm
 OPT_FLAGS=-mem2reg -globalopt -simplifycfg -constprop -always-inline -instcombine -dse -loop-simplify -reassociate -licm -gvn
-WARNINGS=-Wno-int-to-pointer-cast -Wno-int-conversion -Wno-incompatible-pointer-types-discards-qualifiers
-INCLUDES=-I${VPATH}/include
+WARNINGS=-Wno-int-to-pointer-cast -Wno-int-conversion -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
+INCLUDES=-I${POLYGLOT_INC} -I${VPATH}/include
 
 
 rebuild:

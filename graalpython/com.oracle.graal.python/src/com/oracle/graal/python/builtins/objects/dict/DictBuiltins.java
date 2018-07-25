@@ -68,6 +68,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PDict.class)
 public final class DictBuiltins extends PythonBuiltins {
@@ -110,7 +111,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // setdefault(key[, default])
-    @Builtin(name = "setdefault", fixedNumOfArguments = 3)
+    @Builtin(name = "setdefault", minNumOfArguments = 2, keywordArguments = {"default"})
     @GenerateNodeFactory
     public abstract static class SetDefaultNode extends PythonBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
@@ -131,10 +132,14 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!containsKey(dict.getDictStorage(), key)")
         public Object setDefault(PDict dict, Object key, Object defaultValue,
-                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-
-            setItemNode.execute(dict, dict.getDictStorage(), key, defaultValue);
-            return defaultValue;
+                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode,
+                        @Cached("createBinaryProfile()") ConditionProfile defaultValProfile) {
+            Object value = defaultValue;
+            if (defaultValProfile.profile(defaultValue == PNone.NO_VALUE)) {
+                value = PNone.NONE;
+            }
+            setItemNode.execute(dict, dict.getDictStorage(), key, value);
+            return value;
         }
     }
 
@@ -264,6 +269,12 @@ public final class DictBuiltins extends PythonBuiltins {
     @Builtin(name = __MISSING__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class MissingNode extends PythonBuiltinNode {
+        @SuppressWarnings("unused")
+        @Specialization
+        Object run(Object self, PString key) {
+            throw raise(KeyError, "%s", key.getValue());
+        }
+
         @SuppressWarnings("unused")
         @Specialization
         Object run(Object self, String key) {

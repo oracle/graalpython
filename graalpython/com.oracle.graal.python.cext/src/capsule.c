@@ -41,7 +41,7 @@
 PyTypeObject PyCapsule_Type = PY_TRUFFLE_TYPE("PyCapsule", &PyType_Type, 0, sizeof(PyCapsule));
 
 PyObject* PyCapsule_New(void *pointer, const char *name, PyCapsule_Destructor destructor) {
-    return (PyObject *)polyglot_as_PyCapsule(UPCALL_CEXT_O("PyCapsule", name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None), pointer, destructor));
+    return (PyObject *)UPCALL_CEXT_O("PyCapsule", name ? polyglot_from_string(name, SRC_CS) : native_to_java(Py_None), pointer, destructor);
 }
 
 void* PyCapsule_GetContext(PyObject *o) {

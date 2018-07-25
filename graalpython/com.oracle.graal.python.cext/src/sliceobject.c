@@ -45,3 +45,44 @@ PyObject _Py_EllipsisObject = {
     _PyObject_EXTRA_INIT
     1, &PyEllipsis_Type
 };
+
+int PySlice_GetIndicesEx(PyObject *_r, Py_ssize_t length,
+                         Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step,
+                         Py_ssize_t *slicelength) {
+    PySliceObject *r = (PySliceObject*)_r;
+    void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", r->start, r->stop, r->step, length));
+    if (result == ERROR_MARKER) {
+        return -1;
+    }
+    *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
+    *stop = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
+    *step =  PyLong_AsSsize_t(PyTuple_GetItem(result, 2));
+    *slicelength =  PyLong_AsSsize_t(PyTuple_GetItem(result, 3));
+    return 0;
+}
+
+int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
+    PySliceObject *r = (PySliceObject*)_r;
+    void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", r->start, r->stop, r->step, PY_SSIZE_T_MAX));
+    if (result == ERROR_MARKER) {
+        return -1;
+    }
+    *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
+    *stop = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
+    *step = PyLong_AsSsize_t(PyTuple_GetItem(result, 2));
+    return 0;
+}
+
+Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t step) {
+    PyObject *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", *start, *stop, step, length));
+    if (result == ERROR_MARKER) {
+        return -1;
+    }
+    *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
+    *stop = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
+    return PyLong_AsSsize_t(PyTuple_GetItem(result, 3)); // adjusted length
+}
+
+PyObject* PySlice_New(PyObject* start, PyObject *stop, PyObject *step) {
+    return UPCALL_CEXT_O("PySlice_New", native_to_java(start), native_to_java(stop), native_to_java(step));
+}

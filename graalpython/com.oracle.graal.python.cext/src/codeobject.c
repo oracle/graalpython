@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
@@ -36,33 +36,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.dict;
+#include "capi.h"
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
-import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
+PyTypeObject PyCode_Type = PY_TRUFFLE_TYPE("code", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(PyTypeObject));
 
-@GenerateNodeFactory
-public abstract class DictViewNodes {
-
-    public abstract static class ContainsNode extends PBaseNode {
-
-        public abstract boolean execute(PDictView self, Object key);
-
-        @Specialization
-        protected boolean doDictKeysView(PDictKeysView self, Object key,
-                        @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
-            return containsKeyNode.execute(self.getDict().getDictStorage(), key);
-        }
-
-        @Specialization
-        protected boolean doDictValuesView(PDictValuesView self, Object key,
-                        @Cached("create()") HashingStorageNodes.ContainsKeyNode containsKeyNode) {
-            return containsKeyNode.execute(self.getDict().getDictStorage(), key);
-        }
-    }
+PyCodeObject* PyCode_New(int argcount, int kwonlyargcount, int nlocals,
+                         int stacksize, int flags, PyObject *code,
+                         PyObject *consts, PyObject *names, PyObject *varnames,
+                         PyObject *freevars, PyObject *cellvars,
+                         PyObject *filename, PyObject *name, int firstlineno,
+                         PyObject *lnotab) {
+    return UPCALL_CEXT_O("PyCode_New", argcount, kwonlyargcount, nlocals,
+                         stacksize, flags, native_to_java(code),
+                         native_to_java(consts), native_to_java(names), native_to_java(varnames),
+                         native_to_java(filename), native_to_java(name), firstlineno,
+                         native_to_java(lnotab));
 }

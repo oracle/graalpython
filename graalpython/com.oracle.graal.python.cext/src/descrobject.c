@@ -50,6 +50,6 @@ POLYGLOT_DECLARE_TYPE(mappingproxyobject);
 
 /* Dicts */
 PyObject* PyDictProxy_New(PyObject *mapping) {
-    return (PyObject*) polyglot_as_mappingproxyobject(UPCALL_CEXT_O("PyDictProxy_New", native_to_java(mapping)));
+    return (PyObject*) UPCALL_CEXT_O("PyDictProxy_New", native_to_java(mapping));
 }
 

@@ -43,6 +43,8 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 @TypeSystemReference(PythonArithmeticTypes.class) // because bool -> int works here
 public abstract class SliceLiteralNode extends PNode {
 
+    public abstract PSlice execute(Object start, Object stop, Object step);
+
     @Specialization
     public PSlice doPSlice(int start, int stop, int step) {
         return factory().createSlice(start, stop, step);
@@ -76,6 +78,16 @@ public abstract class SliceLiteralNode extends PNode {
     @Specialization
     public PSlice doSlice(int start, @SuppressWarnings("unused") PNone stop, @SuppressWarnings("unused") PNone step) {
         return factory().createSlice(start, MISSING_INDEX, MISSING_INDEX);
+    }
+
+    @TruffleBoundary
+    @Specialization
+    public PSlice doPSlice(long start, @SuppressWarnings("unused") PNone stop, @SuppressWarnings("unused") PNone step) {
+        try {
+            return factory().createSlice(Math.toIntExact(start), MISSING_INDEX, 1);
+        } catch (ArithmeticException e) {
+            throw raise(IndexError, "cannot fit 'int' into an index-sized integer");
+        }
     }
 
     @Specialization
@@ -112,5 +124,9 @@ public abstract class SliceLiteralNode extends PNode {
 
     public static PNode create(PNode lower, PNode upper, PNode step) {
         return SliceLiteralNodeGen.create(lower, upper, step);
+    }
+
+    public static SliceLiteralNode create() {
+        return SliceLiteralNodeGen.create(null, null, null);
     }
 }

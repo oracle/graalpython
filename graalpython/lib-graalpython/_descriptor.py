@@ -72,7 +72,7 @@ class SimpleNamespace(object):
     def __delattr__(self, name):
         object.__getattribute__(self, "__ns__").__delitem__(name)
 
-    def __getattribute__(self, name):
+    def __getattr__(self, name):
         return object.__getattribute__(self, "__ns__")[name]
 
     def __setattr__(self, name, value):

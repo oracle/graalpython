@@ -70,25 +70,7 @@ typedef struct {
 } PyBufferDecorator;
 
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
-
-/* Declare Python structs/types for explicit polyglot typecasts. */
-/* NOTE: Also add an appropriate case in 'PyTruffle_Explicit_Cast' ! */
-POLYGLOT_DECLARE_STRUCT(_object);
-POLYGLOT_DECLARE_TYPE(PyBaseExceptionObject);
-POLYGLOT_DECLARE_TYPE(PyModuleObject);
-POLYGLOT_DECLARE_TYPE(PyVarObject);
-POLYGLOT_DECLARE_STRUCT(_typeobject);
-POLYGLOT_DECLARE_TYPE(PyTupleObject);
-POLYGLOT_DECLARE_TYPE(PyListObject);
-POLYGLOT_DECLARE_TYPE(PyDictObject);
-POLYGLOT_DECLARE_TYPE(PyUnicodeObject);
-POLYGLOT_DECLARE_TYPE(PyBytesObject);
-POLYGLOT_DECLARE_STRUCT(_longobject);
-POLYGLOT_DECLARE_TYPE(PyCapsule);
-POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
-POLYGLOT_DECLARE_TYPE(PySetObject);
-POLYGLOT_DECLARE_TYPE(PyBufferDecorator);
-POLYGLOT_DECLARE_TYPE(PyFloatObject);
+PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 
 
 // TODO cache landing function ?
@@ -104,7 +86,7 @@ POLYGLOT_DECLARE_TYPE(PyFloatObject);
 /* upcall macros for calling into Python */
 
 /* Call function with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_O(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+#define UPCALL_O(__recv__, __name__, ...) handle_exception(PY_TRUFFLE_LANDING((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
 /* Call function with a primitive return; no polyglot cast but error handling */
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
@@ -116,13 +98,13 @@ POLYGLOT_DECLARE_TYPE(PyFloatObject);
 #define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
 
 /* Call function with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_D(__recv__, __name__, ...) handle_exception_and_cast(PY_TRUFFLE_LANDING_D((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+#define UPCALL_D(__recv__, __name__, ...) handle_exception(PY_TRUFFLE_LANDING_D((__recv__), polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
 /* Call function with return type 'void*'; no polyglot cast and no error handling */
 #define UPCALL_PTR(__name__, ...) (PY_TRUFFLE_LANDING_PTR(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_CEXT_O(__name__, ...) handle_exception_and_cast(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
+#define UPCALL_CEXT_O(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
 
 /* Call void function of 'python_cext' module; no polyglot cast and no error handling */
 #define UPCALL_CEXT_VOID(__name__, ...) (PY_TRUFFLE_CEXT_LANDING(polyglot_from_string((__name__), SRC_CS), ##__VA_ARGS__))
@@ -157,13 +139,11 @@ POLYGLOT_DECLARE_TYPE(PyFloatObject);
 #define as_float(obj) ((float)as_double(obj))
 
 
-PyObject* handle_exception_and_cast(void* val);
 void* handle_exception(void* val);
 void* native_to_java(PyObject* obj);
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
-extern PyObject* explicit_cast(PyObject* cobj);
 
 // defined in 'exceptions.c'
 void initialize_exceptions();
@@ -172,7 +152,7 @@ void initialize_hashes();
 
 // prototype of C landing function
 void* wrap_direct(PyCFunction fun, ...);
-int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, PyObject *closure);
+int wrap_setter(PyCFunction fun, PyObject *self, PyObject *value, void *closure);
 void* wrap_varargs(PyCFunction fun, PyObject *module, PyObject *varargs);
 void* wrap_keywords(PyCFunctionWithKeywords fun, PyObject *module, PyObject *varargs, PyObject *kwargs);
 void* wrap_noargs(PyCFunction fun, PyObject *module, PyObject *pnone);

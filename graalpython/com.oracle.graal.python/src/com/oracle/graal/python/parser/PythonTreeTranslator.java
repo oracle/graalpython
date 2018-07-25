@@ -63,11 +63,11 @@ public class PythonTreeTranslator extends PythonBaseTreeTranslator<PythonParseRe
             }
         } catch (PException e) {
             throw e;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             t.printStackTrace();
             throw new RuntimeException("Failed in " + this + " with error " + t, t);
         }
-        this.result = new PythonParseResult(rootNode, core);
+        this.result = new PythonParseResult(rootNode);
     }
 
     @Override

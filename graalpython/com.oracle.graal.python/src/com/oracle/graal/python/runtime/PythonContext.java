@@ -27,6 +27,7 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -40,10 +41,12 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 
 public class PythonContext {
@@ -66,6 +69,7 @@ public class PythonContext {
     private OutputStream out;
     private OutputStream err;
     @CompilationFinal private boolean capiWasLoaded = false;
+    private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
 
@@ -109,13 +113,6 @@ public class PythonContext {
         return builtinsModule;
     }
 
-    public PythonModule createMainModule(String path) {
-        mainModule = core.factory().createPythonModule(__MAIN__, path);
-        mainModule.setAttribute(__BUILTINS__, sysModules.getItem("builtins"));
-        getSysModules().setItem(__MAIN__, mainModule);
-        return mainModule;
-    }
-
     public TruffleLanguage.Env getEnv() {
         return env;
     }
@@ -127,14 +124,6 @@ public class PythonContext {
 
     public PythonModule getMainModule() {
         return mainModule;
-    }
-
-    public PythonModule getOrCreateMainModule(String path) {
-        if (mainModule == null) {
-            return createMainModule(path);
-        } else {
-            return mainModule;
-        }
     }
 
     public PythonCore getCore() {
@@ -177,6 +166,9 @@ public class PythonContext {
         PythonModule sysModule = core.createSysModule(this);
         sysModules = (PDict) sysModule.getAttribute("modules");
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
+        mainModule = core.factory().createPythonModule(__MAIN__);
+        mainModule.setAttribute(__BUILTINS__, builtinsModule);
+        sysModules.setItem(__MAIN__, mainModule);
 
         isInitialized = true;
     }
@@ -224,4 +216,13 @@ public class PythonContext {
         return customThreadState.get();
     }
 
+    public void initializeMainModule(String path) {
+        if (path != null) {
+            mainModule.setAttribute(__FILE__, path);
+        }
+    }
+
+    public static Assumption getSingleNativeContextAssumption() {
+        return singleNativeContext;
+    }
 }

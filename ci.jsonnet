@@ -1,5 +1,5 @@
 {
-  overlay: "2081dc054251c6658f7ce8f4b6671a474edbf2f6",
+  overlay: "03b824f947adf9a67c80c3e8a27646d43a687bfb",
 
   // ======================================================================================================
   // 
@@ -124,8 +124,8 @@
 
   local labsjdk8Mixin = {
     downloads +: {
-      JAVA_HOME: utils.download("labsjdk", "8u161-jvmci-0.42"),
-      EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "9.0.4+11")] },
+      JAVA_HOME: utils.download("labsjdk", "8u172-jvmci-0.46"),
+      EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+20")] },
     },
     environment +: {
       CI: "true",

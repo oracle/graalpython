@@ -82,12 +82,11 @@ import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.DictItemsBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
-import com.oracle.graal.python.builtins.objects.dict.DictKeysBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictKeysIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.DictViewBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.enumerate.EnumerateBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
@@ -95,11 +94,14 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
+import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
+import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -213,11 +215,10 @@ public final class Python3Core implements PythonCore {
                     new TruffleObjectBuiltins(),
                     new ListBuiltins(),
                     new DictBuiltins(),
-                    new DictKeysBuiltins(),
-                    new DictKeysIteratorBuiltins(),
+                    new DictViewBuiltins(),
                     new DictValuesBuiltins(),
+                    new DictKeysIteratorBuiltins(),
                     new DictValuesIteratorBuiltins(),
-                    new DictItemsBuiltins(),
                     new DictItemsIteratorBuiltins(),
                     new RangeBuiltins(),
                     new SliceBuiltins(),
@@ -232,7 +233,9 @@ public final class Python3Core implements PythonCore {
                     new SentinelIteratorBuiltins(),
                     new ForeignIteratorBuiltins(),
                     new GeneratorBuiltins(),
+                    new AbstractFunctionBuiltins(),
                     new FunctionBuiltins(),
+                    new BuiltinFunctionBuiltins(),
                     new MethodBuiltins(),
                     new CodeBuiltins(),
                     new FrameBuiltins(),
@@ -391,7 +394,7 @@ public final class Python3Core implements PythonCore {
             return value;
         } else if (value instanceof PythonModule) {
             PythonModule module = (PythonModule) value;
-            PythonModule newModule = factory().createPythonModule(module.getModuleName(), module.getModulePath());
+            PythonModule newModule = factory().createPythonModule(module.getModuleName());
             replacements.put(module, newModule);
             for (String attr : module.getAttributeNames()) {
                 newModule.setAttribute(attr, duplicate(replacements, module.getAttribute(attr)));
@@ -676,7 +679,7 @@ public final class Python3Core implements PythonCore {
     }
 
     public PythonModule createModule(String name, boolean add, PythonBuiltins... builtins) {
-        PythonModule mod = factory().createPythonModule(name, null);
+        PythonModule mod = factory().createPythonModule(name);
         for (PythonBuiltins builtin : builtins) {
             addBuiltinsToModule(mod, builtin);
         }
@@ -690,7 +693,7 @@ public final class Python3Core implements PythonCore {
         return addMethodsToType(lookupType(javaClass), builtins);
     }
 
-    private static PythonBuiltinClass addMethodsToType(PythonBuiltinClass clazz, PythonBuiltins... builtins) {
+    private PythonBuiltinClass addMethodsToType(PythonBuiltinClass clazz, PythonBuiltins... builtins) {
         for (PythonBuiltins builtin : builtins) {
             addBuiltinsToClass(clazz, builtin);
         }
@@ -726,12 +729,21 @@ public final class Python3Core implements PythonCore {
         }
     }
 
-    private static void addBuiltinsToClass(PythonBuiltinClass clazz, PythonBuiltins builtins) {
+    private void addBuiltinsToClass(PythonBuiltinClass clazz, PythonBuiltins builtins) {
         Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
         for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
             String className = entry.getKey();
             Object obj = entry.getValue();
-            clazz.setAttributeUnsafe(className, obj);
+            if (obj instanceof GetSetDescriptor && ((GetSetDescriptor) obj).getType() != clazz) {
+                // GetSetDescriptors need to be copied per class
+                clazz.setAttributeUnsafe(className, factory().createGetSetDescriptor(
+                                ((GetSetDescriptor) obj).getGet(),
+                                ((GetSetDescriptor) obj).getSet(),
+                                ((GetSetDescriptor) obj).getName(),
+                                clazz));
+            } else {
+                clazz.setAttributeUnsafe(className, obj);
+            }
         }
 
         Map<String, PBuiltinFunction> builtinFunctions = builtins.getBuiltinFunctions();
@@ -779,7 +791,7 @@ public final class Python3Core implements PythonCore {
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
-            mod = factory().createPythonModule("__anonymous__", "<bootstrap>");
+            mod = factory().createPythonModule("__anonymous__");
         }
         CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule.getRootNode());
         callTarget.call(PArguments.withGlobals(mod));

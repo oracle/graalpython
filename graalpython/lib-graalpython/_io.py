@@ -537,6 +537,8 @@ class FileIO(_RawIOBase):
             return size
 
 
+sys.stdin = FileIO(0, mode='r', closefd=False)
+sys.__stdin__ = sys.stdin
 sys.stdout = FileIO(1, mode='w', closefd=False)
 sys.__stdout__ = sys.stdout
 sys.stderr = FileIO(2, mode='w', closefd=False)

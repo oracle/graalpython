@@ -39,23 +39,27 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.nodes.NodeCost;
 
-@NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
-public abstract class LookupInheritedAttributeNode extends PNode {
-    public static LookupInheritedAttributeNode create() {
-        return create(null, null);
+public final class LookupInheritedAttributeNode extends PBaseNode {
+
+    @Child private GetClassNode getClassNode = GetClassNode.create();
+    @Child private LookupAttributeInMRONode lookupInMRONode;
+
+    private LookupInheritedAttributeNode(String key) {
+        lookupInMRONode = LookupAttributeInMRONode.create(key);
     }
 
-    public static LookupInheritedAttributeNode create(PNode object, PNode key) {
-        return LookupInheritedAttributeNodeGen.create(object, key);
+    public static LookupInheritedAttributeNode create(String key) {
+        return new LookupInheritedAttributeNode(key);
+    }
+
+    @Override
+    public NodeCost getCost() {
+        // super-simple wrapper node
+        return NodeCost.NONE;
     }
 
     /**
@@ -64,15 +68,7 @@ public abstract class LookupInheritedAttributeNode extends PNode {
      * @return The lookup result, or {@link PNone#NO_VALUE} if the key isn't inherited by the
      *         object.
      */
-    public abstract Object execute(Object object, Object key);
-
-    @Specialization
-    protected Object doIt(Object object, Object key,
-                    @Cached("createIdentityProfile()") ValueProfile typeProfile,
-                    @Cached("createIdentityProfile()") ValueProfile keyProfile,
-                    @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create()") LookupAttributeInMRONode lookupInMRONode) {
-        PythonClass type = typeProfile.profile(getClassNode.execute(object));
-        return lookupInMRONode.execute(type, keyProfile.profile(key));
+    public Object execute(Object object) {
+        return lookupInMRONode.execute(getClassNode.execute(object));
     }
 }

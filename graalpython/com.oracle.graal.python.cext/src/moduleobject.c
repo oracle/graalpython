@@ -74,7 +74,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         return NULL;
     }
 
-    PyModuleObject* mod = polyglot_as_PyModuleObject(UPCALL_CEXT_O("_PyModule_CreateInitialized_PyModule_New", polyglot_from_string(moduledef->m_name, SRC_CS)));
+    PyModuleObject* mod = (PyModuleObject*)UPCALL_CEXT_O("_PyModule_CreateInitialized_PyModule_New", polyglot_from_string(moduledef->m_name, SRC_CS));
 
     if (moduledef->m_size > 0) {
         void* md_state = PyMem_MALLOC(moduledef->m_size);
@@ -121,5 +121,9 @@ PyObject* PyModule_GetDict(PyObject* o) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    return (polyglot_as_PyModuleObject(o))->md_dict;
+    return ((PyModuleObject*)o)->md_dict;
+}
+
+PyObject* PyModule_NewObject(PyObject* name) {
+    return UPCALL_CEXT_O("PyModule_NewObject", native_to_java(name));
 }

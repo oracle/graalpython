@@ -3156,7 +3156,7 @@ PyInit__memoryview(void)
         return NULL;
 
     Py_INCREF((PyObject*)&PyMemoryView_Type);
-    PyModule_AddObject(m, "memoryview", &PyMemoryView_Type);
+    PyModule_AddObject(m, "memoryview", (PyObject*)&PyMemoryView_Type);
 
     Py_INCREF((PyObject*)&_PyManagedBuffer_Type);
     PyModule_AddObject(m, "managedbuffer", (PyObject*)&_PyManagedBuffer_Type);

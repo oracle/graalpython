@@ -28,12 +28,11 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.PClosureRootNode;
+import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -46,11 +45,9 @@ import com.oracle.truffle.api.source.SourceSection;
 /**
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
-public class FunctionRootNode extends PClosureRootNode implements CellSupplier {
+public class FunctionRootNode extends PClosureFunctionRootNode implements CellSupplier {
 
-    @CompilationFinal(dimensions = 1) private final FrameSlot[] cellVarSlots;
     private final PCell[] cells;
-
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
     private final SourceSection sourceSection;
@@ -61,9 +58,8 @@ public class FunctionRootNode extends PClosureRootNode implements CellSupplier {
 
     public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, PNode body,
                     ExecutionCellSlots executionCellSlots) {
-        super(language, frameDescriptor, executionCellSlots.getFreeVarSlots());
+        super(language, frameDescriptor, executionCellSlots);
         this.executionCellSlots = executionCellSlots;
-        this.cellVarSlots = executionCellSlots.getCellVarSlots();
         this.cells = new PCell[this.cellVarSlots.length];
 
         this.sourceSection = sourceSection;
@@ -91,22 +87,6 @@ public class FunctionRootNode extends PClosureRootNode implements CellSupplier {
         return functionName;
     }
 
-    public String[] getCellVars() {
-        String[] cellVars = new String[cellVarSlots.length];
-        for (int i = 0; i < cellVars.length; i++) {
-            cellVars[i] = (String) cellVarSlots[i].getIdentifier();
-        }
-        return cellVars;
-    }
-
-    public String[] getFreeVars() {
-        String[] freeVars = new String[freeVarSlots.length];
-        for (int i = 0; i < freeVarSlots.length; i++) {
-            freeVars[i] = (String) freeVarSlots[i].getIdentifier();
-        }
-        return freeVars;
-    }
-
     @Override
     public PCell[] getCells() {
         return cells;
@@ -119,7 +99,7 @@ public class FunctionRootNode extends PClosureRootNode implements CellSupplier {
 
     @Override
     public FunctionRootNode copy() {
-        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor().shallowCopy(), uninitializedBody, executionCellSlots);
+        return new FunctionRootNode(getLanguage(PythonLanguage.class), getSourceSection(), functionName, isGenerator, getFrameDescriptor(), uninitializedBody, executionCellSlots);
     }
 
     @ExplodeLoop

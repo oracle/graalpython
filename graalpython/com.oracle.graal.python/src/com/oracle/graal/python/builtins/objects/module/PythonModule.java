@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.module;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
@@ -35,14 +34,11 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public final class PythonModule extends PythonObject {
-
     private final String name;
-    private final String file;
 
-    public PythonModule(PythonClass clazz, String name, String file) {
+    public PythonModule(PythonClass clazz, String name) {
         super(clazz);
         this.name = name;
-        this.file = file;
         addDefaultConstants(name);
     }
 
@@ -50,18 +46,10 @@ public final class PythonModule extends PythonObject {
         setAttribute(__NAME__, moduleName);
         setAttribute(__DOC__, PNone.NONE);
         setAttribute(__PACKAGE__, PNone.NONE);
-
-        if (file != null) {
-            setAttribute(__FILE__, file);
-        }
     }
 
     public String getModuleName() {
         return name;
-    }
-
-    public String getModulePath() {
-        return file;
     }
 
     @Override

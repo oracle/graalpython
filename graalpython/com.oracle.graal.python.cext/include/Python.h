@@ -46,6 +46,7 @@
 #define HAVE_SYS_WAIT_H
 
 #define PYPY_VERSION 0
+#define PYPY_VERSION_NUM 0
 
 #include <truffle.h>
 #include <polyglot.h>
@@ -61,6 +62,7 @@
 #include <langinfo.h>
 #include <assert.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "pyport.h"
 #include "pymacro.h"
@@ -71,6 +73,7 @@
 #include "unicodeobject.h"
 #include "pystate.h"
 #include "pyarena.h"
+#include "compile.h"
 #include "pythonrun.h"
 #include "ceval.h"
 #include "pyerrors.h"
@@ -106,6 +109,12 @@
 #include "code.h"
 #include "pyfpe.h"
 #include "memoryobject.h"
+#include "pystrhex.h"
+#include "codecs.h"
+#include "frameobject.h"
+#include "traceback.h"
+#include "classobject.h"
+#include "pythread.h"
 
 #define PY_TRUFFLE_CEXT ((void*)polyglot_import("python_cext"))
 #define PY_BUILTIN ((void*)polyglot_import("python_builtins"))

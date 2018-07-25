@@ -102,6 +102,13 @@ class SubDict(dict):
     pass
 
 
+ExampleDict = {}
+def fresh_dict():
+    global ExampleDict
+    ExampleDict = {}
+    return ExampleDict
+
+
 class TestPyDict(CPyExtTestCase):
 
     def compile_module(self, name):
@@ -288,4 +295,24 @@ class TestPyDict(CPyExtTestCase):
         resultspec="i",
         argspec='O',
         arguments=["PyObject* o"],
+    )
+
+    test_PyDict_Update = CPyExtFunction(
+        lambda args: 1 if args[0].update(args[1]) else 0,
+        lambda: (
+            (fresh_dict(), {"a": 1}),
+        ),
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* self", "PyObject* other"],
+        code='''PyObject* wrap_PyDict_Update(PyObject* self, PyObject* other) {
+            int result = PyDict_Update(self, other);
+            if (result == -1) {
+                return NULL;
+            } else {
+                return PyLong_FromLong(result);
+            }
+        }''',
+        callfunction="wrap_PyDict_Update",
+        cmpfunc=lambda cr,pr: (cr == pr or (isinstance(cr, BaseException) and type(cr) == type(pr))) and (ExampleDict.get("a") == 1 or len(ExampleDict) == 0)
     )

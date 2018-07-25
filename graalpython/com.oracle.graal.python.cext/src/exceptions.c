@@ -40,6 +40,8 @@
 
 #include <pyerrors.h>
 
+PyTypeObject _PyExc_BaseException = PY_TRUFFLE_TYPE("BaseException", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyBaseExceptionObject));
+
 #define PY_EXCEPTION(__EXC_NAME__) (UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(__EXC_NAME__, SRC_CS)))
 
 PyObject * PyExc_BaseException = NULL;
@@ -73,9 +75,13 @@ PyObject * PyExc_ZeroDivisionError = NULL;
 PyObject * PyExc_ArithmeticError = NULL;
 PyObject * PyExc_StopIteration = NULL;
 PyObject * PyExc_BufferError = NULL;
+PyObject * PyExc_AssertionError = NULL;
+PyObject * PyExc_UnboundLocalError = NULL;
+PyObject * PyExc_NotImplementedError = NULL;
 
 void initialize_exceptions() {
     PyExc_AttributeError = PY_EXCEPTION("AttributeError");
+    PyExc_AssertionError = PY_EXCEPTION("AssertionError");
     PyExc_BaseException = PY_EXCEPTION("BaseException");
     PyExc_BytesWarning = PY_EXCEPTION("BytesWarning");
     PyExc_DeprecationWarning = PY_EXCEPTION("DeprecationWarning");
@@ -105,5 +111,16 @@ void initialize_exceptions() {
     PyExc_ArithmeticError = PY_EXCEPTION("ArithmeticError");
     PyExc_StopIteration = PY_EXCEPTION("StopIteration");
     PyExc_BufferError = PY_EXCEPTION("BufferError");
+    PyExc_UnboundLocalError = PY_EXCEPTION("UnboundLocalError");
+    PyExc_NotImplementedError = PY_EXCEPTION("NotImplementedError");
 }
 
+
+int PyException_SetTraceback(PyObject *self, PyObject *tb) {
+    PyObject* result = UPCALL_O(native_to_java(self), "with_traceback", native_to_java(tb));
+    if (result == ERROR_MARKER) {
+        return -1;
+    } else {
+        return 0;
+    }
+}

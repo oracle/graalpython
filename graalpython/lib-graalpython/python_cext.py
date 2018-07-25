@@ -104,6 +104,10 @@ def PyModule_SetDocString(module, string):
     module.__doc__ = string
 
 
+def PyModule_NewObject(name):
+    return moduletype(name)
+
+
 ##################### DICT
 
 def PyDict_New():
@@ -337,6 +341,15 @@ def _PyLong_Sign(n):
         return 1
 
 
+@may_raise
+def PyLong_FromString(string, base, negative):
+    result = int(string, base)
+    if negative:
+        return -result
+    else:
+        return result
+
+
 ##################### FLOAT
 
 @may_raise
@@ -344,12 +357,9 @@ def PyFloat_FromDouble(n):
     return float(n)
 
 
-@may_raise(-1.0)
-def PyFloat_AsPrimitive(n):
-    if isinstance(n, float):
-        return TrufflePFloat_AsPrimitive(n)
-    else:
-        return TrufflePFloat_AsPrimitive(float(n))
+@may_raise
+def PyFloat_FromObject(n):
+    return float(n)
 
 
 ##################### NUMBER
@@ -548,7 +558,7 @@ class PyCapsule:
 
     def __init__(self, name, pointer, destructor):
         self.name = name
-        self.pointer = pointer
+        self.pointer = to_sulong(pointer)
 
     def __repr__(self):
         name = "NULL" if self.name is None else self.name
@@ -683,6 +693,17 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
         object.__setattr__(mod_obj, name, func)
 
 
+def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+    func = wrapper(CreateFunction(name, cfunc, cwrapper))
+    if isclass:
+        func = classmethod(func)
+    elif isstatic:
+        func = cstaticmethod(func)
+    func.__name__ = name
+    func.__doc__ = doc
+    return func
+
+
 def AddMember(primary, name, memberType, offset, canSet, doc):
     pclass = to_java(primary)
     member = property()
@@ -769,7 +790,7 @@ def dict_from_list(lst):
         raise SystemError("list cannot be converted to dict")
     d = {}
     for i in range(0, len(lst), 2):
-        d[l[i]] = d[l[i + 1]]
+        d[lst[i]] = lst[i + 1]
     return d
 
 
@@ -808,7 +829,7 @@ def PyObject_IsInstance(obj, typ):
 
 @may_raise
 def PyObject_RichCompare(left, right, op):
-    left.__truffle_richcompare__(right, op)
+    return do_richcompare(left, right, op)
 
 
 def PyObject_AsFileDescriptor(obj):
@@ -1020,6 +1041,28 @@ def PyFile_WriteObject(obj, file, flags):
     file.write(write_value)
     return 0
 
+
+##  CODE
+
+codetype = type(may_raise.__code__)
+
+
+@may_raise
+def PyCode_New(*args):
+    return codetype(*args)
+
+
+## TRACEBACK
+
+tbtype = type(sys._getframe(0).f_trace)
+
+@may_raise(-1)
+def PyTraceBack_Here(frame):
+    # skip this, the may_raise wrapper, the upcall wrapper, and PyTraceBack_Here itself
+    parentframe = sys._getframe(4)
+    return PyTruffleTraceBack_Here(parentframe.f_trace, frame)
+
+
 ##################### C EXT HELPERS
 
 def PyTruffle_Debug(*args):
@@ -1042,9 +1085,17 @@ def PyTruffle_Type(type_name):
     elif type_name == "PyCapsule":
         return PyCapsule
     elif type_name == "function":
-        return type(getattr)
+        return type(PyTruffle_Type)
     elif type_name == "ellipsis":
         return type(Py_Ellipsis())
+    elif type_name == "method":
+        return type({}.update)
+    elif type_name == "code":
+        return codetype
+    elif type_name == "traceback":
+        return tbtype
+    elif type_name == "frame":
+        return type(sys._getframe(0))
     else:
         return getattr(sys.modules["builtins"], type_name)
 
@@ -1157,6 +1208,16 @@ def PyRun_String(source, typ, globals, locals):
 
 
 @may_raise
+def PySlice_GetIndicesEx(start, stop, step, length):
+    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
+
+
+@may_raise
+def PySlice_New(start, stop, step):
+    return slice(start, stop, step)
+
+
+@may_raise(to_sulong(error_handler))
 def PyTruffle_Upcall(rcv, name, *args):
     nargs = len(args)
     converted = [None] * nargs

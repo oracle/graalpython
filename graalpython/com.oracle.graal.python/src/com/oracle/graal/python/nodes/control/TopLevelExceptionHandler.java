@@ -92,7 +92,7 @@ public class TopLevelExceptionHandler extends RootNode {
             result = run(frame);
         } catch (PException e) {
             printExc(e);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
                 boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
                 if (!exitException) {
@@ -184,7 +184,7 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     @TruffleBoundary
-    private static void printStackTrace(Throwable e) {
+    private static void printStackTrace(Exception e) {
         e.printStackTrace();
     }
 

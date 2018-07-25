@@ -39,11 +39,9 @@
 import _io
 import sys
 
-
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
     raise ImportError("posix or nt module is required in builtin modules")
-
 
 FAIL = '\033[91m'
 ENDC = '\033[0m'
@@ -57,12 +55,13 @@ class SkipTest(BaseException):
 
 
 class TestCase(object):
+
     def __init__(self):
         self.exceptions = []
         self.passed = 0
         self.failed = 0
 
-    def run_safely(self, func):
+    def run_safely(self, func, print_immediately=False):
         if verbose:
             print(u"\n\t\u21B3 ", func.__name__, " ", end="")
         try:
@@ -71,6 +70,8 @@ class TestCase(object):
             if isinstance(e, SkipTest):
                 print("Skipped: %s" % e)
             else:
+                if print_immediately:
+                    print("Exception during setup occurred: %s\n" % e)
                 code = func.__code__
                 self.exceptions.append(
                     ("%s:%d (%s)" % (code.co_filename, code.co_firstlineno, func), e)
@@ -95,7 +96,7 @@ class TestCase(object):
 
     def failure(self):
         self.failed += 1
-        fail_msg = FAIL+BOLD+"F"+ENDC if verbose else "F"
+        fail_msg = FAIL + BOLD + "F" + ENDC if verbose else "F"
         print(fail_msg, end="", flush=True)
 
     def assertTrue(self, value, msg=""):
@@ -141,6 +142,7 @@ class TestCase(object):
             assert expected_value == next(actual_iter), msg
 
     class assertRaises():
+
         def __init__(self, exc_type, function=None, *args, **kwargs):
             if function is None:
                 self.exc_type = exc_type
@@ -177,9 +179,9 @@ class TestCase(object):
                     break
                 items += typ.__dict__.items()
         if hasattr(instance, "setUp"):
-            if not instance.run_safely(instance.setUp):
+            if not instance.run_safely(instance.setUp, print_immediately=True):
                 return instance
-        for k,v in items:
+        for k, v in items:
             if k.startswith("test"):
                 if patterns:
                     if not any(p in k for p in patterns):
@@ -198,6 +200,7 @@ class TestCase(object):
 
 
 class TestRunner(object):
+
     def __init__(self, paths):
         self.testfiles = TestRunner.find_testfiles(paths)
         self.exceptions = []
@@ -255,7 +258,7 @@ class TestRunner(object):
                 print(u"\n\u25B9 ", module.__name__, end="")
             # some tests can modify the global scope leading to a RuntimeError: test_scope.test_nesting_plus_free_ref_to_global
             module_dict = dict(module.__dict__)
-            for k,v in module_dict.items():
+            for k, v in module_dict.items():
                 if (k.startswith("Test") or k.endswith("Test") or k.endswith("Tests")) and isinstance(v, type):
                     testcase = TestCase.runClass(v)
                 else:

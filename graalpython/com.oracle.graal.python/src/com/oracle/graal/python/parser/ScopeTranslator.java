@@ -47,6 +47,7 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     private final PythonCore core;
     private final boolean interactive;
     private final boolean trackCells;
+    private ScopeInfo currentGeneratorScope = null;
 
     public ScopeTranslator(PythonCore core, TranslationEnvironment environment, boolean interactive, boolean trackCells) {
         this.core = core;
@@ -83,9 +84,11 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitFile_input(Python3Parser.File_inputContext ctx) {
         environment.beginScope(ctx, ScopeInfo.ScopeKind.Module);
-        T node = super.visitFile_input(ctx);
-        environment.endScope(ctx);
-        return node;
+        try {
+            return super.visitFile_input(ctx);
+        } finally {
+            environment.endScope(ctx);
+        }
     }
 
     @Override
@@ -93,20 +96,23 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
         if (interactive) {
             environment.beginScope(ctx, ScopeInfo.ScopeKind.Module);
         }
-        T node = super.visitSingle_input(ctx);
-        if (interactive) {
-            environment.endScope(ctx);
+        try {
+            return super.visitSingle_input(ctx);
+        } finally {
+            if (interactive) {
+                environment.endScope(ctx);
+            }
         }
-
-        return node;
     }
 
     @Override
     public T visitEval_input(Python3Parser.Eval_inputContext ctx) {
         environment.beginScope(ctx, ScopeInfo.ScopeKind.Module);
-        T node = super.visitEval_input(ctx);
-        environment.endScope(ctx);
-        return node;
+        try {
+            return super.visitEval_input(ctx);
+        } finally {
+            environment.endScope(ctx);
+        }
     }
 
     @Override
@@ -219,7 +225,11 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitNonlocal_stmt(Python3Parser.Nonlocal_stmtContext ctx) {
         for (TerminalNode name : ctx.NAME()) {
-            environment.addNonlocal(name.getText());
+            String identifier = name.getText();
+            environment.addNonlocal(identifier);
+            if (trackCells) {
+                environment.registerCell(identifier);
+            }
         }
         return super.visitNonlocal_stmt(ctx);
     }
@@ -348,20 +358,43 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
     @Override
     public T visitComp_for(Python3Parser.Comp_forContext ctx) {
         declareNames(ctx.exprlist());
-        T or_test = ctx.or_test().accept(this);
-        if (ctx.comp_iter() != null) {
-            return aggregateResult(or_test, ctx.comp_iter().accept(this));
-        } else {
-            return or_test;
+        environment.incCurrentScopeLoopCount();
+        return super.visitComp_for(ctx);
+    }
+
+    @Override
+    public T visitOr_test(Python3Parser.Or_testContext ctx) {
+        boolean pushedCurrentGeneratorScope = false;
+        if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
+            if (currentGeneratorScope == null && environment.getCurrentScopeLoopCount() == 1) {
+                // the generator iterator needs to be early evaluated in the parent scope
+                currentGeneratorScope = environment.pushCurentScope();
+                pushedCurrentGeneratorScope = true;
+            }
+        }
+        try {
+            return super.visitOr_test(ctx);
+        } finally {
+            if (ctx.getParent() instanceof Python3Parser.Comp_forContext) {
+                if (pushedCurrentGeneratorScope && currentGeneratorScope.getLoopCount() == 1) {
+                    // restore the current scope
+                    environment.popCurrentScope();
+                    currentGeneratorScope = null;
+                }
+            }
         }
     }
 
     private T visitGenerator(ParserRuleContext ctx, Function<ParserRuleContext, T> block) {
-        environment.beginScope(ctx, ScopeKind.Generator);
+        if (currentGeneratorScope == null) {
+            environment.beginScope(ctx, ScopeKind.Generator);
+        }
         try {
             return block.apply(ctx);
         } finally {
-            environment.endScope(ctx);
+            if (currentGeneratorScope == null) {
+                environment.endScope(ctx);
+            }
         }
     }
 
@@ -370,7 +403,7 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
         if (trackCells) {
             if (ctx.test() != null) {
                 String identifier = ctx.test().getText();
-                environment.registerCellVariable(identifier);
+                environment.registerCell(identifier);
             }
         }
         return super.visitDefparameter(ctx);
@@ -381,7 +414,8 @@ public class ScopeTranslator<T> extends Python3BaseVisitor<T> {
         if (trackCells) {
             TerminalNode name = ctx.NAME();
             if (name != null) {
-                environment.registerCellVariable(name.getText());
+                String identifier = name.getText();
+                environment.registerCell(identifier);
             }
         }
         return super.visitAtom(ctx);

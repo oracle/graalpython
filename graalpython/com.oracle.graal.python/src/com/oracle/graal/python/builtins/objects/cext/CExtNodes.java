@@ -39,12 +39,14 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
@@ -53,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -71,6 +74,98 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class CExtNodes {
+
+    /**
+     * For some builtin classes, the CPython approach to creating a subclass instance is to just
+     * call the alloc function and then assign some fields. This needs to be done in C. This node
+     * will call that subtype C function with two arguments, the C type object and an object
+     * argument to fill in from.
+     */
+    public static class SubtypeNew extends PBaseNode {
+        private final TruffleObject subtypeFunc;
+        @Child private Node executeNode = Message.createExecute(2).createNode();
+        @Child private ToSulongNode toSulongNode = ToSulongNode.create();
+        @Child private ToJavaNode toJavaNode = ToJavaNode.create();
+
+        /**
+         * @param typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
+         */
+        public SubtypeNew(String typenamePrefix) {
+            subtypeFunc = (TruffleObject) getContext().getEnv().importSymbol(typenamePrefix + "_subtype_new");
+            assert subtypeFunc != null;
+        }
+
+        public Object execute(PythonNativeClass object, Object arg) {
+            try {
+                return toJavaNode.execute(ForeignAccess.sendExecute(executeNode, subtypeFunc, toSulongNode.execute(object), arg));
+            } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+                throw new IllegalStateException("C subtype_new function failed", e);
+            }
+        }
+    }
+
+    public static class FromNativeSubclassNode extends PBaseNode {
+        private final PythonBuiltinClassType expectedType;
+        private final String conversionFuncName;
+        @CompilationFinal private PythonBuiltinClass expectedClass;
+        @CompilationFinal private TruffleObject conversionFunc;
+        @Child private Node executeNode;
+        @Child private GetClassNode getClass = GetClassNode.create();
+        @Child private IsSubtypeNode isSubtype = IsSubtypeNode.create();
+        @Child private ToSulongNode toSulongNode;
+
+        private FromNativeSubclassNode(PythonBuiltinClassType expectedType, String conversionFuncName) {
+            this.expectedType = expectedType;
+            this.conversionFuncName = conversionFuncName;
+        }
+
+        private PythonBuiltinClass getExpectedClass() {
+            if (expectedClass == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                expectedClass = getCore().lookupType(expectedType);
+            }
+            return expectedClass;
+        }
+
+        private Node getExecNode() {
+            if (executeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                executeNode = insert(Message.createExecute(1).createNode());
+            }
+            return executeNode;
+        }
+
+        private TruffleObject getConversionFunc() {
+            if (conversionFunc == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                conversionFunc = (TruffleObject) getContext().getEnv().importSymbol(conversionFuncName);
+            }
+            return conversionFunc;
+        }
+
+        private ToSulongNode getToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToSulongNode.create());
+            }
+            return toSulongNode;
+        }
+
+        public Object execute(PythonNativeObject object) {
+            if (isSubtype.execute(getClass.execute(object), getExpectedClass())) {
+                try {
+                    return ForeignAccess.sendExecute(getExecNode(), getConversionFunc(), getToSulongNode().execute(object));
+                } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+                    throw new IllegalStateException("C object conversion function failed", e);
+                }
+            }
+            return null;
+        }
+
+        public static FromNativeSubclassNode create(PythonBuiltinClassType expectedType, String conversionFuncName) {
+            return new FromNativeSubclassNode(expectedType, conversionFuncName);
+        }
+    }
 
     @ImportStatic(PGuards.class)
     abstract static class CExtBaseNode extends PBaseNode {

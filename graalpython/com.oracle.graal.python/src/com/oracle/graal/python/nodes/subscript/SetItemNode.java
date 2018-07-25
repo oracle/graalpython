@@ -46,8 +46,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -55,11 +55,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __SETITEM__)
-@GenerateNodeFactory
 @NodeChildren({@NodeChild(value = "primary", type = PNode.class), @NodeChild(value = "slice", type = PNode.class), @NodeChild(value = "right", type = PNode.class)})
 public abstract class SetItemNode extends StatementNode implements WriteNode {
 
-    @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
+    @Child private NormalizeIndexNode normalize;
 
     public abstract PNode getPrimary();
 
@@ -68,16 +67,24 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     public abstract PNode getRight();
 
     public static SetItemNode create(PNode primary, PNode slice, PNode right) {
-        return SetItemNodeFactory.create(primary, slice, right);
+        return SetItemNodeGen.create(primary, slice, right);
     }
 
     public static SetItemNode create() {
-        return SetItemNodeFactory.create(null, null, null);
+        return SetItemNodeGen.create(null, null, null);
     }
 
     @Override
     public PNode getRhs() {
         return getRight();
+    }
+
+    private NormalizeIndexNode ensureNormalize() {
+        if (normalize == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            normalize = insert(NormalizeIndexNode.create());
+        }
+        return normalize;
     }
 
     private int toInt(PInt index) {
@@ -142,7 +149,7 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
 
     @Specialization
     public Object doPByteArray1(PByteArray primary, int index, Object value) {
-        primary.setItemNormalized(normalize.forArrayAssign(index, primary.len()), value);
+        primary.setItemNormalized(ensureNormalize().forArrayAssign(index, primary.len()), value);
         return PNone.NONE;
     }
 
@@ -156,19 +163,19 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
      */
     @Specialization
     public Object doPArrayInt(PIntArray primary, int index, int value) {
-        primary.setIntItemNormalized(normalize.forArrayAssign(index, primary.len()), value);
+        primary.setIntItemNormalized(ensureNormalize().forArrayAssign(index, primary.len()), value);
         return PNone.NONE;
     }
 
     @Specialization
     public Object doPArrayDouble(PDoubleArray primary, int index, double value) {
-        primary.setDoubleItemNormalized(normalize.forArrayAssign(index, primary.len()), value);
+        primary.setDoubleItemNormalized(ensureNormalize().forArrayAssign(index, primary.len()), value);
         return PNone.NONE;
     }
 
     @Specialization
     public Object doPArrayChar(PCharArray primary, int index, char value) {
-        primary.setCharItemNormalized(normalize.forArrayAssign(index, primary.len()), value);
+        primary.setCharItemNormalized(ensureNormalize().forArrayAssign(index, primary.len()), value);
         return PNone.NONE;
     }
 

@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
- * Copyright (c) 2013, Regents of the University of California
+ * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
  *
@@ -23,11 +23,10 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.builtins.objects.dict;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+package com.oracle.graal.python.builtins.objects.function;
+
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
 
 import java.util.List;
 
@@ -35,60 +34,26 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PDictItemsView.class)
-public final class DictItemsBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PBuiltinFunction.class)
+public class BuiltinFunctionBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return DictItemsBuiltinsFactory.getFactories();
+        return BuiltinFunctionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __SELF__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class IterNode extends PythonUnaryBuiltinNode {
+    public abstract static class SelfNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doPDictItemsView(PDictItemsView self) {
-            if (self.getDict() != null) {
-                return factory().createDictItemsIterator(self.getDict());
-            }
+        protected Object doStatic(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class LenNode extends PythonBuiltinNode {
-        @Specialization
-        Object run(PDictView self) {
-            return self.getDict().size();
-        }
-    }
-
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
-        @Specialization
-        boolean doItemsView(PDictItemsView self, PDictItemsView other,
-                        @Cached("create()") HashingStorageNodes.EqualsNode equalsNode) {
-            return equalsNode.execute(self.getDict().getDictStorage(), other.getDict().getDictStorage());
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }

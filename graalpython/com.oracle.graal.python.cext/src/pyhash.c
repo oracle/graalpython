@@ -51,3 +51,8 @@ void initialize_hashes() {
     _PyHASH_NAN = UPCALL_L(PY_BUILTIN, "hash", NAN);
     _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, "PyHash_Imag");
 }
+
+
+Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
+    return UPCALL_L(PY_BUILTIN, "hash", polyglot_from_string(src, "ascii"));
+}

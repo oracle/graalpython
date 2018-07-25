@@ -38,6 +38,12 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
@@ -45,6 +51,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -56,10 +63,10 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ArityCheckNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.datamodel.IsMappingNode;
@@ -92,20 +99,20 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 @MessageResolution(receiverType = PythonObject.class)
 public class PythonMessageResolution {
     private static final class HasSetItem extends Node {
-        @Child private LookupInheritedAttributeNode getSetItemNode = LookupInheritedAttributeNode.create();
+        @Child private LookupInheritedAttributeNode getSetItemNode = LookupInheritedAttributeNode.create(__SETITEM__);
         final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
         public boolean execute(Object object) {
-            return profile.profile(getSetItemNode.execute(object, SpecialMethodNames.__SETITEM__) != PNone.NO_VALUE);
+            return profile.profile(getSetItemNode.execute(object) != PNone.NO_VALUE);
         }
     }
 
     private static final class HasDelItem extends Node {
-        @Child private LookupInheritedAttributeNode getDelItemNode = LookupInheritedAttributeNode.create();
+        @Child private LookupInheritedAttributeNode getDelItemNode = LookupInheritedAttributeNode.create(__DELITEM__);
         final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
         public boolean execute(Object object) {
-            return profile.profile(getDelItemNode.execute(object, SpecialMethodNames.__DELITEM__) != PNone.NO_VALUE);
+            return profile.profile(getDelItemNode.execute(object) != PNone.NO_VALUE);
         }
     }
 
@@ -156,7 +163,7 @@ public class PythonMessageResolution {
         private static final Object NONEXISTING_IDENTIFIER = new Object();
 
         @Child private IsSequenceNode isSequence = IsSequenceNode.create();
-        @Child private GetAttributeNode readNode = GetAttributeNode.create();
+        @Child private LookupAndCallBinaryNode readNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child private GetItemNode getItemNode = GetItemNode.create();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();
         @Child private KeyForItemAccess getItemKey = new KeyForItemAccess();
@@ -167,7 +174,7 @@ public class PythonMessageResolution {
             String attrKey = getAttributeKey.execute(key);
             if (attrKey != null) {
                 try {
-                    return toForeign.executeConvert(readNode.execute(object, attrKey));
+                    return toForeign.executeConvert(readNode.executeObject(object, attrKey));
                 } catch (PException e) {
                     // pass, we might be reading an item that starts with "@"
                 }
@@ -180,7 +187,7 @@ public class PythonMessageResolution {
 
             if (strProfile.profile(key instanceof String)) {
                 try {
-                    return toForeign.executeConvert(readNode.execute(object, key));
+                    return toForeign.executeConvert(readNode.executeObject(object, key));
                 } catch (PException e) {
                     // pass
                 }
@@ -230,7 +237,7 @@ public class PythonMessageResolution {
     public static final class ExecuteNode extends Node {
         @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
-        @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create();
+        @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create(__CALL__);
         @Child private CallDispatchNode dispatch;
         @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
         @Child private ArityCheckNode arityCheckNode = ArityCheckNode.create();
@@ -239,13 +246,13 @@ public class PythonMessageResolution {
         private CallDispatchNode getDispatchNode() {
             if (dispatch == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                dispatch = insert(CallDispatchNode.create("<foreign-invoke>"));
+                dispatch = insert(CallDispatchNode.create());
             }
             return dispatch;
         }
 
         public Object execute(Object receiver, Object[] arguments) {
-            Object callable = getCall.execute(receiver, SpecialMethodNames.__CALL__);
+            Object callable = getCall.execute(receiver);
 
             // convert foreign argument values to Python values
             Object[] convertedArgs = new Object[arguments.length];
@@ -413,11 +420,11 @@ public class PythonMessageResolution {
 
     @Resolve(message = "INVOKE")
     abstract static class PForeignInvokeNode extends Node {
-        @Child private GetAttributeNode getattr = GetAttributeNode.create();
+        @Child private LookupAndCallBinaryNode getattr = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child private ExecuteNode execNode = new ExecuteNode();
 
         public Object access(Object receiver, String name, Object[] arguments) {
-            Object attribute = getattr.execute(receiver, name);
+            Object attribute = getattr.executeObject(receiver, name);
             return execNode.execute(attribute, arguments);
         }
     }
@@ -444,8 +451,78 @@ public class PythonMessageResolution {
 
     @Resolve(message = "HAS_SIZE")
     abstract static class PForeignHasSizeNode extends Node {
+        @Child private IsSequenceNode isSequenceNode;
+        @Child private IsMappingNode isMappingNode;
+        @Child private BuiltinFunctions.LenNode lenNode;
+        @Child private PTypeUnboxNode unboxNode;
+        @Child private LookupAndCallBinaryNode callGetItemNode;
+
+        private final ValueProfile profile = ValueProfile.createClassProfile();
+
         public Object access(Object object) {
-            return object instanceof PSequence;
+            Object profiled = profile.profile(object);
+            // A sequence object always has a size even if there is no '__len__' attribute. This is,
+            // e.g., the case for 'array'.
+            if (profiled instanceof PSequence) {
+                return true;
+            }
+            if (profiled instanceof PHashingCollection) {
+                return false;
+            }
+            if (getIsSequenceNode().execute(profiled) && !getIsMappingNode().execute(profiled)) {
+                // also try to access using an integer index
+                int len = (int) getUnboxNode().execute(getLenNode().executeWith(profiled));
+                if (len > 0) {
+                    try {
+                        getCallGetItemNode().executeObject(profiled, 0);
+                        return true;
+                    } catch (PException e) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private BuiltinFunctions.LenNode getLenNode() {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(BuiltinFunctionsFactory.LenNodeFactory.create());
+            }
+            return lenNode;
+        }
+
+        private PTypeUnboxNode getUnboxNode() {
+            if (unboxNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                unboxNode = insert(PTypeUnboxNode.create());
+            }
+            return unboxNode;
+        }
+
+        private LookupAndCallBinaryNode getCallGetItemNode() {
+            if (callGetItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callGetItemNode = insert(LookupAndCallBinaryNode.create(__GETITEM__));
+            }
+            return callGetItemNode;
+        }
+
+        private IsSequenceNode getIsSequenceNode() {
+            if (isSequenceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSequenceNode = insert(IsSequenceNode.create());
+            }
+            return isSequenceNode;
+        }
+
+        private IsMappingNode getIsMappingNode() {
+            if (isMappingNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isMappingNode = insert(IsMappingNode.create());
+            }
+            return isMappingNode;
         }
     }
 
@@ -453,10 +530,11 @@ public class PythonMessageResolution {
     abstract static class PForeignGetSizeNode extends Node {
         @Child IsSequenceNode isSeq = IsSequenceNode.create();
         @Child private BuiltinFunctions.LenNode lenNode = BuiltinFunctionsFactory.LenNodeFactory.create();
+        @Child private PTypeUnboxNode unboxNode = PTypeUnboxNode.create();
 
         public Object access(Object object) {
             if (isSeq.execute(object)) {
-                return lenNode.executeWith(object);
+                return unboxNode.execute(lenNode.executeWith(object));
             }
             throw UnsupportedMessageException.raise(Message.GET_SIZE);
         }
@@ -471,7 +549,8 @@ public class PythonMessageResolution {
 
     @Resolve(message = "KEY_INFO")
     abstract static class PKeyInfoNode extends Node {
-        @Child private GetAttributeNode getCallNode = GetAttributeNode.create();
+        @Child private LookupAndCallBinaryNode getCallNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
+
         ReadNode readNode = new ReadNode();
         IsImmutable isImmutable = new IsImmutable();
 
@@ -481,7 +560,7 @@ public class PythonMessageResolution {
             if (attr != ReadNode.NONEXISTING_IDENTIFIER) {
                 info |= KeyInfo.READABLE;
                 try {
-                    getCallNode.execute(attr, SpecialMethodNames.__CALL__);
+                    getCallNode.executeObject(attr, SpecialMethodNames.__CALL__);
                     info |= KeyInfo.INVOCABLE;
                 } catch (PException e) {
                 }

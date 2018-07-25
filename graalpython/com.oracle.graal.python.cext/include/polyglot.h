@@ -88,6 +88,27 @@ void polyglot_export(const char *name, void *value);
 void *polyglot_eval(const char *id, const char *code);
 
 /**
+ * Evaluate a file containing source of another language.
+ *
+ * The filename argument can be absolute or relative to the current working
+ * directory.
+ *
+ * @param id the language identifier
+ * @param filename the file to be evaluated
+ * @return the result of the evaluation
+ * @see org::graalvm::polyglot::Context::eval
+ */
+void *polyglot_eval_file(const char *id, const char *filename);
+
+/**
+ * Access a Java class via host interop.
+ *
+ * @param classname the name of the Java class
+ * @return the Java class, as polyglot value
+ */
+void *polyglot_java_type(const char *classname);
+
+/**
  * Access an argument of the current function.
  *
  * This function can be used to access arguments of the current function by
@@ -296,6 +317,23 @@ bool polyglot_can_execute(const void *value);
  */
 void *polyglot_invoke(void *object, const char *name, ...);
 
+/**
+ * Check whether a polyglot value can be instantiated.
+ *
+ * Returns false for pointers that do not point to a polyglot value (see
+ * {@link polyglot_is_value}).
+ */
+bool polyglot_can_instantiate(const void *object);
+
+/**
+ * Instantiate a polyglot value.
+ *
+ * @param object the polyglot value that should be instantiated
+ * @param ... the arguments of the constructor
+ * @return the new object, as polyglot value
+ */
+void *polyglot_new_instance(const void *object, ...);
+
 /** @} */
 
 /**
@@ -341,6 +379,15 @@ void *polyglot_get_member(const void *object, const char *name);
 void polyglot_put_member(void *object, const char *name, ...);
 
 /**
+ * Remove a named member from a polyglot object.
+ *
+ * @param object the polyglot value to modify
+ * @param name the name of the member to be removed
+ * @return true if the member was successfully removed, false otherwise
+ */
+bool polyglot_remove_member(void *object, const char *name);
+
+/**
  * Check whether a polyglot value has array elements.
  *
  * Returns false for pointers that do not point to a polyglot value (see
@@ -377,6 +424,15 @@ void *polyglot_get_array_element(const void *array, int idx);
  * @param ... the written value
  */
 void polyglot_set_array_element(void *array, int idx, ...);
+
+/**
+ * Remove an array element from a polyglot array.
+ *
+ * @param array the polyglot array to modify
+ * @param idx the index of the removed array element
+ * @return true if the array element was successfully removed, false otherwise
+ */
+bool polyglot_remove_array_element(void *array, int idx);
 
 /** @} */
 
@@ -465,53 +521,74 @@ void *polyglot_from_string_n(const char *string, uint64_t size, const char *char
  */
 
 /**
- * Internal function. Do not use directly.
+ * Opaque handle representing a polyglot type.
  *
  * @see POLYGLOT_DECLARE_STRUCT
  */
-void *__polyglot_as_typed(void *ptr, void *typeId);
+typedef struct __polyglot_typeid *polyglot_typeid;
+
+/**
+ * Declare an array type.
+ *
+ * @param base the element type of the array
+ * @param len the array length
+ * @return a new typeid referring to an array of base with length len
+ */
+polyglot_typeid polyglot_array_typeid(polyglot_typeid base, uint64_t len);
+
+/**
+ * Converts a polyglot value to a dynamic struct or array pointer.
+ *
+ * @see polyglot_as_MyStruct
+ * @see polyglot_as_MyStruct_array
+ *
+ * @param value a polyglot value
+ * @param typeId the type of the polyglot value
+ * @return struct or array view of the polyglot value
+ */
+void *polyglot_as_typed(void *value, polyglot_typeid typeId);
+
+/**
+ * Create a polyglot value from a native pointer to a struct or array.
+ *
+ * @see polyglot_from_MyStruct
+ * @see polyglot_from_MyStruct_array
+ *
+ * @param ptr a pointer to a native struct or array
+ * @param typeid the type of ptr
+ * @return a polyglot value representing ptr
+ */
+void *polyglot_from_typed(void *ptr, polyglot_typeid typeId);
 
 /**
  * Internal function. Do not use directly.
  *
  * @see POLYGLOT_DECLARE_STRUCT
  */
-void *__polyglot_as_typed_array(void *ptr, void *typeId);
-
-/**
- * Internal function. Do not use directly.
- *
- * @see POLYGLOT_DECLARE_STRUCT
- */
-void *__polyglot_from_typed(void *p, void *typeId);
-
-/**
- * Internal function. Do not use directly.
- *
- * @see POLYGLOT_DECLARE_STRUCT
- */
-void *__polyglot_from_typed_array(void *arr, uint64_t length, void *typeId);
-
+polyglot_typeid __polyglot_as_typeid(void *ptr);
 
 #define POLYGLOT_DECLARE_GENERIC_TYPE(typedecl, typename)                                                                                            \
-  static typedecl __polyglot_typeid_##typename[0];                                                                                                   \
+  __attribute__((always_inline)) static void *polyglot_##typename##_typeid() {                                                                       \
+    static typedecl __polyglot_typeid_##typename[0];                                                                                                 \
+    return __polyglot_as_typeid(__polyglot_typeid_##typename);                                                                                       \
+  }                                                                                                                                                  \
                                                                                                                                                      \
   __attribute__((always_inline)) static inline typedecl *polyglot_as_##typename(void *p) {                                                           \
-    void *ret = __polyglot_as_typed(p, __polyglot_typeid_##typename);                                                                                \
+    void *ret = polyglot_as_typed(p, polyglot_##typename##_typeid());                                                                                \
     return (typedecl *)ret;                                                                                                                          \
   }                                                                                                                                                  \
                                                                                                                                                      \
   __attribute__((always_inline)) static inline typedecl *polyglot_as_##typename##_array(void *p) {                                                   \
-    void *ret = __polyglot_as_typed_array(p, __polyglot_typeid_##typename);                                                                          \
+    void *ret = polyglot_as_typed(p, polyglot_array_typeid(polyglot_##typename##_typeid(), 0));                                                      \
     return (typedecl *)ret;                                                                                                                          \
   }                                                                                                                                                  \
                                                                                                                                                      \
-  __attribute__((always_inline)) static void *polyglot_from_##typename(typedecl *s) {                                                                \
-    return __polyglot_from_typed(s, __polyglot_typeid_##typename);                                                                                   \
+  __attribute__((always_inline)) static void *polyglot_from_##typename(typedecl * s) {                                                               \
+    return polyglot_from_typed(s, polyglot_##typename##_typeid());                                                                                   \
   }                                                                                                                                                  \
                                                                                                                                                      \
   __attribute__((always_inline)) static void *polyglot_from_##typename##_array(typedecl *arr, uint64_t len) {                                        \
-    return __polyglot_from_typed_array(arr, len, __polyglot_typeid_##typename);                                                                      \
+    return polyglot_from_typed(arr, polyglot_array_typeid(polyglot_##typename##_typeid(), len));                                                     \
   }
 
 /**
@@ -527,9 +604,10 @@ void *__polyglot_from_typed_array(void *arr, uint64_t length, void *typeId);
  * POLYGLOT_DECLARE_STRUCT(MyStruct)
  * \endcode
  *
- * This macro will generate the following conversion functions:
+ * This macro will generate the following functions:
  *
  * \code
+ * polyglot_typeid polyglot_MyStruct_typeid();
  * struct MyStruct *polyglot_as_MyStruct(void *value);
  * struct MyStruct *polyglot_as_MyStruct_array(void *value);
  * void *polyglot_from_MyStruct(struct MyStruct *s);
@@ -537,6 +615,7 @@ void *__polyglot_from_typed_array(void *arr, uint64_t length, void *typeId);
  * \endcode
  */
 #define POLYGLOT_DECLARE_STRUCT(type) POLYGLOT_DECLARE_GENERIC_TYPE(struct type, type)
+
 /**
  * Declare polyglot conversion functions for a user-defined anonymous struct type.
  *
@@ -550,9 +629,10 @@ void *__polyglot_from_typed_array(void *arr, uint64_t length, void *typeId);
  * POLYGLOT_DECLARE_TYPE(MyType)
  * \endcode
  *
- * This macro will generate the following conversion functions:
+ * This macro will generate the following functions:
  *
  * \code
+ * polyglot_typeid polyglot_MyType_typeid();
  * MyType *polyglot_as_MyType(void *value);
  * MyType *polyglot_as_MyType_array(void *value);
  * void *polyglot_from_MyType(MyType *s);
@@ -563,6 +643,14 @@ void *__polyglot_from_typed_array(void *arr, uint64_t length, void *typeId);
 
 #ifdef DOXYGEN // documentation only
 struct MyStruct;
+
+/**
+ * Get a polyglot type id value for the type MyStruct.
+ *
+ * This typeid can be used with the functions {@link polyglot_as_typed} and
+ * {@link polyglot_from_typed}.
+ */
+polyglot_typeid polyglot_MyStruct_typeid();
 
 /**
  * Converts a polyglot value to a pointer to MyStruct. Accessing members of the

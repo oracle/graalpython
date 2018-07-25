@@ -549,10 +549,16 @@ PyObject* _Py_BuildValue_SizeT(const char *format, ...) {
             if (v->prev == NULL) {
                 PyErr_SetString(PyExc_SystemError, "'}' without '{' in Py_BuildValue");
             } else {
-                PyList_Append(v->prev->list, polyglot_invoke(PY_TRUFFLE_CEXT, "dict_from_list", to_java(v->list)));
+                PyList_Append(v->prev->list, to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "dict_from_list", to_java(v->list))));
                 next = v;
                 v = v->prev;
                 free(next);
+            }
+            break;
+        case ':':
+        case ',':
+            if (v->prev == NULL) {
+                PyErr_SetString(PyExc_SystemError, "':' without '{' in Py_BuildValue");
             }
             break;
         default:

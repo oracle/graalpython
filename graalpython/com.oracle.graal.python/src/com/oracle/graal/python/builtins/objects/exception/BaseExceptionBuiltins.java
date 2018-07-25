@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CONTEXT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__TRACEBACK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -39,6 +41,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -131,17 +135,29 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__cause__", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CAUSE__, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class CauseNode extends PythonBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        public Object cause(PBaseException self, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode readCause) {
+            Object cause = readCause.execute(self, __CAUSE__);
+            if (cause == PNone.NO_VALUE) {
+                return PNone.NONE;
+            } else {
+                return cause;
+            }
+        }
 
         @Specialization
-        public Object cause(@SuppressWarnings("unused") PBaseException self) {
+        public Object cause(PBaseException self, PBaseException value,
+                        @Cached("create()") WriteAttributeToObjectNode writeCause) {
+            writeCause.execute(self, __CAUSE__, value);
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "__context__", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CONTEXT__, fixedNumOfArguments = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
 

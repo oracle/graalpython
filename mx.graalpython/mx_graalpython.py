@@ -34,6 +34,7 @@ import mx_benchmark
 import mx_gate
 import mx_sdk
 import mx_subst
+import mx_urlrewrites
 from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
@@ -235,7 +236,7 @@ def punittest(args):
 
 
 def nativebuild(args):
-    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON"])
+    mx.build(["--only", "com.oracle.graal.python.cext,GRAALPYTHON,GRAALPYTHON_GRAALVM_SUPPORT"])
 
 
 def nativeclean(args):
@@ -255,10 +256,12 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     cpyext = 'python-cpyext'
+    svmunit = 'python-svm-unittest'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
     R = 'python-R'
+    apptests = 'python-apptests'
     license = 'python-license'
 
 
@@ -325,7 +328,7 @@ def python_svm(args):
         nonZeroIsFatal=True
     )
     vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
-    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "svm", "graalpython")
+    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
     shutil.copy(svm_image, os.path.join(_suite.dir, "graalpython-svm"))
     mx.run([svm_image] + args)
     return svm_image
@@ -341,7 +344,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
             test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/"]
-            mx.command_function("python")(test_args)
+            mx.command_function("python")(["--python.CatchAllExceptions=true"] + test_args)
             if platform.system() != 'Darwin':
                 # TODO: re-enable when python3 is available on darwin
                 mx.log("Running tests with CPython")
@@ -355,6 +358,42 @@ def graalpython_gate_runner(args, tasks):
                 # TODO: re-enable when python3 is available on darwin
                 mx.log("Running tests with CPython")
                 mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+
+    with Task('GraalPython Python tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
+        if task:
+            if not os.path.exists("./graalpython-svm"):
+                python_svm(["-h"])
+            if os.path.exists("./graalpython-svm"):
+                langhome = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
+
+                # tests root directory
+                tests_folder = "graalpython/com.oracle.graal.python.test/src/tests/"
+
+                # list of excluded tests
+                excluded = ["test_interop.py"]
+
+                def is_included(path):
+                    if path.endswith(".py"):
+                        basename = path.rpartition("/")[2]
+                        return basename.startswith("test_") and basename not in excluded
+                    return False
+
+                # list all 1st-level tests and exclude the SVM-incompatible ones
+                testfiles = []
+                paths = [tests_folder]
+                while paths:
+                    path = paths.pop()
+                    if is_included(path):
+                        testfiles.append(path)
+                    else:
+                        try:
+                            paths += [(path + f if path.endswith("/") else "%s/%s" % (path, f)) for f in
+                                      os.listdir(path)]
+                        except OSError:
+                            pass
+
+                test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v"] + testfiles
+                mx.run(["./graalpython-svm", "--python.CoreHome=graalpython/lib-graalpython", "--python.StdLibHome=graalpython/lib-python/3", langhome] + test_args, nonZeroIsFatal=True)
 
     with Task('GraalPython downstream R tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.R]) as task:
         script_r2p = os.path.join(_suite.dir, "graalpython", "benchmarks", "src", "benchmarks", "interop", "r_python_image_demo.r")
@@ -379,6 +418,15 @@ def graalpython_gate_runner(args, tasks):
                 [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
                  ["-v", "--cp-sfx", pythonjars, "r", "--jvm", "--polyglot", "-e", "eval.polyglot('python', path='%s')" % str(script_p2r)]
                  ])
+
+    with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
+        if task:
+            apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
+            _apptest_suite = _suite.import_suite(
+                "graalpython-apptests",
+                urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
+            )
+            mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
@@ -667,7 +715,7 @@ def update_import_cmd(args):
                 join(_sulong.dir, "include", "truffle.h"),
                 join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "truffle.h")
             ) and shutil.copy(
-                join(_sulong.dir, "projects", "com.oracle.truffle.llvm.libraries.bitcode", "inclue", "polyglot.h"),
+                join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
                 join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
             )
         # make sure that truffle and regex are the same version

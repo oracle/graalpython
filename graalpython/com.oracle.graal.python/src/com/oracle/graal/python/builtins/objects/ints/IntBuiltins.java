@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.runtime.ArithmeticUtil;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -607,6 +610,10 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PowNode extends PythonTernaryBuiltinNode {
 
+        protected static PowNode create() {
+            return null;
+        }
+
         @Specialization(guards = "right >= 0", rewriteOn = ArithmeticException.class)
         int doIntegerFast(int left, int right, @SuppressWarnings("unused") PNone none) {
             int result = 1;
@@ -686,6 +693,28 @@ public class IntBuiltins extends PythonBuiltins {
             }
             double value = Math.pow(left.doubleValue(), right.doubleValue());
             return factory().createInt((long) value);
+        }
+
+        @Specialization
+        Object powModulo(Object x, Object y, long z,
+                        @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
+                        @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
+            Object result = powNode.execute(x, y, PNone.NO_VALUE);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+            return modNode.executeObject(result, z);
+        }
+
+        @Specialization
+        Object powModuloPInt(Object x, Object y, PInt z,
+                        @Cached("create(__POW__)") LookupAndCallTernaryNode powNode,
+                        @Cached("create(__MOD__)") LookupAndCallBinaryNode modNode) {
+            Object result = powNode.execute(x, y, PNone.NO_VALUE);
+            if (result == PNotImplemented.NOT_IMPLEMENTED) {
+                return result;
+            }
+            return modNode.executeObject(result, z);
         }
 
         @Fallback
@@ -1196,20 +1225,19 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
-
-        @Specialization
-        boolean eq(boolean left, boolean right) {
-            return left == right;
-        }
-
-        @Specialization
-        boolean eqII(int a, int b) {
-            return a == b;
-        }
-
         @Specialization
         boolean eqLL(long a, long b) {
             return a == b;
+        }
+
+        @Specialization
+        boolean eqPIntBoolean(PInt a, boolean b) {
+            return b ? a.isOne() : a.isZero();
+        }
+
+        @Specialization
+        boolean eqBooleanPInt(boolean a, PInt b) {
+            return a ? b.isOne() : b.isZero();
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
@@ -1232,7 +1260,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean eqLPiOvf(long b, PInt a) {
+        boolean eqPiLOvf(long b, PInt a) {
             try {
                 return a.longValueExact() == b;
             } catch (ArithmeticException e) {
@@ -1257,11 +1285,6 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean eqII(int a, int b) {
-            return a != b;
-        }
-
-        @Specialization
         boolean eqLL(long a, long b) {
             return a != b;
         }
@@ -1273,6 +1296,20 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean eqPiLOvf(PInt a, long b) {
+            try {
+                return a.longValueExact() != b;
+            } catch (ArithmeticException e) {
+                return true;
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        boolean eqPiL(long b, PInt a) {
+            return a.longValueExact() != b;
+        }
+
+        @Specialization
+        boolean eqPiLOvf(long b, PInt a) {
             try {
                 return a.longValueExact() != b;
             } catch (ArithmeticException e) {

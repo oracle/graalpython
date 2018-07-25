@@ -204,9 +204,9 @@ public abstract class LookupAndCallUnaryNode extends PNode {
 
     @Specialization
     Object callObject(Object receiver,
-                    @Cached("create()") LookupInheritedAttributeNode getattr,
+                    @Cached("create(name)") LookupInheritedAttributeNode getattr,
                     @Cached("create()") CallUnaryMethodNode dispatchNode) {
-        Object attr = getattr.execute(receiver, name);
+        Object attr = getattr.execute(receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 if (handler == null) {

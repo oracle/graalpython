@@ -25,14 +25,14 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "561c8845426a57b9e019899ac133c4e7f16123a9",
+                "version": "128139f4b55c15cc090f9cb26a7eb775c44e3f3f",
                 "urls": [
                     {"url": "https://github.com/graalvm/sulong", "kind": "git"},
                 ]
             },
             {
                 "name": "regex",
-                "version": "ba18055aa646c58a393c3d9a6b5127c2e158dc04",
+                "version": "b849b28aadc29a9efa0247a40bf88898978f0ceb",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -162,7 +162,13 @@ suite = {
             "native": True,
             "vpath": True,
             "results" : ["graalpython/lib-graalpython"],
-            "output" : "."
+            "output" : ".",
+            "buildDependencies": [
+                "sulong:SULONG_LIBS",
+            ],
+            "buildEnv": {
+                "POLYGLOT_INC": "<path:SULONG_LIBS>",
+            },
         },
 
         "python-lib": {

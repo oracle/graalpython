@@ -40,7 +40,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Location;
@@ -49,10 +48,16 @@ import com.oracle.truffle.api.object.Shape;
 
 public class PythonObject extends PythonAbstractObject {
     protected final PythonClass pythonClass;
-    @CompilationFinal protected DynamicObject storage;
+    protected final DynamicObject storage;
     private PDict dict;
 
     public PythonObject(PythonClass pythonClass) {
+        assert pythonClass != null : getClass().getSimpleName();
+        this.pythonClass = pythonClass;
+        storage = pythonClass.getInstanceShape().newInstance();
+    }
+
+    public PythonObject(PythonClass pythonClass, Shape instanceShape) {
         if (pythonClass == null) {
             CompilerDirectives.transferToInterpreter();
             // special case for base type class
@@ -60,12 +65,7 @@ public class PythonObject extends PythonAbstractObject {
             this.pythonClass = (PythonClass) this;
         } else {
             this.pythonClass = pythonClass;
-            storage = pythonClass.getInstanceShape().newInstance();
         }
-    }
-
-    public PythonObject(PythonClass pythonClass, Shape instanceShape) {
-        this.pythonClass = pythonClass;
         storage = instanceShape.newInstance();
     }
 

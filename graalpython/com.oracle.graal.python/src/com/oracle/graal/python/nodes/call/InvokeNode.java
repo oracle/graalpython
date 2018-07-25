@@ -68,12 +68,12 @@ abstract class AbstractInvokeNode extends Node {
             callTarget = actualCallee.getCallTarget();
         } else if (actualCallee instanceof PMethod) {
             PMethod method = (PMethod) actualCallee;
-            callTarget = method.__func__().getCallTarget();
+            callTarget = method.getFunction().getCallTarget();
         } else if (actualCallee instanceof PBuiltinFunction) {
             callTarget = callee.getCallTarget();
         } else if (callee instanceof PBuiltinMethod) {
             PBuiltinMethod method = (PBuiltinMethod) callee;
-            PBuiltinFunction internalFunc = method.__func__();
+            PBuiltinFunction internalFunc = method.getFunction();
             callTarget = internalFunc.getCallTarget();
         } else if (actualCallee instanceof PythonBuiltinClass) {
             actualCallee = (PythonCallable) ((PythonBuiltinClass) actualCallee).getAttribute(__NEW__);

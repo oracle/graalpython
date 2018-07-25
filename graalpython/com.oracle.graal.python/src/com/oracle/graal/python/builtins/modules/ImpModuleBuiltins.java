@@ -38,6 +38,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CAUSE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -139,6 +141,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         protected static final String INITIALIZE_CAPI = "initialize_capi";
         private static final String LLVM_LANGUAGE = "llvm";
         @Child private SetItemNode setItemNode;
+        @Child private Node isNullNode = Message.IS_NULL.createNode();
 
         @Specialization
         @TruffleBoundary
@@ -184,7 +187,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
-                Object result = AsPythonObjectNode.doSlowPath(ForeignAccess.sendExecute(executeNode, pyinitFunc));
+                Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
+                TruffleCextBuiltins.checkFunctionResult(getContext(), isNullNode, "PyInit_" + basename, nativeResult);
+                Object result = AsPythonObjectNode.doSlowPath(nativeResult);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
@@ -236,13 +241,22 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             StringBuilder sb = new StringBuilder();
             sb.append(e.getMessage());
             Throwable cause = e;
+            Object pythonCause = PNone.NONE;
             while ((cause = cause.getCause()) != null) {
+                if (e instanceof PException) {
+                    if (pythonCause != PNone.NONE) {
+                        ((PythonObject) pythonCause).setAttribute(__CAUSE__, ((PException) e).getExceptionObject());
+                    }
+                    pythonCause = ((PException) e).getExceptionObject();
+                }
                 if (cause.getMessage() != null) {
                     sb.append(", ");
                     sb.append(cause.getMessage());
                 }
             }
-            return raise(ImportError, "cannot load %s: %s", path, sb.toString());
+            PBaseException importExc = factory().createBaseException(ImportError, "cannot load %s: %s", new Object[]{path, sb.toString()});
+            importExc.setAttribute(__CAUSE__, pythonCause);
+            throw raise(importExc);
         }
 
     }

@@ -40,12 +40,10 @@ import sys
 if sys.implementation.name == "graalpython":
     import polyglot
 
-
     def test_import():
         imported_cext = polyglot.import_value("python_cext")
         import python_cext
         assert imported_cext is python_cext
-
 
     class CustomObject():
         field = 42
@@ -55,7 +53,6 @@ if sys.implementation.name == "graalpython":
 
         def __len__(self):
             return 21
-
 
     class CustomMutable(CustomObject):
         _items = {}
@@ -78,14 +75,12 @@ if sys.implementation.name == "graalpython":
         def __delitem__(self, key):
             del self._items[key]
 
-
     def test_read():
         o = CustomObject()
         assert polyglot.__read__(o, "field") == o.field
         assert polyglot.__read__(o, 10) == o[10]
         assert polyglot.__read__(o, "@field") == o.field
         assert polyglot.__read__(o, "[field") == o["field"]
-
 
     def test_write():
         o = CustomMutable()
@@ -120,7 +115,6 @@ if sys.implementation.name == "graalpython":
         polyglot.__write__(o2, non_string, 12)
         assert getattr(o2, non_string) == 12
 
-
     def test_remove():
         o = CustomMutable()
         o.direct_field = 111
@@ -141,25 +135,20 @@ if sys.implementation.name == "graalpython":
         polyglot.__remove__(o, "grrrr")
         assert "grrrr" not in list(o.keys())
 
-
     def test_execute():
         assert polyglot.__execute__(abs, -10) == 10
         o = CustomMutable()
         assert polyglot.__execute__(o.__getattribute__, "field") == o.field
 
-
     def test_invoke():
         o = CustomMutable()
         assert polyglot.__invoke__(o, "__getattribute__", "field") == o.field
 
-
     def test_new():
         assert isinstance(polyglot.__new__(CustomMutable), CustomMutable)
 
-
     def test_is_null():
         assert polyglot.__is_null__(None)
-
 
     def test_has_size():
         import array
@@ -171,15 +160,16 @@ if sys.implementation.name == "graalpython":
         assert polyglot.__has_size__(b"")
         assert polyglot.__has_size__("")
         assert polyglot.__has_size__(range(10))
+        assert polyglot.__has_size__(CustomObject())
 
         assert not polyglot.__has_size__({})
         assert not polyglot.__has_size__(object())
-        assert not polyglot.__has_size__(CustomObject())
-
 
     def test_get_size():
         called = False
+
         class LenObject():
+
             def __getitem__(self, k):
                 if k == 0:
                     return 1
@@ -194,7 +184,6 @@ if sys.implementation.name == "graalpython":
         assert polyglot.__get_size__(LenObject()) == 1
         assert called
 
-
     def test_has_keys():
         assert not polyglot.__has_keys__(True)
         assert polyglot.__has_keys__(None)
@@ -202,14 +191,12 @@ if sys.implementation.name == "graalpython":
         assert not polyglot.__has_keys__(False)
         assert polyglot.__has_keys__(object())
 
-
     def test_keys():
         o = CustomObject()
         assert len(polyglot.__keys__(o)) == 0
         o.my_field = 1
         assert len(polyglot.__keys__(o)) == 1
         assert "my_field" in polyglot.__keys__(o)
-
 
     def test_host_lookup():
         import java

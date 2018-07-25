@@ -25,15 +25,13 @@
  */
 package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.nodes.RootNode;
 
-public class PythonParseResult extends PythonBuiltinObject {
+public class PythonParseResult {
 
     private final RootNode rootNode;
 
-    public PythonParseResult(RootNode rootNode, PythonCore core) {
-        super(core.lookupType(PythonParseResult.class));
+    public PythonParseResult(RootNode rootNode) {
         this.rootNode = rootNode;
     }
 

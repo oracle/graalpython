@@ -40,6 +40,7 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -65,24 +66,80 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
 
     public abstract Object execute(Object object, Object key);
 
-    protected Location getLocationOrNull(Property prop) {
+    protected static Location getLocationOrNull(Property prop) {
         return prop == null ? null : prop.getLocation();
+    }
+
+    protected static boolean isNull(Object value) {
+        return value == null;
+    }
+
+    protected static Object readFinalValue(PythonObject object, Location location) {
+        Object value = location.get(object.getStorage());
+        return value == null ? PNone.NO_VALUE : value;
+    }
+
+    /*
+     * Includes "object" as a parameter so that Truffle DSL sees this as a dynamic check.
+     */
+    protected static boolean checkShape(@SuppressWarnings("unused") PythonObject object, PythonObject cachedObject, Shape cachedShape) {
+        return cachedObject.getStorage().getShape() == cachedShape;
+    }
+
+    protected Object attrKey(Object key) {
+        if (key instanceof PString) {
+            return ((PString) key).getValue();
+        } else {
+            return key;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(limit = "1", //
+                    guards = {
+                                    "object == cachedObject",
+                                    "checkShape(object, cachedObject, cachedShape)",
+                                    "key == cachedKey",
+                                    "!isNull(loc)",
+                                    "loc.isAssumedFinal()"
+                    }, //
+                    assumptions = {
+                                    "layoutAssumption",
+                                    "finalAssumption"
+                    })
+    protected Object readDirectFinal(PythonObject object, Object key,
+                    @Cached("object") PythonObject cachedObject,
+                    @Cached("key") Object cachedKey,
+                    @Cached("attrKey(key)") Object attrKey,
+                    @Cached("object.getStorage().getShape()") Shape cachedShape,
+                    @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
+                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc,
+                    @Cached("loc.getFinalAssumption()") Assumption finalAssumption,
+                    @Cached("readFinalValue(object, loc)") Object cachedValue) {
+        assert assertFinal(object, attrKey, cachedValue);
+        return cachedValue;
+    }
+
+    private static boolean assertFinal(PythonObject object, Object key, Object cachedValue) {
+        Object other = object.getStorage().get(key) == null ? PNone.NO_VALUE : object.getStorage().get(key);
+        return cachedValue == other || cachedValue instanceof Number && other instanceof Number && ((Number) cachedValue).doubleValue() == ((Number) other).doubleValue();
     }
 
     @SuppressWarnings("unused")
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
-                                    "key == cachedKey"
+                                    "key == cachedKey",
+                                    "isNull(loc) || !loc.isAssumedFinal()"
                     }, //
                     assumptions = "layoutAssumption")
     protected Object readDirect(PythonObject object, Object key,
                     @Cached("key") Object cachedKey,
+                    @Cached("attrKey(cachedKey)") Object attrKey,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
-                    @Cached("cachedShape.getProperty(key)") Property prop,
-                    @Cached("getLocationOrNull(prop)") Location loc) {
-        if (prop == null) {
+                    @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
+        if (loc == null) {
             return PNone.NO_VALUE;
         } else {
             return loc.get(object.getStorage());
@@ -105,7 +162,7 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
 
     @Specialization(replaces = "readDirect")
     protected Object readIndirect(PythonObject object, Object key) {
-        Object value = object.getStorage().get(key);
+        Object value = object.getStorage().get(attrKey(key));
         if (value == null) {
             return PNone.NO_VALUE;
         } else {
@@ -117,7 +174,7 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
     protected Object readForeign(TruffleObject object, Object key,
                     @Cached("createReadNode()") Node readNode) {
         try {
-            return ForeignAccess.sendRead(readNode, object, key);
+            return ForeignAccess.sendRead(readNode, object, attrKey(key));
         } catch (UnknownIdentifierException | UnsupportedMessageException e) {
             return PNone.NO_VALUE;
         }

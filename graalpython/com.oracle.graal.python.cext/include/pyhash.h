@@ -46,6 +46,7 @@ extern "C" {
 #endif
 
 PyAPI_FUNC(Py_hash_t) _Py_HashDouble(double);
+PyAPI_FUNC(Py_hash_t) _Py_HashBytes(const void*, Py_ssize_t);
 
 extern long _PyHASH_INF;
 extern long _PyHASH_NAN;

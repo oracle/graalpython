@@ -151,8 +151,12 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetTraceNode extends PythonBuiltinNode {
         @Specialization
-        Object get(@SuppressWarnings("unused") PFrame self) {
-            return PNone.NONE;
+        Object get(PFrame self) {
+            PTraceback traceback = self.getException().getTraceback(factory(), self.getIndex());
+            if (traceback == null) {
+                return PNone.NONE;
+            }
+            return traceback;
         }
     }
 
@@ -169,7 +173,7 @@ public final class FrameBuiltins extends PythonBuiltins {
             if (rootNode == null) {
                 return PNone.NONE;
             } else {
-                return new PythonParseResult(rootNode, getCore());
+                return factory().createCode(new PythonParseResult(rootNode));
             }
         }
     }
