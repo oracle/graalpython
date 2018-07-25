@@ -55,4 +55,8 @@ public class ReadIndexedArgumentNode extends PNode {
             return profile.profile(argumentAt);
         }
     }
+
+    public int getIndex() {
+        return index;
+    }
 }

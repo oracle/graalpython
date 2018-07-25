@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -100,6 +101,9 @@ import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -146,6 +150,8 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1290,17 +1296,52 @@ public final class BuiltinFunctions extends PythonBuiltins {
              * won't work when they are called from an instance of that class due to the implicit
              * currying with "self".
              */
+            Arity arity = func.getArity();
+            PFunction builtinFunc;
+            if (arity.getParameterIds().length > 0 && arity.getParameterIds()[0].equals("self")) {
+                /*
+                 * If the first parameter is called self, we assume the function does explicitly
+                 * declare the module argument
+                 */
+                builtinFunc = func;
+            } else {
+                /*
+                 * Otherwise, we create a new function with an arity that requires one extra
+                 * argument in front. We actually modify the function's AST here, so the original
+                 * PFunction cannot be used anymore (its Arity won't agree with it's indexed
+                 * parameter reads).
+                 */
+                String name = func.getName();
+                Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArg(), arity.takesVarArgs(), arity.getParameterIds(),
+                                arity.getKeywordNames());
+                func.getFunctionRootNode().accept(new NodeVisitor() {
+                    public boolean visit(Node node) {
+                        if (node instanceof ReadVarArgsNode) {
+                            node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex(), ((ReadVarArgsNode) node).isBuiltin()));
+                            return false;
+                        } else if (node instanceof ReadIndexedArgumentNode) {
+                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }
+                });
+                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arityWithSelf, Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
+                                func.getFrameDescriptor(), func.getGlobals(), func.getClosure());
+            }
+
             PythonObject globals = func.getGlobals();
             PythonModule builtinModule;
             if (globals instanceof PythonModule) {
                 builtinModule = (PythonModule) globals;
                 assert getContext().getCore().lookupBuiltinModule(((PythonModule) globals).getModuleName()) == builtinModule;
             } else {
-                String name = (String) getNameNode.execute(globals, __NAME__);
-                builtinModule = getContext().getCore().lookupBuiltinModule(name);
+                String moduleName = (String) getNameNode.execute(globals, __NAME__);
+                builtinModule = getContext().getCore().lookupBuiltinModule(moduleName);
+                assert builtinModule != null;
             }
-            assert builtinModule != null;
-            return factory().createMethod(builtinModule, func);
+            return factory().createMethod(builtinModule, builtinFunc);
         }
     }
 }

@@ -109,4 +109,8 @@ public abstract class ReadVarArgsNode extends ReadIndexedArgumentNode {
             return factory().createTuple(varArgs);
         }
     }
+
+    public boolean isBuiltin() {
+        return builtin;
+    }
 }

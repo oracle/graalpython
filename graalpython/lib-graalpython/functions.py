@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 @__builtin__
-def hasattr(mod, obj, key):
+def hasattr(obj, key):
     try:
         type(obj).__getattribute__(obj, key)
         return True
@@ -52,7 +52,7 @@ def hasattr(mod, obj, key):
 def make_print():
     builtin_print = print
 
-    def func(mod, *objects, sep=" ", end="\n", file=None, flush=False):
+    def func(*objects, sep=" ", end="\n", file=None, flush=False):
         if file is not None:
             sz = len(objects) - 1
             for i in range(sz):
@@ -89,7 +89,7 @@ del make_locals_function
 
 
 @__builtin__
-def any(mod, iterable):
+def any(iterable):
     for i in iterable:
         if i:
             return True
@@ -97,7 +97,7 @@ def any(mod, iterable):
 
 
 @__builtin__
-def all(mod, iterable):
+def all(iterable):
     for i in iterable:
         if not i:
             return False
@@ -105,7 +105,7 @@ def all(mod, iterable):
 
 
 @__builtin__
-def filter(mod, func, iterable):
+def filter(func, iterable):
     result = []
     predicate = func if func is not None else lambda a: a
     for i in iterable:
@@ -115,7 +115,7 @@ def filter(mod, func, iterable):
 
 
 @__builtin__
-def exec(mod, source, globals=None, locals=None):
+def exec(source, globals=None, locals=None):
     # compile returns the source if already a code object
     return eval(compile(source, "<exec>", "exec"), globals, locals)
 
@@ -158,7 +158,7 @@ def _caller_locals():
 
 
 @__builtin__
-def vars(mod, *obj):
+def vars(*obj):
     """Return a dictionary of all the attributes currently bound in obj.  If
     called with no argument, return the variables bound in local scope."""
     if len(obj) == 0:
@@ -174,7 +174,7 @@ def vars(mod, *obj):
 
 
 @__builtin__
-def format(mod, value, format_spec=''):
+def format(value, format_spec=''):
     """Return value.__format__(format_spec)
 
     format_spec defaults to the empty string.
@@ -184,7 +184,7 @@ def format(mod, value, format_spec=''):
 
 
 @__builtin__
-def sorted(mod, iterable, key=None, reverse=False):
+def sorted(iterable, key=None, reverse=False):
     """Return a new list containing all items from the iterable in ascending order.
 
     A custom key function can be supplied to customize the sort order, and the
