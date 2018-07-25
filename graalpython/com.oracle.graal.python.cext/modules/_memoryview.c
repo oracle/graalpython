@@ -57,7 +57,7 @@
      releasebufferprocs must NOT decrement view.obj.
 */
 
-extern PyTypeObject PyNativeMemoryView_Type;
+PyTypeObject PyNativeMemoryView_Type;
 
 #define CHECK_MBUF_RELEASED(mbuf) \
     if (((_PyManagedBufferObject *)mbuf)->flags&_Py_MANAGED_BUFFER_RELEASED) { \

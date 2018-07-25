@@ -45,9 +45,6 @@
 
 PyTypeObject PyLong_Type = PY_TRUFFLE_TYPE("int", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LONG_SUBCLASS, offsetof(PyLongObject, ob_digit));
 
-PyObject *_PyLong_Zero = NULL;
-PyObject *_PyLong_One = NULL;
-
 long PyLong_AsLong(PyObject *obj) {
     return UPCALL_CEXT_L("PyLong_AsPrimitive", native_to_java(obj), 1, sizeof(long), polyglot_from_string("long", SRC_CS));
 }

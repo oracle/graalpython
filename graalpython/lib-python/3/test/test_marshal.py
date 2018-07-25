@@ -34,6 +34,29 @@ class IntTestCase(unittest.TestCase, HelperMixin):
                 self.helper(expected)
             n = n >> 1
 
+    def test_int64(self):
+        # Simulate int marshaling with TYPE_INT64.
+        maxint64 = (1 << 63) - 1
+        minint64 = -maxint64-1
+        for base in maxint64, minint64, -maxint64, -(minint64 >> 1):
+            while base:
+                s = b'I' + int.to_bytes(base, 8, 'little', signed=True)
+                got = marshal.loads(s)
+                self.assertEqual(base, got)
+                if base == -1:  # a fixed-point for shifting right 1
+                    base = 0
+                else:
+                    base >>= 1
+
+        got = marshal.loads(b'I\xfe\xdc\xba\x98\x76\x54\x32\x10')
+        self.assertEqual(got, 0x1032547698badcfe)
+        got = marshal.loads(b'I\x01\x23\x45\x67\x89\xab\xcd\xef')
+        self.assertEqual(got, -0x1032547698badcff)
+        got = marshal.loads(b'I\x08\x19\x2a\x3b\x4c\x5d\x6e\x7f')
+        self.assertEqual(got, 0x7f6e5d4c3b2a1908)
+        got = marshal.loads(b'I\xf7\xe6\xd5\xc4\xb3\xa2\x91\x80')
+        self.assertEqual(got, -0x7f6e5d4c3b2a1909)
+
     def test_bool(self):
         for b in (True, False):
             self.helper(b)
@@ -195,7 +218,6 @@ class BugsTestCase(unittest.TestCase):
         s = b'c' + (b'X' * 4*5) + b'{' * 2**20
         self.assertRaises(ValueError, marshal.loads, s)
 
-    @support.impl_detail('specific recursion check')
     def test_recursion_limit(self):
         # Create a deeply nested structure.
         head = last = []
@@ -289,10 +311,6 @@ class BugsTestCase(unittest.TestCase):
 
 LARGE_SIZE = 2**31
 pointer_size = 8 if sys.maxsize > 0xFFFFFFFF else 4
-if support.check_impl_detail(pypy=False):
-    sizeof_large_size = sys.getsizeof(LARGE_SIZE-1)
-else:
-    sizeof_large_size = 32  # Some value for PyPy
 
 class NullWriter:
     def write(self, s):
@@ -320,13 +338,13 @@ class LargeValuesTestCase(unittest.TestCase):
         self.check_unmarshallable([None] * size)
 
     @support.bigmemtest(size=LARGE_SIZE,
-            memuse=pointer_size*12 + sizeof_large_size,
+            memuse=pointer_size*12 + sys.getsizeof(LARGE_SIZE-1),
             dry_run=False)
     def test_set(self, size):
         self.check_unmarshallable(set(range(size)))
 
     @support.bigmemtest(size=LARGE_SIZE,
-            memuse=pointer_size*12 + sizeof_large_size,
+            memuse=pointer_size*12 + sys.getsizeof(LARGE_SIZE-1),
             dry_run=False)
     def test_frozenset(self, size):
         self.check_unmarshallable(frozenset(range(size)))

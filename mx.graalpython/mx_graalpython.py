@@ -21,6 +21,7 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+from argparse import ArgumentParser
 import os
 import platform
 import re
@@ -754,6 +755,114 @@ def python_checkcopyrights(args):
         os.unlink(listfilename)
 
 
+def import_python_sources(args):
+    # mappings for files that are renamed
+    mapping = {
+        "_memoryview.c": "memoryobject.c",
+        "_cpython_sre.c": "_sre.c",
+    }
+    parser = ArgumentParser(prog='mx python-src-import')
+    parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
+    parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
+    parser.add_argument('--msg', action='store', help='Message for import update commit', required=True)
+    args = parser.parse_args(args)
+
+    python_sources = args.cpython
+    pypy_sources = args.pypy
+    import_version = args.msg
+
+    print """
+    So you think you want to update the inlined sources? Here is how it will go:
+
+    1. We'll first check the copyrights check overrides file to identify the
+       files taken from CPython and we'll remember that list. There's a mapping
+       for files that were renamed, currently this includes:
+       \t{0!r}\n
+
+    2. We'll check out the "python-import" branch. This branch has only files
+       that were inlined from CPython or PyPy. We'll use the sources given on
+       the commandline for that. I hope those are in a state where that makes
+       sense.
+
+    3. We'll stop and wait to give you some time to check if the python-import
+       branch looks as you expect. Then we'll commit the updated files to the
+       python-import branch, push it, and move back to whatever your HEAD is
+       now.
+
+    4. We'll merge the python-import branch back into HEAD. Because these share
+       a common ancestroy, git will try to preserve our patches to files, that
+       is, copyright headers and any other source patches.
+
+    5. !IMPORTANT! If files were inlined from CPython during normal development
+       that were not first added to the python-import branch, you will get merge
+       conflicts and git will tell you that the files was added on both
+       branches. You probably should resolve these using:
+
+           git checkout python-import -- path/to/file
+
+        Then check the diff and make sure that any patches that we did to those
+        files are re-applied.
+
+    6. After the merge is completed and any direct merge conflicts are resolved,
+       run this:
+
+           mx python-checkcopyrights --fix
+
+       This will apply copyrights to files that we're newly added from
+       python-import.
+
+    7. Run the tests and fix any remaining issues.
+    """.format(mapping)
+    raw_input("Got it?")
+
+    files = []
+    with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
+        files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
+
+    # move to orphaned branch with sources
+    if _suite.vc.isDirty(_suite.dir):
+        mx.abort("Working dir must be clean")
+    tip = _suite.vc.tip(_suite.dir).strip()
+    _suite.vc.git_command(_suite.dir, ["checkout", "python-import"])
+    _suite.vc.git_command(_suite.dir, ["clean", "-fdx"])
+    shutil.rmtree("graalpython")
+
+    for inlined_file in files:
+        # C files are mostly just copied
+        original_file = None
+        name = os.path.basename(inlined_file)
+        name = mapping.get(name, name)
+        if inlined_file.endswith(".h") or inlined_file.endswith(".c"):
+            for root, dirs, files in os.walk(python_sources):
+                if os.path.basename(name) in files:
+                    original_file = os.path.join(root, name)
+                    try:
+                        os.makedirs(os.path.dirname(inlined_file))
+                    except:
+                        pass
+                    shutil.copy(original_file, inlined_file)
+                    break
+        elif inlined_file.endswith(".py"):
+            # these files don't need to be updated, they inline some unittest code only
+            if name.startswith("test_") or name.endswith("_tests.py"):
+                original_file = inlined_file
+        if original_file is None:
+            mx.warn("Could not update %s - original file not found" % inlined_file)
+
+    # re-copy lib-python
+    libdir = os.path.join(_suite.dir, "graalpython/lib-python/3")
+    shutil.copytree(os.path.join(pypy_sources, "lib-python", "3"), libdir)
+
+    # commit and check back
+    _suite.vc.git_command(_suite.dir, ["add", "."])
+    raw_input("Check that the updated files look as intended, then press RETURN...")
+    _suite.vc.commit(_suite.dir, "Update Python inlined files: %s" % import_version)
+    answer = raw_input("Should we push python-import (y/N)? ")
+    if answer and answer in "Yy":
+        _suite.vc.git_command(_suite.dir, ["push", "origin", "python-import:python-import"])
+    _suite.vc.update(_suite.dir, rev=tip)
+    _suite.vc.git_command(_suite.dir, ["merge", "python-import"])
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # add the defined python benchmark suites
@@ -828,4 +937,5 @@ mx.update_commands(_suite, {
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],
+    'python-src-import': [import_python_sources, ''],
 })

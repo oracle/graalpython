@@ -2,7 +2,7 @@ import sys
 import unittest
 import tkinter
 from tkinter import ttk
-from test.support import requires, run_unittest, swap_attr, gc_collect
+from test.support import requires, run_unittest, swap_attr
 from tkinter.test.support import AbstractTkTest, destroy_default_root
 
 requires('gui')
@@ -18,7 +18,6 @@ class LabeledScaleTest(AbstractTkTest, unittest.TestCase):
         x = ttk.LabeledScale(self.root)
         var = x._variable._name
         x.destroy()
-        gc_collect()
         self.assertRaises(tkinter.TclError, x.tk.globalgetvar, var)
 
         # manually created variable
@@ -31,7 +30,6 @@ class LabeledScaleTest(AbstractTkTest, unittest.TestCase):
         else:
             self.assertEqual(float(x.tk.globalgetvar(name)), myvar.get())
         del myvar
-        gc_collect()
         self.assertRaises(tkinter.TclError, x.tk.globalgetvar, name)
 
         # checking that the tracing callback is properly removed
@@ -189,7 +187,6 @@ class LabeledScaleTest(AbstractTkTest, unittest.TestCase):
     def test_resize(self):
         x = ttk.LabeledScale(self.root)
         x.pack(expand=True, fill='both')
-        gc_collect()
         x.wait_visibility()
         x.update()
 
@@ -226,7 +223,6 @@ class OptionMenuTest(AbstractTkTest, unittest.TestCase):
         optmenu.destroy()
         self.assertEqual(optmenu.tk.globalgetvar(name), var.get())
         del var
-        gc_collect()
         self.assertRaises(tkinter.TclError, optmenu.tk.globalgetvar, name)
 
 
@@ -272,7 +268,6 @@ class OptionMenuTest(AbstractTkTest, unittest.TestCase):
 
         # check that variable is updated correctly
         optmenu.pack()
-        gc_collect()
         optmenu.wait_visibility()
         optmenu['menu'].invoke(0)
         self.assertEqual(optmenu._variable.get(), items[0])
@@ -295,6 +290,31 @@ class OptionMenuTest(AbstractTkTest, unittest.TestCase):
             self.fail("Menu callback not invoked")
 
         optmenu.destroy()
+
+    def test_unique_radiobuttons(self):
+        # check that radiobuttons are unique across instances (bpo25684)
+        items = ('a', 'b', 'c')
+        default = 'a'
+        optmenu = ttk.OptionMenu(self.root, self.textvar, default, *items)
+        textvar2 = tkinter.StringVar(self.root)
+        optmenu2 = ttk.OptionMenu(self.root, textvar2, default, *items)
+        optmenu.pack()
+        optmenu.wait_visibility()
+        optmenu2.pack()
+        optmenu2.wait_visibility()
+        optmenu['menu'].invoke(1)
+        optmenu2['menu'].invoke(2)
+        optmenu_stringvar_name = optmenu['menu'].entrycget(0, 'variable')
+        optmenu2_stringvar_name = optmenu2['menu'].entrycget(0, 'variable')
+        self.assertNotEqual(optmenu_stringvar_name,
+                            optmenu2_stringvar_name)
+        self.assertEqual(self.root.tk.globalgetvar(optmenu_stringvar_name),
+                         items[1])
+        self.assertEqual(self.root.tk.globalgetvar(optmenu2_stringvar_name),
+                         items[2])
+
+        optmenu.destroy()
+        optmenu2.destroy()
 
 
 tests_gui = (LabeledScaleTest, OptionMenuTest)

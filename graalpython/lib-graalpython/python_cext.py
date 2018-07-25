@@ -1058,7 +1058,8 @@ def PyErr_NormalizeException(exc, val, tb):
 @may_raise
 def _PyErr_Warn(message, category, stack_level, source):
     import warnings
-    warnings.warn(message, category, stack_level, source)
+    # TODO: pass source again once we update to newer lib-python
+    warnings.warn(message, category, stack_level)
     return None
 
 

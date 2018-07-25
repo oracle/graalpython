@@ -3,6 +3,7 @@ from tokenize import (tokenize, _tokenize, untokenize, NUMBER, NAME, OP,
                      STRING, ENDMARKER, ENCODING, tok_name, detect_encoding,
                      open as tokenize_open, Untokenizer)
 from io import BytesIO
+import unittest
 from unittest import TestCase, mock
 from test.test_grammar import (VALID_UNDERSCORE_LITERALS,
                                INVALID_UNDERSCORE_LITERALS)
@@ -629,6 +630,11 @@ def"', """\
     NAME       'async'       (1, 0) (1, 5)
     OP         '='           (1, 6) (1, 7)
     NUMBER     '1'           (1, 8) (1, 9)
+    """)
+
+        self.check_tokenize("async\\", """\
+    ERRORTOKEN '\\\\'          (1, 5) (1, 6)
+    NAME       'async'       (1, 0) (1, 5)
     """)
 
         self.check_tokenize("a = (async = 1)", """\

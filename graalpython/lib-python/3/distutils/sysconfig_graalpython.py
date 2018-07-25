@@ -203,7 +203,3 @@ def customize_compiler(compiler):
             archiver=archiver)
 
         compiler.shared_lib_extension = shlib_suffix
-
-
-from .sysconfig_cpython import (
-    parse_makefile, _variable_rx, expand_makefile_vars)

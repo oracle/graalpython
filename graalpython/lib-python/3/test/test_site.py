@@ -6,8 +6,7 @@ executing have not been removed.
 """
 import unittest
 import test.support
-from test.support import (
-    captured_stderr, check_impl_detail, TESTFN, EnvironmentVarGuard)
+from test.support import captured_stderr, TESTFN, EnvironmentVarGuard
 import builtins
 import os
 import sys
@@ -28,14 +27,27 @@ if sys.flags.no_site:
 
 import site
 
-if site.ENABLE_USER_SITE and not os.path.isdir(site.USER_SITE):
-    # need to add user site directory for tests
-    try:
-        os.makedirs(site.USER_SITE)
-        site.addsitedir(site.USER_SITE)
-    except PermissionError as exc:
-        raise unittest.SkipTest('unable to create user site directory (%r): %s'
-                                % (site.USER_SITE, exc))
+
+OLD_SYS_PATH = None
+
+
+def setUpModule():
+    global OLD_SYS_PATH
+    OLD_SYS_PATH = sys.path[:]
+
+    if site.ENABLE_USER_SITE and not os.path.isdir(site.USER_SITE):
+        # need to add user site directory for tests
+        try:
+            os.makedirs(site.USER_SITE)
+            # modify sys.path: will be restored by tearDownModule()
+            site.addsitedir(site.USER_SITE)
+        except PermissionError as exc:
+            raise unittest.SkipTest('unable to create user site directory (%r): %s'
+                                    % (site.USER_SITE, exc))
+
+
+def tearDownModule():
+    sys.path[:] = OLD_SYS_PATH
 
 
 class HelperFunctionsTests(unittest.TestCase):
@@ -235,11 +247,7 @@ class HelperFunctionsTests(unittest.TestCase):
         site.PREFIXES = ['xoxo']
         dirs = site.getsitepackages()
 
-        if check_impl_detail(pypy=True):
-            self.assertEqual(len(dirs), 1)
-            wanted = os.path.join('xoxo', 'site-packages')
-            self.assertEqual(dirs[0], wanted)
-        elif (sys.platform == "darwin" and
+        if (sys.platform == "darwin" and
             sysconfig.get_config_var("PYTHONFRAMEWORK")):
             # OS X framework builds
             site.PREFIXES = ['Python.framework']
@@ -251,7 +259,7 @@ class HelperFunctionsTests(unittest.TestCase):
                                   'site-packages')
             self.assertEqual(dirs[1], wanted)
         elif os.sep == '/':
-            # OS X non-framwework builds, Linux, FreeBSD, etc
+            # OS X non-framework builds, Linux, FreeBSD, etc
             self.assertEqual(len(dirs), 1)
             wanted = os.path.join('xoxo', 'lib',
                                   'python%d.%d' % sys.version_info[:2],
@@ -356,10 +364,8 @@ class ImportSideEffectTests(unittest.TestCase):
 
         self.assertEqual(proc.returncode, 0)
         os__file__, os__cached__ = stdout.splitlines()[:2]
-        if check_impl_detail(cpython=True):
-            # XXX: should probably match cpython
-            self.assertFalse(os.path.isabs(os__file__))
-            self.assertFalse(os.path.isabs(os__cached__))
+        self.assertFalse(os.path.isabs(os__file__))
+        self.assertFalse(os.path.isabs(os__cached__))
         # Now, with 'import site', it works.
         proc = subprocess.Popen([sys.executable, '-c', command],
                                 env=env,
@@ -508,15 +514,15 @@ class StartupImportTests(unittest.TestCase):
                     print(line, file=f)
             return exe_file
         except:
-            os.unlink(_pth_file)
-            os.unlink(exe_file)
+            test.support.unlink(_pth_file)
+            test.support.unlink(exe_file)
             raise
 
     @classmethod
     def _cleanup_underpth_exe(self, exe_file):
         _pth_file = os.path.splitext(exe_file)[0] + '._pth'
-        os.unlink(_pth_file)
-        os.unlink(exe_file)
+        test.support.unlink(_pth_file)
+        test.support.unlink(exe_file)
 
     @classmethod
     def _calc_sys_path_for_underpth_nosite(self, sys_prefix, lines):

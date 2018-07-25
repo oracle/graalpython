@@ -6,8 +6,7 @@ import _ast
 import tempfile
 import types
 from test import support
-from test.support import script_helper
-from test.support import check_impl_detail
+from test.support import script_helper, FakePath
 
 class TestSpecifics(unittest.TestCase):
 
@@ -36,6 +35,7 @@ class TestSpecifics(unittest.TestCase):
         import builtins
         prev = builtins.__debug__
         setattr(builtins, '__debug__', 'sure')
+        self.assertEqual(__debug__, prev)
         setattr(builtins, '__debug__', prev)
 
     def test_argument_handling(self):
@@ -509,9 +509,7 @@ if 1:
 
     def test_bad_single_statement(self):
         self.assertInvalidSingle('1\n2')
-        if check_impl_detail():
-            # it's a single statment in PyPy
-            self.assertInvalidSingle('def f(): pass')
+        self.assertInvalidSingle('def f(): pass')
         self.assertInvalidSingle('a = 13\nb = 187')
         self.assertInvalidSingle('del x\ndel y')
         self.assertInvalidSingle('f()\ng()')
@@ -672,13 +670,7 @@ if 1:
 
     def test_path_like_objects(self):
         # An implicit test for PyUnicode_FSDecoder().
-        class PathLike:
-            def __init__(self, path):
-                self._path = path
-            def __fspath__(self):
-                return self._path
-
-        compile("42", PathLike("test_compile_pathlike"), "single")
+        compile("42", FakePath("test_compile_pathlike"), "single")
 
 
 class TestStackSize(unittest.TestCase):

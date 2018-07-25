@@ -23,6 +23,12 @@ extern "C" {
 #define PyCF_IGNORE_COOKIE 0x0800
 
 #ifndef Py_LIMITED_API
+typedef struct {
+    int cf_flags;  /* bitmask of CO_xxx flags relevant to future */
+} PyCompilerFlags;
+#endif
+
+#ifndef Py_LIMITED_API
 PyAPI_FUNC(int) PyRun_SimpleStringFlags(const char *, PyCompilerFlags *);
 PyAPI_FUNC(int) PyRun_AnyFileFlags(FILE *, const char *, PyCompilerFlags *);
 PyAPI_FUNC(int) PyRun_AnyFileExFlags(

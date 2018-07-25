@@ -62,7 +62,6 @@ __always_supported = ('md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512',
                       # 'shake_128', 'shake_256'
 )
 
-
 algorithms_guaranteed = set(__always_supported)
 algorithms_available = set(__always_supported)
 

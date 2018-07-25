@@ -173,8 +173,7 @@ class SysModuleTest(unittest.TestCase):
                 sys.setcheckinterval(n)
                 self.assertEqual(sys.getcheckinterval(), n)
 
-    @unittest.skipUnless(hasattr(sys, 'getswitchinterval') and threading,
-                         'New GIL & threading required for this test.')
+    @unittest.skipUnless(threading, 'Threading required for this test.')
     def test_switchinterval(self):
         self.assertRaises(TypeError, sys.setswitchinterval)
         self.assertRaises(TypeError, sys.setswitchinterval, "a")
@@ -257,7 +256,6 @@ class SysModuleTest(unittest.TestCase):
         finally:
             sys.setrecursionlimit(oldlimit)
 
-    @unittest.skipIf(True, 'Fixme: hangs with pypy')
     def test_recursionlimit_fatalerror(self):
         # A fatal error occurs if a second recursion limit is hit when recovering
         # from a first one.
@@ -351,7 +349,6 @@ class SysModuleTest(unittest.TestCase):
         )
 
     # sys._current_frames() is a CPython-only gimmick.
-    @test.support.impl_detail("current_frames")
     def test_current_frames(self):
         have_threads = True
         try:
@@ -448,17 +445,13 @@ class SysModuleTest(unittest.TestCase):
         self.assertEqual(len(sys.float_info), 11)
         self.assertEqual(sys.float_info.radix, 2)
         self.assertEqual(len(sys.int_info), 2)
-        if test.support.check_impl_detail(cpython=True):
-            self.assertTrue(sys.int_info.bits_per_digit % 5 == 0)
-        else:
-            self.assertTrue(sys.int_info.bits_per_digit >= 1)
+        self.assertTrue(sys.int_info.bits_per_digit % 5 == 0)
         self.assertTrue(sys.int_info.sizeof_digit >= 1)
         self.assertEqual(type(sys.int_info.bits_per_digit), int)
         self.assertEqual(type(sys.int_info.sizeof_digit), int)
         self.assertIsInstance(sys.hexversion, int)
 
-        if test.support.check_impl_detail(cpython=True):
-            self.assertEqual(len(sys.hash_info), 9)
+        self.assertEqual(len(sys.hash_info), 9)
         self.assertLess(sys.hash_info.modulus, 2**sys.hash_info.width)
         # sys.hash_info.modulus should be a prime; we do a quick
         # probable primality test (doesn't exclude the possibility of
@@ -473,23 +466,22 @@ class SysModuleTest(unittest.TestCase):
         self.assertIsInstance(sys.hash_info.inf, int)
         self.assertIsInstance(sys.hash_info.nan, int)
         self.assertIsInstance(sys.hash_info.imag, int)
-        if test.support.check_impl_detail(cpython=True):
-            algo = sysconfig.get_config_var("Py_HASH_ALGORITHM")
-            if sys.hash_info.algorithm in {"fnv", "siphash24"}:
-                self.assertIn(sys.hash_info.hash_bits, {32, 64})
-                self.assertIn(sys.hash_info.seed_bits, {32, 64, 128})
+        algo = sysconfig.get_config_var("Py_HASH_ALGORITHM")
+        if sys.hash_info.algorithm in {"fnv", "siphash24"}:
+            self.assertIn(sys.hash_info.hash_bits, {32, 64})
+            self.assertIn(sys.hash_info.seed_bits, {32, 64, 128})
 
-                if algo == 1:
-                    self.assertEqual(sys.hash_info.algorithm, "siphash24")
-                elif algo == 2:
-                    self.assertEqual(sys.hash_info.algorithm, "fnv")
-                else:
-                    self.assertIn(sys.hash_info.algorithm, {"fnv", "siphash24"})
+            if algo == 1:
+                self.assertEqual(sys.hash_info.algorithm, "siphash24")
+            elif algo == 2:
+                self.assertEqual(sys.hash_info.algorithm, "fnv")
             else:
-                # PY_HASH_EXTERNAL
-                self.assertEqual(algo, 0)
-            self.assertGreaterEqual(sys.hash_info.cutoff, 0)
-            self.assertLess(sys.hash_info.cutoff, 8)
+                self.assertIn(sys.hash_info.algorithm, {"fnv", "siphash24"})
+        else:
+            # PY_HASH_EXTERNAL
+            self.assertEqual(algo, 0)
+        self.assertGreaterEqual(sys.hash_info.cutoff, 0)
+        self.assertLess(sys.hash_info.cutoff, 8)
 
         self.assertIsInstance(sys.maxsize, int)
         self.assertIsInstance(sys.maxunicode, int)
@@ -786,6 +778,10 @@ class SysModuleTest(unittest.TestCase):
     @unittest.skipUnless(hasattr(sys, "getallocatedblocks"),
                          "sys.getallocatedblocks unavailable on this build")
     def test_getallocatedblocks(self):
+        if (os.environ.get('PYTHONMALLOC', None)
+           and not sys.flags.ignore_environment):
+            self.skipTest("cannot test if PYTHONMALLOC env var is set")
+
         # Some sanity checks
         with_pymalloc = sysconfig.get_config_var('WITH_PYMALLOC')
         a = sys.getallocatedblocks()
@@ -832,12 +828,40 @@ class SysModuleTest(unittest.TestCase):
             ref = AtExit()
         """
         rc, stdout, stderr = assert_python_ok('-c', code)
-        if test.support.check_impl_detail(cpython=True):
-            self.assertEqual(stdout.rstrip(), b'True')
-        else:
-            # the __del__ method may or may not have been called
-            # in other Python implementations
-            self.assertIn(stdout.rstrip(), {b'True', b''})
+        self.assertEqual(stdout.rstrip(), b'True')
+
+    def test_sys_tracebacklimit(self):
+        code = """if 1:
+            import sys
+            def f1():
+                1 / 0
+            def f2():
+                f1()
+            sys.tracebacklimit = %r
+            f2()
+        """
+        def check(tracebacklimit, expected):
+            p = subprocess.Popen([sys.executable, '-c', code % tracebacklimit],
+                                 stderr=subprocess.PIPE)
+            out = p.communicate()[1]
+            self.assertEqual(out.splitlines(), expected)
+
+        traceback = [
+            b'Traceback (most recent call last):',
+            b'  File "<string>", line 8, in <module>',
+            b'  File "<string>", line 6, in f2',
+            b'  File "<string>", line 4, in f1',
+            b'ZeroDivisionError: division by zero'
+        ]
+        check(10, traceback)
+        check(3, traceback)
+        check(2, traceback[:1] + traceback[2:])
+        check(1, traceback[:1] + traceback[3:])
+        check(0, [traceback[-1]])
+        check(-1, [traceback[-1]])
+        check(1<<1000, traceback)
+        check(-1<<1000, [traceback[-1]])
+        check(None, traceback)
 
 
 @test.support.cpython_only
@@ -926,13 +950,15 @@ class SizeofTest(unittest.TestCase):
             return inner
         check(get_cell().__closure__[0], size('P'))
         # code
-        check(get_cell().__code__, size('6i13P'))
-        check(get_cell.__code__, size('6i13P'))
+        def check_code_size(a, expected_size):
+            self.assertGreaterEqual(sys.getsizeof(a), expected_size)
+        check_code_size(get_cell().__code__, size('6i13P'))
+        check_code_size(get_cell.__code__, size('6i13P'))
         def get_cell2(x):
             def inner():
                 return x
             return inner
-        check(get_cell2.__code__, size('6i13P') + 1)
+        check_code_size(get_cell2.__code__, size('6i13P') + calcsize('n'))
         # complex
         check(complex(0,1), size('2d'))
         # method_descriptor (descriptor object)
@@ -1103,6 +1129,7 @@ class SizeofTest(unittest.TestCase):
             fmt += '3n2P'
         s = vsize(fmt)
         check(int, s)
+        # class
         s = vsize(fmt +                 # PyTypeObject
                   '3P'                  # PyAsyncMethods
                   '36P'                 # PyNumberMethods
@@ -1110,13 +1137,17 @@ class SizeofTest(unittest.TestCase):
                   '10P'                 # PySequenceMethods
                   '2P'                  # PyBufferProcs
                   '4P')
-        # Separate block for PyDictKeysObject with 8 keys and 5 entries
-        s += calcsize("2nP2n") + 8 + 5*calcsize("n2P")
-        # class
         class newstyleclass(object): pass
-        check(newstyleclass, s)
+        # Separate block for PyDictKeysObject with 8 keys and 5 entries
+        check(newstyleclass, s + calcsize("2nP2n0P") + 8 + 5*calcsize("n2P"))
         # dict with shared keys
-        check(newstyleclass().__dict__, size('nQ2P' + '2nP2n'))
+        check(newstyleclass().__dict__, size('nQ2P') + 5*self.P)
+        o = newstyleclass()
+        o.a = o.b = o.c = o.d = o.e = o.f = o.g = o.h = 1
+        # Separate block for PyDictKeysObject with 16 keys and 10 entries
+        check(newstyleclass, s + calcsize("2nP2n0P") + 16 + 10*calcsize("n2P"))
+        # dict with shared keys
+        check(newstyleclass().__dict__, size('nQ2P') + 10*self.P)
         # unicode
         # each tuple contains a string and its expected character size
         # don't put any static strings here, as they may contain

@@ -1,6 +1,5 @@
 # Minimal tests for dis module
 
-from test.support import check_impl_detail
 from test.support import captured_stdout
 from test.bytecode_helper import BytecodeTestCase
 import difflib
@@ -262,7 +261,6 @@ dis_compound_stmt_str = """\
              20 RETURN_VALUE
 """
 
-# XXX: change for PyPy?
 dis_traceback = """\
 %3d           0 SETUP_EXCEPT            12 (to 14)
 
@@ -401,8 +399,7 @@ class DisTests(unittest.TestCase):
         self.do_disassembly_test(expr_str, dis_expr_str)
         self.do_disassembly_test(simple_stmt_str, dis_simple_stmt_str)
         self.do_disassembly_test(annot_stmt_str, dis_annot_stmt_str)
-        if check_impl_detail():
-            self.do_disassembly_test(compound_stmt_str, dis_compound_stmt_str)
+        self.do_disassembly_test(compound_stmt_str, dis_compound_stmt_str)
 
     def test_disassemble_bytes(self):
         self.do_disassembly_test(_f.__code__.co_code, dis_f_co_code)
@@ -469,16 +466,14 @@ class DisWithFileTests(DisTests):
 
 
 
-# CPython 3.5 gives a stack size of 4 whereas it really needs only 3
-# http://bugs.python.org/issue24340
 code_info_code_info = """\
 Name:              code_info
 Filename:          (.*)
 Argument count:    1
 Kw-only arguments: 0
 Number of locals:  1
-Stack size:        (4|3)
-Flags:             OPTIMIZED, NEWLOCALS, NOFREE, 0x100000
+Stack size:        3
+Flags:             OPTIMIZED, NEWLOCALS, NOFREE
 Constants:
    0: %r
 Names:
@@ -596,15 +591,13 @@ async def async_def():
     async for a in b: pass
     async with c as d: pass
 
-# CPython 3.5 gives a stack size of 17 whereas it really needs only 7
-# http://bugs.python.org/issue24340
 code_info_async_def = """\
 Name:              async_def
 Filename:          (.*)
 Argument count:    0
 Kw-only arguments: 0
 Number of locals:  2
-Stack size:        (17|7)
+Stack size:        17
 Flags:             OPTIMIZED, NEWLOCALS, NOFREE, COROUTINE
 Constants:
    0: None

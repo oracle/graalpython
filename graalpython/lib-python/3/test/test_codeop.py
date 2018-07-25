@@ -3,7 +3,7 @@
    Nick Mathewson
 """
 import unittest
-from test.support import run_unittest, is_jython, check_impl_detail
+from test.support import is_jython
 
 from codeop import compile_command, PyCF_DONT_IMPLY_DEDENT
 import io
@@ -270,9 +270,7 @@ class CodeopTests(unittest.TestCase):
         ai("a = 'a\\\n")
 
         ai("a = 1","eval")
-        if check_impl_detail():   # on PyPy it asks for more data, which is not
-            ai("a = (","eval")    # completely correct but hard to fix and
-                                  # really a detail (in my opinion <arigo>)
+        ai("a = (","eval")
         ai("]","eval")
         ai("())","eval")
         ai("[}","eval")

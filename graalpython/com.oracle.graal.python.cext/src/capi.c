@@ -148,10 +148,6 @@ static void initialize_globals() {
     void *jerrormarker = UPCALL_CEXT_PTR("Py_ErrorHandler");
     force_to_native(jerrormarker);
     truffle_assign_managed(&marker_struct, jerrormarker);
-
-    // long constants
-    _PyLong_Zero = PyLong_FromLong(0);
-    _PyLong_One = PyLong_FromLong(1);
 }
 
 static void initialize_bufferprocs() {
