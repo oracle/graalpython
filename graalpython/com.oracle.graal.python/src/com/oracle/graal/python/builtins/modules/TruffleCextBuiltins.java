@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -1579,6 +1580,54 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
                             Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Bytes_EmptyWithCapacity extends NativeBuiltin {
+
+        @Specialization
+        PBytes doInt(int size, @SuppressWarnings("unused") Object errorMarker) {
+            return factory().createBytes(new byte[size]);
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        PBytes doLong(long size, Object errorMarker) {
+            return doInt(PInt.intValueExact(size), errorMarker);
+        }
+
+        @Specialization(replaces = "doLong")
+        PBytes doLongOvf(long size, Object errorMarker) {
+            try {
+                return doInt(PInt.intValueExact(size), errorMarker);
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        PBytes doPInt(PInt size, Object errorMarker) {
+            return doInt(size.intValueExact(), errorMarker);
+        }
+
+        @Specialization(replaces = "doPInt")
+        PBytes doPIntOvf(PInt size, Object errorMarker) {
+            try {
+                return doInt(size.intValueExact(), errorMarker);
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Fallback
+        Object doGeneric(Object size, Object errorMarker) {
+            return raiseNative(errorMarker, TypeError, "expected 'int', but was '%p'", size);
+        }
+
+        @TruffleBoundary
+        private static void addToSet(PythonClass base, PythonClass value) {
+            base.getSubClasses().add(value);
         }
     }
 }
