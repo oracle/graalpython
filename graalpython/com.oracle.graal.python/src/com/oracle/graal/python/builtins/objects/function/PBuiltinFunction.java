@@ -82,6 +82,15 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Pytho
         }
     }
 
+    public boolean declaresExplicitSelf() {
+        RootNode functionRootNode = getFunctionRootNode();
+        if (functionRootNode instanceof BuiltinFunctionRootNode) {
+            return ((BuiltinFunctionRootNode) functionRootNode).declaresExplicitSelf();
+        } else {
+            return false;
+        }
+    }
+
     @Override
     public Arity getArity() {
         return arity;

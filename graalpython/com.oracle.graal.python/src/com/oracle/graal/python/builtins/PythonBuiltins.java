@@ -60,14 +60,21 @@ public abstract class PythonBuiltins {
             return;
         }
         initializeEachFactoryWith((factory, builtin) -> {
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory));
+            CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
+            boolean declaresExplicitSelf = true;
+            if (annotation.defineModule().length() > 0) {
+                assert annotation.extendClasses().length == 0;
+                // for module functions, explicit self is false by default
+                declaresExplicitSelf = builtin.declaresExplicitSelf();
+            }
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf));
             if (builtin.constructsClass().length > 0) {
-                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin), callTarget);
+                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin, declaresExplicitSelf), callTarget);
                 PythonBuiltinClass builtinClass = createBuiltinClassFor(core, builtin);
                 builtinClass.setAttributeUnsafe(__NEW__, newFunc);
                 builtinClass.setAttribute(__DOC__, builtin.doc());
             } else {
-                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, createArity(builtin), callTarget);
+                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, createArity(builtin, declaresExplicitSelf), callTarget);
                 function.setAttribute(__DOC__, builtin.doc());
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
@@ -138,7 +145,7 @@ public abstract class PythonBuiltins {
         }
     }
 
-    private static Arity createArity(Builtin builtin) {
+    private static Arity createArity(Builtin builtin, boolean declaresExplicitSelf) {
         int minNum = builtin.minNumOfArguments();
         int maxNum = Math.max(minNum, builtin.maxNumOfArguments());
         if (builtin.fixedNumOfArguments() > 0) {
@@ -146,6 +153,11 @@ public abstract class PythonBuiltins {
         }
         if (!builtin.takesVariableArguments()) {
             maxNum += builtin.keywordArguments().length;
+        }
+        if (!declaresExplicitSelf) {
+            // if we don't take the explicit self, we still need to accept it by arity
+            minNum++;
+            maxNum++;
         }
         return new Arity(builtin.name(), minNum, maxNum, builtin.keywordArguments().length > 0 || builtin.takesVariableKeywords(), builtin.takesVariableArguments(),
                         Arrays.asList(new String[0]), Arrays.asList(builtin.keywordArguments()));
