@@ -215,7 +215,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -246,7 +246,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -272,7 +272,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -313,7 +313,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -342,54 +342,54 @@ public final class FloatBuiltins extends PythonBuiltins {
             return Math.pow(left, right);
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDL(double left, long right, long mod) {
             return Math.pow(left, right) % mod;
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDPi(double left, PInt right, long mod) {
             return Math.pow(left, right.doubleValue()) % mod;
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDD(double left, double right, long mod) {
             return Math.pow(left, right) % mod;
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDL(double left, long right, PInt mod) {
             return Math.pow(left, right) % mod.doubleValue();
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDPi(double left, PInt right, PInt mod) {
             return Math.pow(left, right.doubleValue()) % mod.doubleValue();
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDD(double left, double right, PInt mod) {
             return Math.pow(left, right) % mod.doubleValue();
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDL(double left, long right, double mod) {
             return Math.pow(left, right) % mod;
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDPi(double left, PInt right, double mod) {
             return Math.pow(left, right.doubleValue()) % mod;
         }
 
-        @Specialization(guards = "!isNone(mod)")
+        @Specialization
         double doDD(double left, double right, double mod) {
             return Math.pow(left, right) % mod;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right, Object none) {
+        PNotImplemented doGeneric(Object left, Object right, Object none) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -418,7 +418,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -490,9 +490,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         public Object fromhexO(PythonClass cl, String arg,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode constr) {
             double value = fromHex(arg);
-            Object result = constr.execute(cl, new Object[]{cl, value});
-
-            return result;
+            return constr.execute(cl, new Object[]{cl, value});
         }
 
         @Fallback
@@ -576,7 +574,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -605,7 +603,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -634,7 +632,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -660,7 +658,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -686,7 +684,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -769,7 +767,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object eq(Object a, Object b) {
+        PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -795,7 +793,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object eq(Object a, Object b) {
+        PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -816,7 +814,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -837,7 +835,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -858,7 +856,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -879,7 +877,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -100,7 +101,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClassNode extends PythonBuiltinNode {
         @Specialization
-        Object getClass(Object self,
+        PythonClass getClass(Object self,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(self);
         }
@@ -172,7 +173,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object repr(Object self,
+        String repr(Object self,
                         @Cached("create()") GetClassNode getClass) {
             if (self == PNone.NONE) {
                 return "None";
@@ -367,7 +368,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected Object doIt(Object object, Object key, Object value,
+        protected PNone doIt(Object object, Object key, Object value,
                         @Cached("create()") GetClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
@@ -399,7 +400,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected Object doIt(Object object, Object key,
+        protected PNone doIt(Object object, Object key,
                         @Cached("create()") GetClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
