@@ -288,7 +288,6 @@ public final class Python3Core implements PythonCore {
     private final PythonParser parser;
 
     @CompilationFinal private boolean initialized;
-    @CompilationFinal private boolean builtinsPatchesLoaded;
 
     // used in case PythonOptions.SharedCore is false
     @CompilationFinal private PythonContext singletonContext;
@@ -356,16 +355,8 @@ public final class Python3Core implements PythonCore {
         }
         exportCInterface(getContext());
         currentException = null;
+        loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
         initialized = true;
-    }
-
-    @Override
-    public void loadBuiltinsPatches() {
-        if (initialized && !builtinsPatchesLoaded) {
-            builtinsPatchesLoaded = true;
-            String coreHome = PythonCore.getCoreHomeOrFail();
-            loadFile(__BUILTINS_PATCHES__, coreHome);
-        }
     }
 
     public Object duplicate(Map<Object, Object> replacements, Object value) {
