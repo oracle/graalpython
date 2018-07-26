@@ -1311,19 +1311,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
                  * parameter reads).
                  */
                 String name = func.getName();
-                Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArg(), arity.takesVarArgs(), arity.getParameterIds(),
+                String[] parameterIds = new String[arity.getParameterIds().length + 1];
+                parameterIds[0] = "self";
+                System.arraycopy(arity.getParameterIds(), 0, parameterIds, 1, parameterIds.length - 1);
+                Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArg(), arity.takesVarArgs(), parameterIds,
                                 arity.getKeywordNames());
                 func.getFunctionRootNode().accept(new NodeVisitor() {
                     public boolean visit(Node node) {
                         if (node instanceof ReadVarArgsNode) {
                             node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex(), ((ReadVarArgsNode) node).isBuiltin()));
-                            return false;
                         } else if (node instanceof ReadIndexedArgumentNode) {
                             node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                            return false;
-                        } else {
-                            return true;
                         }
+                        return true;
                     }
                 });
                 builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arityWithSelf, Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),

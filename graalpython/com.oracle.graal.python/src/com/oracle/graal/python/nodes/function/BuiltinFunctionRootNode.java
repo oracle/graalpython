@@ -212,7 +212,13 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             PNode[] argumentsList = createArgumentsList(builtin, declaresExplicitSelf);
             if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
-                body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList)));
+                if (!declaresExplicitSelf) {
+                    PNode[] argumentsListWithoutSelf = new PNode[argumentsList.length - 1];
+                    System.arraycopy(argumentsList, 1, argumentsListWithoutSelf, 0, argumentsListWithoutSelf.length);
+                    body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsListWithoutSelf)));
+                } else {
+                    body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList)));
+                }
             } else {
                 PythonBuiltinBaseNode node = factory.createNode();
                 if (node instanceof PythonUnaryBuiltinNode) {

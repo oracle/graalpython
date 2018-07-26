@@ -62,7 +62,9 @@ public abstract class PythonBuiltins {
         initializeEachFactoryWith((factory, builtin) -> {
             CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
             boolean declaresExplicitSelf = true;
-            if (annotation.defineModule().length() > 0) {
+            if (annotation.defineModule().length() > 0 && builtin.constructsClass().length == 0) {
+                assert !builtin.isGetter();
+                assert !builtin.isSetter();
                 assert annotation.extendClasses().length == 0;
                 // for module functions, explicit self is false by default
                 declaresExplicitSelf = builtin.declaresExplicitSelf();
