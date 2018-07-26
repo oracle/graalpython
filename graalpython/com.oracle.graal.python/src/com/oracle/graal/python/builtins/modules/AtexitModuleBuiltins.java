@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -98,7 +98,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "unregister", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class UnregisterNode extends PythonBinaryBuiltinNode {
+    abstract static class UnregisterNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object register(Object callable) {
             getContext().deregisterShutdownHook(callable);

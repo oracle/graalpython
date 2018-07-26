@@ -259,7 +259,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("environ", environ);
     }
 
-    @Builtin(name = "getcwd")
+    @Builtin(name = "getcwd", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class CwdNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -290,7 +290,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getpid")
+    @Builtin(name = "getpid", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
         @Specialization
@@ -552,7 +552,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "open", minNumOfArguments = 2, keywordArguments = {"mode", "dir_fd"})
+    @Builtin(name = "open", minNumOfArguments = 2, maxNumOfArguments = 4, keywordArguments = {"mode", "dir_fd"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {

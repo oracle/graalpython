@@ -29,7 +29,6 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -48,7 +47,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     protected final Arity arity;
 
     @Child protected PNode defaults;
-    @Child private ReadGlobalOrBuiltinNode getModuleName;
 
     public FunctionDefinitionNode(String functionName, String enclosingClassName, PythonCore core, Arity arity, PNode defaults, RootCallTarget callTarget, FrameDescriptor frameDescriptor,
                     DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {

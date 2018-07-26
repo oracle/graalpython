@@ -182,7 +182,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "exc_info")
+    @Builtin(name = "exc_info", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public static abstract class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
@@ -288,7 +288,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "getfilesystemencoding")
+    @Builtin(name = "getfilesystemencoding", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
@@ -297,7 +297,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors")
+    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization

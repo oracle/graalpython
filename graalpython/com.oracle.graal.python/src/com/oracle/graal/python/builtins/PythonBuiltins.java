@@ -40,6 +40,7 @@ import java.util.function.BiConsumer;
 
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -80,13 +81,9 @@ public abstract class PythonBuiltins {
                 function.setAttribute(__DOC__, builtin.doc());
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
-                    if (builtin.isGetter() && !builtin.isSetter()) {
-                        callable = core.factory().createGetSetDescriptor(function, null, builtin.name(), null);
-                    } else if (!builtin.isGetter() && builtin.isSetter()) {
-                        callable = core.factory().createGetSetDescriptor(null, function, builtin.name(), null);
-                    } else {
-                        callable = core.factory().createGetSetDescriptor(function, function, builtin.name(), null);
-                    }
+                    PythonCallable get = builtin.isGetter() ? function : null;
+                    PythonCallable set = builtin.isSetter() ? function : null;
+                    callable = core.factory().createGetSetDescriptor(get, set, builtin.name(), null);
                 }
                 setBuiltinFunction(builtin.name(), callable);
             }

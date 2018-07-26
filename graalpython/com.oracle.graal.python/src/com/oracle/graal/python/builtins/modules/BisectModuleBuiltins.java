@@ -51,8 +51,9 @@ final class BisectModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class PythonBisectNode extends PythonBuiltinNode {
 
+        @SuppressWarnings("unused")
         @Specialization
-        public int bisect(Object arg1, Object arg2, @SuppressWarnings("unused") PNone lo, @SuppressWarnings("unused") PNone hi) {
+        public int bisect(Object arg1, Object arg2, PNone lo, PNone hi) {
             return bisect(arg1, arg2);
         }
 

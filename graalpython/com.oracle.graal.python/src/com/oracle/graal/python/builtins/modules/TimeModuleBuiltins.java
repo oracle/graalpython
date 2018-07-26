@@ -103,9 +103,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.time()
-    @Builtin(name = "time")
+    @Builtin(name = "time", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class PythonTimeNode extends PythonBuiltinNode {
+
+        /**
+         * The logic is borrowed from Jython.
+         *
+         * @return current system millisecond time in second
+         */
+
         @Specialization
         @TruffleBoundary
         public double time() {
@@ -114,7 +121,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.monotonic()
-    @Builtin(name = "monotonic")
+    @Builtin(name = "monotonic", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class PythonMonotonicNode extends PythonBuiltinNode {
 
@@ -126,7 +133,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.clock()
-    @Builtin(name = "clock")
+    @Builtin(name = "clock", fixedNumOfArguments = 0)
     @GenerateNodeFactory
     public abstract static class PythonClockNode extends PythonBuiltinNode {
         /**

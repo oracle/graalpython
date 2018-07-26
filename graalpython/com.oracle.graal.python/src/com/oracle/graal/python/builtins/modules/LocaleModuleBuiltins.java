@@ -206,7 +206,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     }
 
     // _locale.setlocale(category, locale=None)
-    @Builtin(name = "setlocale", minNumOfArguments = 1, keywordArguments = {"locale"})
+    @Builtin(name = "setlocale", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class SetLocaleNode extends PythonBuiltinNode {
 

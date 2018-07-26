@@ -57,14 +57,11 @@ import com.oracle.truffle.api.nodes.Node;
 abstract class CallSpecialMethodNode extends Node {
 
     /**
-     * Returns a new instanceof the builtin if it's a subclass of the given class and there is no
-     * "implicit self" that the body needs, and null otherwise.
+     * Returns a new instanceof the builtin if it's a subclass of the given class, and null
+     * otherwise.
      */
     private static <T extends PythonBuiltinBaseNode> T getBuiltin(PBuiltinFunction func, Class<T> clazz) {
-        if (clazz.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass())) {
-            return clazz.cast(func.getBuiltinNodeFactory().createNode());
-        }
-        return null;
+        return clazz.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass()) ? clazz.cast(func.getBuiltinNodeFactory().createNode()) : null;
     }
 
     protected static PythonUnaryBuiltinNode getUnary(PBuiltinFunction func) {

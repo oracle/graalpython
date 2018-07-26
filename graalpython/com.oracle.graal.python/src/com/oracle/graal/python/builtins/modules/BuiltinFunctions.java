@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -121,6 +120,7 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -209,7 +209,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = BIN, fixedNumOfArguments = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class BinNode extends PythonBuiltinNode {
+    public abstract static class BinNode extends PythonUnaryBuiltinNode {
+
         public abstract String executeObject(Object x);
 
         private static String buildString(boolean isNegative, String number) {
@@ -248,14 +249,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected BinNode create() {
-            return BuiltinFunctionsFactory.BinNodeFactory.create(new PNode[0]);
+            return BuiltinFunctionsFactory.BinNodeFactory.create();
         }
     }
 
     // callable(object)
     @Builtin(name = CALLABLE, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class CallableNode extends PythonUnaryBuiltinNode {
+    public abstract static class CallableNode extends PythonBuiltinNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -286,7 +287,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // chr(i)
     @Builtin(name = CHR, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class ChrNode extends PythonUnaryBuiltinNode {
+    public abstract static class ChrNode extends PythonBuiltinNode {
 
         @TruffleBoundary
         @Specialization
@@ -327,9 +328,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // hash([object])
-    @Builtin(name = HASH, fixedNumOfArguments = 1)
+    @Builtin(name = HASH, minNumOfArguments = 0, maxNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class HashNode extends PythonUnaryBuiltinNode {
+    public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization  // tfel: TODO: this shouldn't be needed!
         public Object hash(PException exception) {
             return exception.hashCode();
@@ -561,7 +562,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // getattr(object, name[, default])
     @Builtin(name = GETATTR, minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
-    public abstract static class GetAttrNode extends PythonBuiltinNode {
+    public abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
         public abstract Object executeWithArgs(Object primary, String name, Object defaultValue);
 
         @SuppressWarnings("unused")

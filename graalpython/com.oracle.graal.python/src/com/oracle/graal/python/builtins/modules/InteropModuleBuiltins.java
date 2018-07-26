@@ -80,7 +80,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         return InteropModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "import_value", keywordArguments = {"name"})
+    @Builtin(name = "import_value", minNumOfArguments = 1, keywordArguments = {"name"})
     @GenerateNodeFactory
     public abstract static class ImportNode extends PythonBuiltinNode {
         @Specialization
@@ -94,7 +94,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "eval", keywordArguments = {"path", "string", "language"})
+    @Builtin(name = "eval", minNumOfArguments = 0, keywordArguments = {"path", "string", "language"})
     @GenerateNodeFactory
     abstract static class EvalInteropNode extends PythonBuiltinNode {
         @TruffleBoundary
