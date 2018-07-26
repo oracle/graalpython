@@ -43,6 +43,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.DEBUG, help = "Defer loading the core lib until after language initialization, so it can be debugged.") //
     public static final OptionKey<Boolean> LazyInit = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.DEBUG, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
+    public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
+
     @Option(category = OptionCategory.DEBUG, help = "Print the java stacktrace if enabled") //
     public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
 

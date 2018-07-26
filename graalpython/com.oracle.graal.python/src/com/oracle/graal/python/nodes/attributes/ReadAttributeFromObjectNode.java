@@ -103,7 +103,7 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
                                     "checkShape(object, cachedObject, cachedShape)",
                                     "key == cachedKey",
                                     "!isNull(loc)",
-                                    "loc.isAssumedFinal()"
+                                    "loc.isAssumedFinal()",
                     }, //
                     assumptions = {
                                     "layoutAssumption",
@@ -132,7 +132,7 @@ public abstract class ReadAttributeFromObjectNode extends PNode {
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
                                     "key == cachedKey",
-                                    "isNull(loc) || !loc.isAssumedFinal()"
+                                    "isNull(loc) || !loc.isAssumedFinal()",
                     }, //
                     assumptions = "layoutAssumption")
     protected Object readDirect(PythonObject object, Object key,

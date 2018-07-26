@@ -259,53 +259,55 @@ def _test_join(basetype, type2test):
 def test_join():
     _test_join(bytes, BytesSubclass)
     _test_join(bytearray, ByteArraySubclass)
+    assert b"--".join([]) == b""
+    assert b"--".join([b"hello"]) == b"hello"
 
-# def test_setslice():
-#     b = bytearray(range(10))
-#     assert list(b) == list(range(10))
-#
-#     b[0:5] = bytearray([1, 1, 1, 1, 1])
-#     assert b == bytearray([1, 1, 1, 1, 1, 5, 6, 7, 8, 9])
-#
-#     # TODO: seq storage does not yet support deletion ...
-#     # del b[0:-5]
-#     # assert b == bytearray([5, 6, 7, 8, 9])
-#     b = bytearray([5, 6, 7, 8, 9])
-#
-#     # TODO: seq setSlice is broken ...
-#     # b[0:0] = bytearray([0, 1, 2, 3, 4])
-#     # assert b == bytearray(range(10))
-#     b = bytearray(range(10))
-#
-#     b[-7:-3] = bytearray([100, 101])
-#     assert b == bytearray([0, 1, 2, 100, 101, 7, 8, 9])
-#
-#     b[3:5] = [3, 4, 5, 6]
-#     assert b == bytearray(range(10))
-#
-#     b[3:0] = [42, 42, 42]
-#     assert b == bytearray([0, 1, 2, 42, 42, 42, 3, 4, 5, 6, 7, 8, 9])
-#
-#     print(2)
-#     b[3:] = b'foo'
-#     assert b == bytearray([0, 1, 2, 102, 111, 111])
-#
-#     b[:3] = memoryview(b'foo')
-#     assert b == bytearray([102, 111, 111, 102, 111, 111])
-#
-#     b[3:4] = []
-#     assert b == bytearray([102, 111, 111, 111, 111])
-#
-#     for elem in [5, -5, 0, int(10e20), 'str', 2.3,
-#                  ['a', 'b'], [b'a', b'b'], [[]]]:
-#         def assign():
-#             b[3:4] = elem
-#         assert_raises(TypeError, assign)
-#
-#     for elem in [[254, 255, 256], [-256, 9000]]:
-#         def assign():
-#             b[3:4] = elem
-#         assert_raises(TypeError, assign)
+
+def test_setslice():
+    b = bytearray(range(10))
+    assert list(b) == list(range(10))
+
+    b[0:5] = bytearray([1, 1, 1, 1, 1])
+    assert b == bytearray([1, 1, 1, 1, 1, 5, 6, 7, 8, 9])
+
+    # TODO: seq storage does not yet support deletion ...
+    # del b[0:-5]
+    # assert b == bytearray([5, 6, 7, 8, 9])
+    b = bytearray([5, 6, 7, 8, 9])
+
+    # TODO: seq setSlice is broken ...
+    # b[0:0] = bytearray([0, 1, 2, 3, 4])
+    # assert b == bytearray(range(10))
+    b = bytearray(range(10))
+
+    b[-7:-3] = bytearray([100, 101])
+    assert b == bytearray([0, 1, 2, 100, 101, 7, 8, 9])
+
+    b[3:5] = [3, 4, 5, 6]
+    assert b == bytearray(range(10))
+
+    b[3:0] = [42, 42, 42]
+    assert b == bytearray([0, 1, 2, 42, 42, 42, 3, 4, 5, 6, 7, 8, 9])
+
+    b[3:] = b'foo'
+    assert b == bytearray([0, 1, 2, 102, 111, 111])
+
+    b[:3] = memoryview(b'foo')
+    assert b == bytearray([102, 111, 111, 102, 111, 111])
+
+    b[3:4] = []
+    assert b == bytearray([102, 111, 111, 111, 111])
+
+    for elem in [5, -5, 0, int(10e20), 'str', 2.3,
+                 ['a', 'b'], [b'a', b'b'], [[]]]:
+        def assign():
+            b[3:4] = elem
+        assert_raises(TypeError, assign)
+
+    for elem in [[254, 255, 256], [-256, 9000]]:
+        def assign():
+            b[3:4] = elem
+        assert_raises(ValueError, assign)
 
 
 def test_concat():
@@ -449,7 +451,46 @@ def test_find():
     assert b.find(i, 1, 3) == 1
     assert b.find(w, 1, 3) == -1
 
+    ba = bytearray(b'mississippi')
+    i = 105
+    w = 119
+
+    assert ba.find(b'ss') == 2
+    assert ba.find(b'w') == -1
+    assert ba.find(b'mississippian') == -1
+
+    assert ba.find(i) == 1
+    assert ba.find(w) == -1
+
+    assert ba.find(b'ss', 3) == 5
+    assert ba.find(b'ss', 1, 7) == 2
+    assert ba.find(b'ss', 1, 3) == -1
+
+    assert ba.find(i, 6) == 7
+    assert ba.find(i, 1, 3) == 1
+    assert ba.find(w, 1, 3) == -1
+
+    try:
+        res = ba.find("ss")
+    except TypeError:
+        assert True
+    else:
+        assert False, "should not reach here"
+
 
 def test_same_id():
     empty_ids = set([id(bytes()) for i in range(100)])
     assert len(empty_ids) == 1
+
+
+def test_binary_op():
+    assert not (bytes(memoryview(b"123")) != memoryview(b"123").tobytes())
+    assert bytes(memoryview(b"123")) == memoryview(b"123").tobytes()
+    assert b"123" < b"1234"
+    assert not (b"153" < b"1234")
+    assert not (b"123" > b"1234")
+    assert b"153" > b"1234"
+    assert b"123" <= b"123"
+    assert b"123" <= b"1234"
+    assert b"123" >= b"123"
+    assert not (b"123" >= b"1234")

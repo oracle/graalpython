@@ -67,6 +67,8 @@ public interface PythonCore {
      */
     public void initialize();
 
+    public void postInitialize();
+
     public boolean isInitialized();
 
     public PythonModule lookupBuiltinModule(String name);
@@ -120,10 +122,6 @@ public interface PythonCore {
     boolean hasSingletonContext();
 
     public PythonContext getContext();
-
-    default void loadBuiltinsPatches() {
-
-    }
 
     static void writeWarning(TruffleLanguage.Env env, String warning) {
         if (!LIBPOLYGLOT || env.getOptions().get(PythonOptions.VerboseFlag)) {

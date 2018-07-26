@@ -448,8 +448,15 @@ def CPyExtType(name, code, **kwargs):
         {nb_inplace_floor_divide},
         {nb_inplace_true_divide},
         {nb_index},
+    """ + ("""
         {nb_matrix_multiply},
         {nb_inplace_matrix_multiply},
+    """ if sys.version_info.minor >= 6 else "") + """
+    }};
+    
+    static struct PyMethodDef {name}_methods[] = {{
+        {tp_methods},
+        {{NULL, NULL, 0, NULL}}
     }};
 
     typedef struct {{
@@ -459,13 +466,13 @@ def CPyExtType(name, code, **kwargs):
     static PyTypeObject {name}Type = {{
         PyVarObject_HEAD_INIT(NULL, 0)
         "{name}.{name}",
-        sizeof({name}Object),      /* tp_basicsize */
-        0,                         /* tp_itemsize */
-        0,                         /* tp_dealloc */
+        sizeof({name}Object),       /* tp_basicsize */
+        0,                          /* tp_itemsize */
+        0,                          /* tp_dealloc */
         {tp_print},
         {tp_getattr},
         {tp_setattr},
-        0,                         /* tp_reserved */
+        0,                          /* tp_reserved */
         {tp_repr},
         &{name}_number_methods,
         {tp_as_sequence},
@@ -478,6 +485,24 @@ def CPyExtType(name, code, **kwargs):
         {tp_as_buffer},
         Py_TPFLAGS_DEFAULT,
         "",
+        {tp_traverse},              /* tp_traverse */
+        {tp_clear},                 /* tp_clear */
+        {tp_richcompare},           /* tp_richcompare */
+        0,                          /* tp_weaklistoffset */
+        {tp_iter},                  /* tp_iter */
+        {tp_iternext},              /* tp_iternext */
+        {name}_methods,             /* tp_methods */
+        NULL,                       /* tp_members */
+        0,                          /* tp_getset */
+        0,                          /* tp_base */
+        {tp_dict},                  /* tp_dict */
+        0,                          /* tp_descr_get */
+        0,                          /* tp_descr_set */
+        0,                          /* tp_dictoffset */
+        {tp_init},                  /* tp_init */
+        PyType_GenericAlloc,        /* tp_alloc */
+        PyType_GenericNew,          /* tp_new */
+        PyObject_Del,               /* tp_free */
     }};
 
     static PyModuleDef {name}module = {{
@@ -493,10 +518,10 @@ def CPyExtType(name, code, **kwargs):
     {{
         PyObject* m;
 
-        {name}Type.tp_new = PyType_GenericNew;
         {ready_code}
         if (PyType_Ready(&{name}Type) < 0)
             return NULL;
+        {post_ready_code}
 
         m = PyModule_Create(&{name}module);
         if (m == NULL)
@@ -511,6 +536,8 @@ def CPyExtType(name, code, **kwargs):
     kwargs["name"] = name
     kwargs["code"] = code
     kwargs.setdefault("ready_code", "")
+    kwargs.setdefault("post_ready_code", "")
+    kwargs.setdefault("tp_methods", "{NULL, NULL, 0, NULL}")
     c_source = UnseenFormatter().format(template, **kwargs)
 
     source_file = "%s/%s.c" % (__dir__, name)

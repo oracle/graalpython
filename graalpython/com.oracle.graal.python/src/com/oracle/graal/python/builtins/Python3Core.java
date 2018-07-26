@@ -196,11 +196,6 @@ public final class Python3Core implements PythonCore {
                     "_locale",
     };
 
-    private static final Map<String, Object> BUILTIN_CONSTANTS = new HashMap<>();
-    static {
-        BUILTIN_CONSTANTS.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
-    }
-
     private final PythonBuiltins[] BUILTINS = new PythonBuiltins[]{
                     new BuiltinConstructors(),
                     new BuiltinFunctions(),
@@ -296,7 +291,6 @@ public final class Python3Core implements PythonCore {
     private final PythonParser parser;
 
     @CompilationFinal private boolean initialized;
-    @CompilationFinal private boolean builtinsPatchesLoaded;
 
     // used in case PythonOptions.SharedCore is false
     @CompilationFinal private PythonContext singletonContext;
@@ -348,7 +342,6 @@ public final class Python3Core implements PythonCore {
         publishBuiltinModules();
 
         builtinsModule = builtinModules.get("builtins");
-        setBuiltinsConstants();
     }
 
     @Override
@@ -356,6 +349,7 @@ public final class Python3Core implements PythonCore {
         return initialized;
     }
 
+    @Override
     public void initialize() {
         String coreHome = PythonCore.getCoreHomeOrFail();
         loadFile("builtins", coreHome);
@@ -365,15 +359,16 @@ public final class Python3Core implements PythonCore {
         }
         exportCInterface(getContext());
         currentException = null;
+        postInitialize();
         initialized = true;
     }
 
     @Override
-    public void loadBuiltinsPatches() {
-        if (initialized && !builtinsPatchesLoaded) {
-            builtinsPatchesLoaded = true;
-            String coreHome = PythonCore.getCoreHomeOrFail();
-            loadFile(__BUILTINS_PATCHES__, coreHome);
+    public void postInitialize() {
+        if (!getLanguage().isNativeBuildTime()) {
+            initialized = false;
+            loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
+            initialized = true;
         }
     }
 
@@ -603,12 +598,6 @@ public final class Python3Core implements PythonCore {
         }
     }
 
-    private void setBuiltinsConstants() {
-        for (Entry<String, Object> entry : BUILTIN_CONSTANTS.entrySet()) {
-            builtinsModule.setAttribute(entry.getKey(), entry.getValue());
-        }
-    }
-
     public void exportCInterface(PythonContext context) {
         Env env = context.getEnv();
         if (env != null) {
@@ -731,18 +720,19 @@ public final class Python3Core implements PythonCore {
             // pass
         }
         String suffix = FILE_SEPARATOR + basename + ".py";
+        PythonContext ctxt = PythonLanguage.getContext();
         if (url != null) {
             // This path is hit when we load the core library e.g. from a Jar file
             try {
-                return Source.newBuilder(new URL(url + suffix)).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
+                return PythonLanguage.newSource(ctxt, new URL(url + suffix), basename);
             } catch (IOException e) {
                 throw new RuntimeException("Could not read core library from " + url);
             }
         } else {
-            Env env = PythonLanguage.getContext().getEnv();
+            Env env = ctxt.getEnv();
             TruffleFile file = env.getTruffleFile(prefix + suffix);
             try {
-                return env.newSourceBuilder(file).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
+                return PythonLanguage.newSource(ctxt, file, basename);
             } catch (SecurityException | IOException t) {
                 throw new RuntimeException("Could not read core library from " + file);
             }

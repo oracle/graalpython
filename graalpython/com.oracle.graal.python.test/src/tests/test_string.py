@@ -2,8 +2,10 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-import sys
 import unittest
+
+import sys
+
 
 def test_find():
     assert "teststring".find("test") == 0
@@ -681,3 +683,12 @@ class UnicodeTest(unittest.TestCase):
 
         self.assertTrue('\U0001F46F'.isprintable())
         # self.assertFalse('\U000E0020'.isprintable())
+
+
+def test_same_id():
+    empty_ids = set([id(str()) for i in range(100)])
+    assert len(empty_ids) == 1
+    empty_ids = set([id('') for i in range(100)])
+    assert len(empty_ids) == 1
+    empty_ids = set([id(u'') for i in range(100)])
+    assert len(empty_ids) == 1

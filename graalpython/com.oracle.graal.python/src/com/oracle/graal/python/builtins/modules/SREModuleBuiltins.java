@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,17 +51,31 @@ import java.util.regex.Pattern;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "_sre")
 public class SREModuleBuiltins extends PythonBuiltins {
@@ -66,13 +84,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
         return SREModuleBuiltinsFactory.getFactories();
     }
 
-    /**
-     * Called from C when they actually want a {@code const char*} for a Python string
-     */
-    @Builtin(name = "tregex_preprocess", fixedNumOfArguments = 1)
+    @Builtin(name = "tregex_preprocess_for_verbose", fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class TregexPreprocessNode extends PythonUnaryBuiltinNode {
-        @CompilationFinal private Pattern namedCaptGroupPattern;
+    abstract static class TRegexPreprocessVerboseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         Object run(PString str) {
@@ -81,27 +95,15 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(String str) {
-            if (namedCaptGroupPattern == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                namedCaptGroupPattern = Pattern.compile("\\?P\\<(?<GRPNAME>\\w*)\\>");
-            }
             return replaceAll(str);
         }
 
         /**
-         * replaces named capturing groups {@code ?P<name>} by {@code ?<name>}, removes comments and
-         * whitespaces if they are not in a character class, and replaces end-of-string {@code \Z}
-         * by {@code $}.
+         * removes comments and whitespaces if they are not in a character class
          */
         @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
-        private String replaceAll(String r) {
-            Matcher matcher0 = namedCaptGroupPattern.matcher(r);
-            StringBuffer sb = new StringBuffer();
-            while (matcher0.find()) {
-                matcher0.appendReplacement(sb, "?<" + matcher0.group("GRPNAME") + ">");
-            }
-            matcher0.appendTail(sb);
-
+        private static String replaceAll(String r) {
+            StringBuffer sb = new StringBuffer(r);
             int charclassNestingLevel = 0;
             boolean inComment = false;
             for (int i = 0; i < sb.length();) {
@@ -132,6 +134,146 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Fallback
         Object run(Object o) {
             throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
+        }
+
+    }
+
+    @Builtin(name = "tregex_preprocess_default", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class TRegexPreprocessDefaultNode extends PythonUnaryBuiltinNode {
+        @CompilationFinal private Pattern namedCaptGroupPattern;
+
+        @Specialization
+        Object run(PString str) {
+            return run(str.getValue());
+        }
+
+        @Specialization
+        Object run(String str) {
+            if (namedCaptGroupPattern == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                namedCaptGroupPattern = Pattern.compile("\\?P\\<(?<GRPNAME>\\w*)\\>");
+            }
+            return replaceAll(str);
+        }
+
+        /**
+         * replaces named capturing groups {@code ?P<name>} by {@code ?<name>} and replaces
+         * end-of-string {@code \Z} by {@code $}.
+         */
+        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
+        private String replaceAll(String r) {
+            Matcher matcher0 = namedCaptGroupPattern.matcher(r);
+            StringBuffer sb = new StringBuffer();
+            while (matcher0.find()) {
+                matcher0.appendReplacement(sb, "?<" + matcher0.group("GRPNAME") + ">");
+            }
+            matcher0.appendTail(sb);
+
+            for (int idx = sb.indexOf("\\Z"); idx != -1; idx = sb.indexOf("\\Z", idx + 2)) {
+                sb.replace(idx, idx + 2, "$");
+            }
+
+            return sb.toString();
+        }
+
+        @Fallback
+        Object run(Object o) {
+            throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
+        }
+
+    }
+
+    /**
+     * Replaces any <it>quoted</it> escape sequence like {@code "\\n"} (two characters; backslash +
+     * 'n') by its single character like {@code "\n"} (one character; newline).
+     */
+    @Builtin(name = "_process_escape_sequences", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
+        @CompilationFinal private Pattern namedCaptGroupPattern;
+
+        @Specialization
+        Object run(PString str) {
+            return run(str.getValue());
+        }
+
+        @Specialization
+        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
+        Object run(String str) {
+            if (containsBackslash(str)) {
+                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), str, true);
+                return sb.toString();
+            }
+            return str;
+        }
+
+        @Specialization
+        Object run(PBytes str) {
+            byte[] bytes = doBytes(str.getInternalByteArray());
+            if (bytes != null) {
+                return factory().createByteArray(bytes);
+            }
+            return str;
+        }
+
+        @Specialization
+        Object run(PByteArray str) {
+            byte[] bytes = doBytes(str.getInternalByteArray());
+            if (bytes != null) {
+                return factory().createByteArray(bytes);
+            }
+            return str;
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
+        private byte[] doBytes(byte[] str) {
+            try {
+                StringBuilder sb = BytesUtils.decodeEscapes(getCore(), new String(str, "ascii"), true);
+                return sb.toString().getBytes("ascii");
+            } catch (UnsupportedEncodingException e) {
+            }
+            return null;
+        }
+
+        private static boolean containsBackslash(String str) {
+            CompilerAsserts.neverPartOfCompilation();
+            for (int i = 0; i < str.length(); i++) {
+                if (str.charAt(i) == '\\') {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Fallback
+        Object run(Object o) {
+            throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
+        }
+
+    }
+
+    @Builtin(name = "tregex_call_safe", minNumOfArguments = 1, takesVariableArguments = true)
+    @GenerateNodeFactory
+    abstract static class TRegexCallSafe extends PythonBuiltinNode {
+        @Specialization(guards = "isForeignObject(callable)")
+        Object call(TruffleObject callable, Object[] arguments,
+                        @Cached("create()") BranchProfile runtimeError,
+                        @Cached("create()") BranchProfile typeError,
+                        @Cached("createExecute()") Node invokeNode) {
+            try {
+                return ForeignAccess.sendExecute(invokeNode, callable, arguments);
+            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
+                typeError.enter();
+                throw raise(TypeError, "%s", e);
+            } catch (RuntimeException e) {
+                runtimeError.enter();
+                throw raise(RuntimeError, "%s", e);
+            }
+        }
+
+        protected static Node createExecute() {
+            return Message.createExecute(0).createNode();
         }
 
     }

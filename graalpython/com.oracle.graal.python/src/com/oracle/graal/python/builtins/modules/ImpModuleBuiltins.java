@@ -46,7 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -67,6 +66,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -211,7 +211,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     ((PythonObject) result).setAttribute(__FILE__, path);
                     // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
                     PDict sysModules = getContext().getSysModules();
-                    getSetItemNode().execute(sysModules, sysModules.getDictStorage(), name, result);
+                    sysModules.setDictStorage(getSetItemNode().execute(sysModules.getDictStorage(), name, result));
                     return result;
                 }
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -340,21 +340,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run(String path, PythonModule mod) {
-            Env env = getContext().getEnv();
+            PythonContext ctxt = getContext();
+            Env env = ctxt.getEnv();
             try {
                 String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
                 String fileName = pathParts[pathParts.length - 1];
                 TruffleFile file = env.getTruffleFile(path);
-                Source src = null;
-                try {
-                    if (file.exists()) {
-                        src = env.newSourceBuilder(file).mimeType(PythonLanguage.MIME_TYPE).build();
-                    }
-                } catch (SecurityException e) {
-                }
-                if (src == null) {
-                    src = Source.newBuilder("").uri(URI.create(path)).mimeType(PythonLanguage.MIME_TYPE).name(fileName).build();
-                }
+                Source src = PythonLanguage.newSource(ctxt, file, fileName);
                 RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
                 if (parsedModule != null) {
                     CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
@@ -362,7 +354,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
             } catch (PException e) {
                 throw e;
-            } catch (IOException e) {
+            } catch (IOException | SecurityException e) {
                 throw raise(ImportError, e.getMessage());
             }
             return PNone.NONE;

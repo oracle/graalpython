@@ -132,16 +132,3 @@ frozenset.intersection = frozenset_intersection
 frozenset.__repr__ = frozenset_repr
 frozenset.copy = frozenset_copy
 frozenset.__hash__ = frozenset_hash
-
-del update
-del difference
-del difference_update
-del intersection
-del set_repr
-del set_copy
-
-del frozenset_difference
-del frozenset_intersection
-del frozenset_repr
-del frozenset_copy
-del frozenset_hash

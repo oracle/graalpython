@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -260,7 +260,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object dict(PFunction self) {
-            PDict dict = self.getDict();
+            PHashingCollection dict = self.getDict();
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
                 self.setDict(dict);

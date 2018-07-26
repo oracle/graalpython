@@ -99,6 +99,14 @@ public abstract class PGuards {
         return bytes.len() == 0;
     }
 
+    public static boolean isEmpty(String string) {
+        return string.length() == 0;
+    }
+
+    public static boolean isEmpty(PString string) {
+        return string.len() == 0;
+    }
+
     public static boolean isNone(Object value) {
         return value == PNone.NONE;
     }
