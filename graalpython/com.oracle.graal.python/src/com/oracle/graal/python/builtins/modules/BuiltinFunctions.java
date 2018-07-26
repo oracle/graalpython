@@ -499,7 +499,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
             PythonParser parser = getCore().getParser();
-            Source source = Source.newBuilder(expression).name(name).mimeType(PythonLanguage.MIME_TYPE).build();
+            Source source = PythonLanguage.newSource(getContext(), expression, name);
             RootNode parsed = (RootNode) parser.parse(ParserMode.Eval, getCore(), source, callerFrame);
             return evalNode(parsed, globals, locals, closure);
         }
@@ -532,7 +532,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
+            Source source = PythonLanguage.newSource(getContext(), expression, filename);
             ParserMode pm;
             if (mode.equals("exec")) {
                 pm = ParserMode.File;
