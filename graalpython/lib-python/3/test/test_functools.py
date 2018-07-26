@@ -19,12 +19,7 @@ except ImportError:
 import functools
 
 py_functools = support.import_fresh_module('functools', blocked=['_functools'])
-c_functools = functools
-# pypy: was:
-#   c_functools = support.import_fresh_module('functools', fresh=['_functools'])
-# but this creates confusion for pickle because on pypy, _functools is a
-# pure python module, whereas on CPython it is C (and so not really
-# re-importable)
+c_functools = support.import_fresh_module('functools', fresh=['_functools'])
 
 decimal = support.import_fresh_module('decimal', fresh=['_decimal'])
 
@@ -164,7 +159,6 @@ class TestPartial:
         p = proxy(f)
         self.assertEqual(f.func, p.func)
         f = None
-        support.gc_collect()
         self.assertRaises(ReferenceError, getattr, p, 'func')
 
     def test_with_bound_and_unbound_methods(self):
@@ -408,6 +402,32 @@ class TestPartialC(TestPartial, unittest.TestCase):
         else:
             self.fail('partial object allowed __dict__ to be deleted')
 
+    def test_manually_adding_non_string_keyword(self):
+        p = self.partial(capture)
+        # Adding a non-string/unicode keyword to partial kwargs
+        p.keywords[1234] = 'value'
+        r = repr(p)
+        self.assertIn('1234', r)
+        self.assertIn("'value'", r)
+        with self.assertRaises(TypeError):
+            p()
+
+    def test_keystr_replaces_value(self):
+        p = self.partial(capture)
+
+        class MutatesYourDict(object):
+            def __str__(self):
+                p.keywords[self] = ['sth2']
+                return 'astr'
+
+        # Replacing the value during key formatting should keep the original
+        # value alive (at least long enough).
+        p.keywords[MutatesYourDict()] = ['sth']
+        r = repr(p)
+        self.assertIn('astr', r)
+        self.assertIn("['sth']", r)
+
+
 class TestPartialPy(TestPartial, unittest.TestCase):
     partial = py_functools.partial
 
@@ -558,7 +578,7 @@ class TestUpdateWrapper(unittest.TestCase):
                       updated=functools.WRAPPER_UPDATES):
         # Check attributes were assigned
         for name in assigned:
-            self.assertTrue(getattr(wrapper, name) == getattr(wrapped, name))
+            self.assertIs(getattr(wrapper, name), getattr(wrapped, name))
         # Check attributes were updated
         for name in updated:
             wrapper_attr = getattr(wrapper, name)

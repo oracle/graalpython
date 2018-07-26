@@ -208,10 +208,6 @@ class AST_Tests(unittest.TestCase):
                 self._assertTrueorder(value, parent_pos)
 
     def test_AST_objects(self):
-        if not support.check_impl_detail():
-            # PyPy also provides a __dict__ to the ast.AST base class.
-            return
-
         x = ast.AST()
         self.assertEqual(x._fields, ())
         x.foobar = 42
@@ -401,24 +397,21 @@ class AST_Tests(unittest.TestCase):
         m = ast.Module([ast.Expr(ast.expr(**pos), **pos)])
         with self.assertRaises(TypeError) as cm:
             compile(m, "<test>", "exec")
-        if support.check_impl_detail():
-            self.assertIn("but got <_ast.expr", str(cm.exception))
+        self.assertIn("but got <_ast.expr", str(cm.exception))
 
     def test_invalid_identitifer(self):
         m = ast.Module([ast.Expr(ast.Name(42, ast.Load()))])
         ast.fix_missing_locations(m)
         with self.assertRaises(TypeError) as cm:
             compile(m, "<test>", "exec")
-        if support.check_impl_detail():
-            self.assertIn("identifier must be of type str", str(cm.exception))
+        self.assertIn("identifier must be of type str", str(cm.exception))
 
     def test_invalid_string(self):
         m = ast.Module([ast.Expr(ast.Str(42))])
         ast.fix_missing_locations(m)
         with self.assertRaises(TypeError) as cm:
             compile(m, "<test>", "exec")
-        if support.check_impl_detail():
-            self.assertIn("string must be of type str or uni", str(cm.exception))
+        self.assertIn("string must be of type str", str(cm.exception))
 
     def test_empty_yield_from(self):
         # Issue 16546: yield from value is not optional.
@@ -427,6 +420,16 @@ class AST_Tests(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             compile(empty_yield_from, "<test>", "exec")
         self.assertIn("field value is required", str(cm.exception))
+
+    @support.cpython_only
+    def test_issue31592(self):
+        # There shouldn't be an assertion failure in case of a bad
+        # unicodedata.normalize().
+        import unicodedata
+        def bad_normalize(*args):
+            return None
+        with support.swap_attr(unicodedata, 'normalize', bad_normalize):
+            self.assertRaises(TypeError, ast.parse, '\u03D5')
 
 
 class ASTHelpers_Test(unittest.TestCase):
@@ -553,10 +556,9 @@ class ASTHelpers_Test(unittest.TestCase):
                                level=None,
                                lineno=None, col_offset=None)]
         mod = ast.Module(body)
-        with self.assertRaises((TypeError, ValueError)) as cm:
+        with self.assertRaises(ValueError) as cm:
             compile(mod, 'test', 'exec')
-        if support.check_impl_detail():
-            self.assertIn("invalid integer value: None", str(cm.exception))
+        self.assertIn("invalid integer value: None", str(cm.exception))
 
     def test_level_as_none(self):
         body = [ast.ImportFrom(module='time',

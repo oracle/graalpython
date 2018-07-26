@@ -1,7 +1,6 @@
 import unittest
 from ctypes import *
 from ctypes.test import need_symbol
-from test import support
 
 class StringArrayTestCase(unittest.TestCase):
     def test(self):
@@ -32,9 +31,8 @@ class StringArrayTestCase(unittest.TestCase):
         buf.value = b"Hello, World"
         self.assertEqual(buf.value, b"Hello, World")
 
-        if support.check_impl_detail():
-            self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"Hello, World"))
-            self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"abc"))
+        self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"Hello, World"))
+        self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"abc"))
         self.assertRaises(ValueError, setattr, buf, "raw", memoryview(b"x" * 100))
 
     def test_c_buffer_raw(self):
@@ -42,8 +40,7 @@ class StringArrayTestCase(unittest.TestCase):
 
         buf.raw = memoryview(b"Hello, World")
         self.assertEqual(buf.value, b"Hello, World")
-        if support.check_impl_detail():
-            self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"abc"))
+        self.assertRaises(TypeError, setattr, buf, "value", memoryview(b"abc"))
         self.assertRaises(ValueError, setattr, buf, "raw", memoryview(b"x" * 100))
 
     def test_param_1(self):

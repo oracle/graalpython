@@ -13,7 +13,6 @@ import string
 import sys
 from test import support
 import types
-import gc
 import unittest
 
 from collections import namedtuple, Counter, OrderedDict, _count_elements
@@ -551,7 +550,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
 
         c = new_coro()
         self.assertIsInstance(c, Awaitable)
-        c.close() # awoid RuntimeWarning that coro() was not awaited
+        c.close() # avoid RuntimeWarning that coro() was not awaited
 
         class CoroLike: pass
         Coroutine.register(CoroLike)
@@ -601,7 +600,7 @@ class TestOneTrickPonyABCs(ABCTestCase):
 
         c = new_coro()
         self.assertIsInstance(c, Coroutine)
-        c.close() # awoid RuntimeWarning that coro() was not awaited
+        c.close() # avoid RuntimeWarning that coro() was not awaited
 
         class CoroLike:
             def send(self, value):
@@ -1260,12 +1259,7 @@ class TestCollectionABCs(ABCTestCase):
             def __repr__(self):
                 return "MySet(%s)" % repr(list(self))
         s = MySet([5,43,2,1])
-        # changed from CPython: it was "s.pop() == 1" but I see
-        # nothing that guarantees a particular order here.  In the
-        # 'all_ordered_dicts' branch of PyPy (or with OrderedDict
-        # instead of sets), it consistently returns 5, but this test
-        # should not rely on this or any other order.
-        self.assert_(s.pop() in [5,43,2,1])
+        self.assertEqual(s.pop(), 1)
 
     def test_issue8750(self):
         empty = WithSet()
@@ -1316,20 +1310,29 @@ class TestCollectionABCs(ABCTestCase):
         class CustomEqualObject:
             def __eq__(self, other):
                 return False
-        class CustomSequence(list):
-            def __contains__(self, value):
-                return Sequence.__contains__(self, value)
+        class CustomSequence(Sequence):
+            def __init__(self, seq):
+                self._seq = seq
+            def __getitem__(self, index):
+                return self._seq[index]
+            def __len__(self):
+                return len(self._seq)
 
         nan = float('nan')
         obj = CustomEqualObject()
+        seq = CustomSequence([nan, obj, nan])
         containers = [
-            CustomSequence([nan, obj]),
+            seq,
             ItemsView({1: nan, 2: obj}),
             ValuesView({1: nan, 2: obj})
         ]
         for container in containers:
             for elem in container:
                 self.assertIn(elem, container)
+        self.assertEqual(seq.index(nan), 0)
+        self.assertEqual(seq.index(obj), 1)
+        self.assertEqual(seq.count(nan), 2)
+        self.assertEqual(seq.count(obj), 1)
 
     def assertSameSet(self, s1, s2):
         # coerce both to a real set then check equality
@@ -1604,7 +1607,7 @@ class TestCollectionABCs(ABCTestCase):
             '__len__', '__getitem__', '__setitem__', '__delitem__', 'insert')
 
     def test_MutableSequence_mixins(self):
-        # Test the mixins of MutableSequence by creating a miminal concrete
+        # Test the mixins of MutableSequence by creating a minimal concrete
         # class inherited from it.
         class MutableSequenceSubclass(MutableSequence):
             def __init__(self):

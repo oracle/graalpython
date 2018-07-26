@@ -52,6 +52,7 @@ class TestServerThread(threading.Thread):
 
     def stop(self):
         self.server.shutdown()
+        self.join()
 
 
 class BaseTestCase(unittest.TestCase):
@@ -300,8 +301,7 @@ class RequestHandlerLoggingTestCase(BaseTestCase):
 
         with support.captured_stderr() as err:
             self.con.request('GET', '/')
-            with self.con.getresponse():
-                pass
+            self.con.getresponse()
 
         self.assertTrue(
             err.getvalue().endswith('"GET / HTTP/1.1" 200 -\n'))
@@ -312,8 +312,7 @@ class RequestHandlerLoggingTestCase(BaseTestCase):
 
         with support.captured_stderr() as err:
             self.con.request('ERROR', '/')
-            with self.con.getresponse():
-                pass
+            self.con.getresponse()
 
         lines = err.getvalue().split('\n')
         self.assertTrue(lines[0].endswith('code 404, message File not found'))
@@ -371,7 +370,8 @@ class SimpleHTTPServerTestCase(BaseTestCase):
         reader.close()
         return body
 
-    @support.requires_mac_ver(10, 5)
+    @unittest.skipIf(sys.platform == 'darwin',
+                     'undecodable name cannot always be decoded on macOS')
     @unittest.skipIf(sys.platform == 'win32',
                      'undecodable name cannot be decoded on win32')
     @unittest.skipUnless(support.TESTFN_UNDECODABLE,

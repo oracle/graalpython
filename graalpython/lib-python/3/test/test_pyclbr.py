@@ -125,10 +125,7 @@ class PyclbrTest(TestCase):
                     raise
 
         # Now check for missing stuff.
-        def defined_in(item, module, name):
-            if item.__name__ != name:
-                # Item was defined with another name
-                return False
+        def defined_in(item, module):
             if isinstance(item, type):
                 return item.__module__ == module.__name__
             if isinstance(item, FunctionType):
@@ -137,7 +134,7 @@ class PyclbrTest(TestCase):
         for name in dir(module):
             item = getattr(module, name)
             if isinstance(item,  (type, FunctionType)):
-                if defined_in(item, module, name):
+                if defined_in(item, module):
                     self.assertHaskey(dict, name, ignore)
 
     def test_easy(self):

@@ -711,7 +711,6 @@ class GeneralModuleTests(unittest.TestCase):
         self.assertEqual(p.fileno(), s.fileno())
         s.close()
         s = None
-        support.gc_collect()
         try:
             p.fileno()
         except ReferenceError:
@@ -731,8 +730,6 @@ class GeneralModuleTests(unittest.TestCase):
 
     def testSendtoErrors(self):
         # Testing that sendto doesn't mask failures. See #10169.
-        # PyPy note: made the test accept broader messages: PyPy's
-        # messages are equivalent but worded differently.
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.addCleanup(s.close)
         s.bind(('', 0))
@@ -740,45 +737,40 @@ class GeneralModuleTests(unittest.TestCase):
         # 2 args
         with self.assertRaises(TypeError) as cm:
             s.sendto('\u2620', sockname)
-        self.assertIn(str(cm.exception),
-                      ["a bytes-like object is required, not 'str'", # cpython
-                       "a bytes-like object is required, not str"]) # pypy
+        self.assertEqual(str(cm.exception),
+                         "a bytes-like object is required, not 'str'")
         with self.assertRaises(TypeError) as cm:
             s.sendto(5j, sockname)
-        self.assertIn(str(cm.exception),
-                      ["a bytes-like object is required, not 'complex'",
-                       "a bytes-like object is required, not complex"])
+        self.assertEqual(str(cm.exception),
+                         "a bytes-like object is required, not 'complex'")
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo', None)
-        self.assertIn('NoneType', str(cm.exception))
+        self.assertIn('not NoneType',str(cm.exception))
         # 3 args
         with self.assertRaises(TypeError) as cm:
             s.sendto('\u2620', 0, sockname)
-        self.assertIn(str(cm.exception),
-                      ["a bytes-like object is required, not 'str'",
-                       "a bytes-like object is required, not str"])
+        self.assertEqual(str(cm.exception),
+                         "a bytes-like object is required, not 'str'")
         with self.assertRaises(TypeError) as cm:
             s.sendto(5j, 0, sockname)
-        self.assertIn(str(cm.exception),
-                      ["a bytes-like object is required, not 'complex'",
-                       "a bytes-like object is required, not complex"])
+        self.assertEqual(str(cm.exception),
+                         "a bytes-like object is required, not 'complex'")
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo', 0, None)
-        self.assertIn('NoneType', str(cm.exception))
+        self.assertIn('not NoneType', str(cm.exception))
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo', 'bar', sockname)
-        self.assertIn('integer', str(cm.exception))
+        self.assertIn('an integer is required', str(cm.exception))
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo', None, None)
-        self.assertIn('integer', str(cm.exception))
+        self.assertIn('an integer is required', str(cm.exception))
         # wrong number of args
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo')
-        if support.check_impl_detail():
-            self.assertIn(' given)', str(cm.exception))
+        self.assertIn('(1 given)', str(cm.exception))
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo', 0, sockname, 4)
-        self.assertIn(' given', str(cm.exception))
+        self.assertIn('(4 given)', str(cm.exception))
 
     def testCrucialConstants(self):
         # Testing for mission critical constants
@@ -811,11 +803,6 @@ class GeneralModuleTests(unittest.TestCase):
             self.fail("Error testing host resolution mechanisms. (fqdn: %s, all: %s)" % (fqhn, repr(all_host_names)))
 
     def test_host_resolution(self):
-        for addr in ['0.1.1.~1', '1+.1.1.1', '::1q', '::1::2',
-                     '1:1:1:1:1:1:1:1:1']:
-            self.assertRaises(OSError, socket.gethostbyname, addr)
-            self.assertRaises(OSError, socket.gethostbyaddr, addr)
-
         for addr in [support.HOST, '10.0.0.1', '255.255.255.255']:
             self.assertEqual(socket.gethostbyname(addr), addr)
 
@@ -823,6 +810,21 @@ class GeneralModuleTests(unittest.TestCase):
         # a matching name entry (e.g. 'ip6-localhost')
         for host in [support.HOST]:
             self.assertIn(host, socket.gethostbyaddr(host)[2])
+
+    def test_host_resolution_bad_address(self):
+        # These are all malformed IP addresses and expected not to resolve to
+        # any result.  But some ISPs, e.g. AWS, may successfully resolve these
+        # IPs.
+        explanation = (
+            "resolving an invalid IP address did not raise OSError; "
+            "can be caused by a broken DNS server"
+        )
+        for addr in ['0.1.1.~1', '1+.1.1.1', '::1q', '::1::2',
+                     '1:1:1:1:1:1:1:1:1']:
+            with self.assertRaises(OSError):
+                socket.gethostbyname(addr)
+            with self.assertRaises(OSError, msg=explanation):
+                socket.gethostbyaddr(addr)
 
     @unittest.skipUnless(hasattr(socket, 'sethostname'), "test needs socket.sethostname()")
     @unittest.skipUnless(hasattr(socket, 'gethostname'), "test needs socket.gethostname()")
@@ -904,6 +906,7 @@ class GeneralModuleTests(unittest.TestCase):
             self.assertEqual(swapped & mask, mask)
             self.assertRaises(OverflowError, func, 1<<34)
 
+    @support.cpython_only
     def testNtoHErrors(self):
         good_values = [ 1, 2, 3, 1, 2, 3 ]
         bad_values = [ -1, -2, -3, -1, -2, -3 ]
@@ -1354,7 +1357,7 @@ class GeneralModuleTests(unittest.TestCase):
         socket.gethostbyname(domain)
         socket.gethostbyname_ex(domain)
         socket.getaddrinfo(domain,0,socket.AF_UNSPEC,socket.SOCK_STREAM)
-        # this may not work if the forward lookup choses the IPv6 address, as that doesn't
+        # this may not work if the forward lookup chooses the IPv6 address, as that doesn't
         # have a reverse entry yet
         # socket.gethostbyaddr('испытание.python.org')
 
@@ -4200,11 +4203,10 @@ class UnbufferedFileObjectClassTestCase(FileObjectClassTestCase):
         self.write_file.flush()
 
     def testMakefileCloseSocketDestroy(self):
-        if hasattr(sys, "getrefcount"):
-            refcount_before = sys.getrefcount(self.cli_conn)
-            self.read_file.close()
-            refcount_after = sys.getrefcount(self.cli_conn)
-            self.assertEqual(refcount_before - 1, refcount_after)
+        refcount_before = sys.getrefcount(self.cli_conn)
+        self.read_file.close()
+        refcount_after = sys.getrefcount(self.cli_conn)
+        self.assertEqual(refcount_before - 1, refcount_after)
 
     def _testMakefileCloseSocketDestroy(self):
         pass
@@ -4237,7 +4239,7 @@ class UnbufferedFileObjectClassTestCase(FileObjectClassTestCase):
         self.write_file.write(self.write_msg)
         self.write_file.flush()
         self.evt2.set()
-        # Avoid cloding the socket before the server test has finished,
+        # Avoid closing the socket before the server test has finished,
         # otherwise system recv() will return 0 instead of EWOULDBLOCK.
         self.serv_finished.wait(5.0)
 
@@ -4371,6 +4373,10 @@ class NetworkConnectionNoServer(unittest.TestCase):
         expected_errnos = [ errno.ECONNREFUSED, ]
         if hasattr(errno, 'ENETUNREACH'):
             expected_errnos.append(errno.ENETUNREACH)
+        if hasattr(errno, 'EADDRNOTAVAIL'):
+            # bpo-31910: socket.create_connection() fails randomly
+            # with EADDRNOTAVAIL on Travis CI
+            expected_errnos.append(errno.EADDRNOTAVAIL)
 
         self.assertIn(cm.exception.errno, expected_errnos)
 
@@ -4657,6 +4663,10 @@ class TestUnixDomain(unittest.TestCase):
                     .format(path))
             else:
                 raise
+
+    def testUnbound(self):
+        # Issue #30205
+        self.assertIn(self.sock.getsockname(), ('', None))
 
     def testStrAddr(self):
         # Test binding to and retrieving a normal string pathname.
@@ -5409,6 +5419,9 @@ class LinuxKernelCryptoAPI(unittest.TestCase):
         else:
             return sock
 
+    # bpo-31705: On kernel older than 4.5, sendto() failed with ENOKEY,
+    # at least on ppc64le architecture
+    @support.requires_linux_version(4, 5)
     def test_sha256(self):
         expected = bytes.fromhex("ba7816bf8f01cfea414140de5dae2223b00361a396"
                                  "177a9cb410ff61f20015ad")
@@ -5478,7 +5491,7 @@ class LinuxKernelCryptoAPI(unittest.TestCase):
             self.assertEqual(len(dec), msglen * multiplier)
             self.assertEqual(dec, msg * multiplier)
 
-    @support.requires_linux_version(4, 3)  # see test_aes_cbc
+    @support.requires_linux_version(4, 9)  # see issue29324
     def test_aead_aes_gcm(self):
         key = bytes.fromhex('c939cc13397c1d37de6ae0e1cb7c423c')
         iv = bytes.fromhex('b3d8cc017cbb89b39e0f67e2')
@@ -5501,8 +5514,7 @@ class LinuxKernelCryptoAPI(unittest.TestCase):
                 op.sendmsg_afalg(op=socket.ALG_OP_ENCRYPT, iv=iv,
                                  assoclen=assoclen, flags=socket.MSG_MORE)
                 op.sendall(assoc, socket.MSG_MORE)
-                op.sendall(plain, socket.MSG_MORE)
-                op.sendall(b'\x00' * taglen)
+                op.sendall(plain)
                 res = op.recv(assoclen + len(plain) + taglen)
                 self.assertEqual(expected_ct, res[assoclen:-taglen])
                 self.assertEqual(expected_tag, res[-taglen:])
@@ -5510,7 +5522,7 @@ class LinuxKernelCryptoAPI(unittest.TestCase):
             # now with msg
             op, _ = algo.accept()
             with op:
-                msg = assoc + plain + b'\x00' * taglen
+                msg = assoc + plain
                 op.sendmsg_afalg([msg], op=socket.ALG_OP_ENCRYPT, iv=iv,
                                  assoclen=assoclen)
                 res = op.recv(assoclen + len(plain) + taglen)
@@ -5521,7 +5533,7 @@ class LinuxKernelCryptoAPI(unittest.TestCase):
             pack_uint32 = struct.Struct('I').pack
             op, _ = algo.accept()
             with op:
-                msg = assoc + plain + b'\x00' * taglen
+                msg = assoc + plain
                 op.sendmsg(
                     [msg],
                     ([socket.SOL_ALG, socket.ALG_SET_OP, pack_uint32(socket.ALG_OP_ENCRYPT)],
@@ -5529,7 +5541,7 @@ class LinuxKernelCryptoAPI(unittest.TestCase):
                      [socket.SOL_ALG, socket.ALG_SET_AEAD_ASSOCLEN, pack_uint32(assoclen)],
                     )
                 )
-                res = op.recv(len(msg))
+                res = op.recv(len(msg) + taglen)
                 self.assertEqual(expected_ct, res[assoclen:-taglen])
                 self.assertEqual(expected_tag, res[-taglen:])
 
@@ -5539,8 +5551,8 @@ class LinuxKernelCryptoAPI(unittest.TestCase):
                 msg = assoc + expected_ct + expected_tag
                 op.sendmsg_afalg([msg], op=socket.ALG_OP_DECRYPT, iv=iv,
                                  assoclen=assoclen)
-                res = op.recv(len(msg))
-                self.assertEqual(plain, res[assoclen:-taglen])
+                res = op.recv(len(msg) - taglen)
+                self.assertEqual(plain, res[assoclen:])
 
     @support.requires_linux_version(4, 3)  # see test_aes_cbc
     def test_drbg_pr_sha256(self):
@@ -5571,6 +5583,24 @@ class LinuxKernelCryptoAPI(unittest.TestCase):
             with self.assertRaises(TypeError):
                 sock.sendmsg_afalg(op=socket.ALG_OP_ENCRYPT, assoclen=-1)
 
+@unittest.skipUnless(sys.platform.startswith("win"), "requires Windows")
+class TestMSWindowsTCPFlags(unittest.TestCase):
+    knownTCPFlags = {
+                       # avaliable since long time ago
+                       'TCP_MAXSEG',
+                       'TCP_NODELAY',
+                       # available starting with Windows 10 1607
+                       'TCP_FASTOPEN',
+                       # available starting with Windows 10 1703
+                       'TCP_KEEPCNT',
+                       }
+
+    def test_new_tcp_flags(self):
+        provided = [s for s in dir(socket) if s.startswith('TCP')]
+        unknown = [s for s in provided if s not in self.knownTCPFlags]
+
+        self.assertEqual([], unknown,
+            "New TCP flags were discovered. See bpo-32394 for more information")
 
 def test_main():
     tests = [GeneralModuleTests, BasicTCPTest, TCPCloserTest, TCPTimeoutTest,
@@ -5627,6 +5657,7 @@ def test_main():
         SendfileUsingSendTest,
         SendfileUsingSendfileTest,
     ])
+    tests.append(TestMSWindowsTCPFlags)
 
     thread_info = support.threading_setup()
     support.run_unittest(*tests)

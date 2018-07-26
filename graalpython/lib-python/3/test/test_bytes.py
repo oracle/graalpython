@@ -507,6 +507,11 @@ class BaseBytesTest:
         a = b % (b'seventy-nine', 79)
         self.assertEqual(a, b'seventy-nine / 100 = 79%')
         self.assertIs(type(a), self.type2test)
+        # issue 29714
+        b = self.type2test(b'hello,\x00%b!')
+        b = b % b'world'
+        self.assertEqual(b, b'hello,\x00world!')
+        self.assertIs(type(b), self.type2test)
 
     def test_imod(self):
         b = self.type2test(b'hello, %b!')
@@ -519,6 +524,11 @@ class BaseBytesTest:
         b %= (b'seventy-nine', 79)
         self.assertEqual(b, b'seventy-nine / 100 = 79%')
         self.assertIs(type(b), self.type2test)
+        # issue 29714
+        b = self.type2test(b'hello,\x00%b!')
+        b %= b'world'
+        self.assertEqual(b, b'hello,\x00world!')
+        self.assertIs(type(b), self.type2test)
 
     def test_rmod(self):
         with self.assertRaises(TypeError):
@@ -530,8 +540,16 @@ class BaseBytesTest:
         self.assertEqual(b.replace(b'i', b'a'), b'massassappa')
         self.assertEqual(b.replace(b'ss', b'x'), b'mixixippi')
 
+    def test_replace_int_error(self):
+        self.assertRaises(TypeError, self.type2test(b'a b').replace, 32, b'')
+
     def test_split_string_error(self):
         self.assertRaises(TypeError, self.type2test(b'a b').split, ' ')
+        self.assertRaises(TypeError, self.type2test(b'a b').rsplit, ' ')
+
+    def test_split_int_error(self):
+        self.assertRaises(TypeError, self.type2test(b'a b').split, 32)
+        self.assertRaises(TypeError, self.type2test(b'a b').rsplit, 32)
 
     def test_split_unicodewhitespace(self):
         for b in (b'a\x1Cb', b'a\x1Db', b'a\x1Eb', b'a\x1Fb'):
@@ -539,9 +557,6 @@ class BaseBytesTest:
             self.assertEqual(b.split(), [b])
         b = self.type2test(b"\x09\x0A\x0B\x0C\x0D\x1C\x1D\x1E\x1F")
         self.assertEqual(b.split(), [b'\x1c\x1d\x1e\x1f'])
-
-    def test_rsplit_string_error(self):
-        self.assertRaises(TypeError, self.type2test(b'a b').rsplit, ' ')
 
     def test_rsplit_unicodewhitespace(self):
         b = self.type2test(b"\x09\x0A\x0B\x0C\x0D\x1C\x1D\x1E\x1F")
@@ -557,6 +572,14 @@ class BaseBytesTest:
         self.assertEqual(b.rpartition(b'ss'), (b'missi', b'ss', b'ippi'))
         self.assertEqual(b.rpartition(b'i'), (b'mississipp', b'i', b''))
         self.assertEqual(b.rpartition(b'w'), (b'', b'', b'mississippi'))
+
+    def test_partition_string_error(self):
+        self.assertRaises(TypeError, self.type2test(b'a b').partition, ' ')
+        self.assertRaises(TypeError, self.type2test(b'a b').rpartition, ' ')
+
+    def test_partition_int_error(self):
+        self.assertRaises(TypeError, self.type2test(b'a b').partition, 32)
+        self.assertRaises(TypeError, self.type2test(b'a b').rpartition, 32)
 
     def test_pickling(self):
         for proto in range(pickle.HIGHEST_PROTOCOL + 1):
@@ -590,9 +613,14 @@ class BaseBytesTest:
         self.assertEqual(self.type2test(b'abc').rstrip(memoryview(b'ac')), b'ab')
 
     def test_strip_string_error(self):
-        self.assertRaises(TypeError, self.type2test(b'abc').strip, 'b')
-        self.assertRaises(TypeError, self.type2test(b'abc').lstrip, 'b')
-        self.assertRaises(TypeError, self.type2test(b'abc').rstrip, 'b')
+        self.assertRaises(TypeError, self.type2test(b'abc').strip, 'ac')
+        self.assertRaises(TypeError, self.type2test(b'abc').lstrip, 'ac')
+        self.assertRaises(TypeError, self.type2test(b'abc').rstrip, 'ac')
+
+    def test_strip_int_error(self):
+        self.assertRaises(TypeError, self.type2test(b' abc ').strip, 32)
+        self.assertRaises(TypeError, self.type2test(b' abc ').lstrip, 32)
+        self.assertRaises(TypeError, self.type2test(b' abc ').rstrip, 32)
 
     def test_center(self):
         # Fill character can be either bytes or bytearray (issue 12380)
@@ -614,6 +642,11 @@ class BaseBytesTest:
         for fill_type in (bytes, bytearray):
             self.assertEqual(b.rjust(7, fill_type(b'-')),
                              self.type2test(b'----abc'))
+
+    def test_xjust_int_error(self):
+        self.assertRaises(TypeError, self.type2test(b'abc').center, 7, 32)
+        self.assertRaises(TypeError, self.type2test(b'abc').ljust, 7, 32)
+        self.assertRaises(TypeError, self.type2test(b'abc').rjust, 7, 32)
 
     def test_ord(self):
         b = self.type2test(b'\0A\x7f\x80\xff')
@@ -780,7 +813,6 @@ class BytesTest(BaseBytesTest, unittest.TestCase):
         self.assertIs(type(BytesSubclass(A())), BytesSubclass)
 
     # Test PyBytes_FromFormat()
-    @test.support.impl_detail("don't test cpyext here")
     def test_from_format(self):
         ctypes = test.support.import_module('ctypes')
         _testcapi = test.support.import_module('_testcapi')
@@ -1116,13 +1148,9 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
     def test_del_expand(self):
         # Reducing the size should not expand the buffer (issue #23985)
         b = bytearray(10)
-        try:
-            size = sys.getsizeof(b)
-        except TypeError:
-            pass            # e.g. on pypy
-        else:
-            del b[:1]
-            self.assertLessEqual(sys.getsizeof(b), size)
+        size = sys.getsizeof(b)
+        del b[:1]
+        self.assertLessEqual(sys.getsizeof(b), size)
 
     def test_extended_set_del_slice(self):
         indices = (0, None, 1, 3, 19, 300, 1<<333, -1, -2, -31, -300)
@@ -1333,8 +1361,6 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
         self.assertEqual(b, b"")
         self.assertEqual(c, b"")
 
-    @test.support.impl_detail(
-        "resizing semantics of CPython rely on refcounting")
     def test_resize_forbidden(self):
         # #4509: can't resize a bytearray when there are buffer exports, even
         # if it wouldn't reallocate the underlying buffer.
@@ -1366,26 +1392,6 @@ class ByteArrayTest(BaseBytesTest, unittest.TestCase):
             b[1:-1:2] = b""
         self.assertRaises(BufferError, delslice)
         self.assertEqual(b, orig)
-
-    @test.support.impl_detail("resizing semantics", cpython=False)
-    def test_resize_forbidden_non_cpython(self):
-        # on non-CPython implementations, we cannot prevent changes to
-        # bytearrays just because there are buffers around.  Instead,
-        # we get (on PyPy) a buffer that follows the changes and resizes.
-        b = bytearray(range(10))
-        v = memoryview(b)
-        b[5] = 99
-        self.assertIn(v[5], (99, bytes([99])))
-        b[5] = 100
-        b += b
-        b += b
-        b += b
-        self.assertEquals(len(v), 80)
-        self.assertIn(v[5], (100, bytes([100])))
-        self.assertIn(v[79], (9, bytes([9])))
-        del b[10:]
-        self.assertRaises(IndexError, lambda: v[10])
-        self.assertEquals(len(v), 10)
 
     @test.support.cpython_only
     def test_obsolete_write_lock(self):

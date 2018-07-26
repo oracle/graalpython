@@ -8,11 +8,6 @@ import unittest
 import warnings
 from test import support
 
-def _getrefcount(obj):
-    if hasattr(sys, 'getrefcount'):
-        return sys.getrefcount(obj)
-    return '<no reference counts on this implementation>'
-
 
 class AsyncYieldFrom:
     def __init__(self, obj):
@@ -890,12 +885,9 @@ class CoroutineTest(unittest.TestCase):
 
     def test_corotype_1(self):
         ct = types.CoroutineType
-        self.assert_('into coroutine' in ct.send.__doc__ or
-                     'into generator/coroutine' in ct.send.__doc__)
-        self.assert_('inside coroutine' in ct.close.__doc__ or
-                     'inside generator/coroutine' in ct.close.__doc__)
-        self.assert_('in coroutine' in ct.throw.__doc__ or
-                     'in generator/coroutine' in ct.throw.__doc__)
+        self.assertIn('into coroutine', ct.send.__doc__)
+        self.assertIn('inside coroutine', ct.close.__doc__)
+        self.assertIn('in coroutine', ct.throw.__doc__)
         self.assertIn('of the coroutine', ct.__dict__['__name__'].__doc__)
         self.assertIn('of the coroutine', ct.__dict__['__qualname__'].__doc__)
         self.assertEqual(ct.__name__, 'coroutine')
@@ -1110,6 +1102,21 @@ class CoroutineTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,
                                     "coroutine is being awaited already"):
             waiter(coro).send(None)
+
+    def test_await_16(self):
+        # See https://bugs.python.org/issue29600 for details.
+
+        async def f():
+            return ValueError()
+
+        async def g():
+            try:
+                raise KeyError
+            except:
+                return await f()
+
+        _, result = run_async(g())
+        self.assertIsNone(result.__context__)
 
     def test_with_1(self):
         class Manager:
@@ -1457,7 +1464,7 @@ class CoroutineTest(unittest.TestCase):
 
     def test_for_2(self):
         tup = (1, 2, 3)
-        refs_before = _getrefcount(tup)
+        refs_before = sys.getrefcount(tup)
 
         async def foo():
             async for i in tup:
@@ -1468,7 +1475,7 @@ class CoroutineTest(unittest.TestCase):
 
             run_async(foo())
 
-        self.assertEqual(_getrefcount(tup), refs_before)
+        self.assertEqual(sys.getrefcount(tup), refs_before)
 
     def test_for_3(self):
         class I:
@@ -1476,7 +1483,7 @@ class CoroutineTest(unittest.TestCase):
                 return self
 
         aiter = I()
-        refs_before = _getrefcount(aiter)
+        refs_before = sys.getrefcount(aiter)
 
         async def foo():
             async for i in aiter:
@@ -1488,7 +1495,7 @@ class CoroutineTest(unittest.TestCase):
 
             run_async(foo())
 
-        self.assertEqual(_getrefcount(aiter), refs_before)
+        self.assertEqual(sys.getrefcount(aiter), refs_before)
 
     def test_for_4(self):
         class I:
@@ -1499,7 +1506,7 @@ class CoroutineTest(unittest.TestCase):
                 return ()
 
         aiter = I()
-        refs_before = _getrefcount(aiter)
+        refs_before = sys.getrefcount(aiter)
 
         async def foo():
             async for i in aiter:
@@ -1511,7 +1518,7 @@ class CoroutineTest(unittest.TestCase):
 
             run_async(foo())
 
-        self.assertEqual(_getrefcount(aiter), refs_before)
+        self.assertEqual(sys.getrefcount(aiter), refs_before)
 
     def test_for_5(self):
         class I:
@@ -1561,8 +1568,8 @@ class CoroutineTest(unittest.TestCase):
 
         manager = Manager()
         iterable = Iterable()
-        mrefs_before = _getrefcount(manager)
-        irefs_before = _getrefcount(iterable)
+        mrefs_before = sys.getrefcount(manager)
+        irefs_before = sys.getrefcount(iterable)
 
         async def main():
             nonlocal I
@@ -1579,8 +1586,8 @@ class CoroutineTest(unittest.TestCase):
             run_async(main())
         self.assertEqual(I, 111011)
 
-        self.assertEqual(_getrefcount(manager), mrefs_before)
-        self.assertEqual(_getrefcount(iterable), irefs_before)
+        self.assertEqual(sys.getrefcount(manager), mrefs_before)
+        self.assertEqual(sys.getrefcount(iterable), irefs_before)
 
         ##############
 
@@ -1988,15 +1995,6 @@ class CoroutineTest(unittest.TestCase):
             support.gc_collect()
         self.assertIn("was never awaited", stderr.getvalue())
 
-    def test_fatal_coro_warning(self):
-        # Issue 27811
-        async def func(): pass
-        with warnings.catch_warnings(), support.captured_stderr() as stderr:
-            warnings.filterwarnings("error")
-            func()
-            support.gc_collect()
-        self.assertIn("was never awaited", stderr.getvalue())
-
 
 class CoroAsyncIOCompatTest(unittest.TestCase):
 
@@ -2119,6 +2117,7 @@ class SysSetCoroWrapperTest(unittest.TestCase):
             sys.set_coroutine_wrapper(None)
 
 
+@support.cpython_only
 class CAPITest(unittest.TestCase):
 
     def test_tp_await_1(self):

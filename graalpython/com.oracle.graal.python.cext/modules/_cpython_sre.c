@@ -3,7 +3,6 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
-
 /*
  * Secret Labs' Regular Expression Engine
  *
@@ -40,8 +39,6 @@
  * CNRI.  Hewlett-Packard provided funding for 1.6 integration and
  * other compatibility work.
  */
-
-// this file was taken from CPython 3.6.4's file '_sre.c'
 
 static const char copyright[] =
     " SRE 2.2.2 Copyright (c) 1997-2002 by Secret Labs AB ";

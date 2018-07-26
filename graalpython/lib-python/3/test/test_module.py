@@ -2,7 +2,6 @@
 import unittest
 import weakref
 from test.support import gc_collect, requires_type_collecting
-from test.support import check_impl_detail, impl_detail
 from test.support.script_helper import assert_python_ok
 
 import sys
@@ -22,10 +21,8 @@ class ModuleTests(unittest.TestCase):
         # An uninitialized module has no __dict__ or __name__,
         # and __doc__ is None
         foo = ModuleType.__new__(ModuleType)
-        self.assertFalse(foo.__dict__)
-        if check_impl_detail():
-            self.assertTrue(foo.__dict__ is None)
-            self.assertRaises(SystemError, dir, foo)
+        self.assertTrue(foo.__dict__ is None)
+        self.assertRaises(SystemError, dir, foo)
         try:
             s = foo.__name__
             self.fail("__name__ = %s" % repr(s))
@@ -218,7 +215,6 @@ a = A(destroyed)"""
         self.assertEqual(r[-len(ends_with):], ends_with,
                          '{!r} does not end with {!r}'.format(r, ends_with))
 
-    @impl_detail(pypy=False)   # __del__ is typically not called at shutdown
     @requires_type_collecting
     def test_module_finalization_at_shutdown(self):
         # Module globals and builtins should still be available during shutdown

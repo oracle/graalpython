@@ -1,6 +1,4 @@
 import unittest
-from test import support
-
 import gc
 from tkinter import (Variable, StringVar, IntVar, DoubleVar, BooleanVar, Tcl,
                      TclError)
@@ -45,7 +43,6 @@ class TestVariable(TestBase):
         v = Variable(self.root, "sample string", "varname")
         self.assertTrue(self.info_exists("varname"))
         del v
-        support.gc_collect()
         self.assertFalse(self.info_exists("varname"))
 
     def test_dont_unset_not_existing(self):
@@ -53,11 +50,9 @@ class TestVariable(TestBase):
         v1 = Variable(self.root, name="name")
         v2 = Variable(self.root, name="name")
         del v1
-        support.gc_collect()
         self.assertFalse(self.info_exists("name"))
         # shouldn't raise exception
         del v2
-        support.gc_collect()
         self.assertFalse(self.info_exists("name"))
 
     def test___eq__(self):
