@@ -145,6 +145,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.JavaTypeConversions;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -168,6 +169,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Override
     protected List<com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return BuiltinConstructorsFactory.getFactories();
+    }
+
+    @Override
+    public void initialize(PythonCore core) {
+        super.initialize(core);
+        builtinConstants.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
     }
 
     // bytes([source[, encoding[, errors]]])

@@ -195,11 +195,6 @@ public final class Python3Core implements PythonCore {
                     "_locale",
     };
 
-    private static final Map<String, Object> BUILTIN_CONSTANTS = new HashMap<>();
-    static {
-        BUILTIN_CONSTANTS.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
-    }
-
     private final PythonBuiltins[] BUILTINS = new PythonBuiltins[]{
                     new BuiltinConstructors(),
                     new BuiltinFunctions(),
@@ -345,7 +340,6 @@ public final class Python3Core implements PythonCore {
         publishBuiltinModules();
 
         builtinsModule = builtinModules.get("builtins");
-        setBuiltinsConstants();
     }
 
     @Override
@@ -597,12 +591,6 @@ public final class Python3Core implements PythonCore {
         PDict sysModules = (PDict) sysModule.getAttribute("modules");
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
             sysModules.setItem(entry.getKey(), entry.getValue());
-        }
-    }
-
-    private void setBuiltinsConstants() {
-        for (Entry<String, Object> entry : BUILTIN_CONSTANTS.entrySet()) {
-            builtinsModule.setAttribute(entry.getKey(), entry.getValue());
         }
     }
 
