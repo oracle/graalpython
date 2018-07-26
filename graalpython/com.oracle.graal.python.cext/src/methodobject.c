@@ -54,7 +54,7 @@ PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
                                                get_method_flags_wrapper(ml->ml_flags),
                                                self,
                                                module,
-                                               polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS));
+                                               polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS)));
     if (func == ERROR_MARKER) {
         return NULL;
     } else {
