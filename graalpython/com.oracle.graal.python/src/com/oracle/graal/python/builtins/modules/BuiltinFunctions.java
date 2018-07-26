@@ -75,7 +75,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonImmutableBuiltinType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -634,6 +633,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * </pre>
          */
         private static long KNOWN_OBJECTS_COUNT = 4L;
+        // borrowed logic from pypy
+        // -1 - (-maxunicode-1): unichar
+        // 0 - 255: char
+        // 256: empty string
+        // 257: empty unicode
+        // 258: empty tuple
+        // 259: empty frozenset
+        private static long BASE_EMPTY_BYTES = 256;
+        private static long BASE_EMPTY_UNICODE = 257;
+        private static long BASE_EMPTY_TUPLE = 258;
+        private static long BASE_EMPTY_FROZENSET = 259;
+        private static long IDTAG_SPECIAL = 11;
+        private static int IDTAG_SHIFT = 4;
 
         /**
          * The next available global id. We reserve space for all integers to be their own id +
@@ -665,17 +677,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return integer + KNOWN_OBJECTS_COUNT;
         }
 
-        /**
-         * TODO: {@link #doId(String)} and {@link #doId(double)} are not quite right, because the
-         * hashCode will certainly collide with integer hashes. It should be good for comparisons
-         * between String and String id, though, it'll just look as if we interned all strings from
-         * the Python code's perspective.
-         */
-        @Specialization
-        int doId(String value) {
-            return value.hashCode();
-        }
-
         @Specialization
         Object doId(PInt value) {
             try {
@@ -691,24 +692,47 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyTuple(PTuple value) {
-            return getId(value, PythonImmutableBuiltinType.PTuple);
+        Object doEmptyString(@SuppressWarnings("unused") String value) {
+            return (BASE_EMPTY_UNICODE << IDTAG_SHIFT) | IDTAG_SPECIAL;
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyBytes(PBytes value) {
-            return getId(value, PythonImmutableBuiltinType.PBytes);
+        Object doEmptyString(@SuppressWarnings("unused") PString value) {
+            return (BASE_EMPTY_UNICODE << IDTAG_SHIFT) | IDTAG_SPECIAL;
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyFrozenSet(PFrozenSet value) {
-            return getId(value, PythonImmutableBuiltinType.PFrozenSet);
+        Object doEmptyTuple(@SuppressWarnings("unused") PTuple value) {
+            return (BASE_EMPTY_TUPLE << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyBytes(@SuppressWarnings("unused") PBytes value) {
+            return (BASE_EMPTY_BYTES << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyFrozenSet(@SuppressWarnings("unused") PFrozenSet value) {
+            return (BASE_EMPTY_FROZENSET << IDTAG_SHIFT) | IDTAG_SPECIAL;
         }
 
         protected boolean isEmptyImmutableBuiltin(Object object) {
             return (object instanceof PTuple && PGuards.isEmpty((PTuple) object)) ||
+                            (object instanceof String && PGuards.isEmpty((String) object)) ||
+                            (object instanceof PString && PGuards.isEmpty((PString) object)) ||
                             (object instanceof PBytes && PGuards.isEmpty((PBytes) object)) ||
                             (object instanceof PFrozenSet && PGuards.isEmpty((PFrozenSet) object));
+        }
+
+        /**
+         * TODO: {@link #doId(String)} and {@link #doId(double)} are not quite right, because the
+         * hashCode will certainly collide with integer hashes. It should be good for comparisons
+         * between String and String id, though, it'll just look as if we interned all strings from
+         * the Python code's perspective.
+         */
+        @Specialization(guards = "!isEmpty(value)")
+        int doId(String value) {
+            return value.hashCode();
         }
 
         @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
@@ -722,10 +746,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private Object getId(PythonObject obj) {
-            return getId(obj, null);
-        }
-
-        private Object getId(PythonObject obj, PythonImmutableBuiltinType immutableType) {
             if (readId == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readId = insert(ReadAttributeFromObjectNode.create());
@@ -733,11 +753,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object id = readId.execute(obj, ID_KEY);
             if (id == NO_VALUE) {
-                if (immutableType != null) {
-                    id = getContext().getEmptyImmutableObjectGlobalId(immutableType);
-                } else {
-                    id = getContext().getNextGlobalId();
-                }
+                id = getContext().getNextGlobalId();
                 writeId.execute(obj, ID_KEY, id);
             }
             return id;
