@@ -67,6 +67,8 @@ public interface PythonCore {
      */
     public void initialize();
 
+    public void postInitialize();
+
     public boolean isInitialized();
 
     public PythonModule lookupBuiltinModule(String name);

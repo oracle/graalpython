@@ -61,6 +61,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -86,6 +87,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
+    @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
     @CompilationFinal private PythonCore sharedCore;
     private final NodeFactory nodeFactory;
 
@@ -105,6 +107,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
+        nativeBuildTime = false; // now we're running
         ensureSysExecutable(context);
         ensureHomeInOptions(newEnv);
         if (!optionsAllowPreInitializedContext(context, newEnv)) {
@@ -115,6 +118,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.setOut(newEnv.out());
         context.setErr(newEnv.err());
         context.initialize();
+        context.getCore().postInitialize();
         return true;
     }
 
@@ -418,5 +422,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             srcBuilder.internal();
         }
         return newBuilder.build();
+    }
+
+    public boolean isNativeBuildTime() {
+        return nativeBuildTime;
     }
 }

@@ -346,6 +346,7 @@ public final class Python3Core implements PythonCore {
         return initialized;
     }
 
+    @Override
     public void initialize() {
         String coreHome = PythonCore.getCoreHomeOrFail();
         loadFile("builtins", coreHome);
@@ -355,8 +356,17 @@ public final class Python3Core implements PythonCore {
         }
         exportCInterface(getContext());
         currentException = null;
-        loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
+        postInitialize();
         initialized = true;
+    }
+
+    @Override
+    public void postInitialize() {
+        if (!getLanguage().isNativeBuildTime()) {
+            initialized = false;
+            loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
+            initialized = true;
+        }
     }
 
     public Object duplicate(Map<Object, Object> replacements, Object value) {
