@@ -89,7 +89,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String EXTENSION = ".py";
 
     @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
-    @CompilationFinal private PythonCore sharedCore;
     private final NodeFactory nodeFactory;
 
     public PythonLanguage() {
@@ -109,47 +108,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
         nativeBuildTime = false; // now we're running
-        ensureSysExecutable(context);
         ensureHomeInOptions(newEnv);
-        if (!optionsAllowPreInitializedContext(context, newEnv)) {
-            // Incompatible options - cannot use pre-initialized context
-            return false;
-        }
-        context.setEnv(newEnv);
-        context.setOut(newEnv.out());
-        context.setErr(newEnv.err());
-        context.initialize();
-        context.getCore().postInitialize();
+        PythonCore.writeInfo(newEnv, "Using preinitialized context.");
+        context.patch(newEnv);
         return true;
-    }
-
-    private static void ensureSysExecutable(PythonContext context) {
-        PythonModule sys = context.getCore().lookupBuiltinModule("sys");
-        sys.setAttribute("executable", Compiler.command(new Object[]{"com.oracle.svm.core.posix.GetExecutableName"}));
-    }
-
-    private static boolean optionsAllowPreInitializedContext(PythonContext context, Env newEnv) {
-        // Verify that the option for using a shared core is the same as
-        // at image building time
-        final boolean useSharedCore = newEnv.getOptions().get(PythonOptions.SharedCore);
-        boolean canUsePreinitializedContext = context.getCore().hasSingletonContext() == !useSharedCore;
-        if (canUsePreinitializedContext) {
-            PythonCore.writeInfo(newEnv, "Using preinitialized context.");
-        } else {
-            PythonCore.writeInfo(newEnv, "Not using preinitialized context.");
-        }
-        return canUsePreinitializedContext;
     }
 
     @Override
     protected PythonContext createContext(Env env) {
         ensureHomeInOptions(env);
-        if (env.getOptions().get(PythonOptions.SharedCore) && sharedCore != null) {
-            return new PythonContext(this, env, sharedCore);
-        } else {
-            Python3Core newCore = new Python3Core(this, new PythonParserImpl());
-            return new PythonContext(this, env, newCore);
-        }
+        Python3Core newCore = new Python3Core(new PythonParserImpl());
+        return new PythonContext(this, env, newCore);
     }
 
     private void ensureHomeInOptions(Env env) {
@@ -230,31 +199,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeContext(PythonContext context) throws Exception {
-        Python3Core core = (Python3Core) getCore();
-        boolean fullInit = !PythonOptions.getOption(context, PythonOptions.LazyInit);
-        if (context.getOptions().get(PythonOptions.SharedCore)) {
-            if (sharedCore == null) {
-                sharedCore = context.getCore();
-                core.bootstrap();
-            } else {
-                fullInit = false;
-            }
-        } else {
-            core.bootstrap();
-        }
         context.initialize();
-        if (fullInit) {
-            core.initialize();
-        }
     }
 
     @Override
     protected CallTarget parse(ParsingRequest request) throws Exception {
         PythonContext context = this.getContextReference().get();
         PythonCore pythonCore = context.getCore();
-        if (!pythonCore.isInitialized()) {
-            pythonCore.initialize();
-        }
         Source source = request.getSource();
         context.initializeMainModule(source.getPath());
 
@@ -346,8 +297,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return null;
     }
 
-    public static PythonContext getContext() {
-        return getCurrentContext(PythonLanguage.class);
+    public static PythonLanguage getCurrent() {
+        return getCurrentLanguage(PythonLanguage.class);
+    }
+
+    public static ContextReference<PythonContext> getContextRef() {
+        return getCurrentLanguage(PythonLanguage.class).getContextReference();
+    }
+
+    public static PythonCore getCore() {
+        return getCurrentContext(PythonLanguage.class).getCore();
     }
 
     @Override
@@ -395,11 +354,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return res.toString();
     }
 
-    public static PythonCore getCore() {
-        PythonCore core = getCurrentLanguage(PythonLanguage.class).sharedCore;
-        return core != null ? core : getContext().getCore();
-    }
-
     public static TruffleLogger getLogger() {
         return TruffleLogger.getLogger(ID, PythonLanguage.class);
     }
@@ -419,7 +373,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private static <E1 extends Exception, E2 extends Exception, E3 extends Exception> Source newSource(PythonContext ctxt, Builder<E1, E2, E3> srcBuilder,
                     String name) throws E1 {
         Builder<E1, RuntimeException, RuntimeException> newBuilder = srcBuilder.name(name).mimeType(MIME_TYPE);
-        boolean internal = !ctxt.getCore().isInitialized() && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources) && !PythonOptions.getOption(ctxt, PythonOptions.LazyInit);
+        boolean internal = !ctxt.getCore().isInitialized() && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
         if (internal) {
             srcBuilder.internal();
         }

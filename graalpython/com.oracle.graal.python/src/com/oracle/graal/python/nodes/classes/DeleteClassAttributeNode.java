@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -81,10 +82,12 @@ public abstract class DeleteClassAttributeNode extends PNode {
 
     @Specialization(guards = "localsDict != null")
     Object deleteFromLocals(@SuppressWarnings("unused") VirtualFrame frame,
-                    @Cached("getLocalsDict(frame)") PDict localsDict) {
+                    @Cached("getLocalsDict(frame)") PDict localsDict,
+                    @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey,
+                    @Cached("create()") HashingStorageNodes.DelItemNode delItem) {
         // class namespace overrides closure
-        if (localsDict.hasKey(identifier)) {
-            localsDict.delItem(identifier);
+        if (hasKey.execute(localsDict.getDictStorage(), identifier)) {
+            delItem.execute(localsDict, localsDict.getDictStorage(), identifier);
         }
         return PNone.NONE;
     }

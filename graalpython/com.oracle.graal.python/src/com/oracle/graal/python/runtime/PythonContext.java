@@ -50,6 +50,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 
 public class PythonContext {
 
@@ -174,18 +176,30 @@ public class PythonContext {
     }
 
     public void initialize() {
-        if (!PythonOptions.getOption(this, PythonOptions.SharedCore)) {
-            core.setSingletonContext(this);
-        }
+        core.initialize(this);
+        setupRuntimeInformation();
+        core.postInitialize();
+    }
 
-        PythonModule sysModule = core.createSysModule(this);
+    public void patch(Env newEnv) {
+        setEnv(newEnv);
+        setOut(newEnv.out());
+        setErr(newEnv.err());
+        setupRuntimeInformation();
+        core.postInitialize();
+    }
+
+    private void setupRuntimeInformation() {
+        PythonModule sysModule = core.initializeSysModule();
+        if (TruffleOptions.AOT) {
+            sysModule.setAttribute("executable", Compiler.command(new Object[]{"com.oracle.svm.core.posix.GetExecutableName"}));
+        }
         sysModules = (PDict) sysModule.getAttribute("modules");
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         sysModules.setItem(__MAIN__, mainModule);
         currentException = null;
-
         isInitialized = true;
     }
 

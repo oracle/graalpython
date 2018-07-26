@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -112,7 +111,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         String str(double self) {
-            return JavaTypeConversions.doubleToString(self);
+            return PFloat.doubleToString(self);
         }
     }
 

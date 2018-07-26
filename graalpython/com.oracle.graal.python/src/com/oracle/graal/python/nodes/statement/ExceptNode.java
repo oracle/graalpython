@@ -58,12 +58,7 @@ public class ExceptNode extends StatementNode {
 
     public void executeExcept(VirtualFrame frame, PException e) {
         PythonContext context = getContext();
-        if (context != null) {
-            context.setCurrentException(e);
-        } else {
-            getCore().setCurrentException(e);
-        }
-
+        context.setCurrentException(e);
         body.execute(frame);
         throw ExceptionHandledException.INSTANCE;
     }

@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -133,7 +132,6 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -166,7 +164,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        boolean optimazeFlag = PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimizeFlag);
+        boolean optimazeFlag = PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.PythonOptimizeFlag);
         builtinConstants.put(BuiltinNames.__DEBUG__, !optimazeFlag);
     }
 
@@ -288,7 +286,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = CHR, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ChrNode extends PythonBuiltinNode {
-
         @TruffleBoundary
         @Specialization
         public String charFromInt(int arg) {

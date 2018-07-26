@@ -30,11 +30,13 @@ import java.math.BigInteger;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -52,7 +54,15 @@ public class SequenceUtil {
 
         private final ConditionProfile negativeIndexProfile = ConditionProfile.createBinaryProfile();
         private final ConditionProfile outOfBoundsProfile = ConditionProfile.createBinaryProfile();
-        @CompilationFinal private PythonCore core;
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+        private PythonCore getCore() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = PythonLanguage.getContextRef();
+            }
+            return contextRef.get().getCore();
+        }
 
         public static NormalizeIndexNode create() {
             return new NormalizeIndexNode();
@@ -118,11 +128,7 @@ public class SequenceUtil {
             int idx = index.intValue();
             if (outOfBoundsProfile.profile(!eq(index.getValue(), idx))) {
                 // anything outside the int range is considered to be out of range
-                if (core == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    core = PythonLanguage.getCore();
-                }
-                throw core.raise(PythonErrorType.IndexError, this, outOfBoundsMessage);
+                throw getCore().raise(PythonErrorType.IndexError, this, outOfBoundsMessage);
             }
             return execute(idx, length, outOfBoundsMessage);
         }
@@ -136,11 +142,7 @@ public class SequenceUtil {
             int idx = (int) index;
             if (outOfBoundsProfile.profile(idx != index)) {
                 // anything outside the int range is considered to be out of range
-                if (core == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    core = PythonLanguage.getCore();
-                }
-                throw core.raise(PythonErrorType.IndexError, this, outOfBoundsMessage);
+                throw getCore().raise(PythonErrorType.IndexError, this, outOfBoundsMessage);
             }
             return execute(idx, length, outOfBoundsMessage);
         }
@@ -151,11 +153,7 @@ public class SequenceUtil {
                 idx += length;
             }
             if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {
-                if (core == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    core = PythonLanguage.getCore();
-                }
-                throw core.raise(PythonErrorType.IndexError, this, outOfBoundsMessage);
+                throw getCore().raise(PythonErrorType.IndexError, this, outOfBoundsMessage);
             }
             return idx;
         }

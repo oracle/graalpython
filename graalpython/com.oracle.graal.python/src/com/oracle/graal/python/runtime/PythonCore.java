@@ -40,7 +40,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.Source;
 
 /**
  * Storage for initialized Python built-in modules and types.
@@ -58,39 +57,40 @@ public interface PythonCore {
     static final boolean LIBPOLYGLOT = Boolean.getBoolean("graalvm.libpolyglot");
 
     /**
-     * Set up the basic types and classes in Java.
+     * Load the core library and prepare all builtin classes and modules.
      */
-    public void bootstrap();
+    public void initialize(PythonContext pythonContext);
 
     /**
-     * Load the core library and finish setting up the immutable core.
+     * Initialize the runtime information in the sys module, capturing command line arguments,
+     * executable paths and so on.
      */
-    public void initialize();
+    public PythonModule initializeSysModule();
 
+    /**
+     * Run post-initialization code that needs a fully working Python environment. This will be run
+     * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
+     * omitted when the native image is generated.
+     */
     public void postInitialize();
 
+    /**
+     * Checks whether the core is initialized.
+     */
     public boolean isInitialized();
 
+    // Various lookup functions
     public PythonModule lookupBuiltinModule(String name);
 
     public PythonBuiltinClass lookupType(PythonBuiltinClassType type);
 
     public PythonBuiltinClass lookupType(Class<? extends Object> clazz);
 
-    public Source getCoreSource(String basename);
-
     public String[] builtinModuleNames();
-
-    public PythonModule getBuiltins();
-
-    public PythonBuiltinClass getTypeClass();
-
-    public PythonBuiltinClass getObjectClass();
-
-    public PythonBuiltinClass getModuleClass();
 
     public PythonClass getErrorClass(PythonErrorType type);
 
+    // Error throwing functions
     public PException raise(PythonErrorType type, Node node, String format, Object... args);
 
     public PException raise(PBaseException exception, Node node);
@@ -103,23 +103,14 @@ public interface PythonCore {
 
     public PException raise(PythonClass cls, Node node);
 
+    // Accessors
     public PythonLanguage getLanguage();
-
-    public PythonBuiltinClass getForeignClass();
 
     public PythonParser getParser();
 
-    public PythonModule createSysModule(PythonContext context);
-
-    public PException getCurrentException();
-
-    public void setCurrentException(PException e);
-
     public PythonObjectFactory factory();
 
-    void setSingletonContext(PythonContext context);
-
-    boolean hasSingletonContext();
+    public void setContext(PythonContext context);
 
     public PythonContext getContext();
 
@@ -146,7 +137,7 @@ public interface PythonCore {
 
     @TruffleBoundary
     public static String getCoreHomeOrFail() {
-        TruffleLanguage.Env env = PythonLanguage.getContext().getEnv();
+        TruffleLanguage.Env env = PythonLanguage.getContextRef().get().getEnv();
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         if (coreHome.isEmpty()) {
             throw new RuntimeException(NO_CORE_FATAL);

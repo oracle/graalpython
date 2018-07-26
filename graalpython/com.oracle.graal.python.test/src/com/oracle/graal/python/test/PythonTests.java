@@ -225,7 +225,7 @@ public class PythonTests {
 
     public static PythonContext getContext() {
         PythonTests.ensureContext();
-        return PythonLanguage.getContext();
+        return PythonLanguage.getContextRef().get();
     }
 
     static Context getContext(String[] args) {
@@ -263,7 +263,7 @@ public class PythonTests {
 
     public static RootNode getParseResult(com.oracle.truffle.api.source.Source source, PrintStream out, PrintStream err) {
         PythonTests.ensureContext();
-        PythonContext ctx = PythonLanguage.getContext();
+        PythonContext ctx = PythonLanguage.getContextRef().get();
         ctx.setOut(out);
         ctx.setErr(err);
         return (RootNode) ctx.getCore().getParser().parse(ParserMode.File, ctx.getCore(), source, null);

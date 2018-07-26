@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -202,7 +203,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // restore previous exception state
                 getContext().setCurrentException(exceptionState);
 
-                Object result = AsPythonObjectNode.doSlowPath(nativeResult);
+                Object result = AsPythonObjectNode.doSlowPath(getCore(), nativeResult);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
@@ -293,10 +294,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public int run(String name) {
+        public int run(String name,
+                        @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 return 1;
-            } else if (getContext() != null && getContext().isInitialized() && getContext().getImportedModules().hasKey(name)) {
+            } else if (getContext() != null && getContext().isInitialized() && hasKey.execute(getContext().getImportedModules().getDictStorage(), name)) {
                 return -1;
             } else {
                 return 0;
@@ -345,7 +347,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
                 String fileName = pathParts[pathParts.length - 1];
-                TruffleFile file = env.getTruffleFile(path);
+                TruffleFile file;
+                if (fileName.equals(path)) {
+                    // relative filename
+                    file = env.getTruffleFile(PythonCore.getCoreHomeOrFail() + PythonCore.FILE_SEPARATOR + fileName);
+                } else {
+                    file = env.getTruffleFile(path);
+                }
                 Source src = PythonLanguage.newSource(ctxt, file, fileName);
                 RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
                 if (parsedModule != null) {

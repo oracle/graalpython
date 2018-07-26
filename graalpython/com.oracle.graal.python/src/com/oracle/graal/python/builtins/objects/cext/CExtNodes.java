@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -48,17 +47,18 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPoin
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -318,14 +318,14 @@ public abstract class CExtNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetClassNode.create());
             }
-            return getClassNode.execute(obj) == getCore().getForeignClass();
+            return getClassNode.execute(obj) == getCore().lookupType(PythonBuiltinClassType.TruffleObject);
         }
 
         @TruffleBoundary
-        public static Object doSlowPath(Object object) {
+        public static Object doSlowPath(PythonCore core, Object object) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
-            } else if (GetClassNode.getItSlowPath(object) == PythonLanguage.getCore().getForeignClass()) {
+            } else if (GetClassNode.getItSlowPath(object) == core.lookupType(PythonBuiltinClassType.TruffleObject)) {
                 throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
             }
             return object;
