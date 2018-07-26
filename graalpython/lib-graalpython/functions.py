@@ -52,7 +52,7 @@ def hasattr(obj, key):
 def make_print():
     builtin_print = print
 
-    def func(*objects, sep=" ", end="\n", file=None, flush=False):
+    def print_f(*objects, sep=" ", end="\n", file=None, flush=False):
         if file is not None:
             sz = len(objects) - 1
             for i in range(sz):
@@ -62,7 +62,8 @@ def make_print():
             file.write(str(end))
         else:
             builtin_print(tuple(objects), sep, end, file, flush)
-    return func
+    print_f.__name__ = "print"
+    return print_f
 print = __builtin__(make_print())
 del make_print
 
@@ -71,9 +72,10 @@ del make_print
 def make_globals_function():
     import sys
 
-    def func(mod):
+    def globals_f():
         return sys._getframe(1).f_globals
-    return func
+    globals_f.__name__ = "globals"
+    return globals_f
 globals = __builtin__(make_globals_function())
 del make_globals_function
 
@@ -81,9 +83,10 @@ del make_globals_function
 def make_locals_function():
     import sys
 
-    def func(mod):
+    def locals_f():
         return sys._getframe(1).f_locals
-    return func
+    locals_f.__name__ = "locals"
+    return locals_f
 locals = __builtin__(make_locals_function())
 del make_locals_function
 
