@@ -1335,7 +1335,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 func.getFunctionRootNode().accept(new NodeVisitor() {
                     public boolean visit(Node node) {
                         if (node instanceof ReadVarArgsNode) {
-                            node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex(), ((ReadVarArgsNode) node).isBuiltin()));
+                            node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex() + 1, ((ReadVarArgsNode) node).isBuiltin()));
                         } else if (node instanceof ReadIndexedArgumentNode) {
                             node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
                         }
