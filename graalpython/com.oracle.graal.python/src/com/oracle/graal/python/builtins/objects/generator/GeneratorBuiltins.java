@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -178,8 +179,14 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
-        Object getCode(PGenerator self) {
-            return factory().createCode(self.getGeneratorRootNode());
+        Object getCode(PGenerator self,
+                        @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
+            PCode code = self.getCode();
+            if (hasCodeProfile.profile(code == null)) {
+                code = factory().createCode(self.getGeneratorRootNode());
+                self.setCode(code);
+            }
+            return code;
         }
     }
 }

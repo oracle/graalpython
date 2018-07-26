@@ -116,14 +116,14 @@ public abstract class WriteLocalVariableNode extends FrameSlotNode implements Wr
 
     @Specialization(guards = {"isLongOrObjectKind(frame)", "isPrimitiveInt(value)"}, rewriteOn = ArithmeticException.class)
     public PInt writePIntAsLong(VirtualFrame frame, PInt value) {
+        frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Long);
         frame.setLong(frameSlot, value.longValueExact());
-        frameSlot.setKind(FrameSlotKind.Long);
         return value;
     }
 
     @Specialization(guards = "isLongOrObjectKind(frame)")
     public PInt writePIntAsObject(VirtualFrame frame, PInt value) {
-        frameSlot.setKind(FrameSlotKind.Object);
+        frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
         frame.setObject(frameSlot, value);
         return value;
     }

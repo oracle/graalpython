@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
+import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
@@ -54,4 +55,16 @@ public abstract class PHashingCollection extends PythonBuiltinObject {
     public abstract void setDictStorage(HashingStorage newStorage);
 
     public abstract int size();
+
+    public Iterable<Object> items() {
+        return getDictStorage().values();
+    }
+
+    public Iterable<Object> keys() {
+        return getDictStorage().keys();
+    }
+
+    public Iterable<DictEntry> entries() {
+        return getDictStorage().entries();
+    }
 }

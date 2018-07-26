@@ -99,14 +99,6 @@ public final class PDict extends PHashingCollection {
         }
     }
 
-    public Iterable<Object> items() {
-        return dictStorage.values();
-    }
-
-    public Iterable<Object> keys() {
-        return dictStorage.keys();
-    }
-
     @Override
     public void setDictStorage(HashingStorage newStorage) {
         dictStorage = newStorage;
@@ -145,10 +137,6 @@ public final class PDict extends PHashingCollection {
     @Override
     public int size() {
         return dictStorage.length();
-    }
-
-    public Iterable<DictEntry> entries() {
-        return dictStorage.entries();
     }
 
 }

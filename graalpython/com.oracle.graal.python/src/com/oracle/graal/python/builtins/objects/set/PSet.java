@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
@@ -39,36 +38,11 @@ public final class PSet extends PBaseSet {
         super(clazz, storage);
     }
 
-    // add
-    public void add(Object o) {
-        this.set.setItem(o, PNone.NO_VALUE, HashingStorage.getSlowPathEquivalence(o));
-    }
-
-    // remove
-    @SuppressWarnings({"unused", "static-method"})
-    public boolean remove(Object o) {
-        throw new UnsupportedOperationException();
-    }
-
-    // discard
-    @SuppressWarnings({"unused", "static-method"})
-    public boolean discard(Object o) {
-        throw new UnsupportedOperationException();
-    }
-
-    // pop
-    @SuppressWarnings("static-method")
-    public boolean pop() {
-        throw new UnsupportedOperationException();
-    }
-
-    // clear
-    public void clear() {
-        set.clear();
-    }
-
     @Override
     public void setDictStorage(HashingStorage newStorage) {
-        throw new RuntimeException("set has fixed storage");
+        // ignore if storage stays unchanged
+        if (newStorage != getDictStorage()) {
+            throw new RuntimeException("set has fixed storage");
+        }
     }
 }

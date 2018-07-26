@@ -84,58 +84,50 @@ public abstract class FrameSlotNode extends PNode {
         return FrameUtil.getObjectSafe(frame, frameSlot);
     }
 
-    @SuppressWarnings("unused")
     protected final boolean isNotIllegal(Frame frame) {
-        return frameSlot.getKind() != FrameSlotKind.Illegal;
+        return frame.getFrameDescriptor().getFrameSlotKind(frameSlot) != FrameSlotKind.Illegal;
     }
 
-    @SuppressWarnings("unused")
     protected final boolean isBooleanKind(Frame frame) {
-        return isKind(FrameSlotKind.Boolean);
+        return isKind(frame, FrameSlotKind.Boolean);
     }
 
-    @SuppressWarnings("unused")
     protected final boolean isIntegerKind(Frame frame) {
-        return isKind(FrameSlotKind.Int);
+        return isKind(frame, FrameSlotKind.Int);
     }
 
-    @SuppressWarnings("unused")
     protected final boolean isLongKind(Frame frame) {
-        return isKind(FrameSlotKind.Long);
+        return isKind(frame, FrameSlotKind.Long);
     }
 
-    @SuppressWarnings("unused")
     protected final boolean isDoubleKind(Frame frame) {
-        return isKind(FrameSlotKind.Double);
+        return isKind(frame, FrameSlotKind.Double);
     }
 
-    @SuppressWarnings("unused")
     protected final boolean isIntOrObjectKind(Frame frame) {
-        return isKind(FrameSlotKind.Int) || isKind(FrameSlotKind.Object);
+        return isKind(frame, FrameSlotKind.Int) || isKind(frame, FrameSlotKind.Object);
     }
 
-    @SuppressWarnings("unused")
     protected final boolean isLongOrObjectKind(Frame frame) {
-        return isKind(FrameSlotKind.Long) || isKind(FrameSlotKind.Object);
+        return isKind(frame, FrameSlotKind.Long) || isKind(frame, FrameSlotKind.Object);
     }
 
-    @SuppressWarnings("unused")
     protected final boolean isObjectKind(Frame frame) {
-        if (frameSlot.getKind() != FrameSlotKind.Object) {
+        if (frame.getFrameDescriptor().getFrameSlotKind(frameSlot) != FrameSlotKind.Object) {
             CompilerDirectives.transferToInterpreter();
-            frameSlot.setKind(FrameSlotKind.Object);
+            frame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
         }
         return true;
     }
 
-    private boolean isKind(FrameSlotKind kind) {
-        return frameSlot.getKind() == kind || initialSetKind(kind);
+    private boolean isKind(Frame frame, FrameSlotKind kind) {
+        return frame.getFrameDescriptor().getFrameSlotKind(frameSlot) == kind || initialSetKind(frame, kind);
     }
 
-    private boolean initialSetKind(FrameSlotKind kind) {
-        if (frameSlot.getKind() == FrameSlotKind.Illegal) {
+    private boolean initialSetKind(Frame frame, FrameSlotKind kind) {
+        if (frame.getFrameDescriptor().getFrameSlotKind(frameSlot) == FrameSlotKind.Illegal) {
             CompilerDirectives.transferToInterpreter();
-            frameSlot.setKind(kind);
+            frame.getFrameDescriptor().setFrameSlotKind(frameSlot, kind);
             return true;
         }
         return false;

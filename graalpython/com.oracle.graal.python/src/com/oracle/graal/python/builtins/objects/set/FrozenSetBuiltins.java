@@ -321,6 +321,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile,
                         @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
 
+            HashingStorage curStorage = dictStorage;
             Object iterator = getIteratorNode.executeWith(iterable);
             while (true) {
                 Object value;
@@ -328,9 +329,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                     value = next.execute(iterator);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
+                    container.setDictStorage(curStorage);
                     return container;
                 }
-                setItemNode.execute(container, dictStorage, value, PNone.NO_VALUE);
+                curStorage = setItemNode.execute(curStorage, value, PNone.NO_VALUE);
             }
         }
 

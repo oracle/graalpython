@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,44 +38,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.object;
+package com.oracle.graal.python;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.Specialization;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.spi.FileTypeDetector;
 
-@ImportStatic(PGuards.class)
-public abstract class GetDictNode extends PBaseNode {
-
-    public abstract Object execute(Object o);
-
-    @Specialization
-    Object dict(PDict self) {
-        return self;
-    }
-
-    @Specialization
-    Object dict(PythonModule self) {
-        PHashingCollection dict = self.getDict();
-        if (dict == null) {
-            dict = factory().createDictFixedStorage(self);
-            self.setDict(dict);
+public final class PythonFileDetector extends FileTypeDetector {
+    @Override
+    public String probeContentType(Path path) throws IOException {
+        if (path.getFileName().toString().endsWith(".py")) {
+            return PythonLanguage.MIME_TYPE;
         }
-        return dict;
-    }
-
-    @Fallback
-    Object dict(@SuppressWarnings("unused") Object self) {
-        return PNone.NONE;
-    }
-
-    public static GetDictNode create() {
-        return GetDictNodeGen.create();
+        return null;
     }
 }

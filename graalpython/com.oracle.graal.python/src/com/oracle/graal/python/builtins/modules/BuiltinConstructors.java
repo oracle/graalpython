@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -72,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -135,6 +137,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -148,6 +151,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -565,7 +569,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFrozenSet frozenset(PythonClass cls, String arg) {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             for (int i = 0; i < arg.length(); i++) {
-                getSetItemNode().execute(frozenSet, frozenSet.getDictStorage(), String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
+                frozenSet.setDictStorage(getSetItemNode().execute(frozenSet.getDictStorage(), String.valueOf(arg.charAt(i)), PNone.NO_VALUE));
             }
             return frozenSet;
         }
@@ -581,7 +585,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             while (true) {
                 try {
-                    getSetItemNode().execute(frozenSet, frozenSet.getDictStorage(), next.execute(iterator), PNone.NO_VALUE);
+                    frozenSet.setDictStorage(getSetItemNode().execute(frozenSet.getDictStorage(), next.execute(iterator), PNone.NO_VALUE));
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
                     return frozenSet;
@@ -1029,7 +1033,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = STR, minNumOfArguments = 1, keywordArguments = {"object", "encoding", "errors"}, takesVariableKeywords = true, constructsClass = PString.class)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonBuiltinNode {
+        @Child private LookupAndCallTernaryNode callDecodeNode;
+
         private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
+
+        @CompilationFinal private ConditionProfile isStringProfile;
+        @CompilationFinal private ConditionProfile isPStringProfile;
 
         private Object asPString(Object cls, String str) {
             if (isPrimitiveProfile.profile(cls == getCore().lookupType(PythonBuiltinClassType.PString))) {
@@ -1053,32 +1062,60 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public Object str(Object strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create(__STR__)") LookupAndCallUnaryNode callNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isString,
-                        @Cached("createBinaryProfile()") ConditionProfile isPString) {
+                        @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
             Object result = callNode.executeObject(obj);
-            if (isString.profile(result instanceof String)) {
+            if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
-            } else if (isPString.profile(result instanceof PString)) {
+            } else if (getIsPStringProfile().profile(result instanceof PString)) {
                 return result;
             }
             throw raise(PythonErrorType.TypeError, "__str__ returned non-string (type %p)", result);
         }
 
-        protected static String DECODE = "decode";
-
         @Specialization(guards = "!isNoValue(encoding)")
-        public Object str(Object strClass, PIBytesLike obj, Object encoding, Object errors,
-                        @Cached("createBinaryProfile()") ConditionProfile isString,
-                        @Cached("createBinaryProfile()") ConditionProfile isPString,
-                        @Cached("create(DECODE)") LookupAndCallTernaryNode callDecode) {
-            Object result = callDecode.execute(obj, encoding, errors);
-            if (isString.profile(result instanceof String)) {
+        public Object doBytesLike(Object strClass, PIBytesLike obj, Object encoding, Object errors) {
+            Object result = getCallDecodeNode().execute(obj, encoding, errors);
+            if (getIsStringProfile().profile(result instanceof String)) {
                 return asPString(strClass, (String) result);
-            } else if (isPString.profile(result instanceof PString)) {
+            } else if (getIsPStringProfile().profile(result instanceof PString)) {
                 return result;
             }
             throw raise(PythonErrorType.TypeError, "%p.decode returned non-string (type %p)", obj, result);
+        }
+
+        @Specialization(guards = "!isNoValue(encoding)")
+        public Object doMemoryView(Object strClass, PMemoryView obj, Object encoding, Object errors,
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytes) {
+            Object result = callToBytes.executeObject(obj);
+            if (isBytesProfile.profile(result instanceof PBytes)) {
+                return doBytesLike(strClass, (PBytes) result, encoding, errors);
+            }
+            throw raise(PythonErrorType.TypeError, "%p.tobytes returned non-bytes object (type %p)", obj, result);
+        }
+
+        private LookupAndCallTernaryNode getCallDecodeNode() {
+            if (callDecodeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callDecodeNode = insert(LookupAndCallTernaryNode.create(DECODE));
+            }
+            return callDecodeNode;
+        }
+
+        private ConditionProfile getIsStringProfile() {
+            if (isStringProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isStringProfile = ConditionProfile.createBinaryProfile();
+            }
+            return isStringProfile;
+        }
+
+        private ConditionProfile getIsPStringProfile() {
+            if (isPStringProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isPStringProfile = ConditionProfile.createBinaryProfile();
+            }
+            return isPStringProfile;
         }
     }
 
@@ -1451,34 +1488,44 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Specialization
-        Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
-                        int flags, String codestring, Object constants, Object names, Object varnames,
-                        String filename, String name, int firstlineno, Object lnotab, Object freevars,
-                        Object cellvars) {
-            return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
-                            flags, codestring, constants, names, varnames,
-                            filename, name, firstlineno, lnotab, freevars,
-                            cellvars);
+        Object call(PythonClass cls, int argcount, int kwonlyargcount,
+                        int nlocals, int stacksize, int flags,
+                        String codestring, PTuple constants, PTuple names,
+                        PTuple varnames, PTuple freevars, PTuple cellvars,
+                        String filename, String name, int firstlineno,
+                        String lnotab) {
+            return factory().createCode(cls, argcount, kwonlyargcount,
+                            nlocals, stacksize, flags,
+                            codestring, constants, names,
+                            varnames.getArray(), freevars.getArray(), cellvars.getArray(),
+                            filename, name, firstlineno,
+                            lnotab);
         }
 
         @Specialization
         @TruffleBoundary
-        Object call(PythonClass cls, int argcount, int kwonlyargcount, int nlocals, int stacksize,
-                        int flags, PBytes codestring, Object constants, Object names, Object varnames,
-                        PString filename, PString name, int firstlineno, Object lnotab, Object freevars,
-                        Object cellvars) {
-            return factory().createCode(cls, argcount, kwonlyargcount, nlocals, stacksize,
-                            flags, new String(codestring.getInternalByteArray()), constants, names, varnames,
-                            filename.getValue(), name.getValue(), firstlineno, lnotab, freevars,
-                            cellvars);
+        Object call(PythonClass cls, int argcount, int kwonlyargcount,
+                        int nlocals, int stacksize, int flags,
+                        PBytes codestring, PTuple constants, PTuple names,
+                        PTuple varnames, PTuple freevars, PTuple cellvars,
+                        PString filename, PString name, int firstlineno,
+                        PBytes lnotab) {
+            return factory().createCode(cls, argcount, kwonlyargcount,
+                            nlocals, stacksize, flags,
+                            new String(codestring.getInternalByteArray()), constants, names,
+                            varnames.getArray(), freevars.getArray(), cellvars.getArray(),
+                            filename.getValue(), name.getValue(), firstlineno,
+                            lnotab);
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        Object call(Object cls, Object argcount, Object kwonlyargcount, Object nlocals, Object stacksize,
-                        Object flags, Object codestring, Object constants, Object names, Object varnames,
-                        Object filename, Object name, Object firstlineno, Object lnotab, Object freevars,
-                        Object cellvars) {
+        Object call(Object cls, Object argcount, Object kwonlyargcount,
+                        Object nlocals, Object stacksize, Object flags,
+                        Object codestring, Object constants, Object names,
+                        Object varnames, Object freevars, Object cellvars,
+                        Object filename, Object name, Object firstlineno,
+                        Object lnotab) {
             throw raise(PythonErrorType.NotImplementedError, "code object instance from generic arguments");
         }
     }
@@ -1502,12 +1549,44 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mappingproxy", constructsClass = {PMappingproxy.class}, base = {PDict.class}, isPublic = false, fixedNumOfArguments = 2)
+    @Builtin(name = "mappingproxy", constructsClass = {PMappingproxy.class}, isPublic = false, minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
+        @Child private IsSequenceNode isMappingNode;
+
         @Specialization
-        Object call(PythonClass klass, PythonObject obj) {
-            return factory().createMappingproxy(klass, obj);
+        Object doMapping(PythonClass klass, PHashingCollection obj) {
+            return factory().createMappingproxy(klass, obj.getDictStorage());
+        }
+
+        @Specialization(guards = {"isMapping(obj)", "!isBuiltinMapping(obj)"})
+        Object doMapping(PythonClass klass, PythonObject obj,
+                        @Cached("create()") HashingStorageNodes.InitNode initNode) {
+            return factory().createMappingproxy(klass, initNode.execute(obj, PKeyword.EMPTY_KEYWORDS));
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        @SuppressWarnings("unused")
+        Object doMissing(PythonClass klass, PNone none) {
+            throw raise(TypeError, "mappingproxy() missing required argument 'mapping' (pos 1)");
+        }
+
+        @Specialization(guards = {"!isMapping(obj)", "!isNoValue(obj)"})
+        @SuppressWarnings("unused")
+        Object doInvalid(PythonClass klass, Object obj) {
+            throw raise(TypeError, "mappingproxy() argument must be a mapping, not %p", obj);
+        }
+
+        protected boolean isBuiltinMapping(Object o) {
+            return o instanceof PHashingCollection;
+        }
+
+        protected boolean isMapping(Object o) {
+            if (isMappingNode == null) {
+                CompilerDirectives.transferToInterpreter();
+                isMappingNode = insert(IsSequenceNode.create());
+            }
+            return isMappingNode.execute(o);
         }
     }
 

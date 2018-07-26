@@ -42,7 +42,13 @@
 
 def __memoryview_init(self, *args, **kwargs):
     import _memoryview
-    self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
+    # NOTE: DO NOT CHANGE THE NAME OF PROPERTY '__c_memoryview'
+    # it is also referenced in native code
+    if args and isinstance(args[0], _memoryview.nativememoryview):
+        # wrapping case
+        self.__c_memoryview = args[0]
+    else:
+        self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
 
 
 def __memoryview_getitem(self, key):
@@ -69,13 +75,19 @@ for p in ["nbytes", "readonly", "itemsize", "format", "ndim", "shape", "strides"
     setattr(memoryview, p, make_property(p))
 
 
+def make_delegate0(p):
+    def delegate(self):
+        return getattr(self.__c_memoryview, p)()
+    delegate.__name__ = p
+    return delegate
+
 for p in ["__repr__", "__len__", "release", "tobytes", "hex", "tolist",
           "__enter__", "__exit__"]:
-    setattr(memoryview, p, lambda self: getattr(self.__c_memoryview, p)())
+    setattr(memoryview, p, make_delegate0(p))
 
 
 # other delegate methods
 memoryview.__init__ = __memoryview_init
 memoryview.__getitem__ = __memoryview_getitem
 memoryview.__setitem__ = lambda self, key, value: self.__c_memoryview.__setitem__(key, value)
-memoryview.cast = lambda self, *args: self.__c_memoryview.cast(*args)
+memoryview.cast = lambda self, *args: memoryview(self.__c_memoryview.cast(*args))

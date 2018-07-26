@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PFunction.class, PBuiltinFunction.class})
 public class AbstractFunctionBuiltins extends PythonBuiltins {
@@ -213,8 +214,14 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getCode(PFunction self, @SuppressWarnings("unused") PNone none) {
-            return factory().createCode(self.getFunctionRootNode());
+        Object getCode(PFunction self, @SuppressWarnings("unused") PNone none,
+                        @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
+            PCode code = self.getCode();
+            if (hasCodeProfile.profile(code == null)) {
+                code = factory().createCode(self.getFunctionRootNode());
+                self.setCode(code);
+            }
+            return code;
         }
 
         @SuppressWarnings("unused")
@@ -235,7 +242,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object dict(PFunction self) {
-            PDict dict = self.getDict();
+            PHashingCollection dict = self.getDict();
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
                 self.setDict(dict);

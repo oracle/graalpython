@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -51,8 +52,7 @@ public final class DictLiteralNode extends LiteralNode {
     @Override
     @ExplodeLoop
     public PDict execute(VirtualFrame frame) {
-        PDict dict = factory().createDict();
-
+        HashingStorage dictStorage = PDict.createNewStorage(true, values.length);
         for (int i = 0; i < values.length; i++) {
             final Object key = keys[i].execute(frame);
             final Object val = values[i].execute(frame);
@@ -61,9 +61,8 @@ public final class DictLiteralNode extends LiteralNode {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 setItemNode = insert(SetItemNode.create());
             }
-            setItemNode.execute(dict, dict.getDictStorage(), key, val);
+            dictStorage = setItemNode.execute(dictStorage, key, val);
         }
-
-        return dict;
+        return factory().createDict(dictStorage);
     }
 }
