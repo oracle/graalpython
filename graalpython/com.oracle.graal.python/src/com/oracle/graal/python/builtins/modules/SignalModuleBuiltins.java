@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -152,6 +153,13 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             }
             signalHandlers.put(signum, id);
             return retval;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PBuiltinMethod handler) {
+            // TODO: (tfel) definitely wrong
+            return signal(signum, handler.getFunction());
         }
 
         // TODO: This needs to be fixed, any object with a "__call__" should work
