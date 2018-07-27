@@ -67,13 +67,13 @@ public class FunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getEnclosingClassName() == null")
         @TruffleBoundary
         Object reprModuleFunction(PFunction self) {
-            return String.format("<function '%s' at 0x%x>", self.getName(), self.hashCode());
+            return String.format("<function %s at 0x%x>", self.getName(), self.hashCode());
         }
 
         @Specialization(guards = "self.getEnclosingClassName() != null")
         @TruffleBoundary
         Object reprClassFunction(PFunction self) {
-            return String.format("<function '%s.%s' at 0x%x>", self.getEnclosingClassName(), self.getName(), self.hashCode());
+            return String.format("<function %s.%s at 0x%x>", self.getEnclosingClassName(), self.getName(), self.hashCode());
         }
     }
 
