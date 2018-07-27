@@ -47,10 +47,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -135,6 +138,8 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "signal", fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonBinaryBuiltinNode {
+        @Child CreateArgumentsNode createArgs = CreateArgumentsNode.create();
+
         @Specialization
         @TruffleBoundary
         Object signal(int signum, int id) {
@@ -155,25 +160,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
-        @Specialization
-        @TruffleBoundary
-        Object signal(int signum, PBuiltinMethod handler) {
-            // TODO: (tfel) definitely wrong
-            return signal(signum, handler.getFunction());
-        }
-
-        // TODO: This needs to be fixed, any object with a "__call__" should work
-        @Specialization
-        @TruffleBoundary
-        Object signal(int signum, PBuiltinFunction handler) {
-            RootCallTarget callTarget = handler.getCallTarget();
-            Object[] arguments = PArguments.create(2);
-            PArguments.setArgument(arguments, 0, signum);
-            // TODO: the second argument should be the interrupted, currently executing frame
-            // we'll get that when we switch to executing these handlers (just like finalizers)
-            // on the main thread
-            PArguments.setArgument(arguments, 1, PNone.NONE);
-
+        private Object installSignalHandler(int signum, PythonCallable handler, RootCallTarget callTarget, Object[] arguments) {
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, () -> {
@@ -191,6 +178,34 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             }
             signalHandlers.put(signum, handler);
             return retval;
+        }
+        // TODO: This needs to be fixed, any object with a "__call__" should work
+
+        // TODO: the second argument should be the interrupted, currently executing frame
+        // we'll get that when we switch to executing these handlers (just like finalizers)
+        // on the main thread
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PBuiltinMethod handler) {
+            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.executeWithSelf(handler.getSelf(), new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PBuiltinFunction handler) {
+            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PMethod handler) {
+            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.executeWithSelf(handler.getSelf(), new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PFunction handler) {
+            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
         }
     }
 }
