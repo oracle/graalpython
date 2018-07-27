@@ -32,6 +32,16 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public abstract class SequenceStorage {
 
+    public enum ListStorageType {
+        Uninitialized,
+        Int,
+        Long,
+        Double,
+        List,
+        Tuple,
+        Generic
+    }
+
     @CompilationFinal private static boolean LOG_GENERALIZATION = false;
 
     public abstract int length();

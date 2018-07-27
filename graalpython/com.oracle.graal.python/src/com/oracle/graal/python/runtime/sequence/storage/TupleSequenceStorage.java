@@ -44,6 +44,12 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         this.length = elements.length;
     }
 
+    public TupleSequenceStorage(PTuple[] elements, int length) {
+        this.values = elements;
+        this.capacity = values.length;
+        this.length = length;
+    }
+
     public TupleSequenceStorage(int capacity) {
         this.values = new PTuple[capacity];
         this.capacity = capacity;

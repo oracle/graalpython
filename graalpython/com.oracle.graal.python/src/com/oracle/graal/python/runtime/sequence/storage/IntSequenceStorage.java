@@ -43,6 +43,12 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         this.length = elements.length;
     }
 
+    public IntSequenceStorage(int[] elements, int length) {
+        this.values = elements;
+        this.capacity = values.length;
+        this.length = length;
+    }
+
     public IntSequenceStorage(int capacity) {
         this.values = new int[capacity];
         this.capacity = capacity;

@@ -43,6 +43,12 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         this.length = elements.length;
     }
 
+    public DoubleSequenceStorage(double[] elements, int length) {
+        this.values = elements;
+        this.capacity = elements.length;
+        this.length = length;
+    }
+
     public DoubleSequenceStorage(int capacity) {
         this.values = new double[capacity];
         this.capacity = capacity;
