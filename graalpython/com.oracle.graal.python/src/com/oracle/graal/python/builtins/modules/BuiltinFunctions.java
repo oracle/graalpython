@@ -1303,6 +1303,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child GetItemNode getNameNode = GetItemNode.create();
 
         @Specialization
+        @TruffleBoundary
         public Object doIt(PFunction func) {
             /*
              * (tfel): To be compatible with CPython, builtin module functions must be bound to
