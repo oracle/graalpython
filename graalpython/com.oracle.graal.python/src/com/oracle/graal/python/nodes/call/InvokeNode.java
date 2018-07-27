@@ -154,8 +154,11 @@ public abstract class InvokeNode extends AbstractInvokeNode {
     private final PCell[] closure;
     protected final boolean isBuiltin;
 
-    protected InvokeNode(CallTarget callTarget, Arity calleeArity, PythonObject globals, PCell[] closure, boolean isBuiltin) {
+    protected InvokeNode(CallTarget callTarget, Arity calleeArity, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
+        if (isGenerator) {
+            this.callNode.forceInlining();
+        }
         this.arity = calleeArity;
         this.globals = globals;
         this.closure = closure;
@@ -172,7 +175,7 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         if (builtin && shouldSplit(callee)) {
             callTarget = split(callTarget);
         }
-        return InvokeNodeGen.create(callTarget, getArity(callee), callee.getGlobals(), callee.getClosure(), builtin);
+        return InvokeNodeGen.create(callTarget, getArity(callee), callee.getGlobals(), callee.getClosure(), builtin, callee.isGeneratorFunction());
     }
 
     /**
