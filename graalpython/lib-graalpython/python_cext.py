@@ -732,7 +732,7 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
 
 
 def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
-    func = wrapper(CreateBuiltinMethod(name, cfunc, cwrapper, self))
+    func = wrapper(CreateBuiltinMethod(CreateFunction(name, cfunc, cwrapper), self))
     func.__module__ = module.__name__
     func.__name__ = name
     func.__doc__ = doc
@@ -759,13 +759,13 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
     pclass = to_java(primary)
     getset = property()
     if getter:
-        getter_w = CreateFunction(name, getter, getter_wrapper)
+        getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
         def member_getter(self):
             return capi_to_java(getter_w(self, closure))
 
         getset.getter(member_getter)
     if setter:
-        setter_w = CreateFunction(name, setter, setter_wrapper)
+        setter_w = CreateFunction(name, setter, setter_wrapper, pclass)
         def member_setter(self, value):
             result = setter_w(self, value, closure)
             if result != 0:
@@ -883,8 +883,6 @@ def PyObject_AsFileDescriptor(obj):
 
 @may_raise
 def PyObject_GetAttr(obj, attr):
-    if attr == "__reduce_cython__":
-        __breakpoint__()
     return getattr(obj, attr)
 
 

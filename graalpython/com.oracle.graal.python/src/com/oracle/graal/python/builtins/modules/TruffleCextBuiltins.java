@@ -357,6 +357,20 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
 
+        @Specialization(guards = {"isNoValue(cwrapper)", "isNoValue(type)"})
+        @TruffleBoundary
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type) {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
+            return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
+        }
+
+        @Specialization(guards = {"!isNoValue(cwrapper)", "isNoValue(type)"})
+        @TruffleBoundary
+        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type) {
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
+            return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
+        }
+
         @Specialization(guards = "!isNoValue(cwrapper)")
         @TruffleBoundary
         PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, PythonClass type) {
