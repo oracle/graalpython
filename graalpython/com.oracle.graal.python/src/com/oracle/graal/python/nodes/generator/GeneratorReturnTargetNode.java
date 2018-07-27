@@ -36,6 +36,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public final class GeneratorReturnTargetNode extends ReturnTargetNode implements GeneratorControlNode {
 
     @Child private PNode parameters;
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
     private final int flagSlot;
 
     public GeneratorReturnTargetNode(PNode parameters, PNode body, PNode returnValue, int activeFlagIndex) {
@@ -53,9 +55,9 @@ public final class GeneratorReturnTargetNode extends ReturnTargetNode implements
 
     @Override
     public Object execute(VirtualFrame frame) {
-        if (!isActive(frame, flagSlot)) {
+        if (!gen.isActive(frame, flagSlot)) {
             parameters.executeVoid(frame);
-            setActive(frame, flagSlot, true);
+            gen.setActive(frame, flagSlot, true);
         }
 
         try {

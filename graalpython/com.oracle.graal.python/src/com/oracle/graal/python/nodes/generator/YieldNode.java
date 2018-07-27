@@ -33,6 +33,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public class YieldNode extends StatementNode implements GeneratorControlNode {
 
     @Child private PNode right;
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
     private final int parentBlockIndexSlot;
 
     public YieldNode(PNode right) {
@@ -54,14 +56,15 @@ public class YieldNode extends StatementNode implements GeneratorControlNode {
     }
 
     public void reset(VirtualFrame frame) {
+        // empty
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         right.execute(frame);
         assert parentBlockIndexSlot != -1;
-        final int index = getIndex(frame, parentBlockIndexSlot);
-        setIndex(frame, parentBlockIndexSlot, index + 1);
+        int index = gen.getIndex(frame, parentBlockIndexSlot);
+        gen.setIndex(frame, parentBlockIndexSlot, index + 1);
         throw YieldException.INSTANCE;
     }
 }

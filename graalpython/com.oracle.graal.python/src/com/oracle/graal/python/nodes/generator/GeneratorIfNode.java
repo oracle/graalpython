@@ -34,6 +34,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
 
+    @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
+
     protected final int thenFlagSlot;
     protected final int elseFlagSlot;
 
@@ -60,31 +62,31 @@ public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
     }
 
     protected final Object executeThen(VirtualFrame frame) {
-        setActive(frame, thenFlagSlot, true);
+        gen.setActive(frame, thenFlagSlot, true);
         then.execute(frame);
-        setActive(frame, thenFlagSlot, false);
+        gen.setActive(frame, thenFlagSlot, false);
         return PNone.NONE;
     }
 
     protected final Object executeElse(VirtualFrame frame) {
-        setActive(frame, elseFlagSlot, true);
+        gen.setActive(frame, elseFlagSlot, true);
         orelse.execute(frame);
-        setActive(frame, elseFlagSlot, false);
+        gen.setActive(frame, elseFlagSlot, false);
         return PNone.NONE;
     }
 
     public void reset(VirtualFrame frame) {
-        setActive(frame, thenFlagSlot, false);
-        setActive(frame, elseFlagSlot, false);
+        gen.setActive(frame, thenFlagSlot, false);
+        gen.setActive(frame, elseFlagSlot, false);
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        if (isActive(frame, thenFlagSlot)) {
+        if (gen.isActive(frame, thenFlagSlot)) {
             return executeThen(frame);
         }
 
-        if (isActive(frame, elseFlagSlot)) {
+        if (gen.isActive(frame, elseFlagSlot)) {
             return executeElse(frame);
         }
 
@@ -106,7 +108,7 @@ public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            if (isActive(frame, thenFlagSlot) || condition.executeBoolean(frame)) {
+            if (gen.isActive(frame, thenFlagSlot) || condition.executeBoolean(frame)) {
                 return executeThen(frame);
             }
 

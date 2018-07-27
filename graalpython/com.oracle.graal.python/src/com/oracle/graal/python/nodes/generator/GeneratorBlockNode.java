@@ -34,6 +34,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class GeneratorBlockNode extends BaseBlockNode implements GeneratorControlNode {
 
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
     private final int indexSlot;
 
     public GeneratorBlockNode(PNode[] statements, int indexSlot) {
@@ -60,14 +61,14 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
         Object result = null;
 
         for (int i = 0; i < statements.length; i++) {
-            final int currentIndex = getIndex(frame, indexSlot);
+            final int currentIndex = gen.getIndex(frame, indexSlot);
 
             if (i < currentIndex) {
                 continue;
             }
 
             result = statements[i].execute(frame);
-            setIndex(frame, indexSlot, currentIndex + 1);
+            gen.setIndex(frame, indexSlot, currentIndex + 1);
         }
 
         reset(frame);
@@ -75,6 +76,6 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
     }
 
     public void reset(VirtualFrame frame) {
-        setIndex(frame, indexSlot, 0);
+        gen.setIndex(frame, indexSlot, 0);
     }
 }

@@ -37,6 +37,7 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
 
     @Child protected PNode body;
     @Child protected CastToBooleanNode condition;
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
     private final int flagSlot;
     private int count;
@@ -64,17 +65,17 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
             count = 0;
         }
 
-        assert !isActive(frame, flagSlot);
+        assert !gen.isActive(frame, flagSlot);
         return PNone.NONE;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         try {
-            while (isActive(frame, flagSlot) || condition.executeBoolean(frame)) {
-                setActive(frame, flagSlot, true);
+            while (gen.isActive(frame, flagSlot) || condition.executeBoolean(frame)) {
+                gen.setActive(frame, flagSlot, true);
                 body.executeVoid(frame);
-                setActive(frame, flagSlot, false);
+                gen.setActive(frame, flagSlot, false);
                 incrementCounter();
             }
         } catch (BreakException ex) {
@@ -85,7 +86,7 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
     }
 
     public void reset(VirtualFrame frame) {
-        setActive(frame, flagSlot, false);
+        gen.setActive(frame, flagSlot, false);
     }
 
 }

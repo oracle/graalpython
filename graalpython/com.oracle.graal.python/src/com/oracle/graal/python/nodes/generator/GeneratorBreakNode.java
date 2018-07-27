@@ -27,14 +27,17 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.BreakException;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class GeneratorBreakNode extends StatementNode implements GeneratorControlNode {
 
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
     private final int targetLoopIteratorSlot;
-    private final int[] enclosingBlockIndexSlots;
-    private final int[] enclosingIfFlagSlots;
+    @CompilationFinal(dimensions = 1) private final int[] enclosingBlockIndexSlots;
+    @CompilationFinal(dimensions = 1) private final int[] enclosingIfFlagSlots;
 
     public GeneratorBreakNode(int targetLoopIteratorSlot, int[] enclosingBlockIndexSlots, int[] enclosingIfFlagSlots) {
         this.targetLoopIteratorSlot = targetLoopIteratorSlot;
@@ -42,22 +45,31 @@ public final class GeneratorBreakNode extends StatementNode implements Generator
         this.enclosingIfFlagSlots = enclosingIfFlagSlots;
     }
 
-    @ExplodeLoop
     @Override
     public Object execute(VirtualFrame frame) {
-        setIterator(frame, targetLoopIteratorSlot, null);
+        gen.setIterator(frame, targetLoopIteratorSlot, null);
 
-        for (int indexSlot : enclosingBlockIndexSlots) {
-            setIndex(frame, indexSlot, 0);
-        }
-
-        for (int flagSlot : enclosingIfFlagSlots) {
-            setActive(frame, flagSlot, false);
-        }
+        iterateBlocks(frame);
+        iterateIfs(frame);
 
         throw BreakException.INSTANCE;
     }
 
+    @ExplodeLoop
+    private void iterateIfs(VirtualFrame frame) {
+        for (int flagSlot : enclosingIfFlagSlots) {
+            gen.setActive(frame, flagSlot, false);
+        }
+    }
+
+    @ExplodeLoop
+    private void iterateBlocks(VirtualFrame frame) {
+        for (int indexSlot : enclosingBlockIndexSlots) {
+            gen.setIndex(frame, indexSlot, 0);
+        }
+    }
+
     public void reset(VirtualFrame frame) {
+        // empty
     }
 }

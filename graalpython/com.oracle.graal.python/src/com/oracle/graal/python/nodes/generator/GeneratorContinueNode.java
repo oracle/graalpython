@@ -27,33 +27,45 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ContinueException;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class GeneratorContinueNode extends StatementNode implements GeneratorControlNode {
 
-    private final int[] enclosingBlockIndexSlots;
-    private final int[] enclosingIfFlagSlots;
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
+    @CompilationFinal(dimensions = 1) private final int[] enclosingBlockIndexSlots;
+    @CompilationFinal(dimensions = 1) private final int[] enclosingIfFlagSlots;
 
     public GeneratorContinueNode(int[] enclosingBlockIndexSlots, int[] enclosingIfFlagSlots) {
         this.enclosingBlockIndexSlots = enclosingBlockIndexSlots;
         this.enclosingIfFlagSlots = enclosingIfFlagSlots;
     }
 
-    @ExplodeLoop
     @Override
     public Object execute(VirtualFrame frame) {
-        for (int indexSlot : enclosingBlockIndexSlots) {
-            setIndex(frame, indexSlot, 0);
-        }
-
-        for (int flagSlot : enclosingIfFlagSlots) {
-            setActive(frame, flagSlot, false);
-        }
+        iterateBlocks(frame);
+        iterateIfs(frame);
 
         throw ContinueException.INSTANCE;
     }
 
+    @ExplodeLoop
+    private void iterateIfs(VirtualFrame frame) {
+        for (int flagSlot : enclosingIfFlagSlots) {
+            gen.setActive(frame, flagSlot, false);
+        }
+    }
+
+    @ExplodeLoop
+    private void iterateBlocks(VirtualFrame frame) {
+        for (int indexSlot : enclosingBlockIndexSlots) {
+            gen.setIndex(frame, indexSlot, 0);
+        }
+    }
+
     public void reset(VirtualFrame frame) {
+        // empty
     }
 }

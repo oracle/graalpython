@@ -51,6 +51,9 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorControlNode {
+
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
     private final int exceptFlag;
     private final int elseFlag;
     private final int exceptIndex;
@@ -68,12 +71,12 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
 
         PException exceptionState = getContext().getCurrentException();
 
-        if (isActive(frame, exceptFlag)) {
-            catchException(frame, getActiveException(frame), exceptionState);
+        if (gen.isActive(frame, exceptFlag)) {
+            catchException(frame, gen.getActiveException(frame), exceptionState);
             return doReturn(frame, result);
         }
 
-        if (isActive(frame, elseFlag)) {
+        if (gen.isActive(frame, elseFlag)) {
             result = getOrelse().execute(frame);
             return doReturn(frame, result);
         }
@@ -81,13 +84,13 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         try {
             getBody().execute(frame);
         } catch (PException ex) {
-            setActive(frame, exceptFlag, true);
-            setActiveException(frame, ex);
+            gen.setActive(frame, exceptFlag, true);
+            gen.setActiveException(frame, ex);
             catchException(frame, ex, exceptionState);
             return doReturn(frame, result);
         }
 
-        setActive(frame, elseFlag, true);
+        gen.setActive(frame, elseFlag, true);
         result = getOrelse().execute(frame);
         return doReturn(frame, result);
     }
@@ -100,7 +103,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     @ExplodeLoop
     private void catchException(VirtualFrame frame, PException exception, PException exceptionState) {
         ExceptNode[] exceptNodes = getExceptNodes();
-        final int matchingExceptNodeIndex = getIndex(frame, exceptIndex);
+        final int matchingExceptNodeIndex = gen.getIndex(frame, exceptIndex);
         boolean wasHandled = false;
         if (matchingExceptNodeIndex == 0) {
             // we haven't found the matching node, yet, start searching
@@ -109,7 +112,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                 // so we always run through all except handlers
                 if (!wasHandled) {
                     ExceptNode exceptNode = exceptNodes[i];
-                    setIndex(frame, exceptIndex, i + 1);
+                    gen.setIndex(frame, exceptIndex, i + 1);
                     if (exceptNode.matchesException(frame, exception)) {
                         runExceptionHandler(frame, exception, exceptNode, exceptionState);
                         wasHandled = true;
@@ -146,9 +149,9 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
 
     @Override
     public void reset(VirtualFrame frame) {
-        setActive(frame, elseFlag, false);
-        setActive(frame, exceptFlag, false);
-        setIndex(frame, exceptIndex, 0);
-        setActiveException(frame, null);
+        gen.setActive(frame, elseFlag, false);
+        gen.setActive(frame, exceptFlag, false);
+        gen.setIndex(frame, exceptIndex, 0);
+        gen.setActiveException(frame, null);
     }
 }

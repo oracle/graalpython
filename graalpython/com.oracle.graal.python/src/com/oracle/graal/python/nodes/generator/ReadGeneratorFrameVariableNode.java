@@ -31,8 +31,11 @@ import com.oracle.graal.python.nodes.frame.ReadVariableNode;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public final class ReadGeneratorFrameVariableNode extends ReadVariableNode {
+
+    private final ValueProfile frameProfile = ValueProfile.createClassProfile();
 
     private ReadGeneratorFrameVariableNode(FrameSlot slot) {
         super(slot);
@@ -44,7 +47,7 @@ public final class ReadGeneratorFrameVariableNode extends ReadVariableNode {
 
     @Override
     protected Frame getAccessingFrame(VirtualFrame frame) {
-        return PArguments.getGeneratorFrame(frame);
+        return frameProfile.profile(PArguments.getGeneratorFrame(frame));
     }
 
     @Override

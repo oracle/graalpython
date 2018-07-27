@@ -43,6 +43,7 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
     @Child protected WriteNode target;
     @Child protected PNode getIterator;
     @Child protected GetNextNode getNext = GetNextNode.create();
+    @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
 
     protected final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
@@ -80,7 +81,7 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
     }
 
     public void reset(VirtualFrame frame) {
-        setIterator(frame, iteratorSlot, null);
+        gen.setIterator(frame, iteratorSlot, null);
     }
 
     protected final void incrementCounter() {
@@ -98,7 +99,7 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
 
         while (true) {
             body.executeVoid(frame);
-            Object iterator = getIterator(frame, iteratorSlot);
+            Object iterator = gen.getIterator(frame, iteratorSlot);
             Object value;
             try {
                 value = getNext.execute(iterator);
@@ -127,12 +128,12 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
 
         @Override
         protected boolean executeIterator(VirtualFrame frame) {
-            if (getIterator(frame, iteratorSlot) != null) {
+            if (gen.getIterator(frame, iteratorSlot) != null) {
                 return false;
             }
 
-            setIterator(frame, iteratorSlot, this.getIterator.execute(frame));
-            Object iterator = getIterator(frame, iteratorSlot);
+            gen.setIterator(frame, iteratorSlot, this.getIterator.execute(frame));
+            Object iterator = gen.getIterator(frame, iteratorSlot);
 
             Object value;
             try {
@@ -158,7 +159,7 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
         protected boolean executeIterator(VirtualFrame frame) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
 
-            if (getIterator(frame, iteratorSlot) != null) {
+            if (gen.getIterator(frame, iteratorSlot) != null) {
                 return false;
             }
 
@@ -166,9 +167,9 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
 
             replace(new GenericGeneratorForNode(target, getIterator, body, this.getIteratorSlot()));
 
-            setIterator(frame, iteratorSlot, iterator);
+            gen.setIterator(frame, iteratorSlot, iterator);
 
-            iterator = getIterator(frame, iteratorSlot);
+            iterator = gen.getIterator(frame, iteratorSlot);
             Object value;
             try {
                 value = getNext.execute(iterator);
