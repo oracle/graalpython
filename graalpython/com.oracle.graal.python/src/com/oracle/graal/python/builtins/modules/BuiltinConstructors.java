@@ -1466,6 +1466,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         Object method(PythonClass cls, Object self, PFunction func) {
             return factory().createMethod(cls, self, func);
         }
+
+        @Specialization(guards = "isPythonBuiltinClass(cls)")
+        Object method(@SuppressWarnings("unused") PythonClass cls, Object self, PBuiltinFunction func) {
+            return factory().createBuiltinMethod(self, func);
+        }
     }
 
     @Builtin(name = "builtin_function_or_method", fixedNumOfArguments = 3, constructsClass = {PBuiltinMethod.class}, isPublic = false)
