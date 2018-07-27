@@ -732,11 +732,12 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
 
 
 def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
-    func = wrapper(CreateBuiltinMethod(CreateFunction(name, cfunc, cwrapper), self))
-    func.__module__ = module.__name__
+    func = wrapper(CreateFunction(name, cfunc, cwrapper))
     func.__name__ = name
     func.__doc__ = doc
-    return func
+    method = methodtype(self, func)
+    method.__module__ = module.__name__
+    return method
 
 
 def AddMember(primary, name, memberType, offset, canSet, doc):
