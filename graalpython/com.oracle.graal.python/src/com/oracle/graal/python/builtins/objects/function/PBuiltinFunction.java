@@ -57,8 +57,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Pytho
         this.callTarget = callTarget;
         this.arity = arity;
         this.getStorage().define(__NAME__, name);
-        this.getStorage().define("__objclass__", enclosingType);
         if (enclosingType != null) {
+            this.getStorage().define("__objclass__", enclosingType);
             this.getStorage().define(__QUALNAME__, enclosingType.getName() + "." + name);
         } else {
             this.getStorage().define(__QUALNAME__, name);
