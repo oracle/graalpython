@@ -387,10 +387,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected String toString(PythonContext context, Object value) {
         final PythonModule builtins = context.getBuiltins();
-        PBuiltinFunction intClass = ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
-        Object[] userArgs = PArguments.create(1);
-        PArguments.setArgument(userArgs, 0, value);
-        Object res = InvokeNode.create(intClass).invoke(userArgs);
+        PBuiltinFunction reprMethod = ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
+        Object[] userArgs = PArguments.create(2);
+        PArguments.setArgument(userArgs, 0, PNone.NONE);
+        PArguments.setArgument(userArgs, 1, value);
+        Object res = InvokeNode.create(reprMethod).invoke(userArgs);
         return res.toString();
     }
 
