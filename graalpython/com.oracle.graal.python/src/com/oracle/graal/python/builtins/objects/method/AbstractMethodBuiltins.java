@@ -112,6 +112,11 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getName) {
             return getName.executeObject(self.getFunction(), __NAME__);
         }
+
+        @Specialization
+        protected Object doIt(PBuiltinMethod self) {
+            return self.getName();
+        }
     }
 
     @Builtin(name = __CODE__, fixedNumOfArguments = 1, isGetter = true)
