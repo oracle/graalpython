@@ -37,7 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class property():
+
+class property(object):
     """
     property(fget=None, fset=None, fdel=None, doc=None) -> property attribute
 
@@ -72,8 +73,11 @@ class property():
         self.__delete = fdel
         self.doc = doc
         self.name = name
+        self._owner = None
 
     def __get__(self, instance, owner):
+        if self._owner is None:
+            self._owner = owner
         if instance is None:
             return self
         if self.__get is None:
@@ -81,12 +85,13 @@ class property():
         return self.__get(instance)
 
     def __set__(self, instance, value):
-        if self.__get is None:
-            raise AttributeError("can't set attribute")
+        if self.__set is None:
+            raise AttributeError("attribute '{}' of '{}' objects is not writable".format(
+                self.name, getattr(self._owner, "__name__", str(self._owner))))
         return self.__set(instance, value)
 
     def __delete__(self, instance):
-        if self.__get is None:
+        if self.__delete is None:
             raise AttributeError("can't delete attribute")
         return self.__delete(instance)
 
@@ -107,6 +112,6 @@ class property():
             "<property ",
             str(self.name),
             " of ",
-            getattr(self.owner, "__name__", str(self.owner)),
+            getattr(self._owner, "__name__", str(self._owner)),
             " objects>"
         ])

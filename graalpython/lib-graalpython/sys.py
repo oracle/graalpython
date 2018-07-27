@@ -169,3 +169,7 @@ def make_excepthook():
 __excepthook__ = make_excepthook()
 excepthook = __excepthook__
 del make_excepthook
+
+# TODO: this is really based on size_t but we do not have access to that one here,
+# so we hardcode it for the moment until a better way is found
+maxsize = ((2**64)-1) >> 1
