@@ -30,17 +30,22 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.runtime.exception.BreakException;
+import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GeneratorWhileNode extends LoopNode implements GeneratorControlNode {
 
-    @Child protected PNode body;
-    @Child protected CastToBooleanNode condition;
+    @Child private PNode body;
+    @Child private CastToBooleanNode condition;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
+    private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
+    private final BranchProfile seenYield = BranchProfile.create();
+    private final BranchProfile seenBreak = BranchProfile.create();
     private final int flagSlot;
-    private int count;
 
     public GeneratorWhileNode(CastToBooleanNode condition, PNode body, int flagSlot) {
         this.body = body;
@@ -53,40 +58,39 @@ public final class GeneratorWhileNode extends LoopNode implements GeneratorContr
         return body;
     }
 
-    private void incrementCounter() {
-        if (CompilerDirectives.inInterpreter()) {
-            count++;
-        }
-    }
-
-    private Object doReturn(VirtualFrame frame) {
-        if (CompilerDirectives.inInterpreter()) {
-            reportLoopCount(count);
-            count = 0;
-        }
-
-        assert !gen.isActive(frame, flagSlot);
-        return PNone.NONE;
-    }
-
     @Override
     public Object execute(VirtualFrame frame) {
-        try {
-            while (gen.isActive(frame, flagSlot) || condition.executeBoolean(frame)) {
-                gen.setActive(frame, flagSlot, true);
-                body.executeVoid(frame);
-                gen.setActive(frame, flagSlot, false);
-                incrementCounter();
+        boolean startFlag = gen.isActive(frame, flagSlot);
+
+        if (!startFlag) {
+            if (!condition.executeBoolean(frame)) {
+                return PNone.NONE;
             }
-        } catch (BreakException ex) {
-            reset(frame);
         }
-
-        return doReturn(frame);
+        boolean nextFlag = false;
+        int count = 0;
+        try {
+            do {
+                body.executeVoid(frame);
+                if (CompilerDirectives.inInterpreter()) {
+                    count++;
+                }
+            } while (condition.executeBoolean(frame));
+            return PNone.NONE;
+        } catch (YieldException e) {
+            seenYield.enter();
+            nextFlag = true;
+            throw e;
+        } catch (BreakException ex) {
+            seenBreak.enter();
+            return PNone.NONE;
+        } finally {
+            if (CompilerDirectives.inInterpreter()) {
+                reportLoopCount(count);
+            }
+            if (needsUpdateProfile.profile(startFlag != nextFlag)) {
+                gen.setActive(frame, flagSlot, nextFlag);
+            }
+        }
     }
-
-    public void reset(VirtualFrame frame) {
-        gen.setActive(frame, flagSlot, false);
-    }
-
 }

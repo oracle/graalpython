@@ -147,7 +147,6 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         }
     }
 
-    @Override
     public void reset(VirtualFrame frame) {
         gen.setActive(frame, elseFlag, false);
         gen.setActive(frame, exceptFlag, false);

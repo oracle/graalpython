@@ -25,9 +25,5 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.truffle.api.frame.VirtualFrame;
-
 public interface GeneratorControlNode {
-
-    void reset(VirtualFrame frame);
 }

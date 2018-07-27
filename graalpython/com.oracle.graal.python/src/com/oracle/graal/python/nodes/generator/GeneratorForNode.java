@@ -31,13 +31,13 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
-import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class GeneratorForNode extends LoopNode implements GeneratorControlNode {
+public final class GeneratorForNode extends LoopNode implements GeneratorControlNode {
 
     @Child protected PNode body;
     @Child protected WriteNode target;
@@ -45,10 +45,12 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
     @Child protected GetNextNode getNext = GetNextNode.create();
     @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
 
-    protected final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile executesHeadProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
+    private final BranchProfile seenYield = BranchProfile.create();
 
-    protected final int iteratorSlot;
-    private int count;
+    private final int iteratorSlot;
 
     public GeneratorForNode(WriteNode target, PNode getIterator, PNode body, int iteratorSlot) {
         this.body = body;
@@ -58,7 +60,7 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
     }
 
     public static GeneratorForNode create(WriteNode target, PNode getIterator, PNode body, int iteratorSlot) {
-        return new UninitializedGeneratorForNode(target, getIterator, body, iteratorSlot);
+        return new GeneratorForNode(target, getIterator, body, iteratorSlot);
     }
 
     @Override
@@ -70,71 +72,13 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
         return iteratorSlot;
     }
 
-    protected final Object doReturn(VirtualFrame frame) {
-        if (CompilerDirectives.inInterpreter()) {
-            reportLoopCount(count);
-            count = 0;
-        }
-
-        reset(frame);
-        return PNone.NONE;
-    }
-
-    public void reset(VirtualFrame frame) {
-        gen.setIterator(frame, iteratorSlot, null);
-    }
-
-    protected final void incrementCounter() {
-        if (CompilerDirectives.inInterpreter()) {
-            count++;
-        }
-    }
-
     @Override
     public Object execute(VirtualFrame frame) {
+        Object startIterator = gen.getIterator(frame, iteratorSlot);
 
-        if (executeIterator(frame)) {
-            return doReturn(frame);
-        }
-
-        while (true) {
-            body.executeVoid(frame);
-            Object iterator = gen.getIterator(frame, iteratorSlot);
-            Object value;
-            try {
-                value = getNext.execute(iterator);
-            } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile);
-                break;
-            }
-            target.doWrite(frame, value);
-            incrementCounter();
-        }
-
-        return doReturn(frame);
-    }
-
-    /**
-     * Returns {@code true} if the iterator stopped (instead of throwing an exception).
-     */
-    protected abstract boolean executeIterator(VirtualFrame frame);
-
-    @NodeInfo(cost = NodeCost.POLYMORPHIC)
-    public static final class GenericGeneratorForNode extends GeneratorForNode {
-
-        public GenericGeneratorForNode(WriteNode target, PNode getIterator, PNode body, int iteratorSlot) {
-            super(target, getIterator, body, iteratorSlot);
-        }
-
-        @Override
-        protected boolean executeIterator(VirtualFrame frame) {
-            if (gen.getIterator(frame, iteratorSlot) != null) {
-                return false;
-            }
-
-            gen.setIterator(frame, iteratorSlot, this.getIterator.execute(frame));
-            Object iterator = gen.getIterator(frame, iteratorSlot);
-
+        Object iterator;
+        if (executesHeadProfile.profile(startIterator == null)) {
+            iterator = getIterator.execute(frame);
             Object value;
             try {
                 value = getNext.execute(iterator);
@@ -143,44 +87,39 @@ public abstract class GeneratorForNode extends LoopNode implements GeneratorCont
                 return true;
             }
             target.doWrite(frame, value);
-            incrementCounter();
-            return false;
+        } else {
+            iterator = startIterator;
+        }
+
+        Object nextIterator = null;
+        int count = 0;
+        try {
+            while (true) {
+                body.executeVoid(frame);
+                Object value;
+                try {
+                    value = getNext.execute(iterator);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+                target.doWrite(frame, value);
+                if (CompilerDirectives.inInterpreter()) {
+                    count++;
+                }
+            }
+            return PNone.NONE;
+        } catch (YieldException e) {
+            seenYield.enter();
+            nextIterator = iterator;
+            throw e;
+        } finally {
+            if (CompilerDirectives.inInterpreter()) {
+                reportLoopCount(count);
+            }
+            if (needsUpdateProfile.profile(nextIterator != startIterator)) {
+                gen.setIterator(frame, iteratorSlot, nextIterator);
+            }
         }
     }
-
-    @NodeInfo(cost = NodeCost.UNINITIALIZED)
-    public static final class UninitializedGeneratorForNode extends GeneratorForNode {
-
-        public UninitializedGeneratorForNode(WriteNode target, PNode getIterator, PNode body, int iteratorSlot) {
-            super(target, getIterator, body, iteratorSlot);
-        }
-
-        @Override
-        protected boolean executeIterator(VirtualFrame frame) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-
-            if (gen.getIterator(frame, iteratorSlot) != null) {
-                return false;
-            }
-
-            Object iterator = getIterator.execute(frame);
-
-            replace(new GenericGeneratorForNode(target, getIterator, body, this.getIteratorSlot()));
-
-            gen.setIterator(frame, iteratorSlot, iterator);
-
-            iterator = gen.getIterator(frame, iteratorSlot);
-            Object value;
-            try {
-                value = getNext.execute(iterator);
-            } catch (PException e) {
-                e.expectStopIteration(getCore(), errorProfile);
-                return true;
-            }
-            target.doWrite(frame, value);
-            incrementCounter();
-            return false;
-        }
-    }
-
 }

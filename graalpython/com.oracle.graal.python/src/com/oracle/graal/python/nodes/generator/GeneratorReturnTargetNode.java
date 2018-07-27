@@ -50,9 +50,6 @@ public final class GeneratorReturnTargetNode extends ReturnTargetNode implements
         return parameters;
     }
 
-    public void reset(VirtualFrame frame) {
-    }
-
     @Override
     public Object execute(VirtualFrame frame) {
         if (!gen.isActive(frame, flagSlot)) {
