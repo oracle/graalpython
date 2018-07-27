@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PFunction.class, PBuiltinFunction.class})
@@ -118,13 +119,13 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
         @Specialization
-        protected Object doIt(PFunction self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self, createArgs.execute(arguments), keywords);
+        protected Object doIt(VirtualFrame frame, PFunction self, Object[] arguments, PKeyword[] keywords) {
+            return dispatch.executeCall(frame, self, createArgs.execute(arguments), keywords);
         }
 
         @Specialization
-        protected Object doIt(PBuiltinFunction self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self, createArgs.execute(arguments), keywords);
+        protected Object doIt(VirtualFrame frame, PBuiltinFunction self, Object[] arguments, PKeyword[] keywords) {
+            return dispatch.executeCall(frame, self, createArgs.execute(arguments), keywords);
         }
     }
 

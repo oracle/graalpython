@@ -130,6 +130,6 @@ public abstract class CallBinaryMethodNode extends CallSpecialMethodNode {
     @Specialization
     Object call(Object func, Object arg1, Object arg2,
                     @Cached("create()") CallNode callNode) {
-        return callNode.execute(func, new Object[]{arg1, arg2}, PKeyword.EMPTY_KEYWORDS);
+        return callNode.execute(null, func, new Object[]{arg1, arg2}, PKeyword.EMPTY_KEYWORDS);
     }
 }

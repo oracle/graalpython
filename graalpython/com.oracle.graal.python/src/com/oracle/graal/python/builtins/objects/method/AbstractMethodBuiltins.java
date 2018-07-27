@@ -67,12 +67,12 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(PMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
+            return dispatch.executeCall(null, self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
         }
 
         @Specialization
         protected Object doIt(PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
+            return dispatch.executeCall(null, self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
         }
     }
 

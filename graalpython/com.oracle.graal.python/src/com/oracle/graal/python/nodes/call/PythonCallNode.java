@@ -35,7 +35,6 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNodeGen.GetCallAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
-import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Cached;
@@ -175,7 +174,7 @@ public abstract class PythonCallNode extends PNode {
             invokeError.enter();
             // the interop contract is to revert to READ and then EXECUTE
             Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);
-            return callNode.execute(member, arguments, keywords);
+            return callNode.execute(frame, member, arguments, keywords);
         }
     }
 
@@ -183,7 +182,7 @@ public abstract class PythonCallNode extends PNode {
     Object call(VirtualFrame frame, Object callable) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame);
-        return callNode.execute(callable, arguments, keywords);
+        return callNode.execute(frame, callable, arguments, keywords);
     }
 
     @Override

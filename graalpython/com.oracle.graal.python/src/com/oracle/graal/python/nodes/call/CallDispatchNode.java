@@ -35,6 +35,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
@@ -48,7 +49,7 @@ public abstract class CallDispatchNode extends Node {
         return CallDispatchNodeGen.create();
     }
 
-    public abstract Object executeCall(Object callee, Object[] arguments, PKeyword[] keywords);
+    public abstract Object executeCall(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
 
     /**
      * We have to treat PMethods specially, because we want the PIC to be on the function, not on
@@ -56,31 +57,31 @@ public abstract class CallDispatchNode extends Node {
      */
     @SuppressWarnings("unused")
     @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
-    protected Object callMethod(PMethod method, Object[] arguments, PKeyword[] keywords,
+    protected Object callMethod(VirtualFrame frame, PMethod method, Object[] arguments, PKeyword[] keywords,
                     @Cached("method.getFunction()") PFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
-        return invoke.invoke(arguments, keywords);
+        return invoke.execute(frame, arguments, keywords);
     }
 
     @SuppressWarnings("unused")
     @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
-    protected Object callBuiltinMethod(PBuiltinMethod method, Object[] arguments, PKeyword[] keywords,
+    protected Object callBuiltinMethod(VirtualFrame frame, PBuiltinMethod method, Object[] arguments, PKeyword[] keywords,
                     @Cached("method.getFunction()") PBuiltinFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
-        return invoke.invoke(arguments, keywords);
+        return invoke.execute(frame, arguments, keywords);
     }
 
     @SuppressWarnings("unused")
     @Specialization(guards = "callee == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
-    protected Object callFunction(PythonCallable callee, Object[] arguments, PKeyword[] keywords,
+    protected Object callFunction(VirtualFrame frame, PythonCallable callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("callee") PythonCallable cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
-        return invoke.invoke(arguments, keywords);
+        return invoke.execute(frame, arguments, keywords);
     }
 
     @Specialization(replaces = {"callMethod", "callBuiltinMethod", "callFunction"})
-    protected Object callGeneric(PythonCallable callee, Object[] arguments, PKeyword[] keywords,
+    protected Object callGeneric(VirtualFrame frame, PythonCallable callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("create()") GenericInvokeNode invoke) {
-        return invoke.execute(callee, arguments, keywords);
+        return invoke.execute(frame, callee, arguments, keywords);
     }
 }

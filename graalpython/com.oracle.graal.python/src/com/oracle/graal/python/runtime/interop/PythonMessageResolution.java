@@ -270,7 +270,7 @@ public class PythonMessageResolution {
             PKeyword[] emptyKeywords = new PKeyword[0];
             Object[] pArguments = createArgs.executeWithSelf(receiver, convertedArgs);
 
-            return toForeign.executeConvert(getDispatchNode().executeCall(profiledCallable, pArguments, emptyKeywords));
+            return toForeign.executeConvert(getDispatchNode().executeCall(null, profiledCallable, pArguments, emptyKeywords));
         }
     }
 

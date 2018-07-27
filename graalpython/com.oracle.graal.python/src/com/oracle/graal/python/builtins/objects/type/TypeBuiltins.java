@@ -89,6 +89,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -150,8 +151,8 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public final Object varArgExecute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(PNone.NO_VALUE, arguments, keywords);
+        public final Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, PNone.NO_VALUE, arguments, keywords);
         }
 
         protected PythonClass first(Object[] ary) {
@@ -159,34 +160,34 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"first(arguments) == cachedSelf"})
-        protected Object doItUnboxed(@SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
+        protected Object doItUnboxed(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords,
                         @Cached("first(arguments)") PythonClass cachedSelf) {
-            return op(cachedSelf, arguments, keywords, false);
+            return op(frame, cachedSelf, arguments, keywords, false);
         }
 
         @Specialization(replaces = "doItUnboxed")
-        protected Object doItUnboxedIndirect(@SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords) {
+        protected Object doItUnboxedIndirect(VirtualFrame frame, @SuppressWarnings("unused") PNone noSelf, Object[] arguments, PKeyword[] keywords) {
             PythonClass self = (PythonClass) arguments[0];
-            return op(self, arguments, keywords, false);
+            return op(frame, self, arguments, keywords, false);
         }
 
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = {"self == cachedSelf"})
-        protected Object doIt(@SuppressWarnings("unused") PythonClass self, Object[] arguments, PKeyword[] keywords,
+        protected Object doIt(VirtualFrame frame, @SuppressWarnings("unused") PythonClass self, Object[] arguments, PKeyword[] keywords,
                         @Cached("self") PythonClass cachedSelf) {
-            return op(cachedSelf, arguments, keywords, true);
+            return op(frame, cachedSelf, arguments, keywords, true);
         }
 
         @Specialization(replaces = "doIt")
-        protected Object doItIndirect(PythonClass self, Object[] arguments, PKeyword[] keywords) {
-            return op(self, arguments, keywords, true);
+        protected Object doItIndirect(VirtualFrame frame, PythonClass self, Object[] arguments, PKeyword[] keywords) {
+            return op(frame, self, arguments, keywords, true);
         }
 
-        private Object op(PythonClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
+        private Object op(VirtualFrame frame, PythonClass self, Object[] arguments, PKeyword[] keywords, boolean doCreateArgs) {
             Object newMethod = lookupNew.execute(self);
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
                 Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments, arguments.length) : arguments;
-                Object newInstance = dispatchNew.execute(newMethod, newArgs, keywords);
+                Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 PythonClass newInstanceKlass = getClass.execute(newInstance);
                 if (newInstanceKlass == self) {
                     if (arguments.length == 2 && self == getCore().lookupType(PythonBuiltinClassType.PythonBuiltinClass)) {
@@ -204,7 +205,7 @@ public class TypeBuiltins extends PythonBuiltins {
                                 arguments[0] = newInstance;
                                 initArgs = arguments;
                             }
-                            Object initResult = dispatchInit.execute(initMethod, initArgs, keywords);
+                            Object initResult = dispatchInit.execute(frame, initMethod, initArgs, keywords);
                             if (initResult != PNone.NONE && initResult != PNone.NO_VALUE) {
                                 throw raise(TypeError, "__init__() should return None");
                             }

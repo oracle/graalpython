@@ -159,6 +159,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1175,8 +1176,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
         @Override
-        public final Object varArgExecute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(PNone.NO_VALUE, arguments, keywords);
+        public final Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, PNone.NO_VALUE, arguments, keywords);
         }
 
         @Specialization
@@ -1500,8 +1501,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(namespace)"})
-        @TruffleBoundary
-        public Object type(PythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
+        public Object type(VirtualFrame frame, PythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create()") CallDispatchNode callNewFuncNode,
@@ -1512,9 +1512,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
                     // the new metaclass has the same __new__ function as we are in
                 } else {
-                    return callNewFuncNode.executeCall(newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
+                    return callNewFuncNode.executeCall(frame, newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
                 }
             }
+            return typeMetaclass(name, bases, namespace, metaclass);
+        }
+
+        @TruffleBoundary
+        private Object typeMetaclass(String name, PTuple bases, PDict namespace, PythonClass metaclass) {
             if (name.indexOf('\0') != -1) {
                 throw raise(ValueError, "type name must not contain null characters");
             }
@@ -1566,14 +1571,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        protected abstract Object execute(Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
+        protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
         protected static TypeNode create() {
             return BuiltinConstructorsFactory.TypeNodeFactory.create(null);
         }
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(dict)"})
-        public Object typeGeneric(Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
+        public Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
                         @Cached("create()") TypeNode nextTypeNode) {
             if (PGuards.isNoValue(bases) && !PGuards.isNoValue(dict) || !PGuards.isNoValue(bases) && PGuards.isNoValue(dict)) {
                 throw raise(TypeError, "type() takes 1 or 3 arguments");
@@ -1587,7 +1592,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // TODO: this is actually allowed, deal with it
                 throw raise(NotImplementedError, "creating a class with non-class metaclass");
             }
-            return nextTypeNode.execute(cls, name, bases, dict, kwds);
+            return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
         }
     }
 

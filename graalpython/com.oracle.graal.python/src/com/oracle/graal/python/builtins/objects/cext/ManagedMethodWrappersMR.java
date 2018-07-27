@@ -97,7 +97,7 @@ public class ManagedMethodWrappersMR {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 dispatch = insert(CallNode.create());
             }
-            return toSulongNode.execute(dispatch.execute(object.getDelegate(), pArgs, kwArgsArray));
+            return toSulongNode.execute(dispatch.execute(null, object.getDelegate(), pArgs, kwArgsArray));
         }
 
         @ExplodeLoop

@@ -1007,7 +1007,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private static Object applyKeyFunction(PythonObject keywordArg, CallNode keyCall, Object currentValue) {
-            return keyCall == null ? currentValue : keyCall.execute(keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
+            return keyCall == null ? currentValue : keyCall.execute(null, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
         }
     }
 

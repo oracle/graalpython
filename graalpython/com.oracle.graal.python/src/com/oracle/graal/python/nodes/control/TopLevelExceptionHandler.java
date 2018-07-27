@@ -150,7 +150,7 @@ public class TopLevelExceptionHandler extends RootNode {
         if (PythonOptions.getOption(context, PythonOptions.AlwaysRunExcepthook)) {
             if (hook != PNone.NO_VALUE) {
                 try {
-                    callNode.execute(hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
+                    callNode.execute(null, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
                 } catch (PException internalError) {
                     // More complex handling of errors in exception printing is done in our
                     // Python code, if we get here, we just fall back to the launcher

@@ -54,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -149,9 +150,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ThrowNode extends PythonBuiltinNode {
         @Specialization
-        Object sendThrow(PGenerator self, PythonClass typ, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
+        Object sendThrow(VirtualFrame frame, PGenerator self, PythonClass typ, @SuppressWarnings("unused") PNone val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(typ, new Object[0]);
+            Object instance = callTyp.execute(frame, typ, new Object[0]);
             if (instance instanceof PBaseException) {
                 PException pException = new PException((PBaseException) instance, this);
                 ((PBaseException) instance).setException(pException);
@@ -163,9 +164,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object sendThrow(PGenerator self, PythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
+        Object sendThrow(VirtualFrame frame, PGenerator self, PythonClass typ, PTuple val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(typ, val.getArray());
+            Object instance = callTyp.execute(frame, typ, val.getArray());
             if (instance instanceof PBaseException) {
                 PException pException = new PException((PBaseException) instance, this);
                 ((PBaseException) instance).setException(pException);
@@ -177,9 +178,9 @@ public class GeneratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isPNone(val)", "!isPTuple(val)"})
-        Object sendThrow(PGenerator self, PythonClass typ, Object val, @SuppressWarnings("unused") PNone tb,
+        Object sendThrow(VirtualFrame frame, PGenerator self, PythonClass typ, Object val, @SuppressWarnings("unused") PNone tb,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode callTyp) {
-            Object instance = callTyp.execute(typ, new Object[]{val});
+            Object instance = callTyp.execute(frame, typ, new Object[]{val});
             if (instance instanceof PBaseException) {
                 PException pException = new PException((PBaseException) instance, this);
                 ((PBaseException) instance).setException(pException);
