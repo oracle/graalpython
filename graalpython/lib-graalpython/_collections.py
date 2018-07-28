@@ -304,18 +304,12 @@ class deque(object):
             maxlen_repr = ', maxlen=%d' % (self.maxlen,)
         return 'deque(%s%s)' % (list_repr, maxlen_repr)
 
-    def __compare__(self, w_other, op):
-        if not isinstance(w_other, deque):
+    def __compare__(self, other, op):
+        if not isinstance(other, deque):
             return NotImplemented
 
-        def _next_or_none(_iter):
-            try:
-                return next(_iter)
-            except StopIteration:
-                return None
-
         it1 = iter(self)
-        it2 = iter(w_other)
+        it2 = iter(other)
         while True:
             x1 = _next_or_none(it1)
             x2 = _next_or_none(it2)
@@ -348,6 +342,12 @@ class deque(object):
                 if op == 'ge':
                     return x1 >= x2
                 assert False, "bad value for op"
+
+    def __contains__(self, item):
+        for itm in self:
+            if itm == item:
+                return True
+        return False
 
     def __lt__(self, other):
         return self.__compare__(other, 'lt')
@@ -436,6 +436,13 @@ class deque(object):
             return None
         else:
             return self._maxlen
+
+
+def _next_or_none(_iter):
+    try:
+        return next(_iter)
+    except StopIteration:
+        return None
 
 
 class _DequeIter(object):
