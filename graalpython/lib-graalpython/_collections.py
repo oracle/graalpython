@@ -207,7 +207,7 @@ class deque(object):
         """Extend the right side of the deque with elements from the iterable"""
         # Handle case where id(deque) == id(iterable)
         if self == iterable:
-            return self.extend(list(iterable))
+            iterable = list(iterable)
 
         _iter = iter(iterable)
         while True:
@@ -234,9 +234,15 @@ class deque(object):
     def __rmul__(self, times):
         return _mul(deque(self, maxlen=self.maxlen), times)
 
+    def __hash__(self):
+        raise TypeError("unhashable type: '%s'" % self.__name__)
+
     def extendleft(self, iterable):
         """Extend the left side of the deque with elements from the iterable"""
         # Handle case where id(deque) == id(iterable)
+        if self == iterable:
+            iterable = list(iterable)
+
         _iter = iter(iterable)
         while True:
             try:
