@@ -4,6 +4,7 @@ import xdrlib
 
 class XDRTest(unittest.TestCase):
 
+    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_xdr(self):
         p = xdrlib.Packer()
 
@@ -58,15 +59,19 @@ class ConversionErrorTest(unittest.TestCase):
     def assertRaisesConversion(self, *args):
         self.assertRaises(xdrlib.ConversionError, *args)
 
+    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_pack_int(self):
         self.assertRaisesConversion(self.packer.pack_int, 'string')
 
+    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_pack_uint(self):
         self.assertRaisesConversion(self.packer.pack_uint, 'string')
 
+    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_float(self):
         self.assertRaisesConversion(self.packer.pack_float, 'string')
 
+    @unittest.skipIfGraalPython(reason="not yet supported, causes SEGFAULT")
     def test_double(self):
         self.assertRaisesConversion(self.packer.pack_double, 'string')
 

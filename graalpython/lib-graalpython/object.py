@@ -88,6 +88,11 @@ def _getstate(obj):
     return state
 
 
+def reduce_1(obj, proto):
+    import copyreg
+    return copyreg._reduce_ex(obj, proto)
+
+
 def reduce_2(obj, proto, args, kwargs):
     cls = obj.__class__
 
