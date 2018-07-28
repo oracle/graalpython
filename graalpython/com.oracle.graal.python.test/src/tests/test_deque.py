@@ -219,9 +219,6 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(e + e, deque('abcabc'))
         self.assertEqual(e + d, deque('abc'))
         self.assertEqual(d + e, deque('abc'))
-        self.assertIsNot(d + d, deque())
-        self.assertIsNot(e + d, deque('abc'))
-        self.assertIsNot(d + e, deque('abc'))
 
         g = deque('abcdef', maxlen=4)
         h = deque('gh')
@@ -375,7 +372,6 @@ class TestBasic(unittest.TestCase):
         self.assertEqual(d * 1, deque('abc'))
         self.assertEqual(d * 2, deque('abcabc'))
         self.assertEqual(d * 3, deque('abcabcabc'))
-        self.assertIsNot(d * 1, d)
 
         self.assertEqual(deque() * 0, deque())
         self.assertEqual(deque() * 1, deque())

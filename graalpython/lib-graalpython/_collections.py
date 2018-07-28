@@ -57,6 +57,30 @@ class Lock(object):
     pass
 
 
+def _add(d1, d2):
+    d1.extend(d2)
+    return d1
+
+
+def _mul(d, times):
+    if not isinstance(times, int):
+        raise TypeError("can't multiply sequence by non-int of type '%s'" % (type(times)))
+    if times <= 0:
+        d.clear()
+    else:
+        l = list(d)
+        for _ in range(times - 1):
+            d.extend(l)
+    return d
+
+
+def _next_or_none(_iter):
+    try:
+        return next(_iter)
+    except StopIteration:
+        return None
+
+
 class deque(object):
     def __init__(self, iterable=None, maxlen=None):
         if maxlen is None:
@@ -193,9 +217,22 @@ class deque(object):
                 break
             self.append(obj)
 
-    def __iadd__(self, iterable):
-        self.extend(iterable)
-        return self
+    def __iadd__(self, other):
+        return _add(self, other)
+
+    def __add__(self, other):
+        if not isinstance(other, deque):
+            raise TypeError("can only concatenate deque (not '%s') to deque" % (type(other)))
+        return _add(deque(self, maxlen=self.maxlen), other)
+
+    def __imul__(self, times):
+        return _mul(self, times)
+
+    def __mul__(self, times):
+        return _mul(deque(self, maxlen=self.maxlen), times)
+
+    def __rmul__(self, times):
+        return _mul(deque(self, maxlen=self.maxlen), times)
 
     def extendleft(self, iterable):
         """Extend the left side of the deque with elements from the iterable"""
@@ -439,13 +476,6 @@ class deque(object):
             return None
         else:
             return self._maxlen
-
-
-def _next_or_none(_iter):
-    try:
-        return next(_iter)
-    except StopIteration:
-        return None
 
 
 class _DequeIter(object):
