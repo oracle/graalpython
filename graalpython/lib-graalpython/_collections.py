@@ -104,13 +104,13 @@ class deque(object):
 
     def _modified(self):
         self._lock = None
-
-    def getlock(self):
+        
+    def _getlock(self):
         if self._lock is None:
             self._lock = Lock()
         return self._lock
 
-    def checklock(self, lock):
+    def _checklock(self, lock):
         if lock is not self._lock:
             raise RuntimeError("deque mutated during iteration")
 
@@ -166,12 +166,12 @@ class deque(object):
         result = 0
         block = self.leftblock
         index = self.leftindex
-        lock = self.getlock()
+        lock = self._getlock()
         for i in range(self.len):
             w_item = block.data[index]
             if w_item == x:
                 result += 1
-            self.checklock(lock)
+            self._checklock(lock)
             # Advance the block/index pair
             index += 1
             if index >= BLOCKLEN:
@@ -182,6 +182,9 @@ class deque(object):
     def extend(self, iterable):
         """Extend the right side of the deque with elements from the iterable"""
         # Handle case where id(deque) == id(iterable)
+        if self == iterable:
+            return self.extend(list(iterable))
+
         _iter = iter(iterable)
         while True:
             try:
@@ -233,10 +236,10 @@ class deque(object):
         """Remove first occurrence of value."""
         block = self.leftblock
         index = self.leftindex
-        lock = self.getlock()
+        lock = self._getlock()
         for i in range(self.len):
             item = block.data[index]
-            self.checklock(lock)
+            self._checklock(lock)
             if item == x:
                 self._delitem(i)
                 return
@@ -451,7 +454,7 @@ class _DequeIter(object):
         self.block = dq.leftblock
         self.index = dq.leftindex
         self.counter = dq.len
-        self.lock = dq.getlock()
+        self.lock = dq._getlock()
         assert self.index > 0
 
     def __iter__(self):
@@ -479,11 +482,11 @@ class _DequeIter(object):
 
 class _DequeRevIter(object):
     def __init__(self, dq):
-        self.deque = dq
+        self._deque = dq
         self.block = dq.rightblock
         self.index = dq.rightindex
         self.counter = dq.len
-        self.lock = dq.getlock()
+        self.lock = dq._getlock()
         assert self.index > 0
 
     def __iter__(self):
@@ -493,7 +496,7 @@ class _DequeRevIter(object):
         return self.counter
 
     def __next__(self):
-        if self.lock is not self.deque._lock:
+        if self.lock is not self._deque._lock:
             self.counter = 0
             raise RuntimeError("deque mutated during iteration")
         if self.counter == 0:
