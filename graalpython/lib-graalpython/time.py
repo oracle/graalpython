@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 
+@__builtin__
 def struct_time(*args, **kwargs):
     from collections import namedtuple
 
@@ -56,9 +57,11 @@ def struct_time(*args, **kwargs):
     return nt(*args, **kwargs)
 
 
+@__builtin__
 def gmtime(seconds):
     return struct_time(*__truffle_gmtime_tuple__(seconds))
 
 
+@__builtin__
 def localtime(seconds):
     return struct_time(*__truffle_localtime_tuple__(seconds))

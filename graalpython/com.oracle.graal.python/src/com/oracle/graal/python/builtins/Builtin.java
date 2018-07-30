@@ -56,4 +56,11 @@ public @interface Builtin {
     String[] keywordArguments() default {};
 
     boolean isPublic() default true;
+
+    /**
+     * Module functions should be bound to their module, meaning they would take the module itself
+     * as "self" parameter. We omit this by default, but if the builtin does explicitly specify the
+     * self argument, set this to true.
+     */
+    boolean declaresExplicitSelf() default false;
 }

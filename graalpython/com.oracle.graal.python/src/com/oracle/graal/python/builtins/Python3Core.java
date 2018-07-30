@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -112,6 +111,8 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
+import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -232,7 +233,9 @@ public final class Python3Core implements PythonCore {
                     new AbstractFunctionBuiltins(),
                     new FunctionBuiltins(),
                     new BuiltinFunctionBuiltins(),
+                    new AbstractMethodBuiltins(),
                     new MethodBuiltins(),
+                    new BuiltinMethodBuiltins(),
                     new CodeBuiltins(),
                     new FrameBuiltins(),
                     new MappingproxyBuiltins(),
@@ -621,9 +624,14 @@ public final class Python3Core implements PythonCore {
         addType(PythonObject.class, getObjectClass());
         addType(PythonModule.class, getModuleClass());
         addType(TruffleObject.class, getForeignClass());
-        // n.b.: the builtin classes and their constructors are initialized first here, so we set up
-        // the mapping from java classes to python classes.
+        // n.b.: the builtin modules and classes and their constructors are initialized first here,
+        // so we have the mapping from java classes to python classes and builtin names to modules
+        // available.
         for (PythonBuiltins builtin : BUILTINS) {
+            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+            if (annotation.defineModule().length() > 0) {
+                createModule(annotation.defineModule());
+            }
             builtin.initializeClasses(this);
             for (Entry<PythonBuiltinClass, Entry<Class<?>[], Boolean>> entry : builtin.getBuiltinClasses().entrySet()) {
                 PythonBuiltinClass pythonClass = entry.getKey();
@@ -639,22 +647,21 @@ public final class Python3Core implements PythonCore {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                createModule(annotation.defineModule(), true, builtin);
-            } else if (annotation.extendModule().length() > 0) {
-                addBuiltinsToModule(builtinModules.get(annotation.extendModule()), builtin);
-            } else if (annotation.extendClasses().length > 0) {
-                for (Class<?> klass : annotation.extendClasses()) {
-                    addMethodsToType(klass, builtin);
-                }
+                addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
+            }
+            for (Class<?> klass : annotation.extendClasses()) {
+                addBuiltinsTo(lookupType(klass), builtin);
             }
         }
 
         // core machinery
-        createModule("_descriptor", true);
-        createModule("_warnings", true);
-        PythonModule bootstrapExternal = createModule("importlib._bootstrap_external", "importlib");
+        createModule("_descriptor");
+        createModule("_warnings");
+        PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
+        bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
         builtinModules.put("_frozen_importlib_external", bootstrapExternal);
-        PythonModule bootstrap = createModule("importlib._bootstrap", "importlib");
+        PythonModule bootstrap = createModule("importlib._bootstrap");
+        bootstrap.setAttribute(__PACKAGE__, "importlib");
         builtinModules.put("_frozen_importlib", bootstrap);
     }
 
@@ -662,85 +669,41 @@ public final class Python3Core implements PythonCore {
         builtinTypes[PythonBuiltinClassType.fromClass(clazz).ordinal()] = typ;
     }
 
-    private PythonModule createModule(String name, String pkg, PythonBuiltins... builtins) {
-        PythonModule mod = createModule(name, true, builtins);
-        mod.setAttribute(__PACKAGE__, pkg);
-        return mod;
-    }
-
-    public PythonModule createModule(String name, boolean add, PythonBuiltins... builtins) {
-        PythonModule mod = factory().createPythonModule(name);
-        for (PythonBuiltins builtin : builtins) {
-            addBuiltinsToModule(mod, builtin);
-        }
-        if (add) {
+    private PythonModule createModule(String name) {
+        PythonModule mod = builtinModules.get(name);
+        if (mod == null) {
+            mod = factory().createPythonModule(name);
             builtinModules.put(name, mod);
         }
         return mod;
     }
 
-    private PythonBuiltinClass addMethodsToType(Class<?> javaClass, PythonBuiltins... builtins) {
-        return addMethodsToType(lookupType(javaClass), builtins);
-    }
-
-    private PythonBuiltinClass addMethodsToType(PythonBuiltinClass clazz, PythonBuiltins... builtins) {
-        for (PythonBuiltins builtin : builtins) {
-            addBuiltinsToClass(clazz, builtin);
-        }
-        return clazz;
-    }
-
-    private void addBuiltinsToModule(PythonModule mod, PythonBuiltins builtins) {
+    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtins) {
         Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
         for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
             String constantName = entry.getKey();
-            Object obj = entry.getValue();
-            mod.setAttribute(constantName, obj);
+            obj.setAttribute(constantName, entry.getValue());
         }
 
-        Map<String, PBuiltinFunction> builtinFunctions = builtins.getBuiltinFunctions();
-        for (Map.Entry<String, PBuiltinFunction> entry : builtinFunctions.entrySet()) {
+        Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtins.getBuiltinFunctions();
+        for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             String methodName = entry.getKey();
-            PBuiltinFunction function = entry.getValue();
-            mod.setAttribute(methodName, function);
+            Object value;
+            if (obj instanceof PythonModule) {
+                value = factory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
+            } else {
+                value = entry.getValue().boundToObject(obj, factory());
+            }
+            obj.setAttribute(methodName, value);
         }
 
         Map<PythonBuiltinClass, Entry<Class<?>[], Boolean>> builtinClasses = builtins.getBuiltinClasses();
         for (Entry<PythonBuiltinClass, Entry<Class<?>[], Boolean>> entry : builtinClasses.entrySet()) {
             boolean isPublic = entry.getValue().getValue();
-            Class<?>[] javaClasses = entry.getValue().getKey();
-            PythonBuiltinClass pythonClass = entry.getKey();
             if (isPublic) {
-                mod.setAttribute(pythonClass.getName(), pythonClass);
+                PythonBuiltinClass pythonClass = entry.getKey();
+                obj.setAttribute(pythonClass.getName(), pythonClass);
             }
-            for (Class<?> klass : javaClasses) {
-                addType(klass, pythonClass);
-            }
-        }
-    }
-
-    private void addBuiltinsToClass(PythonBuiltinClass clazz, PythonBuiltins builtins) {
-        Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
-        for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
-            String className = entry.getKey();
-            Object obj = entry.getValue();
-            if (obj instanceof GetSetDescriptor && ((GetSetDescriptor) obj).getType() != clazz) {
-                // GetSetDescriptors need to be copied per class
-                clazz.setAttributeUnsafe(className, factory().createGetSetDescriptor(
-                                ((GetSetDescriptor) obj).getGet(),
-                                ((GetSetDescriptor) obj).getSet(),
-                                ((GetSetDescriptor) obj).getName(),
-                                clazz));
-            } else {
-                clazz.setAttributeUnsafe(className, obj);
-            }
-        }
-
-        Map<String, PBuiltinFunction> builtinFunctions = builtins.getBuiltinFunctions();
-        for (Map.Entry<String, PBuiltinFunction> entry : builtinFunctions.entrySet()) {
-            String className = entry.getKey();
-            PBuiltinFunction function = entry.getValue();
-            clazz.setAttributeUnsafe(className, function);
         }
     }
 

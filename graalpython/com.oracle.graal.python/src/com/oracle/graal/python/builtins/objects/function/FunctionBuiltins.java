@@ -27,7 +27,7 @@
 package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
@@ -35,21 +35,22 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 @CoreFunctions(extendClasses = PFunction.class)
 public class FunctionBuiltins extends PythonBuiltins {
@@ -59,44 +60,26 @@ public class FunctionBuiltins extends PythonBuiltins {
         return FunctionBuiltinsFactory.getFactories();
     }
 
-    @SuppressWarnings("unused")
-    @Builtin(name = __GET__, fixedNumOfArguments = 3)
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class GetNode extends PythonTernaryBuiltinNode {
-        @Specialization(guards = {"self.isStatic()"})
-        protected Object doStatic(PFunction self, Object instance, Object klass) {
-            return self;
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.getEnclosingClassName() == null")
+        @TruffleBoundary
+        Object reprModuleFunction(PFunction self) {
+            return String.format("<function %s at 0x%x>", self.getName(), self.hashCode());
         }
 
-        @Specialization(guards = {"self.isStatic()"})
-        protected Object doBuiltinStatic(PBuiltinFunction self, Object instance, Object klass) {
-            return self;
-        }
-
-        @Specialization(guards = {"!isNone(instance)", "!self.isStatic()"})
-        protected PMethod doMethod(PFunction self, Object instance, Object klass) {
-            return factory().createMethod(instance, self);
-        }
-
-        @Specialization(guards = {"!isNone(instance)", "!self.isStatic()"})
-        protected PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass) {
-            return factory().createBuiltinMethod(instance, self);
-        }
-
-        @Specialization
-        protected Object doFunction(PFunction self, PNone instance, Object klass) {
-            return self;
-        }
-
-        @Specialization
-        protected Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
-            return self;
+        @Specialization(guards = "self.getEnclosingClassName() != null")
+        @TruffleBoundary
+        Object reprClassFunction(PFunction self) {
+            return String.format("<function %s.%s at 0x%x>", self.getEnclosingClassName(), self.getName(), self.hashCode());
         }
     }
 
     @Builtin(name = __NAME__, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class NameNode extends PythonBuiltinNode {
+    abstract static class NameNode extends PythonBinaryBuiltinNode {
         @Child WriteAttributeToObjectNode writeNode;
 
         @Specialization(guards = "isNoValue(noValue)")

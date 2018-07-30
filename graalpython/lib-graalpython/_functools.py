@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+@__builtin__
 def reduce(function, iterable, initializer=None):
     it = iter(iterable)
     if initializer is None:
@@ -48,6 +49,7 @@ def reduce(function, iterable, initializer=None):
     return value
 
 
+@__builtin__
 def partial(func, *args, **keywords):
     def newfunc(*fargs, **fkeywords):
         newkeywords = keywords.copy()
@@ -57,4 +59,3 @@ def partial(func, *args, **keywords):
     newfunc.args = args
     newfunc.keywords = keywords
     return newfunc
-

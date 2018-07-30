@@ -46,7 +46,7 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -136,8 +136,8 @@ class TryExceptNodeMessageResolution {
                     Object isinstanceFunc = getAttr.executeObject(builtins, BuiltinNames.ISINSTANCE);
                     PTuple caughtClasses = factory.createTuple(literalCatches.toArray());
 
-                    if (isinstanceFunc instanceof PBuiltinFunction) {
-                        RootCallTarget callTarget = ((PBuiltinFunction) isinstanceFunc).getCallTarget();
+                    if (isinstanceFunc instanceof PBuiltinMethod) {
+                        RootCallTarget callTarget = ((PBuiltinMethod) isinstanceFunc).getCallTarget();
                         object.setCatchesFunction(new CatchesFunction(callTarget, caughtClasses));
                     } else {
                         throw new IllegalStateException("isinstance was redefined, cannot check exceptions");

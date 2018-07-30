@@ -347,28 +347,24 @@ public abstract class PythonObjectFactory extends Node {
         return createMethod(lookupClass(PythonBuiltinClassType.PMethod), self, function);
     }
 
-    public final PBuiltinMethod createBuiltinMethod(PythonClass cls, Object instance, PBuiltinFunction self) {
-        return trace(new PBuiltinMethod(cls, instance, self));
+    public final PMethod createBuiltinMethod(Object self, PFunction function) {
+        return createMethod(lookupClass(PythonBuiltinClassType.PBuiltinMethod), self, function);
     }
 
-    public final PBuiltinMethod createBuiltinMethod(Object instance, PBuiltinFunction self) {
-        return createBuiltinMethod(lookupClass(PythonBuiltinClassType.PBuiltinMethod), instance, self);
+    public final PBuiltinMethod createBuiltinMethod(PythonClass cls, Object self, PBuiltinFunction function) {
+        return trace(new PBuiltinMethod(cls, self, function));
+    }
+
+    public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function) {
+        return createBuiltinMethod(lookupClass(PythonBuiltinClassType.PBuiltinMethod), self, function);
     }
 
     public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
         return trace(new PFunction(lookupClass(PythonBuiltinClassType.PFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
     }
 
-    public PBuiltinFunction createFunction(String name, Arity arity, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PFunction), name, arity, callTarget));
-    }
-
-    public PFunction createBuiltinFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        return trace(new PFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
-    }
-
-    public PBuiltinFunction createBuiltinFunction(String name, Arity arity, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, arity, callTarget));
+    public PBuiltinFunction createBuiltinFunction(String name, PythonClass type, Arity arity, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, type, arity, callTarget));
     }
 
     public GetSetDescriptor createGetSetDescriptor(PythonCallable get, PythonCallable set, String name, PythonClass type) {

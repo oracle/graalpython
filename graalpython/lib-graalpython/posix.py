@@ -49,10 +49,12 @@ del make_named_tuple_class
 old_stat = stat
 
 
+@__builtin__
 def stat(filename):
     return stat_result(old_stat(filename))
 
 
+@__builtin__
 def lstat(filename):
     return stat_result(old_stat(filename, False))
 
@@ -60,10 +62,12 @@ def lstat(filename):
 old_fstat = fstat
 
 
+@__builtin__
 def fstat(fd):
     return stat_result(old_fstat(fd))
 
 
+@__builtin__
 def fspath(path):
     """Return the file system path representation of the object.
 
@@ -90,5 +94,6 @@ class ScandirIterator:
         return self.__delegate.__next__()
 
 
+@__builtin__
 def scandir(path):
     return ScandirIterator(iter(listdir(path)))

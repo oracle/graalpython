@@ -60,4 +60,4 @@ _imp._truffle_bootstrap_file_into_module(lib_python + "/importlib/_bootstrap.py"
 sys.modules[__name__] = sys.modules['_frozen_importlib']
 _install(sys, _imp)
 
-sys.modules['builtins'].__import__ = __import__
+sys.modules['builtins'].__import__ = __builtin__(__import__)

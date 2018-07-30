@@ -709,34 +709,35 @@ class cstaticmethod():
 
 
 def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
-    mod_obj = to_java(primary)
-    func = wrapper(CreateFunction(name, cfunc, cwrapper))
-    if isclass:
-        func = classmethod(func)
-    elif isstatic:
-        func = cstaticmethod(func)
-    elif isinstance(mod_obj, moduletype):
-        func = modulemethod(mod_obj, func)
-    func.__name__ = name
-    func.__doc__ = doc
-    if name == "__init__":
-        def __init__(self, *args, **kwargs):
-            if func(self, *args, **kwargs) != 0:
-                raise TypeError("__init__ failed")
-        object.__setattr__(mod_obj, name, __init__)
+    owner = to_java(primary)
+    if isinstance(owner, moduletype):
+        # module case, we create the bound function-or-method
+        func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner, doc)
+        object.__setattr__(owner, name, func)
     else:
-        object.__setattr__(mod_obj, name, func)
+        func = wrapper(CreateFunction(name, cfunc, cwrapper, owner))
+        if isclass:
+            func = classmethod(func)
+        elif isstatic:
+            func = cstaticmethod(func)
+        func.__name__ = name
+        func.__doc__ = doc
+        if name == "__init__":
+            def __init__(self, *args, **kwargs):
+                if func(self, *args, **kwargs) != 0:
+                    raise TypeError("__init__ failed")
+            object.__setattr__(owner, name, __init__)
+        else:
+            object.__setattr__(owner, name, func)
 
 
-def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
     func = wrapper(CreateFunction(name, cfunc, cwrapper))
-    if isclass:
-        func = classmethod(func)
-    elif isstatic:
-        func = cstaticmethod(func)
     func.__name__ = name
     func.__doc__ = doc
-    return func
+    method = methodtype(self, func)
+    method.__module__ = module.__name__
+    return method
 
 
 def AddMember(primary, name, memberType, offset, canSet, doc):
@@ -759,13 +760,13 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
     pclass = to_java(primary)
     getset = property()
     if getter:
-        getter_w = CreateFunction(name, getter, getter_wrapper)
+        getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
         def member_getter(self):
             return capi_to_java(getter_w(self, closure))
 
         getset.getter(member_getter)
     if setter:
-        setter_w = CreateFunction(name, setter, setter_wrapper)
+        setter_w = CreateFunction(name, setter, setter_wrapper, pclass)
         def member_setter(self, value):
             result = setter_w(self, value, closure)
             if result != 0:

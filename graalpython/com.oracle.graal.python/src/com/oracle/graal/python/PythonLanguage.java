@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -386,10 +387,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected String toString(PythonContext context, Object value) {
         final PythonModule builtins = context.getBuiltins();
-        PBuiltinFunction intClass = (PBuiltinFunction) builtins.getAttribute(BuiltinNames.REPR);
-        Object[] userArgs = PArguments.create(1);
-        PArguments.setArgument(userArgs, 0, value);
-        Object res = InvokeNode.create(intClass).invoke(userArgs);
+        PBuiltinFunction reprMethod = ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
+        Object[] userArgs = PArguments.create(2);
+        PArguments.setArgument(userArgs, 0, PNone.NONE);
+        PArguments.setArgument(userArgs, 1, value);
+        Object res = InvokeNode.create(reprMethod).invoke(userArgs);
         return res.toString();
     }
 

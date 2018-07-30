@@ -38,49 +38,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.getsetdescriptor;
+package com.oracle.graal.python.builtins;
 
-import com.oracle.graal.python.builtins.BoundBuiltinCallable;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 
-public final class GetSetDescriptor extends PythonBuiltinObject implements BoundBuiltinCallable<GetSetDescriptor> {
-    private final PythonCallable get;
-    private final PythonCallable set;
-    private final String name;
-    private final PythonClass type;
-
-    public GetSetDescriptor(PythonClass cls, PythonCallable get, PythonCallable set, String name, PythonClass type) {
-        super(cls);
-        this.get = get;
-        this.set = set;
-        this.name = name;
-        this.type = type;
-    }
-
-    public PythonCallable getGet() {
-        return get;
-    }
-
-    public PythonCallable getSet() {
-        return set;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public PythonClass getType() {
-        return type;
-    }
-
-    public GetSetDescriptor boundToObject(Object klass, PythonObjectFactory factory) {
-        if (klass == type) {
-            return this;
-        } else {
-            return factory.createGetSetDescriptor(get, set, name, (PythonClass) klass);
-        }
-    }
+public interface BoundBuiltinCallable<T> {
+    T boundToObject(Object binding, PythonObjectFactory factory);
 }

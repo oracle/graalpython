@@ -43,6 +43,7 @@ __codec_search_cache__ = {}
 __codec_error_registry__ = {}
 
 
+@__builtin__
 def register(search_function):
     if not __codec_search_path__:
         __codec_registry_init__()
@@ -56,6 +57,7 @@ def __normalizestring(string):
     return string.replace(' ', '-').lower()
 
 
+@__builtin__
 def lookup(encoding):
     if not __codec_search_path__:
         __codec_registry_init__()
@@ -99,6 +101,7 @@ def __decoder(encoding):
     return __codec_getitem(encoding, 1)
 
 
+@__builtin__
 def encode(obj, encoding='utf-8', errors='strict'):
     encoder = __encoder(encoding)
     if encoder:
@@ -108,6 +111,7 @@ def encode(obj, encoding='utf-8', errors='strict'):
         return result[0]
 
 
+@__builtin__
 def decode(obj, encoding='utf-8', errors='strict'):
     decoder = __decoder(encoding)
     if decoder:
@@ -117,12 +121,14 @@ def decode(obj, encoding='utf-8', errors='strict'):
         return result[0]
 
 
+@__builtin__
 def register_error(errors, handler):
     if not hasattr(handler, '__call__'):
         raise TypeError('handler must be callable')
     __codec_error_registry__[errors] = handler
 
 
+@__builtin__
 def lookup_error(errors='strict'):
     handler = __codec_error_registry__.get(errors)
     if handler is None:
@@ -139,201 +145,201 @@ def __codec_registry_init__():
 
 
 # TODO implement the encode / decode methods
-@staticmethod
+@__builtin__
 def escape_encode(data, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def escape_decode(data, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def utf_8_encode(string, errors=None):
     return __truffle_encode(string, "utf-8", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_8_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-8", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_7_encode(string, errors=None):
     return __truffle_encode(string, "utf-7", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_7_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-7", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_16_encode(string, errors=None, byteorder=0):
     return __truffle_encode(string, "utf-16", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_16_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-16", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_16_le_encode(string, errors=None):
     return __truffle_encode(string, "utf-16-le", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_16_le_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-16-le", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_16_be_encode(string, errors=None):
     return __truffle_encode(string, "utf-16-be", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_16_be_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-16-be", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_16_ex_decode(data, errors=None, byteorder=0, final=False):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def utf_32_encode(string, errors=None, byteorder=0):
     return __truffle_encode(string, "utf-32", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_32_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-32", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_32_le_encode(string, errors=None):
     return __truffle_encode(string, "utf-32-le", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_32_le_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-32-le", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_32_be_encode(string, errors=None):
     return __truffle_encode(string, "utf-32-be", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_32_be_decode(string, errors=None, final=False):
     return __truffle_decode(string, "utf-32-be", errors)
 
 
-@staticmethod
+@__builtin__
 def utf_32_ex_decode(data, errors=None, byteorder=0, final=False):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def unicode_escape_encode(string, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def unicode_escape_decode(string, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def unicode_internal_encode(obj, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def unicode_internal_decode(obj, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def raw_unicode_escape_encode(string, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def raw_unicode_escape_decode(string, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def latin_1_encode(string, errors=None):
     return __truffle_encode(string, "latin-1", errors)
 
 
-@staticmethod
+@__builtin__
 def latin_1_decode(string, errors=None):
     return __truffle_decode(string, "latin-1", errors)
 
 
-@staticmethod
+@__builtin__
 def ascii_encode(string, errors=None):
     return __truffle_encode(string, "ascii", errors)
 
 
-@staticmethod
+@__builtin__
 def ascii_decode(string, errors=None):
     return __truffle_decode(string, "ascii", errors)
 
 
-@staticmethod
+@__builtin__
 def charmap_encode(string, errors=None, mapping=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def charmap_decode(string, errors=None, mapping=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def charmap_build(mapping):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def readbuffer_encode(data, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def mbcs_encode(string, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def mbcs_decode(string, errors=None, final=False):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def oem_encode(string, errors):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def oem_decode(string, errors=None, final=False):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def code_page_encode(code_page, string, errors=None):
     raise NotImplementedError()
 
 
-@staticmethod
+@__builtin__
 def code_page_decode(code_page, string, errors=None, final=False):
     raise NotImplementedError()

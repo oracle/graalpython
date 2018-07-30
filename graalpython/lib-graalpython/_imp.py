@@ -41,14 +41,17 @@
 _py_package_context = None
 
 
+@__builtin__
 def extension_suffixes():
     return [".bc", ".so", ".dylib", ".su"]
 
 
+@__builtin__
 def get_magic():
     return '\x0c\xaf\xaf\xe1'
 
 
+@__builtin__
 def create_dynamic(module_spec, filename=None):
     global _py_package_context
     old_package_context = _py_package_context
@@ -59,18 +62,22 @@ def create_dynamic(module_spec, filename=None):
         _py_package_context = old_package_context
 
 
+@__builtin__
 def exec_builtin(mod):
     return None
 
 
+@__builtin__
 def init_frozen(name):
     return None
 
 
+@__builtin__
 def is_frozen(name):
     return False
 
 
+@__builtin__
 def get_frozen_object(name):
     raise ImportError("No such frozen object named %s" % name)
 

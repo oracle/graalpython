@@ -25,21 +25,22 @@
  */
 package com.oracle.graal.python.test.runtime;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
-import org.junit.Test;
-
-import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
-import static org.junit.Assert.assertEquals;
 
 public class PythonModuleTests {
 
@@ -57,8 +58,8 @@ public class PythonModuleTests {
     public void builtinsMinTest() {
         final PythonContext context = PythonTests.getContext();
         final PythonModule builtins = context.getBuiltins();
-        PBuiltinFunction min = (PBuiltinFunction) builtins.getAttribute(BuiltinNames.MIN);
-        Object returnValue = InvokeNode.create(min).invoke(createWithUserArguments(4, 2, 1));
+        PBuiltinMethod min = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.MIN);
+        Object returnValue = InvokeNode.create(min).invoke(createWithUserArguments(builtins, 4, 2, 1));
         assertEquals(1, returnValue);
     }
 
@@ -76,8 +77,8 @@ public class PythonModuleTests {
         final PythonContext context = PythonTests.getContext();
         PythonModule main = context.getMainModule();
         PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
-        PBuiltinFunction abs = (PBuiltinFunction) builtins.getAttribute(BuiltinNames.ABS);
-        Object returned = InvokeNode.create(abs).invoke(createWithUserArguments(-42));
+        PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.ABS);
+        Object returned = InvokeNode.create(abs).invoke(createWithUserArguments(builtins, -42));
         assertEquals(42, returned);
     }
 

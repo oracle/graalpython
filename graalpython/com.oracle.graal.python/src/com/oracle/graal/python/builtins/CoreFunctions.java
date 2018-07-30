@@ -32,8 +32,6 @@ import java.lang.annotation.RetentionPolicy;
 public @interface CoreFunctions {
     String defineModule() default "";
 
-    String extendModule() default "";
-
     String publicName() default "";
 
     Class<?>[] extendClasses() default {};

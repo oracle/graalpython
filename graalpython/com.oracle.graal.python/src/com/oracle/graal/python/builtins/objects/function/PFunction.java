@@ -117,9 +117,9 @@ public class PFunction extends PythonObject implements PythonCallable {
     public final String toString() {
         CompilerAsserts.neverPartOfCompilation();
         if (enclosingClassName == null) {
-            return String.format("<function %s at 0x%x>", name, hashCode());
+            return String.format("PFunction %s at 0x%x", name, hashCode());
         } else {
-            return String.format("<function %s.%s at 0x%x>", enclosingClassName, name, hashCode());
+            return String.format("PFunction %s.%s at 0x%x", enclosingClassName, name, hashCode());
         }
     }
 
@@ -129,5 +129,9 @@ public class PFunction extends PythonObject implements PythonCallable {
 
     public void setCode(PCode code) {
         this.code = code;
+    }
+
+    public String getEnclosingClassName() {
+        return enclosingClassName;
     }
 }

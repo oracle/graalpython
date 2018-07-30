@@ -81,7 +81,9 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -97,6 +99,8 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -144,12 +148,14 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
-@CoreFunctions(extendModule = "builtins")
+@CoreFunctions(defineModule = "builtins")
 public final class BuiltinFunctions extends PythonBuiltins {
 
     @Override
@@ -1288,6 +1294,70 @@ public final class BuiltinFunctions extends PythonBuiltins {
             CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
             callTarget.call(PArguments.withGlobals(mod));
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "__builtin__", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
+        @Child GetItemNode getNameNode = GetItemNode.create();
+
+        @Specialization
+        @TruffleBoundary
+        public Object doIt(PFunction func) {
+            /*
+             * (tfel): To be compatible with CPython, builtin module functions must be bound to
+             * their respective builtin module. We ignore that builtin functions should really be
+             * builtin methods here - it does not hurt if they are normal methods. What does hurt,
+             * however, is if they are not bound, because then using these functions in class field
+             * won't work when they are called from an instance of that class due to the implicit
+             * currying with "self".
+             */
+            Arity arity = func.getArity();
+            PFunction builtinFunc;
+            if (arity.getParameterIds().length > 0 && arity.getParameterIds()[0].equals("self")) {
+                /*
+                 * If the first parameter is called self, we assume the function does explicitly
+                 * declare the module argument
+                 */
+                builtinFunc = func;
+            } else {
+                /*
+                 * Otherwise, we create a new function with an arity that requires one extra
+                 * argument in front. We actually modify the function's AST here, so the original
+                 * PFunction cannot be used anymore (its Arity won't agree with it's indexed
+                 * parameter reads).
+                 */
+                String name = func.getName();
+                String[] parameterIds = new String[arity.getParameterIds().length + 1];
+                parameterIds[0] = "self";
+                System.arraycopy(arity.getParameterIds(), 0, parameterIds, 1, parameterIds.length - 1);
+                Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArg(), arity.takesVarArgs(), parameterIds,
+                                arity.getKeywordNames());
+                func.getFunctionRootNode().accept(new NodeVisitor() {
+                    public boolean visit(Node node) {
+                        if (node instanceof ReadVarArgsNode) {
+                            node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex() + 1, ((ReadVarArgsNode) node).isBuiltin()));
+                        } else if (node instanceof ReadIndexedArgumentNode) {
+                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                        }
+                        return true;
+                    }
+                });
+                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arityWithSelf, Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
+                                func.getFrameDescriptor(), func.getGlobals(), func.getClosure());
+            }
+
+            PythonObject globals = func.getGlobals();
+            PythonModule builtinModule;
+            if (globals instanceof PythonModule) {
+                builtinModule = (PythonModule) globals;
+            } else {
+                String moduleName = (String) getNameNode.execute(globals, __NAME__);
+                builtinModule = getContext().getCore().lookupBuiltinModule(moduleName);
+                assert builtinModule != null;
+            }
+            return factory().createBuiltinMethod(builtinModule, builtinFunc);
         }
     }
 }
