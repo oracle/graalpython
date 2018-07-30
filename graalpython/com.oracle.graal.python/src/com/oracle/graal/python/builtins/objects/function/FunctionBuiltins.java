@@ -39,7 +39,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -79,7 +79,7 @@ public class FunctionBuiltins extends PythonBuiltins {
 
     @Builtin(name = __NAME__, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class NameNode extends PythonBuiltinNode {
+    abstract static class NameNode extends PythonBinaryBuiltinNode {
         @Child WriteAttributeToObjectNode writeNode;
 
         @Specialization(guards = "isNoValue(noValue)")
