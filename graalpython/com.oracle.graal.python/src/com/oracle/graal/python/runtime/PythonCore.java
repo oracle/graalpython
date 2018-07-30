@@ -30,6 +30,7 @@ import java.io.IOException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -114,6 +115,8 @@ public interface PythonCore {
     public PException getCurrentException();
 
     public void setCurrentException(PException e);
+
+    public PDict createEnvironDict();
 
     public PythonObjectFactory factory();
 
