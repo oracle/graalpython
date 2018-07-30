@@ -179,7 +179,7 @@ public class PySequenceArrayWrapperMR {
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
         Object doGeneric(Object object, long idx,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
-            return getItemNode.executeObject(object, idx);
+            return getToSulongNode().execute(getItemNode.executeObject(object, idx));
         }
 
         protected static ListBuiltins.GetItemNode createListGetItem() {
