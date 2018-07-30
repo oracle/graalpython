@@ -51,10 +51,14 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
     public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
     public static final String FUN_PY_FLOAT_AS_DOUBLE = "PyFloat_AsDouble";
-    public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE = "PyTruffle_ByteArrayToNative";
     public static final String FUN_GET_OB_TYPE = "get_ob_type";
     public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
     public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
     public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";
     public static final String FUN_PTR_COMPARE = "truffle_ptr_compare";
+    public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE = "PyTruffle_ByteArrayToNative";
+    public static final String FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE = "PyTruffle_IntArrayToNative";
+    public static final String FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE = "PyTruffle_LongArrayToNative";
+    public static final String FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE = "PyTruffle_DoubleArrayToNative";
+    public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE = "PyTruffle_ObjectArrayToNative";
 }

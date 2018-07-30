@@ -122,6 +122,15 @@ initialize_type(PyEllipsis_Type, ellipsis, _object);
 typedef uint8_t ByteArray[0];
 POLYGLOT_DECLARE_TYPE(ByteArray);
 
+typedef int32_t IntArray[0];
+POLYGLOT_DECLARE_TYPE(IntArray);
+
+typedef int64_t LongArray[0];
+POLYGLOT_DECLARE_TYPE(LongArray);
+
+typedef double DoubleArray[0];
+POLYGLOT_DECLARE_TYPE(DoubleArray);
+
 typedef PyObject* PtrArray[0];
 POLYGLOT_DECLARE_TYPE(PtrArray);
 
@@ -264,15 +273,59 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
     return str;
 }
 
-const char* PyTruffle_ByteArrayToNative(const void* jbyteArray, int len) {
-    int i;
-    int size = len != 0 ? len : 1;
+ByteArray* PyTruffle_ByteArrayToNative(const void* jbyteArray, int32_t len) {
+    int32_t i;
+    int32_t size = len != 0 ? len : 1;
     char* barr = (const char*) malloc(size * sizeof(char));
     barr[0] = '\0';
-    for(i=0; i < len; i++) {
+    for (i=0; i < len; i++) {
         barr[i] = (char) polyglot_get_array_element(jbyteArray, i);
     }
-    return (const char*) barr;
+    return polyglot_as_ByteArray(barr);
+}
+
+IntArray* PyTruffle_IntArrayToNative(const void* jintArray, int32_t len) {
+    int32_t i;
+    int32_t size = len != 0 ? len : 1;
+    int32_t* barr = (int32_t*) malloc(size * sizeof(int32_t));
+    barr[0] = 0;
+    for (i=0; i < len; i++) {
+        barr[i] = (int32_t) polyglot_get_array_element(jintArray, i);
+    }
+    return polyglot_as_IntArray(barr);
+}
+
+LongArray* PyTruffle_LongArrayToNative(const void* jlongArray, int32_t len) {
+    int32_t i;
+    int32_t size = len != 0 ? len : 1;
+    int64_t* barr = (int64_t*) malloc(size * sizeof(int64_t));
+    barr[0] = 0LL;
+    for (i=0; i < len; i++) {
+        barr[i] = (int64_t) polyglot_get_array_element(jlongArray, i);
+    }
+    return polyglot_as_LongArray(barr);
+}
+
+DoubleArray* PyTruffle_DoubleArrayToNative(const void* jdoubleArray, int32_t len) {
+    int32_t i;
+    int32_t size = len != 0 ? len : 1;
+    double* barr = (double*) malloc(size * sizeof(double));
+    barr[0] = 0.0;
+    for (i=0; i < len; i++) {
+        barr[i] = polyglot_as_double(polyglot_get_array_element(jdoubleArray, i));
+    }
+    return polyglot_as_DoubleArray(barr);
+}
+
+PtrArray* PyTruffle_ObjectArrayToNative(const void* jobjectArray, int32_t len) {
+    int32_t i;
+    int32_t size = len != 0 ? len : 1;
+    PyObject** barr = (PyObject**) malloc(size * sizeof(PyObject*));
+    barr[0] = NULL;
+    for (i=0; i < len; i++) {
+        barr[i] = (PyObject*)polyglot_get_array_element(jobjectArray, i);
+    }
+    return polyglot_as_PtrArray(barr);
 }
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
