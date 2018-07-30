@@ -44,12 +44,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -67,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -912,17 +915,67 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends UnboxNode {
         @Specialization(guards = "isForeignObject(object)")
-        protected Object doIt(TruffleObject object,
-                        @Cached("IS_BOXED.createNode()") Node isBoxedNode,
-                        @Cached("UNBOX.createNode()") Node unboxNode) {
-            if (ForeignAccess.sendIsBoxed(isBoxedNode, object)) {
+        protected Object doIt(TruffleObject object) {
+            if (isBoxed(object)) {
                 try {
-                    return ForeignAccess.sendUnbox(unboxNode, object);
+                    return unboxLeft(object);
                 } catch (UnsupportedMessageException e) {
                     throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
                 }
             }
             throw raiseIndexError();
+        }
+    }
+
+    @Builtin(name = __STR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class StrNode extends UnboxNode {
+        @Child private LookupAndCallUnaryNode callStrNode;
+
+        @Specialization(guards = "isForeignObject(object)")
+        protected Object doIt(TruffleObject object) {
+            if (isBoxed(object)) {
+                try {
+                    return getCallStrNode().executeObject(unboxLeft(object));
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
+                }
+            }
+            throw raise(PythonErrorType.AttributeError);
+        }
+
+        private LookupAndCallUnaryNode getCallStrNode() {
+            if (callStrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callStrNode = insert(LookupAndCallUnaryNode.create(__STR__));
+            }
+            return callStrNode;
+        }
+    }
+
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends UnboxNode {
+        @Child private LookupAndCallUnaryNode callReprNode;
+
+        @Specialization(guards = "isForeignObject(object)")
+        protected Object doIt(TruffleObject object) {
+            if (isBoxed(object)) {
+                try {
+                    return getCallReprNode().executeObject(unboxLeft(object));
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
+                }
+            }
+            throw raise(PythonErrorType.AttributeError);
+        }
+
+        private LookupAndCallUnaryNode getCallReprNode() {
+            if (callReprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+            }
+            return callReprNode;
         }
     }
 }
