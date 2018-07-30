@@ -279,12 +279,14 @@ class deque(object):
         """Remove first occurrence of value."""
         block = self.leftblock
         index = self.leftindex
-        lock = self._getlock()
-        for i in range(self.len):
+        n = self.len
+        for i in range(n):
             item = block.data[index]
-            self._checklock(lock)
+            if self.len != n:
+                raise IndexError("deque mutated during remove().")
+
             if item == x:
-                self._delitem(i)
+                self.delitem(i)
                 return
             # Advance the block/index pair
             index += 1
@@ -395,7 +397,7 @@ class deque(object):
         index = self.leftindex
         b = self.leftblock
 
-        while n >= 0:
+        while (n - 1) >= 0:
             n -= 1
             assert b is not None
             item = b.data[index]
@@ -411,17 +413,24 @@ class deque(object):
 
         return False
 
-    def index(self, v, start=0, stop=-1):
-        lock = self._getlock()
-        if start < 0:
-            start += self.len
-            if start < 0:
-                start = 0
+    def _norm_index(self, idx, force_index_to_zero=True):
+        if idx < 0:
+            idx += self.len
+            if idx < 0 and force_index_to_zero:
+                idx = 0
+        return idx
 
-        if stop < 0:
-            stop += self.len
-            if stop < 0:
-                stop = 0
+    def _check_index(self, idx):
+        if idx < 0 or idx >= self.len:
+            raise IndexError("deque index out of range")
+
+    def index(self, v, start=0, stop=None):
+        if stop is None:
+            stop = self.len
+
+        lock = self._getlock()
+        start = self._norm_index(start)
+        stop = self._norm_index(stop)
 
         if stop > self.len:
             stop = self.len
@@ -429,18 +438,20 @@ class deque(object):
         if start > stop:
             start = stop
 
+        assert 0 <= start <= stop <= self.len
+
         index = self.leftindex
         b = self.leftblock
-
         i = 0
+
         for i in range(start):
             index += 1
             if index == BLOCKLEN:
                 b = b.rightlink
                 index = 0
 
-        n = stop - i
-        while n >= 0:
+        n = stop - start
+        while (n - 1) >= 0:
             n -= 1
             assert b is not None
             item = b.data[index]
@@ -491,7 +502,7 @@ class deque(object):
         assert i >= 0
         return b, i
 
-    def _delitem(self, i):
+    def delitem(self, i):
         # delitem() implemented in terms of rotate for simplicity and
         # reasonable performance near the end points.
         self.rotate(-i)
@@ -499,15 +510,21 @@ class deque(object):
         self.rotate(i)
 
     def __getitem__(self, idx):
+        idx = self._norm_index(idx)
+        self._check_index(idx)
         b, i = self._locate(idx)
         return b.data[i]
 
     def __setitem__(self, idx, value):
+        idx = self._norm_index(idx, force_index_to_zero=False)
+        self._check_index(idx)
         b, i = self._locate(idx)
         b.data[i] = value
 
     def __delitem__(self, idx):
-        self._delitem(idx)
+        idx = self._norm_index(idx, force_index_to_zero=False)
+        self._check_index(idx)
+        self.delitem(idx)
 
     def copy(self):
         """Return a shallow copy of a deque."""
