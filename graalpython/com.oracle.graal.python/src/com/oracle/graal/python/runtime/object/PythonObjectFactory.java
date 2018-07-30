@@ -347,6 +347,10 @@ public abstract class PythonObjectFactory extends Node {
         return createMethod(lookupClass(PythonBuiltinClassType.PMethod), self, function);
     }
 
+    public final PMethod createBuiltinMethod(Object self, PFunction function) {
+        return createMethod(lookupClass(PythonBuiltinClassType.PBuiltinMethod), self, function);
+    }
+
     public final PBuiltinMethod createBuiltinMethod(PythonClass cls, Object self, PBuiltinFunction function) {
         return trace(new PBuiltinMethod(cls, self, function));
     }

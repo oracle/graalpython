@@ -38,8 +38,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -57,20 +57,32 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Child GetClassNode getClassNode;
+        boolean isBuiltinFunction(PBuiltinMethod self) {
+            return self.getSelf() instanceof PythonModule;
+        }
 
-        @Specialization
+        boolean isBuiltinFunction(PMethod self) {
+            return self.getSelf() instanceof PythonModule && self.getFunction().getEnclosingClassName() == null;
+        }
+
+        @Specialization(guards = "isBuiltinFunction(self)")
         @TruffleBoundary
-        Object reprModuleFunction(PBuiltinMethod self) {
-            if (self.getSelf() instanceof PythonModule) {
-                return String.format("<built-in function %s>", self.getName());
-            } else {
-                if (getClassNode == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    getClassNode = insert(GetClassNode.create());
-                }
-                return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
-            }
+        Object reprBuiltinFunction(PMethod self) {
+            // (tfel): this only happens for builtin modules ... I think
+            return String.format("<built-in function %s>", self.getName());
+        }
+
+        @Specialization(guards = "isBuiltinFunction(self)")
+        @TruffleBoundary
+        String reprBuiltinFunction(PBuiltinMethod self) {
+            return String.format("<built-in function %s>", self.getName());
+        }
+
+        @Specialization(guards = "!isBuiltinFunction(self)")
+        @TruffleBoundary
+        Object reprBuiltinMethod(PBuiltinMethod self,
+                        @Cached("create()") GetClassNode getClassNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }
     }
 }

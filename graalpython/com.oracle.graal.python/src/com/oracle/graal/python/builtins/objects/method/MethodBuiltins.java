@@ -35,21 +35,18 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(extendClasses = {PMethod.class})
 public class MethodBuiltins extends PythonBuiltins {
@@ -87,23 +84,10 @@ public class MethodBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Child GetClassNode getClassNode;
-        BranchProfile builtinProfile = BranchProfile.create();
-
         @Specialization
         @TruffleBoundary
-        Object reprModuleFunction(PMethod self) {
-            if (self.getSelf() instanceof PythonModule) {
-                if (self.getFunction().getEnclosingClassName() == null) {
-                    builtinProfile.enter();
-                    // (tfel): this only happens for builtin modules ... I think
-                    return String.format("<built-in function %s>", self.getName());
-                }
-            }
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
-            }
+        Object reprMethod(PMethod self,
+                        @Cached("create()") GetClassNode getClassNode) {
             return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }
     }

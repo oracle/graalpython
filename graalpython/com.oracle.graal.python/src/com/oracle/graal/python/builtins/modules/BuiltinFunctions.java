@@ -1357,7 +1357,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 builtinModule = getContext().getCore().lookupBuiltinModule(moduleName);
                 assert builtinModule != null;
             }
-            return factory().createMethod(builtinModule, builtinFunc);
+            return factory().createBuiltinMethod(builtinModule, builtinFunc);
         }
     }
 }
