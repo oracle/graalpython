@@ -37,6 +37,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
@@ -904,6 +905,24 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             } else {
                 return factory().createList();
             }
+        }
+    }
+
+    @Builtin(name = __INDEX__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class IndexNode extends UnboxNode {
+        @Specialization(guards = "isForeignObject(object)")
+        protected Object doIt(TruffleObject object,
+                        @Cached("IS_BOXED.createNode()") Node isBoxedNode,
+                        @Cached("UNBOX.createNode()") Node unboxNode) {
+            if (ForeignAccess.sendIsBoxed(isBoxedNode, object)) {
+                try {
+                    return ForeignAccess.sendUnbox(unboxNode, object);
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
+                }
+            }
+            throw raiseIndexError();
         }
     }
 }
