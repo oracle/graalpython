@@ -1121,28 +1121,33 @@ def PyTruffle_GetBuiltin(name):
 
 
 def PyTruffle_Type(type_name):
+    import types
     if type_name == "mappingproxy":
-        return type(dict().keys())
+        return types.MappingProxyType
     elif type_name == "NotImplementedType":
         return type(NotImplemented)
     elif type_name == "module":
-        return type(sys)
+        return types.ModuleType
     elif type_name == "NoneType":
         return type(None)
     elif type_name == "PyCapsule":
         return PyCapsule
     elif type_name == "function":
-        return type(PyTruffle_Type)
+        return types.FunctionType
+    elif type_name == "method_descriptor":
+        return type(list.append)
+    elif type_name == "builtin_function_or_method":
+        return types.BuiltinFunctionType
     elif type_name == "ellipsis":
-        return type(Py_Ellipsis())
+        return type(...)
     elif type_name == "method":
-        return type({}.update)
+        return types.MethodType
     elif type_name == "code":
-        return codetype
+        return types.CodeType
     elif type_name == "traceback":
-        return tbtype
+        return types.TracebackType
     elif type_name == "frame":
-        return type(sys._getframe(0))
+        return types.FrameType
     else:
         return getattr(sys.modules["builtins"], type_name)
 
