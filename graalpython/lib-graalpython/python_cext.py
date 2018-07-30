@@ -740,7 +740,7 @@ def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
     func = wrapper(CreateFunction(name, cfunc, cwrapper))
     func.__name__ = name
     func.__doc__ = doc
-    method = methodtype(self, func)
+    method = PyTruffle_BuiltinMethod(self, func)
     method.__module__ = module.__name__
     return method
 

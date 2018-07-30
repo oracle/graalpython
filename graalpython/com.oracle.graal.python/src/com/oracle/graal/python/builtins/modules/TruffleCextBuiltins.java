@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -1344,24 +1345,29 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_GetSetDescriptor", fixedNumOfArguments = 0, keywordArguments = {"fget", "fset", "name", "owner"})
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         Object call(PythonCallable get, PythonCallable set, String name, PythonClass owner) {
             return factory().createGetSetDescriptor(get, set, name, owner);
         }
 
         @Specialization
-        @TruffleBoundary
-        Object call(PythonCallable get, PNone set, String name, PythonClass owner) {
+        Object call(PythonCallable get, @SuppressWarnings("unused") PNone set, String name, PythonClass owner) {
             return factory().createGetSetDescriptor(get, null, name, owner);
         }
 
         @Specialization
-        @TruffleBoundary
-        Object call(PNone set, PNone get, String name, PythonClass owner) {
-            return factory().createGetSetDescriptor(null, null, name, owner);
+        Object call(@SuppressWarnings("unused") PNone get, PythonCallable set, String name, PythonClass owner) {
+            return factory().createGetSetDescriptor(null, set, name, owner);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_BuiltinMethod", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class BuiltinMethodNode extends PythonBuiltinNode {
+        @Specialization
+        Object call(Object self, PFunction function) {
+            return factory().createBuiltinMethod(self, function);
         }
     }
 }
