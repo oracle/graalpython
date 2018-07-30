@@ -1303,13 +1303,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child WriteAttributeToObjectNode writeFile = WriteAttributeToObjectNode.create();
 
         @Specialization
-        public PythonModule module(Object cls, String name, PNone path) {
-            return factory().createPythonModule(name);
+        public PythonModule module(PythonClass cls, String name, PNone path) {
+            return factory().createPythonModule(cls, name);
         }
 
         @Specialization
-        public PythonModule module(Object cls, String name, String path) {
-            PythonModule module = factory().createPythonModule(name);
+        public PythonModule module(PythonClass cls, String name, String path) {
+            PythonModule module = factory().createPythonModule(cls, name);
             writeFile.execute(module, __FILE__, path);
             return module;
         }
