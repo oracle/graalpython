@@ -389,11 +389,72 @@ class deque(object):
                     return x1 >= x2
                 assert False, "bad value for op"
 
-    def __contains__(self, item):
-        for itm in self:
-            if itm == item:
+    def __contains__(self, v):
+        lock = self._getlock()
+        n = self.len
+        index = self.leftindex
+        b = self.leftblock
+
+        while n >= 0:
+            n -= 1
+            assert b is not None
+            item = b.data[index]
+            if item == v:
                 return True
+
+            self._checklock(lock)
+
+            index += 1
+            if index == BLOCKLEN:
+                b = b.rightlink
+                index = 0
+
         return False
+
+    def index(self, v, start=0, stop=-1):
+        lock = self._getlock()
+        if start < 0:
+            start += self.len
+            if start < 0:
+                start = 0
+
+        if stop < 0:
+            stop += self.len
+            if stop < 0:
+                stop = 0
+
+        if stop > self.len:
+            stop = self.len
+
+        if start > stop:
+            start = stop
+
+        index = self.leftindex
+        b = self.leftblock
+
+        i = 0
+        for i in range(start):
+            index += 1
+            if index == BLOCKLEN:
+                b = b.rightlink
+                index = 0
+
+        n = stop - i
+        while n >= 0:
+            n -= 1
+            assert b is not None
+            item = b.data[index]
+            if item == v:
+                return stop - n - 1
+
+            self._checklock(lock)
+
+            index += 1
+            if index == BLOCKLEN:
+                b = b.rightlink
+                index = 0
+
+        raise ValueError("%s is not in deque" % v)
 
     def __lt__(self, other):
         return self.__compare__(other, 'lt')
@@ -413,7 +474,7 @@ class deque(object):
     def __ge__(self, other):
         return self.__compare__(other, 'ge')
 
-    def index(self, i):
+    def _locate(self, i):
         if i < (self.len >> 1):
             i += self.leftindex
             b = self.leftblock
@@ -438,11 +499,11 @@ class deque(object):
         self.rotate(i)
 
     def __getitem__(self, idx):
-        b, i = self.index(idx)
+        b, i = self._locate(idx)
         return b.data[i]
 
     def __setitem__(self, idx, value):
-        b, i = self.index(idx)
+        b, i = self._locate(idx)
         b.data[i] = value
 
     def __delitem__(self, idx):
