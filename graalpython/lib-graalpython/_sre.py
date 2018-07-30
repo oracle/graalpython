@@ -369,16 +369,22 @@ class SRE_Pattern():
 compile = SRE_Pattern
 
 
+@__builtin__
 def getcodesize(*args, **kwargs):
     raise NotImplementedError("_sre.getcodesize is not yet implemented")
 
 
+@__builtin__
 def getlower(char_ord, flags):
     return ord(chr(char_ord).lower())
 
+
+@__builtin__
 def unicode_iscased(codepoint):
     ch = chr(codepoint)
     return ch != ch.lower() or ch != ch.upper()
 
+
+@__builtin__
 def unicode_tolower(codepoint):
     return ord(chr(codepoint).lower())

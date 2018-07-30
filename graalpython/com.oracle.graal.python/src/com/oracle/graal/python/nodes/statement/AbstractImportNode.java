@@ -46,9 +46,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
@@ -97,9 +97,9 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     Object __import__(String name, Object globals, String[] fromList, int level) {
-        PFunction builtinImport = (PFunction) getContext().getBuiltins().getAttribute(__IMPORT__);
-        Object[] importArguments = PArguments.create(1);
-        PArguments.setArgument(importArguments, 0, name);
+        PMethod builtinImport = (PMethod) getContext().getBuiltins().getAttribute(__IMPORT__);
+        Object[] importArguments = PArguments.create(2);
+        PArguments.setArgument(importArguments, 1, name);
         assert fromList != null;
         assert globals != null;
         return getInvokeNode(builtinImport).invoke(importArguments, new PKeyword[]{

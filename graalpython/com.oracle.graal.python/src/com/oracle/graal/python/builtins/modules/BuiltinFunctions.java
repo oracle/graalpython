@@ -1352,7 +1352,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PythonModule builtinModule;
             if (globals instanceof PythonModule) {
                 builtinModule = (PythonModule) globals;
-                assert getContext().getCore().lookupBuiltinModule(((PythonModule) globals).getModuleName()) == builtinModule;
             } else {
                 String moduleName = (String) getNameNode.execute(globals, __NAME__);
                 builtinModule = getContext().getCore().lookupBuiltinModule(moduleName);

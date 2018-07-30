@@ -131,6 +131,7 @@ ps1 = ">>> "
 ps2 = "... "
 
 
+@__builtin__
 def exit(arg=0):
     raise SystemExit(arg)
 
