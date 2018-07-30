@@ -123,8 +123,8 @@ public class PythonObjectNativeWrapperMR {
     abstract static class GetDynamicTypeNode extends Node {
         @Child GetClassNode getClass = GetClassNode.create();
 
-        public Object access(PythonObjectNativeWrapper object) {
-            PythonClass klass = getClass.execute(object.getPythonObject());
+        public Object access(PythonNativeWrapper object) {
+            PythonClass klass = getClass.execute(object.getDelegate());
             Object sulongType = klass.getSulongType();
             if (sulongType == null) {
                 CompilerDirectives.transferToInterpreter();
