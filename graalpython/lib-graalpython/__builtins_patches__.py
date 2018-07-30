@@ -50,8 +50,14 @@ import _io
 import _pyio
 import io
 
+
+@__builtin__
+def open(*args, **kwargs):
+    return _pyio.open(*args, **kwargs)
+
+
 for module in [_io, io]:
-    setattr(module, 'open', _pyio.open)
+    setattr(module, 'open', open)
     setattr(module, 'TextIOWrapper', _pyio.TextIOWrapper)
     setattr(module, 'IncrementalNewlineDecoder', _pyio.IncrementalNewlineDecoder)
     setattr(module, 'BufferedRandom', _pyio.BufferedRandom)
@@ -64,5 +70,5 @@ for module in [_io, io]:
     setattr(module, 'BytesIO', _pyio.BytesIO)
     setattr(module, '_TextIOBase', _pyio.TextIOBase)
 
-setattr(builtins, 'open', _pyio.open)
-globals()['open'] = _pyio.open
+
+setattr(builtins, 'open', open)

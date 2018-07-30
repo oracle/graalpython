@@ -6,7 +6,7 @@
 
 /* Memoryview object implementation */
 
-#include "Python.h"
+#include "../src/capi.h"
 #include <limits.h>
 /* #include "internal/mem.h" */
 /* #include "internal/pystate.h" */
@@ -56,6 +56,8 @@
      PyBuffer_Release() decrements view.obj (if non-NULL), so the
      releasebufferprocs must NOT decrement view.obj.
 */
+
+POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
 
 PyTypeObject PyNativeMemoryView_Type;
 
@@ -646,7 +648,7 @@ memory_alloc(int ndim)
     mv->weakreflist = NULL;
 
     _PyObject_GC_TRACK(mv);
-    return mv;
+    return polyglot_from_PyMemoryViewObject(mv);
 }
 
 /*
@@ -966,7 +968,7 @@ memory_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    return PyMemoryView_FromObject(obj);
+    return polyglot_from_PyMemoryViewObject((PyMemoryViewObject *)PyMemoryView_FromObject(obj));
 }
 
 
@@ -1413,11 +1415,18 @@ error:
 /*                               getbuffer                                */
 /**************************************************************************/
 
+static PyMemoryViewObject* PyTruffle_MemoryView_GetDelegate(PyObject* managed_self) {
+    return (PyMemoryViewObject*) PyObject_GetAttrString(managed_self, "__c_memoryview");
+}
+
 static int
 memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
 {
-    Py_buffer *base = &self->view;
-    int baseflags = self->flags;
+    Py_buffer *base = NULL;
+    int baseflags = 0;
+
+    base = &self->view;
+    baseflags = self->flags;
 
     CHECK_RELEASED_INT(self);
 
@@ -3125,6 +3134,28 @@ PyTypeObject PyNativeMemoryView_Type = {
     memory_new,                               /* tp_new */
 };
 
+
+static PyMemoryViewObject* _get_managed_self(PyMemoryViewObject *original_self) {
+    PyMemoryViewObject *self = NULL;
+
+    // this code may be reached over different path; self may therefore be the managed wrapper or the native object
+    if (PyMemoryView_Check(original_self)) {
+        // we need to get the native delegate of the managed memoryview object
+        self = PyTruffle_MemoryView_GetDelegate((PyObject*) original_self);
+    }
+    assert(self != NULL);
+    assert(Py_TYPE(self) == &PyNativeMemoryView_Type);
+    return self;
+}
+
+static int memory_managed_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags) {
+    return memory_getbuf(_get_managed_self(self), view, flags);
+}
+
+static void memory_managed_releasebuf(PyMemoryViewObject *self, Py_buffer *view) {
+    memory_releasebuf(_get_managed_self(self), view);
+}
+
 static struct PyModuleDef _memoryviewmodule = {
     PyModuleDef_HEAD_INIT,
     "_memoryview",
@@ -3157,6 +3188,10 @@ PyInit__memoryview(void)
 
     Py_INCREF((PyObject*)&_PyManagedBuffer_Type);
     PyModule_AddObject(m, "managedbuffer", (PyObject*) &_PyManagedBuffer_Type);
+
+
+    // register buffer procs
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyMemoryView_Type), (getbufferproc)memory_managed_getbuf, (releasebufferproc)memory_managed_releasebuf);
 
     return m;
 }

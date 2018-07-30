@@ -75,14 +75,15 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonImmutableBuiltinType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -98,6 +99,8 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -145,12 +148,14 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 
-@CoreFunctions(extendModule = "builtins")
+@CoreFunctions(defineModule = "builtins")
 public final class BuiltinFunctions extends PythonBuiltins {
 
     @Override
@@ -500,7 +505,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
             PythonParser parser = getCore().getParser();
-            Source source = Source.newBuilder(expression).name(name).mimeType(PythonLanguage.MIME_TYPE).build();
+            Source source = PythonLanguage.newSource(getContext(), expression, name);
             RootNode parsed = (RootNode) parser.parse(ParserMode.Eval, getCore(), source, callerFrame);
             return evalNode(parsed, globals, locals, closure);
         }
@@ -533,7 +538,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object compile(String expression, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            Source source = Source.newBuilder(expression).name(filename).mimeType(PythonLanguage.MIME_TYPE).build();
+            Source source = PythonLanguage.newSource(getContext(), expression, filename);
             ParserMode pm;
             if (mode.equals("exec")) {
                 pm = ParserMode.File;
@@ -634,6 +639,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
          * </pre>
          */
         private static long KNOWN_OBJECTS_COUNT = 4L;
+        // borrowed logic from pypy
+        // -1 - (-maxunicode-1): unichar
+        // 0 - 255: char
+        // 256: empty string
+        // 257: empty unicode
+        // 258: empty tuple
+        // 259: empty frozenset
+        private static long BASE_EMPTY_BYTES = 256;
+        private static long BASE_EMPTY_UNICODE = 257;
+        private static long BASE_EMPTY_TUPLE = 258;
+        private static long BASE_EMPTY_FROZENSET = 259;
+        private static long IDTAG_SPECIAL = 11;
+        private static int IDTAG_SHIFT = 4;
 
         /**
          * The next available global id. We reserve space for all integers to be their own id +
@@ -665,17 +683,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return integer + KNOWN_OBJECTS_COUNT;
         }
 
-        /**
-         * TODO: {@link #doId(String)} and {@link #doId(double)} are not quite right, because the
-         * hashCode will certainly collide with integer hashes. It should be good for comparisons
-         * between String and String id, though, it'll just look as if we interned all strings from
-         * the Python code's perspective.
-         */
-        @Specialization
-        int doId(String value) {
-            return value.hashCode();
-        }
-
         @Specialization
         Object doId(PInt value) {
             try {
@@ -691,24 +698,47 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyTuple(PTuple value) {
-            return getId(value, PythonImmutableBuiltinType.PTuple);
+        Object doEmptyString(@SuppressWarnings("unused") String value) {
+            return (BASE_EMPTY_UNICODE << IDTAG_SHIFT) | IDTAG_SPECIAL;
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyBytes(PBytes value) {
-            return getId(value, PythonImmutableBuiltinType.PBytes);
+        Object doEmptyString(@SuppressWarnings("unused") PString value) {
+            return (BASE_EMPTY_UNICODE << IDTAG_SHIFT) | IDTAG_SPECIAL;
         }
 
         @Specialization(guards = "isEmpty(value)")
-        Object doEmptyFrozenSet(PFrozenSet value) {
-            return getId(value, PythonImmutableBuiltinType.PFrozenSet);
+        Object doEmptyTuple(@SuppressWarnings("unused") PTuple value) {
+            return (BASE_EMPTY_TUPLE << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyBytes(@SuppressWarnings("unused") PBytes value) {
+            return (BASE_EMPTY_BYTES << IDTAG_SHIFT) | IDTAG_SPECIAL;
+        }
+
+        @Specialization(guards = "isEmpty(value)")
+        Object doEmptyFrozenSet(@SuppressWarnings("unused") PFrozenSet value) {
+            return (BASE_EMPTY_FROZENSET << IDTAG_SHIFT) | IDTAG_SPECIAL;
         }
 
         protected boolean isEmptyImmutableBuiltin(Object object) {
             return (object instanceof PTuple && PGuards.isEmpty((PTuple) object)) ||
+                            (object instanceof String && PGuards.isEmpty((String) object)) ||
+                            (object instanceof PString && PGuards.isEmpty((PString) object)) ||
                             (object instanceof PBytes && PGuards.isEmpty((PBytes) object)) ||
                             (object instanceof PFrozenSet && PGuards.isEmpty((PFrozenSet) object));
+        }
+
+        /**
+         * TODO: {@link #doId(String)} and {@link #doId(double)} are not quite right, because the
+         * hashCode will certainly collide with integer hashes. It should be good for comparisons
+         * between String and String id, though, it'll just look as if we interned all strings from
+         * the Python code's perspective.
+         */
+        @Specialization(guards = "!isEmpty(value)")
+        int doId(String value) {
+            return value.hashCode();
         }
 
         @Specialization(guards = {"!isPInt(obj)", "!isPString(obj)", "!isPFloat(obj)", "!isEmptyImmutableBuiltin(obj)"})
@@ -722,10 +752,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private Object getId(PythonObject obj) {
-            return getId(obj, null);
-        }
-
-        private Object getId(PythonObject obj, PythonImmutableBuiltinType immutableType) {
             if (readId == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readId = insert(ReadAttributeFromObjectNode.create());
@@ -733,11 +759,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             Object id = readId.execute(obj, ID_KEY);
             if (id == NO_VALUE) {
-                if (immutableType != null) {
-                    id = getContext().getEmptyImmutableObjectGlobalId(immutableType);
-                } else {
-                    id = getContext().getNextGlobalId();
-                }
+                id = getContext().getNextGlobalId();
                 writeId.execute(obj, ID_KEY, id);
             }
             return id;
@@ -1272,6 +1294,70 @@ public final class BuiltinFunctions extends PythonBuiltins {
             CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
             callTarget.call(PArguments.withGlobals(mod));
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "__builtin__", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
+        @Child GetItemNode getNameNode = GetItemNode.create();
+
+        @Specialization
+        @TruffleBoundary
+        public Object doIt(PFunction func) {
+            /*
+             * (tfel): To be compatible with CPython, builtin module functions must be bound to
+             * their respective builtin module. We ignore that builtin functions should really be
+             * builtin methods here - it does not hurt if they are normal methods. What does hurt,
+             * however, is if they are not bound, because then using these functions in class field
+             * won't work when they are called from an instance of that class due to the implicit
+             * currying with "self".
+             */
+            Arity arity = func.getArity();
+            PFunction builtinFunc;
+            if (arity.getParameterIds().length > 0 && arity.getParameterIds()[0].equals("self")) {
+                /*
+                 * If the first parameter is called self, we assume the function does explicitly
+                 * declare the module argument
+                 */
+                builtinFunc = func;
+            } else {
+                /*
+                 * Otherwise, we create a new function with an arity that requires one extra
+                 * argument in front. We actually modify the function's AST here, so the original
+                 * PFunction cannot be used anymore (its Arity won't agree with it's indexed
+                 * parameter reads).
+                 */
+                String name = func.getName();
+                String[] parameterIds = new String[arity.getParameterIds().length + 1];
+                parameterIds[0] = "self";
+                System.arraycopy(arity.getParameterIds(), 0, parameterIds, 1, parameterIds.length - 1);
+                Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArg(), arity.takesVarArgs(), parameterIds,
+                                arity.getKeywordNames());
+                func.getFunctionRootNode().accept(new NodeVisitor() {
+                    public boolean visit(Node node) {
+                        if (node instanceof ReadVarArgsNode) {
+                            node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex() + 1, ((ReadVarArgsNode) node).isBuiltin()));
+                        } else if (node instanceof ReadIndexedArgumentNode) {
+                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                        }
+                        return true;
+                    }
+                });
+                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arityWithSelf, Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
+                                func.getFrameDescriptor(), func.getGlobals(), func.getClosure());
+            }
+
+            PythonObject globals = func.getGlobals();
+            PythonModule builtinModule;
+            if (globals instanceof PythonModule) {
+                builtinModule = (PythonModule) globals;
+            } else {
+                String moduleName = (String) getNameNode.execute(globals, __NAME__);
+                builtinModule = getContext().getCore().lookupBuiltinModule(moduleName);
+                assert builtinModule != null;
+            }
+            return factory().createBuiltinMethod(builtinModule, builtinFunc);
         }
     }
 }

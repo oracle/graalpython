@@ -30,14 +30,19 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.nio.charset.CodingErrorAction;
@@ -49,16 +54,16 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -98,7 +103,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         public boolean eq(PBytes self, PByteArray other) {
             return self.equals(other);
@@ -119,18 +124,106 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    public abstract static class NeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public boolean eq(PBytes self, PByteArray other) {
+            return !self.equals(other);
+        }
+
+        @Specialization
+        public boolean eq(PBytes self, PBytes other) {
+            return !self.equals(other);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object eq(Object self, Object other) {
+            if (self instanceof PBytes) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            throw raise(TypeError, "descriptor '__ne__' requires a 'bytes' object but received a '%p'", self);
+        }
+    }
+
+    abstract static class CmpNode extends PythonBinaryBuiltinNode {
+        int cmp(PBytes self, PBytes other) {
+            byte[] a = self.getInternalByteArray();
+            byte[] b = other.getInternalByteArray();
+            for (int i = 0; i < Math.min(a.length, b.length); i++) {
+                if (a[i] != b[i]) {
+                    // CPython uses 'memcmp'; so do unsigned comparison
+                    return a[i] & 0xFF - b[i] & 0xFF;
+                }
+            }
+            return a.length - b.length;
+        }
+    }
+
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
+    abstract static class LtNode extends CmpNode {
         @Specialization
-        boolean contains(PSequence self, PSequence other) {
-            return self.lessThan(other);
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) < 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) <= 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GtNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) > 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) >= 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class AddNode extends PythonBuiltinNode {
+    public abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object add(PBytes self, PIBytesLike other) {
             return self.concat(factory(), other);
@@ -145,7 +238,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __RADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class RAddNode extends PythonBuiltinNode {
+    public abstract static class RAddNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object add(PBytes self, PIBytesLike other) {
             return self.concat(factory(), other);
@@ -160,7 +253,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
     @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class MulNode extends PythonBuiltinNode {
+    public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
         public Object mul(PBytes self, int times) {
             return self.__mul__(factory(), times);
@@ -191,25 +284,17 @@ public class BytesBuiltins extends PythonBuiltins {
     // bytes.join(iterable)
     @Builtin(name = "join", fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class JoinNode extends PythonBuiltinNode {
+    public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PBytes join(PBytes bytes, PSequence seq) {
-            return factory().createBytes(BytesUtils.join(getCore(), bytes.getInternalByteArray(), seq.getSequenceStorage().getInternalArray()));
-        }
-
-        @Specialization
-        public PBytes join(PBytes bytes, PSet set) {
-            Object[] values = new Object[set.size()];
-            int i = 0;
-            for (Object value : set.getDictStorage().keys()) {
-                values[i++] = value;
-            }
-            return factory().createBytes(BytesUtils.join(getCore(), bytes.getInternalByteArray(), values));
+        public PBytes join(PBytes bytes, Object iterable,
+                        @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
+            return factory().createBytes(bytesJoinNode.execute(bytes.getInternalByteArray(), iterable));
         }
 
         @Fallback
-        public PBytes join(Object self, Object arg) {
-            throw new RuntimeException("invalid arguments type for join(): self " + self + ", arg " + arg);
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object arg) {
+            throw raise(TypeError, "can only join an iterable");
         }
     }
 
@@ -348,6 +433,16 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         Object getitem(PBytes self, PSlice slice) {
             return self.getSlice(factory(), slice);
+        }
+    }
+
+    @Builtin(name = __SETITEM__, fixedNumOfArguments = 3)
+    @GenerateNodeFactory
+    abstract static class SetitemNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        @SuppressWarnings("unused")
+        Object getitem(PBytes self, Object idx, Object value) {
+            throw raise(TypeError, "'bytes' object does not support item assignment");
         }
     }
 }

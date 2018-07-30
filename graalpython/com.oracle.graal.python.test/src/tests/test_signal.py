@@ -80,8 +80,8 @@ def test_alarm():
             handler = lambda s,f: posix.close(s)
 
         oldhandler = _signal.signal(_signal.SIGALRM, handler)
-        assert oldhandler == _signal.SIG_DFL
-        assert _signal.getsignal(_signal.SIGALRM) is handler
+        assert oldhandler == _signal.SIG_DFL, "oldhandler != SIG_DFL"
+        assert _signal.getsignal(_signal.SIGALRM) is handler, "getsignal handler != handler"
 
         # schedule the alarm signal, that will trigger the handler, which
         # will in turn close our file

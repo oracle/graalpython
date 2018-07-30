@@ -25,14 +25,14 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "eb3cf4bc0abb0c98c53ae7a93dc75b01d1846d83",
+                "version": "d99324d26677a90d3625a8ae4131603ad08eee95",
                 "urls": [
                     {"url": "https://github.com/graalvm/sulong", "kind": "git"},
                 ]
             },
             {
                 "name": "regex",
-                "version": "337a2747a1d750693853cc7c8f6ec2aaa2afc4ba",
+                "version": "2db27f2ed33d2f9ec73935da8c420317e89dc563",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},

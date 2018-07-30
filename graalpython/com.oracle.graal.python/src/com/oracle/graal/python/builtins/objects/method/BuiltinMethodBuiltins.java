@@ -26,8 +26,6 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
@@ -35,9 +33,8 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -48,45 +45,42 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-@CoreFunctions(extendClasses = {PMethod.class})
-public class MethodBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = {PBuiltinMethod.class})
+public class BuiltinMethodBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return MethodBuiltinsFactory.getFactories();
-    }
-
-    @Builtin(name = __FUNC__, fixedNumOfArguments = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class FuncNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(PMethod self) {
-            return self.getFunction();
-        }
-
-        @Specialization
-        protected Object doIt(PBuiltinMethod self) {
-            return self.getFunction();
-        }
-    }
-
-    @Builtin(name = __CODE__, fixedNumOfArguments = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class CodeNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(PMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.getFunction(), __CODE__);
-        }
+        return BuiltinMethodBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
-        @Specialization
+        boolean isBuiltinFunction(PBuiltinMethod self) {
+            return self.getSelf() instanceof PythonModule;
+        }
+
+        boolean isBuiltinFunction(PMethod self) {
+            return self.getSelf() instanceof PythonModule && self.getFunction().getEnclosingClassName() == null;
+        }
+
+        @Specialization(guards = "isBuiltinFunction(self)")
         @TruffleBoundary
-        Object reprMethod(PMethod self,
+        Object reprBuiltinFunction(PMethod self) {
+            // (tfel): this only happens for builtin modules ... I think
+            return String.format("<built-in function %s>", self.getName());
+        }
+
+        @Specialization(guards = "isBuiltinFunction(self)")
+        @TruffleBoundary
+        String reprBuiltinFunction(PBuiltinMethod self) {
+            return String.format("<built-in function %s>", self.getName());
+        }
+
+        @Specialization(guards = "!isBuiltinFunction(self)")
+        @TruffleBoundary
+        Object reprBuiltinMethod(PBuiltinMethod self,
                         @Cached("create()") GetClassNode getClassNode) {
             return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }

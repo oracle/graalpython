@@ -37,9 +37,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
+@__builtin__
 def _warn(msg, cls=Warning, stacklevel=None):
     print(cls, msg)
 
 
+@__builtin__
 def warn(msg, cls=Warning, stacklevel=None):
     _warn(msg, cls=cls, stacklevel=stacklevel)

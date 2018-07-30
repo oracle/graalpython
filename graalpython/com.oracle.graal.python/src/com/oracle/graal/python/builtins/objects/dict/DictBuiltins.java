@@ -26,6 +26,8 @@
 package com.oracle.graal.python.builtins.objects.dict;
 
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -94,13 +96,13 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "args.length == 1")
         public Object doVarargs(PDict self, Object[] args, PKeyword[] kwargs) {
-            getInitNode().execute(self, args[0], kwargs);
+            self.setDictStorage(getInitNode().execute(args[0], kwargs));
             return PNone.NONE;
         }
 
         @Specialization(guards = "args.length == 0")
         public Object doKeywords(PDict self, @SuppressWarnings("unused") Object[] args, PKeyword[] kwargs) {
-            getInitNode().execute(self, NO_VALUE, kwargs);
+            self.setDictStorage(getInitNode().execute(NO_VALUE, kwargs));
             return PNone.NONE;
         }
 
@@ -138,7 +140,7 @@ public final class DictBuiltins extends PythonBuiltins {
             if (defaultValProfile.profile(defaultValue == PNone.NO_VALUE)) {
                 value = PNone.NONE;
             }
-            setItemNode.execute(dict, dict.getDictStorage(), key, value);
+            dict.setDictStorage(setItemNode.execute(dict.getDictStorage(), key, value));
             return value;
         }
     }
@@ -203,7 +205,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // keys()
-    @Builtin(name = "keys", fixedNumOfArguments = 1)
+    @Builtin(name = KEYS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
 
@@ -214,7 +216,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // items()
-    @Builtin(name = "items", fixedNumOfArguments = 1)
+    @Builtin(name = ITEMS, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
 
@@ -299,7 +301,7 @@ public final class DictBuiltins extends PythonBuiltins {
         @Specialization
         Object run(PDict self, Object key, Object value,
                         @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-            setItemNode.execute(self, self.getDictStorage(), key, value);
+            self.setDictStorage(setItemNode.execute(self.getDictStorage(), key, value));
             return PNone.NONE;
         }
     }

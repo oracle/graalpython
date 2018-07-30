@@ -26,6 +26,7 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 
@@ -36,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -60,6 +62,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -70,6 +73,7 @@ import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.Builder;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, DebuggerTags.AlwaysHalt.class})
@@ -84,6 +88,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
+    @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
     @CompilationFinal private PythonCore sharedCore;
     private final NodeFactory nodeFactory;
 
@@ -103,6 +108,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
+        nativeBuildTime = false; // now we're running
         ensureSysExecutable(context);
         ensureHomeInOptions(newEnv);
         if (!optionsAllowPreInitializedContext(context, newEnv)) {
@@ -113,6 +119,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.setOut(newEnv.out());
         context.setErr(newEnv.err());
         context.initialize();
+        context.getCore().postInitialize();
         return true;
     }
 
@@ -380,10 +387,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected String toString(PythonContext context, Object value) {
         final PythonModule builtins = context.getBuiltins();
-        PBuiltinFunction intClass = (PBuiltinFunction) builtins.getAttribute(BuiltinNames.REPR);
-        Object[] userArgs = PArguments.create(1);
-        PArguments.setArgument(userArgs, 0, value);
-        Object res = InvokeNode.create(intClass).invoke(userArgs);
+        PBuiltinFunction reprMethod = ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
+        Object[] userArgs = PArguments.create(2);
+        PArguments.setArgument(userArgs, 0, PNone.NONE);
+        PArguments.setArgument(userArgs, 1, value);
+        Object res = InvokeNode.create(reprMethod).invoke(userArgs);
         return res.toString();
     }
 
@@ -394,5 +402,31 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static TruffleLogger getLogger() {
         return TruffleLogger.getLogger(ID, PythonLanguage.class);
+    }
+
+    public static Source newSource(PythonContext ctxt, String src, String name) {
+        return newSource(ctxt, Source.newBuilder(src), name);
+    }
+
+    public static Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
+        return newSource(ctxt, ctxt.getEnv().newSourceBuilder(src), name);
+    }
+
+    public static Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
+        return newSource(ctxt, Source.newBuilder(url), name);
+    }
+
+    private static <E1 extends Exception, E2 extends Exception, E3 extends Exception> Source newSource(PythonContext ctxt, Builder<E1, E2, E3> srcBuilder,
+                    String name) throws E1 {
+        Builder<E1, RuntimeException, RuntimeException> newBuilder = srcBuilder.name(name).mimeType(MIME_TYPE);
+        boolean internal = !ctxt.getCore().isInitialized() && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources) && !PythonOptions.getOption(ctxt, PythonOptions.LazyInit);
+        if (internal) {
+            srcBuilder.internal();
+        }
+        return newBuilder.build();
+    }
+
+    public boolean isNativeBuildTime() {
+        return nativeBuildTime;
     }
 }

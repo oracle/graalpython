@@ -117,8 +117,6 @@ public class TopLevelExceptionHandler extends RootNode {
                     }
                 }
                 throw e;
-            } finally {
-                context.setCurrentException(null);
             }
         }
     }

@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 
+// Corresponds to PyCFunction, but that name is just confusing
 public class PBuiltinMethod extends PythonBuiltinObject implements PythonCallable {
 
     private final PBuiltinFunction function;

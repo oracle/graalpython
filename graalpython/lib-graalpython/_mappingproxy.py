@@ -37,54 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class mappingproxy_iterator(object):
-    def __init__(self, proxy):
-        self.items = proxy.keys()
-        self.index = 0
-
-    def __iter__(self):
-        return self
-
-    def __length_hint__(self):
-        return len(self.items)
-
-    def __next__(self):
-        if self.index >= len(self.items):
-            raise StopIteration
-        else:
-            index = self.index
-            self.index += 1
-            return self.items[index]
-
-
 mappingproxy = type(type.__dict__)
-
-
-def __iter__(self):
-    return mappingproxy_iterator(self)
-mappingproxy.__iter__ = __iter__
-
-
-def clear(self):
-    for k in self.keys():
-        delete_attribute(self.obj, k)
-mappingproxy.clear = clear
-
-
-def items(self):
-    items = []
-    for k in self.keys():
-        items.append(tuple([k, self.get(k)]))
-    return items
-mappingproxy.items = items
-
-
-def values(self):
-    values = []
-    for k in self.keys():
-        values.append(self.get(k))
-    return values
-mappingproxy.values = values
 
 
 def __repr__(self):
@@ -98,3 +51,4 @@ mappingproxy.__str__ = __repr__
 
 
 mappingproxy.update = dict.update
+mappingproxy.__hash__ = dict.__hash__

@@ -817,6 +817,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         boolean isATTY(int fd) {
             // TODO: XXX: actually check
             switch (fd) {
+                case 0:
+                    return getContext().getStandardIn() == System.in;
                 case 1:
                     return getContext().getStandardOut() == System.out;
                 case 2:

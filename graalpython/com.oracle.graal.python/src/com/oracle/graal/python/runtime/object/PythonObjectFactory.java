@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.Pyth
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -346,28 +347,24 @@ public abstract class PythonObjectFactory extends Node {
         return createMethod(lookupClass(PythonBuiltinClassType.PMethod), self, function);
     }
 
-    public final PBuiltinMethod createBuiltinMethod(PythonClass cls, Object instance, PBuiltinFunction self) {
-        return trace(new PBuiltinMethod(cls, instance, self));
+    public final PMethod createBuiltinMethod(Object self, PFunction function) {
+        return createMethod(lookupClass(PythonBuiltinClassType.PBuiltinMethod), self, function);
     }
 
-    public final PBuiltinMethod createBuiltinMethod(Object instance, PBuiltinFunction self) {
-        return createBuiltinMethod(lookupClass(PythonBuiltinClassType.PBuiltinMethod), instance, self);
+    public final PBuiltinMethod createBuiltinMethod(PythonClass cls, Object self, PBuiltinFunction function) {
+        return trace(new PBuiltinMethod(cls, self, function));
+    }
+
+    public final PBuiltinMethod createBuiltinMethod(Object self, PBuiltinFunction function) {
+        return createBuiltinMethod(lookupClass(PythonBuiltinClassType.PBuiltinMethod), self, function);
     }
 
     public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
         return trace(new PFunction(lookupClass(PythonBuiltinClassType.PFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
     }
 
-    public PBuiltinFunction createFunction(String name, Arity arity, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PFunction), name, arity, callTarget));
-    }
-
-    public PFunction createBuiltinFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        return trace(new PFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
-    }
-
-    public PBuiltinFunction createBuiltinFunction(String name, Arity arity, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, arity, callTarget));
+    public PBuiltinFunction createBuiltinFunction(String name, PythonClass type, Arity arity, RootCallTarget callTarget) {
+        return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, type, arity, callTarget));
     }
 
     public GetSetDescriptor createGetSetDescriptor(PythonCallable get, PythonCallable set, String name, PythonClass type) {
@@ -468,15 +465,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(lookupClass(PythonBuiltinClassType.PDict), storage));
     }
 
-    public PDictView createDictKeysView(PDict dict) {
+    public PDictView createDictKeysView(PHashingCollection dict) {
         return trace(new PDictKeysView(lookupClass(PythonBuiltinClassType.PDictKeysView), dict));
     }
 
-    public PDictView createDictValuesView(PDict dict) {
+    public PDictView createDictValuesView(PHashingCollection dict) {
         return trace(new PDictValuesView(lookupClass(PythonBuiltinClassType.PDictValuesView), dict));
     }
 
-    public PDictView createDictItemsView(PDict dict) {
+    public PDictView createDictItemsView(PHashingCollection dict) {
         return trace(new PDictItemsView(lookupClass(PythonBuiltinClassType.PDictItemsView), dict));
     }
 
@@ -498,12 +495,20 @@ public abstract class PythonObjectFactory extends Node {
                         frameDescriptor, globals, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode));
     }
 
-    public PMappingproxy createMappingproxy(PythonObject self) {
-        return trace(new PMappingproxy(lookupClass(PythonBuiltinClassType.PMappingproxy), self));
+    public PMappingproxy createMappingproxy(PythonObject object) {
+        return trace(new PMappingproxy(lookupClass(PythonBuiltinClassType.PMappingproxy), new PythonObjectDictStorage(object.getStorage())));
+    }
+
+    public PMappingproxy createMappingproxy(HashingStorage storage) {
+        return trace(new PMappingproxy(lookupClass(PythonBuiltinClassType.PMappingproxy), storage));
     }
 
     public PMappingproxy createMappingproxy(PythonClass cls, PythonObject object) {
-        return trace(new PMappingproxy(cls, object));
+        return trace(new PMappingproxy(cls, new PythonObjectDictStorage(object.getStorage())));
+    }
+
+    public PMappingproxy createMappingproxy(PythonClass cls, HashingStorage storage) {
+        return trace(new PMappingproxy(cls, storage));
     }
 
     public PReferenceType createReferenceType(PythonClass cls, PythonObject object, PFunction callback) {
@@ -662,15 +667,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PBaseSetIterator(lookupClass(PythonBuiltinClassType.PBaseSetIterator), set));
     }
 
-    public PDictView.PDictItemsIterator createDictItemsIterator(PDict dict) {
+    public PDictView.PDictItemsIterator createDictItemsIterator(PHashingCollection dict) {
         return trace(new PDictView.PDictItemsIterator(lookupClass(PythonBuiltinClassType.PDictItemsIterator), dict));
     }
 
-    public PDictView.PDictKeysIterator createDictKeysIterator(PDict dict) {
+    public PDictView.PDictKeysIterator createDictKeysIterator(PHashingCollection dict) {
         return trace(new PDictView.PDictKeysIterator(lookupClass(PythonBuiltinClassType.PDictKeysIterator), dict));
     }
 
-    public PDictView.PDictValuesIterator createDictValuesIterator(PDict dict) {
+    public PDictView.PDictValuesIterator createDictValuesIterator(PHashingCollection dict) {
         return trace(new PDictView.PDictValuesIterator(lookupClass(PythonBuiltinClassType.PDictValuesIterator), dict));
     }
 

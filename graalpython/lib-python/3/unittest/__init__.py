@@ -79,5 +79,5 @@ def load_tests(loader, tests, pattern):
     return loader.discover(start_dir=this_dir, pattern=pattern)
 
 
-def skipIfGraalPython():
-    return skipIf(sys.implementation.name == 'graalpython', 'Functionality not yet supported')
+def skipIfGraalPython(reason="Functionality not yet supported"):
+    return skipIf(sys.implementation.name == 'graalpython', reason)

@@ -92,8 +92,6 @@ public final class PythonParserImpl implements PythonParser {
                 throw handleParserError(core, source, e);
             }
         }
-        // ensure builtins patches are loaded before parsing
-        core.loadBuiltinsPatches();
         TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
         Node result;
         Consumer<TranslationEnvironment> environmentConsumer = (env) -> env.setFreeVarsInRootScope(currentFrame);

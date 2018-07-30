@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,7 +38,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.graalvm.options.OptionValues;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonImmutableBuiltinType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -59,8 +59,6 @@ public class PythonContext {
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
 
-    private final long[] emptyImmutableObjectsIdCache = new long[PythonImmutableBuiltinType.values().length];
-
     @CompilationFinal private TruffleLanguage.Env env;
 
     private PException currentException;
@@ -73,6 +71,7 @@ public class PythonContext {
 
     private OutputStream out;
     private OutputStream err;
+    private InputStream in;
     @CompilationFinal private boolean capiWasLoaded = false;
     private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
@@ -86,24 +85,14 @@ public class PythonContext {
         this.core = core;
         this.env = env;
         if (env == null) {
+            this.in = System.in;
             this.out = System.out;
             this.err = System.err;
         } else {
+            this.in = env.in();
             this.out = env.out();
             this.err = env.err();
         }
-    }
-
-    public long getEmptyImmutableObjectGlobalId(PythonImmutableBuiltinType immutableType) {
-        int idx = immutableType.ordinal();
-        if (emptyImmutableObjectsIdCache[idx] == 0) {
-            synchronized (emptyImmutableObjectsIdCache) {
-                if (emptyImmutableObjectsIdCache[idx] == 0) {
-                    emptyImmutableObjectsIdCache[idx] = getNextGlobalId();
-                }
-            }
-        }
-        return emptyImmutableObjectsIdCache[idx];
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -152,6 +141,10 @@ public class PythonContext {
         return core;
     }
 
+    public InputStream getStandardIn() {
+        return in;
+    }
+
     public OutputStream getStandardErr() {
         return err;
     }
@@ -191,6 +184,7 @@ public class PythonContext {
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         sysModules.setItem(__MAIN__, mainModule);
+        currentException = null;
 
         isInitialized = true;
     }

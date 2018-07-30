@@ -62,6 +62,16 @@ public class Arity {
         this.keywordNames = keywordNames.toArray(new String[0]);
     }
 
+    public Arity(String functionName, int minNumOfArgs, int maxNumOfArgs, boolean takesKeywordArg, boolean takesVarArgs, String[] parameterIds, String[] keywordNames) {
+        this.functionName = functionName;
+        this.minNumOfArgs = minNumOfArgs;
+        this.maxNumOfArgs = maxNumOfArgs;
+        this.takesKeywordArg = takesKeywordArg;
+        this.takesVarArgs = takesVarArgs;
+        this.parameterIds = parameterIds;
+        this.keywordNames = keywordNames;
+    }
+
     public boolean takesVarArgs() {
         return takesVarArgs;
     }
