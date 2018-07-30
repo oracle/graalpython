@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
 # Copyright (c) 2017, The PyPy Project
 #
 #     The MIT License
@@ -20,6 +20,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import sys
 
 
@@ -169,23 +170,29 @@ class deque(object):
         self.len = 0
         self._modified()
 
-    def count(self, x):
+    def count(self, v):
         """Return number of occurrences of value."""
-        result = 0
-        block = self.leftblock
+        b = self.leftblock
         index = self.leftindex
+        n = self.len
+        count = 0
         lock = self._getlock()
-        for i in range(self.len):
-            w_item = block.data[index]
-            if w_item == x:
-                result += 1
+
+        while (n - 1) >= 0:
+            n -= 1
+            assert b is not None
+            item = b.data[index]
+            if item == v:
+                count += 1
+
             self._checklock(lock)
-            # Advance the block/index pair
+
             index += 1
-            if index >= BLOCKLEN:
-                block = block.rightlink
+            if index == BLOCKLEN:
+                b = b.rightlink
                 index = 0
-        return result
+
+        return count
 
     def extend(self, iterable):
         """Extend the right side of the deque with elements from the iterable"""
