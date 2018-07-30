@@ -43,7 +43,6 @@
 typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
 
 PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
-PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("method_descriptor", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyWrapperDescr_Type));;
 
 PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
     PyObject* func = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,

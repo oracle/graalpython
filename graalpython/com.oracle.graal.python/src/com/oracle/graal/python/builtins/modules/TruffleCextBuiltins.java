@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -1338,6 +1339,29 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static void addToSet(PythonClass base, PythonClass value) {
             base.getSubClasses().add(value);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_GetSetDescriptor", fixedNumOfArguments = 0, keywordArguments = {"fget", "fset", "name", "owner"})
+    @GenerateNodeFactory
+    @SuppressWarnings("unused")
+    public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object call(PythonCallable get, PythonCallable set, String name, PythonClass owner) {
+            return factory().createGetSetDescriptor(get, set, name, owner);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object call(PythonCallable get, PNone set, String name, PythonClass owner) {
+            return factory().createGetSetDescriptor(get, null, name, owner);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object call(PNone set, PNone get, String name, PythonClass owner) {
+            return factory().createGetSetDescriptor(null, null, name, owner);
         }
     }
 }

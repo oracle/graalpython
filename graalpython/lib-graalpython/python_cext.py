@@ -761,15 +761,16 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
     object.__setattr__(pclass, name, member)
 
 
+getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
     pclass = to_java(primary)
-    getset = property()
+    fset = fget = None
     if getter:
         getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
         def member_getter(self):
             return capi_to_java(getter_w(self, closure))
 
-        getset.getter(member_getter)
+        fget = member_getter
     if setter:
         setter_w = CreateFunction(name, setter, setter_wrapper, pclass)
         def member_setter(self, value):
@@ -777,9 +778,12 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
             if result != 0:
                 raise
             return None
-        getset.setter(member_setter)
+
+        fset = member_setter
     else:
-        getset.setter(lambda self, value: GetSet_SetNotWritable(self, value, name))
+        fset = lambda self, value: GetSet_SetNotWritable(self, value, name)
+
+    getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
     getset.__doc__ = doc
     object.__setattr__(pclass, name, getset)
 
@@ -1136,6 +1140,12 @@ def PyTruffle_Type(type_name):
         return types.FunctionType
     elif type_name == "method_descriptor":
         return type(list.append)
+    elif type_name == "getset_descriptor":
+        return getset_descriptor
+    elif type_name == "wrapper_descriptor":
+        return property
+    elif type_name == "member_descriptor":
+        return property
     elif type_name == "builtin_function_or_method":
         return types.BuiltinFunctionType
     elif type_name == "ellipsis":
