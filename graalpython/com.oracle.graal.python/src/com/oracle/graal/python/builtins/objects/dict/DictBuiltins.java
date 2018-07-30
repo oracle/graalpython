@@ -62,6 +62,8 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -255,7 +257,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBuiltinNode {
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getItem(PDict self, Object key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
@@ -297,7 +299,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SETITEM__, fixedNumOfArguments = 3)
     @GenerateNodeFactory
-    public abstract static class SetItemNode extends PythonBuiltinNode {
+    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object run(PDict self, Object key, Object value,
                         @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
@@ -339,7 +341,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
