@@ -388,11 +388,8 @@ Common commands: (see '--help-commands' for more)
         if DEBUG:
             self.announce("Distribution.parse_config_files():")
 
-        # TODO: Truffle revert-me
-        # parser = ConfigParser()
-        parser = None # TODO: Truffle remove-me
+        parser = ConfigParser()
         for filename in filenames:
-            if parser is None: parser = ConfigParser() # TODO: Truffle remove-me
             if DEBUG:
                 self.announce("  reading %s" % filename)
             parser.read(filename)
