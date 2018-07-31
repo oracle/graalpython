@@ -89,7 +89,7 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
                 Object element = ForeignAccess.sendRead(getReadNode(), foreignIter.getForeignArray(), foreignIter.advance());
                 return getFromForeignNode().executeConvert(element);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw getCore().raise(PythonErrorType.StopIteration);
+                throw raise(PythonErrorType.StopIteration);
             }
         }
     }
