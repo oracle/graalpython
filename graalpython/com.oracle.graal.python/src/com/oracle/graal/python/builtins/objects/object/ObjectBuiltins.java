@@ -344,7 +344,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GETATTR__, fixedNumOfArguments = 3)
+    @Builtin(name = SpecialMethodNames.__GETATTR__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization

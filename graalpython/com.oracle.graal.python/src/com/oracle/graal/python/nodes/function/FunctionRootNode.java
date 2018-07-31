@@ -54,6 +54,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private final SourceSection sourceSection;
     private final boolean isGenerator;
     private final ValueProfile generatorFrameProfile;
+    private boolean isRewritten = false;
 
     @Child private PNode body;
     private PNode uninitializedBody;
@@ -150,5 +151,13 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     @Override
     public SourceSection getSourceSection() {
         return sourceSection;
+    }
+
+    public boolean isRewritten() {
+        return isRewritten;
+    }
+
+    public void setRewritten() {
+        this.isRewritten = true;
     }
 }

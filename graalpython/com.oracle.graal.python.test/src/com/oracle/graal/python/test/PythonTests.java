@@ -48,6 +48,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.junit.BeforeClass;
 
@@ -81,7 +82,22 @@ public class PythonTests {
     final static ByteArrayOutputStream outArray = new ByteArrayOutputStream();
     final static PrintStream errStream = new PrintStream(errArray);
     final static PrintStream outStream = new PrintStream(outArray);
+    public static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
     public static Context context = null;
+
+    public static void resetContext(String[] args) {
+        if (PythonTests.context != null) {
+            PythonTests.context.close();
+        }
+        org.graalvm.polyglot.Context.Builder ctxBuilder = Context.newBuilder();
+        ctxBuilder.engine(engine);
+        ctxBuilder.allowAllAccess(true);
+        PythonTests.outArray.reset();
+        PythonTests.errArray.reset();
+        ctxBuilder.arguments("python", args);
+        PythonTests.context = ctxBuilder.build();
+        PythonTests.context.initialize("python");
+    }
 
     public static void assertBenchNoError(Path scriptName, String[] args) {
         final ByteArrayOutputStream byteArrayErr = new ByteArrayOutputStream();
@@ -296,21 +312,6 @@ public class PythonTests {
             return new File(path.toString());
         } else
             throw new RuntimeException("Unable to locate " + path);
-    }
-
-    public static void resetContext(String[] args) {
-        if (PythonTests.context != null) {
-            PythonTests.context.close();
-        }
-        org.graalvm.polyglot.Context.Builder ctxBuilder = Context.newBuilder();
-        ctxBuilder.allowAllAccess(true);
-        PythonTests.outArray.reset();
-        PythonTests.errArray.reset();
-        ctxBuilder.out(PythonTests.outStream);
-        ctxBuilder.err(PythonTests.errStream);
-        ctxBuilder.arguments("python", args);
-        PythonTests.context = ctxBuilder.build();
-        PythonTests.context.initialize("python");
     }
 
     public static void runScript(String[] args, File path, OutputStream out, OutputStream err) {

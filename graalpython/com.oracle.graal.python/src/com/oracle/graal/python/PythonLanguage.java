@@ -207,13 +207,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         PythonContext context = this.getContextReference().get();
         PythonCore pythonCore = context.getCore();
         Source source = request.getSource();
-        context.initializeMainModule(source.getPath());
+        if (pythonCore.isInitialized()) {
+            context.initializeMainModule(source.getPath());
 
-        // if we are running the interpreter, module 'site' is automatically imported
-        if (source.isInteractive()) {
-            CompilerAsserts.neverPartOfCompilation();
-            // no frame required
-            new ImportNode("site").execute(null);
+            // if we are running the interpreter, module 'site' is automatically imported
+            if (source.isInteractive()) {
+                CompilerAsserts.neverPartOfCompilation();
+                // no frame required
+                new ImportNode("site").execute(null);
+            }
         }
         RootNode root;
         try {
@@ -223,7 +225,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
             throw e;
         }
-        return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
+        if (pythonCore.isInitialized()) {
+            return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
+        } else {
+            return Truffle.getRuntime().createCallTarget(root);
+        }
     }
 
     @Override
@@ -373,10 +379,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private static <E1 extends Exception, E2 extends Exception, E3 extends Exception> Source newSource(PythonContext ctxt, Builder<E1, E2, E3> srcBuilder,
                     String name) throws E1 {
         Builder<E1, RuntimeException, RuntimeException> newBuilder = srcBuilder.name(name).mimeType(MIME_TYPE);
-        boolean internal = !ctxt.getCore().isInitialized() && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
+        boolean coreIsInitialized = ctxt.getCore().isInitialized();
+        boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
         if (internal) {
             srcBuilder.internal();
         }
+        if (!coreIsInitialized) {
+            srcBuilder.cached(true);
+        }
+        srcBuilder.cached(true);
         return newBuilder.build();
     }
 

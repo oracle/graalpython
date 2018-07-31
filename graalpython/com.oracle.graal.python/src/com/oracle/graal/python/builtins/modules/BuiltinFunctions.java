@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -117,6 +118,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -1282,21 +1284,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__load_builtins__", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class LoadBuiltinsNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public Object doIt(String name) {
-            PythonModule mod = getCore().isInitialized() ? getContext().getBuiltins() : getCore().lookupBuiltinModule("builtins");
-            Source src = getCore().getCoreSource(name);
-            RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
-            CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
-            callTarget.call(PArguments.withGlobals(mod));
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = "__builtin__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
@@ -1334,16 +1321,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 System.arraycopy(arity.getParameterIds(), 0, parameterIds, 1, parameterIds.length - 1);
                 Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArg(), arity.takesVarArgs(), parameterIds,
                                 arity.getKeywordNames());
-                func.getFunctionRootNode().accept(new NodeVisitor() {
-                    public boolean visit(Node node) {
-                        if (node instanceof ReadVarArgsNode) {
-                            node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex() + 1, ((ReadVarArgsNode) node).isBuiltin()));
-                        } else if (node instanceof ReadIndexedArgumentNode) {
-                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+                if (!functionRootNode.isRewritten()) {
+                    functionRootNode.setRewritten();
+                    func.getFunctionRootNode().accept(new NodeVisitor() {
+                        public boolean visit(Node node) {
+                            if (node instanceof ReadVarArgsNode) {
+                                node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex() + 1, ((ReadVarArgsNode) node).isBuiltin()));
+                            } else if (node instanceof ReadIndexedArgumentNode) {
+                                node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                            }
+                            return true;
                         }
-                        return true;
-                    }
-                });
+                    });
+                }
                 builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arityWithSelf, Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
                                 func.getFrameDescriptor(), func.getGlobals(), func.getClosure());
             }

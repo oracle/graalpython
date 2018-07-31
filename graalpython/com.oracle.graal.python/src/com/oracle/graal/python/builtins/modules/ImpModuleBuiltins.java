@@ -69,13 +69,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,7 +90,6 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
 @CoreFunctions(defineModule = "_imp")
@@ -355,11 +352,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     file = env.getTruffleFile(path);
                 }
                 Source src = PythonLanguage.newSource(ctxt, file, fileName);
-                RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
-                if (parsedModule != null) {
-                    CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
-                    callTarget.call(PArguments.withGlobals(mod));
-                }
+                CallTarget callTarget = env.parse(src);
+                callTarget.call(PArguments.withGlobals(mod));
             } catch (PException e) {
                 throw e;
             } catch (IOException | SecurityException e) {
