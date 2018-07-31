@@ -531,6 +531,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SetSequenceStorageItem.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TupleSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TypedSequenceStorage.java,zippy.copyright
+graalpython/lib-graalpython/_collections.py,pypy.copyright
 graalpython/lib-graalpython/_io.py,pypy.copyright
 graalpython/lib-graalpython/itertools.py,pypy.copyright
 graalpython/lib-graalpython/object.py,pypy.copyright
