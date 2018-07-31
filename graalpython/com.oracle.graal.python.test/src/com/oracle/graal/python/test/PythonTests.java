@@ -39,8 +39,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -50,7 +48,6 @@ import java.nio.file.Paths;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
-import org.junit.BeforeClass;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -82,21 +79,25 @@ public class PythonTests {
     final static ByteArrayOutputStream outArray = new ByteArrayOutputStream();
     final static PrintStream errStream = new PrintStream(errArray);
     final static PrintStream outStream = new PrintStream(outArray);
-    public static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
-    public static Context context = null;
 
-    public static void resetContext(String[] args) {
-        if (PythonTests.context != null) {
-            PythonTests.context.close();
-        }
-        org.graalvm.polyglot.Context.Builder ctxBuilder = Context.newBuilder();
-        ctxBuilder.engine(engine);
-        ctxBuilder.allowAllAccess(true);
+    private static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
+    private static Context context = null;
+
+    public static void enterContext(String... newArgs) {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
-        ctxBuilder.arguments("python", args);
-        PythonTests.context = ctxBuilder.build();
-        PythonTests.context.initialize("python");
+        if (context != null) {
+            context.leave();
+            context.close();
+        }
+        context = Context.newBuilder().engine(engine).allowAllAccess(true).arguments("python", newArgs).build();
+        context.initialize("python");
+        context.enter();
+    }
+
+    public static void closeContext() {
+        context.leave();
+        context.close();
     }
 
     public static void assertBenchNoError(Path scriptName, String[] args) {
@@ -193,22 +194,6 @@ public class PythonTests {
         return Truffle.getRuntime().createVirtualFrame(null, new FrameDescriptor());
     }
 
-    public static void ensureContext() {
-        resetContext(new String[0]);
-        // XXX
-        Field field;
-        try {
-            field = PythonTests.context.getClass().getDeclaredField("impl");
-            field.setAccessible(true);
-            Object polyglotContextImpl = field.get(PythonTests.context);
-            Method enterMethod = polyglotContextImpl.getClass().getDeclaredMethod("enter", new Class<?>[0]);
-            enterMethod.setAccessible(true);
-            enterMethod.invoke(polyglotContextImpl);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-            e.printStackTrace();
-        }
-    }
-
     static void flush(OutputStream out, OutputStream err) {
         PythonTests.outStream.flush();
         PythonTests.errStream.flush();
@@ -239,18 +224,6 @@ public class PythonTests {
         return file;
     }
 
-    public static PythonContext getContext() {
-        PythonTests.ensureContext();
-        return PythonLanguage.getContextRef().get();
-    }
-
-    static Context getContext(String[] args) {
-        resetContext(args);
-        PythonTests.outArray.reset();
-        PythonTests.errArray.reset();
-        return PythonTests.context;
-    }
-
     private static String getFileContent(File file) {
         String ret = null;
         Reader reader;
@@ -278,7 +251,7 @@ public class PythonTests {
     }
 
     public static RootNode getParseResult(com.oracle.truffle.api.source.Source source, PrintStream out, PrintStream err) {
-        PythonTests.ensureContext();
+        PythonTests.enterContext();
         PythonContext ctx = PythonLanguage.getContextRef().get();
         ctx.setOut(out);
         ctx.setErr(err);
@@ -316,7 +289,8 @@ public class PythonTests {
 
     public static void runScript(String[] args, File path, OutputStream out, OutputStream err) {
         try {
-            PythonTests.getContext(args).eval(org.graalvm.polyglot.Source.newBuilder("python", path).build());
+            enterContext(args);
+            context.eval(org.graalvm.polyglot.Source.newBuilder("python", path).build());
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -327,7 +301,8 @@ public class PythonTests {
 
     public static void runScript(String[] args, String source, OutputStream out, OutputStream err) {
         try {
-            PythonTests.getContext(args).eval(org.graalvm.polyglot.Source.create("python", source));
+            enterContext(args);
+            context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             flush(out, err);
         }
@@ -335,7 +310,8 @@ public class PythonTests {
 
     public static void runScript(String[] args, String source, OutputStream out, OutputStream err, Runnable cb) {
         try {
-            PythonTests.getContext(args).eval(org.graalvm.polyglot.Source.create("python", source));
+            enterContext(args);
+            context.eval(org.graalvm.polyglot.Source.create("python", source));
         } finally {
             cb.run();
             flush(out, err);
@@ -366,10 +342,4 @@ public class PythonTests {
             }
         }
     }
-
-    @BeforeClass
-    public static void setUp() {
-        PythonTests.resetContext(new String[0]);
-    }
-
 }

@@ -63,7 +63,7 @@ public class AtexitTests {
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         final PrintStream printStream = new PrintStream(byteArray);
         PythonTests.runScript(new String[0], source, printStream, System.err, () -> {
-            PythonTests.context.close();
+            PythonTests.closeContext();
         });
         String result = byteArray.toString().replaceAll("\r\n", "\n");
         assertEquals("arg kw\n", result);

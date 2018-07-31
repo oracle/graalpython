@@ -40,7 +40,6 @@ import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
@@ -130,7 +129,7 @@ public final class PythonParserImpl implements PythonParser {
         };
         PBaseException instance;
         PythonClass exceptionType = core.getErrorClass(SyntaxError);
-        instance = PythonObjectFactory.get().createBaseException(exceptionType, "invalid syntax", new Object[0]);
+        instance = core.factory().createBaseException(exceptionType, "invalid syntax", new Object[0]);
         String path = source.getPath();
         instance.setAttribute("filename", path != null ? path : source.getName() != null ? source.getName() : "<string>");
         instance.setAttribute("text", section.isAvailable() ? source.getCharacters(section.getStartLine()) : "");

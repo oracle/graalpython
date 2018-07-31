@@ -32,6 +32,6 @@ import com.oracle.graal.python.test.PythonTests;
 public class IteratorTests {
     @Before
     public void setup() {
-        PythonTests.resetContext(new String[0]);
+        PythonTests.enterContext();
     }
 }

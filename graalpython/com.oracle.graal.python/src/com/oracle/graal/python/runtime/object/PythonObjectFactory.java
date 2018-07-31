@@ -127,14 +127,6 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PythonObjectFactory extends Node {
-
-    private static final PythonObjectFactory SINGLETON = PythonObjectFactory.create();
-
-    public static PythonObjectFactory get() {
-        // CompilerAsserts.neverPartOfCompilation();
-        return SINGLETON;
-    }
-
     public static PythonObjectFactory create() {
         return new PythonObjectFactory() {
             @CompilationFinal private ContextReference<PythonContext> contextRef;

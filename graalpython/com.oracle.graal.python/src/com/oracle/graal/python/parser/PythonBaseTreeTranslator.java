@@ -96,7 +96,6 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -783,7 +782,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     }
 
     private Object parseImaginaryNumber(String text) {
-        return factory.createComplexLiteral(PythonObjectFactory.get().createComplex(0.0, Double.parseDouble(text)));
+        return factory.createComplexLiteral(core.factory().createComplex(0.0, Double.parseDouble(text)));
     }
 
     private Object parseFloatNumber(String text) {

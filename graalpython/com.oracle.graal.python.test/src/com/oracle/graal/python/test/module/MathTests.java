@@ -32,6 +32,10 @@ import com.oracle.graal.python.test.PythonTests;
 import static com.oracle.graal.python.test.PythonTests.*;
 
 public class MathTests {
+    @Before
+    public void setUp() {
+        PythonTests.enterContext();
+    }
 
     @Test
     public void piAndE() {
@@ -39,7 +43,6 @@ public class MathTests {
                         "print(math.e)\n" + //
                         "print(math.pi)\n" + //
                         "print(math.e + math.pi)\n";
-        PythonTests.resetContext(new String[0]);
         assertPrints("2.718281828459045\n" + "3.141592653589793\n" + "5.859874482048838\n", source);
     }
 
@@ -50,7 +53,6 @@ public class MathTests {
                         "b = 10\n" + //
                         "c = math.exp(b)\n" + //
                         "print(a // c)\n";
-        PythonTests.resetContext(new String[0]);
         assertPrints("0.0\n", source);
     }
 
@@ -60,7 +62,6 @@ public class MathTests {
                         "x = math.pi\n" + //
                         "y = math.sin(x)\n" + //
                         "print(y // math.cos(math.e))\n";
-        PythonTests.resetContext(new String[0]);
         assertPrints("-1.0\n", source);
     }
 
