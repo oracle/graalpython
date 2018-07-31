@@ -409,8 +409,13 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
-        Object doObSval(PBuffer object, @SuppressWarnings("unused") String key) {
+        Object doBufDelegate(PBuffer object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object.getDelegate(), 1);
+        }
+
+        @Specialization(guards = "eq(BUF_READONLY, key)")
+        int doBufReadonly(PBuffer object, @SuppressWarnings("unused") String key) {
+            return object.isReadOnly() ? 1 : 0;
         }
 
         @Specialization(guards = "eq(START, key)")
