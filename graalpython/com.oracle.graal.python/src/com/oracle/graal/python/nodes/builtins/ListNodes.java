@@ -320,7 +320,7 @@ public abstract class ListNodes {
             return factory().createList(cls);
         }
 
-        @Specialization(guards = "!isNoValue(iterable)")
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         public PList listIterable(PythonClass cls, Object iterable, @SuppressWarnings("unused") PythonClass valueClass,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") CreateListFromIteratorNode createListFromIteratorNode) {
