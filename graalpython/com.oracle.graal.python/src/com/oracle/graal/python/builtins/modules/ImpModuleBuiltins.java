@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CallTarget;
@@ -91,6 +92,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.Builder;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -222,25 +224,30 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
-            if (!getContext().capiWasLoaded()) {
-                Env env = getContext().getEnv();
+            PythonContext ctxt = getContext();
+            if (!ctxt.capiWasLoaded()) {
+                Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "capi.bc");
                 Object capi = null;
                 try {
-                    capi = getContext().getEnv().parse(env.newSourceBuilder(capiFile).language(LLVM_LANGUAGE).build()).call();
+                    Builder<IOException, RuntimeException, RuntimeException> capiSrcBuilder = env.newSourceBuilder(capiFile).language(LLVM_LANGUAGE);
+                    if (!PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources)) {
+                        capiSrcBuilder.internal();
+                    }
+                    capi = ctxt.getEnv().parse(capiSrcBuilder.build()).call();
                 } catch (SecurityException | IOException e) {
                     throw raise(PythonErrorType.ImportError, "cannot load capi from " + capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
                 CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
-                callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
-                getContext().setCapiWasLoaded();
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
+                ctxt.setCapiWasLoaded();
 
                 // initialization needs to be finished already but load memoryview implemenation
                 // immediately
-                callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 
