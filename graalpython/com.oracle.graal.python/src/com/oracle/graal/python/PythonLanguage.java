@@ -384,10 +384,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (internal) {
             srcBuilder.internal();
         }
-        if (!coreIsInitialized) {
-            srcBuilder.cached(true);
-        }
-        srcBuilder.cached(true);
         return newBuilder.build();
     }
 
