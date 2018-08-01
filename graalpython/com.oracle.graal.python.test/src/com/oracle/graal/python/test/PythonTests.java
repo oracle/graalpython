@@ -87,8 +87,7 @@ public class PythonTests {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
         if (context != null) {
-            context.leave();
-            context.close();
+            closeContext();
         }
         context = Context.newBuilder().engine(engine).allowAllAccess(true).arguments("python", newArgs).build();
         context.initialize("python");
@@ -98,6 +97,7 @@ public class PythonTests {
     public static void closeContext() {
         context.leave();
         context.close();
+        context = null;
     }
 
     public static void assertBenchNoError(Path scriptName, String[] args) {
