@@ -46,6 +46,18 @@ _mx_graal = mx.suite("compiler", fatalIfMissing=False)
 _sulong = mx.suite("sulong")
 
 
+def _get_core_home():
+    return os.path.join(_suite.dir, "graalpython", "lib-graalpython")
+
+
+def _get_stdlib_home():
+    return os.path.join(_suite.dir, "graalpython", "lib-python", "3")
+
+
+def _get_svm_binary():
+    return os.path.join(_suite.dir, "graalpython-svm")
+
+
 def _extract_graalpython_internal_options(args):
     internal = []
     non_internal = []
