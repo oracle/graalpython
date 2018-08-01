@@ -129,8 +129,9 @@ public class PythonProvider implements LanguageProvider {
         addValueSnippet(context, snippets, "DictType:KeyString",   OBJECT,     "lambda: {'Bacon':1, 'Ham': 0}");
         addValueSnippet(context, snippets, "DictType:KeyNumber",   OBJECT,     "lambda: {1: 'Bacon', 0: 'Ham'}");
 
-        addValueSnippet(context, snippets, "LambdaType:Id",     executable(ANY, ANY),     "lambda: lambda x: x");
-        addValueSnippet(context, snippets, "LambdaType:+1",     executable(NUMBER, NUMBER),     "lambda: lambda x: x + 1");
+        // TODO remove '*args' from following value constructors once this is fixed in Truffle TCK
+        addValueSnippet(context, snippets, "LambdaType:Id",     executable(ANY, ANY),     "lambda: lambda x, *args: x");
+        addValueSnippet(context, snippets, "LambdaType:+1",     executable(NUMBER, NUMBER),     "lambda: lambda x, *args: x + 1");
 
         // @formatter:on
         return snippets;
