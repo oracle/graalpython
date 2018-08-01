@@ -43,7 +43,7 @@
 def __memoryview_init(self, *args, **kwargs):
     import _memoryview
     # NOTE: DO NOT CHANGE THE NAME OF PROPERTY '__c_memoryview'
-    # it is also referenced in native code
+    # it is also referenced in native code and Java code
     if args and isinstance(args[0], _memoryview.nativememoryview):
         # wrapping case
         self.__c_memoryview = args[0]

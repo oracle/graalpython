@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
 import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
@@ -170,7 +171,6 @@ public final class Python3Core implements PythonCore {
                     "itertools",
                     "base_exception",
                     "python_cext",
-                    "_sre",
                     "_collections",
                     "memoryview",
                     "list",
@@ -259,6 +259,7 @@ public final class Python3Core implements PythonCore {
                     new LocaleModuleBuiltins(),
                     new SysModuleBuiltins(),
                     new BufferBuiltins(),
+                    new MemoryviewBuiltins(),
     };
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
