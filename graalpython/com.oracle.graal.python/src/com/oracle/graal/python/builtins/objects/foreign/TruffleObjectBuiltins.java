@@ -36,8 +36,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltinsFactory.MulNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -265,8 +266,11 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MulNode extends UnboxNode {
         @Child private LookupAndCallBinaryNode mulNode = BinaryArithmetic.Mul.create();
+        @Child private MulNode recursive;
 
-        @Specialization(guards = {"isBoxed(left)", "!isForeignObject(right)"})
+        public abstract Object executeWith(Object left, Object right);
+
+        @Specialization(guards = {"isBoxed(left)", "!isForeignArray(left)", "!isForeignObject(right)"})
         Object doForeignBoxed(TruffleObject left, Object right) {
             try {
                 return mulNode.executeObject(unboxLeft(left), right);
@@ -275,10 +279,10 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"isBoxed(left)", "isBoxed(right)"})
+        @Specialization(guards = {"isBoxed(left)", "!isForeignArray(left)", "isBoxed(right)", "!isForeignArray(right)"})
         Object doForeignBoxed(TruffleObject left, TruffleObject right) {
             try {
-                return doForeignBoxed(left, unboxRight(right));
+                return getRecursiveNode().executeWith(left, unboxRight(right));
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
@@ -308,7 +312,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"isForeignArray(left)", "isBoxed(right)"})
+        @Specialization(guards = {"isForeignArray(left)", "isBoxed(right)", "!isForeignArray(right)"})
         Object doForeignArray(TruffleObject left, TruffleObject right,
                         @Cached("READ.createNode()") Node readNode,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
@@ -339,14 +343,20 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isForeignArray(left)", "!isPositive(right)"})
+        @Specialization(guards = {"isForeignArray(left)", "!right"})
+        Object doForeignArrayEmpty(TruffleObject left, boolean right) {
+            return factory().createList();
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"isForeignArray(left)", "right <= 0"})
         Object doForeignArrayEmpty(TruffleObject left, int right) {
             return factory().createList();
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isForeignArray(left)", "!right"})
-        Object doForeignArrayEmpty(TruffleObject left, boolean right) {
+        @Specialization(guards = {"isForeignArray(left)", "right <= 0"})
+        Object doForeignArrayEmpty(TruffleObject left, long right) {
             return factory().createList();
         }
 
@@ -358,6 +368,14 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         protected boolean isPositive(int right) {
             return right > 0;
+        }
+
+        private MulNode getRecursiveNode() {
+            if (recursive == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursive = insert(MulNodeFactory.create(null));
+            }
+            return recursive;
         }
     }
 
