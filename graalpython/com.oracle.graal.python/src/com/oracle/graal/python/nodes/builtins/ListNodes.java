@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
@@ -302,6 +303,11 @@ public abstract class ListNodes {
         }
 
         public abstract PList execute(Object cls, Object value, PythonClass valueClass);
+
+        @Specialization
+        public PList listString(PythonClass cls, PString arg, PythonClass valueClass) {
+            return listString(cls, arg.getValue(), valueClass);
+        }
 
         @Specialization
         public PList listString(PythonClass cls, String arg, @SuppressWarnings("unused") PythonClass valueClass) {
