@@ -181,6 +181,7 @@ public final class Python3Core implements PythonCore {
                     "time",
                     "unicodedata",
                     "_locale",
+                    "_sre",
     };
 
     private final PythonBuiltins[] BUILTINS = new PythonBuiltins[]{
