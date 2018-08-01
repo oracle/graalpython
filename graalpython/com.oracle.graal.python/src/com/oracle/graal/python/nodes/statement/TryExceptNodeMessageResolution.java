@@ -113,6 +113,9 @@ class TryExceptNodeMessageResolution {
                     ArrayList<Object> literalCatches = new ArrayList<>();
                     ExceptNode[] exceptNodes = object.getExceptNodes();
                     PythonModule builtins = object.getContext().getBuiltins();
+                    if (builtins == null) {
+                        return new CatchesFunction(null, null);
+                    }
 
                     for (ExceptNode node : exceptNodes) {
                         PNode exceptType = node.getExceptType();
@@ -182,6 +185,9 @@ class TryExceptNodeMessageResolution {
 
         @ExplodeLoop
         boolean catches(Object exception) {
+            if (isInstance == null) {
+                return false;
+            }
             if (exception instanceof PBaseException) {
                 PArguments.setArgument(args, 0, exception);
                 try {
