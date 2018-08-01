@@ -140,6 +140,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
@@ -809,29 +810,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = BOOL, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = Boolean.class, base = PInt.class)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
-    public abstract static class BoolNode extends PythonBuiltinNode {
+    public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public boolean bool(Object cls, boolean arg) {
+        public boolean boolB(Object cls, boolean arg) {
             return arg;
         }
 
         @Specialization
-        public boolean bool(Object cls, int arg) {
+        public boolean boolI(Object cls, int arg) {
             return arg != 0;
         }
 
         @Specialization
-        public boolean bool(Object cls, double arg) {
+        public boolean boolD(Object cls, double arg) {
             return arg != 0.0;
         }
 
         @Specialization
-        public boolean bool(Object cls, String arg) {
+        public boolean boolS(Object cls, String arg) {
             return !arg.isEmpty();
         }
 
         @Specialization
-        public boolean bool(Object cls, PNone arg) {
+        public boolean boolN(Object cls, PNone arg) {
             return false;
         }
 
@@ -850,7 +851,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // list([iterable])
     @Builtin(name = LIST, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PList.class)
     @GenerateNodeFactory
-    public abstract static class ListNode extends PythonBuiltinNode {
+    public abstract static class ListNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         protected PList constructList(PythonClass cls, Object value,
@@ -1129,7 +1130,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // tuple([iterable])
     @Builtin(name = TUPLE, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PTuple.class)
     @GenerateNodeFactory
-    public abstract static class TupleNode extends PythonBuiltinNode {
+    public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         protected PTuple constructTuple(PythonClass cls, Object value,

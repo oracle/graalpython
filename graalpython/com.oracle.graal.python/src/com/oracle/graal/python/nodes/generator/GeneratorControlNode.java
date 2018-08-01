@@ -25,43 +25,5 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.frame.VirtualFrame;
-
 public interface GeneratorControlNode {
-    default boolean isActive(VirtualFrame frame, int flagSlot) {
-        return PArguments.getControlData(frame).getActive(flagSlot);
-    }
-
-    default void setActive(VirtualFrame frame, int flagSlot, boolean value) {
-        PArguments.getControlData(frame).setActive(flagSlot, value);
-    }
-
-    default int getIndex(VirtualFrame frame, int blockIndexSlot) {
-        return PArguments.getControlData(frame).getBlockIndexAt(blockIndexSlot);
-    }
-
-    default void setIndex(VirtualFrame frame, int blockIndexSlot, int value) {
-        PArguments.getControlData(frame).setBlockIndexAt(blockIndexSlot, value);
-    }
-
-    default Object getIterator(VirtualFrame frame, int iteratorSlot) {
-        return PArguments.getControlData(frame).getIteratorAt(iteratorSlot);
-    }
-
-    default void setIterator(VirtualFrame frame, int iteratorSlot, Object value) {
-        PArguments.getControlData(frame).setIteratorAt(iteratorSlot, value);
-    }
-
-    default PException getActiveException(VirtualFrame frame) {
-        return PArguments.getControlData(frame).getActiveException();
-    }
-
-    default void setActiveException(VirtualFrame frame, PException ex) {
-        PArguments.getControlData(frame).setActiveException(ex);
-    }
-
-    // TODO: use this to ensure we automatically reset in case of errors
-    void reset(VirtualFrame frame);
 }

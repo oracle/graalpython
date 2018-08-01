@@ -32,7 +32,7 @@ public abstract class LoopNode extends StatementNode {
 
     public abstract PNode getBody();
 
-    protected final void reportLoopCount(@SuppressWarnings("unused") int value) {
-        // ignore for the time being
+    protected final void reportLoopCount(int value) {
+        com.oracle.truffle.api.nodes.LoopNode.reportLoopCount(this, value);
     }
 }

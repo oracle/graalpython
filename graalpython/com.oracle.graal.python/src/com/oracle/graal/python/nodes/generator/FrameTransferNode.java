@@ -35,6 +35,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 /**
  * Transfer a local variable value from the current frame to a cargo frame.
@@ -42,6 +43,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 @NodeChild(value = "right", type = PNode.class)
 @GenerateNodeFactory
 public abstract class FrameTransferNode extends FrameSlotNode {
+
+    private final ValueProfile frameProfile = ValueProfile.createClassProfile();
 
     public FrameTransferNode(FrameSlot slot) {
         super(slot);
@@ -58,46 +61,43 @@ public abstract class FrameTransferNode extends FrameSlotNode {
 
     protected abstract Object execute(VirtualFrame frame, Object value);
 
+    private Frame getCargoFrame(VirtualFrame frame) {
+        return frameProfile.profile(PArguments.getGeneratorFrame(frame));
+    }
+
     @Specialization(guards = "isBooleanKind(frame)")
     public boolean write(VirtualFrame frame, boolean right) {
-        Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        cargoFrame.setBoolean(frameSlot, right);
+        getCargoFrame(frame).setBoolean(frameSlot, right);
         return right;
     }
 
     @Specialization(guards = "isIntegerKind(frame)")
     public int doInteger(VirtualFrame frame, int value) {
-        Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        cargoFrame.setInt(frameSlot, value);
+        getCargoFrame(frame).setInt(frameSlot, value);
         return value;
     }
 
     @Specialization(guards = "isIntOrObjectKind(frame)")
     public PInt write(VirtualFrame frame, PInt value) {
-        Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        setObject(cargoFrame, value);
+        setObject(getCargoFrame(frame), value);
         return value;
     }
 
     @Specialization(guards = "isLongKind(frame)")
     public long doLong(VirtualFrame frame, long value) {
-        Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        cargoFrame.setLong(frameSlot, value);
+        getCargoFrame(frame).setLong(frameSlot, value);
         return value;
     }
 
     @Specialization(guards = "isDoubleKind(frame)")
     public double doDouble(VirtualFrame frame, double right) {
-        Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        cargoFrame.setDouble(frameSlot, right);
+        getCargoFrame(frame).setDouble(frameSlot, right);
         return right;
     }
 
     @Specialization(guards = "isObjectKind(frame)")
     public Object write(VirtualFrame frame, Object right) {
-        Frame cargoFrame = PArguments.getGeneratorFrame(frame);
-        assert !(right instanceof PInt);
-        setObject(cargoFrame, right);
+        setObject(getCargoFrame(frame), right);
         return right;
     }
 }

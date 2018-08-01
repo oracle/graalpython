@@ -40,3 +40,22 @@ def test_polymorphic_iterator():
 
     assert foo([1,2,3,4]) == [1,2,3,4]
     assert foo("hello") == ["h", "e", "l", "l", "o"]
+
+def gen_effect(n):
+    if effect(n) == 5:
+        yield 1
+        yield 2
+    else:
+        yield 3
+        yield 4
+
+effect_count = 0
+def effect(n):
+    global effect_count
+    effect_count += 1
+    return n
+
+def test_sideeffect():
+    l = list(gen_effect(5))
+    assert l == [1,2]
+    assert effect_count == 1

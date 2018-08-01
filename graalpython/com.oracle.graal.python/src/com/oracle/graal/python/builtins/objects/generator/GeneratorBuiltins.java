@@ -47,10 +47,15 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PGenerator.class)
@@ -85,13 +90,41 @@ public class GeneratorBuiltins extends PythonBuiltins {
 
         private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
-        @Specialization
-        public Object next(PGenerator self) {
+        protected static DirectCallNode createDirectCall(CallTarget target) {
+            return Truffle.getRuntime().createDirectCallNode(target);
+        }
+
+        protected static IndirectCallNode createIndirectCall() {
+            return Truffle.getRuntime().createIndirectCallNode();
+        }
+
+        protected static boolean sameCallTarget(RootCallTarget target1, CallTarget target2) {
+            return target1 == target2;
+        }
+
+        @Specialization(guards = "sameCallTarget(self.getCallTarget(), call.getCallTarget())", limit = "getCallSiteInlineCacheMaxDepth()")
+        public Object nextCached(PGenerator self,
+                        @Cached("createDirectCall(self.getCallTarget())") DirectCallNode call) {
             if (self.isFinished()) {
                 throw raise(StopIteration);
             }
             try {
-                return self.getCallTarget().call(self.getArguments());
+                return call.call(self.getArguments());
+            } catch (PException e) {
+                e.expectStopIteration(getCore(), errorProfile);
+                self.markAsFinished();
+                throw raise(StopIteration);
+            }
+        }
+
+        @Specialization(replaces = "nextCached")
+        public Object next(PGenerator self,
+                        @Cached("createIndirectCall()") IndirectCallNode call) {
+            if (self.isFinished()) {
+                throw raise(StopIteration);
+            }
+            try {
+                return call.call(self.getCallTarget(), self.getArguments());
             } catch (PException e) {
                 e.expectStopIteration(getCore(), errorProfile);
                 self.markAsFinished();

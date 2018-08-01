@@ -36,35 +36,129 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-public abstract class ListLiteralNode extends LiteralNode {
+public final class ListLiteralNode extends LiteralNode {
 
     @Children protected final PNode[] values;
 
+    @CompilationFinal private ListStorageType type;
+
     public ListLiteralNode(PNode[] values) {
         this.values = values;
+        this.type = PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceStorage) ? ListStorageType.Uninitialized : ListStorageType.Generic;
     }
 
     public PNode[] getValues() {
         return values;
     }
 
-    protected boolean unboxSequenceStorage() {
-        return PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceStorage);
+    @Override
+    @ExplodeLoop
+    public Object execute(VirtualFrame frame) {
+        SequenceStorage storage;
+        if (type == ListStorageType.Uninitialized) {
+            try {
+                Object[] elements = new Object[values.length];
+                for (int i = 0; i < values.length; i++) {
+                    elements[i] = values[i].execute(frame);
+                }
+                storage = new SequenceStorageFactory().createStorage(elements);
+                if (storage instanceof IntSequenceStorage) {
+                    type = ListStorageType.Int;
+                } else if (storage instanceof LongSequenceStorage) {
+                    type = ListStorageType.Long;
+                } else if (storage instanceof DoubleSequenceStorage) {
+                    type = ListStorageType.Double;
+                } else if (storage instanceof ListSequenceStorage) {
+                    type = ListStorageType.List;
+                } else if (storage instanceof TupleSequenceStorage) {
+                    type = ListStorageType.Tuple;
+                } else {
+                    type = ListStorageType.Generic;
+                }
+            } catch (Throwable t) {
+                type = ListStorageType.Generic;
+                throw t;
+            }
+        } else {
+            int i = 0;
+            Object array = null;
+            try {
+                switch (type) {
+                    case Int: {
+                        int[] elements = new int[values.length];
+                        array = elements;
+                        for (; i < values.length; i++) {
+                            elements[i] = values[i].executeInt(frame);
+                        }
+                        storage = new IntSequenceStorage(elements);
+                        break;
+                    }
+                    case Long: {
+                        long[] elements = new long[values.length];
+                        array = elements;
+                        for (; i < values.length; i++) {
+                            elements[i] = values[i].executeLong(frame);
+                        }
+                        storage = new LongSequenceStorage(elements);
+                        break;
+                    }
+                    case Double: {
+                        double[] elements = new double[values.length];
+                        array = elements;
+                        for (; i < values.length; i++) {
+                            elements[i] = values[i].executeDouble(frame);
+                        }
+                        storage = new DoubleSequenceStorage(elements);
+                        break;
+                    }
+                    case List: {
+                        PList[] elements = new PList[values.length];
+                        array = elements;
+                        for (; i < values.length; i++) {
+                            elements[i] = PList.expect(values[i].execute(frame));
+                        }
+                        storage = new ListSequenceStorage(elements);
+                        break;
+                    }
+                    case Tuple: {
+                        PTuple[] elements = new PTuple[values.length];
+                        array = elements;
+                        for (; i < values.length; i++) {
+                            elements[i] = PTuple.expect(values[i].execute(frame));
+                        }
+                        storage = new TupleSequenceStorage(elements);
+                        break;
+                    }
+                    case Generic: {
+                        Object[] elements = new Object[values.length];
+                        array = elements;
+                        for (; i < values.length; i++) {
+                            elements[i] = values[i].execute(frame);
+                        }
+                        storage = new ObjectSequenceStorage(elements);
+                        break;
+                    }
+                    default:
+                        throw new RuntimeException("unexpected state");
+                }
+            } catch (UnexpectedResultException e) {
+                storage = genericFallback(frame, array, i, e.getResult());
+            }
+        }
+        return factory().createList(storage);
     }
 
-    @Specialization(guards = {"values.length == 0", "unboxSequenceStorage()"})
-    protected PList doEmpty() {
-        return factory().createList();
-    }
-
-    private Object genericFallback(VirtualFrame frame, Object array, int count, Object result) {
+    private SequenceStorage genericFallback(VirtualFrame frame, Object array, int count, Object result) {
+        type = ListStorageType.Generic;
         Object[] elements = new Object[values.length];
         int i = 0;
         for (; i < count; i++) {
@@ -74,95 +168,10 @@ public abstract class ListLiteralNode extends LiteralNode {
         for (; i < values.length; i++) {
             elements[i] = values[i].execute(frame);
         }
-        return factory().createList(new SequenceStorageFactory().createStorage(elements));
-    }
-
-    @Specialization(guards = "unboxSequenceStorage()", rewriteOn = UnexpectedResultException.class)
-    @ExplodeLoop
-    protected PList doInt(VirtualFrame frame) throws UnexpectedResultException {
-        int[] elements = new int[values.length];
-        int i = 0;
-        try {
-            for (; i < values.length; i++) {
-                elements[i] = values[i].executeInt(frame);
-            }
-            return factory().createList(new IntSequenceStorage(elements));
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(genericFallback(frame, elements, i, e.getResult()));
-        }
-    }
-
-    @Specialization(guards = "unboxSequenceStorage()", rewriteOn = UnexpectedResultException.class)
-    @ExplodeLoop
-    protected PList doLong(VirtualFrame frame) throws UnexpectedResultException {
-        long[] elements = new long[values.length];
-        int i = 0;
-        try {
-            for (; i < values.length; i++) {
-                elements[i] = values[i].executeLong(frame);
-            }
-            return factory().createList(new LongSequenceStorage(elements));
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(genericFallback(frame, elements, i, e.getResult()));
-        }
-    }
-
-    @Specialization(guards = "unboxSequenceStorage()", rewriteOn = UnexpectedResultException.class)
-    @ExplodeLoop
-    protected PList doDouble(VirtualFrame frame) throws UnexpectedResultException {
-        double[] elements = new double[values.length];
-        int i = 0;
-        try {
-            for (; i < values.length; i++) {
-                elements[i] = values[i].executeDouble(frame);
-            }
-            return factory().createList(new DoubleSequenceStorage(elements));
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(genericFallback(frame, elements, i, e.getResult()));
-        }
-    }
-
-    @Specialization(guards = "unboxSequenceStorage()", rewriteOn = UnexpectedResultException.class)
-    @ExplodeLoop
-    protected PList doPList(VirtualFrame frame) throws UnexpectedResultException {
-        PList[] elements = new PList[values.length];
-        int i = 0;
-        try {
-            for (; i < values.length; i++) {
-                elements[i] = PList.expect(values[i].execute(frame));
-            }
-            return factory().createList(new ListSequenceStorage(elements));
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(genericFallback(frame, elements, i, e.getResult()));
-        }
-    }
-
-    @Specialization(guards = "unboxSequenceStorage()", rewriteOn = UnexpectedResultException.class)
-    @ExplodeLoop
-    protected PList doPTuple(VirtualFrame frame) throws UnexpectedResultException {
-        PTuple[] elements = new PTuple[values.length];
-        int i = 0;
-        try {
-            for (; i < values.length; i++) {
-                elements[i] = PTuple.expect(values[i].execute(frame));
-            }
-            return factory().createList(new TupleSequenceStorage(elements));
-        } catch (UnexpectedResultException e) {
-            throw new UnexpectedResultException(genericFallback(frame, elements, i, e.getResult()));
-        }
-    }
-
-    @Specialization
-    @ExplodeLoop
-    protected PList doGeneric(VirtualFrame frame) {
-        Object[] elements = new Object[values.length];
-        for (int i = 0; i < values.length; i++) {
-            elements[i] = values[i].execute(frame);
-        }
-        return factory().createList(new ObjectSequenceStorage(elements));
+        return new ObjectSequenceStorage(elements);
     }
 
     public static ListLiteralNode create(PNode[] values) {
-        return ListLiteralNodeGen.create(values);
+        return new ListLiteralNode(values);
     }
 }

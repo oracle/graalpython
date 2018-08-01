@@ -47,7 +47,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-public class YieldResumeNode extends StatementNode {
+public final class YieldResumeNode extends StatementNode {
     final BranchProfile gotException = BranchProfile.create();
     final BranchProfile gotValue = BranchProfile.create();
     final BranchProfile gotNothing = BranchProfile.create();

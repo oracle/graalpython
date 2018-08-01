@@ -32,7 +32,6 @@ import com.oracle.graal.python.builtins.objects.array.PCharArray;
 import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
 import com.oracle.graal.python.builtins.objects.array.PIntArray;
 import com.oracle.graal.python.builtins.objects.array.PLongArray;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
@@ -42,9 +41,8 @@ import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -150,13 +148,12 @@ public abstract class GetIteratorNode extends UnaryOpNode {
                     @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
                     @Cached("create(__ITER__)") LookupAttributeInMRONode lookupAttrMroNode,
                     @Cached("create(__GETITEM__)") LookupAttributeInMRONode lookupGetitemAttrMroNode,
-                    @Cached("create()") CallDispatchNode dispatchGetattribute,
-                    @Cached("create()") CreateArgumentsNode createArgs,
+                    @Cached("create()") CallUnaryMethodNode dispatchGetattribute,
                     @Cached("create()") IsIteratorObjectNode isIteratorObjectNode) {
         PythonClass clazz = getClass(value);
         Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz));
         if (attrObj != PNone.NO_VALUE && attrObj != PNone.NONE) {
-            Object iterObj = dispatchGetattribute.executeCall(attrObj, createArgs.execute(value), PKeyword.EMPTY_KEYWORDS);
+            Object iterObj = dispatchGetattribute.executeObject(attrObj, value);
             if (isIteratorObjectNode.execute(iterObj)) {
                 return iterObj;
             } else {
