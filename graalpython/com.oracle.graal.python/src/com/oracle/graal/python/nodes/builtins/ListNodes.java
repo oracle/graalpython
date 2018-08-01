@@ -211,11 +211,11 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    Object value = next.execute(iterator);
+                                    PList value = PList.expect(next.execute(iterator));
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                     }
-                                    elements[i++] = PList.expect(value);
+                                    elements[i++] = value;
                                 } catch (PException e) {
                                     e.expectStopIteration(getCore(), errorProfile);
                                     break;
@@ -229,11 +229,11 @@ public abstract class ListNodes {
                             array = elements;
                             while (true) {
                                 try {
-                                    Object value = next.execute(iterator);
+                                    PTuple value = PTuple.expect(next.execute(iterator));
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                     }
-                                    elements[i++] = PTuple.expect(value);
+                                    elements[i++] = value;
                                 } catch (PException e) {
                                     e.expectStopIteration(getCore(), errorProfile);
                                     break;
