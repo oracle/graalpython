@@ -67,6 +67,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -931,6 +933,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StrNode extends UnboxNode {
         @Child private LookupAndCallUnaryNode callStrNode;
+        @Child private ObjectBuiltins.StrNode objectStrNode;
 
         @Specialization(guards = "isForeignObject(object)")
         protected Object doIt(TruffleObject object) {
@@ -941,7 +944,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
                 }
             }
-            throw raise(PythonErrorType.AttributeError);
+            return getObjectStrNode().execute(object);
         }
 
         private LookupAndCallUnaryNode getCallStrNode() {
@@ -951,12 +954,21 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
             return callStrNode;
         }
+
+        private ObjectBuiltins.StrNode getObjectStrNode() {
+            if (objectStrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectStrNode = insert(ObjectBuiltinsFactory.StrNodeFactory.create());
+            }
+            return objectStrNode;
+        }
     }
 
     @Builtin(name = __REPR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends UnboxNode {
         @Child private LookupAndCallUnaryNode callReprNode;
+        @Child private ObjectBuiltins.ReprNode objectReprNode;
 
         @Specialization(guards = "isForeignObject(object)")
         protected Object doIt(TruffleObject object) {
@@ -967,7 +979,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                     throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
                 }
             }
-            throw raise(PythonErrorType.AttributeError);
+            return getObjectReprNode().execute(object);
         }
 
         private LookupAndCallUnaryNode getCallReprNode() {
@@ -976,6 +988,14 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
                 callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
             }
             return callReprNode;
+        }
+
+        private ObjectBuiltins.ReprNode getObjectReprNode() {
+            if (objectReprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectReprNode = insert(ObjectBuiltinsFactory.ReprNodeFactory.create());
+            }
+            return objectReprNode;
         }
     }
 }
