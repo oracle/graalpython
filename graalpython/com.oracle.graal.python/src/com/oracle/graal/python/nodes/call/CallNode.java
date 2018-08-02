@@ -80,14 +80,13 @@ public abstract class CallNode extends PBaseNode {
     @Specialization(guards = {"isNoCallable(callableObject) || isClass(callableObject)"})
     protected Object specialCall(Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode,
-                    @Cached("create()") PositionalArgumentsNode callArgsNode) {
+                    @Cached("create()") CallVarargsMethodNode callCallNode) {
         Object call = callAttrGetterNode.execute(callableObject);
         if (isNoCallable(call)) {
             CompilerDirectives.transferToInterpreter();
             throw raise(PythonErrorType.TypeError, "'%p' object is not callable", callableObject);
         }
-        return callCallNode.execute(call, callArgsNode.executeWithArguments(callableObject, arguments), keywords);
+        return callCallNode.execute(call, PositionalArgumentsNode.prependArgument(callableObject, arguments, arguments.length), keywords);
     }
 
     @Specialization

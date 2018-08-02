@@ -144,7 +144,6 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child CallVarargsMethodNode dispatchInit = CallVarargsMethodNode.create();
         @Child LookupAttributeInMRONode lookupInit = LookupAttributeInMRONode.create(__INIT__);
         @Child GetClassNode getClass = GetClassNode.create();
-        @Child PositionalArgumentsNode createArgs = PositionalArgumentsNode.create();
 
         public static CallNode create() {
             return CallNodeFactory.create();
@@ -186,7 +185,7 @@ public class TypeBuiltins extends PythonBuiltins {
             Object newMethod = lookupNew.execute(self);
             if (newMethod != PNone.NO_VALUE) {
                 CompilerAsserts.partialEvaluationConstant(doCreateArgs);
-                Object[] newArgs = doCreateArgs ? createArgs.executeWithArguments(self, arguments) : arguments;
+                Object[] newArgs = doCreateArgs ? PositionalArgumentsNode.prependArgument(self, arguments, arguments.length) : arguments;
                 Object newInstance = dispatchNew.execute(newMethod, newArgs, keywords);
                 PythonClass newInstanceKlass = getClass.execute(newInstance);
                 if (newInstanceKlass == self) {
@@ -199,7 +198,7 @@ public class TypeBuiltins extends PythonBuiltins {
                         if (newMethod != PNone.NO_VALUE) {
                             Object[] initArgs;
                             if (doCreateArgs) {
-                                initArgs = createArgs.executeWithArguments(newInstance, arguments);
+                                initArgs = PositionalArgumentsNode.prependArgument(newInstance, arguments, arguments.length);
                             } else {
                                 // XXX: (tfel) is this valid? I think it should be fine...
                                 arguments[0] = newInstance;
