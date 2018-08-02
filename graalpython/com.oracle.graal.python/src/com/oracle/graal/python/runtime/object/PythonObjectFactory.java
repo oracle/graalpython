@@ -126,28 +126,15 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 
-public abstract class PythonObjectFactory extends Node {
-    public static PythonObjectFactory create() {
-        return new PythonObjectFactory() {
-            @CompilationFinal private ContextReference<PythonContext> contextRef;
+public final class PythonObjectFactory extends Node {
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-            @Override
-            public NodeCost getCost() {
-                return contextRef == null ? NodeCost.UNINITIALIZED : NodeCost.MONOMORPHIC;
-            }
-
-            @Override
-            public PythonCore getCore() {
-                if (contextRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    contextRef = PythonLanguage.getContextRef();
-                }
-                return contextRef.get().getCore();
-            }
-        };
+    private PythonObjectFactory() {
     }
 
-    public abstract PythonCore getCore();
+    public static PythonObjectFactory create() {
+        return new PythonObjectFactory();
+    }
 
     private PythonClass lookupClass(PythonBuiltinClassType type) {
         return getCore().lookupType(type);
@@ -156,6 +143,19 @@ public abstract class PythonObjectFactory extends Node {
     @SuppressWarnings("static-method")
     public final <T> T trace(T allocatedObject) {
         return allocatedObject;
+    }
+
+    @Override
+    public NodeCost getCost() {
+        return contextRef == null ? NodeCost.UNINITIALIZED : NodeCost.MONOMORPHIC;
+    }
+
+    public PythonCore getCore() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = PythonLanguage.getContextRef();
+        }
+        return contextRef.get().getCore();
     }
 
     /*
