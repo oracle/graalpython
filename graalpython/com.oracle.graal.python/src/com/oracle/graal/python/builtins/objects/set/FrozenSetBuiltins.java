@@ -156,7 +156,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         private HashingStorageNodes.SetItemNode getSetItemNode() {
             if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = HashingStorageNodes.SetItemNode.create();
+                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
             }
             return setItemNode;
         }

@@ -55,7 +55,6 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PBaseNode extends Node {
-    @CompilationFinal private PythonContext context;
     @Child private PythonObjectFactory factory;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
