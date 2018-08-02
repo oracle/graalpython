@@ -103,45 +103,40 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
     public abstract Object execute(PythonClass klass);
 
     final static class PythonClassAssumptionPair {
-        public final PythonClass cls;
         public final Assumption assumption;
+        public final Object value;
 
-        PythonClassAssumptionPair(PythonClass cls, Assumption assumption) {
-            this.cls = cls;
+        PythonClassAssumptionPair(Assumption assumption, Object value) {
             this.assumption = assumption;
+            this.value = value;
         }
     }
 
     protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(PythonClass klass) {
         PythonClass[] mro = klass.getMethodResolutionOrder();
-        Assumption attrAssumption = null;
+        Assumption attrAssumption = klass.createAttributeInMROFinalAssumption(key);
         for (int i = 0; i < mro.length; i++) {
             PythonClass cls = mro[i];
             if (i > 0) {
                 assert cls != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
-                if (attrAssumption == null) {
-                    attrAssumption = cls.createAttributeInMROFinalAssumption(key);
-                } else {
-                    cls.addAttributeInMROFinalAssumption(key, attrAssumption);
-                }
+                cls.addAttributeInMROFinalAssumption(key, attrAssumption);
             }
 
             if (cls.getStorage().containsKey(key)) {
-                return new PythonClassAssumptionPair(cls, attrAssumption);
+                Object value = cls.getStorage().get(key);
+                if (value != PNone.NO_VALUE) {
+                    return new PythonClassAssumptionPair(attrAssumption, value);
+                }
             }
         }
-        return new PythonClassAssumptionPair(null, attrAssumption);
+        return new PythonClassAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "cachedClassInMROInfo.cls != null"}, limit = "5", assumptions = {"lookupStable",
-                    "cachedClassInMROInfo.assumption"})
+    @Specialization(guards = {"klass == cachedKlass"}, limit = "5", assumptions = {"cachedClassInMROInfo.assumption"})
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
-                    @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
-                    @Cached("create()") @SuppressWarnings("unused") ReadAttributeFromObjectNode readAttributeNode,
-                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") @SuppressWarnings("unused") PythonClassAssumptionPair cachedClassInMROInfo,
-                    @Cached("readAttributeNode.execute(cachedClassInMROInfo.cls, key)") Object value) {
-        return value;
+                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
+        return cachedClassInMROInfo.value;
     }
 
     protected ReadAttributeFromObjectNode[] create(int size) {

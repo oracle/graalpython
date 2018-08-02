@@ -63,8 +63,16 @@ public class PythonClass extends PythonObject {
 
     @CompilationFinal(dimensions = 1) private PythonClass[] baseClasses;
     @CompilationFinal(dimensions = 1) private PythonClass[] methodResolutionOrder;
-    private CyclicAssumption lookupStableAssumption;
-    private Map<Object, List<Assumption>> attributesInMROFinalAssumptions;
+
+    /**
+     * This assumption will be invalidated whenever the mro changes.
+     */
+    private final CyclicAssumption lookupStableAssumption;
+    /**
+     * These assumptions will be invalidated whenever the value of the given slot changes. All
+     * assumptions will be invalidated if the mro changes.
+     */
+    private final Map<String, List<Assumption>> attributesInMROFinalAssumptions = new HashMap<>();
 
     private final Set<PythonClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonClass, Boolean>());
     private final Shape instanceShape;
@@ -79,8 +87,6 @@ public class PythonClass extends PythonObject {
     public PythonClass(PythonClass typeClass, String name, PythonClass... baseClasses) {
         super(typeClass, freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
-        this.lookupStableAssumption = new CyclicAssumption(className);
-        this.attributesInMROFinalAssumptions = new HashMap<>();
 
         assert baseClasses.length > 0;
         if (baseClasses.length == 1 && baseClasses[0] == null) {
@@ -90,6 +96,7 @@ public class PythonClass extends PythonObject {
         }
 
         this.flags = new FlagsContainer(getSuperClass());
+        this.lookupStableAssumption = new CyclicAssumption(className);
 
         // Compute MRO
         computeMethodResolutionOrder();
@@ -113,8 +120,8 @@ public class PythonClass extends PythonObject {
         return lookupStableAssumption.getAssumption();
     }
 
-    @TruffleBoundary
-    public Assumption createAttributeInMROFinalAssumption(Object name) {
+    public Assumption createAttributeInMROFinalAssumption(String name) {
+        CompilerAsserts.neverPartOfCompilation();
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
             attrAssumptions = new ArrayList<>();
@@ -126,8 +133,8 @@ public class PythonClass extends PythonObject {
         return assumption;
     }
 
-    @TruffleBoundary
-    public void addAttributeInMROFinalAssumption(Object name, Assumption assumption) {
+    public void addAttributeInMROFinalAssumption(String name, Assumption assumption) {
+        CompilerAsserts.neverPartOfCompilation();
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
             attrAssumptions = new ArrayList<>();
@@ -137,16 +144,27 @@ public class PythonClass extends PythonObject {
         attrAssumptions.add(assumption);
     }
 
-    @TruffleBoundary
-    public void invalidateAttributeInMROFinalAssumptions(Object name) {
+    public void invalidateAttributeInMROFinalAssumptions(String name) {
+        CompilerAsserts.neverPartOfCompilation();
         List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, new ArrayList<>());
-        for (Assumption assumption : assumptions) {
-            assumption.invalidate(className + "." + name);
+        if (!assumptions.isEmpty()) {
+            String message = className + "." + name;
+            for (Assumption assumption : assumptions) {
+                assumption.invalidate(message);
+            }
         }
     }
 
-    @TruffleBoundary
+    /**
+     * This method needs to be called if the mro changes. (currently not used)
+     */
     public void lookupChanged() {
+        CompilerAsserts.neverPartOfCompilation();
+        for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
+            for (Assumption assumption : list) {
+                assumption.invalidate();
+            }
+        }
         lookupStableAssumption.invalidate();
         for (PythonClass subclass : getSubClasses()) {
             if (subclass != null) {
@@ -271,9 +289,18 @@ public class PythonClass extends PythonObject {
 
     @Override
     @TruffleBoundary
-    public void setAttribute(Object name, Object value) {
-        super.setAttribute(name, value);
-        lookupChanged();
+    public void setAttribute(Object key, Object value) {
+        if (key instanceof String) {
+            invalidateAttributeInMROFinalAssumptions((String) key);
+        }
+        super.setAttribute(key, value);
+    }
+
+    @Override
+    @TruffleBoundary
+    public void deleteAttribute(String key) {
+        invalidateAttributeInMROFinalAssumptions(key);
+        super.deleteAttribute(key);
     }
 
     @Override
@@ -292,6 +319,9 @@ public class PythonClass extends PythonObject {
      * used.
      */
     public void unsafeSetSuperClass(PythonClass... newBaseClasses) {
+        // TODO: if this is used outside bootstrapping, it needs to call
+        // computeMethodResolutionOrder for subclasses.
+
         assert getBaseClasses() == null || getBaseClasses().length == 0;
         this.baseClasses = newBaseClasses;
 

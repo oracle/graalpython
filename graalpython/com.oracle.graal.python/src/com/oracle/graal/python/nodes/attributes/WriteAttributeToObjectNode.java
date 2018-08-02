@@ -42,26 +42,31 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.FinalLocationException;
 import com.oracle.truffle.api.object.IncompatibleLocationException;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class), @NodeChild(value = "value", type = PNode.class)})
-public abstract class WriteAttributeToObjectNode extends PNode {
+@ImportStatic(PythonOptions.class)
+public abstract class WriteAttributeToObjectNode extends PBaseNode {
+
     public abstract boolean execute(Object primary, Object key, Object value);
 
+    public abstract boolean execute(Object primary, String key, Object value);
+
     public static WriteAttributeToObjectNode create() {
-        return WriteAttributeToObjectNodeGen.create(null, null, null);
+        return WriteAttributeToObjectNodeGen.create();
     }
 
     protected Location getLocationOrNull(Property prop) {
@@ -76,12 +81,22 @@ public abstract class WriteAttributeToObjectNode extends PNode {
         }
     }
 
+    private final ConditionProfile isClassProfile = ConditionProfile.createBinaryProfile();
+
+    private void handlePythonClass(PythonObject object, Object key) {
+        if (isClassProfile.profile(object instanceof PythonClass)) {
+            if (key instanceof String) {
+                ((PythonClass) object).invalidateAttributeInMROFinalAssumptions((String) key);
+            }
+        }
+    }
+
     @SuppressWarnings("unused")
     @Specialization(guards = {
                     "object.getStorage().getShape() == cachedShape",
                     "!layoutAssumption.isValid()"
     })
-    protected Object updateShapeAndWrite(PythonObject object, Object key, Object value,
+    protected boolean updateShapeAndWrite(PythonObject object, Object key, Object value,
                     @Cached("object.getStorage().getShape()") Shape cachedShape,
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
                     @Cached("create()") WriteAttributeToObjectNode nextNode) {
@@ -89,11 +104,15 @@ public abstract class WriteAttributeToObjectNode extends PNode {
         return nextNode.execute(object, key, value);
     }
 
+    protected static boolean compareKey(Object cachedKey, Object key) {
+        return cachedKey == key;
+    }
+
     @SuppressWarnings("unused")
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
-                                    "cachedKey == key",
+                                    "compareKey(cachedKey, key)",
                                     "loc != null",
                                     "loc.canSet(value)"
                     }, //
@@ -108,6 +127,7 @@ public abstract class WriteAttributeToObjectNode extends PNode {
                     @Cached("cachedShape.getValidAssumption()") Assumption layoutAssumption,
                     @Cached("getLocationOrNull(cachedShape.getProperty(attrKey))") Location loc) {
         try {
+            handlePythonClass(object, attrKey);
             loc.set(object.getStorage(), value);
         } catch (IncompatibleLocationException | FinalLocationException e) {
             CompilerDirectives.transferToInterpreter();
@@ -121,7 +141,7 @@ public abstract class WriteAttributeToObjectNode extends PNode {
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
                                     "object.getStorage().getShape() == cachedShape",
-                                    "cachedKey == key",
+                                    "compareKey(cachedKey, key)",
                                     "loc == null || !loc.canSet(value)",
                                     "newLoc.canSet(value)"
                     }, //
@@ -139,6 +159,7 @@ public abstract class WriteAttributeToObjectNode extends PNode {
                     @Cached("newShape.getValidAssumption()") Assumption newLayoutAssumption,
                     @Cached("getLocationOrNull(newShape.getProperty(attrKey))") Location newLoc) {
         try {
+            handlePythonClass(object, attrKey);
             newLoc.set(object.getStorage(), value, cachedShape, newShape);
         } catch (IncompatibleLocationException e) {
             CompilerDirectives.transferToInterpreter();
@@ -151,13 +172,16 @@ public abstract class WriteAttributeToObjectNode extends PNode {
     @TruffleBoundary
     @Specialization(replaces = {"doDirect", "defineDirect"}, guards = {"object.getStorage().getShape().isValid()"})
     protected boolean doIndirect(PythonObject object, Object key, Object value) {
-        object.setAttribute(attrKey(key), value);
+        Object attrKey = attrKey(key);
+        handlePythonClass(object, attrKey);
+        object.setAttribute(attrKey, value);
         return true;
     }
 
-    @TruffleBoundary
     @Specialization(guards = "!object.getStorage().getShape().isValid()")
     protected boolean defineDirect(PythonObject object, Object key, Object value) {
+        CompilerDirectives.transferToInterpreter();
+
         object.getStorage().updateShape();
         return doIndirect(object, key, value);
     }

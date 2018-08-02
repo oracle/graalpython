@@ -51,7 +51,6 @@ import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class), @NodeChild(value = "rhs", type = PNode.class)})
@@ -90,20 +89,6 @@ public abstract class SetAttributeNode extends PNode implements WriteNode {
     }
 
     @Specialization
-    protected Object doClass(PythonClass cls, Object key, Object value,
-                    @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
-                    @Cached("create(__SETATTR__)") LookupAttributeInMRONode setAttributeLookup,
-                    @Cached("create()") CallTernaryMethodNode callSetAttribute,
-                    @Cached("createBinaryProfile()") ConditionProfile isAddingAttributeProfile) {
-        if (isAddingAttributeProfile.profile(!cls.getStorage().containsKey(key))) {
-            cls.lookupChanged();
-        }
-        cls.invalidateAttributeInMROFinalAssumptions(key);
-        Object descr = setAttributeProfile.profile(setAttributeLookup.execute(cls));
-        return callSetAttribute.execute(descr, cls, key, value);
-    }
-
-    @Specialization(guards = "!isClass(object)")
     protected Object doIt(Object object, Object key, Object value,
                     @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
