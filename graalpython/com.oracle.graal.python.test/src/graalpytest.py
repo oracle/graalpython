@@ -169,7 +169,6 @@ class TestCase(object):
                 except exc_type:
                     pass
                 else:
-                    dump_truffle_ast(self.__init__)
                     assert False, "expected '%r' to raise '%r'" % (self.function, exc_type)
 
         def __enter__(self):

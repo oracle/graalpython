@@ -195,8 +195,8 @@
     tags: "tags must be defined",
 
 //    local truffleDebugFlags = utils.graalOption("TraceTruffleCompilation", "true"),
-    local truffleDebugFlags = utils.graalOption("TraceTruffleCompilationDetails", "true"),
-//    local truffleDebugFlags = [],
+//    local truffleDebugFlags = utils.graalOption("TraceTruffleCompilationDetails", "true"),
+    local truffleDebugFlags = [],
     targets: TARGET.gate,
     run +: [
       ["mx"] + truffleDebugFlags + ["--strict-compliance", "--dynamicimports", super.dynamicImports, "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning-for-dependencies"],
