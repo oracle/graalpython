@@ -123,8 +123,8 @@ public class PythonObjectNativeWrapperMR {
     abstract static class GetDynamicTypeNode extends Node {
         @Child GetClassNode getClass = GetClassNode.create();
 
-        public Object access(PythonObjectNativeWrapper object) {
-            PythonClass klass = getClass.execute(object.getPythonObject());
+        public Object access(PythonNativeWrapper object) {
+            PythonClass klass = getClass.execute(object.getDelegate());
             Object sulongType = klass.getSulongType();
             if (sulongType == null) {
                 CompilerDirectives.transferToInterpreter();
@@ -409,8 +409,13 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
-        Object doObSval(PBuffer object, @SuppressWarnings("unused") String key) {
+        Object doBufDelegate(PBuffer object, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object.getDelegate(), 1);
+        }
+
+        @Specialization(guards = "eq(BUF_READONLY, key)")
+        int doBufReadonly(PBuffer object, @SuppressWarnings("unused") String key) {
+            return object.isReadOnly() ? 1 : 0;
         }
 
         @Specialization(guards = "eq(START, key)")

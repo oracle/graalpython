@@ -44,5 +44,5 @@ PyTypeObject PyMemoryView_Type = PY_TRUFFLE_TYPE("memoryview", &PyType_Type, Py_
 PyTypeObject PyBuffer_Type = PY_TRUFFLE_TYPE("buffer", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyBufferDecorator));
 
 int bufferdecorator_getbuffer(PyBufferDecorator *self, Py_buffer *view, int flags) {
-    return PyBuffer_FillInfo(view, (PyObject*)self, polyglot_get_member(self, "buf_delegate"), PyObject_Size((PyObject *)self), 1, flags);
+    return PyBuffer_FillInfo(view, (PyObject*)self, polyglot_get_member(self, "buf_delegate"), PyObject_Size((PyObject *)self) * sizeof(PyObject*), self->readonly, flags);
 }

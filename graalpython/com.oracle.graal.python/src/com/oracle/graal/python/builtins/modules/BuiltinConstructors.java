@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -479,9 +480,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = ENUMERATE, fixedNumOfArguments = 2, keywordArguments = {"start"}, constructsClass = PEnumerate.class)
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
-        /**
-         * TODO enumerate can take a keyword argument start, and currently that's not supported.
-         */
 
         @Specialization
         public PEnumerate enumerate(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone keywordArg,
@@ -1983,19 +1981,32 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // buffer([iterable])
-    @Builtin(name = "buffer", fixedNumOfArguments = 2, constructsClass = PBuffer.class)
+    @Builtin(name = "buffer", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PBuffer.class)
     @GenerateNodeFactory
     public abstract static class BufferNode extends PythonBuiltinNode {
+        @Child private LookupInheritedAttributeNode getSetItemNode;
+
+        @Specialization(guards = "isNoValue(readOnly)")
+        protected PBuffer construct(PythonClass cls, Object delegate, @SuppressWarnings("unused") PNone readOnly) {
+            return factory().createBuffer(cls, delegate, !hasSetItem(delegate));
+        }
 
         @Specialization
-        protected PBuffer construct(PythonClass cls, Object value) {
-            return factory().createBuffer(cls, value);
+        protected PBuffer construct(PythonClass cls, Object delegate, boolean readOnly) {
+            return factory().createBuffer(cls, delegate, readOnly);
         }
 
         @Fallback
-        public PBuffer listObject(@SuppressWarnings("unused") Object cls, Object arg) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new RuntimeException("buffer does not support iterable object " + arg);
+        public PBuffer doGeneric(@SuppressWarnings("unused") Object cls, Object delegate, @SuppressWarnings("unused") Object readOnly) {
+            throw raise(TypeError, "cannot create buffer for object %s", delegate);
+        }
+
+        public boolean hasSetItem(Object object) {
+            if (getSetItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getSetItemNode = LookupInheritedAttributeNode.create(__SETITEM__);
+            }
+            return getSetItemNode.execute(object) != PNone.NO_VALUE;
         }
     }
 

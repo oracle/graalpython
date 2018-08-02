@@ -681,12 +681,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PForeignArrayIterator(lookupClass(PythonBuiltinClassType.PForeignArrayIterator), iterable, size));
     }
 
-    public PBuffer createBuffer(PythonClass cls, Object iterable) {
-        return trace(new PBuffer(cls, iterable));
+    public PBuffer createBuffer(PythonClass cls, Object iterable, boolean readonly) {
+        return trace(new PBuffer(cls, iterable, readonly));
     }
 
-    public PBuffer createBuffer(Object iterable) {
-        return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable));
+    public PBuffer createBuffer(Object iterable, boolean readonly) {
+        return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable, readonly));
     }
 
     public PCode createCode(RootNode result) {

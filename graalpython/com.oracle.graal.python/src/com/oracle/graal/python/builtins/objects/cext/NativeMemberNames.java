@@ -91,6 +91,7 @@ public final class NativeMemberNames {
     public static final String MD_DEF = "md_def";
     public static final String MD_DICT = "md_dict";
     public static final String BUF_DELEGATE = "buf_delegate";
+    public static final String BUF_READONLY = "readonly";
     public static final String NB_ADD = "nb_add";
     public static final String NB_INDEX = "nb_index";
     public static final String NB_POW = "nb_power";

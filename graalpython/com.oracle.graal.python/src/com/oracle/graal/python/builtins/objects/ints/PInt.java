@@ -129,6 +129,11 @@ public final class PInt extends PythonBuiltinObject {
         return value.compareTo(BigInteger.ZERO) >= 0;
     }
 
+    @TruffleBoundary
+    public boolean isZeroOrNegative() {
+        return value.compareTo(BigInteger.ZERO) <= 0;
+    }
+
     public static int intValue(boolean bool) {
         return bool ? 1 : 0;
     }
