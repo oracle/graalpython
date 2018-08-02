@@ -25,7 +25,7 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "20ded72c7602f906c3605a250651140a46718321",
+                "version": "d9d7dc0134eb899d622d672f1ab65a7cef613102",
                 "urls": [
                     {"url": "https://github.com/graalvm/sulong", "kind": "git"},
                 ]
