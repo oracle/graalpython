@@ -54,6 +54,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.ROUND;
 import static com.oracle.graal.python.nodes.BuiltinNames.SETATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUM;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BREAKPOINT__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTIN__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__DUMP_TRUFFLE_AST__;
 import static com.oracle.graal.python.nodes.HiddenAttributes.ID_KEY;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
@@ -91,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
@@ -155,6 +158,7 @@ import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -1312,7 +1316,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__builtin__", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = __BUILTIN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
         @Child GetItemNode getNameNode = GetItemNode.create();
@@ -1374,6 +1378,28 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 assert builtinModule != null;
             }
             return factory().createBuiltinMethod(builtinModule, builtinFunc);
+        }
+    }
+
+    @Builtin(name = __DUMP_TRUFFLE_AST__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class DumpTruffleAstNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        public String doIt(PFunction func) {
+            return NodeUtil.printTreeToString(func.getCallTarget().getRootNode());
+        }
+
+        @Specialization
+        @TruffleBoundary
+        public String doIt(PMethod method) {
+            return NodeUtil.printTreeToString(method.getCallTarget().getRootNode());
+        }
+
+        @Fallback
+        @TruffleBoundary
+        public Object doit(Object object) {
+            return "truffle ast dump not supported for " + object.toString();
         }
     }
 }
