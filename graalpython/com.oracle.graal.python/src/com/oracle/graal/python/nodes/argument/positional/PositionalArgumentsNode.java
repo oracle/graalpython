@@ -114,4 +114,11 @@ public abstract class PositionalArgumentsNode extends PNode {
         }
         return values;
     }
+
+    public static Object[] prependArgument(Object primary, Object[] arguments, int argumentsLength) {
+        Object[] result = new Object[argumentsLength + 1];
+        result[0] = primary;
+        System.arraycopy(arguments, 0, result, 1, argumentsLength);
+        return result;
+    }
 }
