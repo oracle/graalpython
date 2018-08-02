@@ -111,7 +111,7 @@ public abstract class PythonBuiltins {
             Class<?>[] bases = builtin.base();
             PythonBuiltinClass base = null;
             if (bases.length == 0) {
-                base = core.getObjectClass();
+                base = core.lookupType(PythonBuiltinClassType.PythonObject);
             } else {
                 assert bases.length == 1;
                 // Search the "local scope" for builtin classes to inherit from
@@ -129,7 +129,7 @@ public abstract class PythonBuiltins {
                 }
                 assert base != null;
             }
-            builtinClass = new PythonBuiltinClass(core.getTypeClass(), builtin.name(), base);
+            builtinClass = new PythonBuiltinClass(core.lookupType(PythonBuiltinClassType.PythonBuiltinClass), builtin.name(), base);
         }
         setBuiltinClass(builtinClass, builtin.constructsClass(), builtin.isPublic());
         return builtinClass;

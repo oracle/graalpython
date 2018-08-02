@@ -115,7 +115,7 @@ public abstract class HashingStorage {
         @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
 
         protected HashRootNode() {
-            super(PythonLanguage.getContext().getLanguage());
+            super(PythonLanguage.getCurrent());
             Truffle.getRuntime().createCallTarget(this);
         }
 
@@ -135,7 +135,7 @@ public abstract class HashingStorage {
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");
 
         protected EqualsRootNode() {
-            super(PythonLanguage.getContext().getLanguage());
+            super(PythonLanguage.getCurrent());
             Truffle.getRuntime().createCallTarget(this);
         }
 
@@ -209,7 +209,7 @@ public abstract class HashingStorage {
         if (key instanceof String) {
             return DEFAULT_EQIVALENCE;
         }
-        return PythonLanguage.getContext().getSlowPathEquivalence();
+        return PythonLanguage.getContextRef().get().getSlowPathEquivalence();
     }
 
     public abstract int length();

@@ -30,7 +30,6 @@ import java.lang.reflect.Array;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
@@ -49,11 +48,10 @@ public final class ListLiteralNode extends LiteralNode {
 
     @Children protected final PNode[] values;
 
-    @CompilationFinal private ListStorageType type;
+    @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
     public ListLiteralNode(PNode[] values) {
         this.values = values;
-        this.type = PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceStorage) ? ListStorageType.Uninitialized : ListStorageType.Generic;
     }
 
     public PNode[] getValues() {

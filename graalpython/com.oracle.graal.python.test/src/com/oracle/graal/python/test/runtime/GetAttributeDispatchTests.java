@@ -27,11 +27,16 @@ package com.oracle.graal.python.test.runtime;
 
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 
 public class GetAttributeDispatchTests {
+    @Before
+    public void setUp() {
+        PythonTests.enterContext();
+    }
 
     @Test
     public void cachedModuleAttr() {
@@ -39,7 +44,6 @@ public class GetAttributeDispatchTests {
                         "for i in range(2):\n" + //
                         "  time.foo = 42\n" + //
                         "  print(time.foo)\n";
-        PythonTests.resetContext(new String[0]);
         assertPrints("42\n42\n", source);
     }
 

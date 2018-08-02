@@ -29,7 +29,6 @@ public abstract class TypedSequenceStorage extends BasicSequenceStorage {
 
     @Override
     public final ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
-        logGeneralization();
         return new ObjectSequenceStorage(getInternalArray());
     }
 

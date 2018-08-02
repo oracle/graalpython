@@ -597,13 +597,14 @@ public class PythonObjectNativeWrapperMR {
         @Specialization(guards = "eq(TP_DICT, key)")
         Object doTpDict(PythonClass object, @SuppressWarnings("unused") String key, Object nativeValue,
                         @Cached("create()") CExtNodes.AsPythonObjectNode asPythonObjectNode,
+                        @Cached("create()") HashingStorageNodes.GetItemNode getItem,
                         @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
             Object value = asPythonObjectNode.execute(nativeValue);
             if (value instanceof PDict && ((PDict) value).getPythonClass() == getCore().lookupType(PDict.class)) {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 for (Object k : d.keys()) {
-                    writeAttrNode.execute(object, k, d.getItem(k));
+                    writeAttrNode.execute(object, k, getItem.execute(d.getDictStorage(), k));
                 }
                 PHashingCollection existing = object.getDict();
                 if (existing != null) {
@@ -736,7 +737,7 @@ public class PythonObjectNativeWrapperMR {
 
         public Object access(Object object) {
             if (object instanceof PythonNativeWrapper) {
-                return PythonLanguage.getContext().getEnv().asGuestValue(new String[]{GP_OBJECT});
+                return PythonLanguage.getContextRef().get().getEnv().asGuestValue(new String[]{GP_OBJECT});
             } else {
                 throw UnsupportedMessageException.raise(Message.KEYS);
             }

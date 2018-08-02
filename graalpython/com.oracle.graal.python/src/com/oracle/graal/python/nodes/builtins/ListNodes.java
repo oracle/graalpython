@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -101,11 +101,7 @@ public abstract class ListNodes {
 
         private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
-        @CompilationFinal private ListStorageType type;
-
-        public CreateListFromIteratorNode() {
-            this.type = PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceStorage) ? ListStorageType.Uninitialized : ListStorageType.Generic;
-        }
+        @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
         public static CreateListFromIteratorNode create() {
             return new CreateListFromIteratorNode();
@@ -304,6 +300,11 @@ public abstract class ListNodes {
         public abstract PList execute(Object cls, Object value, PythonClass valueClass);
 
         @Specialization
+        public PList listString(PythonClass cls, PString arg, PythonClass valueClass) {
+            return listString(cls, arg.getValue(), valueClass);
+        }
+
+        @Specialization
         public PList listString(PythonClass cls, String arg, @SuppressWarnings("unused") PythonClass valueClass) {
             char[] chars = arg.toCharArray();
             PList list = factory().createList(cls);
@@ -320,7 +321,7 @@ public abstract class ListNodes {
             return factory().createList(cls);
         }
 
-        @Specialization(guards = "!isNoValue(iterable)")
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         public PList listIterable(PythonClass cls, Object iterable, @SuppressWarnings("unused") PythonClass valueClass,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") CreateListFromIteratorNode createListFromIteratorNode) {

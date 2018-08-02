@@ -27,10 +27,8 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@ReportPolymorphism
 @NodeChild(value = "arguments", type = PNode[].class)
 public abstract class PythonBuiltinNode extends PythonBuiltinBaseNode {
 

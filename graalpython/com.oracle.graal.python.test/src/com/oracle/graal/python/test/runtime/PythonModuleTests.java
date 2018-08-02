@@ -31,8 +31,10 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -43,10 +45,16 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.test.PythonTests;
 
 public class PythonModuleTests {
+    private PythonContext context;
+
+    @Before
+    public void setUp() {
+        PythonTests.enterContext();
+        context = PythonLanguage.getContextRef().get();
+    }
 
     @Test
     public void pythonModuleTest() {
-        final PythonContext context = PythonTests.getContext();
         PythonModule module = context.getCore().factory().createPythonModule("testModule");
 
         assertEquals("testModule", module.getAttribute(__NAME__).toString());
@@ -56,7 +64,6 @@ public class PythonModuleTests {
 
     @Test
     public void builtinsMinTest() {
-        final PythonContext context = PythonTests.getContext();
         final PythonModule builtins = context.getBuiltins();
         PBuiltinMethod min = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.MIN);
         Object returnValue = InvokeNode.create(min).invoke(createWithUserArguments(builtins, 4, 2, 1));
@@ -65,7 +72,6 @@ public class PythonModuleTests {
 
     @Test
     public void builtinsIntTest() {
-        final PythonContext context = PythonTests.getContext();
         final PythonModule builtins = context.getBuiltins();
         PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.INT);
         Object returnValue = InvokeNode.create(intClass).invoke(createWithUserArguments(intClass, "42"));
@@ -74,7 +80,6 @@ public class PythonModuleTests {
 
     @Test
     public void mainModuleTest() {
-        final PythonContext context = PythonTests.getContext();
         PythonModule main = context.getMainModule();
         PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
         PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.ABS);

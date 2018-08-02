@@ -30,7 +30,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class EmptySequenceStorage extends SequenceStorage {
@@ -47,11 +46,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
             if (target instanceof ByteSequenceStorage) {
                 generalized = new ByteSequenceStorage(16);
             } else {
-                if (!PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceLongType)) {
-                    generalized = new IntSequenceStorage();
-                } else {
-                    generalized = new LongSequenceStorage();
-                }
+                generalized = new IntSequenceStorage();
             }
         } else if (value instanceof Long) {
             if (target instanceof ByteSequenceStorage) {
@@ -69,8 +64,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
             generalized = new ObjectSequenceStorage(new Object[0]);
         }
 
-        logGeneralization(generalized);
-
         return generalized;
     }
 
@@ -87,7 +80,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public void setNewLength(int length) {
         CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, "list length out of range");
+        throw PythonLanguage.getContextRef().get().getCore().raise(ValueError, "list length out of range");
     }
 
     @Override

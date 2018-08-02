@@ -59,7 +59,6 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final PCell[] closure;
     private final ExecutionCellSlots cellSlots;
     private final String name;
-
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,

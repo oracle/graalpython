@@ -40,11 +40,13 @@
 # IMPORTANT! Any files added here also need to be added to
 # Python3Core.INDIRECT_CORE_FILES, because during bootstrap we pre-parse (but do
 # not run!) all core files.
-__load_builtins__('functions')
-__load_builtins__('staticmethod')
-__load_builtins__('classmethod')
-__load_builtins__('exceptions')
-__load_builtins__('super')
-__load_builtins__('property')
-__load_builtins__('ellipsis')
-__load_builtins__('timsort')
+import _imp
+
+_imp._truffle_bootstrap_file_into_module("functions.py", "builtins")
+_imp._truffle_bootstrap_file_into_module("staticmethod.py", "builtins")
+_imp._truffle_bootstrap_file_into_module("classmethod.py", "builtins")
+_imp._truffle_bootstrap_file_into_module("exceptions.py", "builtins")
+_imp._truffle_bootstrap_file_into_module("super.py", "builtins")
+_imp._truffle_bootstrap_file_into_module("property.py", "builtins")
+_imp._truffle_bootstrap_file_into_module("ellipsis.py", "builtins")
+_imp._truffle_bootstrap_file_into_module("timsort.py", "builtins")

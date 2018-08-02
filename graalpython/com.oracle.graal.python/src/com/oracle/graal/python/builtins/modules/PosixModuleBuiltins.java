@@ -247,12 +247,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         builtinConstants.put("_have_functions", core.factory().createList());
-
-        if (!core.getLanguage().isNativeBuildTime()) {
-            builtinConstants.put("environ", core.createEnvironDict());
-        } else {
-            builtinConstants.put("environ", core.factory().createDict());
-        }
+        builtinConstants.put("environ", core.factory().createDict());
     }
 
     @Builtin(name = "getcwd", fixedNumOfArguments = 0)

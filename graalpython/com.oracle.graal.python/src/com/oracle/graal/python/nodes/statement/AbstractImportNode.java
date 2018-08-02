@@ -45,12 +45,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -58,7 +56,7 @@ import com.oracle.truffle.api.instrumentation.Tag;
 
 public abstract class AbstractImportNode extends StatementNode {
 
-    @Child private InvokeNode invokeNode;
+    @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
 
     public AbstractImportNode() {
@@ -69,12 +67,12 @@ public abstract class AbstractImportNode extends StatementNode {
         return importModule(name, PNone.NONE, new String[0], 0);
     }
 
-    InvokeNode getInvokeNode(PythonCallable callable) {
-        if (invokeNode == null) {
+    CallNode getCallNode() {
+        if (callNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            invokeNode = insert(InvokeNode.create(callable));
+            callNode = insert(CallNode.create());
         }
-        return invokeNode;
+        return callNode;
     }
 
     private GetDictNode getGetDictNode() {
@@ -98,11 +96,9 @@ public abstract class AbstractImportNode extends StatementNode {
 
     Object __import__(String name, Object globals, String[] fromList, int level) {
         PMethod builtinImport = (PMethod) getContext().getBuiltins().getAttribute(__IMPORT__);
-        Object[] importArguments = PArguments.create(2);
-        PArguments.setArgument(importArguments, 1, name);
         assert fromList != null;
         assert globals != null;
-        return getInvokeNode(builtinImport).invoke(importArguments, new PKeyword[]{
+        return getCallNode().execute(builtinImport, new Object[]{name}, new PKeyword[]{
                         new PKeyword(GLOBALS, getGetDictNode().execute(globals)),
                         new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
                                                           // can always be None

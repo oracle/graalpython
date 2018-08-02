@@ -65,7 +65,7 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -188,7 +188,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         public Object run() {
             PythonContext context = getContext();
-            PException currentException = context == null ? getCore().getCurrentException() : context.getCurrentException();
+            PException currentException = context.getCurrentException();
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
@@ -215,15 +215,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
          * behavior. (it only captures the frames if a CallTarget boundary is crossed)
          */
         private static final class GetStackTraceRootNode extends RootNode {
+            private ContextReference<PythonContext> contextRef;
 
-            protected GetStackTraceRootNode(TruffleLanguage<?> language) {
+            protected GetStackTraceRootNode(PythonLanguage language) {
                 super(language);
+                this.contextRef = language.getContextReference();
             }
 
             @Override
             public Object execute(VirtualFrame frame) {
                 CompilerDirectives.transferToInterpreter();
-                throw PythonLanguage.getCore().raise(ValueError);
+                throw contextRef.get().getCore().raise(ValueError);
             }
 
             @Override

@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -68,13 +69,12 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParser.ParserMode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
@@ -91,8 +91,8 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.Builder;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -202,7 +202,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 // restore previous exception state
                 getContext().setCurrentException(exceptionState);
 
-                Object result = AsPythonObjectNode.doSlowPath(nativeResult);
+                Object result = AsPythonObjectNode.doSlowPath(getCore(), nativeResult);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
@@ -224,25 +224,30 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
-            if (!getContext().capiWasLoaded()) {
-                Env env = getContext().getEnv();
+            PythonContext ctxt = getContext();
+            if (!ctxt.capiWasLoaded()) {
+                Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "capi.bc");
                 Object capi = null;
                 try {
-                    capi = getContext().getEnv().parse(env.newSourceBuilder(capiFile).language(LLVM_LANGUAGE).build()).call();
+                    Builder<IOException, RuntimeException, RuntimeException> capiSrcBuilder = env.newSourceBuilder(capiFile).language(LLVM_LANGUAGE);
+                    if (!PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources)) {
+                        capiSrcBuilder.internal();
+                    }
+                    capi = ctxt.getEnv().parse(capiSrcBuilder.build()).call();
                 } catch (SecurityException | IOException e) {
                     throw raise(PythonErrorType.ImportError, "cannot load capi from " + capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
                 CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
-                callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
-                getContext().setCapiWasLoaded();
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
+                ctxt.setCapiWasLoaded();
 
                 // initialization needs to be finished already but load memoryview implemenation
                 // immediately
-                callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 
@@ -293,10 +298,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public int run(String name) {
+        public int run(String name,
+                        @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 return 1;
-            } else if (getContext() != null && getContext().isInitialized() && getContext().getImportedModules().hasKey(name)) {
+            } else if (getContext() != null && getContext().isInitialized() && hasKey.execute(getContext().getImportedModules().getDictStorage(), name)) {
                 return -1;
             } else {
                 return 0;
@@ -345,13 +351,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
                 String fileName = pathParts[pathParts.length - 1];
-                TruffleFile file = env.getTruffleFile(path);
-                Source src = PythonLanguage.newSource(ctxt, file, fileName);
-                RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
-                if (parsedModule != null) {
-                    CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
-                    callTarget.call(PArguments.withGlobals(mod));
+                TruffleFile file;
+                if (fileName.equals(path)) {
+                    // relative filename
+                    file = env.getTruffleFile(PythonCore.getCoreHomeOrFail() + PythonCore.FILE_SEPARATOR + fileName);
+                } else {
+                    file = env.getTruffleFile(path);
                 }
+                Source src = PythonLanguage.newSource(ctxt, file, fileName);
+                CallTarget callTarget = env.parse(src);
+                callTarget.call(PArguments.withGlobals(mod));
             } catch (PException e) {
                 throw e;
             } catch (IOException | SecurityException e) {

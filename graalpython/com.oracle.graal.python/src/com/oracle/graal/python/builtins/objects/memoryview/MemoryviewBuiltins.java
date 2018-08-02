@@ -38,18 +38,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function;
+package com.oracle.graal.python.builtins.objects.memoryview;
 
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import java.util.List;
 
-@ReportPolymorphism
-@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
-public abstract class PythonBuiltinBaseNode extends PBaseNode {
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+
+@CoreFunctions(extendClasses = PMemoryView.class)
+public class MemoryviewBuiltins extends PythonBuiltins {
+    private static final String C_MEMORYVIEW = "__c_memoryview";
+
+    @Override
+    protected List<NodeFactory<SetCMemoryviewNode>> getNodeFactories() {
+        return MemoryviewBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = C_MEMORYVIEW, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    static abstract class SetCMemoryviewNode extends PythonBinaryBuiltinNode {
+
+        /*
+         * NOTE: DO NOT CHANGE THE NAME OF PROPERTY '__c_memoryview' it is also referenced in native
+         * code and Java code
+         */
+        @Specialization(guards = "isNoValue(value)")
+        Object set(Object self, @SuppressWarnings("unused") PNone value,
+                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+            return readNode.execute(self, C_MEMORYVIEW);
+        }
+
+        @Specialization(guards = "!isNoValue(cmemoryview)")
+        PNone set(Object self, Object cmemoryview,
+                        @Cached("create()") WriteAttributeToObjectNode writeNode) {
+            writeNode.execute(self, C_MEMORYVIEW, cmemoryview);
+            return PNone.NONE;
+        }
+    }
 }

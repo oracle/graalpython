@@ -502,8 +502,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Pyt
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Listener.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Parser.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Visitor.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/ArithmeticUtil.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/JavaTypeConversions.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonCore.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java,zippy.copyright

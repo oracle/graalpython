@@ -27,7 +27,6 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -55,7 +54,7 @@ public class AssertNode extends StatementNode {
     public Object execute(VirtualFrame frame) {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            assertionsEnabled = !PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimizeFlag);
+            assertionsEnabled = !PythonOptions.getOption(getContext(), PythonOptions.PythonOptimizeFlag);
         }
         if (assertionsEnabled) {
             try {
