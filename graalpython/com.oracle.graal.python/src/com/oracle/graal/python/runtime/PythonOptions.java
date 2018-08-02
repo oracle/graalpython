@@ -50,6 +50,9 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> TraceSequenceStorageGeneralization = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
+    public static final OptionKey<Boolean> UnboxSequenceStorage = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> UnboxSequenceIteration = new OptionKey<>(true);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
