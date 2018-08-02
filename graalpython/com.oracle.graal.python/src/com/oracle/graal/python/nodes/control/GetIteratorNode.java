@@ -46,7 +46,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -94,38 +93,22 @@ public abstract class GetIteratorNode extends UnaryOpNode {
 
     @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doPIntArray(PIntArray value) {
-        if (PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceIteration)) {
-            return factory().createIntArrayIterator(value);
-        } else {
-            return factory().createSequenceIterator(value);
-        }
+        return factory().createIntArrayIterator(value);
     }
 
     @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doPLongArray(PLongArray value) {
-        if (PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceIteration)) {
-            return factory().createLongArrayIterator(value);
-        } else {
-            return factory().createSequenceIterator(value);
-        }
+        return factory().createLongArrayIterator(value);
     }
 
     @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doPDoubleArray(PDoubleArray value) {
-        if (PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceIteration)) {
-            return factory().createDoubleArrayIterator(value);
-        } else {
-            return factory().createSequenceIterator(value);
-        }
+        return factory().createDoubleArrayIterator(value);
     }
 
     @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doCharArray(PCharArray value) {
-        if (PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceIteration)) {
-            return factory().createCharArrayIterator(value);
-        } else {
-            return factory().createSequenceIterator(value);
-        }
+        return factory().createCharArrayIterator(value);
     }
 
     @Specialization(guards = "iterCannotBeOverridden(value)")

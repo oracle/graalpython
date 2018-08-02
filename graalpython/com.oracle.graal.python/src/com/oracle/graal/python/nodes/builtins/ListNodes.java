@@ -68,7 +68,6 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -102,11 +101,7 @@ public abstract class ListNodes {
 
         private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
-        @CompilationFinal private ListStorageType type;
-
-        public CreateListFromIteratorNode() {
-            this.type = PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceStorage) ? ListStorageType.Uninitialized : ListStorageType.Generic;
-        }
+        @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
         public static CreateListFromIteratorNode create() {
             return new CreateListFromIteratorNode();

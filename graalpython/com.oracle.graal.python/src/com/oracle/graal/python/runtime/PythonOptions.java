@@ -47,15 +47,6 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> TraceSequenceStorageGeneralization = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> UnboxSequenceStorage = new OptionKey<>(true);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> UnboxSequenceIteration = new OptionKey<>(true);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
@@ -75,9 +66,6 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> ForceLongType = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
