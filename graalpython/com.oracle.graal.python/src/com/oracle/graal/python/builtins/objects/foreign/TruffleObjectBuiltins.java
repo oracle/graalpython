@@ -270,7 +270,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         public abstract Object executeWith(Object left, Object right);
 
-        @Specialization(guards = {"isBoxed(left)", "!isForeignArray(left)", "!isForeignObject(right)"})
+        @Specialization(guards = {"isBoxed(left)", "!isForeignObject(right)"})
         Object doForeignBoxed(TruffleObject left, Object right) {
             try {
                 return mulNode.executeObject(unboxLeft(left), right);
@@ -279,7 +279,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"isBoxed(left)", "!isForeignArray(left)", "isBoxed(right)", "!isForeignArray(right)"})
+        @Specialization(guards = {"isBoxed(left)", "isBoxed(right)"})
         Object doForeignBoxed(TruffleObject left, TruffleObject right) {
             try {
                 return getRecursiveNode().executeWith(left, unboxRight(right));
@@ -289,7 +289,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        @Specialization(guards = {"isForeignArray(left)", "isPositive(right)"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "right > 0"})
         Object doForeignArray(TruffleObject left, int right,
                         @Cached("READ.createNode()") Node readNode,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
@@ -312,7 +312,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"isForeignArray(left)", "isBoxed(right)", "!isForeignArray(right)"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "isBoxed(right)"})
         Object doForeignArray(TruffleObject left, TruffleObject right,
                         @Cached("READ.createNode()") Node readNode,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
@@ -331,7 +331,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        @Specialization(guards = {"isForeignArray(left)", "right"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "right"})
         Object doForeignArray(TruffleObject left, @SuppressWarnings("unused") boolean right,
                         @Cached("READ.createNode()") Node readNode,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
@@ -343,19 +343,19 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isForeignArray(left)", "!right"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "!right"})
         Object doForeignArrayEmpty(TruffleObject left, boolean right) {
             return factory().createList();
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isForeignArray(left)", "right <= 0"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "right <= 0"})
         Object doForeignArrayEmpty(TruffleObject left, int right) {
             return factory().createList();
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isForeignArray(left)", "right <= 0"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "right <= 0"})
         Object doForeignArrayEmpty(TruffleObject left, long right) {
             return factory().createList();
         }
@@ -364,10 +364,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        protected boolean isPositive(int right) {
-            return right > 0;
         }
 
         private MulNode getRecursiveNode() {
@@ -591,10 +587,6 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Fallback
         PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        protected boolean isPositive(int right) {
-            return right > 0;
         }
     }
 

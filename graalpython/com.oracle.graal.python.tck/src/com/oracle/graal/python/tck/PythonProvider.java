@@ -360,9 +360,13 @@ public class PythonProvider implements LanguageProvider {
                 } else {
                     throw snippetRun.getException();
                 }
-            } else {
+            } else if (!(isNumber(par0) && isScalarVector(par1) || isScalarVector(par0) && isNumber(par1))) {
                 ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
             }
+        }
+
+        protected static boolean isScalarVector(Value val) {
+            return isNumber(val) && val.hasArrayElements() && val.getArraySize() == 1 && !isMapping(val);
         }
 
         protected static boolean isNumber(Value par0) {
@@ -374,7 +378,7 @@ public class PythonProvider implements LanguageProvider {
         }
 
         protected static boolean isSequence(Value par0) {
-            return par0.isString() || (par0.hasArrayElements() && !isMapping(par0));
+            return !isNumber(par0) && (par0.isString() || (par0.hasArrayElements() && !isMapping(par0)));
         }
 
         protected static boolean isMapping(Value par0) {
@@ -390,7 +394,7 @@ public class PythonProvider implements LanguageProvider {
         }
 
         private static boolean isInteger(Value par0) {
-            return (par0.isNumber() && par0.fitsInInt() || par0.isBoolean()) && !isSequence(par0);
+            return (par0.isNumber() && par0.fitsInInt() || par0.isBoolean());
         }
 
         private static final PSequenceMultiplicationVerifier INSTANCE = new PSequenceMultiplicationVerifier();
