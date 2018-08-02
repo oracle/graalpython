@@ -46,14 +46,19 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 public class PBuffer extends PythonBuiltinObject {
 
     private final Object delegate;
+    private final boolean readOnly;
 
-    public PBuffer(PythonClass cls, Object iterable) {
+    public PBuffer(PythonClass cls, Object iterable, boolean readOnly) {
         super(cls);
         this.delegate = iterable;
+        this.readOnly = readOnly;
     }
 
     public Object getDelegate() {
         return delegate;
     }
 
+    public boolean isReadOnly() {
+        return readOnly;
+    }
 }

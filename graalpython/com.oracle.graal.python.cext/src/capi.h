@@ -68,6 +68,7 @@ typedef struct {
 
 typedef struct {
     PyObject_VAR_HEAD
+    int readonly;
     void *buf_delegate;
 } PyBufferDecorator;
 

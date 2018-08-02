@@ -56,8 +56,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +68,6 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -251,12 +248,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         builtinConstants.put("_have_functions", core.factory().createList());
 
-        Map<String, String> getenv = System.getenv();
-        PDict environ = core.factory().createDict();
-        for (Entry<String, String> entry : getenv.entrySet()) {
-            environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(entry.getValue().getBytes()));
+        if (!core.getLanguage().isNativeBuildTime()) {
+            builtinConstants.put("environ", core.createEnvironDict());
+        } else {
+            builtinConstants.put("environ", core.factory().createDict());
         }
-        builtinConstants.put("environ", environ);
     }
 
     @Builtin(name = "getcwd", fixedNumOfArguments = 0)
