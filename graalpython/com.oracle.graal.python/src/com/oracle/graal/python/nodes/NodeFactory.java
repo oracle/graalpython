@@ -518,7 +518,7 @@ public class NodeFactory {
     }
 
     public PNode callBuiltin(String string, PNode argument) {
-        return PythonCallNode.create(getBuiltin(string), new PNode[]{argument}, new PNode[0], EmptyNode.create(), EmptyNode.create());
+        return PythonCallNode.create(getBuiltin(string), new PNode[]{argument}, new PNode[0], null, null);
     }
 
     public PNode createSetAttribute(PNode object, String key, PNode rhs) {

@@ -25,93 +25,39 @@
  */
 package com.oracle.graal.python.nodes.argument.positional;
 
-import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
 
-@NodeChildren({@NodeChild(value = "primary"), @NodeChild(value = "splat", type = ExecutePositionalStarargsNode.class)})
-public abstract class PositionalArgumentsNode extends PNode {
-    @Children private final PNode[] arguments;
+public final class PositionalArgumentsNode extends Node {
 
-    public static PositionalArgumentsNode create(PNode[] arguments, PNode starargs) {
-        return PositionalArgumentsNodeGen.create(arguments, EmptyNode.create(), ExecutePositionalStarargsNode.create(starargs == null ? EmptyNode.create() : starargs));
+    public static PositionalArgumentsNode create(PNode[] arguments, PNode starArgs) {
+        assert starArgs != null;
+        return new PositionalArgumentsNode(arguments, ExecutePositionalStarargsNode.create(starArgs));
     }
 
-    public static PositionalArgumentsNode create() {
-        return PositionalArgumentsNodeGen.create(new PNode[0], EmptyNode.create(), ExecutePositionalStarargsNode.create(EmptyNode.create()));
-    }
+    @Children protected final PNode[] arguments;
+    @Child private ExecutePositionalStarargsNode starArgs;
 
-    PositionalArgumentsNode(PNode[] arguments) {
+    private final PrimitiveValueProfile starArgsLengthProfile = PrimitiveValueProfile.createEqualityProfile();
+
+    public PositionalArgumentsNode(PNode[] arguments, ExecutePositionalStarargsNode starArgs) {
         this.arguments = arguments;
+        this.starArgs = starArgs;
     }
 
-    public int getArgumentLength() {
-        return arguments.length;
-    }
-
-    @Override
-    public final Object[] execute(VirtualFrame frame) {
-        return execute(frame, null);
-    }
-
-    public abstract Object[] execute(VirtualFrame frame, Object primary);
-
-    protected abstract Object[] executeWithArguments(VirtualFrame frame, Object primary, Object[] starargs);
-
-    public final Object[] executeWithArguments(Object primary, Object[] starargs) {
-        assert arguments.length == 0;
-        return executeWithArguments(null, primary, starargs);
-    }
-
-    @Specialization(guards = {"starargs.length == starLen", "(primary == null) == primaryWasNull"}, limit = "getVariableArgumentInlineCacheLimit()")
     @ExplodeLoop
-    Object[] argumentsCached(VirtualFrame frame, Object primary, Object[] starargs,
-                    @Cached("starargs.length") int starLen,
-                    @Cached("primary == null") boolean primaryWasNull) {
-        final int argLen = arguments.length;
-        CompilerAsserts.partialEvaluationConstant(primaryWasNull);
-        int offset = 0;
-        if (!primaryWasNull) {
-            offset = 1;
+    public Object[] execute(VirtualFrame frame) {
+        Object[] starArgsArray = starArgs.execute(frame);
+        int starArgsLength = starArgsLengthProfile.profile(starArgsArray.length);
+        Object[] values = new Object[arguments.length + starArgsLength];
+        for (int i = 0; i < arguments.length; i++) {
+            values[i] = arguments[i].execute(frame);
         }
-        CompilerAsserts.partialEvaluationConstant(offset);
-        final int length = argLen + starLen + offset;
-        CompilerAsserts.partialEvaluationConstant(length);
-        final Object[] values = new Object[length];
-        if (!primaryWasNull) {
-            values[0] = primary;
-        }
-        for (int i = 0; i < argLen; i++) {
-            values[offset + i] = arguments[i].execute(frame);
-        }
-        for (int i = 0; i < starLen; i++) {
-            values[offset + argLen + i] = starargs[i];
-        }
-        return values;
-    }
-
-    @Specialization(replaces = "argumentsCached")
-    Object[] arguments(VirtualFrame frame, Object primary, Object[] starargs) {
-        final int argLen = arguments.length;
-        final int starLen = starargs.length;
-        int offset = primary == null ? 0 : 1;
-        final int length = argLen + starLen + offset;
-        final Object[] values = new Object[length];
-        if (primary != null) {
-            values[0] = primary;
-        }
-        for (int i = 0; i < argLen; i++) {
-            values[offset + i] = arguments[i].execute(frame);
-        }
-        for (int i = 0; i < starLen; i++) {
-            values[offset + argLen + i] = starargs[i];
-        }
+        System.arraycopy(starArgsArray, 0, values, arguments.length, starArgsLength);
         return values;
     }
 
@@ -120,5 +66,15 @@ public abstract class PositionalArgumentsNode extends PNode {
         result[0] = primary;
         System.arraycopy(arguments, 0, result, 1, argumentsLength);
         return result;
+    }
+
+    @ExplodeLoop
+    public static Object[] evaluateArguments(VirtualFrame frame, PNode[] arguments) {
+        CompilerAsserts.compilationConstant(arguments);
+        Object[] values = new Object[arguments.length];
+        for (int i = 0; i < arguments.length; i++) {
+            values[i] = arguments[i].execute(frame);
+        }
+        return values;
     }
 }

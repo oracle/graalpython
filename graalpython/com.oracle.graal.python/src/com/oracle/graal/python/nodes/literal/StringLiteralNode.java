@@ -40,6 +40,10 @@ public final class StringLiteralNode extends LiteralNode {
         return value;
     }
 
+    public String getValue() {
+        return value;
+    }
+
     public static StringLiteralNode create(String string) {
         return new StringLiteralNode(string);
     }

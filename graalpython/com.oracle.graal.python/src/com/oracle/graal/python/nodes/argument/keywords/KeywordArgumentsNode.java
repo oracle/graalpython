@@ -28,16 +28,19 @@ package com.oracle.graal.python.nodes.argument.keywords;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 
-@NodeChildren({@NodeChild(value = "splat", type = ExecuteKeywordStarargsNode.class)})
-public abstract class KeywordArgumentsNode extends PNode {
+@NodeChild(value = "splat", type = ExecuteKeywordStarargsNode.class)
+@ImportStatic(PythonOptions.class)
+public abstract class KeywordArgumentsNode extends Node {
     @Children private final PNode[] arguments;
     @Child private CompactKeywordsNode compactNode = CompactKeywordsNodeGen.create();
 
@@ -49,7 +52,6 @@ public abstract class KeywordArgumentsNode extends PNode {
         this.arguments = arguments;
     }
 
-    @Override
     public abstract PKeyword[] execute(VirtualFrame frame);
 
     @Specialization(guards = "starargs.length == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
