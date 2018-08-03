@@ -276,7 +276,6 @@ class GraalPythonTags(object):
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
-    R = 'python-R'
     apptests = 'python-apptests'
     license = 'python-license'
 
@@ -414,35 +413,12 @@ def graalpython_gate_runner(args, tasks):
                 test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v"] + testfiles
                 mx.run(["./graalpython-svm", "--python.CoreHome=graalpython/lib-graalpython", "--python.StdLibHome=graalpython/lib-python/3", langhome] + test_args, nonZeroIsFatal=True)
 
-    with Task('GraalPython downstream R tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.R]) as task:
-        script_r2p = os.path.join(_suite.dir, "graalpython", "benchmarks", "src", "benchmarks", "interop", "r_python_image_demo.r")
-        script_p2r = os.path.join(_suite.dir, "graalpython", "benchmarks", "src", "benchmarks", "interop", "python_r_image_demo.py")
-        pythonjars = os.pathsep.join([
-            os.path.join(_suite.dir, "mxbuild", "dists", "graalpython.jar"),
-            os.path.join(_suite.dir, "mxbuild", "dists", "graalpython-env.jar")
-        ])
-        if task:
-            rrepo = os.environ["FASTR_REPO_URL"]
-            testdownstream(
-                _suite,
-                [rrepo, mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
-                ".",
-                [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
-                 ["--cp-sfx", pythonjars, "r", "--polyglot", "--file=%s" % script_r2p]
-                 ])
-            testdownstream(
-                _suite,
-                [rrepo, mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
-                ".",
-                [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
-                 ["-v", "--cp-sfx", pythonjars, "r", "--jvm", "--polyglot", "-e", "eval.polyglot('python', path='%s')" % str(script_p2r)]
-                 ])
-
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
             _apptest_suite = _suite.import_suite(
                 "graalpython-apptests",
+                version="a16199a5f529689c6b671ce1ead79be0e652f3c9",
                 urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
             )
             mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
