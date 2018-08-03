@@ -1106,12 +1106,10 @@ def PyTruffle_Type(type_name):
         return PyCapsule
     elif type_name == "function":
         return types.FunctionType
-    elif type_name == "method_descriptor":
+    elif type_name == "method_descriptor" or type_name == "wrapper_descriptor":
         return type(list.append)
     elif type_name == "getset_descriptor":
         return getset_descriptor
-    elif type_name == "wrapper_descriptor":
-        return property
     elif type_name == "member_descriptor":
         return property
     elif type_name == "builtin_function_or_method":
