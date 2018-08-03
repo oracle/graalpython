@@ -691,9 +691,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException) {
             if (obj instanceof String) {
-                return JavaTypeConversions.convertStringToDouble((String) obj);
+                return convertStringToDouble((String) obj);
             } else if (obj instanceof PString) {
-                return JavaTypeConversions.convertStringToDouble(((PString) obj).getValue());
+                return convertStringToDouble(((PString) obj).getValue());
             } else if (obj instanceof PNone) {
                 return 0.0;
             }
