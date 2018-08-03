@@ -183,6 +183,11 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(o);
         }
 
+        @Specialization(guards = "eq(D_COMMON, key)")
+        Object doDCommon(Object o, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(o);
+        }
+
         @Specialization(guards = "eq(_BASE, key)")
         Object doObBase(PString o, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(o);

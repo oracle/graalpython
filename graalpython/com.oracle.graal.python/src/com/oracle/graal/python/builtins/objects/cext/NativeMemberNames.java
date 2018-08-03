@@ -107,6 +107,7 @@ public final class NativeMemberNames {
     public static final String IM_SELF = "im_self";
     public static final String SQ_REPEAT = "sq_repeat";
     public static final String MEMORYVIEW_FLAGS = "flags";
+    public static final String D_COMMON = "d_common";
 
     @CompilationFinal(dimensions = 1) public static final String[] values;
     static {
