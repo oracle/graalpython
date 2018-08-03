@@ -457,6 +457,7 @@ public class TypeBuiltins extends PythonBuiltins {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
 
         @Specialization
+        @TruffleBoundary
         PList getSubclasses(PythonClass cls) {
             // TODO: missing: keep track of subclasses
             return factory().createList(cls.getSubClasses().toArray());
