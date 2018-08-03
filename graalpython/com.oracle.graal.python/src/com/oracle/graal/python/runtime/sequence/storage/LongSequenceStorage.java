@@ -149,7 +149,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
+    public LongSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         long[] newArray = new long[sliceLength];
 
         if (step == 1) {

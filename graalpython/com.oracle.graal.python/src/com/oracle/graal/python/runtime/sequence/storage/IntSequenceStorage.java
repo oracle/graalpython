@@ -144,7 +144,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
+    public IntSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         int[] newArray = new int[sliceLength];
 
         if (step == 1) {

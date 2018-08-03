@@ -80,7 +80,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
+    public ObjectSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         Object[] newArray = new Object[sliceLength];
 
         if (step == 1) {

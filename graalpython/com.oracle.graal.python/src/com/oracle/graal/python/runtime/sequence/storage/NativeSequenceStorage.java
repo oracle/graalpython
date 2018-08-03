@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 public class NativeSequenceStorage extends SequenceStorage {
 
     public static enum ElementType {
+        BYTE,
         INT,
         LONG,
         DOUBLE,
