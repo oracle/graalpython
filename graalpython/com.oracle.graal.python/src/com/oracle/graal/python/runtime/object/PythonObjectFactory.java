@@ -104,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -115,6 +116,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -124,44 +126,15 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 
-public abstract class PythonObjectFactory extends Node {
+public final class PythonObjectFactory extends Node {
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-    private static final PythonObjectFactory SINGLETON = new PythonObjectFactory() {
-
-        @Override
-        protected PythonCore getCore() {
-            // TODO(ls): re-enable assertion
-            // CompilerAsserts.neverPartOfCompilation();
-            return PythonLanguage.getCore();
-        }
-    };
-
-    public static PythonObjectFactory get() {
-        // CompilerAsserts.neverPartOfCompilation();
-        return SINGLETON;
+    private PythonObjectFactory() {
     }
 
     public static PythonObjectFactory create() {
-        return new PythonObjectFactory() {
-            @CompilationFinal private PythonCore core;
-
-            @Override
-            public NodeCost getCost() {
-                return core == null ? NodeCost.UNINITIALIZED : NodeCost.MONOMORPHIC;
-            }
-
-            @Override
-            protected PythonCore getCore() {
-                if (core == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    core = PythonLanguage.getContext().getCore();
-                }
-                return core;
-            }
-        };
+        return new PythonObjectFactory();
     }
-
-    protected abstract PythonCore getCore();
 
     private PythonClass lookupClass(PythonBuiltinClassType type) {
         return getCore().lookupType(type);
@@ -170,6 +143,19 @@ public abstract class PythonObjectFactory extends Node {
     @SuppressWarnings("static-method")
     public final <T> T trace(T allocatedObject) {
         return allocatedObject;
+    }
+
+    @Override
+    public NodeCost getCost() {
+        return contextRef == null ? NodeCost.UNINITIALIZED : NodeCost.MONOMORPHIC;
+    }
+
+    public PythonCore getCore() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = PythonLanguage.getContextRef();
+        }
+        return contextRef.get().getCore();
     }
 
     /*
@@ -495,7 +481,7 @@ public abstract class PythonObjectFactory extends Node {
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
                     FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure, ExecutionCellSlots cellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        return trace(PGeneratorFunction.create(lookupClass(PythonBuiltinClassType.PGeneratorFunction), getCore(), name, enclosingClassName, arity, callTarget,
+        return trace(PGeneratorFunction.create(lookupClass(PythonBuiltinClassType.PGeneratorFunction), getCore().getLanguage(), name, enclosingClassName, arity, callTarget,
                         frameDescriptor, globals, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode));
     }
 
@@ -699,12 +685,12 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PForeignArrayIterator(lookupClass(PythonBuiltinClassType.PForeignArrayIterator), iterable, size));
     }
 
-    public PBuffer createBuffer(PythonClass cls, Object iterable) {
-        return trace(new PBuffer(cls, iterable));
+    public PBuffer createBuffer(PythonClass cls, Object iterable, boolean readonly) {
+        return trace(new PBuffer(cls, iterable, readonly));
     }
 
-    public PBuffer createBuffer(Object iterable) {
-        return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable));
+    public PBuffer createBuffer(Object iterable, boolean readonly) {
+        return trace(new PBuffer(lookupClass(PythonBuiltinClassType.PBuffer), iterable, readonly));
     }
 
     public PCode createCode(RootNode result) {

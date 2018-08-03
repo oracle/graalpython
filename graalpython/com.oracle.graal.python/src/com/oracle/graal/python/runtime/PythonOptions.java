@@ -40,26 +40,11 @@ public final class PythonOptions {
         // no instances
     }
 
-    @Option(category = OptionCategory.DEBUG, help = "Defer loading the core lib until after language initialization, so it can be debugged.") //
-    public static final OptionKey<Boolean> LazyInit = new OptionKey<>(false);
-
     @Option(category = OptionCategory.DEBUG, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
     public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "Print the java stacktrace if enabled") //
     public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "Share the core library between all contexts of an engine.") //
-    public static final OptionKey<Boolean> SharedCore = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> TraceSequenceStorageGeneralization = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> UnboxSequenceStorage = new OptionKey<>(true);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> UnboxSequenceIteration = new OptionKey<>(true);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
@@ -81,9 +66,6 @@ public final class PythonOptions {
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> ForceLongType = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
@@ -130,10 +112,10 @@ public final class PythonOptions {
     }
 
     public static int getCallSiteInlineCacheMaxDepth() {
-        return getOption(PythonLanguage.getContext(), CallSiteInlineCacheMaxDepth);
+        return getOption(PythonLanguage.getContextRef().get(), CallSiteInlineCacheMaxDepth);
     }
 
     public static int getVariableArgumentInlineCacheLimit() {
-        return getOption(PythonLanguage.getContext(), VariableArgumentInlineCacheLimit);
+        return getOption(PythonLanguage.getContextRef().get(), VariableArgumentInlineCacheLimit);
     }
 }

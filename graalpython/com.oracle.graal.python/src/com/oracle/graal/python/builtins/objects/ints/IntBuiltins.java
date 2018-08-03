@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import java.math.BigInteger;
 import java.util.List;
 
@@ -60,7 +62,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.ArithmeticUtil;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -135,12 +136,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object add(PInt left, long right) {
+        PInt add(PInt left, long right) {
             return add(left, factory().createInt(right));
         }
 
         @Specialization
-        Object add(long left, PInt right) {
+        PInt add(long left, PInt right) {
             return add(factory().createInt(left), right);
         }
 
@@ -156,7 +157,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -192,12 +193,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPIntLong(PInt left, long right) {
+        PInt doPIntLong(PInt left, long right) {
             return doPIntPInt(left, factory().createInt(right));
         }
 
         @Specialization
-        Object doLongPInt(long left, PInt right) {
+        PInt doLongPInt(long left, PInt right) {
             return doPIntPInt(factory().createInt(left), right);
         }
 
@@ -213,7 +214,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -244,12 +245,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPIntLong(PInt right, long left) {
+        PInt doPIntLong(PInt right, long left) {
             return doPIntPInt(factory().createInt(left), right);
         }
 
         @Specialization
-        Object doLongPInt(long right, PInt left) {
+        PInt doLongPInt(long right, PInt left) {
             return doPIntPInt(factory().createInt(right), left);
         }
 
@@ -265,7 +266,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -293,12 +294,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPI(long left, PInt right) {
+        double doPI(long left, PInt right) {
             return doPP(factory().createInt(left), right);
         }
 
         @Specialization
-        Object doPL(PInt left, long right) {
+        double doPL(PInt left, long right) {
             if (right == 0) {
                 throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
             }
@@ -329,7 +330,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -385,7 +386,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             // TODO: raise error if left is an integer
             // raise(PythonErrorType.TypeError, "descriptor '__rtruediv__' requires a 'int' object
             // but received a '%p'", right);
@@ -440,7 +441,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -487,7 +488,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -509,30 +510,30 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doLPi(long left, PInt right) {
+        PInt doLPi(long left, PInt right) {
             raiseDivisionByZero(right.isZero());
             return factory().createInt(op(BigInteger.valueOf(left), right.getValue()));
         }
 
         @Specialization(guards = "right >= 0")
-        Object doPiL(PInt left, long right) {
+        PInt doPiL(PInt left, long right) {
             raiseDivisionByZero(right == 0);
             return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()")
-        Object doPiPi(PInt left, PInt right) {
+        PInt doPiPi(PInt left, PInt right) {
             raiseDivisionByZero(right.isZero());
             return factory().createInt(op(left.getValue(), right.getValue()));
         }
 
         @Specialization(guards = "right < 0")
-        Object doPiLNeg(PInt left, long right) {
+        PInt doPiLNeg(PInt left, long right) {
             return factory().createInt(opNeg(left.getValue(), BigInteger.valueOf(right)));
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()")
-        Object doPiPiNeg(PInt left, PInt right) {
+        PInt doPiPiNeg(PInt left, PInt right) {
             return factory().createInt(opNeg(left.getValue(), right.getValue()));
         }
 
@@ -551,7 +552,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -572,16 +573,21 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doLLOvf(long x, long y) {
-            try {
-                return Math.multiplyExact(x, y);
-            } catch (ArithmeticException e) {
-                return factory().createInt(op(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+        PInt doLLOvf(long x, long y) {
+            long r = x * y;
+            long ax = Math.abs(x);
+            long ay = Math.abs(y);
+            if (((ax | ay) >>> 31 != 0)) {
+                int leadingZeros = Long.numberOfLeadingZeros(ax) + Long.numberOfLeadingZeros(ay);
+                if (leadingZeros < 66) {
+                    return factory().createInt(op(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+                }
             }
+            return factory().createInt(r);
         }
 
         @Specialization
-        Object doPIntLong(PInt left, long right) {
+        PInt doPIntLong(PInt left, long right) {
             return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
         }
 
@@ -597,7 +603,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -721,7 +727,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doFallback(Object x, Object y, Object z) {
+        PNotImplemented doFallback(Object x, Object y, Object z) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -780,13 +786,13 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization
-        Object posOvf(long arg) {
+        @Specialization(rewriteOn = IllegalArgumentException.class)
+        PInt posOvf(long arg) throws IllegalArgumentException {
             long result = Math.abs(arg);
             if (result < 0) {
                 return factory().createInt(op(BigInteger.valueOf(arg)));
             } else {
-                return result;
+                return factory().createInt(BigInteger.valueOf(arg));
             }
         }
 
@@ -881,12 +887,9 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object negOvf(long arg) {
-            try {
-                return Math.negateExact(arg);
-            } catch (ArithmeticException e) {
-                return factory().createInt(negate(BigInteger.valueOf(arg)));
-            }
+        PInt negOvf(long arg) {
+            BigInteger value = arg == Long.MIN_VALUE ? negate(BigInteger.valueOf(arg)) : BigInteger.valueOf(-arg);
+            return factory().createInt(value);
         }
 
         @Specialization
@@ -934,17 +937,54 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class LShiftNode extends PythonBinaryBuiltinNode {
+
+        private long leftShiftExact(long left, long right) {
+            if (right >= Long.SIZE || right < 0) {
+                shiftError(right);
+            }
+
+            long result = left << right;
+
+            if (left != result >> right) {
+                throw new ArithmeticException("integer overflow");
+            }
+
+            return result;
+        }
+
+        private int leftShiftExact(int left, int right) {
+            if (right >= Integer.SIZE || right < 0) {
+                shiftError(right);
+            }
+
+            int result = left << right;
+
+            if (left != result >> right) {
+                throw new ArithmeticException("integer overflow");
+            }
+
+            return result;
+        }
+
+        private void shiftError(long shiftCount) {
+            if (shiftCount >= Integer.SIZE) {
+                throw new ArithmeticException("integer overflow");
+            } else if (shiftCount < 0) {
+                throw getCore().raise(ValueError, "negative shift count");
+            }
+        }
+
         @Specialization(rewriteOn = ArithmeticException.class)
         int doII(int left, int right) {
             raiseNegativeShiftCount(right < 0);
-            return ArithmeticUtil.leftShiftExact(left, right);
+            return leftShiftExact(left, right);
         }
 
         @Specialization
         Object doIIOvf(int left, int right) {
             raiseNegativeShiftCount(right < 0);
             try {
-                return ArithmeticUtil.leftShiftExact(left, right);
+                return leftShiftExact(left, right);
             } catch (ArithmeticException e) {
                 return doGuardedBiI(BigInteger.valueOf(left), right);
             }
@@ -953,14 +993,14 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization(rewriteOn = ArithmeticException.class)
         long doLL(long left, long right) {
             raiseNegativeShiftCount(right < 0);
-            return ArithmeticUtil.leftShiftExact(left, right);
+            return leftShiftExact(left, right);
         }
 
         @Specialization
         Object doLLOvf(long left, long right) {
             raiseNegativeShiftCount(right < 0);
             try {
-                return ArithmeticUtil.leftShiftExact(left, right);
+                return leftShiftExact(left, right);
             } catch (ArithmeticException e) {
                 int rightI = (int) right;
                 if (rightI == right) {
@@ -1017,7 +1057,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -1082,7 +1122,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -1137,7 +1177,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1277,7 +1317,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object eq(Object a, Object b) {
+        PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1326,7 +1366,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object eq(Object a, Object b) {
+        PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1371,7 +1411,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1416,7 +1456,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1462,7 +1502,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1508,7 +1548,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1533,7 +1573,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object frombytesSignedOrNot(String str, String byteorder, Object[] args, boolean keywordArg) {
+        public PInt frombytesSignedOrNot(String str, String byteorder, Object[] args, boolean keywordArg) {
             byte[] bytes = littleToBig(str.getBytes(), byteorder);
             BigInteger integer = new BigInteger(bytes);
             if (keywordArg) {
@@ -1545,14 +1585,14 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object frombytes(String str, String byteorder, Object[] args, PNone keywordArg) {
+        public PInt frombytes(String str, String byteorder, Object[] args, PNone keywordArg) {
             byte[] bytes = littleToBig(str.getBytes(), byteorder);
             return factory().createInt(new BigInteger(bytes));
         }
 
         @Specialization
         @TruffleBoundary
-        public Object fromPBytes(PBytes str, String byteorder, Object[] args, PNone keywordArg) {
+        public PInt fromPBytes(PBytes str, String byteorder, Object[] args, PNone keywordArg) {
             byte[] bytes = littleToBig(str.getInternalByteArray(), byteorder);
             return factory().createInt(new BigInteger(bytes));
         }
@@ -1600,7 +1640,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object doPInt(PInt self) {
+        public String doPInt(PInt self) {
             return self.toString();
         }
     }
@@ -1765,7 +1805,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
+        PNotImplemented doGeneric(@SuppressWarnings("unused") Object self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

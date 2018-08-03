@@ -51,30 +51,23 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PBaseNode extends Node {
-    @CompilationFinal private PythonCore core;
     @Child private PythonObjectFactory factory;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
-        if (factory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            factory = insert(PythonObjectFactory.create());
-        }
-        return factory;
+        return getCore().factory();
     }
 
     public final PythonCore getCore() {
-        if (core == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            core = PythonLanguage.getCore();
-        }
-        return core;
+        return getContext().getCore();
     }
 
     public final NodeFactory getNodeFactory() {
-        return getCore().getLanguage().getNodeFactory();
+        return getContext().getLanguage().getNodeFactory();
     }
 
     public final PException raise(PBaseException exc) {
@@ -102,6 +95,10 @@ public abstract class PBaseNode extends Node {
     }
 
     public final PythonContext getContext() {
-        return getCore().getContext();
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = PythonLanguage.getContextRef();
+        }
+        return contextRef.get();
     }
 }

@@ -125,7 +125,7 @@ public class StringFormatter {
                 // Result is the result of arg.__int__() if that works
                 Object attribute = lookupAttribute.apply(arg, __INT__);
                 if (attribute instanceof PythonCallable) {
-                    return callNode.executeCall(attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                    return callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                 }
             } catch (PException e) {
                 // No __int__ defined (at Python level)
@@ -142,7 +142,7 @@ public class StringFormatter {
             try {
                 Object attribute = lookupAttribute.apply(arg, __FLOAT__);
                 if (attribute instanceof PythonCallable) {
-                    return callNode.executeCall(attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                    return callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                 }
             } catch (PException e) {
             }
@@ -345,7 +345,7 @@ public class StringFormatter {
                     } else if (arg instanceof PBytes) {
                         ft.format(((PBytes) arg).toString());
                     } else if (arg instanceof PythonObject && ((bytesAttribute = lookupAttribute.apply(arg, __BYTES__)) != PNone.NO_VALUE)) {
-                        Object result = callNode.executeCall(bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                        Object result = callNode.executeCall(null, bytesAttribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                         ft.format(result.toString());
                     } else {
                         throw core.raise(TypeError, " %%b requires bytes, or an object that implements %s, not '%p'", __BYTES__, arg);
@@ -357,7 +357,7 @@ public class StringFormatter {
                     // Get hold of the actual object to display (may set needUnicode)
                     Object attribute = spec.type == 's' ? lookupAttribute.apply(arg, __STR__) : lookupAttribute.apply(arg, __REPR__);
                     if (attribute != PNone.NO_VALUE) {
-                        Object result = callNode.executeCall(attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
+                        Object result = callNode.executeCall(null, attribute, createArgs(arg), PKeyword.EMPTY_KEYWORDS);
                         if (PGuards.isString(result)) {
                             // Format the str/unicode form of the argument using this Spec.
                             f = ft = new TextFormatter(core, buffer, spec);

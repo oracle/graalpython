@@ -44,6 +44,12 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         this.length = elements.length;
     }
 
+    public LongSequenceStorage(long[] elements, int length) {
+        this.values = elements;
+        this.capacity = values.length;
+        this.length = length;
+    }
+
     public LongSequenceStorage(int capacity) {
         this.values = new long[capacity];
         this.capacity = capacity;

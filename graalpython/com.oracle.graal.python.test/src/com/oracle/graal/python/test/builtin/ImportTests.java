@@ -36,7 +36,7 @@ import static com.oracle.graal.python.test.PythonTests.*;
 public class ImportTests {
     @Before
     public void setup() {
-        PythonTests.resetContext(new String[0]);
+        PythonTests.enterContext();
     }
 
     @Test

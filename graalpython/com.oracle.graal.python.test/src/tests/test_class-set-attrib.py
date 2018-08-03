@@ -37,57 +37,68 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# memoryview is mainly implemented in C
+counter = 0
+
+class Foo:
+  def __setattr__(self, key, value):
+    global counter
+    counter = counter + 1
+    object.__setattr__(self, key, value)
+  def __delattr__(self, key):
+    global counter
+    counter = counter + 10
+    object.__delattr__(self, key)
+
+def test_call():
+  global counter
+  counter = 0
+  f = Foo()
+  f.a = 1
+  Foo.b = 123
+  assert counter == 1, "setting attrib on class should not call its own __setattr__"
+  del f.a
+  del Foo.b
+  assert counter == 11, "deleting attrib on class should not call its own __delattr__"
+
+class AClass:
+  pass
+
+class BClass(AClass):
+  pass
+
+class CClass(BClass):
+  pass
+
+class DClass(BClass):
+  pass
+
+def custom_set(self, key, value):
+  object.__setattr__(self, key, value + 10 if isinstance(value, int) else value)
+
+def custom_get(self, key):
+  value = object.__getattribute__(self, key)
+  return value + 100 if isinstance(value, int) else value
+
+def test_assignments():
+  object = CClass()
+  # writing to BClass changes the result, writing to DClass doesn't
+  targets = (AClass, BClass, DClass, CClass, object)
+  results = (0, 1, 1, 3, 4)
+  for i in range(0, len(targets)):
+    targets[i].foo = i
+    assert object.foo == results[i], "normal %d" %i
+  # make sure that a custom __getattribute__ is used
+  BClass.__getattribute__ = custom_get
+  for i in range(0, len(targets)):
+    targets[i].bar = i
+    assert object.bar == results[i] + 100, "custom get %d" % i
+  # check correct lookups when deleting attributes
+  for i in reversed(range(0, len(targets))):
+    assert object.bar == results[i] + 100, "delete %d" % i
+    del targets[i].bar
+  # make sure a custom __setattr__ is used
+  BClass.__setattr__ = custom_set
+  object.baz = 9
+  assert object.baz == 119, "custom set"
 
 
-def __memoryview_init(self, *args, **kwargs):
-    import _memoryview
-    # NOTE: DO NOT CHANGE THE NAME OF PROPERTY '__c_memoryview'
-    # it is also referenced in native code and Java code
-    if args and isinstance(args[0], _memoryview.nativememoryview):
-        # wrapping case
-        self.__c_memoryview = args[0]
-    else:
-        self.__c_memoryview = _memoryview.nativememoryview(*args, **kwargs)
-
-
-def __memoryview_getitem(self, key):
-    res = self.__c_memoryview.__getitem__(key)
-    return memoryview(res) if isinstance(res, type(self.__c_memoryview)) else res
-
-
-getsetdescriptor = type(type(__memoryview_init).__code__)
-
-
-def make_property(name):
-    def getter(self):
-        return getattr(self.__c_memoryview, name)
-
-    error_string = "attribute '%s' of 'memoryview' objects is not writable" % name
-    def setter(self, value):
-        raise AttributeError(error_string)
-
-    return getsetdescriptor(fget=getter, fset=setter, name=name, owner=memoryview)
-
-
-for p in ["nbytes", "readonly", "itemsize", "format", "ndim", "shape", "strides",
-          "suboffsets", "c_contiguous", "f_contiguous", "contiguous"]:
-    setattr(memoryview, p, make_property(p))
-
-
-def make_delegate0(p):
-    def delegate(self):
-        return getattr(self.__c_memoryview, p)()
-    delegate.__name__ = p
-    return delegate
-
-for p in ["__repr__", "__len__", "release", "tobytes", "hex", "tolist",
-          "__enter__", "__exit__"]:
-    setattr(memoryview, p, make_delegate0(p))
-
-
-# other delegate methods
-memoryview.__init__ = __memoryview_init
-memoryview.__getitem__ = __memoryview_getitem
-memoryview.__setitem__ = lambda self, key, value: self.__c_memoryview.__setitem__(key, value)
-memoryview.cast = lambda self, *args: memoryview(self.__c_memoryview.cast(*args))

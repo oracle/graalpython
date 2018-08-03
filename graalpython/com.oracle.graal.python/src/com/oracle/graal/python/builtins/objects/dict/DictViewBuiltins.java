@@ -180,7 +180,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -210,7 +210,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

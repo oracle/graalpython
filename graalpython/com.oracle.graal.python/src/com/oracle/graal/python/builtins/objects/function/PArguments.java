@@ -217,8 +217,7 @@ public final class PArguments {
         generatorFrame.getArguments()[INDEX_GENERATOR_FRAME] = generatorArguments;
     }
 
-    public static GeneratorControlData getControlData(Frame frame) {
-        Frame generatorFrame = getGeneratorFrame(frame);
+    public static GeneratorControlData getControlDataFromGeneratorFrame(Frame generatorFrame) {
         return (GeneratorControlData) generatorFrame.getArguments()[INDEX_GENERATOR_FRAME];
     }
 

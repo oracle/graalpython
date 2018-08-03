@@ -38,10 +38,14 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeChild(value = "rightNode", type = PNode.class)
 @GenerateNodeFactory
 public abstract class WriteGeneratorFrameVariableNode extends FrameSlotNode implements WriteIdentifierNode {
+
+    private final ValueProfile frameProfile = ValueProfile.createClassProfile();
+
     public WriteGeneratorFrameVariableNode(FrameSlot slot) {
         super(slot);
     }
@@ -97,30 +101,31 @@ public abstract class WriteGeneratorFrameVariableNode extends FrameSlotNode impl
 
     public abstract Object executeWith(VirtualFrame frame, Object value);
 
+    private Frame getGeneratorFrame(VirtualFrame frame) {
+        return frameProfile.profile(PArguments.getGeneratorFrame(frame));
+    }
+
     @Specialization(guards = "isBooleanKind(frame)")
     public PNone write(VirtualFrame frame, PNone right) {
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        generatorFrame.setObject(frameSlot, PNone.NONE);
+        getGeneratorFrame(frame).setObject(frameSlot, PNone.NONE);
         return right;
     }
 
     @Specialization(guards = "isBooleanKind(frame)")
     public boolean write(VirtualFrame frame, boolean right) {
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        generatorFrame.setBoolean(frameSlot, right);
+        getGeneratorFrame(frame).setBoolean(frameSlot, right);
         return right;
     }
 
     @Specialization(guards = "isIntegerKind(frame)")
     public int write(VirtualFrame frame, int value) {
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        generatorFrame.setInt(frameSlot, value);
+        getGeneratorFrame(frame).setInt(frameSlot, value);
         return value;
     }
 
     @Specialization(guards = {"isLongOrObjectKind(frame)", "isPrimitiveInt(value)"}, rewriteOn = ArithmeticException.class)
     public PInt writePIntAsLong(VirtualFrame frame, PInt value) {
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
+        Frame generatorFrame = getGeneratorFrame(frame);
         generatorFrame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Long);
         generatorFrame.setLong(frameSlot, value.longValueExact());
         return value;
@@ -128,7 +133,7 @@ public abstract class WriteGeneratorFrameVariableNode extends FrameSlotNode impl
 
     @Specialization(guards = "isLongOrObjectKind(frame)")
     public PInt writePIntAsObject(VirtualFrame frame, PInt value) {
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
+        Frame generatorFrame = getGeneratorFrame(frame);
         generatorFrame.getFrameDescriptor().setFrameSlotKind(frameSlot, FrameSlotKind.Object);
         generatorFrame.setObject(frameSlot, value);
         return value;
@@ -136,15 +141,13 @@ public abstract class WriteGeneratorFrameVariableNode extends FrameSlotNode impl
 
     @Specialization(guards = "isDoubleKind(frame)")
     public double write(VirtualFrame frame, double right) {
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        generatorFrame.setDouble(frameSlot, right);
+        getGeneratorFrame(frame).setDouble(frameSlot, right);
         return right;
     }
 
     @Specialization(guards = "isObjectKind(frame)")
     public Object write(VirtualFrame frame, Object right) {
-        Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        generatorFrame.setObject(frameSlot, right);
+        getGeneratorFrame(frame).setObject(frameSlot, right);
         return right;
     }
 }

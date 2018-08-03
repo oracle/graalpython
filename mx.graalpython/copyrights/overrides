@@ -438,15 +438,13 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/G
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/GeneratorFunctionDefinitionNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/function/PythonBuiltinNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/FrameTransferNode.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorAccessNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorBlockNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorBreakNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorContinueNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorControlNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorForNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorIfNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorReturnTargetNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/GeneratorWhileNode.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/ListAppendNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/ReadGeneratorFrameVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/WriteGeneratorFrameVariableNode.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/generator/YieldNode.java,zippy.copyright
@@ -505,8 +503,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Pyt
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Listener.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Parser.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Visitor.java,python3antlr.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/ArithmeticUtil.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/JavaTypeConversions.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonCore.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java,zippy.copyright

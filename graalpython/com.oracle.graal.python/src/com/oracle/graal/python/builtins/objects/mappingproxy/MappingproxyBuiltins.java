@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -144,7 +145,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class GetItemNode extends PythonBuiltinNode {
+    public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getItem(PMappingproxy self, Object key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
@@ -158,7 +159,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
 
     @Builtin(name = __SETITEM__, fixedNumOfArguments = 3)
     @GenerateNodeFactory
-    public abstract static class SetItemNode extends PythonBuiltinNode {
+    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
         Object run(PMappingproxy self, Object key, Object value) {

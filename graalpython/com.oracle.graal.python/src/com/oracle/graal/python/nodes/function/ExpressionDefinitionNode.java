@@ -35,8 +35,13 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 abstract class ExpressionDefinitionNode extends PNode {
+    private final ValueProfile frameProfile = ValueProfile.createClassProfile();
+    private final ConditionProfile isGeneratorProfile = ConditionProfile.createBinaryProfile();
+
     final ExecutionCellSlots executionCellSlots;
     @CompilerDirectives.CompilationFinal(dimensions = 1) private final FrameSlot[] freeVarDefinitionSlots;
 
@@ -66,8 +71,8 @@ abstract class ExpressionDefinitionNode extends PNode {
     PCell[] getClosureFromGeneratorOrFunctionLocals(Frame frame) {
         PCell[] closure;
         Frame generatorFrame = PArguments.getGeneratorFrame(frame);
-        if (generatorFrame != null) {
-            closure = getClosureFromLocals(generatorFrame);
+        if (isGeneratorProfile.profile(generatorFrame != null)) {
+            closure = getClosureFromLocals(frameProfile.profile(generatorFrame));
         } else {
             closure = getClosureFromLocals(frame);
         }

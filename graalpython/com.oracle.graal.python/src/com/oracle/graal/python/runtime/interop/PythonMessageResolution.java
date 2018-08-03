@@ -270,7 +270,7 @@ public class PythonMessageResolution {
             PKeyword[] emptyKeywords = new PKeyword[0];
             Object[] pArguments = createArgs.executeWithSelf(receiver, convertedArgs);
 
-            return toForeign.executeConvert(getDispatchNode().executeCall(profiledCallable, pArguments, emptyKeywords));
+            return toForeign.executeConvert(getDispatchNode().executeCall(null, profiledCallable, pArguments, emptyKeywords));
         }
     }
 
@@ -304,7 +304,7 @@ public class PythonMessageResolution {
     @Resolve(message = "WRITE")
     abstract static class WriteNode extends Node {
         @Child private SetItemNode setItemNode = SetItemNode.create();
-        @Child private SetAttributeNode writeNode = SetAttributeNode.create();
+        @Child private SetAttributeNode.Dynamic writeNode = new SetAttributeNode.Dynamic();
         @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private HasSetItem hasSetItem = new HasSetItem();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();

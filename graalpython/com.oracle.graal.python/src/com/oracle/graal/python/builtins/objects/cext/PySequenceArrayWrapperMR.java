@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
@@ -57,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -179,7 +182,7 @@ public class PySequenceArrayWrapperMR {
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
         Object doGeneric(Object object, long idx,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
-            return getItemNode.executeObject(object, idx);
+            return getToSulongNode().execute(getItemNode.executeObject(object, idx));
         }
 
         protected static ListBuiltins.GetItemNode createListGetItem() {
@@ -227,27 +230,38 @@ public class PySequenceArrayWrapperMR {
         }
 
         @Specialization
-        Object doTuple(PList list, long idx, Object value,
+        Object doList(PList list, long idx, Object value,
                         @Cached("createListSetItem()") ListBuiltins.SetItemNode setItemNode) {
             return setItemNode.execute(list, idx, getToJavaNode().execute(value));
         }
 
         @Specialization
-        Object doTuple(PBytes tuple, long idx, byte value) {
+        Object doBytes(PBytes tuple, long idx, byte value) {
             // TODO(fa) do proper index conversion
             tuple.getInternalByteArray()[(int) idx] = value;
             return value;
         }
 
         @Specialization
-        Object doTuple(PByteArray tuple, long idx, byte value) {
+        Object doByteArray(PByteArray tuple, long idx, byte value) {
             // TODO(fa) do proper index conversion
             tuple.getInternalByteArray()[(int) idx] = value;
             return value;
         }
 
+        @Specialization
+        Object doGeneric(Object tuple, Object idx, Object value,
+                        @Cached("createSetItem()") LookupAndCallTernaryNode setItemNode) {
+            setItemNode.execute(tuple, idx, value);
+            return value;
+        }
+
         protected static ListBuiltins.SetItemNode createListSetItem() {
             return ListBuiltinsFactory.SetItemNodeFactory.create();
+        }
+
+        protected static LookupAndCallTernaryNode createSetItem() {
+            return LookupAndCallTernaryNode.create(__SETITEM__);
         }
 
         private CExtNodes.ToJavaNode getToJavaNode() {

@@ -112,7 +112,8 @@ public class TestParserTranslator {
     PythonContext context;
 
     public TestParserTranslator() {
-        context = PythonTests.getContext();
+        PythonTests.enterContext();
+        context = PythonLanguage.getContextRef().get();
     }
 
     RootNode parse(String src) {

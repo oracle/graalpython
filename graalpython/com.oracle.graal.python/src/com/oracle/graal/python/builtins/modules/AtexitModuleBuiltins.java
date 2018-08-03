@@ -84,7 +84,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
 
             @Override
             public Object execute(VirtualFrame frame) {
-                return callNode.execute(callable, arguments, keywords);
+                return callNode.execute(frame, callable, arguments, keywords);
             }
         }
 

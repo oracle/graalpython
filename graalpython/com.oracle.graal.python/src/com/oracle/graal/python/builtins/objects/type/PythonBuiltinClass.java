@@ -46,16 +46,6 @@ public final class PythonBuiltinClass extends PythonClass implements PythonCalla
     }
 
     @Override
-    public void deleteAttribute(String name) {
-        CompilerDirectives.transferToInterpreter();
-        if (PythonLanguage.getCore().isInitialized()) {
-            throw PythonLanguage.getCore().raise(TypeError, "can't delete attributes of built-in/extension type '%s'", name);
-        } else {
-            super.deleteAttribute(name);
-        }
-    }
-
-    @Override
     public void setAttribute(Object name, Object value) {
         CompilerDirectives.transferToInterpreter();
         if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {

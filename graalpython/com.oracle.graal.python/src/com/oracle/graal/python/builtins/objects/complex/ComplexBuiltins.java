@@ -249,7 +249,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doComplex(Object left, Object right) {
+        PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -281,7 +281,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doComplex(Object left, Object right) {
+        PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -300,7 +300,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doComplex(Object left, Object right) {
+        PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -333,7 +333,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -359,7 +359,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doComplex(Object left, Object right) {
+        PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -374,7 +374,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -389,7 +389,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -404,7 +404,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -419,7 +419,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -434,7 +434,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -449,7 +449,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

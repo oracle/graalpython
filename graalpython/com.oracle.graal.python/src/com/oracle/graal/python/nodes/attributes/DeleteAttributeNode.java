@@ -40,18 +40,15 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ValueProfile;
-
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 @NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
 public abstract class DeleteAttributeNode extends PNode {
@@ -67,13 +64,12 @@ public abstract class DeleteAttributeNode extends PNode {
 
     @Specialization
     protected Object doIt(Object object, Object key,
-                    @Cached("createIdentityProfile()") ValueProfile setattributeProfile,
+                    @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
-                    @Cached("create(__DELATTR__)") LookupAttributeInMRONode lookupDelAttr,
-                    @Cached("create()") CallDispatchNode dispatchSetattribute,
-                    @Cached("create()") CreateArgumentsNode createArgs) {
+                    @Cached("create(__DELATTR__)") LookupAttributeInMRONode delAttributeLookup,
+                    @Cached("create()") CallBinaryMethodNode callDelAttribute) {
         PythonClass type = getClassNode.execute(object);
-        Object descr = setattributeProfile.profile(lookupDelAttr.execute(type));
-        return dispatchSetattribute.executeCall(descr, createArgs.execute(object, key), new PKeyword[0]);
+        Object descr = setAttributeProfile.profile(delAttributeLookup.execute(type));
+        return callDelAttribute.executeObject(descr, object, key);
     }
 }

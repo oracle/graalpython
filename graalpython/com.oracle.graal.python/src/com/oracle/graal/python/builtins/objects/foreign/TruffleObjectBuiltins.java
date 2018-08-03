@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
@@ -43,12 +44,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RTRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -62,10 +65,14 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltinsFactory.MulNodeFactory;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
@@ -211,7 +218,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -259,6 +266,9 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MulNode extends UnboxNode {
         @Child private LookupAndCallBinaryNode mulNode = BinaryArithmetic.Mul.create();
+        @Child private MulNode recursive;
+
+        public abstract Object executeWith(Object left, Object right);
 
         @Specialization(guards = {"isBoxed(left)", "!isForeignObject(right)"})
         Object doForeignBoxed(TruffleObject left, Object right) {
@@ -272,14 +282,14 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isBoxed(left)", "isBoxed(right)"})
         Object doForeignBoxed(TruffleObject left, TruffleObject right) {
             try {
-                return doForeignBoxed(left, unboxRight(right));
+                return getRecursiveNode().executeWith(left, unboxRight(right));
             } catch (UnsupportedMessageException e) {
                 // fall through
             }
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        @Specialization(guards = {"isForeignArray(left)", "isPositive(right)"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "right > 0"})
         Object doForeignArray(TruffleObject left, int right,
                         @Cached("READ.createNode()") Node readNode,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
@@ -302,7 +312,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"isForeignArray(left)", "isBoxed(right)"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "isBoxed(right)"})
         Object doForeignArray(TruffleObject left, TruffleObject right,
                         @Cached("READ.createNode()") Node readNode,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
@@ -321,7 +331,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        @Specialization(guards = {"isForeignArray(left)", "right"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "right"})
         Object doForeignArray(TruffleObject left, @SuppressWarnings("unused") boolean right,
                         @Cached("READ.createNode()") Node readNode,
                         @Cached("GET_SIZE.createNode()") Node sizeNode) {
@@ -333,25 +343,35 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"isForeignArray(left)", "!isPositive(right)"})
-        Object doForeignArrayEmpty(TruffleObject left, int right) {
-            return factory().createList();
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"isForeignArray(left)", "!right"})
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "!right"})
         Object doForeignArrayEmpty(TruffleObject left, boolean right) {
             return factory().createList();
         }
 
         @SuppressWarnings("unused")
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "right <= 0"})
+        Object doForeignArrayEmpty(TruffleObject left, int right) {
+            return factory().createList();
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"isForeignArray(left)", "!isBoxed(left)", "right <= 0"})
+        Object doForeignArrayEmpty(TruffleObject left, long right) {
+            return factory().createList();
+        }
+
+        @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        protected boolean isPositive(int right) {
-            return right > 0;
+        private MulNode getRecursiveNode() {
+            if (recursive == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursive = insert(MulNodeFactory.create(null));
+            }
+            return recursive;
         }
     }
 
@@ -385,7 +405,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -415,7 +435,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -565,12 +585,8 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        protected boolean isPositive(int right) {
-            return right > 0;
         }
     }
 
@@ -604,7 +620,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -662,7 +678,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public Object doGeneric(Object left, Object right) {
+        public PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -904,6 +920,92 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
             } else {
                 return factory().createList();
             }
+        }
+    }
+
+    @Builtin(name = __INDEX__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class IndexNode extends UnboxNode {
+        @Specialization(guards = "isForeignObject(object)")
+        protected Object doIt(TruffleObject object) {
+            if (isBoxed(object)) {
+                try {
+                    return unboxLeft(object);
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
+                }
+            }
+            throw raiseIndexError();
+        }
+    }
+
+    @Builtin(name = __STR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class StrNode extends UnboxNode {
+        @Child private LookupAndCallUnaryNode callStrNode;
+        @Child private ObjectBuiltins.StrNode objectStrNode;
+
+        @Specialization(guards = "isForeignObject(object)")
+        protected Object doIt(TruffleObject object) {
+            if (isBoxed(object)) {
+                try {
+                    return getCallStrNode().executeObject(unboxLeft(object));
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
+                }
+            }
+            return getObjectStrNode().execute(object);
+        }
+
+        private LookupAndCallUnaryNode getCallStrNode() {
+            if (callStrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callStrNode = insert(LookupAndCallUnaryNode.create(__STR__));
+            }
+            return callStrNode;
+        }
+
+        private ObjectBuiltins.StrNode getObjectStrNode() {
+            if (objectStrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectStrNode = insert(ObjectBuiltinsFactory.StrNodeFactory.create());
+            }
+            return objectStrNode;
+        }
+    }
+
+    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends UnboxNode {
+        @Child private LookupAndCallUnaryNode callReprNode;
+        @Child private ObjectBuiltins.ReprNode objectReprNode;
+
+        @Specialization(guards = "isForeignObject(object)")
+        protected Object doIt(TruffleObject object) {
+            if (isBoxed(object)) {
+                try {
+                    return getCallReprNode().executeObject(unboxLeft(object));
+                } catch (UnsupportedMessageException e) {
+                    throw new IllegalStateException("The object '%s' claims to be boxed, but does not support the UNBOX message");
+                }
+            }
+            return getObjectReprNode().execute(object);
+        }
+
+        private LookupAndCallUnaryNode getCallReprNode() {
+            if (callReprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callReprNode = insert(LookupAndCallUnaryNode.create(__REPR__));
+            }
+            return callReprNode;
+        }
+
+        private ObjectBuiltins.ReprNode getObjectReprNode() {
+            if (objectReprNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                objectReprNode = insert(ObjectBuiltinsFactory.ReprNodeFactory.create());
+            }
+            return objectReprNode;
         }
     }
 }

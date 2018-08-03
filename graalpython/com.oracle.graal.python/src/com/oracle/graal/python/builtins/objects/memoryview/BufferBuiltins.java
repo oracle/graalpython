@@ -133,7 +133,7 @@ public class BufferBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object iter(PBuffer self,
+        public Object len(PBuffer self,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
             return callLenNode.executeObject(self.getDelegate());
         }

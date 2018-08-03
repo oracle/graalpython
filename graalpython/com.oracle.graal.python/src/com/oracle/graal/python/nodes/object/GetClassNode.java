@@ -192,18 +192,23 @@ public abstract class GetClassNode extends PNode {
         return getNativeClassNode.execute(object);
     }
 
+    PythonBuiltinClass cacheForeign() {
+        return getCore().lookupType(PythonBuiltinClassType.TruffleObject);
+    }
+
     @SuppressWarnings("unused")
     @Specialization(guards = "isForeignObject(object)")
-    protected PythonClass getIt(TruffleObject object) {
-        return getCore().getForeignClass();
+    protected PythonClass getIt(TruffleObject object,
+                    @Cached("cacheForeign()") PythonBuiltinClass klass) {
+        return klass;
     }
 
     @TruffleBoundary
     public static PythonClass getItSlowPath(Object o) {
         if (PGuards.isForeignObject(o)) {
-            return PythonLanguage.getCore().getForeignClass();
+            return PythonLanguage.getContextRef().get().getCore().lookupType(PythonBuiltinClassType.TruffleObject);
         }
-        return PythonLanguage.getCore().lookupType(o.getClass());
+        return PythonLanguage.getContextRef().get().getCore().lookupType(o.getClass());
     }
 
     @TruffleBoundary

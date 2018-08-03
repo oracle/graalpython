@@ -83,10 +83,10 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonObject.class)
 public class ObjectBuiltins extends PythonBuiltins {
@@ -100,7 +100,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClassNode extends PythonBuiltinNode {
         @Specialization
-        Object getClass(Object self,
+        PythonClass getClass(Object self,
                         @Cached("create()") GetClassNode getClass) {
             return getClass.execute(self);
         }
@@ -110,7 +110,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
         @Override
-        public final Object varArgExecute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public final Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             return PNone.NONE;
         }
 
@@ -172,7 +172,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object repr(Object self,
+        String repr(Object self,
                         @Cached("create()") GetClassNode getClass) {
             if (self == PNone.NONE) {
                 return "None";
@@ -223,7 +223,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETATTRIBUTE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
         private final BranchProfile hasDescProfile = BranchProfile.create();
         private final BranchProfile isDescProfile = BranchProfile.create();
         private final BranchProfile hasValueProfile = BranchProfile.create();
@@ -231,8 +231,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private final ConditionProfile typeIsObjectProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        private final ValueProfile typeProfile = ValueProfile.createIdentityProfile();
-        @Child private GetClassNode getObjectClassNode;
+        @Child private GetClassNode getObjectClassNode = GetClassNode.create();
         @Child private GetClassNode getDataClassNode;
         @Child private LookupAttributeInMRONode lookupGetNode;
         @Child private LookupAttributeInMRONode lookupSetNode;
@@ -243,7 +242,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(Object object, Object key) {
-            PythonClass type = getObjectClass(object);
+            PythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             PythonClass dataDescClass = null;
             if (descr != PNone.NO_VALUE) {
@@ -337,14 +336,6 @@ public class ObjectBuiltins extends PythonBuiltins {
             return lookupSetNode.execute(dataDescClass);
         }
 
-        private PythonClass getObjectClass(Object object) {
-            if (getObjectClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectClassNode = insert(GetClassNode.create());
-            }
-            return typeProfile.profile(getObjectClassNode.execute(object));
-        }
-
         private PythonClass getDataClass(Object descr) {
             if (getDataClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -354,7 +345,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GETATTR__, fixedNumOfArguments = 3)
+    @Builtin(name = SpecialMethodNames.__GETATTR__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -367,7 +358,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
-        protected Object doIt(Object object, Object key, Object value,
+        protected PNone doIt(Object object, Object key, Object value,
                         @Cached("create()") GetClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,
@@ -399,7 +390,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
-        protected Object doIt(Object object, Object key,
+        protected PNone doIt(Object object, Object key,
                         @Cached("create()") GetClassNode getObjectClassNode,
                         @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached("create()") GetClassNode getDataClassNode,

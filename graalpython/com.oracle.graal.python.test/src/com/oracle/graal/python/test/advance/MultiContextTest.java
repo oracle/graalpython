@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,32 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.generator;
+package com.oracle.graal.python.test.advance;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
+import org.junit.Test;
 
-public final class YieldResumeNode extends StatementNode {
-    final BranchProfile gotException = BranchProfile.create();
-    final BranchProfile gotValue = BranchProfile.create();
-    final BranchProfile gotNothing = BranchProfile.create();
+import com.oracle.graal.python.test.PythonTests;
 
-    @Override
-    public Object execute(VirtualFrame frame) {
-        Object specialArgument = PArguments.getSpecialArgument(frame);
-        if (specialArgument == null) {
-            gotNothing.enter();
-            return PNone.NONE;
-        } else if (specialArgument instanceof PException) {
-            gotException.enter();
-            throw (PException) specialArgument;
-        } else {
-            gotValue.enter();
-            return specialArgument;
+public class MultiContextTest extends PythonTests {
+    @Test
+    public void testContextReuse() {
+        Engine engine = Engine.newBuilder().build();
+        for (int i = 0; i < 10; i++) {
+            try (Context context = newContext(engine)) {
+                context.eval("python", "memoryview(b'abc')");
+            }
         }
+    }
+
+    private static Context newContext(Engine engine) {
+        return Context.newBuilder().allowAllAccess(true).engine(engine).build();
     }
 }

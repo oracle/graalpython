@@ -120,6 +120,7 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -136,7 +137,6 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -169,7 +169,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        boolean optimazeFlag = PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.PythonOptimizeFlag);
+        boolean optimazeFlag = PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.PythonOptimizeFlag);
         builtinConstants.put(BuiltinNames.__DEBUG__, !optimazeFlag);
     }
 
@@ -291,7 +291,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = CHR, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class ChrNode extends PythonBuiltinNode {
-
         @TruffleBoundary
         @Specialization
         public String charFromInt(int arg) {
@@ -770,10 +769,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (readId == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readId = insert(ReadAttributeFromObjectNode.create());
-                writeId = insert(WriteAttributeToObjectNode.create());
             }
             Object id = readId.execute(obj, ID_KEY);
             if (id == NO_VALUE) {
+                if (writeId == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    writeId = insert(WriteAttributeToObjectNode.create());
+                }
                 id = getContext().getNextGlobalId();
                 writeId.execute(obj, ID_KEY, id);
             }
@@ -1020,7 +1022,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         private static Object applyKeyFunction(PythonObject keywordArg, CallNode keyCall, Object currentValue) {
-            return keyCall == null ? currentValue : keyCall.execute(keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
+            return keyCall == null ? currentValue : keyCall.execute(null, keywordArg, new Object[]{currentValue}, PKeyword.EMPTY_KEYWORDS);
         }
     }
 
@@ -1158,7 +1160,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class SetAttrNode extends PythonBuiltinNode {
         @Specialization
         public Object setAttr(Object object, Object key, Object value,
-                        @Cached("create()") SetAttributeNode setAttrNode) {
+                        @Cached("new()") SetAttributeNode.Dynamic setAttrNode) {
             return setAttrNode.execute(object, key, value);
         }
     }
@@ -1297,21 +1299,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__load_builtins__", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class LoadBuiltinsNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public Object doIt(String name) {
-            PythonModule mod = getCore().isInitialized() ? getContext().getBuiltins() : getCore().lookupBuiltinModule("builtins");
-            Source src = getCore().getCoreSource(name);
-            RootNode parsedModule = (RootNode) getCore().getParser().parse(ParserMode.File, getCore(), src, null);
-            CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule);
-            callTarget.call(PArguments.withGlobals(mod));
-            return PNone.NONE;
-        }
-    }
-
     @Builtin(name = "__builtin__", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
@@ -1349,16 +1336,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 System.arraycopy(arity.getParameterIds(), 0, parameterIds, 1, parameterIds.length - 1);
                 Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArg(), arity.takesVarArgs(), parameterIds,
                                 arity.getKeywordNames());
-                func.getFunctionRootNode().accept(new NodeVisitor() {
-                    public boolean visit(Node node) {
-                        if (node instanceof ReadVarArgsNode) {
-                            node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex() + 1, ((ReadVarArgsNode) node).isBuiltin()));
-                        } else if (node instanceof ReadIndexedArgumentNode) {
-                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
+                if (!functionRootNode.isRewritten()) {
+                    functionRootNode.setRewritten();
+                    func.getFunctionRootNode().accept(new NodeVisitor() {
+                        public boolean visit(Node node) {
+                            if (node instanceof ReadVarArgsNode) {
+                                node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex() + 1, ((ReadVarArgsNode) node).isBuiltin()));
+                            } else if (node instanceof ReadIndexedArgumentNode) {
+                                node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                            }
+                            return true;
                         }
-                        return true;
-                    }
-                });
+                    });
+                }
                 builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arityWithSelf, Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
                                 func.getFrameDescriptor(), func.getGlobals(), func.getClosure());
             }

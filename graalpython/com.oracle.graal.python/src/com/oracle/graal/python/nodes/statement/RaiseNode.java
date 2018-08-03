@@ -57,7 +57,7 @@ public abstract class RaiseNode extends StatementNode {
     public Object reraise(PNone type, Object cause,
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
         PythonContext context = getContext();
-        PException currentException = context == null ? getCore().getCurrentException() : context.getCurrentException();
+        PException currentException = context.getCurrentException();
         if (hasCurrentException.profile(currentException == null)) {
             throw raise(RuntimeError, "No active exception to reraise");
         }

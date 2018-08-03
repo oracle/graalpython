@@ -105,6 +105,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -1183,9 +1184,25 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        PList doPListBigInt(PList left, long right,
+        @Specialization(guards = "right <= 0")
+        PList doPListLongNegative(@SuppressWarnings("unused") PList left, @SuppressWarnings("unused") long right) {
+            return factory().createList();
+        }
+
+        @Specialization(guards = "right > 0", rewriteOn = ArithmeticException.class)
+        PList doPListLong(PList left, long right,
                         @Cached("createClassProfile()") ValueProfile profile) {
+            return doPListInt(left, PInt.intValueExact(right), profile);
+        }
+
+        @Specialization(replaces = "doPListLong")
+        PList doPListLongOvf(PList left, long right,
+                        @Cached("create()") BranchProfile notPositiveProfile,
+                        @Cached("createClassProfile()") ValueProfile profile) {
+            if (right <= 0) {
+                notPositiveProfile.enter();
+                return factory().createList();
+            }
             try {
                 return doPListInt(left, PInt.intValueExact(right), profile);
             } catch (ArithmeticException e) {
@@ -1193,9 +1210,25 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
+        @Specialization(guards = "right.isZeroOrNegative()", rewriteOn = ArithmeticException.class)
+        PList doPListBigIntNegative(@SuppressWarnings("unused") PList left, @SuppressWarnings("unused") PInt right) {
+            return factory().createList();
+        }
+
+        @Specialization(guards = "!right.isZeroOrNegative()", rewriteOn = ArithmeticException.class)
         PList doPListBigInt(PList left, PInt right,
                         @Cached("createClassProfile()") ValueProfile profile) {
+            return doPListInt(left, right.intValueExact(), profile);
+        }
+
+        @Specialization(replaces = "doPListBigInt")
+        PList doPListBigIntOvf(PList left, PInt right,
+                        @Cached("create()") BranchProfile notPositiveProfile,
+                        @Cached("createClassProfile()") ValueProfile profile) {
+            if (right.isZeroOrNegative()) {
+                notPositiveProfile.enter();
+                return factory().createList();
+            }
             try {
                 return doPListInt(left, right.intValueExact(), profile);
             } catch (ArithmeticException | OutOfMemoryError e) {
@@ -1205,7 +1238,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

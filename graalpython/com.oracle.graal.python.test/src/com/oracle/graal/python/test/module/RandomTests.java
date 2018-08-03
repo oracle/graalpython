@@ -27,18 +27,22 @@ package com.oracle.graal.python.test.module;
 
 import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.PythonTests;
 
 public class RandomTests {
+    @Before
+    public void setUp() {
+        PythonTests.enterContext();
+    }
 
     @Test
     public void randomRandom() {
         String source = "import random\n" + //
                         "random.seed(1)\n" + //
                         "print(int(random.random()))\n";
-        PythonTests.resetContext(new String[0]);
         assertPrints("0\n", source);
     }
 
@@ -49,7 +53,6 @@ public class RandomTests {
                         "stop = 10\n" + //
                         "ran = random.randrange(stop)\n" + //
                         "print(ran // stop)\n";
-        PythonTests.resetContext(new String[0]);
         assertPrints("0\n", source);
     }
 
@@ -59,7 +62,6 @@ public class RandomTests {
                         "stop = 9223372036854775807\n" + //
                         "ran = random.randrange(stop)\n" + //
                         "print(ran // stop)\n";
-        PythonTests.resetContext(new String[0]);
         assertPrints("0\n", source);
     }
 

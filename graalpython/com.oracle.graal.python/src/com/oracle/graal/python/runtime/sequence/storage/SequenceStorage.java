@@ -25,12 +25,19 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public abstract class SequenceStorage {
+
+    public enum ListStorageType {
+        Uninitialized,
+        Int,
+        Long,
+        Double,
+        List,
+        Tuple,
+        Generic
+    }
 
     @CompilationFinal private static boolean LOG_GENERALIZATION = false;
 
@@ -94,23 +101,5 @@ public abstract class SequenceStorage {
             }
         }
         return count;
-    }
-
-    protected void logGeneralization() {
-        // TODO(ls): this is expensive
-        if (LOG_GENERALIZATION && PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.TraceSequenceStorageGeneralization)) {
-            printGeneralization("ObjectSequenceStorage");
-        }
-    }
-
-    protected void logGeneralization(SequenceStorage storage) {
-        if (LOG_GENERALIZATION && PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.TraceSequenceStorageGeneralization)) {
-            printGeneralization(storage);
-        }
-    }
-
-    @TruffleBoundary
-    private void printGeneralization(Object storage) {
-        System.out.println("[GraalPython]" + this + " generalizing to " + storage);
     }
 }

@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -55,7 +56,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.math.BigInteger;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -140,11 +140,11 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.JavaTypeConversions;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -159,6 +159,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -195,7 +196,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PBytes bytes(PythonClass cls, PInt source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             try {
-                return factory().createBytes(cls, BytesUtils.fromSize(PythonLanguage.getCore(), source.intValueExact()));
+                return factory().createBytes(cls, BytesUtils.fromSize(getCore(), source.intValueExact()));
             } catch (ArithmeticException e) {
                 // TODO: fix me, in python the array can take long sizes, we are bound to ints for
                 // now
@@ -248,13 +249,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PByteArray bytearray(PythonClass cls, int source, PNone encoding, PNone errors) {
-            return factory().createByteArray(cls, BytesUtils.fromSize(PythonLanguage.getCore(), source));
+            return factory().createByteArray(cls, BytesUtils.fromSize(getCore(), source));
         }
 
         @Specialization
         public PByteArray bytearray(PythonClass cls, PInt source, PNone encoding, PNone errors) {
             try {
-                return factory().createByteArray(cls, BytesUtils.fromSize(PythonLanguage.getCore(), source.intValueExact()));
+                return factory().createByteArray(cls, BytesUtils.fromSize(getCore(), source.intValueExact()));
             } catch (ArithmeticException e) {
                 // TODO: fix me, in python the array can take long sizes, we are bound to ints for
                 // now
@@ -264,7 +265,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         public PByteArray bytearray(PythonClass cls, String source, String encoding, PNone errors) {
-            return factory().createByteArray(cls, BytesUtils.fromStringAndEncoding(PythonLanguage.getCore(), source, encoding));
+            return factory().createByteArray(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
         }
 
         @Specialization
@@ -273,7 +274,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create()") GetClassNode getClassNode) {
             PythonClass sourceClass = getClassNode.execute(source);
             PList list = constructListNode.execute(source, sourceClass);
-            return factory().createByteArray(cls, BytesUtils.fromList(PythonLanguage.getCore(), list));
+            return factory().createByteArray(cls, BytesUtils.fromList(getCore(), list));
         }
     }
 
@@ -314,7 +315,147 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (!(imaginary instanceof PNone)) {
                 throw raise(TypeError, "complex() can't take second arg if first is a string");
             }
-            return JavaTypeConversions.convertStringToComplex(real, (PythonClass) cls, factory());
+            return convertStringToComplex(real, (PythonClass) cls);
+        }
+
+        // Taken from Jython PyString's __complex__() method
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private PComplex convertStringToComplex(String str, PythonClass cls) {
+            boolean gotRe = false;
+            boolean gotIm = false;
+            boolean done = false;
+            boolean swError = false;
+
+            int s = 0;
+            int n = str.length();
+            while (s < n && Character.isSpaceChar(str.charAt(s))) {
+                s++;
+            }
+
+            if (s == n) {
+                throw getCore().raise(ValueError, "empty string for complex()");
+            }
+
+            double z = -1.0;
+            double x = 0.0;
+            double y = 0.0;
+
+            int sign = 1;
+            do {
+                char c = str.charAt(s);
+
+                switch (c) {
+                    case '-':
+                    case '+':
+                        if (c == '-') {
+                            sign = -1;
+                        }
+                        if (done || s + 1 == n) {
+                            swError = true;
+                            break;
+                        }
+                        // a character is guaranteed, but it better be a digit
+                        // or J or j
+                        c = str.charAt(++s);  // eat the sign character
+                        // and check the next
+                        if (!Character.isDigit(c) && c != 'J' && c != 'j') {
+                            swError = true;
+                        }
+                        break;
+
+                    case 'J':
+                    case 'j':
+                        if (gotIm || done) {
+                            swError = true;
+                            break;
+                        }
+                        if (z < 0.0) {
+                            y = sign;
+                        } else {
+                            y = sign * z;
+                        }
+                        gotIm = true;
+                        done = gotRe;
+                        sign = 1;
+                        s++; // eat the J or j
+                        break;
+
+                    case ' ':
+                        while (s < n && Character.isSpaceChar(str.charAt(s))) {
+                            s++;
+                        }
+                        if (s != n) {
+                            swError = true;
+                        }
+                        break;
+
+                    default:
+                        boolean digitOrDot = (c == '.' || Character.isDigit(c));
+                        if (!digitOrDot) {
+                            swError = true;
+                            break;
+                        }
+                        int end = endDouble(str, s);
+                        z = Double.valueOf(str.substring(s, end)).doubleValue();
+                        if (z == Double.POSITIVE_INFINITY) {
+                            throw getCore().raise(ValueError, String.format("float() out of range: %.150s", str));
+                        }
+
+                        s = end;
+                        if (s < n) {
+                            c = str.charAt(s);
+                            if (c == 'J' || c == 'j') {
+                                break;
+                            }
+                        }
+                        if (gotRe) {
+                            swError = true;
+                            break;
+                        }
+
+                        /* accept a real part */
+                        x = sign * z;
+                        gotRe = true;
+                        done = gotIm;
+                        z = -1.0;
+                        sign = 1;
+                        break;
+
+                } /* end of switch */
+
+            } while (s < n && !swError);
+
+            if (swError) {
+                throw getCore().raise(ValueError, "malformed string for complex() %s", str.substring(s));
+            }
+
+            return factory().createComplex(cls, x, y);
+        }
+
+        // Taken from Jython PyString directly
+        public static int endDouble(String string, int s) {
+            int end = s;
+            int n = string.length();
+            while (end < n) {
+                char c = string.charAt(end++);
+                if (Character.isDigit(c)) {
+                    continue;
+                }
+                if (c == '.') {
+                    continue;
+                }
+                if (c == 'e' || c == 'E') {
+                    if (end < n) {
+                        c = string.charAt(end);
+                        if (c == '+' || c == '-') {
+                            end++;
+                        }
+                        continue;
+                    }
+                }
+                return end - 1;
+            }
+            return end;
         }
 
         @Fallback
@@ -340,9 +481,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = ENUMERATE, fixedNumOfArguments = 2, keywordArguments = {"start"}, constructsClass = PEnumerate.class)
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
-        /**
-         * TODO enumerate can take a keyword argument start, and currently that's not supported.
-         */
 
         @Specialization
         public PEnumerate enumerate(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone keywordArg,
@@ -492,11 +630,52 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeClass(cls)")
         public Object floatFromString(PythonClass cls, String arg) {
-            double value = JavaTypeConversions.convertStringToDouble(arg);
+            double value = convertStringToDouble(arg);
             if (isPrimitiveFloat(cls)) {
                 return value;
             }
             return factory().createFloat(cls, value);
+        }
+
+        // Taken from Jython PyString's atof() method
+        // The last statement throw Py.ValueError is modified
+        @TruffleBoundary
+        private double convertStringToDouble(String str) {
+            StringBuilder s = null;
+            int n = str.length();
+
+            for (int i = 0; i < n; i++) {
+                char ch = str.charAt(i);
+                if (ch == '\u0000') {
+                    throw getCore().raise(ValueError, "empty string for complex()");
+                }
+                if (Character.isDigit(ch)) {
+                    if (s == null) {
+                        s = new StringBuilder(str);
+                    }
+                    int val = Character.digit(ch, 10);
+                    s.setCharAt(i, Character.forDigit(val, 10));
+                }
+            }
+            String sval = str.trim();
+            if (s != null) {
+                sval = s.toString();
+            }
+            try {
+                // Double.valueOf allows format specifier ("d" or "f") at the end
+                String lowSval = sval.toLowerCase();
+                if (lowSval.equals("nan") || lowSval.equals("+nan") || lowSval.equals("-nan")) {
+                    return Double.NaN;
+                } else if (lowSval.equals("inf") || lowSval.equals("+inf") || lowSval.equals("infinity") || lowSval.equals("+infinity")) {
+                    return Double.POSITIVE_INFINITY;
+                } else if (lowSval.equals("-inf") || lowSval.equals("-infinity")) {
+                    return Double.NEGATIVE_INFINITY;
+                }
+                return Double.valueOf(sval).doubleValue();
+            } catch (NumberFormatException exc) {
+                // throw Py.ValueError("invalid literal for __float__: " + str);
+                throw getCore().raise(ValueError, "could not convert string to float: %s", str);
+            }
         }
 
         @Specialization(guards = "!isNativeClass(cls)")
@@ -622,6 +801,131 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private Object stringToInt(String num, int base) {
+            String s = num.replace("_", "");
+            if ((base >= 2 && base <= 32) || base == 0) {
+                BigInteger bi = asciiToBigInteger(s, 10, false);
+                if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
+                    return bi;
+                } else {
+                    return bi.intValue();
+                }
+            } else {
+                throw getCore().raise(ValueError, "base is out of range for int()");
+            }
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private Object toInt(Object arg) {
+            if (arg instanceof Integer || arg instanceof BigInteger) {
+                return arg;
+            } else if (arg instanceof Boolean) {
+                return (boolean) arg ? 1 : 0;
+            } else if (arg instanceof Double) {
+                return doubleToInt((Double) arg);
+            } else if (arg instanceof String) {
+                return stringToInt((String) arg, 10);
+            }
+            return null;
+        }
+
+        private Object toInt(Object arg1, Object arg2) {
+            if (arg1 instanceof String && arg2 instanceof Integer) {
+                return stringToInt((String) arg1, (Integer) arg2);
+            } else {
+                throw getCore().raise(ValueError, "invalid base or val for int()");
+            }
+        }
+
+        private static Object doubleToInt(double num) {
+            if (num > Integer.MAX_VALUE || num < Integer.MIN_VALUE) {
+                return BigInteger.valueOf((long) num);
+            } else {
+                return (int) num;
+            }
+        }
+
+        // Copied directly from Jython
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private static BigInteger asciiToBigInteger(String str, int possibleBase, boolean isLong) {
+            int base = possibleBase;
+            int b = 0;
+            int e = str.length();
+
+            while (b < e && Character.isWhitespace(str.charAt(b))) {
+                b++;
+            }
+
+            while (e > b && Character.isWhitespace(str.charAt(e - 1))) {
+                e--;
+            }
+
+            char sign = 0;
+            if (b < e) {
+                sign = str.charAt(b);
+                if (sign == '-' || sign == '+') {
+                    b++;
+                    while (b < e && Character.isWhitespace(str.charAt(b))) {
+                        b++;
+                    }
+                }
+
+                if (base == 16) {
+                    if (str.charAt(b) == '0') {
+                        if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'X') {
+                            b += 2;
+                        }
+                    }
+                } else if (base == 0) {
+                    if (str.charAt(b) == '0') {
+                        if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'X') {
+                            base = 16;
+                            b += 2;
+                        } else if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'O') {
+                            base = 8;
+                            b += 2;
+                        } else if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'B') {
+                            base = 2;
+                            b += 2;
+                        } else {
+                            base = 8;
+                        }
+                    }
+                } else if (base == 8) {
+                    if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'O') {
+                        b += 2;
+                    }
+                } else if (base == 2) {
+                    if (b < e - 1 && Character.toUpperCase(str.charAt(b + 1)) == 'B') {
+                        b += 2;
+                    }
+                }
+            }
+
+            if (base == 0) {
+                base = 10;
+            }
+
+            // if the base >= 22, then an 'l' or 'L' is a digit!
+            if (isLong && base < 22 && e > b && (str.charAt(e - 1) == 'L' || str.charAt(e - 1) == 'l')) {
+                e--;
+            }
+
+            String s = str;
+            if (b > 0 || e < str.length()) {
+                s = str.substring(b, e);
+            }
+
+            BigInteger bi;
+            if (sign == '-') {
+                bi = new BigInteger("-" + s, base);
+            } else {
+                bi = new BigInteger(s, base);
+            }
+            return bi;
+        }
+
         private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
 
         public abstract Object executeWith(Object cls, Object arg, Object keywordArg);
@@ -681,7 +985,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isNoValue(keywordArg)")
         public Object createInt(PythonClass cls, String arg, @SuppressWarnings("unused") PNone keywordArg) {
             try {
-                Object value = JavaTypeConversions.stringToInt(arg, 10);
+                Object value = stringToInt(arg, 10);
                 if (isPrimitiveInt(cls)) {
                     return value;
                 } else {
@@ -741,7 +1045,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         Object parsePInt(PythonClass cls, String arg, int keywordArg) {
-            Object int2 = JavaTypeConversions.toInt(arg, keywordArg);
+            Object int2 = toInt(arg, keywordArg);
             if (int2 instanceof BigInteger) {
                 return factory().createInt(cls, (BigInteger) int2);
             } else if (isPrimitiveInt(cls)) {
@@ -755,7 +1059,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public Object createInt(PythonClass cls, String arg, Object keywordArg) {
             if (keywordArg instanceof PNone) {
-                Object value = JavaTypeConversions.toInt(arg);
+                Object value = toInt(arg);
                 if (value == null) {
                     throw raise(ValueError, "invalid literal for int() with base 10: %s", arg);
                 } else if (value instanceof BigInteger) {
@@ -816,29 +1120,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = BOOL, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = Boolean.class, base = PInt.class)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
-    public abstract static class BoolNode extends PythonBuiltinNode {
+    public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public boolean bool(Object cls, boolean arg) {
+        public boolean boolB(Object cls, boolean arg) {
             return arg;
         }
 
         @Specialization
-        public boolean bool(Object cls, int arg) {
+        public boolean boolI(Object cls, int arg) {
             return arg != 0;
         }
 
         @Specialization
-        public boolean bool(Object cls, double arg) {
+        public boolean boolD(Object cls, double arg) {
             return arg != 0.0;
         }
 
         @Specialization
-        public boolean bool(Object cls, String arg) {
+        public boolean boolS(Object cls, String arg) {
             return !arg.isEmpty();
         }
 
         @Specialization
-        public boolean bool(Object cls, PNone arg) {
+        public boolean boolN(Object cls, PNone arg) {
             return false;
         }
 
@@ -857,7 +1161,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // list([iterable])
     @Builtin(name = LIST, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PList.class)
     @GenerateNodeFactory
-    public abstract static class ListNode extends PythonBuiltinNode {
+    public abstract static class ListNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         protected PList constructList(PythonClass cls, Object value,
@@ -879,8 +1183,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
         @Override
-        public final Object varArgExecute(Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
-            return execute(PNone.NO_VALUE, arguments, keywords);
+        public final Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            return execute(frame, PNone.NO_VALUE, arguments, keywords);
         }
 
         @Specialization
@@ -1071,7 +1375,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object str(Object strClass, double arg, PNone encoding, PNone errors) {
-            return asPString(strClass, JavaTypeConversions.doubleToString(arg));
+            return asPString(strClass, PFloat.doubleToString(arg));
         }
 
         @Specialization
@@ -1136,7 +1440,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // tuple([iterable])
     @Builtin(name = TUPLE, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PTuple.class)
     @GenerateNodeFactory
-    public abstract static class TupleNode extends PythonBuiltinNode {
+    public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         protected PTuple constructTuple(PythonClass cls, Object value,
@@ -1204,8 +1508,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(namespace)"})
-        @TruffleBoundary
-        public Object type(PythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
+        public Object type(VirtualFrame frame, PythonClass cls, String name, PTuple bases, PDict namespace, PKeyword[] kwds,
                         @Cached("create()") GetClassNode getMetaclassNode,
                         @Cached("create(__NEW__)") LookupInheritedAttributeNode getNewFuncNode,
                         @Cached("create()") CallDispatchNode callNewFuncNode,
@@ -1216,16 +1519,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
                     // the new metaclass has the same __new__ function as we are in
                 } else {
-                    return callNewFuncNode.executeCall(newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
+                    return callNewFuncNode.executeCall(frame, newFunc, createArgs.execute(metaclass, name, bases, namespace), kwds);
                 }
             }
+            return typeMetaclass(name, bases, namespace, metaclass);
+        }
+
+        @TruffleBoundary
+        private Object typeMetaclass(String name, PTuple bases, PDict namespace, PythonClass metaclass) {
             if (name.indexOf('\0') != -1) {
                 throw raise(ValueError, "type name must not contain null characters");
             }
             Object[] array = bases.getArray();
             PythonClass[] basesArray;
             if (array.length == 0) {
-                basesArray = new PythonClass[]{getCore().getObjectClass()};
+                basesArray = new PythonClass[]{getCore().lookupType(PythonBuiltinClassType.PythonObject)};
             } else {
                 basesArray = new PythonClass[array.length];
                 for (int i = 0; i < array.length; i++) {
@@ -1270,14 +1578,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return false;
         }
 
-        protected abstract Object execute(Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
+        protected abstract Object execute(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds);
 
         protected static TypeNode create() {
             return BuiltinConstructorsFactory.TypeNodeFactory.create(null);
         }
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(dict)"})
-        public Object typeGeneric(Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
+        public Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
                         @Cached("create()") TypeNode nextTypeNode) {
             if (PGuards.isNoValue(bases) && !PGuards.isNoValue(dict) || !PGuards.isNoValue(bases) && PGuards.isNoValue(dict)) {
                 throw raise(TypeError, "type() takes 1 or 3 arguments");
@@ -1291,7 +1599,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 // TODO: this is actually allowed, deal with it
                 throw raise(NotImplementedError, "creating a class with non-class metaclass");
             }
-            return nextTypeNode.execute(cls, name, bases, dict, kwds);
+            return nextTypeNode.execute(frame, cls, name, bases, dict, kwds);
         }
     }
 
@@ -1685,19 +1993,32 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // buffer([iterable])
-    @Builtin(name = "buffer", fixedNumOfArguments = 2, constructsClass = PBuffer.class)
+    @Builtin(name = "buffer", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PBuffer.class)
     @GenerateNodeFactory
     public abstract static class BufferNode extends PythonBuiltinNode {
+        @Child private LookupInheritedAttributeNode getSetItemNode;
+
+        @Specialization(guards = "isNoValue(readOnly)")
+        protected PBuffer construct(PythonClass cls, Object delegate, @SuppressWarnings("unused") PNone readOnly) {
+            return factory().createBuffer(cls, delegate, !hasSetItem(delegate));
+        }
 
         @Specialization
-        protected PBuffer construct(PythonClass cls, Object value) {
-            return factory().createBuffer(cls, value);
+        protected PBuffer construct(PythonClass cls, Object delegate, boolean readOnly) {
+            return factory().createBuffer(cls, delegate, readOnly);
         }
 
         @Fallback
-        public PBuffer listObject(@SuppressWarnings("unused") Object cls, Object arg) {
-            CompilerAsserts.neverPartOfCompilation();
-            throw new RuntimeException("buffer does not support iterable object " + arg);
+        public PBuffer doGeneric(@SuppressWarnings("unused") Object cls, Object delegate, @SuppressWarnings("unused") Object readOnly) {
+            throw raise(TypeError, "cannot create buffer for object %s", delegate);
+        }
+
+        public boolean hasSetItem(Object object) {
+            if (getSetItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getSetItemNode = LookupInheritedAttributeNode.create(__SETITEM__);
+            }
+            return getSetItemNode.execute(object) != PNone.NO_VALUE;
         }
     }
 

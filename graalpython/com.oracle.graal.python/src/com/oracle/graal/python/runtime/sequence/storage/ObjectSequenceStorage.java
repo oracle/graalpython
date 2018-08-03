@@ -39,6 +39,12 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         this.length = elements.length;
     }
 
+    public ObjectSequenceStorage(Object[] elements, int length) {
+        this.values = elements;
+        this.capacity = elements.length;
+        this.length = length;
+    }
+
     public ObjectSequenceStorage(int capacity) {
         this.values = new Object[capacity];
         this.capacity = capacity;

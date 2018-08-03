@@ -36,9 +36,9 @@ development).
 When you make your changes, you can test them with `mx python`. Additionally,
 there are various "gates" that we use on our CI system to check any code that
 goes in. You can run all of these gates using `mx python-gate` or just some by
-using `mx python-gate --tags [TAG]`. Two interesting tags to run that cover most
-things are:
+using `mx python-gate --tags [TAG]`. Three interesting tags to run that cover
+most things are:
 
-- python-unittest
-- python-graalvm
-- python-license
+- `python-unittest` - Run the unittests written in Python, including those for the C extension API
+- `python-graalvm` - Build a minimal GraalVM bundle with Python only and a native launcher
+- `python-license` - Check that all files have the correct copyright headers applied to them

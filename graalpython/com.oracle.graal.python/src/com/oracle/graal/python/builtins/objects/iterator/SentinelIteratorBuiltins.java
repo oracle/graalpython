@@ -68,7 +68,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
         private Object callSentinalIteratorTarget(PSentinelIterator iterator) {
-            return callNode.execute(iterator.getCallTarget(), new Object[]{iterator.getCallTarget()});
+            return callNode.execute(null, iterator.getCallTarget(), new Object[]{iterator.getCallTarget()});
         }
 
         @Specialization

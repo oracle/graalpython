@@ -108,7 +108,7 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 

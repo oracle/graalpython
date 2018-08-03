@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.set;
 
-import static com.oracle.graal.python.builtins.objects.common.HashingStorage.getSlowPathEquivalence;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
@@ -122,7 +121,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -152,13 +151,22 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.IntersectNode intersectNode;
+        @Child private HashingStorageNodes.SetItemNode setItemNode;
+
+        private HashingStorageNodes.SetItemNode getSetItemNode() {
+            if (setItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
+            }
+            return setItemNode;
+        }
 
         @TruffleBoundary
-        private static HashingStorage getStringAsHashingStorage(String str) {
+        private HashingStorage getStringAsHashingStorage(String str) {
             HashingStorage storage = EconomicMapStorage.create(str.length(), true);
             for (int i = 0; i < str.length(); i++) {
                 String key = String.valueOf(str.charAt(i));
-                storage.setItem(key, PNone.NO_VALUE, getSlowPathEquivalence(key));
+                getSetItemNode().execute(storage, key, PNone.NO_VALUE);
             }
             return storage;
         }

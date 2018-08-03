@@ -3,6 +3,17 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC5
+
+* Generator expressions now properly evaluate their first iterator in the definition scope at definition time
+* Fixes for embedders to ensure top scopes are stable and local scopes always contain TruffleObjects
+* C-API improvements to support simple Cython modules
+* Support recognition of Python source files with the polyglot launcher
+
+## Version 1.0.0 RC4
+
+* No changes
+
 ## Version 1.0.0 RC3
 
 * Support for more String encodings

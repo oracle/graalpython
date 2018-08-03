@@ -115,6 +115,6 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     @Specialization
     Object call(Object func, Object receiver,
                     @Cached("create()") CallNode callNode) {
-        return callNode.execute(func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);
+        return callNode.execute(null, func, new Object[]{receiver}, PKeyword.EMPTY_KEYWORDS);
     }
 }

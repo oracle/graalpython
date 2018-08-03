@@ -35,13 +35,9 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PNodeUtil;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
-import com.oracle.graal.python.nodes.control.BreakNode;
 import com.oracle.graal.python.nodes.control.BreakTargetNode;
-import com.oracle.graal.python.nodes.control.ContinueNode;
-import com.oracle.graal.python.nodes.control.ContinueTargetNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.IfNode;
-import com.oracle.graal.python.nodes.control.LoopNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
@@ -51,12 +47,9 @@ import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
-import com.oracle.graal.python.nodes.generator.GeneratorBreakNode;
-import com.oracle.graal.python.nodes.generator.GeneratorContinueNode;
 import com.oracle.graal.python.nodes.generator.GeneratorControlNode;
 import com.oracle.graal.python.nodes.generator.GeneratorForNode;
 import com.oracle.graal.python.nodes.generator.GeneratorIfNode;
-import com.oracle.graal.python.nodes.generator.GeneratorIfNode.GeneratorIfWithoutElseNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.GeneratorTryExceptNode;
 import com.oracle.graal.python.nodes.generator.GeneratorTryFinallyNode;
@@ -99,14 +92,14 @@ public class GeneratorTranslator {
         assert returnTargets.size() == 1;
         splitArgumentLoads(returnTargets.get(0));
 
-        /**
-         * Redirect local variable accesses to materialized persistent frame.
-         */
         ForNode outerMostLoop = NodeUtil.findFirstNodeInstance(root, ForNode.class);
         if (outerMostLoop != null && inGeneratorExpression) {
             replaceOuterMostForNode(outerMostLoop);
         }
 
+        /**
+         * Redirect local variable accesses to materialized persistent frame.
+         */
         for (WriteLocalVariableNode write : NodeUtil.findAllNodeInstances(root, WriteLocalVariableNode.class)) {
             replace(write, WriteGeneratorFrameVariableNode.create(write.getSlot(), write.getRhs()));
         }
@@ -115,95 +108,18 @@ public class GeneratorTranslator {
             replace(read, ReadGeneratorFrameVariableNode.create(read.getSlot()));
         }
 
+        /**
+         * Rewrite all control flow paths leading to yields.
+         */
         for (YieldNode yield : NodeUtil.findAllNodeInstances(root, YieldNode.class)) {
             replaceYield(yield);
-        }
-
-        for (YieldNode yield : NodeUtil.findAllNodeInstances(root, YieldNode.class)) {
-            assert yield.getParentBlockIndexSlot() != -1;
         }
 
         for (GeneratorExpressionNode genexp : NodeUtil.findAllNodeInstances(root, GeneratorExpressionNode.class)) {
             genexp.setEnclosingFrameGenerator(true);
         }
 
-        for (BreakNode breakNode : NodeUtil.findAllNodeInstances(root, BreakNode.class)) {
-            replaceBreak(breakNode);
-        }
-
-        for (ContinueNode continueNode : NodeUtil.findAllNodeInstances(root, ContinueNode.class)) {
-            replaceContinue(continueNode);
-        }
-
         return callTarget;
-    }
-
-    private static void replaceBreak(BreakNode breakNode) {
-        // look for it's breaking loop node
-        Node current = breakNode.getParent();
-        List<Integer> indexSlots = new ArrayList<>();
-        List<Integer> flagSlots = new ArrayList<>();
-
-        while (current instanceof GeneratorBlockNode || current instanceof ContinueTargetNode || current instanceof IfNode) {
-            if (current instanceof GeneratorBlockNode) {
-                int indexSlot = ((GeneratorBlockNode) current).getIndexSlot();
-                indexSlots.add(indexSlot);
-            } else if (current instanceof GeneratorIfWithoutElseNode) {
-                GeneratorIfWithoutElseNode ifNode = (GeneratorIfWithoutElseNode) current;
-                flagSlots.add(ifNode.getThenFlagSlot());
-            } else if (current instanceof GeneratorIfNode) {
-                GeneratorIfNode ifNode = (GeneratorIfNode) current;
-                flagSlots.add(ifNode.getThenFlagSlot());
-                flagSlots.add(ifNode.getElseFlagSlot());
-            }
-
-            current = current.getParent();
-        }
-
-        if (current instanceof GeneratorForNode) {
-            int iteratorSlot = ((GeneratorForNode) current).getIteratorSlot();
-            int[] indexSlotsArray = new int[indexSlots.size()];
-            for (int i = 0; i < indexSlots.size(); i++) {
-                indexSlotsArray[i] = indexSlots.get(i);
-            }
-            int[] flagSlotsArray = new int[flagSlots.size()];
-            for (int i = 0; i < flagSlots.size(); i++) {
-                flagSlotsArray[i] = flagSlots.get(i);
-            }
-            replace(breakNode, new GeneratorBreakNode(iteratorSlot, indexSlotsArray, flagSlotsArray));
-        }
-    }
-
-    private static void replaceContinue(ContinueNode continueNode) {
-        Node current = continueNode.getParent();
-        List<Integer> indexSlots = new ArrayList<>();
-        List<Integer> flagSlots = new ArrayList<>();
-
-        while (!(current instanceof LoopNode)) {
-            if (current instanceof GeneratorBlockNode) {
-                int indexSlot = ((GeneratorBlockNode) current).getIndexSlot();
-                indexSlots.add(indexSlot);
-            } else if (current instanceof GeneratorIfWithoutElseNode) {
-                GeneratorIfWithoutElseNode ifNode = (GeneratorIfWithoutElseNode) current;
-                flagSlots.add(ifNode.getThenFlagSlot());
-            } else if (current instanceof GeneratorIfNode) {
-                GeneratorIfNode ifNode = (GeneratorIfNode) current;
-                flagSlots.add(ifNode.getThenFlagSlot());
-                flagSlots.add(ifNode.getElseFlagSlot());
-            }
-
-            current = current.getParent();
-        }
-
-        int[] indexSlotsArray = new int[indexSlots.size()];
-        for (int i = 0; i < indexSlots.size(); i++) {
-            indexSlotsArray[i] = indexSlots.get(i);
-        }
-        int[] flagSlotsArray = new int[flagSlots.size()];
-        for (int i = 0; i < flagSlots.size(); i++) {
-            flagSlotsArray[i] = flagSlots.get(i);
-        }
-        replace(continueNode, new GeneratorContinueNode(indexSlotsArray, flagSlotsArray));
     }
 
     private void replaceYield(YieldNode yield) {
@@ -221,21 +137,13 @@ public class GeneratorTranslator {
                 parent = parent.getParent();
             }
             current = (PNode) parent;
-            replaceControl(current, yield);
+            replaceControl(current);
         }
 
         if (needToHandleComplicatedYieldExpression) {
             needToHandleComplicatedYieldExpression = false;
             // TranslationUtil.notCovered("Yield expression used in a complicated expression");
             handleComplicatedYieldExpression(yield);
-        }
-
-        // Last pass to fix yield nodes which its parent block index has not been updated yet.
-        if (yield.getParentBlockIndexSlot() == -1) {
-            if (yield.getParent() instanceof GeneratorBlockNode) {
-                GeneratorBlockNode block = (GeneratorBlockNode) yield.getParent();
-                replace(yield, new YieldNode(yield, block.getIndexSlot()));
-            }
         }
     }
 
@@ -323,7 +231,7 @@ public class GeneratorTranslator {
         replace(forNode, GeneratorForNode.create(target, getIter, forNode.getBody(), nextGeneratorForNodeSlot()));
     }
 
-    private void replaceControl(PNode node, YieldNode yield) {
+    private void replaceControl(PNode node) {
         /**
          * Has it been replaced already?
          */
@@ -352,10 +260,6 @@ public class GeneratorTranslator {
         } else if (node instanceof BlockNode) {
             BlockNode block = (BlockNode) node;
             int slotOfBlockIndex = nextGeneratorBlockIndexSlot();
-
-            if (yield.getParent().equals(block)) {
-                replace(yield, new YieldNode(yield, slotOfBlockIndex));
-            }
 
             replace(node, new GeneratorBlockNode(block.getStatements(), slotOfBlockIndex));
 

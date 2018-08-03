@@ -31,7 +31,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIter
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -90,7 +89,7 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
                 Object element = ForeignAccess.sendRead(getReadNode(), foreignIter.getForeignArray(), foreignIter.advance());
                 return getFromForeignNode().executeConvert(element);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw PythonLanguage.getCore().raise(PythonErrorType.StopIteration);
+                throw raise(PythonErrorType.StopIteration);
             }
         }
     }

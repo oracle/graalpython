@@ -47,6 +47,9 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorTryFinallyNode extends TryFinallyNode implements GeneratorControlNode {
+
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
     private final int finallyFlag;
 
     public GeneratorTryFinallyNode(PNode body, PNode finalbody, int finallyFlag) {
@@ -58,7 +61,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
     public Object execute(VirtualFrame frame) {
         PException exceptionState = getContext().getCurrentException();
         PException exception = null;
-        if (isActive(frame, finallyFlag)) {
+        if (gen.isActive(frame, finallyFlag)) {
             getFinalbody().execute(frame);
         } else {
             try {
@@ -66,7 +69,7 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
             } catch (PException e) {
                 exception = e;
             }
-            setActive(frame, finallyFlag, true);
+            gen.setActive(frame, finallyFlag, true);
             getFinalbody().execute(frame);
         }
         reset(frame);
@@ -78,6 +81,6 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
     }
 
     public void reset(VirtualFrame frame) {
-        setActive(frame, finallyFlag, false);
+        gen.setActive(frame, finallyFlag, false);
     }
 }

@@ -46,39 +46,46 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
+@NodeChild(value = "object", type = PNode.class)
 public abstract class GetAttributeNode extends PNode implements ReadNode {
+
+    private final String key;
 
     @Child LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
 
-    public PNode makeWriteNode(PNode rhs) {
-        return SetAttributeNode.create(getObject(), getKey(), rhs);
+    protected GetAttributeNode(String key) {
+        this.key = key;
     }
 
-    public static GetAttributeNode create(PNode object, PNode key) {
-        return GetAttributeNodeGen.create(object, key);
+    public final String getKey() {
+        return key;
+    }
+
+    public final PNode makeWriteNode(PNode rhs) {
+        return SetAttributeNode.create(key, getObject(), rhs);
+    }
+
+    public static GetAttributeNode create(String key, PNode object) {
+        return GetAttributeNodeGen.create(key, object);
     }
 
     public abstract PNode getObject();
 
-    public abstract PNode getKey();
-
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    protected int doItInt(Object object, Object key) throws UnexpectedResultException {
+    protected int doItInt(Object object) throws UnexpectedResultException {
         return dispatchNode.executeInt(object, key);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    protected boolean doItBoolean(Object object, Object key) throws UnexpectedResultException {
+    protected boolean doItBoolean(Object object) throws UnexpectedResultException {
         return dispatchNode.executeBool(object, key);
     }
 
     @Specialization(replaces = {"doItInt", "doItBoolean"})
-    protected Object doIt(Object object, Object key) {
+    protected Object doIt(Object object) {
         return dispatchNode.executeObject(object, key);
     }
 }

@@ -47,10 +47,12 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.GetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.SetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PyProcsWrapper.SsizeargfuncWrapper;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
@@ -66,6 +68,7 @@ public class PyProcsWrapperMR {
         @Child private ToSulongNode toSulongNode;
         @Child private ToJavaNode toJavaNode;
         @CompilationFinal ConditionProfile attributeErrorProfile;
+        @CompilationFinal ContextReference<PythonContext> contextRef;
 
         public Object access(GetAttrWrapper object, Object[] arguments) {
             if (arguments.length != 2) {
@@ -79,10 +82,18 @@ public class PyProcsWrapperMR {
                 result = getExecuteNode().execute(object.getDelegate(), converted);
             } catch (PException e) {
                 // TODO move to node
-                e.expectAttributeError(PythonLanguage.getCore(), getProfile());
+                e.expectAttributeError(getContext().getCore(), getProfile());
                 result = PNone.NO_VALUE;
             }
             return getToSulongNode().execute(result);
+        }
+
+        private PythonContext getContext() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = PythonLanguage.getContextRef();
+            }
+            return contextRef.get();
         }
 
         public Object access(SetAttrWrapper object, Object[] arguments) {

@@ -96,7 +96,6 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -249,8 +248,8 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     }
 
     private void visitCallArglist(Python3Parser.ArglistContext arglist, List<PNode> argumentNodes, List<PNode> keywords, PNode[] splatArguments) {
-        PNode starargs = EmptyNode.create();
-        PNode kwargs = EmptyNode.create();
+        PNode starargs = null;
+        PNode kwargs = null;
         if (arglist != null) {
             for (Python3Parser.ArgumentContext argctx : arglist.argument()) {
                 PNode defaultarg = getDefaultarg(argctx);
@@ -264,16 +263,16 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
                         arg = (PNode) argctx.accept(this);
                     }
                     if (isKwarg(argctx)) {
-                        if (!EmptyNode.isEmpty(kwargs)) {
+                        if (kwargs != null) {
                             kwargs = factory.createDictionaryConcat(kwargs, arg);
                         } else {
                             kwargs = arg;
                         }
                     } else if (isStararg(argctx)) {
-                        if (!EmptyNode.isEmpty(kwargs)) {
+                        if (kwargs != null) {
                             throw core.raise(SyntaxError, "iterable argument unpacking follows keyword argument unpacking");
                         }
-                        if (!EmptyNode.isEmpty(starargs)) {
+                        if (starargs != null) {
                             starargs = factory.createBinaryOperation("+", starargs, arg);
                         } else {
                             starargs = arg;
@@ -282,7 +281,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
                         if (!keywords.isEmpty()) {
                             throw core.raise(SyntaxError, "positional argument follows keyword argument");
                         }
-                        if (!EmptyNode.isEmpty(kwargs)) {
+                        if (kwargs != null) {
                             throw core.raise(SyntaxError, "positional argument follows keyword argument unpacking");
                         }
                         argumentNodes.add(arg);
@@ -783,7 +782,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     }
 
     private Object parseImaginaryNumber(String text) {
-        return factory.createComplexLiteral(PythonObjectFactory.get().createComplex(0.0, Double.parseDouble(text)));
+        return factory.createComplexLiteral(core.factory().createComplex(0.0, Double.parseDouble(text)));
     }
 
     private Object parseFloatNumber(String text) {
@@ -837,7 +836,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
             definition = ((WriteNode) definition).getRhs();
         }
         for (PNode decorator : decorators) {
-            definition = PythonCallNode.create(decorator, new PNode[]{definition}, new PNode[]{}, EmptyNode.create(), EmptyNode.create());
+            definition = PythonCallNode.create(decorator, new PNode[]{definition}, new PNode[]{}, null, null);
             definition.assignSourceSection(decorator.getSourceSection());
         }
         return environment.findVariable(definitionName).makeWriteNode(definition);

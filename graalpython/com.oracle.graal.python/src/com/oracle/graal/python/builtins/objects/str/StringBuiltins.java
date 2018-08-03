@@ -221,7 +221,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -237,7 +237,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -254,7 +254,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -271,7 +271,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -288,7 +288,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -305,7 +305,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -326,7 +326,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1180,7 +1180,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

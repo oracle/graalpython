@@ -84,7 +84,7 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         }
     }
 
-    private final String key;
+    protected final String key;
 
     public LookupAttributeInMRONode(String key) {
         this.key = key;
@@ -102,17 +102,62 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
      */
     public abstract Object execute(PythonClass klass);
 
+    final static class PythonClassAssumptionPair {
+        public final Assumption assumption;
+        public final Object value;
+
+        PythonClassAssumptionPair(Assumption assumption, Object value) {
+            this.assumption = assumption;
+            this.value = value;
+        }
+    }
+
+    protected PythonClassAssumptionPair findAttrClassAndAssumptionInMRO(PythonClass klass) {
+        PythonClass[] mro = klass.getMethodResolutionOrder();
+        Assumption attrAssumption = klass.createAttributeInMROFinalAssumption(key);
+        for (int i = 0; i < mro.length; i++) {
+            PythonClass cls = mro[i];
+            if (i > 0) {
+                assert cls != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
+                cls.addAttributeInMROFinalAssumption(key, attrAssumption);
+            }
+
+            if (cls.getStorage().containsKey(key)) {
+                Object value = cls.getStorage().get(key);
+                if (value != PNone.NO_VALUE) {
+                    return new PythonClassAssumptionPair(attrAssumption, value);
+                }
+            }
+        }
+        return new PythonClassAssumptionPair(attrAssumption, PNone.NO_VALUE);
+    }
+
+    @Specialization(guards = {"klass == cachedKlass"}, limit = "5", assumptions = {"cachedClassInMROInfo.assumption"})
+    protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
+                    @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
+        return cachedClassInMROInfo.value;
+    }
+
+    protected ReadAttributeFromObjectNode[] create(int size) {
+        ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
+        for (int i = 0; i < size; i++) {
+            nodes[i] = ReadAttributeFromObjectNode.create();
+        }
+        return nodes;
+    }
+
     @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "5", assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("cachedKlass.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
-                    @Cached("create()") ReadAttributeFromObjectNode readAttrNode,
                     @Cached(value = "cachedKlass.getMethodResolutionOrder()", dimensions = 1) PythonClass[] mro,
-                    @Cached("mro.length") @SuppressWarnings("unused") int mroLength) {
+                    @Cached("mro.length") @SuppressWarnings("unused") int mroLength,
+                    @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
         for (int i = 0; i < mro.length; i++) {
             PythonClass kls = mro[i];
-            Object value = readAttrNode.execute(kls, key);
+            Object value = readAttrNodes[i].execute(kls, key);
             if (value != PNone.NO_VALUE) {
                 return value;
             }

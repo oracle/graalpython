@@ -109,12 +109,12 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -585,14 +585,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private final TruffleObject cwrapper;
         private final TruffleObject callable;
         private final String name;
-        @CompilationFinal PythonContext ctxt;
+        @CompilationFinal ContextReference<PythonContext> ctxt;
         @Child private Node executeNode;
         @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
         @Child CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
         @Child private Node isNullNode = Message.IS_NULL.createNode();
         @Child private PNativeToPTypeNode fromForeign = PNativeToPTypeNode.create();
-
-        @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
         public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
             super(lang);
@@ -658,9 +656,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         public final PythonContext getContext() {
             if (ctxt == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                ctxt = PythonLanguage.getContext();
+                ctxt = PythonLanguage.getContextRef();
             }
-            return ctxt;
+            return ctxt.get();
         }
 
         @Override

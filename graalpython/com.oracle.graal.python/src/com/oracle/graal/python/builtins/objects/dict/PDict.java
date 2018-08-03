@@ -83,16 +83,6 @@ public final class PDict extends PHashingCollection {
         return newDictStorage;
     }
 
-    public void delItem(Object key) {
-        try {
-            dictStorage.remove(key, HashingStorage.getSlowPathEquivalence(key));
-        } catch (UnmodifiableStorageException e) {
-            HashingStorage newDictStorage = createNewStorage(key instanceof String, size() - 1);
-            newDictStorage.remove(key, HashingStorage.getSlowPathEquivalence(key));
-            dictStorage = newDictStorage;
-        }
-    }
-
     public void update(PDict other) {
         for (DictEntry entry : other.entries()) {
             this.setItem(entry.key, entry.value);
@@ -107,10 +97,6 @@ public final class PDict extends PHashingCollection {
     @Override
     public HashingStorage getDictStorage() {
         return dictStorage;
-    }
-
-    public boolean hasKey(Object key) {
-        return dictStorage.hasKey(key, HashingStorage.getSlowPathEquivalence(key));
     }
 
     @Override

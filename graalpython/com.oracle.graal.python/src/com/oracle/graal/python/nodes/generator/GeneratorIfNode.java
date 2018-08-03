@@ -30,12 +30,22 @@ import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
 
+    @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
+
     protected final int thenFlagSlot;
     protected final int elseFlagSlot;
+
+    protected final ConditionProfile needsConditionProfile = ConditionProfile.createBinaryProfile();
+    protected final ConditionProfile needsThenUpdateProfile = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile needsElseUpdateProfile = ConditionProfile.createBinaryProfile();
+    protected final BranchProfile seenYield = BranchProfile.create();
 
     public GeneratorIfNode(CastToBooleanNode condition, PNode then, PNode orelse, int thenFlagSlot, int elseFlagSlot) {
         super(condition, then, orelse);
@@ -59,39 +69,36 @@ public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
         return elseFlagSlot;
     }
 
-    protected final Object executeThen(VirtualFrame frame) {
-        setActive(frame, thenFlagSlot, true);
-        then.execute(frame);
-        setActive(frame, thenFlagSlot, false);
-        return PNone.NONE;
-    }
-
-    protected final Object executeElse(VirtualFrame frame) {
-        setActive(frame, elseFlagSlot, true);
-        orelse.execute(frame);
-        setActive(frame, elseFlagSlot, false);
-        return PNone.NONE;
-    }
-
-    public void reset(VirtualFrame frame) {
-        setActive(frame, thenFlagSlot, false);
-        setActive(frame, elseFlagSlot, false);
-    }
-
     @Override
     public Object execute(VirtualFrame frame) {
-        if (isActive(frame, thenFlagSlot)) {
-            return executeThen(frame);
-        }
+        boolean startThenFlag = gen.isActive(frame, thenFlagSlot);
+        boolean startElseFlag = gen.isActive(frame, elseFlagSlot);
+        boolean thenFlag = startThenFlag;
+        boolean nextThenFlag = false;
+        boolean nextElseFlag = false;
 
-        if (isActive(frame, elseFlagSlot)) {
-            return executeElse(frame);
-        }
-
-        if (condition.executeBoolean(frame)) {
-            return executeThen(frame);
-        } else {
-            return executeElse(frame);
+        try {
+            if (needsConditionProfile.profile(!startThenFlag && !startElseFlag)) {
+                thenFlag = condition.executeBoolean(frame);
+            }
+            if (thenFlag) {
+                then.execute(frame);
+            } else {
+                orelse.execute(frame);
+            }
+            return PNone.NONE;
+        } catch (YieldException e) {
+            seenYield.enter();
+            nextThenFlag = thenFlag;
+            nextElseFlag = !thenFlag;
+            throw e;
+        } finally {
+            if (needsThenUpdateProfile.profile(startThenFlag != nextThenFlag)) {
+                gen.setActive(frame, thenFlagSlot, nextThenFlag);
+            }
+            if (needsElseUpdateProfile.profile(startElseFlag != nextElseFlag)) {
+                gen.setActive(frame, elseFlagSlot, nextElseFlag);
+            }
         }
     }
 
@@ -106,12 +113,27 @@ public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            if (isActive(frame, thenFlagSlot) || condition.executeBoolean(frame)) {
-                return executeThen(frame);
-            }
+            boolean startThenFlag = gen.isActive(frame, thenFlagSlot);
+            boolean thenFlag = startThenFlag;
+            boolean nextThenFlag = false;
 
-            return PNone.NONE;
+            try {
+                if (needsConditionProfile.profile(!startThenFlag)) {
+                    thenFlag = condition.executeBoolean(frame);
+                }
+                if (thenFlag) {
+                    then.execute(frame);
+                }
+                return PNone.NONE;
+            } catch (YieldException e) {
+                seenYield.enter();
+                nextThenFlag = thenFlag;
+                throw e;
+            } finally {
+                if (needsThenUpdateProfile.profile(startThenFlag != nextThenFlag)) {
+                    gen.setActive(frame, thenFlagSlot, nextThenFlag);
+                }
+            }
         }
     }
-
 }

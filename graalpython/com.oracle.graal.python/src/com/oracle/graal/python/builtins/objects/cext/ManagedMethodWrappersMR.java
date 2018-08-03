@@ -46,12 +46,10 @@ import com.oracle.graal.python.builtins.objects.cext.ManagedMethodWrappers.MethK
 import com.oracle.graal.python.builtins.objects.cext.ManagedMethodWrappers.MethVarargs;
 import com.oracle.graal.python.builtins.objects.cext.ManagedMethodWrappers.MethodWrapper;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.argument.ArityCheckNode;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.ArityException;
@@ -59,83 +57,66 @@ import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
+import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
 
 @MessageResolution(receiverType = MethodWrapper.class)
 public class ManagedMethodWrappersMR {
 
     @Resolve(message = "EXECUTE")
     abstract static class ExecuteNode extends Node {
-        @Child PythonMessageResolution.ExecuteNode executeNode;
-        @Child private ToJavaNode toJavaNode;
-        @Child private ToSulongNode toSulongNode;
+
+        @Child private PythonMessageResolution.ExecuteNode executeNode;
+        @Child private ToJavaNode toJavaNode = ToJavaNode.create();
+        @Child private ToSulongNode toSulongNode = ToSulongNode.create();
 
         @Child private ExecutePositionalStarargsNode posStarargsNode = ExecutePositionalStarargsNode.create();
-        @Child private PositionalArgumentsNode posArgsNode = PositionalArgumentsNode.create();
         @Child private ExecuteKeywordStarargsNode expandKwargsNode = ExecuteKeywordStarargsNode.create();
-        @Child private CallDispatchNode dispatch;
-        @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-        @Child private ArityCheckNode arityCheckNode = ArityCheckNode.create();
-        final ValueProfile classProfile = ValueProfile.createClassProfile();
+        @Child private CallNode dispatch;
 
-        private CallDispatchNode getDispatchNode() {
-            if (dispatch == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                dispatch = insert(CallDispatchNode.create());
-            }
-            return dispatch;
-        }
+        private final PrimitiveValueProfile starArgsLenProfile = PrimitiveValueProfile.createEqualityProfile();
 
-        @ExplodeLoop
         public Object access(MethKeywords object, Object[] arguments) {
-            if (executeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(new PythonMessageResolution.ExecuteNode());
-            }
             if (arguments.length != 3) {
                 throw ArityException.raise(3, arguments.length);
             }
 
             // convert args
-            Object[] converted = new Object[arguments.length];
-            for (int i = 0; i < arguments.length; i++) {
-                converted[i] = getToJavaNode().execute(arguments[i]);
-            }
 
-            Object[] userArgs = posArgsNode.executeWithArguments(converted[0], posStarargsNode.executeWith(converted[1]));
-            Object[] pArgs = createArgs.execute(userArgs);
-            PKeyword[] kwargs = expandKwargsNode.executeWith(converted[2]);
-            return getToSulongNode().execute(getDispatchNode().executeCall(object.getDelegate(), pArgs, kwargs));
+            Object receiver = toJavaNode.execute(arguments[0]);
+            Object starArgs = toJavaNode.execute(arguments[1]);
+            Object kwArgs = toJavaNode.execute(arguments[2]);
+
+            Object[] starArgsArray = posStarargsNode.executeWith(starArgs);
+            int starArgsLen = starArgsLenProfile.profile(starArgsArray.length);
+            Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray, starArgsLen);
+            PKeyword[] kwArgsArray = expandKwargsNode.executeWith(kwArgs);
+
+            // execute
+
+            if (dispatch == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                dispatch = insert(CallNode.create());
+            }
+            return toSulongNode.execute(dispatch.execute(null, object.getDelegate(), pArgs, kwArgsArray));
         }
 
         @ExplodeLoop
         public Object access(MethVarargs object, Object[] arguments) {
-            if (executeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(new PythonMessageResolution.ExecuteNode());
-            }
             if (arguments.length != 1) {
                 throw ArityException.raise(1, arguments.length);
             }
 
             // convert args
-            return getToSulongNode().execute(executeNode.execute(object.getDelegate(), new Object[]{getToJavaNode().execute(arguments[0])}));
-        }
 
-        private ToJavaNode getToJavaNode() {
-            if (toJavaNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toJavaNode = insert(ToJavaNode.create());
-            }
-            return toJavaNode;
-        }
+            Object varArgs = toJavaNode.execute(arguments[0]);
 
-        private ToSulongNode getToSulongNode() {
-            if (toSulongNode == null) {
+            // execute
+
+            if (executeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toSulongNode = insert(ToSulongNode.create());
+                executeNode = insert(new PythonMessageResolution.ExecuteNode());
             }
-            return toSulongNode;
+            return toSulongNode.execute(executeNode.execute(object.getDelegate(), new Object[]{varArgs}));
         }
     }
 }

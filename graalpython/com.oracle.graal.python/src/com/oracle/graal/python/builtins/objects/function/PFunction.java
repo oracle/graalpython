@@ -65,10 +65,6 @@ public class PFunction extends PythonObject implements PythonCallable {
         addDefaultConstants(this.getStorage(), name, enclosingClassName);
     }
 
-    public PFunction copyWithGlobals(PythonObject newGlobals) {
-        return new PFunction(getPythonClass(), name, enclosingClassName, arity, callTarget, frameDescriptor, newGlobals, closure);
-    }
-
     @TruffleBoundary
     private static void addDefaultConstants(DynamicObject storage2, String name, String enclosingClassName) {
         storage2.define(__NAME__, name);

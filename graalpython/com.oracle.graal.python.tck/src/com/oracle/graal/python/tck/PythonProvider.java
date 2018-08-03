@@ -150,11 +150,9 @@ public class PythonProvider implements LanguageProvider {
         addExpressionSnippet(context, snippets, "-",     "lambda x, y: x - y",  NUMBER_OBJECT, PNUMBER, PNUMBER);
 
         // multiplication
-        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  NUMBER_OBJECT, PNUMBER, PNUMBER);
-        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  STRING, PSequenceMultiplicationVerifier.INSTANCE, PNUMBER, STRING);
-        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  STRING, PSequenceMultiplicationVerifier.INSTANCE, STRING, PNUMBER);
-        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  array(ANY), PSequenceMultiplicationVerifier.INSTANCE, array(ANY), PNUMBER);
-        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  array(ANY), PSequenceMultiplicationVerifier.INSTANCE, PNUMBER, array(ANY));
+        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  NUMBER_OBJECT, PNoArrayVerifier.INSTANCE, PNUMBER, PNUMBER);
+        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  PSEQUENCE_OBJECT, PSequenceMultiplicationVerifier.INSTANCE, PNUMBER, PSEQUENCE_OBJECT);
+        addExpressionSnippet(context, snippets, "*",     "lambda x, y: x * y",  PSEQUENCE_OBJECT, PSequenceMultiplicationVerifier.INSTANCE, PSEQUENCE_OBJECT, PNUMBER);
 
         // division
         addExpressionSnippet(context, snippets, "/",     "lambda x, y: x / y",  NUMBER_OBJECT, PDivByZeroVerifier.INSTANCE, PNUMBER, PNUMBER);
@@ -332,21 +330,59 @@ public class PythonProvider implements LanguageProvider {
             Value par1 = parameters.get(1);
 
             // Just restrict 'number' to integer value space
-            if (isSequence(par0) && par1.isNumber()) {
-                if (isInteger(par1) && !hasMemoryError(snippetRun)) {
-                    ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+            if (isSequence(par0) && isNumber(par1)) {
+                if (!hasMemoryError(snippetRun)) {
+                    if (isInteger(par1) || isNegativeNumber(par1)) {
+                        ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+                    } else {
+                        if (snippetRun.getException() == null) {
+                            throw new AssertionError("<sequence> * <non-integer> should give an error.");
+                        }
+                    }
                 }
-            } else if (par0.isNumber() && isSequence(par1)) {
-                if (isInteger(par0) && !hasMemoryError(snippetRun)) {
-                    ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+            } else if (isNumber(par0) && isSequence(par1)) {
+                if (!hasMemoryError(snippetRun)) {
+                    if (isInteger(par0) || isNegativeNumber(par0)) {
+                        ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+                    } else {
+                        if (snippetRun.getException() == null) {
+                            throw new AssertionError("<non-integer> * <sequence> should give an error.");
+                        }
+                    }
                 }
-            } else {
+            } else if (isNumber(par0) && isMapping(par1) || isNumber(par1) && isMapping(par0)) {
+                if (snippetRun.getException() != null) {
+                    throw new AssertionError("Multipliation with mapping should give an error.");
+                }
+            } else if (isSequence(par0) && isSequence(par1)) {
+                if (snippetRun.getException() == null) {
+                    throw new AssertionError("<sequence> * <sequence> should give an error.");
+                } else {
+                    throw snippetRun.getException();
+                }
+            } else if (!(isNumber(par0) && isScalarVector(par1) || isScalarVector(par0) && isNumber(par1))) {
                 ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
             }
         }
 
-        protected boolean isSequence(Value par0) {
-            return par0.isString() || par0.hasArrayElements();
+        protected static boolean isScalarVector(Value val) {
+            return isNumber(val) && val.hasArrayElements() && val.getArraySize() == 1 && !isMapping(val);
+        }
+
+        protected static boolean isNumber(Value par0) {
+            return par0.isNumber() || par0.isBoolean();
+        }
+
+        protected static boolean isNegativeNumber(Value par0) {
+            return par0.isNumber() && par0.fitsInLong() && par0.asLong() < 0L;
+        }
+
+        protected static boolean isSequence(Value par0) {
+            return !isNumber(par0) && (par0.isString() || (par0.hasArrayElements() && !isMapping(par0)));
+        }
+
+        protected static boolean isMapping(Value par0) {
+            return par0.hasMembers() && par0.getMetaObject().toString().contains("dict");
         }
 
         private static boolean hasMemoryError(SnippetRun snippetRun) {
@@ -358,7 +394,7 @@ public class PythonProvider implements LanguageProvider {
         }
 
         private static boolean isInteger(Value par0) {
-            return par0.isNumber() && par0.fitsInInt();
+            return (par0.isNumber() && par0.fitsInInt() || par0.isBoolean());
         }
 
         private static final PSequenceMultiplicationVerifier INSTANCE = new PSequenceMultiplicationVerifier();
@@ -389,6 +425,35 @@ public class PythonProvider implements LanguageProvider {
         }
 
         private static final PNoListCoercionVerifier INSTANCE = new PNoListCoercionVerifier();
+    }
+
+    /**
+     * Foreign objects may be array-ish and boxed (e.g. if they have just one element). In this
+     * case, we still treat them as arrays.
+     */
+    private static class PNoArrayVerifier extends PResultVerifier {
+
+        public void accept(SnippetRun snippetRun) throws PolyglotException {
+            List<? extends Value> parameters = snippetRun.getParameters();
+            assert parameters.size() == 2;
+
+            Value par0 = parameters.get(0);
+            Value par1 = parameters.get(1);
+
+            if (isNumber(par0) && isNumber(par1)) {
+                if (!(par0.hasArrayElements() || par1.hasArrayElements())) {
+                    ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+                }
+            } else {
+                ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+            }
+        }
+
+        private static boolean isNumber(Value val) {
+            return val.isNumber() || val.isBoolean();
+        }
+
+        private static final PNoArrayVerifier INSTANCE = new PNoArrayVerifier();
     }
 
     /**

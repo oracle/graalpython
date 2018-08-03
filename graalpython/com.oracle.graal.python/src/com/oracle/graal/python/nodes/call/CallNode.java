@@ -60,6 +60,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
@@ -71,42 +72,57 @@ public abstract class CallNode extends PBaseNode {
     @Child CreateArgumentsNode createArguments = CreateArgumentsNode.create();
     @Child CallDispatchNode dispatch = CallDispatchNode.create();
 
-    public abstract Object execute(Object callableObject, Object[] arguments, PKeyword[] keywords);
+    public abstract Object execute(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords);
 
     protected static boolean isNoCallable(Object callee) {
         return !(callee instanceof PythonCallable);
     }
 
     @Specialization(guards = {"isNoCallable(callableObject) || isClass(callableObject)"})
-    protected Object specialCall(Object callableObject, Object[] arguments, PKeyword[] keywords,
+    protected Object specialCall(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode,
-                    @Cached("create()") PositionalArgumentsNode callArgsNode) {
+                    @Cached("create()") CallVarargsMethodNode callCallNode) {
         Object call = callAttrGetterNode.execute(callableObject);
         if (isNoCallable(call)) {
             CompilerDirectives.transferToInterpreter();
             throw raise(PythonErrorType.TypeError, "'%p' object is not callable", callableObject);
         }
-        return callCallNode.execute(call, callArgsNode.executeWithArguments(callableObject, arguments), keywords);
+        return callCallNode.execute(frame, call, PositionalArgumentsNode.prependArgument(callableObject, arguments, arguments.length), keywords);
+    }
+
+    private CreateArgumentsNode ensureCreateArguments() {
+        if (createArguments == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            createArguments = insert(CreateArgumentsNode.create());
+        }
+        return createArguments;
+    }
+
+    private CallDispatchNode ensureDispatch() {
+        if (dispatch == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            dispatch = insert(CallDispatchNode.create());
+        }
+        return dispatch;
     }
 
     @Specialization
-    protected Object methodCall(PMethod callable, Object[] arguments, PKeyword[] keywords) {
-        return dispatch.executeCall(callable, createArguments.executeWithSelf(callable.getSelf(), arguments), keywords);
+    protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords) {
+        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
     }
 
     @Specialization
-    protected Object builtinMethodCall(PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
-        return dispatch.executeCall(callable, createArguments.executeWithSelf(callable.getSelf(), arguments), keywords);
+    protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords) {
+        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().executeWithSelf(callable.getSelf(), arguments), keywords);
     }
 
     @Specialization
-    protected Object functionCall(PFunction callable, Object[] arguments, PKeyword[] keywords) {
-        return dispatch.executeCall(callable, createArguments.execute(arguments), keywords);
+    protected Object functionCall(VirtualFrame frame, PFunction callable, Object[] arguments, PKeyword[] keywords) {
+        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(arguments), keywords);
     }
 
     @Specialization
-    protected Object builtinFunctionCall(PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords) {
-        return dispatch.executeCall(callable, createArguments.execute(arguments), keywords);
+    protected Object builtinFunctionCall(VirtualFrame frame, PBuiltinFunction callable, Object[] arguments, PKeyword[] keywords) {
+        return ensureDispatch().executeCall(frame, callable, ensureCreateArguments().execute(arguments), keywords);
     }
 }

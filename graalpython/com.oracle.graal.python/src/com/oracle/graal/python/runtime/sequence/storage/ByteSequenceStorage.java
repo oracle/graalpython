@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -377,6 +378,14 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     public void append(Object value) throws SequenceStoreException {
         if (value instanceof Integer) {
             appendInt((int) value);
+        } else if (value instanceof Long) {
+            appendLong((long) value);
+        } else if (value instanceof PInt) {
+            try {
+                appendInt(((PInt) value).intValueExact());
+            } catch (ArithmeticException e) {
+                throw SequenceStoreException.INSTANCE;
+            }
         } else if (value instanceof Byte) {
             appendByte((byte) value);
         } else {
@@ -384,12 +393,21 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
     }
 
+    public void appendLong(long value) {
+        if (value < 0 || value >= 256) {
+            throw SequenceStoreException.INSTANCE;
+        }
+        ensureCapacity(length + 1);
+        values[length] = (byte) value;
+        length++;
+    }
+
     public void appendInt(int value) {
         if (value < 0 || value >= 256) {
             throw SequenceStoreException.INSTANCE;
         }
         ensureCapacity(length + 1);
-        values[length] = ((Integer) value).byteValue();
+        values[length] = (byte) value;
         length++;
     }
 
@@ -405,6 +423,8 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             extendWithByteStorage((ByteSequenceStorage) other);
         } else if (other instanceof IntSequenceStorage) {
             extendWithIntStorage((IntSequenceStorage) other);
+        } else if (other instanceof ObjectSequenceStorage) {
+            extendWithObjectStorage((ObjectSequenceStorage) other);
         } else {
             throw SequenceStoreException.INSTANCE;
         }
@@ -432,7 +452,35 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             if (otherValue < 0 || otherValue >= 256) {
                 throw SequenceStoreException.INSTANCE;
             }
-            values[i] = ((Integer) otherValue).byteValue();
+            values[i] = (byte) otherValue;
+        }
+
+        length = extendedLength;
+    }
+
+    private void extendWithObjectStorage(ObjectSequenceStorage other) {
+        int extendedLength = length + other.length();
+        ensureCapacity(extendedLength);
+        Object[] otherValues = other.getInternalArray();
+
+        for (int i = length, j = 0; i < extendedLength; i++, j++) {
+            Object otherValue = otherValues[j];
+            long value = 0;
+            if (otherValue instanceof Integer) {
+                value = (int) otherValue;
+            } else if (otherValue instanceof Long) {
+                value = (long) otherValue;
+            } else if (otherValue instanceof PInt) {
+                try {
+                    value = ((PInt) otherValue).intValueExact();
+                } catch (ArithmeticException e) {
+                    throw SequenceStoreException.INSTANCE;
+                }
+            }
+            if (value < 0 || value >= 256) {
+                throw SequenceStoreException.INSTANCE;
+            }
+            values[i] = (byte) value;
         }
 
         length = extendedLength;

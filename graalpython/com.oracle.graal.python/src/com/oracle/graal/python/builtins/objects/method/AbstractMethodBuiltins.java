@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -61,18 +62,18 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CALL__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
     @GenerateNodeFactory
-    public abstract static class CallNode extends PythonBuiltinNode {
+    public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Child private CallDispatchNode dispatch = CallDispatchNode.create();
         @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
         @Specialization
         protected Object doIt(PMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
+            return dispatch.executeCall(null, self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
         }
 
         @Specialization
         protected Object doIt(PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
+            return dispatch.executeCall(null, self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
         }
     }
 

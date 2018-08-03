@@ -46,6 +46,21 @@ _mx_graal = mx.suite("compiler", fatalIfMissing=False)
 _sulong = mx.suite("sulong")
 
 
+def _get_core_home():
+    return os.path.join(_suite.dir, "graalpython", "lib-graalpython")
+
+
+def _get_stdlib_home():
+    return os.path.join(_suite.dir, "graalpython", "lib-python", "3")
+
+
+def _get_svm_binary():
+    return os.path.join(_suite.dir, "graalpython-svm")
+
+def __get_svm_binary_from_graalvm():
+    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
+    return os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
+
 def _extract_graalpython_internal_options(args):
     internal = []
     non_internal = []
@@ -261,7 +276,6 @@ class GraalPythonTags(object):
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
-    R = 'python-R'
     apptests = 'python-apptests'
     license = 'python-license'
 
@@ -321,16 +335,19 @@ def find_eclipse():
                 return
 
 
-def python_svm(args):
+def python_build_svm(args):
     mx.run_mx(
         ["--dynamicimports", "/substratevm,/vm", "build",
          "--force-deprecation-as-warning", "--dependencies",
          "GRAAL_MANAGEMENT,graalpython.image"],
         nonZeroIsFatal=True
     )
-    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
-    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
-    shutil.copy(svm_image, os.path.join(_suite.dir, "graalpython-svm"))
+    shutil.copy(__get_svm_binary_from_graalvm(), _get_svm_binary())
+
+
+def python_svm(args):
+    python_build_svm(args)
+    svm_image = __get_svm_binary_from_graalvm()
     mx.run([svm_image] + args)
     return svm_image
 
@@ -396,35 +413,12 @@ def graalpython_gate_runner(args, tasks):
                 test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v"] + testfiles
                 mx.run(["./graalpython-svm", "--python.CoreHome=graalpython/lib-graalpython", "--python.StdLibHome=graalpython/lib-python/3", langhome] + test_args, nonZeroIsFatal=True)
 
-    with Task('GraalPython downstream R tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.R]) as task:
-        script_r2p = os.path.join(_suite.dir, "graalpython", "benchmarks", "src", "benchmarks", "interop", "r_python_image_demo.r")
-        script_p2r = os.path.join(_suite.dir, "graalpython", "benchmarks", "src", "benchmarks", "interop", "python_r_image_demo.py")
-        pythonjars = os.pathsep.join([
-            os.path.join(_suite.dir, "mxbuild", "dists", "graalpython.jar"),
-            os.path.join(_suite.dir, "mxbuild", "dists", "graalpython-env.jar")
-        ])
-        if task:
-            rrepo = os.environ["FASTR_REPO_URL"]
-            testdownstream(
-                _suite,
-                [rrepo, mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
-                ".",
-                [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
-                 ["--cp-sfx", pythonjars, "r", "--polyglot", "--file=%s" % script_r2p]
-                 ])
-            testdownstream(
-                _suite,
-                [rrepo, mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
-                ".",
-                [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
-                 ["-v", "--cp-sfx", pythonjars, "r", "--jvm", "--polyglot", "-e", "eval.polyglot('python', path='%s')" % str(script_p2r)]
-                 ])
-
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
             _apptest_suite = _suite.import_suite(
                 "graalpython-apptests",
+                version="a16199a5f529689c6b671ce1ead79be0e652f3c9",
                 urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
             )
             mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
@@ -930,6 +924,7 @@ mx.update_commands(_suite, {
     'python-update-import': [update_import_cmd, 'import name'],
     'delete-graalpython-if-testdownstream': [delete_self_if_testdownstream, ''],
     'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
+    'python-build-svm': [python_build_svm, 'build svm image if it is outdated'],
     'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
     'python3-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
