@@ -360,6 +360,9 @@ PyObject* _PyObject_New(PyTypeObject *tp) {
     return PyObject_INIT(op, tp);
 }
 
+void PyObject_GC_Track(void *tp) {
+}
+
 PyObject* _PyObject_GC_New(PyTypeObject *tp) {
     return _PyObject_New(tp);
 }
