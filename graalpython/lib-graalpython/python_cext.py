@@ -753,7 +753,7 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
 
     getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
     getset.__doc__ = doc
-    object.__setattr__(pclass, name, getset)
+    PyType_Dict(pclass)[name] = getset
 
 
 def GetSet_SetNotWritable(self, value, attr):

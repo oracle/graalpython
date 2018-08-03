@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -508,6 +509,17 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         boolean op5(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
             return compNode.executeBool(a, b);
+        }
+    }
+
+    @Builtin(name = "PyType_Dict", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class PyType_DictNode extends PythonBuiltinNode {
+        @Specialization
+        PHashingCollection getDict(PythonNativeClass object) {
+            PHashingCollection dict = object.getDict();
+            assert dict instanceof PDict;
+            return dict;
         }
     }
 
