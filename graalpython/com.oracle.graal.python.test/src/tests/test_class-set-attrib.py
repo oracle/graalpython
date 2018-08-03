@@ -37,45 +37,68 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def make_super_class():
-    import sys
+counter = 0
+
+class Foo:
+  def __setattr__(self, key, value):
+    global counter
+    counter = counter + 1
+    object.__setattr__(self, key, value)
+  def __delattr__(self, key):
+    global counter
+    counter = counter + 10
+    object.__delattr__(self, key)
+
+def test_call():
+  global counter
+  counter = 0
+  f = Foo()
+  f.a = 1
+  Foo.b = 123
+  assert counter == 1, "setting attrib on class should not call its own __setattr__"
+  del f.a
+  del Foo.b
+  assert counter == 11, "deleting attrib on class should not call its own __delattr__"
+
+class AClass:
+  pass
+
+class BClass(AClass):
+  pass
+
+class CClass(BClass):
+  pass
+
+class DClass(BClass):
+  pass
+
+def custom_set(self, key, value):
+  object.__setattr__(self, key, value + 10 if isinstance(value, int) else value)
+
+def custom_get(self, key):
+  value = object.__getattribute__(self, key)
+  return value + 100 if isinstance(value, int) else value
+
+def test_assignments():
+  object = CClass()
+  # writing to BClass changes the result, writing to DClass doesn't
+  targets = (AClass, BClass, DClass, CClass, object)
+  results = (0, 1, 1, 3, 4)
+  for i in range(0, len(targets)):
+    targets[i].foo = i
+    assert object.foo == results[i], "normal %d" %i
+  # make sure that a custom __getattribute__ is used
+  BClass.__getattribute__ = custom_get
+  for i in range(0, len(targets)):
+    targets[i].bar = i
+    assert object.bar == results[i] + 100, "custom get %d" % i
+  # check correct lookups when deleting attributes
+  for i in reversed(range(0, len(targets))):
+    assert object.bar == results[i] + 100, "delete %d" % i
+    del targets[i].bar
+  # make sure a custom __setattr__ is used
+  BClass.__setattr__ = custom_set
+  object.baz = 9
+  assert object.baz == 119, "custom set"
 
 
-    class super(object):
-        def __get__(self, obj, type=None):
-            if object.__getattribute__(self, "__obj__") is None and obj is not None:
-                return super(object.__getattribute__(self, "__type__"), obj)
-            else:
-                return self
-
-        def __getattribute__(self, attr):
-            obj = object.__getattribute__(self, "__obj__")
-            typ = object.__getattribute__(self, "__type__")
-            if isinstance(obj, typ):
-                start_type = obj.__class__
-            else:
-                start_type = obj
-            mro = iter(start_type.__mro__)
-            found_start = False
-            for cls in mro:
-                if cls is typ:
-                    found_start = True
-                elif found_start:
-                    if attr in cls.__dict__:
-                        x = cls.__dict__[attr]
-                        if hasattr(x, "__get__"):
-                            x = x.__get__(obj, typ)
-                        return x
-            raise AttributeError(attr)
-
-        def __repr__(self):
-            obj = object.__getattribute__(self, "__obj__")
-            typ = object.__getattribute__(self, "__type__")
-            return '<super: %s, %s>' % (typ, obj)
-
-    super.__init__ = sys.__super__init__
-    del sys.__super__init__
-    return super
-
-
-super = make_super_class()

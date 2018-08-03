@@ -29,6 +29,7 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PNode;
@@ -139,7 +140,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.execute(arg1.execute(frame), (Object[]) arg2.execute(frame), (PKeyword[]) arg3.execute(frame));
+            return node.execute(frame, arg1.execute(frame), (Object[]) arg2.execute(frame), (PKeyword[]) arg3.execute(frame));
         }
     }
 
@@ -148,6 +149,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.builtin = builtin;
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
+        if (SysModuleBuiltins.SuperInitNode.class.isAssignableFrom(factory.getNodeClass())) {
+            setNeedsCallerFrame();
+        }
     }
 
     private static PNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {

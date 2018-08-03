@@ -42,7 +42,7 @@ public class ImportStarNode extends AbstractImportNode {
     private final int level;
 
     @Child private SetItemNode dictWriteNode = null;
-    @Child private SetAttributeNode setAttributeNode = null;
+    @Child private SetAttributeNode.Dynamic setAttributeNode = null;
 
     // TODO: remove once we removed PythonModule globals
 
@@ -56,7 +56,7 @@ public class ImportStarNode extends AbstractImportNode {
         } else {
             if (setAttributeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                setAttributeNode = insert(SetAttributeNode.create());
+                setAttributeNode = insert(new SetAttributeNode.Dynamic());
             }
             setAttributeNode.execute(globals, name, value);
         }

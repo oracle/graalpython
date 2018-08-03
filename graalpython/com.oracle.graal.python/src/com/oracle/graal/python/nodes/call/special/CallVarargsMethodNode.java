@@ -50,19 +50,20 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode.VarargsBuiltinDirectInvocationNotSupported;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     public static CallVarargsMethodNode create() {
         return CallVarargsMethodNodeGen.create();
     }
 
-    public abstract Object execute(Object callable, Object[] arguments, PKeyword[] keywords);
+    public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments, PKeyword[] keywords);
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = VarargsBuiltinDirectInvocationNotSupported.class)
-    Object call(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
+    Object call(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, PKeyword[] keywords,
                     @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
                     @Cached("getVarargs(func)") PythonVarargsBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
-        return builtinNode.varArgExecute(arguments, keywords);
+        return builtinNode.varArgExecute(frame, arguments, keywords);
     }
 
     @Specialization(guards = {"arguments.length == 1", "keywords.length == 0", "func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -87,8 +88,8 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     }
 
     @Specialization
-    Object call(Object func, Object[] arguments, PKeyword[] keywords,
+    Object call(VirtualFrame frame, Object func, Object[] arguments, PKeyword[] keywords,
                     @Cached("create()") CallNode callNode) {
-        return callNode.execute(func, arguments, keywords);
+        return callNode.execute(frame, func, arguments, keywords);
     }
 }

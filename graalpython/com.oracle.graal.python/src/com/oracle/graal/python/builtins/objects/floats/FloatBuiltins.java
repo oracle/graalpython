@@ -489,7 +489,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         public Object fromhexO(PythonClass cl, String arg,
                         @Cached("create(__CALL__)") LookupAndCallVarargsNode constr) {
             double value = fromHex(arg);
-            return constr.execute(cl, new Object[]{cl, value});
+            return constr.execute(null, cl, new Object[]{cl, value});
         }
 
         @Fallback

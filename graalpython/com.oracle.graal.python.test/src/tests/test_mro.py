@@ -37,45 +37,82 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def make_super_class():
-    import sys
+
+def test_class_attr_change():
+    class A(object):
+        counter = 0
+
+    for i in range(10):
+        A.counter += 1
+
+    assert A.counter == 10
 
 
-    class super(object):
-        def __get__(self, obj, type=None):
-            if object.__getattribute__(self, "__obj__") is None and obj is not None:
-                return super(object.__getattribute__(self, "__type__"), obj)
-            else:
-                return self
+def test_class_attr_deleted():
+    class A(object):
+        counter = 0
 
-        def __getattribute__(self, attr):
-            obj = object.__getattribute__(self, "__obj__")
-            typ = object.__getattribute__(self, "__type__")
-            if isinstance(obj, typ):
-                start_type = obj.__class__
-            else:
-                start_type = obj
-            mro = iter(start_type.__mro__)
-            found_start = False
-            for cls in mro:
-                if cls is typ:
-                    found_start = True
-                elif found_start:
-                    if attr in cls.__dict__:
-                        x = cls.__dict__[attr]
-                        if hasattr(x, "__get__"):
-                            x = x.__get__(obj, typ)
-                        return x
-            raise AttributeError(attr)
+    class B(A):
+        counter = 1
 
-        def __repr__(self):
-            obj = object.__getattribute__(self, "__obj__")
-            typ = object.__getattribute__(self, "__type__")
-            return '<super: %s, %s>' % (typ, obj)
+    for i in range(10):
+        B.counter += 1
 
-    super.__init__ = sys.__super__init__
-    del sys.__super__init__
-    return super
+    assert B.counter == 11
+    assert A.counter == 0
+    del B.counter
+    assert B.counter == 0
+
+    for i in range(10):
+        A.counter += 1
+    assert A.counter == 10
 
 
-super = make_super_class()
+def test_class_attr_added():
+    class A(object):
+        counter = 0
+
+    class B(A):
+        pass
+
+    for i in range(10):
+        B.counter += 1
+
+    assert B.counter == 10
+    assert A.counter == 0
+    B.counter = 1
+    assert B.counter == 1
+
+    for i in range(10):
+        A.counter += 1
+    assert A.counter == 10
+
+
+def test_class_attr_add_del():
+    class A:
+        foo = 1
+
+    class B(A):
+        foo = 2
+
+    class C(B):
+        foo = 3
+
+    C.foo += 1
+    C.foo += 1
+    C.foo += 1
+    C.foo += 1
+    C.foo += 1
+    C.foo += 1
+    C.foo += 1
+
+    assert C.foo == 10
+    del C.foo
+    assert C.foo == 2
+    del B.foo
+    assert C.foo == 1
+    B.foo = 5
+    assert C.foo == 5
+    C.foo = 10
+    assert C.foo == 10
+

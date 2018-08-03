@@ -42,25 +42,30 @@ package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
 /**
- * Subclasses must override {@link #varArgExecute(Object[], PKeyword[])} to call the e.g.
- * {@link #execute(Object, Object[], PKeyword[])} or whatever is right for them, otherwise they will
- * never be on the direct call path.
+ * Subclasses must override {@link #varArgExecute(VirtualFrame, Object[], PKeyword[])} to call the
+ * e.g. {@link #execute(VirtualFrame, Object, Object[], PKeyword[])} or whatever is right for them,
+ * otherwise they will never be on the direct call path.
  */
 public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
     public static final class VarargsBuiltinDirectInvocationNotSupported extends ControlFlowException {
         private static final long serialVersionUID = 1L;
     }
 
-    // this function must not be called "execute"
-    public Object varArgExecute(@SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+    /**
+     * {@code frame} may be null. This function must not be called "execute"
+     */
+    public Object varArgExecute(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords)
+                    throws VarargsBuiltinDirectInvocationNotSupported {
         throw new VarargsBuiltinDirectInvocationNotSupported();
     }
 
-    /*
-     * Most varargs invocations will be (self, *args, *kwargs), so this execute method won't hurt.
+    /**
+     * {@code frame} may be null. Most varargs invocations will be (self, *args, *kwargs), so this
+     * execute method won't hurt.
      */
-    public abstract Object execute(Object self, Object[] arguments, PKeyword[] keywords);
+    public abstract Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords);
 }

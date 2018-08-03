@@ -73,6 +73,6 @@ public abstract class CallTernaryMethodNode extends CallSpecialMethodNode {
     @Specialization
     Object call(Object func, Object arg1, Object arg2, Object arg3,
                     @Cached("create()") CallNode callNode) {
-        return callNode.execute(func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
+        return callNode.execute(null, func, new Object[]{arg1, arg2, arg3}, PKeyword.EMPTY_KEYWORDS);
     }
 }

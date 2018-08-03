@@ -98,7 +98,7 @@ public abstract class AbstractImportNode extends StatementNode {
         PMethod builtinImport = (PMethod) getContext().getBuiltins().getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
-        return getCallNode().execute(builtinImport, new Object[]{name}, new PKeyword[]{
+        return getCallNode().execute(null, builtinImport, new Object[]{name}, new PKeyword[]{
                         new PKeyword(GLOBALS, getGetDictNode().execute(globals)),
                         new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
                                                           // can always be None

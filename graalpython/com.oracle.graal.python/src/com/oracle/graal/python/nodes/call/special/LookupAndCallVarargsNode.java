@@ -46,12 +46,13 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class LookupAndCallVarargsNode extends PBaseNode {
     private final String name;
     @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 
-    public abstract Object execute(Object callable, Object[] arguments);
+    public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
 
     public static LookupAndCallVarargsNode create(String name) {
         return LookupAndCallVarargsNodeGen.create(name);
@@ -62,9 +63,9 @@ public abstract class LookupAndCallVarargsNode extends PBaseNode {
     }
 
     @Specialization
-    Object callObject(Object callable, Object[] arguments,
+    Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") LookupAttributeInMRONode.Dynamic getattr) {
-        return dispatchNode.execute(getattr.execute(getClassNode.execute(callable), name), arguments, PKeyword.EMPTY_KEYWORDS);
+        return dispatchNode.execute(frame, getattr.execute(getClassNode.execute(callable), name), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

@@ -51,7 +51,6 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
-import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -117,7 +116,7 @@ public abstract class CastToListNode extends PNode {
     }
 
     protected GetAttributeNode getList() {
-        return GetAttributeNode.create(new BuiltinsLiteralNode(), new StringLiteralNode("list"));
+        return GetAttributeNode.create("list", new BuiltinsLiteralNode());
     }
 
     @Specialization(rewriteOn = PException.class)

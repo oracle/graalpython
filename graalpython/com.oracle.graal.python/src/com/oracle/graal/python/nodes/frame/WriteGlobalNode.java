@@ -53,7 +53,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @NodeChildren({@NodeChild(value = "rhs", type = PNode.class)})
 public abstract class WriteGlobalNode extends GlobalNode implements WriteNode {
-    private final String attributeId;
+    protected final String attributeId;
 
     WriteGlobalNode(String attributeId) {
         this.attributeId = attributeId;
@@ -134,8 +134,8 @@ public abstract class WriteGlobalNode extends GlobalNode implements WriteNode {
 
     @Specialization(guards = "isInModule(frame)")
     Object writeDict(VirtualFrame frame, Object value,
-                    @Cached("create()") SetAttributeNode storeNode) {
-        storeNode.execute(PArguments.getGlobals(frame), attributeId, value);
+                    @Cached("create(attributeId)") SetAttributeNode storeNode) {
+        storeNode.execute(PArguments.getGlobals(frame), value);
         return PNone.NONE;
     }
 

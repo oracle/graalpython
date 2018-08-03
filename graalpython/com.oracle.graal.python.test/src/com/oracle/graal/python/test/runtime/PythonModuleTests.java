@@ -36,6 +36,7 @@ import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -66,7 +67,7 @@ public class PythonModuleTests {
     public void builtinsMinTest() {
         final PythonModule builtins = context.getBuiltins();
         PBuiltinMethod min = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.MIN);
-        Object returnValue = InvokeNode.create(min).invoke(createWithUserArguments(builtins, 4, 2, 1));
+        Object returnValue = InvokeNode.create(min).execute(null, createWithUserArguments(builtins, 4, 2, 1), PKeyword.EMPTY_KEYWORDS);
         assertEquals(1, returnValue);
     }
 
@@ -74,7 +75,7 @@ public class PythonModuleTests {
     public void builtinsIntTest() {
         final PythonModule builtins = context.getBuiltins();
         PythonBuiltinClass intClass = (PythonBuiltinClass) builtins.getAttribute(BuiltinNames.INT);
-        Object returnValue = InvokeNode.create(intClass).invoke(createWithUserArguments(intClass, "42"));
+        Object returnValue = InvokeNode.create(intClass).execute(null, createWithUserArguments(intClass, "42"), PKeyword.EMPTY_KEYWORDS);
         assertEquals(42, returnValue);
     }
 
@@ -83,7 +84,7 @@ public class PythonModuleTests {
         PythonModule main = context.getMainModule();
         PythonModule builtins = (PythonModule) main.getAttribute(__BUILTINS__);
         PBuiltinMethod abs = (PBuiltinMethod) builtins.getAttribute(BuiltinNames.ABS);
-        Object returned = InvokeNode.create(abs).invoke(createWithUserArguments(builtins, -42));
+        Object returned = InvokeNode.create(abs).execute(null, createWithUserArguments(builtins, -42), PKeyword.EMPTY_KEYWORDS);
         assertEquals(42, returned);
     }
 

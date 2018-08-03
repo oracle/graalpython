@@ -96,7 +96,7 @@ public abstract class WithNode extends StatementNode {
         Object enterCallable = enterGetter.executeObject(withObject, "__enter__");
 
         if (isCallableNode.execute(enterCallable)) {
-            applyValues(frame, enterDispatch.executeCall(enterCallable, createArgs.execute(withObject), new PKeyword[0]));
+            applyValues(frame, enterDispatch.executeCall(frame, enterCallable, createArgs.execute(withObject), new PKeyword[0]));
         } else {
             throw raise(TypeError, "%p is not callable", enterCallable);
         }
@@ -105,11 +105,11 @@ public abstract class WithNode extends StatementNode {
             body.execute(frame);
         } catch (PException exception) {
             gotException = true;
-            return handleException(withObject, exitCallable, exception, isExitCallableNode);
+            return handleException(frame, withObject, exitCallable, exception, isExitCallableNode);
         } finally {
             if (!gotException) {
                 if (isExitCallableNode.execute(exitCallable)) {
-                    exitDispatch.executeCall(exitCallable, createArgs.execute(withObject, PNone.NONE, PNone.NONE, PNone.NONE), new PKeyword[0]);
+                    exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, PNone.NONE, PNone.NONE, PNone.NONE), new PKeyword[0]);
                 } else {
                     throw raise(TypeError, "%p is not callable", exitCallable);
                 }
@@ -119,7 +119,7 @@ public abstract class WithNode extends StatementNode {
         return PNone.NONE;
     }
 
-    private Object handleException(Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
+    private Object handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
         if (!isExitCallableNode.execute(exitCallable)) {
             throw raise(TypeError, "%p is not callable", exitCallable);
         }
@@ -128,7 +128,7 @@ public abstract class WithNode extends StatementNode {
         Object type = e.getType();
         Object value = e.getExceptionObject();
         Object trace = e.getExceptionObject().getTraceback(factory());
-        Object returnValue = exitDispatch.executeCall(exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
+        Object returnValue = exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
         // If exit handler returns 'true', suppress
         if (toBooleanNode.executeWith(returnValue)) {
             return PNone.NONE;
