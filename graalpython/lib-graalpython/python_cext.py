@@ -654,44 +654,12 @@ def PyStructSequence_New(typ):
     return stat_result([None] * stat_result.n_sequence_fields * 2)
 
 
-def METH_KEYWORDS(fun):
-    def wrapped(self, *args, **kwds):
-        return fun(self, args, kwds)
-    return wrapped
-
-
-def METH_VARARGS(fun):
-    def wrapped(self, *args):
-        return fun(self, args)
-    return wrapped
-
-
-def METH_NOARGS(fun):
-    def wrapped(self):
-        return fun(self, None)
-    return wrapped
-
-
-def METH_O(fun):
-    def wrapped(self, arg):
-        return fun(self, (arg,));
-    return wrapped
-
-
-def METH_FASTCALL(fun):
-    def wrapped(self, *args, **kwargs):
-        return fun(self, args, len(args), kwargs)
-    return wrapped
-
-
 def METH_UNSUPPORTED(fun):
     raise NotImplementedError("unsupported message type")
 
 
 def METH_DIRECT(fun):
-    def wrapped(*args, **kwargs):
-        return fun(*args, **kwargs)
-    return wrapped
+    return fun
 
 
 methodtype = classmethod.method

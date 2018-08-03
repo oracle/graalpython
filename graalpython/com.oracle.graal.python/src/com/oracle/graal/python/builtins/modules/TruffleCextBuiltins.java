@@ -81,7 +81,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -95,6 +95,9 @@ import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -109,6 +112,8 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -130,6 +135,7 @@ import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -1364,8 +1370,171 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BuiltinMethodNode extends PythonBuiltinNode {
         @Specialization
-        Object call(Object self, PFunction function) {
+        Object call(Object self, PBuiltinFunction function) {
             return factory().createBuiltinMethod(self, function);
+        }
+    }
+
+    abstract static class MethodDescriptorRoot extends RootNode {
+        @Child protected DirectCallNode directCallNode;
+        @Child protected ReadIndexedArgumentNode readSelfNode;
+        protected final PythonObjectFactory factory;
+
+        protected MethodDescriptorRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+            super(language);
+            this.factory = factory;
+            this.readSelfNode = ReadIndexedArgumentNode.create(0);
+            this.directCallNode = Truffle.getRuntime().createDirectCallNode(callTarget);
+        }
+    }
+
+    static class MethKeywordsRoot extends MethodDescriptorRoot {
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private ReadVarKeywordsNode readKwargsNode;
+
+        protected MethKeywordsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+            super(language, factory, callTarget);
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object[] args = readVarargsNode.executeObjectArray(frame);
+            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+            Object[] arguments = PArguments.create(3);
+            PArguments.setArgument(arguments, 0, self);
+            PArguments.setArgument(arguments, 1, factory.createTuple(args));
+            PArguments.setArgument(arguments, 2, factory.createDict(kwargs));
+            return directCallNode.call(arguments);
+        }
+    }
+
+    static class MethVarargsRoot extends MethodDescriptorRoot {
+        @Child private ReadVarArgsNode readVarargsNode;
+
+        protected MethVarargsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+            super(language, factory, callTarget);
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object[] args = readVarargsNode.executeObjectArray(frame);
+            Object[] arguments = PArguments.create(2);
+            PArguments.setArgument(arguments, 0, self);
+            PArguments.setArgument(arguments, 1, factory.createTuple(args));
+            return directCallNode.call(arguments);
+        }
+    }
+
+    static class MethNoargsRoot extends MethodDescriptorRoot {
+        protected MethNoargsRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+            super(language, factory, callTarget);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object[] arguments = PArguments.create(2);
+            PArguments.setArgument(arguments, 0, self);
+            PArguments.setArgument(arguments, 1, PNone.NONE);
+            return directCallNode.call(arguments);
+        }
+    }
+
+    static class MethORoot extends MethodDescriptorRoot {
+        @Child private ReadIndexedArgumentNode readArgNode;
+
+        protected MethORoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+            super(language, factory, callTarget);
+            this.readArgNode = ReadIndexedArgumentNode.create(1);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object arg = readArgNode.execute(frame);
+            Object[] arguments = PArguments.create(2);
+            PArguments.setArgument(arguments, 0, self);
+            PArguments.setArgument(arguments, 1, factory.createTuple(new Object[]{arg}));
+            return directCallNode.call(arguments);
+        }
+    }
+
+    static class MethFastcallRoot extends MethodDescriptorRoot {
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private ReadVarKeywordsNode readKwargsNode;
+
+        protected MethFastcallRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
+            super(language, factory, callTarget);
+            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readKwargsNode = ReadVarKeywordsNode.create(new String[0]);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object[] args = readVarargsNode.executeObjectArray(frame);
+            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+            Object[] arguments = PArguments.create(4);
+            PArguments.setArgument(arguments, 0, self);
+            PArguments.setArgument(arguments, 1, factory.createTuple(args));
+            PArguments.setArgument(arguments, 2, args.length);
+            PArguments.setArgument(arguments, 3, factory.createDict(kwargs));
+            return directCallNode.call(arguments);
+        }
+    }
+
+    @Builtin(name = "METH_KEYWORDS", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object call(PBuiltinFunction function) {
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        }
+    }
+
+    @Builtin(name = "METH_VARARGS", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object call(PBuiltinFunction function) {
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+                            Truffle.getRuntime().createCallTarget(new MethVarargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        }
+    }
+
+    @Builtin(name = "METH_NOARGS", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object call(PBuiltinFunction function) {
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+                            Truffle.getRuntime().createCallTarget(new MethNoargsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        }
+    }
+
+    @Builtin(name = "METH_O", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class MethONode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object call(PBuiltinFunction function) {
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+                            Truffle.getRuntime().createCallTarget(new MethORoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        }
+    }
+
+    @Builtin(name = "METH_FASTCALL", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object call(PBuiltinFunction function) {
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+                            Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
         }
     }
 }

@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -61,7 +62,12 @@ abstract class CallSpecialMethodNode extends Node {
      * otherwise.
      */
     private static <T extends PythonBuiltinBaseNode> T getBuiltin(PBuiltinFunction func, Class<T> clazz) {
-        return clazz.isAssignableFrom(func.getBuiltinNodeFactory().getNodeClass()) ? clazz.cast(func.getBuiltinNodeFactory().createNode()) : null;
+        NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = func.getBuiltinNodeFactory();
+        if (builtinNodeFactory != null) {
+            return clazz.isAssignableFrom(builtinNodeFactory.getNodeClass()) ? clazz.cast(func.getBuiltinNodeFactory().createNode()) : null;
+        } else {
+            return null;
+        }
     }
 
     protected static PythonUnaryBuiltinNode getUnary(PBuiltinFunction func) {
