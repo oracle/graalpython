@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ReadArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -443,49 +445,33 @@ public class PySequenceArrayWrapperMR {
     }
 
     static abstract class ToNativeStorageNode extends TransformToNativeNode {
-        @Child private PCallNativeNode callNativeBinary;
-
-        @CompilationFinal private TruffleObject allocateByteArrayFunction;
-        @CompilationFinal private TruffleObject allocateIntArrayFunction;
-        @CompilationFinal private TruffleObject allocateLongArrayFunction;
-        @CompilationFinal private TruffleObject allocateDoubleArrayFunction;
-        @CompilationFinal private TruffleObject allocateObjectArrayFunction;
+        @Child private StorageToNativeNode storageToNativeNode;
 
         public abstract NativeSequenceStorage execute(SequenceStorage object);
 
         @Specialization
         NativeSequenceStorage doByteStorage(ByteSequenceStorage s) {
-            byte[] arr = s.getInternalByteArray();
-            Object ptr = ensureIsPointer(callBinaryIntoCapi(getAllocateByteArrayFunction(), arr, arr.length));
-            return new NativeSequenceStorage(ptr, s.length(), arr.length);
+            return getStorageToNativeNode().execute(s.getInternalByteArray());
         }
 
         @Specialization
         NativeSequenceStorage doIntStorage(IntSequenceStorage s) {
-            int[] arr = s.getInternalIntArray();
-            Object ptr = ensureIsPointer(callBinaryIntoCapi(getAllocateIntArrayFunction(), arr, arr.length));
-            return new NativeSequenceStorage(ptr, s.length(), arr.length);
+            return getStorageToNativeNode().execute(s.getInternalIntArray());
         }
 
         @Specialization
         NativeSequenceStorage doLongStorage(LongSequenceStorage s) {
-            long[] arr = s.getInternalLongArray();
-            Object ptr = ensureIsPointer(callBinaryIntoCapi(getAllocateLongArrayFunction(), arr, arr.length));
-            return new NativeSequenceStorage(ptr, s.length(), arr.length);
+            return getStorageToNativeNode().execute(s.getInternalLongArray());
         }
 
         @Specialization
         NativeSequenceStorage doDoubleStorage(DoubleSequenceStorage s) {
-            double[] arr = s.getInternalDoubleArray();
-            Object ptr = ensureIsPointer(callBinaryIntoCapi(getAllocateDoubleArrayFunction(), arr, arr.length));
-            return new NativeSequenceStorage(ptr, s.length(), arr.length);
+            return getStorageToNativeNode().execute(s.getInternalDoubleArray());
         }
 
         @Specialization
         NativeSequenceStorage doObjectStorage(ObjectSequenceStorage s) {
-            Object[] arr = s.getInternalArray();
-            Object ptr = ensureIsPointer(callBinaryIntoCapi(getAllocateObjectArrayFunction(), arr, arr.length));
-            return new NativeSequenceStorage(ptr, s.length(), arr.length);
+            return getStorageToNativeNode().execute(s.getInternalArray());
         }
 
         @Specialization
@@ -493,57 +479,23 @@ public class PySequenceArrayWrapperMR {
             return s;
         }
 
+        @Specialization
+        NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
+            // TODO(fa): not sure if that completely reflects semantics
+            return getStorageToNativeNode().execute(new byte[0]);
+        }
+
         @Fallback
         NativeSequenceStorage doGeneric(@SuppressWarnings("unused") SequenceStorage s) {
             return null;
         }
 
-        private TruffleObject getAllocateByteArrayFunction() {
-            if (allocateByteArrayFunction == null) {
+        private StorageToNativeNode getStorageToNativeNode() {
+            if (storageToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                allocateByteArrayFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE);
+                storageToNativeNode = insert(StorageToNativeNode.create());
             }
-            return allocateByteArrayFunction;
-        }
-
-        private TruffleObject getAllocateIntArrayFunction() {
-            if (allocateIntArrayFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                allocateIntArrayFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE);
-            }
-            return allocateIntArrayFunction;
-        }
-
-        private TruffleObject getAllocateLongArrayFunction() {
-            if (allocateLongArrayFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                allocateLongArrayFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE);
-            }
-            return allocateLongArrayFunction;
-        }
-
-        private TruffleObject getAllocateDoubleArrayFunction() {
-            if (allocateDoubleArrayFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                allocateDoubleArrayFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE);
-            }
-            return allocateDoubleArrayFunction;
-        }
-
-        private TruffleObject getAllocateObjectArrayFunction() {
-            if (allocateObjectArrayFunction == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                allocateObjectArrayFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE);
-            }
-            return allocateObjectArrayFunction;
-        }
-
-        private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, int size) {
-            if (callNativeBinary == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeBinary = insert(PCallNativeNode.create(1));
-            }
-            return callNativeBinary.execute(fun, new Object[]{arg0, size});
+            return storageToNativeNode;
         }
 
         public static ToNativeStorageNode create() {
