@@ -1392,6 +1392,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child protected ReadIndexedArgumentNode readSelfNode;
         protected final PythonObjectFactory factory;
 
+        @TruffleBoundary
         protected MethodDescriptorRoot(PythonLanguage language, PythonObjectFactory factory, CallTarget callTarget) {
             super(language);
             this.factory = factory;
