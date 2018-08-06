@@ -90,7 +90,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         return DictViewBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -99,7 +99,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -119,7 +119,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
@@ -149,7 +149,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
@@ -188,7 +188,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Child EqNode eqNode;
@@ -218,7 +218,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUB__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -255,7 +255,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __AND__, fixedNumOfArguments = 2)
+    @Builtin(name = __AND__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -292,7 +292,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __OR__, fixedNumOfArguments = 2)
+    @Builtin(name = __OR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -325,7 +325,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __XOR__, fixedNumOfArguments = 2)
+    @Builtin(name = __XOR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -358,7 +358,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -391,7 +391,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -424,7 +424,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessThanNode extends PythonBinaryBuiltinNode {
         @Child LessEqualNode lessEqualNode;
@@ -456,7 +456,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterThanNode extends PythonBinaryBuiltinNode {
         @Child GreaterEqualNode greaterEqualNode;

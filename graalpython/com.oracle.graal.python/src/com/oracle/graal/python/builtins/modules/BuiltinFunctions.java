@@ -177,7 +177,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // abs(x)
-    @Builtin(name = ABS, fixedNumOfArguments = 1)
+    @Builtin(name = ABS, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class AbsNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -212,7 +212,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // bin(object)
-    @Builtin(name = BIN, fixedNumOfArguments = 1)
+    @Builtin(name = BIN, fixedNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class BinNode extends PythonUnaryBuiltinNode {
@@ -260,7 +260,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // callable(object)
-    @Builtin(name = CALLABLE, fixedNumOfArguments = 1)
+    @Builtin(name = CALLABLE, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CallableNode extends PythonBuiltinNode {
 
@@ -291,7 +291,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // chr(i)
-    @Builtin(name = CHR, fixedNumOfArguments = 1)
+    @Builtin(name = CHR, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ChrNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -333,7 +333,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // hash([object])
-    @Builtin(name = HASH, minNumOfArguments = 0, maxNumOfArguments = 1)
+    @Builtin(name = HASH, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization  // tfel: TODO: this shouldn't be needed!
@@ -358,7 +358,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // dir([object])
-    @Builtin(name = DIR, minNumOfArguments = 0, maxNumOfArguments = 1)
+    @Builtin(name = DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(object)")
@@ -389,7 +389,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // divmod(a, b)
-    @Builtin(name = DIVMOD, fixedNumOfArguments = 2)
+    @Builtin(name = DIVMOD, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DivModNode extends PythonBuiltinNode {
@@ -430,7 +430,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // eval(expression, globals=None, locals=None)
-    @Builtin(name = EVAL, fixedNumOfArguments = 1, keywordArguments = {"globals", "locals"})
+    @Builtin(name = EVAL, fixedNumOfPositionalArgs = 1, keywordArguments = {"globals", "locals"})
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
         @Child private GetItemNode getNameNode = GetItemNode.create();
@@ -530,7 +530,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
-    @Builtin(name = COMPILE, fixedNumOfArguments = 3, keywordArguments = {"flags", "dont_inherit", "optimize"})
+    @Builtin(name = COMPILE, fixedNumOfPositionalArgs = 3, keywordArguments = {"flags", "dont_inherit", "optimize"})
     @GenerateNodeFactory
     public abstract static class CompileNode extends PythonBuiltinNode {
         @Specialization
@@ -578,7 +578,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // getattr(object, name[, default])
-    @Builtin(name = GETATTR, minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = GETATTR, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
         public abstract Object executeWithArgs(Object primary, String name, Object defaultValue);
@@ -646,7 +646,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // id(object)
-    @Builtin(name = ID, fixedNumOfArguments = 1)
+    @Builtin(name = ID, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IdNode extends PythonBuiltinNode {
         /**
@@ -788,7 +788,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // isinstance(object, classinfo)
-    @Builtin(name = ISINSTANCE, fixedNumOfArguments = 2)
+    @Builtin(name = ISINSTANCE, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsInstanceNode extends PythonBuiltinNode {
         @Child private GetClassNode getClassNode = GetClassNode.create();
@@ -847,7 +847,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // issubclass(class, classinfo)
-    @Builtin(name = ISSUBCLASS, fixedNumOfArguments = 2)
+    @Builtin(name = ISSUBCLASS, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IsSubClassNode extends PythonBuiltinNode {
         @Child private LookupAndCallBinaryNode subclassCheckNode = LookupAndCallBinaryNode.create(__SUBCLASSCHECK__);
@@ -898,7 +898,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // iter(object[, sentinel])
-    @Builtin(name = ITER, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = ITER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(sentinel)")
@@ -914,7 +914,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // len(s)
-    @Builtin(name = LEN, fixedNumOfArguments = 1)
+    @Builtin(name = LEN, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
@@ -1032,7 +1032,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // max(iterable, *[, key])
     // max(arg1, arg2, *args[, key])
-    @Builtin(name = MAX, minNumOfArguments = 1, takesVariableArguments = true, keywordArguments = {"key"})
+    @Builtin(name = MAX, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordArguments = {"key"})
     @GenerateNodeFactory
     public abstract static class MaxNode extends MinMaxNode {
 
@@ -1040,7 +1040,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // min(iterable, *[, key])
     // min(arg1, arg2, *args[, key])
-    @Builtin(name = MIN, minNumOfArguments = 1, takesVariableArguments = true, keywordArguments = {"key"})
+    @Builtin(name = MIN, minNumOfPositionalArgs = 1, takesVarArgs = true, keywordArguments = {"key"})
     @GenerateNodeFactory
     public abstract static class MinNode extends MinMaxNode {
 
@@ -1048,7 +1048,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // next(iterator[, default])
     @SuppressWarnings("unused")
-    @Builtin(name = NEXT, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = NEXT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonBuiltinNode {
 
@@ -1071,7 +1071,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // ord(c)
-    @Builtin(name = ORD, fixedNumOfArguments = 1)
+    @Builtin(name = ORD, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class OrdNode extends PythonBuiltinNode {
 
@@ -1096,7 +1096,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
-    @Builtin(name = PRINT, fixedNumOfArguments = 5)
+    @Builtin(name = PRINT, fixedNumOfPositionalArgs = 5)
     @GenerateNodeFactory
     public abstract static class PrintNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1138,7 +1138,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // repr(object)
-    @Builtin(name = REPR, fixedNumOfArguments = 1)
+    @Builtin(name = REPR, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -1157,7 +1157,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // round(number[, ndigits])
-    @Builtin(name = ROUND, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = ROUND, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RoundNode extends PythonBuiltinNode {
         @Specialization
@@ -1168,7 +1168,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // setattr(object, name, value)
-    @Builtin(name = SETATTR, fixedNumOfArguments = 3)
+    @Builtin(name = SETATTR, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetAttrNode extends PythonBuiltinNode {
         @Specialization
@@ -1178,7 +1178,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BREAKPOINT__, fixedNumOfArguments = 0)
+    @Builtin(name = __BREAKPOINT__, fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class BreakPointNode extends PythonBuiltinNode {
         @Specialization
@@ -1187,7 +1187,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__tdebug__", takesVariableArguments = true)
+    @Builtin(name = "__tdebug__", takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class DebugNode extends PythonBuiltinNode {
         @Specialization
@@ -1202,7 +1202,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = POW, minNumOfArguments = 2, keywordArguments = {"z"})
+    @Builtin(name = POW, minNumOfPositionalArgs = 2, keywordArguments = {"z"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonBuiltinNode {
         @Child LookupAndCallTernaryNode powNode = TernaryArithmetic.Pow.create();
@@ -1214,7 +1214,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // sum(iterable[, start])
-    @Builtin(name = SUM, fixedNumOfArguments = 1, keywordArguments = {"start"})
+    @Builtin(name = SUM, fixedNumOfPositionalArgs = 1, keywordArguments = {"start"})
     @GenerateNodeFactory
     public abstract static class SumFunctionNode extends PythonBuiltinNode {
 
@@ -1312,7 +1312,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__builtin__", fixedNumOfArguments = 1)
+    @Builtin(name = "__builtin__", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
         @Child GetItemNode getNameNode = GetItemNode.create();
@@ -1343,19 +1343,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                  * PFunction cannot be used anymore (its Arity won't agree with it's indexed
                  * parameter reads).
                  */
-                String name = func.getName();
-                String[] parameterIds = new String[arity.getParameterIds().length + 1];
-                parameterIds[0] = "self";
-                System.arraycopy(arity.getParameterIds(), 0, parameterIds, 1, parameterIds.length - 1);
-                Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArgs(), arity.takesVarArgs(), parameterIds,
-                                arity.getKeywordNames());
                 FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
                 if (!functionRootNode.isRewritten()) {
                     functionRootNode.setRewritten();
                     func.getFunctionRootNode().accept(new NodeVisitor() {
                         public boolean visit(Node node) {
                             if (node instanceof ReadVarArgsNode) {
-                                node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).getIndex() + 1, ((ReadVarArgsNode) node).isBuiltin()));
+                                ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
+                                node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
                             } else if (node instanceof ReadIndexedArgumentNode) {
                                 node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
                             }
@@ -1363,7 +1358,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         }
                     });
                 }
-                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arityWithSelf, Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
+
+                String name = func.getName();
+                builtinFunc = factory().createFunction(name, func.getEnclosingClassName(), arity.createWithSelf(name), Truffle.getRuntime().createCallTarget(func.getFunctionRootNode()),
                                 func.getFrameDescriptor(), func.getGlobals(), func.getClosure());
             }
 

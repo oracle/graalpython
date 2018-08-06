@@ -68,7 +68,7 @@ public class RandomBuiltins extends PythonBuiltins {
         return RandomBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "seed", fixedNumOfArguments = 2)
+    @Builtin(name = "seed", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SeedNode extends PythonBuiltinNode {
 
@@ -120,7 +120,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "setstate", fixedNumOfArguments = 2)
+    @Builtin(name = "setstate", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBuiltinNode {
 
@@ -140,7 +140,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getstate", fixedNumOfArguments = 1)
+    @Builtin(name = "getstate", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetStateNode extends PythonBuiltinNode {
 
@@ -151,7 +151,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "random", fixedNumOfArguments = 1)
+    @Builtin(name = "random", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RandomNode extends PythonBuiltinNode {
 
@@ -162,7 +162,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getrandbits", fixedNumOfArguments = 2)
+    @Builtin(name = "getrandbits", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetRandBitsNode extends PythonBuiltinNode {
 

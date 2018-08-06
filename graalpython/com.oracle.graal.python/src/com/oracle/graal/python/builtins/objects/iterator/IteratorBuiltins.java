@@ -67,7 +67,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         return IteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfArguments = 1)
+    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
@@ -187,7 +187,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 
@@ -197,7 +197,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LENGTH_HINT__, fixedNumOfArguments = 1)
+    @Builtin(name = __LENGTH_HINT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization

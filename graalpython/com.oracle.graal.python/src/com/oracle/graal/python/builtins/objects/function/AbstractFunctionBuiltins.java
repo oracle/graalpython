@@ -79,7 +79,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     }
 
     @SuppressWarnings("unused")
-    @Builtin(name = __GET__, fixedNumOfArguments = 3)
+    @Builtin(name = __GET__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
         @Specialization(guards = {"self.isStatic()"})
@@ -113,7 +113,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CALL__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonBuiltinNode {
         @Child private CallDispatchNode dispatch = CallDispatchNode.create();
@@ -130,7 +130,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CLOSURE__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CLOSURE__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetClosureNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
@@ -149,7 +149,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GLOBALS__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __GLOBALS__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
         @Specialization(guards = "!isBuiltinFunction(self)")
@@ -165,7 +165,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MODULE__, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
@@ -201,7 +201,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ANNOTATIONS__, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __ANNOTATIONS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class GetAnnotationsNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
@@ -230,7 +230,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CODE__, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
@@ -257,7 +257,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -277,7 +277,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__text_signature__", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "__text_signature__", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class TextSignatureNode extends PythonUnaryBuiltinNode {
         @Specialization

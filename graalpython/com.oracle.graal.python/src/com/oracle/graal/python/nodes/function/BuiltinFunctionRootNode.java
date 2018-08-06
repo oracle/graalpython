@@ -156,17 +156,17 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     private static PNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
         ArrayList<PNode> args = new ArrayList<>();
-        int numOfPositionalArgs = Math.max(builtin.minNumOfArguments(), builtin.maxNumOfArguments());
+        int numOfPositionalArgs = Math.max(builtin.minNumOfPositionalArgs(), builtin.maxNumOfPositionalArgs());
 
-        if (builtin.keywordArguments().length > 0 && builtin.maxNumOfArguments() > builtin.minNumOfArguments()) {
+        if (builtin.keywordArguments().length > 0 && builtin.maxNumOfPositionalArgs() > builtin.minNumOfPositionalArgs()) {
             // (tfel): This is actually a specification error, if there are keyword
             // names, we cannot also have optional positional arguments, but we're
             // being defensive here.
-            numOfPositionalArgs = builtin.minNumOfArguments();
+            numOfPositionalArgs = builtin.minNumOfPositionalArgs();
         }
 
-        if (builtin.fixedNumOfArguments() > 0) {
-            numOfPositionalArgs = builtin.fixedNumOfArguments();
+        if (builtin.fixedNumOfPositionalArgs() > 0) {
+            numOfPositionalArgs = builtin.fixedNumOfPositionalArgs();
         }
 
         if (!needsExplicitSelf) {
@@ -180,7 +180,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
 
         // read splat args if any
-        if (builtin.takesVariableArguments()) {
+        if (builtin.takesVarArgs()) {
             args.add(ReadVarArgsNode.create(args.size(), true));
         }
 
@@ -189,7 +189,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             String name = builtin.keywordArguments()[i];
             ReadDefaultArgumentNode defaultNode = new ReadDefaultArgumentNode();
             defaultNode.setValue(PNone.NO_VALUE);
-            if (!builtin.takesVariableArguments()) {
+            if (!builtin.takesVarArgs()) {
                 // if there's no splat, we also accept the keywords positionally
                 args.add(ReadKeywordNode.create(name, i + numOfPositionalArgs, defaultNode));
             } else {
@@ -198,7 +198,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             }
         }
 
-        if (builtin.takesVariableKeywords()) {
+        if (builtin.takesVarKeywordArgs()) {
             args.add(ReadVarKeywordsNode.create(builtin.keywordArguments()));
         }
 

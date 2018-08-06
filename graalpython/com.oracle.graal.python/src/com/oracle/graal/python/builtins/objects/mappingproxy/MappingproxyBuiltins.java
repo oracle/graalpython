@@ -63,7 +63,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         return MappingproxyBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, fixedNumOfArguments = 2)
+    @Builtin(name = __INIT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBinaryBuiltinNode {
 
@@ -75,7 +75,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -85,7 +85,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // keys()
-    @Builtin(name = KEYS, fixedNumOfArguments = 1)
+    @Builtin(name = KEYS, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
 
@@ -96,7 +96,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // items()
-    @Builtin(name = ITEMS, fixedNumOfArguments = 1)
+    @Builtin(name = ITEMS, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
 
@@ -107,7 +107,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // values()
-    @Builtin(name = "values", fixedNumOfArguments = 1)
+    @Builtin(name = "values", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
 
@@ -118,7 +118,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // get(key[, default])
-    @Builtin(name = "get", minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBuiltinNode {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
@@ -144,7 +144,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -158,7 +158,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfArguments = 3)
+    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -168,7 +168,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBuiltinNode {
 
@@ -179,7 +179,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -189,7 +189,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     }
 
     // copy()
-    @Builtin(name = "copy", fixedNumOfArguments = 1)
+    @Builtin(name = "copy", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonUnaryBuiltinNode {
         @Specialization

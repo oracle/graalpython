@@ -50,7 +50,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         return GcModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "collect", fixedNumOfArguments = 0)
+    @Builtin(name = "collect", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
@@ -61,7 +61,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_count", fixedNumOfArguments = 0)
+    @Builtin(name = "get_count", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GcCountNode extends PythonBuiltinNode {
         @Specialization
@@ -79,7 +79,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_tracked", fixedNumOfArguments = 1)
+    @Builtin(name = "is_tracked", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GcIsTrackedNode extends PythonBuiltinNode {
         @Specialization

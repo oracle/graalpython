@@ -41,6 +41,9 @@
 package com.oracle.graal.python.nodes;
 
 public abstract class BuiltinNames {
+    // special arg names
+    public static final String SELF = "self";
+
     // graalpython internals
     public static final String __BREAKPOINT__ = "__breakpoint__";
     public static final String __BUILTINS_PATCHES__ = "__builtins_patches__";

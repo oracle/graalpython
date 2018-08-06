@@ -52,7 +52,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         return TracebackBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __DIR__, fixedNumOfArguments = 1)
+    @Builtin(name = __DIR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
@@ -61,7 +61,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_FRAME, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = TB_FRAME, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
         @Specialization
@@ -70,7 +70,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_NEXT, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = TB_NEXT, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackNextNode extends PythonBuiltinNode {
         @Specialization
@@ -80,7 +80,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_LASTI, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = TB_LASTI, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
@@ -89,7 +89,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_LINENO, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = TB_LINENO, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization

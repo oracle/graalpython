@@ -61,7 +61,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         return AbstractMethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __CALL__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Child private CallDispatchNode dispatch = CallDispatchNode.create();
@@ -78,7 +78,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SELF__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __SELF__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfNode extends PythonBuiltinNode {
         @Specialization
@@ -92,7 +92,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __FUNC__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __FUNC__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FuncNode extends PythonBuiltinNode {
         @Specialization
@@ -106,7 +106,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NAME__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __NAME__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonBuiltinNode {
         @Specialization
@@ -121,7 +121,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CODE__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CODE__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
@@ -131,7 +131,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization

@@ -77,7 +77,7 @@ public class TupleBuiltins extends PythonBuiltins {
     }
 
     // index(element)
-    @Builtin(name = "index", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @ImportStatic(MathGuards.class)
     @GenerateNodeFactory
@@ -234,7 +234,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "count", fixedNumOfArguments = 2)
+    @Builtin(name = "count", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class CountNode extends PythonBuiltinNode {
 
@@ -254,7 +254,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -263,7 +263,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -322,7 +322,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GETITEM__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__GETITEM__, fixedNumOfPositionalArgs = 2)
     @ImportStatic(MathGuards.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
@@ -353,7 +353,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
 
@@ -370,7 +370,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class NeNode extends PythonBinaryBuiltinNode {
 
@@ -387,7 +387,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GeNode extends PythonBinaryBuiltinNode {
 
@@ -405,7 +405,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
 
@@ -423,7 +423,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GtNode extends PythonBinaryBuiltinNode {
 
@@ -439,7 +439,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -454,7 +454,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBuiltinNode {
         @Specialization
@@ -470,7 +470,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBuiltinNode {
         @Specialization
@@ -480,12 +480,12 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -496,7 +496,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -510,7 +510,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization

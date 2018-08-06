@@ -89,7 +89,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", fixedNumOfArguments = 1)
+    @Builtin(name = "alarm", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AlarmNode extends PythonUnaryBuiltinNode {
@@ -116,7 +116,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", fixedNumOfArguments = 1)
+    @Builtin(name = "getsignal", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -135,7 +135,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "signal", fixedNumOfArguments = 2)
+    @Builtin(name = "signal", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonBinaryBuiltinNode {
         @Child CreateArgumentsNode createArgs = CreateArgumentsNode.create();

@@ -48,7 +48,7 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
     }
 
     // tee(iterable, n=2)
-    @Builtin(name = "tee", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "tee", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class TeeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")

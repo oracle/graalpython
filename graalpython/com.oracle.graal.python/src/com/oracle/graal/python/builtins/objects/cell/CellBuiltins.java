@@ -72,7 +72,7 @@ public class CellBuiltins extends PythonBuiltins {
         return CellBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
@@ -90,7 +90,7 @@ public class CellBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeqNode extends PythonBuiltinNode {
         @Specialization
@@ -108,7 +108,7 @@ public class CellBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
@@ -132,7 +132,7 @@ public class CellBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cell_contents", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = "cell_contents", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class CellContentsNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
