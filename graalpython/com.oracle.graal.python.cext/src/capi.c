@@ -281,7 +281,7 @@ ByteArray* PyTruffle_ByteArrayToNative(const void* jbyteArray, int32_t len) {
     for (i=0; i < len; i++) {
         barr[i] = (char) polyglot_get_array_element(jbyteArray, i);
     }
-    return polyglot_as_ByteArray(barr);
+    return polyglot_from_ByteArray(barr);
 }
 
 IntArray* PyTruffle_IntArrayToNative(const void* jintArray, int32_t len) {
@@ -292,7 +292,7 @@ IntArray* PyTruffle_IntArrayToNative(const void* jintArray, int32_t len) {
     for (i=0; i < len; i++) {
         barr[i] = (int32_t) polyglot_get_array_element(jintArray, i);
     }
-    return polyglot_as_IntArray(barr);
+    return polyglot_from_IntArray(barr);
 }
 
 LongArray* PyTruffle_LongArrayToNative(const void* jlongArray, int32_t len) {
@@ -303,7 +303,7 @@ LongArray* PyTruffle_LongArrayToNative(const void* jlongArray, int32_t len) {
     for (i=0; i < len; i++) {
         barr[i] = (int64_t) polyglot_get_array_element(jlongArray, i);
     }
-    return polyglot_as_LongArray(barr);
+    return polyglot_from_LongArray(barr);
 }
 
 DoubleArray* PyTruffle_DoubleArrayToNative(const void* jdoubleArray, int32_t len) {
@@ -314,7 +314,7 @@ DoubleArray* PyTruffle_DoubleArrayToNative(const void* jdoubleArray, int32_t len
     for (i=0; i < len; i++) {
         barr[i] = polyglot_as_double(polyglot_get_array_element(jdoubleArray, i));
     }
-    return polyglot_as_DoubleArray(barr);
+    return polyglot_from_DoubleArray(barr);
 }
 
 PtrArray* PyTruffle_ObjectArrayToNative(const void* jobjectArray, int32_t len) {
@@ -325,7 +325,7 @@ PtrArray* PyTruffle_ObjectArrayToNative(const void* jobjectArray, int32_t len) {
     for (i=0; i < len; i++) {
         barr[i] = (PyObject*)polyglot_get_array_element(jobjectArray, i);
     }
-    return polyglot_as_PtrArray(barr);
+    return polyglot_from_PtrArray(barr);
 }
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
