@@ -1631,7 +1631,11 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     }
 
     private static Arity createArity(String functionName, PNode argBlock) {
-        boolean takesFixedNumOfArgs = true;
+        boolean takesKeywordArgs = false;
+        int maxNumOfArgs = 0;
+        int minNumOfArgs = 0;
+        List<String> parameterIds = new ArrayList<>();
+        List<String> keywordNames = new ArrayList<>();
 
         PNode[] statements;
         if (argBlock instanceof BlockNode) {
@@ -1641,10 +1645,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         } else {
             statements = new PNode[]{argBlock};
         }
-        int maxNumOfArgs = 0;
-        int minNumOfArgs = 0;
-        List<String> parameterIds = new ArrayList<>();
-        List<String> keywordNames = new ArrayList<>();
+
         for (PNode writeLocal : statements) {
             WriteIdentifierNode writeNode = (WriteIdentifierNode) writeLocal;
             PNode rhs = writeNode.getRhs();
@@ -1652,13 +1653,15 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 maxNumOfArgs = -1;
             } else if (rhs instanceof ReadVarKeywordsNode) {
                 maxNumOfArgs = -1;
+                takesKeywordArgs = true;
             } else if (rhs instanceof ReadKeywordNode) {
                 if (((ReadKeywordNode) rhs).canBePositional()) {
                     // this default can be passed positionally
                     maxNumOfArgs++;
+                } else {
+                    takesKeywordArgs = true;
                 }
                 keywordNames.add((String) writeNode.getIdentifier());
-                takesFixedNumOfArgs = false;
             } else if (rhs instanceof ReadIndexedArgumentNode) {
                 minNumOfArgs++;
                 maxNumOfArgs++;
@@ -1668,11 +1671,9 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             }
         }
 
-        takesFixedNumOfArgs = takesFixedNumOfArgs && maxNumOfArgs == minNumOfArgs;
         boolean takesVarArgs = maxNumOfArgs == -1;
-        boolean takesKeywordArg = true;
 
-        return new Arity(functionName, minNumOfArgs, maxNumOfArgs, takesKeywordArg, takesVarArgs, parameterIds, keywordNames);
+        return new Arity(functionName, minNumOfArgs, maxNumOfArgs, takesKeywordArgs, takesVarArgs, parameterIds, keywordNames);
     }
 
     @Override

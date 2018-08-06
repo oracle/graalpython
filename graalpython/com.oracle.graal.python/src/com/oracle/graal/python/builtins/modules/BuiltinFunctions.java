@@ -1347,7 +1347,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 String[] parameterIds = new String[arity.getParameterIds().length + 1];
                 parameterIds[0] = "self";
                 System.arraycopy(arity.getParameterIds(), 0, parameterIds, 1, parameterIds.length - 1);
-                Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArg(), arity.takesVarArgs(), parameterIds,
+                Arity arityWithSelf = new Arity(name, arity.getMinNumOfArgs() + 1, arity.getMaxNumOfArgs() + 1, arity.takesKeywordArgs(), arity.takesVarArgs(), parameterIds,
                                 arity.getKeywordNames());
                 FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
                 if (!functionRootNode.isRewritten()) {

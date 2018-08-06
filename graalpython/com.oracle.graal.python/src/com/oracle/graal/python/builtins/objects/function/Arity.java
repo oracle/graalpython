@@ -36,7 +36,7 @@ public class Arity {
     private final int minNumOfArgs;
     private final int maxNumOfArgs;
 
-    private final boolean takesKeywordArg;
+    private final boolean takesKeywordArgs;
     private final boolean takesVarArgs;
 
     @CompilationFinal(dimensions = 1) private final String[] parameterIds;
@@ -46,42 +46,50 @@ public class Arity {
         this.functionName = functionName;
         this.minNumOfArgs = minNumOfArgs;
         this.maxNumOfArgs = maxNumOfArgs;
-        this.takesKeywordArg = true;
+        this.takesKeywordArgs = true;
         this.takesVarArgs = false;
         this.parameterIds = parameterIds.toArray(new String[0]);
         this.keywordNames = keywordNames.toArray(new String[0]);
     }
 
-    public Arity(String functionName, int minNumOfArgs, int maxNumOfArgs, boolean takesKeywordArg, boolean takesVarArgs, List<String> parameterIds, List<String> keywordNames) {
+    public Arity(String functionName, int minNumOfArgs, int maxNumOfArgs, boolean takesKeywordArgs, boolean takesVarArgs, List<String> parameterIds, List<String> keywordNames) {
         this.functionName = functionName;
         this.minNumOfArgs = minNumOfArgs;
         this.maxNumOfArgs = maxNumOfArgs;
-        this.takesKeywordArg = takesKeywordArg;
+        this.takesKeywordArgs = takesKeywordArgs;
         this.takesVarArgs = takesVarArgs;
         this.parameterIds = parameterIds.toArray(new String[0]);
         this.keywordNames = keywordNames.toArray(new String[0]);
     }
 
-    public Arity(String functionName, int minNumOfArgs, int maxNumOfArgs, boolean takesKeywordArg, boolean takesVarArgs, String[] parameterIds, String[] keywordNames) {
+    public Arity(String functionName, int minNumOfArgs, int maxNumOfArgs, boolean takesKeywordArgs, boolean takesVarArgs, String[] parameterIds, String[] keywordNames) {
         this.functionName = functionName;
         this.minNumOfArgs = minNumOfArgs;
         this.maxNumOfArgs = maxNumOfArgs;
-        this.takesKeywordArg = takesKeywordArg;
+        this.takesKeywordArgs = takesKeywordArgs;
         this.takesVarArgs = takesVarArgs;
         this.parameterIds = parameterIds;
         this.keywordNames = keywordNames;
+    }
+
+    public static Arity createOneArgument(String functionName) {
+        return new Arity(functionName, 1, 1, new ArrayList<String>(), new ArrayList<String>());
     }
 
     public boolean takesVarArgs() {
         return takesVarArgs;
     }
 
-    public boolean takesKeywordArg() {
-        return takesKeywordArg;
+    public boolean takesKeywordArgs() {
+        return takesKeywordArgs;
     }
 
-    public static Arity createOneArgument(String functionName) {
-        return new Arity(functionName, 1, 1, new ArrayList<String>(), new ArrayList<String>());
+    public boolean takesFixedNumberOfArguments() {
+        if (takesVarArgs || takesKeywordArgs) {
+            return false;
+        } else {
+            return minNumOfArgs == maxNumOfArgs;
+        }
     }
 
     public int getMinNumOfArgs() {
@@ -104,7 +112,7 @@ public class Arity {
         return parameterIds;
     }
 
-    public int parametersSize() {
+    public int getNumberOfParameters() {
         return parameterIds.length;
     }
 
