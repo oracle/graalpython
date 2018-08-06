@@ -119,6 +119,7 @@
 #include "pythread.h"
 #include "funcobject.h"
 #include "iterobject.h"
+#include "datetime.h"
 
 #define PY_TRUFFLE_CEXT ((void*)polyglot_import("python_cext"))
 #define PY_BUILTIN ((void*)polyglot_import("python_builtins"))

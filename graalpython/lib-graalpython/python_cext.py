@@ -1196,6 +1196,7 @@ def initialize_datetime_capi():
         def Time_FromTimeAndFold(h, m, s, us, tz, fold, typ):
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
+    import_c_func("set_PyDateTime_CAPI_typeid")(PyDateTime_CAPI)
     datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
 
 

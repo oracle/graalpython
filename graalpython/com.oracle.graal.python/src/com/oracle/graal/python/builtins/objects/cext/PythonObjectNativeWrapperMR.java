@@ -481,6 +481,17 @@ public class PythonObjectNativeWrapperMR {
             throw new IllegalStateException("delegate of memoryview object is not native");
         }
 
+        protected static boolean isPyDateTimeCAPI(PythonObject object) {
+            return object.getPythonClass().getName().equals("PyDateTime_CAPI");
+        }
+
+        @Specialization(guards = "isPyDateTimeCAPI(object)")
+        Object doDatetimeCAPI(PythonObject object, String key,
+                        @Cached("create()") GetClassNode getClass,
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic getAttrNode) {
+            return getToSulongNode().execute(getAttrNode.execute(getClass.execute(object), key));
+        }
+
         @Fallback
         Object doGeneric(Object object, String key) {
             // This is the preliminary generic case: There are native members we know that they
