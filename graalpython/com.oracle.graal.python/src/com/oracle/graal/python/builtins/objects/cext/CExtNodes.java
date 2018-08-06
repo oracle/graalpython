@@ -108,7 +108,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class FromNativeSubclassNode extends PBaseNode {
+    public static class FromNativeSubclassNode<T> extends PBaseNode {
         private final PythonBuiltinClassType expectedType;
         private final String conversionFuncName;
         @CompilationFinal private PythonBuiltinClass expectedClass;
@@ -155,10 +155,11 @@ public abstract class CExtNodes {
             return toSulongNode;
         }
 
-        public Object execute(PythonNativeObject object) {
-            if (isSubtype.execute(getClass.execute(object), getExpectedClass())) {
+        @SuppressWarnings("unchecked")
+        public T execute(PythonNativeObject object) {
+            if (isSubtype(object)) {
                 try {
-                    return ForeignAccess.sendExecute(getExecNode(), getConversionFunc(), getToSulongNode().execute(object));
+                    return (T) ForeignAccess.sendExecute(getExecNode(), getConversionFunc(), getToSulongNode().execute(object));
                 } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                     throw new IllegalStateException("C object conversion function failed", e);
                 }
@@ -166,8 +167,12 @@ public abstract class CExtNodes {
             return null;
         }
 
-        public static FromNativeSubclassNode create(PythonBuiltinClassType expectedType, String conversionFuncName) {
-            return new FromNativeSubclassNode(expectedType, conversionFuncName);
+        public boolean isSubtype(PythonNativeObject object) {
+            return isSubtype.execute(getClass.execute(object), getExpectedClass());
+        }
+
+        public static <T> FromNativeSubclassNode<T> create(PythonBuiltinClassType expectedType, String conversionFuncName) {
+            return new FromNativeSubclassNode<>(expectedType, conversionFuncName);
         }
     }
 
