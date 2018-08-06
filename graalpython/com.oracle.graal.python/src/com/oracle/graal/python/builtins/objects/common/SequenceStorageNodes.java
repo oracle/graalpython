@@ -3,6 +3,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
@@ -10,7 +11,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -20,7 +21,6 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
@@ -41,40 +41,27 @@ public abstract class SequenceStorageNodes {
     public abstract static class GetItemNode extends PBaseNode {
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
+        @Child private NormalizeIndexNode normalizeIndexNode;
 
         public abstract Object execute(SequenceStorage s, Object key);
 
+        public abstract Object executeInt(SequenceStorage s, int key);
+
+        public abstract Object executeLong(SequenceStorage s, long key);
+
         @Specialization
-        protected Object doScalarInt(IntSequenceStorage storage, int idx) {
-            return getGetItemScalarNode().executeInt(storage, idx);
+        protected Object doScalarInt(SequenceStorage storage, int idx) {
+            return getGetItemScalarNode().executeInt(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        protected Object doScalarLong(IntSequenceStorage storage, long idx) {
-            return getGetItemScalarNode().executeInt(storage, PInt.intValueExact(idx));
+        @Specialization
+        protected Object doScalarLong(SequenceStorage storage, long idx) {
+            return getGetItemScalarNode().executeInt(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()));
         }
 
-        @Specialization(replaces = "doScalarLong")
-        protected Object doScalarLongOvf(IntSequenceStorage storage, long idx) {
-            try {
-                return getGetItemScalarNode().executeInt(storage, PInt.intValueExact(idx));
-            } catch (ArithmeticException e) {
-                throw raiseIndexError();
-            }
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        protected Object doScalarPInt(IntSequenceStorage storage, PInt idx) {
-            return getGetItemScalarNode().executeInt(storage, idx.intValueExact());
-        }
-
-        @Specialization(replaces = "doScalarPInt")
-        protected Object doScalarPIntOvf(IntSequenceStorage storage, PInt idx) {
-            try {
-                return getGetItemScalarNode().executeInt(storage, idx.intValueExact());
-            } catch (ArithmeticException e) {
-                throw raiseIndexError();
-            }
+        @Specialization
+        protected Object doScalarPInt(SequenceStorage storage, PInt idx) {
+            return getGetItemScalarNode().executeInt(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()));
         }
 
         @Specialization
@@ -99,6 +86,18 @@ public abstract class SequenceStorageNodes {
             return getItemSliceNode;
         }
 
+        private NormalizeIndexNode getNormalizeIndexNode() {
+            if (normalizeIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                normalizeIndexNode = insert(NormalizeIndexNode.create());
+            }
+            return normalizeIndexNode;
+        }
+
+        public static GetItemNode create() {
+            return GetItemNodeGen.create();
+        }
+
     }
 
     public abstract static class GetItemScalarNode extends PBaseNode {
@@ -117,6 +116,11 @@ public abstract class SequenceStorageNodes {
         public abstract long executeLong(SequenceStorage s, int idx);
 
         public abstract double executeDouble(SequenceStorage s, int idx);
+
+        @Specialization
+        protected int doByte(ByteSequenceStorage storage, int idx) {
+            return storage.getIntItemNormalized(idx);
+        }
 
         @Specialization
         protected int doInt(IntSequenceStorage storage, int idx) {
@@ -177,7 +181,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(limit = "5", guards = {"storage.getClass() == cachedClass"})
         protected SequenceStorage doManagedStorage(BasicSequenceStorage storage, int start, int stop, int step, int length,
-                        @Cached("storage.getClass()") Class<BasicSequenceStorage> cachedClass) {
+                        @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             return cachedClass.cast(storage).getSliceInBound(start, stop, step, length);
         }
 
@@ -211,67 +215,52 @@ public abstract class SequenceStorageNodes {
 // }
 
         @Specialization(guards = "storage.getElementType() == BYTE")
-        protected NativeSequenceStorage doNativeByte(NativeSequenceStorage storage, int start, int stop, int step, int length,
+        protected NativeSequenceStorage doNativeByte(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            // TODO
             byte[] newArray = new byte[length];
-
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = (byte) readNativeElement((TruffleObject) storage.getPtr(), i);
             }
-
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == INT")
-        protected NativeSequenceStorage doNativeInt(NativeSequenceStorage storage, int start, int stop, int step, int length,
+        protected NativeSequenceStorage doNativeInt(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            // TODO
             int[] newArray = new int[length];
-
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = (int) readNativeElement((TruffleObject) storage.getPtr(), i);
             }
-
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == LONG")
-        protected NativeSequenceStorage doNativeLong(NativeSequenceStorage storage, int start, int stop, int step, int length,
+        protected NativeSequenceStorage doNativeLong(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            // TODO
             long[] newArray = new long[length];
-
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = (long) readNativeElement((TruffleObject) storage.getPtr(), i);
             }
-
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == DOUBLE")
-        protected NativeSequenceStorage doNativeDouble(NativeSequenceStorage storage, int start, int stop, int step, int length,
+        protected NativeSequenceStorage doNativeDouble(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            // TODO
             double[] newArray = new double[length];
-
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = (double) readNativeElement((TruffleObject) storage.getPtr(), i);
             }
-
             return storageToNativeNode.execute(newArray);
         }
 
         @Specialization(guards = "storage.getElementType() == OBJECT")
-        protected NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, int stop, int step, int length,
+        protected NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            // TODO
             Object[] newArray = new Object[length];
-
             for (int i = start, j = 0; j < length; i += step, j++) {
                 newArray[j] = readNativeElement((TruffleObject) storage.getPtr(), i);
             }
-
             return storageToNativeNode.execute(newArray);
         }
 
@@ -291,13 +280,13 @@ public abstract class SequenceStorageNodes {
             return readNode;
         }
 
-        private Node getExecuteNode() {
-            if (executeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(5).createNode());
-            }
-            return executeNode;
-        }
+// private Node getExecuteNode() {
+// if (executeNode == null) {
+// CompilerDirectives.transferToInterpreterAndInvalidate();
+// executeNode = insert(Message.createExecute(5).createNode());
+// }
+// return executeNode;
+// }
 
         public static GetItemSliceNode create() {
             return GetItemSliceNodeGen.create();
@@ -345,32 +334,32 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         NativeSequenceStorage doByte(byte[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallUnaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr), arr.length, arr.length, ElementType.BYTE);
+                        @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.BYTE);
         }
 
         @Specialization
         NativeSequenceStorage doInt(int[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallUnaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr), arr.length, arr.length, ElementType.BYTE);
+                        @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.INT);
         }
 
         @Specialization
         NativeSequenceStorage doLong(long[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallUnaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr), arr.length, arr.length, ElementType.BYTE);
+                        @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.LONG);
         }
 
         @Specialization
         NativeSequenceStorage doDouble(double[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallUnaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr), arr.length, arr.length, ElementType.BYTE);
+                        @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.DOUBLE);
         }
 
         @Specialization
         NativeSequenceStorage doObject(Object[] arr,
-                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallUnaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr), arr.length, arr.length, ElementType.BYTE);
+                        @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
+            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.OBJECT);
         }
 
         public static StorageToNativeNode create() {
@@ -378,7 +367,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    public static class PCallUnaryCapiFunction extends PBaseNode {
+    public static class PCallBinaryCapiFunction extends PBaseNode {
 
         @Child private Node callNode;
 
@@ -387,13 +376,13 @@ public abstract class SequenceStorageNodes {
 
         @CompilationFinal TruffleObject receiver;
 
-        public PCallUnaryCapiFunction(String name) {
+        public PCallBinaryCapiFunction(String name) {
             this.name = name;
         }
 
-        public Object execute(Object arg) {
+        public Object execute(Object arg0, Object arg1) {
             try {
-                return ForeignAccess.sendExecute(getCallNode(), getFunction(), arg);
+                return ForeignAccess.sendExecute(getCallNode(), getFunction(), arg0, arg1);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 profile.enter();
                 throw e.raise();
@@ -403,7 +392,7 @@ public abstract class SequenceStorageNodes {
         private Node getCallNode() {
             if (callNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(Message.createExecute(1).createNode());
+                callNode = insert(Message.createExecute(2).createNode());
             }
             return callNode;
         }
@@ -416,8 +405,8 @@ public abstract class SequenceStorageNodes {
             return receiver;
         }
 
-        public static PCallUnaryCapiFunction create(String name) {
-            return new PCallUnaryCapiFunction(name);
+        public static PCallBinaryCapiFunction create(String name) {
+            return new PCallBinaryCapiFunction(name);
         }
     }
 

@@ -45,6 +45,7 @@ public class SequenceUtil {
     public static final String STEP_CANNOT_BE_ZERO = "slice step cannot be zero";
 
     public static final class NormalizeIndexNode extends Node {
+        public static final String INDEX_OUT_OF_BOUNDS = "index out of range";
         public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
         public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
         public static final String LIST_OUT_OF_BOUNDS = "list index out of range";
@@ -66,6 +67,18 @@ public class SequenceUtil {
 
         public static NormalizeIndexNode create() {
             return new NormalizeIndexNode();
+        }
+
+        public int forGeneric(int index, int length) {
+            return execute(index, length, INDEX_OUT_OF_BOUNDS);
+        }
+
+        public int forGeneric(long index, int length) {
+            return execute(index, length, INDEX_OUT_OF_BOUNDS);
+        }
+
+        public int forGeneric(PInt index, int length) {
+            return execute(index, length, INDEX_OUT_OF_BOUNDS);
         }
 
         public int forList(int index, int length) {
