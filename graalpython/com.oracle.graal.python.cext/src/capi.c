@@ -275,9 +275,9 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
 
 ByteArray* PyTruffle_ByteArrayToNative(const void* jbyteArray, int32_t len) {
     int32_t i;
-    int32_t size = len != 0 ? len : 1;
+    int32_t size = len + 1;
     char* barr = (const char*) malloc(size * sizeof(char));
-    barr[0] = '\0';
+    barr[len] = '\0';
     for (i=0; i < len; i++) {
         barr[i] = (char) polyglot_get_array_element(jbyteArray, i);
     }
