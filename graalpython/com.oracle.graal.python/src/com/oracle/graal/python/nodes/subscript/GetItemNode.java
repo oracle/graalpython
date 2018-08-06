@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
 import com.oracle.graal.python.builtins.objects.array.PIntArray;
 import com.oracle.graal.python.builtins.objects.array.PLongArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNode;
@@ -98,16 +97,6 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     @Specialization
     public Object doPArray(PArray primary, PSlice slice) {
         return primary.getSlice(factory(), slice);
-    }
-
-    @Specialization
-    public Object doPBytes(PBytes primary, int idx) {
-        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPBytes(PBytes bytes, PInt idx) {
-        return doPBytes(bytes, toInt(idx));
     }
 
     @Specialization
