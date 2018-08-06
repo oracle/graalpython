@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -1375,6 +1376,15 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object call(@SuppressWarnings("unused") PNone get, PythonCallable set, String name, PythonClass owner) {
             return factory().createGetSetDescriptor(null, set, name, owner);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_SeqIter_New", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    public abstract static class SeqIterNewNode extends PythonBuiltinNode {
+        @Specialization
+        PSequenceIterator call(Object seq) {
+            return factory().createSequenceIterator(seq);
         }
     }
 
