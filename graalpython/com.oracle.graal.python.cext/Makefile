@@ -53,7 +53,7 @@ HEADER_TARGETS=$(INCLUDE_FILES:${VPATH}/include/%.h=${VPATH}/../include/%.h)
 default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 
-CFLAGS=${LLVM_TARGET_FLAGS} -ggdb -emit-llvm
+CFLAGS=${LLVM_TARGET_FLAGS} -O1 -ggdb -emit-llvm
 OPT_FLAGS=-mem2reg -globalopt -simplifycfg -constprop -always-inline -instcombine -dse -loop-simplify -reassociate -licm -gvn
 WARNINGS=-Wno-int-to-pointer-cast -Wno-int-conversion -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
 INCLUDES=-I${POLYGLOT_INC} -I${VPATH}/include
