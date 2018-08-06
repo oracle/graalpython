@@ -335,31 +335,31 @@ public abstract class SequenceStorageNodes {
         @Specialization
         NativeSequenceStorage doByte(byte[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.BYTE);
+            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.BYTE);
         }
 
         @Specialization
         NativeSequenceStorage doInt(int[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.INT);
+            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.INT);
         }
 
         @Specialization
         NativeSequenceStorage doLong(long[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.LONG);
+            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.LONG);
         }
 
         @Specialization
         NativeSequenceStorage doDouble(double[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.DOUBLE);
+            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.DOUBLE);
         }
 
         @Specialization
         NativeSequenceStorage doObject(Object[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(arr, arr.length), arr.length, arr.length, ElementType.OBJECT);
+            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.OBJECT);
         }
 
         public static StorageToNativeNode create() {
