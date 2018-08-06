@@ -138,6 +138,7 @@ public final class PByteArray extends PArray implements PIBytesLike {
         return store;
     }
 
+    @Override
     public final void setSequenceStorage(SequenceStorage newStorage) {
         this.store = newStorage;
     }

@@ -27,11 +27,17 @@ package com.oracle.graal.python.runtime.sequence;
 
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
 public abstract class PImmutableSequence extends PSequence {
 
     public PImmutableSequence(PythonClass cls) {
         super(cls);
+    }
+
+    @Override
+    public void setSequenceStorage(SequenceStorage store) {
+        throw new UnsupportedOperationException();
     }
 
     /**

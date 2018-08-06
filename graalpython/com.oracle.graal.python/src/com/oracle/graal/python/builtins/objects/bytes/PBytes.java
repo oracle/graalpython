@@ -37,13 +37,15 @@ import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
-    private final ByteSequenceStorage store;
+    private SequenceStorage store;
 
     public PBytes(PythonClass cls, byte[] bytes) {
         super(cls);
@@ -53,6 +55,17 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     public PBytes(PythonClass cls, ByteSequenceStorage storage) {
         super(cls);
         store = storage;
+    }
+
+    @Override
+    public SequenceStorage getSequenceStorage() {
+        return store;
+    }
+
+    @Override
+    public void setSequenceStorage(SequenceStorage store) {
+        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && ((NativeSequenceStorage) store).getElementType() == ElementType.BYTE;
+        this.store = store;
     }
 
     @Override
@@ -72,7 +85,8 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     @Override
     public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        return factory.createBytes(getPythonClass(), store.getSliceInBound(start, stop, step, length));
+        CompilerDirectives.transferToInterpreter();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -88,23 +102,24 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     }
 
     @Override
-    public SequenceStorage getSequenceStorage() {
-        return store;
-    }
-
-    @Override
     public boolean lessThan(PSequence sequence) {
         return false;
     }
 
     @Override
     public String toString() {
+        // TODO(fa) really required ?
         CompilerAsserts.neverPartOfCompilation();
-        return __repr__(store.getInternalByteArray());
+        if (store instanceof ByteSequenceStorage) {
+            return __repr__(((ByteSequenceStorage) store).getInternalByteArray());
+        } else {
+            return store.toString();
+        }
     }
 
     @Override
     public final boolean equals(Object other) {
+        // TODO(fa) really required ?
         if (!(other instanceof PSequence)) {
             return false;
         } else {
@@ -120,12 +135,20 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     @Override
     public final int hashCode() {
-        return Arrays.hashCode(store.getInternalByteArray());
+        // TODO(fa) really required ?
+        if (store instanceof ByteSequenceStorage) {
+            return Arrays.hashCode(((ByteSequenceStorage) store).getInternalByteArray());
+        }
+        return store.hashCode();
     }
 
     @Override
     public byte[] getInternalByteArray() {
-        return store.getInternalByteArray();
+        // TODO(fa) remove this method
+        if (store instanceof ByteSequenceStorage) {
+            return ((ByteSequenceStorage) store).getInternalByteArray();
+        }
+        return null;
     }
 
     @Override

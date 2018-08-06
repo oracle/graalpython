@@ -62,6 +62,11 @@ public abstract class PArray extends PSequence {
     }
 
     @Override
+    public void setSequenceStorage(SequenceStorage newStorage) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean lessThan(PSequence sequence) {
         throw new UnsupportedOperationException();
     }

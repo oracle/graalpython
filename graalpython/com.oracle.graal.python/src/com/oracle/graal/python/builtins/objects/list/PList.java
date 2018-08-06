@@ -56,6 +56,7 @@ public final class PList extends PSequence {
         return store.getItemNormalized(index);
     }
 
+    @Override
     public final void setSequenceStorage(SequenceStorage newStorage) {
         this.store = newStorage;
     }

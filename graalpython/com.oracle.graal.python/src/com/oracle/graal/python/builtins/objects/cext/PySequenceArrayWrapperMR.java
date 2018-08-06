@@ -310,11 +310,14 @@ public class PySequenceArrayWrapperMR {
             // TODO correct element size
             Object delegate = object.getDelegate();
             if (delegate instanceof PSequence) {
-                NativeSequenceStorage nativeStorage = getToNativeStorageNode().execute(((PSequence) delegate).getSequenceStorage());
+                PSequence sequence = (PSequence) delegate;
+                NativeSequenceStorage nativeStorage = getToNativeStorageNode().execute(sequence.getSequenceStorage());
                 if (nativeStorage == null) {
                     throw new AssertionError("could not allocate native storage");
                 }
-                return nativeStorage;
+                // switch to native storage
+                sequence.setSequenceStorage(nativeStorage);
+                return nativeStorage.getPtr();
 
             }
             return null;
@@ -339,7 +342,7 @@ public class PySequenceArrayWrapperMR {
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        Object access(PySequenceArrayWrapper obj) {
+        boolean access(PySequenceArrayWrapper obj) {
             return obj.isNative();
         }
     }
