@@ -53,6 +53,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.range.PRange;
@@ -71,8 +73,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -112,47 +112,47 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        @Child private SequenceUtil.NormalizeIndexNode normalize = SequenceUtil.NormalizeIndexNode.create();
+        @Child private SequenceStorageNodes.NormalizeIndexNode normalize = SequenceStorageNodes.NormalizeIndexNode.forArray();
 
         @Specialization(guards = "isByteStorage(primary)")
         protected PNone doBytes(PByteArray primary, long idx) {
             ByteSequenceStorage storage = (ByteSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            storage.delItemInBound(normalize.execute(idx, storage.length()));
             return PNone.NONE;
         }
 
         @Specialization(guards = "isByteStorage(primary)")
         protected PNone doBytes(PByteArray primary, PInt idx) {
             ByteSequenceStorage storage = (ByteSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            storage.delItemInBound(normalize.execute(idx, storage.length()));
             return PNone.NONE;
         }
 
         @Specialization(guards = "isIntStorage(primary)")
         protected PNone doInt(PByteArray primary, long idx) {
             IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            storage.delItemInBound(normalize.execute(idx, storage.length()));
             return PNone.NONE;
         }
 
         @Specialization(guards = "isIntStorage(primary)")
         protected PNone doInt(PByteArray primary, PInt idx) {
             IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            storage.delItemInBound(normalize.execute(idx, storage.length()));
             return PNone.NONE;
         }
 
         @Specialization
         protected PNone doArray(PByteArray byteArray, long idx) {
             SequenceStorage storage = byteArray.getSequenceStorage();
-            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            storage.delItemInBound(normalize.execute(idx, storage.length()));
             return PNone.NONE;
         }
 
         @Specialization
         protected PNone doArray(PByteArray byteArray, PInt idx) {
             SequenceStorage storage = byteArray.getSequenceStorage();
-            storage.delItemInBound(normalize.forArray(idx, storage.length()));
+            storage.delItemInBound(normalize.execute(idx, storage.length()));
             return PNone.NONE;
         }
 
@@ -577,14 +577,18 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isScalar(idx)")
         Object doScalar(PByteArray self, Object idx,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
+                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
             return getSequenceItemNode.execute(self.getSequenceStorage(), idx);
         }
 
         @Specialization
         Object doSlice(PByteArray self, PSlice slice,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
+                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
             return factory().createByteArray(self.getPythonClass(), (ByteSequenceStorage) getSequenceItemNode.execute(self.getSequenceStorage(), slice));
+        }
+
+        protected static GetItemNode createGetItem() {
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forBytearray());
         }
 
         protected boolean isScalar(Object obj) {
@@ -596,11 +600,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
-        @Child private NormalizeIndexNode normalize;
+        @Child private SequenceStorageNodes.NormalizeIndexNode normalize;
 
         @Specialization
         PNone doInt(PByteArray self, int idx, Object value) {
-            self.setItemNormalized(ensureNormalize().forArrayAssign(idx, self.len()), value);
+            self.setItemNormalized(ensureNormalize().execute(idx, self.len()), value);
             return PNone.NONE;
         }
 
@@ -662,10 +666,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        private NormalizeIndexNode ensureNormalize() {
+        private SequenceStorageNodes.NormalizeIndexNode ensureNormalize() {
             if (normalize == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                normalize = insert(NormalizeIndexNode.create());
+                normalize = insert(SequenceStorageNodes.NormalizeIndexNode.forArrayAssign());
             }
             return normalize;
         }

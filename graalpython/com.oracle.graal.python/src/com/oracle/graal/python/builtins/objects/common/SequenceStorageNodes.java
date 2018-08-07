@@ -1,8 +1,11 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
+import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CastToByteNodeGen;
@@ -21,7 +24,6 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -35,6 +37,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -48,6 +51,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class SequenceStorageNodes {
 
@@ -55,6 +59,10 @@ public abstract class SequenceStorageNodes {
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
         @Child private NormalizeIndexNode normalizeIndexNode;
+
+        public GetItemNode(NormalizeIndexNode normalizeIndexNode) {
+            this.normalizeIndexNode = normalizeIndexNode;
+        }
 
         public abstract Object execute(SequenceStorage s, Object key);
 
@@ -64,17 +72,17 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doScalarInt(SequenceStorage storage, int idx) {
-            return getGetItemScalarNode().execute(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()));
         }
 
         @Specialization
         protected Object doScalarLong(SequenceStorage storage, long idx) {
-            return getGetItemScalarNode().execute(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()));
         }
 
         @Specialization
         protected Object doScalarPInt(SequenceStorage storage, PInt idx) {
-            return getGetItemScalarNode().execute(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()));
         }
 
         @Specialization
@@ -99,18 +107,13 @@ public abstract class SequenceStorageNodes {
             return getItemSliceNode;
         }
 
-        private NormalizeIndexNode getNormalizeIndexNode() {
-            if (normalizeIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                normalizeIndexNode = insert(NormalizeIndexNode.create());
-            }
-            return normalizeIndexNode;
+        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode) {
+            return GetItemNodeGen.create(normalizeIndexNode);
         }
 
         public static GetItemNode create() {
-            return GetItemNodeGen.create();
+            return GetItemNodeGen.create(NormalizeIndexNode.create());
         }
-
     }
 
     public abstract static class GetItemScalarNode extends PBaseNode {
@@ -299,6 +302,10 @@ public abstract class SequenceStorageNodes {
         @Child private SetItemSliceNode setItemSliceNode;
         @Child private NormalizeIndexNode normalizeIndexNode;
 
+        public SetItemNode(NormalizeIndexNode normalizeIndexNode) {
+            this.normalizeIndexNode = normalizeIndexNode;
+        }
+
         public abstract void execute(SequenceStorage s, Object key, Object value);
 
         public abstract void executeInt(SequenceStorage s, int key, Object value);
@@ -307,17 +314,17 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected void doScalarInt(SequenceStorage storage, int idx, Object value) {
-            getSetItemScalarNode().execute(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()), value);
+            getSetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()), value);
         }
 
         @Specialization
         protected void doScalarLong(SequenceStorage storage, long idx, Object value) {
-            getSetItemScalarNode().execute(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()), value);
+            getSetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()), value);
         }
 
         @Specialization
         protected void doScalarPInt(SequenceStorage storage, PInt idx, Object value) {
-            getSetItemScalarNode().execute(storage, getNormalizeIndexNode().forGeneric(idx, storage.length()), value);
+            getSetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()), value);
         }
 
         @Specialization
@@ -343,16 +350,8 @@ public abstract class SequenceStorageNodes {
             return setItemSliceNode;
         }
 
-        private NormalizeIndexNode getNormalizeIndexNode() {
-            if (normalizeIndexNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                normalizeIndexNode = insert(NormalizeIndexNode.create());
-            }
-            return normalizeIndexNode;
-        }
-
-        public static SetItemNode create() {
-            return SetItemNodeGen.create();
+        public static SetItemNode create(NormalizeIndexNode normalizeIndexNode) {
+            return SetItemNodeGen.create(normalizeIndexNode);
         }
 
     }
@@ -765,7 +764,7 @@ public abstract class SequenceStorageNodes {
         private GetItemNode getGetItemNode() {
             if (getItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemNode.create());
+                getItemNode = insert(GetItemNode.create(NormalizeIndexNode.create()));
             }
             return getItemNode;
         }
@@ -773,7 +772,7 @@ public abstract class SequenceStorageNodes {
         private GetItemNode getGetRightItemNode() {
             if (getRightItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getRightItemNode = insert(GetItemNode.create());
+                getRightItemNode = insert(GetItemNode.create(NormalizeIndexNode.create()));
             }
             return getRightItemNode;
         }
@@ -790,6 +789,95 @@ public abstract class SequenceStorageNodes {
             return EqNodeGen.create();
         }
 
+    }
+
+    public static final class NormalizeIndexNode extends PBaseNode {
+        public static final String INDEX_OUT_OF_BOUNDS = "index out of range";
+        public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
+        public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
+        public static final String LIST_OUT_OF_BOUNDS = "list index out of range";
+        public static final String LIST_ASSIGN_OUT_OF_BOUNDS = "list assignment index out of range";
+        public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
+        public static final String ARRAY_ASSIGN_OUT_OF_BOUNDS = "array assignment index out of range";
+        public static final String BYTEARRAY_OUT_OF_BOUNDS = "bytearray index out of range";
+
+        private final String errorMessage;
+        private final ConditionProfile negativeIndexProfile = ConditionProfile.createBinaryProfile();
+        private final ConditionProfile outOfBoundsProfile = ConditionProfile.createBinaryProfile();
+
+        public NormalizeIndexNode(String errorMessage) {
+            this.errorMessage = errorMessage;
+        }
+
+        public int execute(PInt index, int length) {
+            int idx = index.intValue();
+            if (outOfBoundsProfile.profile(!eq(index.getValue(), idx))) {
+                // anything outside the int range is considered to be out of range
+                throw raise(IndexError, errorMessage);
+            }
+            return execute(idx, length);
+        }
+
+        public int execute(long index, int length) {
+            int idx = (int) index;
+            if (outOfBoundsProfile.profile(idx != index)) {
+                // anything outside the int range is considered to be out of range
+                throw raise(IndexError, errorMessage);
+            }
+            return execute(idx, length);
+        }
+
+        public int execute(int index, int length) {
+            int idx = index;
+            if (negativeIndexProfile.profile(idx < 0)) {
+                idx += length;
+            }
+            if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {
+                throw raise(IndexError, errorMessage);
+            }
+            return idx;
+        }
+
+        @TruffleBoundary
+        private static final boolean eq(BigInteger index, int idx) {
+            return index.equals(BigInteger.valueOf(idx));
+        }
+
+        public static NormalizeIndexNode create() {
+            return create(INDEX_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode create(String errorMessage) {
+            return new NormalizeIndexNode(errorMessage);
+        }
+
+        public static NormalizeIndexNode forList() {
+            return create(LIST_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode forListAssign() {
+            return create(LIST_ASSIGN_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode forTuple() {
+            return create(TUPLE_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode forArray() {
+            return create(ARRAY_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode forArrayAssign() {
+            return create(ARRAY_ASSIGN_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode forRange() {
+            return create(RANGE_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode forBytearray() {
+            return create(BYTEARRAY_OUT_OF_BOUNDS);
+        }
     }
 
 }

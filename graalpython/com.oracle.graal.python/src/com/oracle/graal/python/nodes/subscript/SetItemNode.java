@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.array.PCharArray;
 import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
 import com.oracle.graal.python.builtins.objects.array.PIntArray;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -41,7 +42,6 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -78,7 +78,7 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     private NormalizeIndexNode ensureNormalize() {
         if (normalize == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            normalize = insert(NormalizeIndexNode.create());
+            normalize = insert(NormalizeIndexNode.forArrayAssign());
         }
         return normalize;
     }
@@ -133,19 +133,19 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
      */
     @Specialization
     public Object doPArrayInt(PIntArray primary, int index, int value) {
-        primary.setIntItemNormalized(ensureNormalize().forArrayAssign(index, primary.len()), value);
+        primary.setIntItemNormalized(ensureNormalize().execute(index, primary.len()), value);
         return PNone.NONE;
     }
 
     @Specialization
     public Object doPArrayDouble(PDoubleArray primary, int index, double value) {
-        primary.setDoubleItemNormalized(ensureNormalize().forArrayAssign(index, primary.len()), value);
+        primary.setDoubleItemNormalized(ensureNormalize().execute(index, primary.len()), value);
         return PNone.NONE;
     }
 
     @Specialization
     public Object doPArrayChar(PCharArray primary, int index, char value) {
-        primary.setCharItemNormalized(ensureNormalize().forArrayAssign(index, primary.len()), value);
+        primary.setCharItemNormalized(ensureNormalize().execute(index, primary.len()), value);
         return PNone.NONE;
     }
 

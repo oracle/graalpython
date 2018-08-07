@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
@@ -54,7 +55,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -307,7 +307,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         private static final String TYPE_ERROR_MESSAGE = "tuple indices must be integers of slices, not %p";
 
-        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
+        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forTuple();
 
         public abstract Object execute(PTuple tuple, Object index);
 
@@ -318,7 +318,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doPTuple(PTuple tuple, long idx) {
-            return tuple.getItemNormalized(normalize.forTuple(idx, tuple.len()));
+            return tuple.getItemNormalized(normalize.execute(idx, tuple.len()));
         }
 
         @Specialization
