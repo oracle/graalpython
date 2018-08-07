@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.expression;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -35,6 +36,8 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.YesNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -43,6 +46,7 @@ import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 public abstract class CastToBooleanNode extends UnaryOpNode {
+    @Child private GetClassNode getClassNode;
 
     public static CastToBooleanNode createIfTrueNode() {
         return YesNodeGen.create(null);
@@ -66,6 +70,14 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
     public abstract boolean executeBoolean(VirtualFrame frame);
 
     public abstract boolean executeWith(Object value);
+
+    GetClassNode getGetClassNode() {
+        if (getClassNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getClassNode = insert(GetClassNode.create());
+        }
+        return getClassNode;
+    }
 
     @ImportStatic(Message.class)
     public abstract static class YesNode extends CastToBooleanNode {
@@ -116,8 +128,10 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
             Object value = callBoolNode.executeObject(object);
             if (value instanceof Boolean) {
                 return (boolean) value;
+            } else if (value instanceof PInt && getGetClassNode().execute(value) == getCore().lookupType(PythonBuiltinClassType.Boolean)) {
+                return ((PInt) value).isOne();
             } else {
-                throw raise(TypeError, "__bool__ should return bool, returned %s", object);
+                throw raise(TypeError, "__bool__ should return bool, returned %p", value);
             }
         }
     }
@@ -182,8 +196,10 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
             Object value = callBoolNode.executeObject(object);
             if (value instanceof Boolean) {
                 return !((boolean) value);
+            } else if (value instanceof PInt && getGetClassNode().execute(value) == getCore().lookupType(PythonBuiltinClassType.Boolean)) {
+                return ((PInt) value).isZero();
             } else {
-                throw raise(TypeError, "__bool__ should return bool, returned %s", object);
+                throw raise(TypeError, "__bool__ should return bool, returned %p", value);
             }
         }
     }
