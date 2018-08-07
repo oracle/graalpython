@@ -39,8 +39,10 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
@@ -75,6 +77,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.Builder;
+import com.oracle.truffle.api.source.SourceSection;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.REUSE)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, DebuggerTags.AlwaysHalt.class})
@@ -348,6 +351,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         scopes.add(Scope.newBuilder("__main__", context.getMainModule()).build());
         scopes.add(Scope.newBuilder("builtins", context.getBuiltins()).build());
         return scopes;
+    }
+
+    @Override
+    protected SourceSection findSourceLocation(PythonContext context, Object value) {
+        if (value instanceof PythonCallable) {
+            PythonCallable callable = (PythonCallable) value;
+            if (!(value instanceof PythonBuiltinClass)) {
+                return callable.getCallTarget().getRootNode().getSourceSection();
+            }
+        }
+        return null;
     }
 
     @Override
