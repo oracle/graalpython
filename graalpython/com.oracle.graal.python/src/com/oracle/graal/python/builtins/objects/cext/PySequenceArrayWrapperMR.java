@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ReadArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
@@ -248,9 +249,9 @@ public class PySequenceArrayWrapperMR {
         }
 
         @Specialization
-        Object doBytes(PBytes tuple, long idx, byte value) {
-            // TODO(fa) do proper index conversion
-            tuple.getInternalByteArray()[(int) idx] = value;
+        Object doBytes(PBytes tuple, long idx, byte value,
+                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.executeLong(tuple.getSequenceStorage(), idx, value);
             return value;
         }
 
