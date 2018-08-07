@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -107,14 +108,16 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
+        @Child SequenceStorageNodes.EqNode eqNode;
+
         @Specialization
         public boolean eq(PBytes self, PByteArray other) {
-            return self.equals(other);
+            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Specialization
         public boolean eq(PBytes self, PBytes other) {
-            return self.equals(other);
+            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @SuppressWarnings("unused")
@@ -124,6 +127,14 @@ public class BytesBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             throw raise(TypeError, "descriptor '__eq__' requires a 'bytes' object but received a '%p'", self);
+        }
+
+        private SequenceStorageNodes.EqNode getEqNode() {
+            if (eqNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                eqNode = insert(SequenceStorageNodes.EqNode.create());
+            }
+            return eqNode;
         }
     }
 

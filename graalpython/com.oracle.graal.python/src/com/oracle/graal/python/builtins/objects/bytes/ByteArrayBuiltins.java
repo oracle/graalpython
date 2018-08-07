@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.range.PRange;
@@ -177,15 +178,17 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+        @Child SequenceStorageNodes.EqNode eqNode;
+
         @Specialization
         public boolean eq(PByteArray self, PByteArray other) {
-            return self.equals(other);
+            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Specialization
         public boolean eq(PByteArray self, PBytes other) {
-            return self.equals(other);
+            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @SuppressWarnings("unused")
@@ -195,6 +198,14 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             throw raise(TypeError, "descriptor '__eq__' requires a 'bytearray' object but received a '%p'", self);
+        }
+
+        private SequenceStorageNodes.EqNode getEqNode() {
+            if (eqNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                eqNode = insert(SequenceStorageNodes.EqNode.create());
+            }
+            return eqNode;
         }
     }
 
@@ -563,43 +574,21 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        Object doInt(PByteArray self, int idx) {
-            return self.getItem(idx);
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        Object doLongExact(PByteArray self, long idx) {
-            return self.getItem(PInt.intValueExact(idx));
+    abstract static class GetitemNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isScalar(idx)")
+        Object doScalar(PByteArray self, Object idx,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
+            return getSequenceItemNode.execute(self.getSequenceStorage(), idx);
         }
 
         @Specialization
-        Object doLongGeneric(PByteArray self, long idx) {
-            try {
-                return self.getItem(PInt.intValueExact(idx));
-            } catch (ArithmeticException e) {
-                throw raiseIndexError();
-            }
+        Object doSlice(PByteArray self, PSlice slice,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
+            return factory().createByteArray(self.getPythonClass(), (ByteSequenceStorage) getSequenceItemNode.execute(self.getSequenceStorage(), slice));
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        Object doPIntExact(PByteArray self, PInt idx) {
-            return self.getItem(idx.intValueExact());
-        }
-
-        @Specialization
-        Object doPIntGeneric(PByteArray self, PInt idx) {
-            try {
-                return self.getItem(idx.intValueExact());
-            } catch (ArithmeticException e) {
-                throw raiseIndexError();
-            }
-        }
-
-        @Specialization
-        Object getitem(PByteArray self, PSlice slice) {
-            return self.getSlice(factory(), slice);
+        protected boolean isScalar(Object obj) {
+            return PGuards.isInteger(obj) || PGuards.isPInt(obj);
         }
     }
 
