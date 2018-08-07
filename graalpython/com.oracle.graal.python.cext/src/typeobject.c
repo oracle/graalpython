@@ -140,6 +140,7 @@ static PyObject* wrap_objobjproc(objobjproc f, PyObject* a, PyObject* b) {
 
 static PyObject* wrap_inquiry(inquiry f, PyObject* a) {
 	return PyLong_FromLong(f(a));
+}
 
 static PyObject* wrap_nb_bool(inquiry f, PyObject* a) {
     return f(a) ? Py_True : Py_False;
