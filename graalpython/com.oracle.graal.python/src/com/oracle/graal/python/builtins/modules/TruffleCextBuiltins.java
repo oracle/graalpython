@@ -477,39 +477,39 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "op == 0")
-        boolean op0(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op0(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeBool(a, b);
+            return compNode.executeWith(a, b);
         }
 
         @Specialization(guards = "op == 1")
-        boolean op1(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op1(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeBool(a, b);
+            return compNode.executeWith(a, b);
         }
 
         @Specialization(guards = "op == 2")
-        boolean op2(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op2(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeBool(a, b);
+            return compNode.executeWith(a, b);
         }
 
         @Specialization(guards = "op == 3")
-        boolean op3(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op3(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeBool(a, b);
+            return compNode.executeWith(a, b);
         }
 
         @Specialization(guards = "op == 4")
-        boolean op4(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op4(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeBool(a, b);
+            return compNode.executeWith(a, b);
         }
 
         @Specialization(guards = "op == 5")
-        boolean op5(Object a, Object b, @SuppressWarnings("unused") int op,
+        Object op5(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
-            return compNode.executeBool(a, b);
+            return compNode.executeWith(a, b);
         }
     }
 
