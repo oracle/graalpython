@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsHashableNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -114,6 +115,7 @@ public abstract class HashingStorageNodes {
     public static class PythonEquivalence extends Equivalence {
         @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==", null, null);
+        @Child private CastToBooleanNode castToBoolean = CastToBooleanNode.createIfTrueNode();
         @CompilationFinal private int state = 0;
 
         @Override
@@ -164,7 +166,7 @@ public abstract class HashingStorageNodes {
 
         @Override
         public boolean equals(Object left, Object right) {
-            return callEqNode.executeBool(left, right);
+            return castToBoolean.executeWith(callEqNode.executeWith(left, right));
         }
 
         public static PythonEquivalence create() {
