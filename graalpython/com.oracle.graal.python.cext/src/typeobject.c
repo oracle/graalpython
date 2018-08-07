@@ -140,6 +140,9 @@ static PyObject* wrap_objobjproc(objobjproc f, PyObject* a, PyObject* b) {
 
 static PyObject* wrap_inquiry(inquiry f, PyObject* a) {
 	return PyLong_FromLong(f(a));
+
+static PyObject* wrap_nb_bool(inquiry f, PyObject* a) {
+    return f(a) ? Py_True : Py_False;
 }
 
 /* very special case: operator '**' has an optional third arg */
@@ -363,7 +366,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
-        ADD_SLOT_CONV("__bool__", wrap_inquiry, numbers->nb_bool, -1);
+        ADD_SLOT_CONV("__bool__", wrap_nb_bool, numbers->nb_bool, -1);
         ADD_SLOT("__invert__", numbers->nb_invert, -1);
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
