@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -52,6 +53,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.FinalLocationException;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.IncompatibleLocationException;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
@@ -91,8 +93,17 @@ public abstract class WriteAttributeToObjectNode extends PBaseNode {
         }
     }
 
+    protected static boolean isHiddenKey(Object key) {
+        return key instanceof HiddenKey;
+    }
+
+    protected static boolean isBuiltinObject(Object object) {
+        return object instanceof PythonBuiltinObject;
+    }
+
     @SuppressWarnings("unused")
     @Specialization(guards = {
+                    "!isBuiltinObject(object) || isHiddenKey(key)",
                     "object.getStorage().getShape() == cachedShape",
                     "!layoutAssumption.isValid()"
     })
@@ -111,6 +122,7 @@ public abstract class WriteAttributeToObjectNode extends PBaseNode {
     @SuppressWarnings("unused")
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
+                                    "!isBuiltinObject(object) || isHiddenKey(key)",
                                     "object.getStorage().getShape() == cachedShape",
                                     "compareKey(cachedKey, key)",
                                     "loc != null",
@@ -140,6 +152,7 @@ public abstract class WriteAttributeToObjectNode extends PBaseNode {
     @SuppressWarnings("unused")
     @Specialization(limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", //
                     guards = {
+                                    "!isBuiltinObject(object) || isHiddenKey(key)",
                                     "object.getStorage().getShape() == cachedShape",
                                     "compareKey(cachedKey, key)",
                                     "loc == null || !loc.canSet(value)",

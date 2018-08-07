@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -521,6 +522,24 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             PHashingCollection dict = object.getDict();
             assert dict instanceof PDict;
             return dict;
+        }
+    }
+
+    @Builtin(name = "PyTruffle_SetAttr", fixedNumOfArguments = 3)
+    @GenerateNodeFactory
+    abstract static class PyObject_Setattr extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object setattr(PythonBuiltinObject object, String key, Object value) {
+            object.getStorage().define(key, value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object setattr(PythonNativeClass object, String key, Object value) {
+            object.getStorage().define(key, value);
+            return PNone.NONE;
         }
     }
 

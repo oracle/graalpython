@@ -693,8 +693,8 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
             func = classmethod(func)
         elif isstatic:
             func = cstaticmethod(func)
-        func.__name__ = name
-        func.__doc__ = doc
+        PyTruffle_SetAttr(func, "__name__", name)
+        PyTruffle_SetAttr(func, "__doc__", doc)
         if name == "__init__":
             def __init__(self, *args, **kwargs):
                 if func(self, *args, **kwargs) != 0:
@@ -706,10 +706,10 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
 
 def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
     func = wrapper(CreateFunction(name, cfunc, cwrapper))
-    func.__name__ = name
-    func.__doc__ = doc
+    PyTruffle_SetAttr(func, "__name__", name)
+    PyTruffle_SetAttr(func, "__doc__", doc)
     method = PyTruffle_BuiltinMethod(self, func)
-    method.__module__ = module.__name__
+    PyTruffle_SetAttr(method, "__module__", module.__name__)
     return method
 
 
@@ -752,8 +752,8 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
         fset = lambda self, value: GetSet_SetNotWritable(self, value, name)
 
     getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
-    getset.__doc__ = doc
-    PyType_Dict(pclass)[name] = getset
+    PyTruffle_SetAttr(getset, "__doc__", doc)
+    PyTruffle_SetAttr(pclass, name, getset)
 
 
 def GetSet_SetNotWritable(self, value, attr):

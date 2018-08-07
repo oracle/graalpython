@@ -51,7 +51,7 @@ public final class PythonBuiltinClass extends PythonClass implements PythonCalla
         if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
-            throw PythonLanguage.getCore().raise(TypeError, "can't set attributes of built-in/extension type '%p'", name);
+            throw PythonLanguage.getCore().raise(TypeError, "can't set attributes of built-in/extension type '%s'", this);
         }
     }
 
