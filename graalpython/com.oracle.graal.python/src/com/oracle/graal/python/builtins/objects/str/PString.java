@@ -43,7 +43,7 @@ public final class PString extends PImmutableSequence {
     public String getValue() {
         return value.toString();
     }
-    
+
     public CharSequence getCharSequence() {
         return value;
     }

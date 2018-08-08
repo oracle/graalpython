@@ -248,7 +248,7 @@ public final class PythonObjectFactory extends Node {
     public PString createString(PythonClass cls, String string) {
         return trace(new PString(cls, string));
     }
-    
+
     public PString createString(CharSequence string) {
         return trace(new PString(lookupClass(PythonBuiltinClassType.PString), string));
     }

@@ -343,7 +343,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         public Object run(String path, String modulename) {
             return run(path, getCore().lookupBuiltinModule(modulename));
         }
-        
+
         @Specialization
         public Object run(PString path, String modulename) {
             return run(path.getValue(), getCore().lookupBuiltinModule(modulename));

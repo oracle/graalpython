@@ -313,68 +313,68 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
-        
+
         protected final ConditionProfile leftProfile1 = ConditionProfile.createBinaryProfile();
         protected final ConditionProfile leftProfile2 = ConditionProfile.createBinaryProfile();
         protected final ConditionProfile rightProfile1 = ConditionProfile.createBinaryProfile();
         protected final ConditionProfile rightProfile2 = ConditionProfile.createBinaryProfile();
-    
-        @Specialization (guards="!concatGuard(self, other)")
+
+        @Specialization(guards = "!concatGuard(self, other)")
         String doSSSimple(String self, String other) {
             if (LazyString.length(self, leftProfile1, leftProfile2) == 0) {
                 return other;
             }
             return self;
         }
-        
-        @Specialization (guards="!concatGuard(self, other.getCharSequence())")
+
+        @Specialization(guards = "!concatGuard(self, other.getCharSequence())")
         Object doSSSimple(String self, PString other) {
             if (LazyString.length(self, leftProfile1, leftProfile2) == 0) {
                 return other;
             }
             return self;
         }
-        
-        @Specialization (guards="!concatGuard(self.getCharSequence(), other)")
+
+        @Specialization(guards = "!concatGuard(self.getCharSequence(), other)")
         Object doSSSimple(PString self, String other) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
                 return other;
             }
             return self;
         }
-        
-        @Specialization (guards="!concatGuard(self.getCharSequence(), self.getCharSequence())")
+
+        @Specialization(guards = "!concatGuard(self.getCharSequence(), self.getCharSequence())")
         PString doSSSimple(PString self, PString other) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
                 return other;
             }
             return self;
         }
-        
-        @Specialization (guards="concatGuard(self.getCharSequence(), other)")
+
+        @Specialization(guards = "concatGuard(self.getCharSequence(), other)")
         Object doSS(PString self, String other,
-                @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
             return doIt(self.getCharSequence(), other, shortStringAppend);
         }
-        
-        @Specialization (guards="concatGuard(self, other)")
+
+        @Specialization(guards = "concatGuard(self, other)")
         Object doSS(String self, String other,
-                @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
             return doIt(self, other, shortStringAppend);
         }
-        
-        @Specialization (guards="concatGuard(self, other.getCharSequence())")
+
+        @Specialization(guards = "concatGuard(self, other.getCharSequence())")
         Object doSS(String self, PString other,
-                @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
             return doIt(self, other.getCharSequence(), shortStringAppend);
         }
-        
-        @Specialization (guards="concatGuard(self.getCharSequence(), other.getCharSequence())")
+
+        @Specialization(guards = "concatGuard(self.getCharSequence(), other.getCharSequence())")
         Object doSS(PString self, PString other,
-                @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
             return doIt(self.getCharSequence(), other.getCharSequence(), shortStringAppend);
         }
-        
+
         private Object doIt(CharSequence left, CharSequence right, ConditionProfile shortStringAppend) {
             if (LazyString.UseLazyStrings) {
                 int leftLength = LazyString.length(left, leftProfile1, leftProfile2);
@@ -390,7 +390,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             return stringConcat(left, right);
         }
-        
+
         @TruffleBoundary
         private static String stringConcat(CharSequence left, CharSequence right) {
             return left.toString() + right.toString();
@@ -400,7 +400,7 @@ public final class StringBuiltins extends PythonBuiltins {
         String doSO(@SuppressWarnings("unused") String self, Object other) {
             throw raise(TypeError, "Can't convert '%p' object to str implicitly", other);
         }
-        
+
         @Specialization(guards = "!isString(other)")
         String doSO(@SuppressWarnings("unused") PString self, Object other) {
             throw raise(TypeError, "Can't convert '%p' object to str implicitly", other);
@@ -411,7 +411,7 @@ public final class StringBuiltins extends PythonBuiltins {
         PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
-        
+
         protected boolean concatGuard(CharSequence left, CharSequence right) {
             int leftLength = LazyString.length(left, leftProfile1, leftProfile2);
             int rightLength = LazyString.length(right, rightProfile1, rightProfile2);
