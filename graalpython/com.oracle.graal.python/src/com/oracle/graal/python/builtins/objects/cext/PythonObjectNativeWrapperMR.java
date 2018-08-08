@@ -477,10 +477,15 @@ public class PythonObjectNativeWrapperMR {
             if (object instanceof PythonAbstractObject) {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
-                PythonLanguage.getLogger().log(Level.FINE, "read of Python struct native member " + key);
+                logGeneric(key);
                 return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), key);
             }
             throw UnknownIdentifierException.raise(key);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static void logGeneric(String key) {
+            PythonLanguage.getLogger().log(Level.FINE, "read of Python struct native member " + key);
         }
 
         protected boolean eq(String expected, String actual) {
@@ -643,11 +648,16 @@ public class PythonObjectNativeWrapperMR {
             if (object instanceof PythonAbstractObject) {
                 PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
-                PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
+                logGeneric(key);
                 getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), key, value);
                 return value;
             }
             throw UnknownIdentifierException.raise(key);
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        private static void logGeneric(String key) {
+            PythonLanguage.getLogger().log(Level.FINE, "write of Python struct native member " + key);
         }
 
         protected boolean eq(String expected, String actual) {
