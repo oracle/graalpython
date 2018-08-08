@@ -354,6 +354,10 @@ public abstract class SequenceStorageNodes {
             return SetItemNodeGen.create(normalizeIndexNode);
         }
 
+        public static SetItemNode create() {
+            return SetItemNodeGen.create(NormalizeIndexNode.create());
+        }
+
     }
 
     public abstract static class SetItemScalarNode extends PBaseNode {
