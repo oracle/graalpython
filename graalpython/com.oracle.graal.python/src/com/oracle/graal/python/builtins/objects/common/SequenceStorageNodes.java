@@ -3,6 +3,7 @@ package com.oracle.graal.python.builtins.objects.common;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
@@ -54,6 +55,14 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class SequenceStorageNodes {
+
+    abstract static class SequenceStorageBaseNode extends PBaseNode {
+
+        protected static boolean isByteStorage(NativeSequenceStorage store) {
+            return store.getElementType() == ElementType.BYTE;
+        }
+
+    }
 
     public abstract static class GetItemNode extends PBaseNode {
         @Child private GetItemScalarNode getItemScalarNode;
@@ -116,7 +125,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    public abstract static class GetItemScalarNode extends PBaseNode {
+    abstract static class GetItemScalarNode extends SequenceStorageBaseNode {
 
         @Child private Node readNode;
         @Child private VerifyNativeItemNode verifyNativeItemNode;
@@ -198,14 +207,10 @@ public abstract class SequenceStorageNodes {
             return readNode;
         }
 
-        protected boolean isByteStorage(NativeSequenceStorage store) {
-            return store.getElementType() == ElementType.BYTE;
-        }
-
     }
 
     @ImportStatic(ElementType.class)
-    public abstract static class GetItemSliceNode extends PBaseNode {
+    abstract static class GetItemSliceNode extends PBaseNode {
 
         @Child private Node readNode;
         @Child private Node executeNode;
@@ -360,20 +365,19 @@ public abstract class SequenceStorageNodes {
 
     }
 
-    public abstract static class SetItemScalarNode extends PBaseNode {
+    abstract static class SetItemScalarNode extends SequenceStorageBaseNode {
 
         @Child private Node writeNode;
+        @Child private VerifyNativeItemNode verifyNativeItemNode;
+        @Child private CastToByteNode castToByteNode;
+
+        @CompilationFinal private BranchProfile invalidTypeProfile;
 
         public abstract void execute(SequenceStorage s, int idx, Object value);
 
-        public static SetItemScalarNode create() {
-            return SetItemScalarNodeGen.create();
-        }
-
         @Specialization
-        protected void doByte(ByteSequenceStorage storage, int idx, Object value,
-                        @Cached("create()") CastToByteNode castToByteNode) {
-            storage.setByteItemNormalized(idx, castToByteNode.execute(value));
+        protected void doByte(ByteSequenceStorage storage, int idx, Object value) {
+            storage.setByteItemNormalized(idx, getCastToByteNode().execute(value));
         }
 
         @Specialization
@@ -395,10 +399,19 @@ public abstract class SequenceStorageNodes {
             storage.setItemNormalized(idx, value);
         }
 
+        @Specialization(guards = "isByteStorage(storage)")
+        protected void doNativeByte(NativeSequenceStorage storage, int idx, Object value) {
+            try {
+                ForeignAccess.sendWrite(getWriteNode(), (TruffleObject) storage.getPtr(), idx, getCastToByteNode().execute(value));
+            } catch (InteropException e) {
+                throw e.raise();
+            }
+        }
+
         @Specialization
         protected void doNative(NativeSequenceStorage storage, int idx, Object value) {
             try {
-                ForeignAccess.sendWrite(getWriteNode(), (TruffleObject) storage.getPtr(), idx, value);
+                ForeignAccess.sendWrite(getWriteNode(), (TruffleObject) storage.getPtr(), idx, verifyValue(storage, value));
             } catch (InteropException e) {
                 throw e.raise();
             }
@@ -412,6 +425,33 @@ public abstract class SequenceStorageNodes {
             return writeNode;
         }
 
+        private CastToByteNode getCastToByteNode() {
+            if (castToByteNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToByteNode = insert(CastToByteNode.create());
+            }
+            return castToByteNode;
+        }
+
+        private Object verifyValue(NativeSequenceStorage storage, Object item) {
+            if (verifyNativeItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                verifyNativeItemNode = insert(VerifyNativeItemNode.create());
+            }
+            if (invalidTypeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                invalidTypeProfile = BranchProfile.create();
+            }
+            if (!verifyNativeItemNode.execute(storage.getElementType(), item)) {
+                invalidTypeProfile.enter();
+                throw raise(TypeError, "%s is required, was %p", storage.getElementType(), item);
+            }
+            return item;
+        }
+
+        public static SetItemScalarNode create() {
+            return SetItemScalarNodeGen.create();
+        }
     }
 
     @ImportStatic(ElementType.class)
@@ -670,6 +710,11 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected byte doBoolean(boolean value) {
             return value ? (byte) 1 : (byte) 0;
+        }
+
+        @Fallback
+        protected byte doGeneric(@SuppressWarnings("unused") Object val) {
+            throw raise(TypeError, "an integer is required");
         }
 
         public static CastToByteNode create() {
