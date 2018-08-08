@@ -138,6 +138,7 @@ graalpython/com.oracle.graal.python.cext/modules/sre_constants.h,python.copyrigh
 graalpython/com.oracle.graal.python.cext/modules/sre.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/sre_lib.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_struct.c,python.copyright
+graalpython/com.oracle.graal.python.cext/src/floatobject.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getbuildinfo.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getcompiler.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/getversion.c,python.copyright
