@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -341,6 +342,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public Object run(String path, String modulename) {
             return run(path, getCore().lookupBuiltinModule(modulename));
+        }
+        
+        @Specialization
+        public Object run(PString path, String modulename) {
+            return run(path.getValue(), getCore().lookupBuiltinModule(modulename));
         }
 
         @Specialization

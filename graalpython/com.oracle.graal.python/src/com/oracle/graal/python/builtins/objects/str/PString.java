@@ -33,14 +33,18 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
 public final class PString extends PImmutableSequence {
 
-    private final String value;
+    private final CharSequence value;
 
-    public PString(PythonClass clazz, String value) {
+    public PString(PythonClass clazz, CharSequence value) {
         super(clazz);
         this.value = value;
     }
 
     public String getValue() {
+        return value.toString();
+    }
+    
+    public CharSequence getCharSequence() {
         return value;
     }
 
@@ -66,7 +70,7 @@ public final class PString extends PImmutableSequence {
 
     @Override
     public String toString() {
-        return value;
+        return value.toString();
     }
 
     @Override
@@ -82,6 +86,9 @@ public final class PString extends PImmutableSequence {
 
     @Override
     public int hashCode() {
+        if (value instanceof LazyString) {
+            return value.toString().hashCode();
+        }
         return value.hashCode();
     }
 
