@@ -102,7 +102,7 @@ public abstract class WithNode extends StatementNode {
         }
 
         try {
-            body.execute(frame);
+            body.executeVoid(frame);
         } catch (PException exception) {
             gotException = true;
             return handleException(frame, withObject, exitCallable, exception, isExitCallableNode);

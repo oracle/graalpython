@@ -62,15 +62,15 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
         PException exceptionState = getContext().getCurrentException();
         PException exception = null;
         if (gen.isActive(frame, finallyFlag)) {
-            getFinalbody().execute(frame);
+            getFinalbody().executeVoid(frame);
         } else {
             try {
-                getBody().execute(frame);
+                getBody().executeVoid(frame);
             } catch (PException e) {
                 exception = e;
             }
             gen.setActive(frame, finallyFlag, true);
-            getFinalbody().execute(frame);
+            getFinalbody().executeVoid(frame);
         }
         reset(frame);
         if (exception != null) {

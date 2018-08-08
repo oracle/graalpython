@@ -47,14 +47,14 @@ public class TryFinallyNode extends StatementNode {
         PythonContext context = getContext();
         PException exceptionState = context.getCurrentException();
         try {
-            body.execute(frame);
+            body.executeVoid(frame);
         } catch (PException e) {
             // any thrown Python exception is visible in the finally block
             context.setCurrentException(e);
             throw e;
         } finally {
             try {
-                finalbody.execute(frame);
+                finalbody.executeVoid(frame);
             } catch (ControlFlowException e) {
                 // restore
                 context.setCurrentException(exceptionState);

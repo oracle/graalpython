@@ -28,20 +28,28 @@ package com.oracle.graal.python.nodes.generator;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.control.ReturnTargetNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
-public final class GeneratorReturnTargetNode extends ReturnTargetNode implements GeneratorControlNode {
+public final class GeneratorReturnTargetNode extends StatementNode implements GeneratorControlNode {
 
+    @Child private PNode body;
+    @Child private PNode returnValue;
     @Child private PNode parameters;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
+    private final BranchProfile returnProfile = BranchProfile.create();
+    private final BranchProfile fallthroughProfile = BranchProfile.create();
+    private final BranchProfile yieldProfile = BranchProfile.create();
 
     private final int flagSlot;
 
     public GeneratorReturnTargetNode(PNode parameters, PNode body, PNode returnValue, int activeFlagIndex) {
-        super(body, returnValue);
+        this.body = body;
+        this.returnValue = returnValue;
         this.parameters = parameters;
         this.flagSlot = activeFlagIndex;
     }
@@ -58,11 +66,14 @@ public final class GeneratorReturnTargetNode extends ReturnTargetNode implements
         }
 
         try {
-            body.execute(frame);
+            body.executeVoid(frame);
+            fallthroughProfile.enter();
         } catch (YieldException eye) {
+            yieldProfile.enter();
             return returnValue.execute(frame);
         } catch (ReturnException ire) {
             // return statement in generators throws StopIteration.
+            returnProfile.enter();
         }
 
         throw raise(StopIteration);

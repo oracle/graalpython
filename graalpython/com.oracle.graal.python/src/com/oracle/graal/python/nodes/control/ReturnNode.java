@@ -51,7 +51,7 @@ public class ReturnNode extends StatementNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            right.execute(frame);
+            right.executeVoid(frame);
             throw ReturnException.INSTANCE;
         }
 
