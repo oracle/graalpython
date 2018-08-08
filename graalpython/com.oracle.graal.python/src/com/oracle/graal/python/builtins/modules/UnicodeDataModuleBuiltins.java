@@ -48,6 +48,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -85,5 +86,16 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
             }
             return Normalizer.normalize(unistr, cachedNormForm);
         }
+
+        @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
+        public String normalize(@SuppressWarnings("unused") String form, PString unistr,
+                        @SuppressWarnings("unused") @Cached("form") String cachedForm,
+                        @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
+            if (cachedNormForm == null) {
+                throw raise(ValueError, "invalid normalization form");
+            }
+            return Normalizer.normalize(unistr.getValue(), cachedNormForm);
+        }
+
     }
 }
