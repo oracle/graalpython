@@ -124,6 +124,7 @@ public class GeneratorTranslator {
 
     private void replaceYield(YieldNode yield) {
         PNode current = yield;
+        yield.setFlagSlot(nextActiveFlagSlot());
 
         if (yield.getParent() instanceof GeneratorReturnTargetNode) {
             // if this yield is the only thing in the body, we introduce a block
