@@ -163,6 +163,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         PArray arrayWithObjectInitializer(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
             throw new RuntimeException("Unsupported initializer " + initializer);
         }

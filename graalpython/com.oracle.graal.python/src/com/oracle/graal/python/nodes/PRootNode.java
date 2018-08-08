@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -62,8 +62,8 @@ public abstract class PRootNode extends RootNode {
     }
 
     public void setNeedsCallerFrame() {
+        CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
         if (!this.needsCallerFrame) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             this.needsCallerFrame = true;
         }
     }
