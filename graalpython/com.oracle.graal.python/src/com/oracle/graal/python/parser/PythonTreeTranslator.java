@@ -38,11 +38,8 @@ import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Deque;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -56,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
@@ -95,15 +91,21 @@ import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
+import com.oracle.graal.python.parser.antlr.Python3Parser.ArgumentContext;
+import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_bodyContext;
+import com.oracle.graal.python.parser.antlr.Python3Parser.Lambdef_nocond_bodyContext;
+import com.oracle.graal.python.parser.antlr.Python3Parser.VarargslistContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
-public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Object> {
+public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     protected final PythonCore core;
     protected final NodeFactory factory;
@@ -113,51 +115,86 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     protected final Source source;
     protected final String name;
 
-    public PythonBaseTreeTranslator(PythonCore core, String name, TranslationEnvironment environment, Source source) {
+    protected final boolean isInlineMode;
+
+    public PythonTreeTranslator(PythonCore core, String name, TranslationEnvironment environment, Source source, boolean isInlineMode) {
         this.name = name;
         this.core = core;
+        this.environment = environment;
         this.source = source;
+        this.isInlineMode = isInlineMode;
         this.factory = core.getLanguage().getNodeFactory();
-        this.environment = environment.reset();
         this.loops = new LoopsBookKeeper();
         this.assigns = new AssignmentTranslator(core, environment, this);
     }
 
-    public abstract T getTranslationResult();
-
-    @SuppressWarnings("unchecked")
-    @Override
-    protected Object aggregateResult(Object aggregate, Object nextResult) {
-        if (aggregate == null) {
-            return nextResult;
-        } else if (nextResult == null) {
-            return aggregate;
-        } else {
-            ArrayList<Object> r = new ArrayList<>();
-            if (aggregate instanceof List) {
-                r.addAll((Collection<Object>) aggregate);
+    public static Node translate(PythonCore core, String name, ParserRuleContext input, TranslationEnvironment environment, Source source, boolean isInlineMode) {
+        PythonTreeTranslator translator = new PythonTreeTranslator(core, name, environment, source, isInlineMode);
+        try {
+            Object parseResult = input.accept(translator);
+            if (!isInlineMode && parseResult instanceof RootNode || isInlineMode && parseResult instanceof PNode) {
+                return (Node) parseResult;
             } else {
-                r.add(aggregate);
+                throw new RuntimeException("Unexpected parse result");
             }
-            if (nextResult instanceof List) {
-                r.addAll((Collection<? extends Object>) nextResult);
-            } else {
-                r.add(nextResult);
-            }
-            return r;
+        } catch (PException e) {
+            throw e;
+        } catch (Exception t) {
+            t.printStackTrace();
+            throw new RuntimeException("Failed in " + translator + " with error " + t, t);
         }
     }
 
-    @Override
-    protected Object defaultResult() {
-        return null;
-    }
-
+    @SuppressWarnings("unchecked")
     @Override
     public Object visitChildren(RuleNode node) {
-        Object r = super.visitChildren(node);
-        deriveSourceSection(node, r);
-        return r;
+        int count = node.getChildCount();
+
+        if (count == 0) {
+            return null;
+        } else if (count == 1) {
+            Object result = node.getChild(0).accept(this);
+            deriveSourceSection(node, result);
+            return result;
+        } else {
+            ArrayList<Object> list = null;
+            Object singleElement = null;
+            for (int i = 0; i < count; i++) {
+                Object element = node.getChild(i).accept(this);
+                if (element != null) {
+                    if (singleElement == null) {
+                        singleElement = element;
+                    } else {
+                        if (list == null) {
+                            if (singleElement instanceof ArrayList) {
+                                list = (ArrayList<Object>) singleElement;
+                            } else {
+                                list = new ArrayList<>(count);
+                                addToList(list, singleElement);
+                            }
+                        }
+                        addToList(list, element);
+                    }
+                }
+            }
+            if (list != null) {
+                return list;
+            } else if (singleElement != null) {
+                deriveSourceSection(node, singleElement);
+                return singleElement;
+            } else {
+                return null;
+            }
+        }
+    }
+
+    private static void addToList(ArrayList<Object> list, Object element) {
+        assert element != null;
+        if (element instanceof ArrayList<?>) {
+            list.addAll((ArrayList<?>) element);
+        } else {
+            list.add(element);
+        }
     }
 
     protected void deriveSourceSection(RuleNode node, Object r) {
@@ -192,34 +229,33 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
 
     @Override
     public Object visitFile_input(Python3Parser.File_inputContext ctx) {
-        environment.beginScope(ctx, ScopeInfo.ScopeKind.Module);
+        environment.enterScope(ctx.scope);
         PNode file = asBlockOrPNode(super.visitFile_input(ctx));
         deriveSourceSection(ctx, file);
-        FrameDescriptor fd = environment.getCurrentFrame();
-        environment.endScope(ctx);
-        ModuleRootNode newNode = factory.createModuleRoot(name, file, fd);
-        return newNode;
+        environment.leaveScope();
+        return factory.createModuleRoot(name, file, ctx.scope.getFrameDescriptor());
     }
 
     @Override
     public Object visitEval_input(Python3Parser.Eval_inputContext ctx) {
-        environment.beginScope(ctx, ScopeInfo.ScopeKind.Module);
+        environment.enterScope(ctx.scope);
         PNode node = (PNode) super.visitEval_input(ctx);
         deriveSourceSection(ctx, node);
-        FrameDescriptor fd = environment.getCurrentFrame();
-        FrameSlot[] freeVarSlots = environment.getFreeVarSlots();
-        environment.endScope(ctx);
-        return factory.createModuleRoot(name, node, fd, freeVarSlots);
+        environment.leaveScope();
+        return factory.createModuleRoot(name, node, ctx.scope.getFrameDescriptor(), ctx.scope.getFreeVarSlots());
     }
 
     @Override
     public Object visitSingle_input(Python3Parser.Single_inputContext ctx) {
-        environment.beginScope(ctx, ScopeInfo.ScopeKind.Function);
+        environment.enterScope(ctx.scope);
         PNode body = asBlockOrPNode(super.visitSingle_input(ctx));
         deriveSourceSection(ctx, body);
-        FrameDescriptor fd = environment.getCurrentFrame();
-        environment.endScope(ctx);
-        return factory.createModuleRoot("<expression>", body, fd);
+        environment.leaveScope();
+        if (isInlineMode) {
+            return body;
+        } else {
+            return factory.createModuleRoot("<expression>", body, ctx.scope.getFrameDescriptor());
+        }
     }
 
     @Override
@@ -256,12 +292,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
                 if (defaultarg != null) {
                     keywords.add(defaultarg);
                 } else {
-                    PNode arg;
-                    if (argctx.comp_for() != null) {
-                        arg = createComprehensionExpression(argctx);
-                    } else {
-                        arg = (PNode) argctx.accept(this);
-                    }
+                    PNode arg = (PNode) argctx.accept(this);
                     if (isKwarg(argctx)) {
                         if (kwargs != null) {
                             kwargs = factory.createDictionaryConcat(kwargs, arg);
@@ -396,7 +427,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         } else if (ctx.NAME() != null) {
             return environment.findVariable(ctx.NAME().getText());
         } else if (ctx.getChildCount() == 1) {
-            return parseSpecalLiteral(ctx.getText());
+            return parseSpecialLiteral(ctx.getText());
         } else if (ctx.dictorsetmaker() != null) {
             return super.visitAtom(ctx);
         } else if (ctx.getChild(0).getText().equals("{")) { // empty dict
@@ -423,20 +454,19 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
     public Object visitSetmaker(Python3Parser.SetmakerContext ctx) {
         if (ctx.comp_for() == null) {
             List<PNode> nodes = asList(super.visitSetmaker(ctx));
-            Set<PNode> setNodes = new LinkedHashSet<>(nodes);
-            return factory.createSetLiteral(setNodes);
+            return factory.createSetLiteral(nodes);
         } else {
-            return factory.callBuiltin(SET, createComprehensionExpression(ctx));
+            return factory.callBuiltin(SET, createComprehensionExpression(ctx, ctx.comp_for()));
         }
     }
 
-    private PNode createComprehensionExpression(ParserRuleContext ctx) {
-        return createComprehensionExpression(ctx, c -> asBlockOrPNode(c.getChild(0).accept(this)));
+    private PNode createComprehensionExpression(ParserRuleContext ctx, Python3Parser.Comp_forContext compctx) {
+        return createComprehensionExpression(ctx, compctx, c -> asBlockOrPNode(c.getChild(0).accept(this)));
     }
 
-    private PNode createComprehensionExpression(ParserRuleContext ctx, Function<ParserRuleContext, PNode> getBlock) {
+    private PNode createComprehensionExpression(ParserRuleContext ctx, Python3Parser.Comp_forContext compctx, Function<ParserRuleContext, PNode> getBlock) {
         try {
-            environment.beginScope(ctx, ScopeInfo.ScopeKind.Generator);
+            environment.enterScope(compctx.scope);
             PNode block = getBlock.apply(ctx);
             PNode yield = factory.createYield(block, environment.getReturnSlot());
             yield.assignSourceSection(block.getSourceSection());
@@ -450,7 +480,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
             genExprDef.assignSourceSection(srcSection);
             return genExprDef;
         } finally {
-            environment.endScope(ctx);
+            environment.leaveScope();
         }
     }
 
@@ -511,11 +541,11 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         if (!ctx.expr().isEmpty()) {
             throw core.raise(SyntaxError, "dict unpacking cannot be used in dict comprehension");
         }
-        return factory.callBuiltin(DICT, createComprehensionExpression(ctx, c -> factory.createTupleLiteral(Arrays.asList(
+        return factory.callBuiltin(DICT, createComprehensionExpression(ctx, ctx.comp_for(), c -> factory.createTupleLiteral(Arrays.asList(
                         asBlockOrPNode(ctx.test(0).accept(this)), asBlockOrPNode(ctx.test(1).accept(this))))));
     }
 
-    private Object parseSpecalLiteral(String text) {
+    private Object parseSpecialLiteral(String text) {
         if (text.equals("...")) {
             return factory.createObjectLiteral(PEllipsis.INSTANCE);
         } else if (text.equals("None")) {
@@ -723,35 +753,39 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         }
     }
 
-    static int maxHexadecimalIntegerLength = Integer.toString(Integer.MAX_VALUE, 16).length() - 1;
-    static int maxDecimalIntegerLength = Integer.toString(Integer.MAX_VALUE, 10).length() - 1;
-    static int maxOctalIntegerLength = Integer.toString(Integer.MAX_VALUE, 8).length() - 1;
-    static int maxBinaryIntegerLength = Integer.toString(Integer.MAX_VALUE, 2).length() - 1;
+    private static int maxHexadecimalIntegerLength = Integer.toString(Integer.MAX_VALUE, 16).length() - 1;
+    private static int maxDecimalIntegerLength = Integer.toString(Integer.MAX_VALUE, 10).length() - 1;
+    private static int maxOctalIntegerLength = Integer.toString(Integer.MAX_VALUE, 8).length() - 1;
+    private static int maxBinaryIntegerLength = Integer.toString(Integer.MAX_VALUE, 2).length() - 1;
 
     private Object parseInteger(String text) {
         String intString = text;
         int radix = 10;
-        if (text.toLowerCase().startsWith("0x")) {
-            radix = 16;
-            intString = text.substring(2);
-            if (intString.length() < maxHexadecimalIntegerLength) {
-                return factory.createIntegerLiteral(Integer.parseInt(intString, radix));
+        if (text.length() >= 2 && text.charAt(0) == '0') {
+            if (text.charAt(1) == 'x' || text.charAt(1) == 'X') {
+                radix = 16;
+                intString = text.substring(2);
+                if (intString.length() < maxHexadecimalIntegerLength) {
+                    return factory.createIntegerLiteral(Integer.parseInt(intString, radix));
+                }
+            } else if (text.charAt(1) == 'o' || text.charAt(1) == 'O') {
+                radix = 8;
+                intString = text.substring(2);
+                if (intString.length() < maxOctalIntegerLength) {
+                    return factory.createIntegerLiteral(Integer.parseInt(intString, radix));
+                }
+            } else if (text.charAt(1) == 'b' || text.charAt(1) == 'B') {
+                radix = 2;
+                intString = text.substring(2);
+                if (intString.length() < maxBinaryIntegerLength) {
+                    return factory.createIntegerLiteral(Integer.parseInt(intString, radix));
+                }
             }
-        } else if (text.toLowerCase().startsWith("0o")) {
-            radix = 8;
-            intString = text.substring(2);
-            if (intString.length() < maxOctalIntegerLength) {
-                return factory.createIntegerLiteral(Integer.parseInt(intString, radix));
-            }
-        } else if (text.toLowerCase().startsWith("0b")) {
-            radix = 2;
-            intString = text.substring(2);
-            if (intString.length() < maxBinaryIntegerLength) {
-                return factory.createIntegerLiteral(Integer.parseInt(intString, radix));
-            }
-        } else if (intString.length() < maxDecimalIntegerLength) {
+        }
+        if (radix == 10 && intString.length() < maxDecimalIntegerLength) {
             return factory.createIntegerLiteral(Integer.parseInt(intString, radix));
         }
+
         // Won't fit into integer literal, parse digit by digit into big integer
         BigInteger integer = BigInteger.ZERO;
         BigInteger bigRadix = BigInteger.valueOf(radix);
@@ -1374,7 +1408,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
             }
         }
 
-        environment.beginScope(ctx, ScopeInfo.ScopeKind.Function);
+        environment.enterScope(ctx.scope);
         environment.setDefaultArgumentNodes(defaultArgs);
 
         /**
@@ -1423,7 +1457,7 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         } else {
             funcDef = new FunctionDefinitionNode(funcName, enclosingClassName, core, arity, defaults, ct, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
-        environment.endScope(ctx);
+        environment.leaveScope();
 
         ReadNode funcVar = environment.findVariable(funcName);
         if (doc == null) {
@@ -1516,14 +1550,13 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         }
     }
 
-    @Override
-    public Object visitLambdef(Python3Parser.LambdefContext ctx) {
+    private PNode createLambda(ParserRuleContext ctx, VarargslistContext varargslist, ParserRuleContext bodyCtx, ScopeInfo scope) {
         /**
          * translate default arguments in FunctionDef's declaring scope.
          */
         List<PNode> defaultArgs = new ArrayList<>();
-        if (ctx.varargslist() != null) {
-            for (Python3Parser.VdefparameterContext defc : ctx.varargslist().vdefparameter()) {
+        if (varargslist != null) {
+            for (Python3Parser.VdefparameterContext defc : varargslist.vdefparameter()) {
                 if (defc.test() != null) {
                     defaultArgs.add((PNode) defc.test().accept(this));
                 }
@@ -1531,19 +1564,19 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         }
 
         String funcname = "anonymous";
-        environment.beginScope(ctx, ScopeInfo.ScopeKind.Function);
+        environment.enterScope(scope);
         environment.setDefaultArgumentNodes(defaultArgs);
 
         /**
          * Parameters
          */
-        PNode argumentLoads = visitArgs(ctx.varargslist());
+        PNode argumentLoads = visitArgs(varargslist);
         Arity arity = createArity(funcname, argumentLoads);
 
         /**
          * Lambda body
          */
-        PNode body = (PNode) ctx.lambdef_body().accept(this);
+        PNode body = (PNode) bodyCtx.accept(this);
         body = factory.createBlock(argumentLoads, body);
         if (environment.isInGeneratorScope()) {
             // If we're in a generator scope, we need a return target, that will
@@ -1577,9 +1610,24 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         } else {
             funcDef = new FunctionDefinitionNode(funcname, null, core, arity, defaults, ct, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
         }
-        environment.endScope(ctx);
+        environment.leaveScope();
 
         return funcDef;
+    }
+
+    @Override
+    public Object visitLambdef(Python3Parser.LambdefContext ctx) {
+        VarargslistContext varargslist = ctx.varargslist();
+        Lambdef_bodyContext bodyCtx = ctx.lambdef_body();
+        ScopeInfo scope = ctx.scope;
+        return createLambda(ctx, varargslist, bodyCtx, scope);
+    }
+
+    @Override
+    public Object visitLambdef_nocond(Python3Parser.Lambdef_nocondContext ctx) {
+        VarargslistContext varargslist = ctx.varargslist();
+        Lambdef_nocond_bodyContext bodyCtx = ctx.lambdef_nocond_body();
+        return createLambda(ctx, varargslist, bodyCtx, ctx.scope);
     }
 
     private static Arity createArity(String functionName, PNode argBlock) {
@@ -1667,15 +1715,14 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         PNode[] splatArguments = new PNode[2];
         visitCallArglist(ctx.arglist(), argumentNodes, keywords, splatArguments);
 
-        environment.beginScope(ctx, ScopeInfo.ScopeKind.Class);
+        environment.enterScope(ctx.scope);
 
         PNode body = asClassBody(ctx.suite().accept(this), qualName);
-        ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body,
-                        environment.getExecutionCellSlots());
+        ClassBodyRootNode classBodyRoot = factory.createClassBodyRoot(deriveSourceSection(ctx), className, environment.getCurrentFrame(), body, environment.getExecutionCellSlots());
         RootCallTarget ct = Truffle.getRuntime().createCallTarget(classBodyRoot);
         FunctionDefinitionNode funcDef = new FunctionDefinitionNode(className, null, core, Arity.createOneArgument(className),
                         EmptyNode.create(), ct, environment.getCurrentFrame(), environment.getDefinitionCellSlots(), environment.getExecutionCellSlots());
-        environment.endScope(ctx);
+        environment.leaveScope();
 
         argumentNodes.add(0, factory.createStringLiteral(className));
         argumentNodes.add(0, funcDef);
@@ -1702,16 +1749,22 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected PNode asBlockOrPNode(Object accept) {
-        List<PNode> asList = asList(accept);
-        if (asList.isEmpty()) {
+        if (accept == null) {
             return EmptyNode.create();
-        } else if (asList.size() == 1) {
-            return asList.get(0);
+        } else if (accept instanceof PNode) {
+            return (PNode) accept;
         } else {
-            PNode block = factory.createBlock(asList);
-            SourceSection sourceSection = asList.get(0).getSourceSection();
-            SourceSection sourceSection2 = asList.get(asList.size() - 1).getSourceSection();
+            List<PNode> list = (List<PNode>) accept;
+            if (list.isEmpty()) {
+                return EmptyNode.create();
+            } else if (list.size() == 1) {
+                return list.get(0);
+            }
+            PNode block = factory.createBlock(list);
+            SourceSection sourceSection = list.get(0).getSourceSection();
+            SourceSection sourceSection2 = list.get(list.size() - 1).getSourceSection();
             if (sourceSection != null && sourceSection2 != null) {
                 block.assignSourceSection(createSourceSection(sourceSection.getCharIndex(), sourceSection2.getCharEndIndex() - sourceSection.getCharIndex()));
             } else if (sourceSection != null) {
@@ -1738,7 +1791,16 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
         if (ctx.comp_for() == null) {
             return super.visitTestlist_comp(ctx);
         } else {
-            return createComprehensionExpression(ctx);
+            return createComprehensionExpression(ctx, ctx.comp_for());
+        }
+    }
+
+    @Override
+    public Object visitArgument(ArgumentContext ctx) {
+        if (ctx.comp_for() == null) {
+            return super.visitArgument(ctx);
+        } else {
+            return createComprehensionExpression(ctx, ctx.comp_for());
         }
     }
 
@@ -1748,12 +1810,13 @@ public abstract class PythonBaseTreeTranslator<T> extends Python3BaseVisitor<Obj
 
     private PNode createGeneratorExpression(Python3Parser.Comp_forContext comp_for, PNode yield, boolean iteratorInParentScope) {
         // TODO: async
+        ScopeInfo old = null;
         if (iteratorInParentScope) {
-            environment.pushCurentScope();
+            old = environment.pushCurentScope();
         }
         PNode iterator = asBlockOrPNode(comp_for.or_test().accept(this));
         if (iteratorInParentScope) {
-            environment.popCurrentScope();
+            environment.popCurrentScope(old);
         }
 
         PNode targets = assigns.translate(comp_for.exprlist());

@@ -190,6 +190,7 @@ public class Python3Parser extends Parser {
 		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
 	public static class Single_inputContext extends ParserRuleContext {
+		public com.oracle.graal.python.parser.ScopeInfo scope;
 		public TerminalNode NEWLINE() { return getToken(Python3Parser.NEWLINE, 0); }
 		public Simple_stmtContext simple_stmt() {
 			return getRuleContext(Simple_stmtContext.class,0);
@@ -298,6 +299,7 @@ public class Python3Parser extends Parser {
 	}
 
 	public static class File_inputContext extends ParserRuleContext {
+		public com.oracle.graal.python.parser.ScopeInfo scope;
 		public TerminalNode EOF() { return getToken(Python3Parser.EOF, 0); }
 		public List<TerminalNode> NEWLINE() { return getTokens(Python3Parser.NEWLINE); }
 		public TerminalNode NEWLINE(int i) {
@@ -416,6 +418,7 @@ public class Python3Parser extends Parser {
 	}
 
 	public static class Eval_inputContext extends ParserRuleContext {
+		public com.oracle.graal.python.parser.ScopeInfo scope;
 		public TestlistContext testlist() {
 			return getRuleContext(TestlistContext.class,0);
 		}
@@ -741,6 +744,7 @@ public class Python3Parser extends Parser {
 	}
 
 	public static class FuncdefContext extends ParserRuleContext {
+		public com.oracle.graal.python.parser.ScopeInfo scope;
 		public TerminalNode NAME() { return getToken(Python3Parser.NAME, 0); }
 		public ParametersContext parameters() {
 			return getRuleContext(ParametersContext.class,0);
@@ -4826,6 +4830,7 @@ public class Python3Parser extends Parser {
 	}
 
 	public static class LambdefContext extends ParserRuleContext {
+		public com.oracle.graal.python.parser.ScopeInfo scope;
 		public Lambdef_bodyContext lambdef_body() {
 			return getRuleContext(Lambdef_bodyContext.class,0);
 		}
@@ -4932,6 +4937,7 @@ public class Python3Parser extends Parser {
 	}
 
 	public static class Lambdef_nocondContext extends ParserRuleContext {
+		public com.oracle.graal.python.parser.ScopeInfo scope;
 		public Lambdef_nocond_bodyContext lambdef_nocond_body() {
 			return getRuleContext(Lambdef_nocond_bodyContext.class,0);
 		}
@@ -7412,6 +7418,7 @@ public class Python3Parser extends Parser {
 	}
 
 	public static class ClassdefContext extends ParserRuleContext {
+		public com.oracle.graal.python.parser.ScopeInfo scope;
 		public TerminalNode NAME() { return getToken(Python3Parser.NAME, 0); }
 		public SuiteContext suite() {
 			return getRuleContext(SuiteContext.class,0);
@@ -7724,6 +7731,7 @@ public class Python3Parser extends Parser {
 	}
 
 	public static class Comp_forContext extends ParserRuleContext {
+		public com.oracle.graal.python.parser.ScopeInfo scope;
 		public ExprlistContext exprlist() {
 			return getRuleContext(ExprlistContext.class,0);
 		}

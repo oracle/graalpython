@@ -45,6 +45,9 @@ import com.oracle.truffle.api.source.SourceSection;
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
 @GenerateWrapper
 public abstract class PNode extends PBaseNode implements InstrumentableNode {
+
+    public static final PNode[] EMPTY_ARRAY = new PNode[0];
+
     @CompilationFinal private SourceSection sourceSection;
     @CompilationFinal private boolean isStmt = false;
     @CompilationFinal private boolean isRoot = false;

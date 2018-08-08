@@ -145,7 +145,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     }
 
     public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
-        super(language, null);
+        super(language);
         this.builtin = builtin;
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;

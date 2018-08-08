@@ -26,19 +26,14 @@
 package com.oracle.graal.python.parser;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
-import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.LIST_COMPREHENSION_SLOT_ID;
 import static com.oracle.graal.python.nodes.frame.FrameSlotIDs.RETURN_SLOT_ID;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Stack;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
@@ -48,91 +43,79 @@ import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameUtil;
 
-public class TranslationEnvironment implements CellFrameSlotSupplier {
+public final class TranslationEnvironment implements CellFrameSlotSupplier {
 
     private final NodeFactory factory;
 
-    private Map<ParserRuleContext, ScopeInfo> scopeInfos;
-    private Stack<ScopeInfo> scopesStack;
     private ScopeInfo currentScope;
     private ScopeInfo globalScope;
-    private int scopeLevel;
 
     private static final String TEMP_LOCAL_PREFIX = "<>temp_";
-    private int listComprehensionSlotCounter = 0;
 
     public TranslationEnvironment(PythonLanguage language) {
         this.factory = language.getNodeFactory();
-        scopeInfos = new HashMap<>();
-        scopesStack = new Stack<>();
     }
 
-    public TranslationEnvironment reset() {
-        scopeLevel = 0;
-        listComprehensionSlotCounter = 0;
-        scopesStack.clear();
-        for (ScopeInfo scope : scopeInfos.values()) {
-            scope.resetLoopCount();
+    public static TranslationEnvironment createFromScope(ScopeInfo scope) {
+        TranslationEnvironment environment = new TranslationEnvironment(PythonLanguage.getCurrent());
+        environment.currentScope = scope;
+        scope.resetLoopCount();
+        ScopeInfo global = scope;
+        while (global.getParent() != null) {
+            global = global.getParent();
         }
-        return this;
+        environment.globalScope = global;
+        return environment;
     }
 
-    public void beginScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind) {
-        scopeLevel++;
-        ScopeInfo info = scopeInfos.get(ctx);
-        currentScope = info != null ? info : new ScopeInfo(TranslationUtil.getScopeId(ctx, kind), kind, new FrameDescriptor(), currentScope);
+    public ScopeInfo createScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind) {
+        return createScope(ctx, kind, null);
+    }
 
+    public ScopeInfo createScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind, FrameDescriptor frameDescriptor) {
+        currentScope = new ScopeInfo(TranslationUtil.getScopeId(ctx, kind), kind, frameDescriptor, currentScope);
         if (globalScope == null) {
             globalScope = currentScope;
         }
+        return currentScope;
     }
 
-    public void beginScope(ParserRuleContext ctx, ScopeInfo.ScopeKind kind, FrameDescriptor fd) {
-        scopeLevel++;
-        ScopeInfo info = scopeInfos.get(ctx);
-        currentScope = info != null ? info : new ScopeInfo(TranslationUtil.getScopeId(ctx, kind), kind, fd, currentScope);
-
-        if (globalScope == null) {
-            globalScope = currentScope;
-        }
+    public void enterScope(ScopeInfo scope) {
+        assert scope != null;
+        currentScope = scope;
+        scope.resetLoopCount();
     }
 
-    public void endScope(ParserRuleContext ctx) {
-        scopeLevel--;
-        scopeInfos.put(ctx, currentScope);
+    public void leaveScope() {
         currentScope = currentScope.getParent();
     }
 
     public ScopeInfo pushCurentScope() {
         if (currentScope.getParent() != null) {
-            scopeLevel--;
-            scopesStack.push(currentScope);
+            ScopeInfo old = currentScope;
             currentScope = currentScope.getParent();
-            return scopesStack.peek();
+            return old;
         }
         return null;
     }
 
-    public void popCurrentScope() {
-        if (!scopesStack.isEmpty()) {
-            scopeLevel++;
-            currentScope = scopesStack.pop();
+    public void popCurrentScope(ScopeInfo oldScope) {
+        if (oldScope != null) {
+            currentScope = oldScope;
         }
     }
 
     public boolean atModuleLevel() {
-        assert scopeLevel > 0;
-        return scopeLevel == 1;
+        assert currentScope != null;
+        return currentScope == globalScope;
     }
 
     public boolean atNonModuleLevel() {
-        assert scopeLevel > 0;
-        return scopeLevel > 1;
+        assert currentScope != null;
+        return currentScope != globalScope;
     }
 
     public ScopeInfo.ScopeKind getScopeKind() {
@@ -201,11 +184,6 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
         return currentScope.isFreeVar(name) || currentScope.isCellVar(name);
     }
 
-    private FrameSlot findSlotInCurrentScope(String name) {
-        assert name != null : "name is null!";
-        return currentScope.getFrameDescriptor().findFrameSlot(name);
-    }
-
     @Override
     public FrameSlot[] getCellVarSlots() {
         return currentScope.getCellVarSlots();
@@ -244,7 +222,7 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
     }
 
     private PNode getWriteNode(String name, Function<FrameSlot, PNode> getReadNode) {
-        FrameSlot slot = findSlotInCurrentScope(name);
+        FrameSlot slot = currentScope.findFrameSlot(name);
         PNode right = getReadNode.apply(slot);
 
         return getWriteNode(name, slot, right);
@@ -274,47 +252,7 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
         return getWriteNode(name, slot -> ReadVarKeywordsNode.createForUserFunction(names));
     }
 
-    public void registerCell(String identifier) {
-        if (currentScope != globalScope && findSlotInCurrentScope(identifier) == null) {
-            // symbol frameslot not found in current scope => free variable in current scope
-            ScopeInfo definitionScope = findVariableScope(currentScope, identifier);
-            if (definitionScope != null && definitionScope != globalScope) {
-                definitionScope.addCellVar(identifier);
-                // register it as a free variable in all parent scopes up until the defining scope
-                // (except it)
-                ScopeInfo scope = currentScope;
-                while (scope != definitionScope) {
-                    scope.addFreeVar(identifier);
-                    scope = scope.getParent();
-                }
-            }
-        }
-    }
-
-    private ScopeInfo getRootScope() {
-        ScopeInfo scope = scopeInfos.values().iterator().next();
-        while (scope.getParent() != null) {
-            scope = scope.getParent();
-        }
-        return scope;
-    }
-
-    public void setFreeVarsInRootScope(Frame frame) {
-        if (frame != null) {
-            ScopeInfo rootScope = getRootScope();
-            for (Object identifier : frame.getFrameDescriptor().getIdentifiers()) {
-                FrameSlot frameSlot = frame.getFrameDescriptor().findFrameSlot(identifier);
-                if (frameSlot != null && frame.isObject(frameSlot)) {
-                    Object value = FrameUtil.getObjectSafe(frame, frameSlot);
-                    if (value instanceof PCell) {
-                        rootScope.addFreeVar((String) frameSlot.getIdentifier(), false);
-                    }
-                }
-            }
-        }
-    }
-
-    private ScopeInfo findVariableScope(ScopeInfo enclosingScope, String identifier) {
+    static ScopeInfo findVariableScope(ScopeInfo enclosingScope, String identifier) {
         ScopeInfo parentScope = enclosingScope.getParent();
         if (parentScope != null) {
             FrameSlot slot = parentScope.findFrameSlot(identifier);
@@ -334,7 +272,7 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
     }
 
     private ReadNode findVariableInLocalOrEnclosingScopes(String name) {
-        FrameSlot slot = findSlotInCurrentScope(name);
+        FrameSlot slot = currentScope.findFrameSlot(name);
         if (slot != null) {
             return (ReadNode) getReadNode(name, slot);
         }
@@ -355,7 +293,7 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
     private ReadNode findVariableNodeClass(String name) {
         FrameSlot cellSlot = null;
         if (isCellInCurrentScope(name)) {
-            cellSlot = findSlotInCurrentScope(name);
+            cellSlot = currentScope.findFrameSlot(name);
         }
         return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, currentScope.isFreeVar(name));
     }
@@ -364,7 +302,7 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
         if (currentScope.isFreeVar(name)) {
             // this is covering the special eval case where free vars pass through to the eval
             // module scope
-            FrameSlot cellSlot = findSlotInCurrentScope(name);
+            FrameSlot cellSlot = currentScope.findFrameSlot(name);
             return (ReadNode) factory.createReadLocalCell(cellSlot, true);
         }
         return findVariableInGlobalOrBuiltinScope(name);
@@ -463,15 +401,6 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
         return currentScope.getFrameDescriptor().findOrAddFrameSlot(RETURN_SLOT_ID);
     }
 
-    public FrameSlot nextListComprehensionSlot() {
-        listComprehensionSlotCounter++;
-        return getListComprehensionSlot();
-    }
-
-    public FrameSlot getListComprehensionSlot() {
-        return currentScope.getFrameDescriptor().findOrAddFrameSlot(LIST_COMPREHENSION_SLOT_ID + listComprehensionSlotCounter);
-    }
-
     private ScopeInfo findEnclosingClassScope() {
         ScopeInfo scope = currentScope;
         while (scope != globalScope) {
@@ -489,17 +418,13 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
             // 1) create a cellvar in the class body (__class__), the class itself is stored here
             classScope.addCellVar(__CLASS__, true);
             // 2) all class methods receive a __class__ freevar
-            for (ScopeInfo childScope : classScope.getChildScopes()) {
+            ScopeInfo childScope = classScope.getFirstChildScope();
+            while (childScope != null) {
                 if (childScope.getScopeKind() == ScopeKind.Function) {
                     childScope.addFreeVar(__CLASS__, true);
                 }
+                childScope = childScope.getNextChildScope();
             }
-        }
-    }
-
-    public void createFrameSlotsForCellAndFreeVars() {
-        for (ScopeInfo scope : scopeInfos.values()) {
-            scope.createFrameSlotsForCellAndFreeVars();
         }
     }
 
@@ -509,5 +434,17 @@ public class TranslationEnvironment implements CellFrameSlotSupplier {
 
     public int getCurrentScopeLoopCount() {
         return currentScope.getLoopCount();
+    }
+
+    public FrameSlot findFrameSlot(String identifier) {
+        return currentScope.findFrameSlot(identifier);
+    }
+
+    public ScopeInfo getCurrentScope() {
+        return currentScope;
+    }
+
+    public ScopeInfo getGlobalScope() {
+        return globalScope;
     }
 }
