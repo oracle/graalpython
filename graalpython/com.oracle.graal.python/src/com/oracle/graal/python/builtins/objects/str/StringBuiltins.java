@@ -1107,11 +1107,15 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(String self) {
             return self.length();
+        }
+
+        @Specialization
+        public int len(PString self) {
+            return self.len();
         }
     }
 

@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
@@ -253,26 +255,21 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "tregex_call_safe", minNumOfArguments = 1, takesVariableArguments = true)
+    @Builtin(name = "tregex_call_safe", fixedNumOfArguments = 3)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class TRegexCallSafe extends PythonBuiltinNode {
-        @Specialization(guards = "isForeignObject(callable)")
-        Object call(TruffleObject callable, Object[] arguments,
+
+        private Node invokeNode;
+
+        private Object doIt(TruffleObject callable, String arg1, Object arg2,
                         @Cached("create()") BranchProfile runtimeError,
-                        @Cached("create()") BranchProfile typeError,
-                        @Cached("createExecute()") Node invokeNode) {
+                        @Cached("create()") BranchProfile typeError) {
+            if (invokeNode == null) {
+                invokeNode = Message.createExecute(0).createNode();
+            }
             try {
-                // TODO This is a hack. The right solution would be to fix it
-                // in
-                // com.oracle.truffle.regex.RegexEngine.RegexEngineMessageResolution.RegexEngineExecuteNode
-                // where is only check whether the argument is instance of String.
-                // PString should be there unboxed.
-                for (int i = 0; i < arguments.length; i++) {
-                    if (arguments[i] instanceof PString) {
-                        arguments[i] = ((PString) arguments[i]).getValue();
-                    }
-                }
-                return ForeignAccess.sendExecute(invokeNode, callable, arguments);
+                return ForeignAccess.sendExecute(invokeNode, callable, new Object[]{arg1, arg2});
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
@@ -282,10 +279,19 @@ public class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        protected static Node createExecute() {
-            return Message.createExecute(0).createNode();
+        @Specialization(guards = "isForeignObject(callable)")
+        Object call(TruffleObject callable, String arg1, String arg2,
+                        @Cached("create()") BranchProfile runtimeError,
+                        @Cached("create()") BranchProfile typeError) {
+            return doIt(callable, arg1, arg2, runtimeError, typeError);
+        }
+
+        @Specialization(guards = "isForeignObject(callable)")
+        Object call(TruffleObject callable, String arg1, int arg2,
+                        @Cached("create()") BranchProfile runtimeError,
+                        @Cached("create()") BranchProfile typeError) {
+            return doIt(callable, arg1, arg2, runtimeError, typeError);
         }
 
     }
-
 }

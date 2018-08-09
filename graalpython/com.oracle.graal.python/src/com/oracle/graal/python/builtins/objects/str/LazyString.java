@@ -67,8 +67,8 @@ public class LazyString implements CharSequence {
 
     @TruffleBoundary
     public static CharSequence create(CharSequence left, CharSequence right) {
-        assert PGuards.isString(left);
-        assert PGuards.isString(right);
+        assert PGuards.isString(left) || left instanceof LazyString;
+        assert PGuards.isString(right) || right instanceof LazyString;
         if (UseLazyStrings) {
             if (left.length() == 0) {
                 return right;
