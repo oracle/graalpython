@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -184,96 +183,39 @@ public final class BuiltinConstructors extends PythonBuiltins {
         builtinConstants.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
     }
 
-    // bytes([source[, encoding[, errors]]])
-    @Builtin(name = BYTES, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PBytes.class)
-    @GenerateNodeFactory
-    public abstract static class BytesNode extends PythonBuiltinNode {
-
-        @Specialization(guards = "isNoValue(source)")
-        public PBytes bytes(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, new byte[0]);
-        }
-
-        @Specialization
-        public PBytes bytes(PythonClass cls, int source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, BytesUtils.fromSize(getCore(), source));
-        }
-
-        @Specialization
-        public PBytes bytes(PythonClass cls, PInt source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            try {
-                return factory().createBytes(cls, BytesUtils.fromSize(getCore(), source.intValueExact()));
-            } catch (ArithmeticException e) {
-                // TODO: fix me, in python the array can take long sizes, we are bound to ints for
-                // now
-                throw raise(OverflowError, "byte string is too large");
-            }
-        }
-
-        @Specialization
-        public PBytes bytes(PythonClass cls, String source, String encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
-        }
-
-        @Specialization
-        public PBytes bytes(PythonClass cls, PString source, String encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, BytesUtils.fromStringAndEncoding(getCore(), source.getValue(), encoding));
-        }
-
-        @Specialization(guards = "isString(source)")
-        @SuppressWarnings("unused")
-        public PBytes bytes(PythonClass cls, Object source, PNone encoding, PNone errors) {
-            throw raise(TypeError, "string argument without an encoding");
-        }
-
-        @Specialization
-        public PBytes bytes(PythonClass cls, PythonObject source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create()") ConstructListNode constructListNode,
-                        @Cached("create()") GetClassNode getClassNode) {
-            PythonClass sourceClass = getClassNode.execute(source);
-            PList list = constructListNode.execute(source, sourceClass);
-            return factory().createBytes(cls, BytesUtils.fromList(getCore(), list));
-        }
-
-        @Specialization(guards = "!isString(source)")
-        @SuppressWarnings("unused")
-        public PBytes bytes(Object cls, Object source, Object encoding, Object errors) {
-            throw raise(TypeError, "encoding without a string argument");
-        }
-    }
-
-    // bytearray([source[, encoding[, errors]]])
-    @Builtin(name = BYTEARRAY, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PByteArray.class)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class ByteArrayNode extends PythonBuiltinNode {
+    protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
         @Child private IsIndexNode isIndexNode;
         @Child private CastToIndexNode castToIndexNode;
 
+        @SuppressWarnings("unused")
+        protected Object create(PythonClass cls, byte[] barr) {
+            throw new AssertionError("should not reach");
+        }
+
         @Specialization(guards = {"isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public PByteArray bytearray(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createByteArray(cls, new byte[0]);
+        public Object bytearray(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            return create(cls, new byte[0]);
         }
 
         @Specialization(guards = {"isInt(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public PByteArray bytearray(PythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+        public Object bytearray(PythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             int cap = getCastToIndexNode().execute(capObj);
-            return factory().createByteArray(cls, BytesUtils.fromSize(getCore(), cap));
+            return create(cls, BytesUtils.fromSize(getCore(), cap));
         }
 
         @Specialization(guards = "isNoValue(errors)")
-        public PByteArray fromString(PythonClass cls, String source, String encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createByteArray(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
+        public Object fromString(PythonClass cls, String source, String encoding, @SuppressWarnings("unused") PNone errors) {
+            return create(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
         }
 
         @Specialization(guards = {"isNoValue(encoding)", "isNoValue(errors)"})
         @SuppressWarnings("unused")
-        public PByteArray fromString(PythonClass cls, String source, PNone encoding, PNone errors) {
+        public Object fromString(PythonClass cls, String source, PNone encoding, PNone errors) {
             throw raise(PythonErrorType.TypeError, "string argument without an encoding");
         }
 
         @Specialization(guards = {"!isInt(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
-        public PByteArray bytearray(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        public Object bytearray(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
                         @Cached("createBinaryProfile()") ConditionProfile stopIterationProfile,
@@ -291,7 +233,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     arr[i++] = item;
                 } catch (PException e) {
                     e.expect(StopIteration, getCore(), stopIterationProfile);
-                    return factory().createByteArray(cls, arr);
+                    return create(cls, arr);
                 }
             }
         }
@@ -315,6 +257,27 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 castToIndexNode = insert(CastToIndexNode.create());
             }
             return castToIndexNode;
+        }
+    }
+
+    // bytes([source[, encoding[, errors]]])
+    @Builtin(name = BYTES, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PBytes.class)
+    @GenerateNodeFactory
+    public abstract static class BytesNode extends CreateByteOrByteArrayNode {
+        @Override
+        protected Object create(PythonClass cls, byte[] barr) {
+            return factory().createBytes(cls, barr);
+        }
+    }
+
+    // bytearray([source[, encoding[, errors]]])
+    @Builtin(name = BYTEARRAY, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PByteArray.class)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class ByteArrayNode extends CreateByteOrByteArrayNode {
+        @Override
+        protected Object create(PythonClass cls, byte[] barr) {
+            return factory().createByteArray(cls, barr);
         }
     }
 
