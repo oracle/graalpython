@@ -1533,6 +1533,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_KEYWORDS", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
@@ -1543,6 +1544,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_VARARGS", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
@@ -1553,6 +1555,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_NOARGS", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
@@ -1563,6 +1566,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_O", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class MethONode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
@@ -1573,6 +1577,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "METH_FASTCALL", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
         @Specialization
         Object call(PBuiltinFunction function) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
