@@ -36,7 +36,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
@@ -220,25 +219,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    public abstract static class AddNode extends PythonBuiltinNode {
+    public abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object add(PByteArray self, PIBytesLike other) {
-            return self.concat(factory(), other);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        public Object add(Object self, Object other) {
-            throw raise(TypeError, "can't concat bytearray to %p", other);
-        }
-    }
-
-    @Builtin(name = __RADD__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class RAddNode extends PythonBuiltinNode {
-        @Specialization
-        public Object add(PByteArray self, PIBytesLike other) {
-            return self.concat(factory(), other);
+        public Object add(PByteArray self, PIBytesLike other,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+            SequenceStorage res = concatNode.execute(self.getSequenceStorage(), other.getSequenceStorage());
+            return factory().createByteArray(res);
         }
 
         @SuppressWarnings("unused")
@@ -251,9 +237,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBuiltinNode {
+
         @Specialization
-        public Object mul(PByteArray self, int times) {
-            return self.__mul__(factory(), times);
+        public Object mul(PByteArray self, int times,
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
+            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), times);
+            return factory().createByteArray(res);
         }
 
         @SuppressWarnings("unused")
@@ -443,24 +432,21 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartsWithNode extends PythonBuiltinNode {
         @Specialization
-        @CompilerDirectives.TruffleBoundary
-        boolean startswith(PByteArray self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return new String(self.getInternalByteArray()).startsWith(prefix);
+        boolean startswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, 0, self.len()) == 0;
         }
 
         @Specialization
-        boolean startswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.startsWith(self, prefix);
+        boolean startswith(PByteArray self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, start, self.len()) == start;
         }
 
         @Specialization
-        boolean startswith(PByteArray self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.startsWith(self, prefix, start, -1);
-        }
-
-        @Specialization
-        boolean startswith(PByteArray self, PIBytesLike prefix, int start, int end) {
-            return BytesUtils.startsWith(self, prefix, start, end);
+        boolean startswith(PByteArray self, PIBytesLike prefix, int start, int end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, start, end) == start;
         }
     }
 
@@ -468,14 +454,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EndsWithNode extends PythonBuiltinNode {
         @Specialization
-        @CompilerDirectives.TruffleBoundary
-        boolean endswith(PByteArray self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return new String(self.getInternalByteArray()).endsWith(prefix);
-        }
-
-        @Specialization
-        boolean endswith(PByteArray self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.endsWith(self, prefix);
+        boolean endswith(PByteArray self, PIBytesLike suffix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, suffix, self.len() - suffix.len(), self.len()) != -1;
         }
     }
 
@@ -484,9 +465,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PByteArray join(PByteArray bytes, Object iterable,
+        public PBytes join(PByteArray bytes, Object iterable,
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createByteArray(bytesJoinNode.execute(bytes.getInternalByteArray(), iterable));
+            return factory().createBytes(bytesJoinNode.execute(toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
@@ -517,34 +499,21 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "find", minNumOfArguments = 2, maxNumOfArguments = 4)
     @GenerateNodeFactory
     abstract static class FindNode extends PythonBuiltinNode {
+        @Child private BytesNodes.FindNode findNode;
+
         @Specialization
-        int find(PByteArray self, int sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+        int find(PByteArray self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return find(self, sub, 0, self.len());
         }
 
         @Specialization
-        int find(PByteArray self, int sub, int start, @SuppressWarnings("unused") PNone end) {
+        int find(PByteArray self, Object sub, int start, @SuppressWarnings("unused") PNone end) {
             return find(self, sub, start, self.len());
         }
 
         @Specialization
-        int find(PByteArray self, int sub, int start, int ending) {
-            return BytesUtils.find(self, sub, start, ending);
-        }
-
-        @Specialization
-        int find(PByteArray self, PIBytesLike sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, 0, self.len());
-        }
-
-        @Specialization
-        int find(PByteArray self, PIBytesLike sub, int start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, start, self.len());
-        }
-
-        @Specialization
-        int find(PByteArray self, PIBytesLike sub, int start, int ending) {
-            return BytesUtils.find(self, sub, start, ending);
+        int find(PByteArray self, Object sub, int start, int ending) {
+            return getFindNode().execute(self, sub, start, ending);
         }
 
         @Fallback
@@ -552,24 +521,64 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         Object doGeneric(Object self, Object sub, Object start, Object ending) {
             throw raise(TypeError, "argument should be integer or bytes-like object, not '%p'", sub);
         }
+
+        private BytesNodes.FindNode getFindNode() {
+            if (findNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                findNode = insert(BytesNodes.FindNode.create());
+            }
+            return findNode;
+        }
     }
 
     @Builtin(name = "translate", minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
     abstract static class TranslateNode extends PythonBuiltinNode {
+
+        @Child private SequenceStorageNodes.GetItemNode getSelfItemNode;
+        @Child private SequenceStorageNodes.GetItemNode getTableItemNode;
+        @Child private SequenceStorageNodes.SetItemNode setItemNode;
+
         @Specialization
-        PByteArray translate(PByteArray self, PIBytesLike table, @SuppressWarnings("unused") PNone delete) {
-            if (table.getInternalByteArray().length != 256) {
+        PByteArray translate(PByteArray self, PBytes table, @SuppressWarnings("unused") PNone delete) {
+            return translate(self.getSequenceStorage(), table.getSequenceStorage());
+        }
+
+        @Specialization
+        PByteArray translate(PByteArray self, PByteArray table, @SuppressWarnings("unused") PNone delete) {
+            return translate(self.getSequenceStorage(), table.getSequenceStorage());
+        }
+
+        private PByteArray translate(SequenceStorage selfStorage, SequenceStorage tableStorage) {
+            if (tableStorage.length() != 256) {
                 throw raise(ValueError, "translation table must be 256 characters long");
             }
-            byte[] newBytes = self.getBytesExact();
-            byte[] tableBytes = table.getInternalByteArray();
-            for (int i = 0; i < newBytes.length; i++) {
-                byte b = newBytes[i];
-                newBytes[i] = tableBytes[b];
+            byte[] result = new byte[selfStorage.length()];
+            for (int i = 0; i < selfStorage.length(); i++) {
+                int b = getGetSelfItemNode().executeInt(selfStorage, i);
+                int t = getGetTableItemNode().executeInt(tableStorage, b);
+                assert t >= 0 && t < 256;
+                result[i] = (byte) t;
             }
-            return factory().createByteArray(newBytes);
+            return factory().createByteArray(result);
         }
+
+        private SequenceStorageNodes.GetItemNode getGetSelfItemNode() {
+            if (getSelfItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getSelfItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getSelfItemNode;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetTableItemNode() {
+            if (getTableItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getTableItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getTableItemNode;
+        }
+
     }
 
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)

@@ -294,4 +294,9 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         return true;
     }
 
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
+    }
+
 }

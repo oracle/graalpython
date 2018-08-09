@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.__repr__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -40,6 +39,8 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -139,8 +140,9 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     @Override
-    public final void setSequenceStorage(SequenceStorage newStorage) {
-        this.store = newStorage;
+    public final void setSequenceStorage(SequenceStorage store) {
+        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && ((NativeSequenceStorage) store).getElementType() == ElementType.BYTE;
+        this.store = store;
     }
 
     @Override
@@ -156,7 +158,12 @@ public final class PByteArray extends PArray implements PIBytesLike {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("bytearray(%s)", __repr__(getInternalByteArray(), store.length()));
+        if (store instanceof ByteSequenceStorage) {
+            byte[] barr = ((ByteSequenceStorage) store).getInternalByteArray();
+            return String.format("bytearray(%s)", BytesUtils.bytesRepr(barr, barr.length));
+        } else {
+            return String.format("bytearray(%s)", store);
+        }
     }
 
     @Override
@@ -209,15 +216,6 @@ public final class PByteArray extends PArray implements PIBytesLike {
 
     public int count(Object arg) {
         return this.store.count(arg);
-    }
-
-    @Override
-    public byte[] getInternalByteArray() {
-        if (store instanceof ByteSequenceStorage) {
-            return ((ByteSequenceStorage) store).getInternalByteArray();
-        } else {
-            throw new UnsupportedOperationException("this case is not yet supported!");
-        }
     }
 
     @Override

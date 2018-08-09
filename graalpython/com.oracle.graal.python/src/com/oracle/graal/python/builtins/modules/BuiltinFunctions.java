@@ -78,9 +78,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -532,8 +534,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class CompileNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            return compile(new String(source.getInternalByteArray()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
+        Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return compile(new String(toBytesNode.execute(source)), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @SuppressWarnings("unused")
@@ -1081,12 +1084,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public int ord(PBytes chr) {
+        public int ord(PBytes chr,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
             if (chr.len() != 1) {
                 raise(TypeError, "ord() expected a character, but string of length %d found", chr.len());
             }
 
-            return chr.getInternalByteArray()[0];
+            return (byte) getItemNode.execute(chr.getSequenceStorage(), 0);
         }
     }
 

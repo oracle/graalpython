@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.__repr__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.Arrays;
@@ -52,9 +51,9 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PBytes(PythonClass cls, ByteSequenceStorage storage) {
+    public PBytes(PythonClass cls, SequenceStorage storage) {
         super(cls);
-        store = storage;
+        setSequenceStorage(storage);
     }
 
     @Override
@@ -111,7 +110,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
         // TODO(fa) really required ?
         CompilerAsserts.neverPartOfCompilation();
         if (store instanceof ByteSequenceStorage) {
-            return __repr__(((ByteSequenceStorage) store).getInternalByteArray());
+            return BytesUtils.bytesRepr(((ByteSequenceStorage) store).getInternalByteArray(), store.length());
         } else {
             return store.toString();
         }
@@ -140,15 +139,6 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
             return Arrays.hashCode(((ByteSequenceStorage) store).getInternalByteArray());
         }
         return store.hashCode();
-    }
-
-    @Override
-    public byte[] getInternalByteArray() {
-        // TODO(fa) remove this method
-        if (store instanceof ByteSequenceStorage) {
-            return ((ByteSequenceStorage) store).getInternalByteArray();
-        }
-        return null;
     }
 
     @Override

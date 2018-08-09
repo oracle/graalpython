@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -800,6 +801,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         @TruffleBoundary(transferToInterpreterOnException = false)
         private Object stringToInt(String num, int base) {
             String s = num.replace("_", "");
@@ -998,19 +1001,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
         int parseInt(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseInt(cls, new String(arg.getInternalByteArray()), keywordArg);
+            return parseInt(cls, new String(getByteArray(arg)), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
         long parseLong(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseLong(cls, new String(arg.getInternalByteArray()), keywordArg);
+            return parseLong(cls, new String(getByteArray(arg)), keywordArg);
         }
 
-        @Specialization
+        @Specialization(rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        Object parsePInt(PythonClass cls, PIBytesLike arg, int keywordArg) {
-            return parsePInt(cls, new String(arg.getInternalByteArray()), keywordArg);
+        Object parseBytes(PythonClass cls, PIBytesLike arg, int base) {
+            return parsePInt(cls, new String(getByteArray(arg)), base);
+        }
+
+        @Specialization(replaces = "parseBytes")
+        Object parseBytesError(PythonClass cls, PIBytesLike arg, int base) {
+            try {
+                return parseBytes(cls, arg, base);
+            } catch (NumberFormatException e) {
+                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
+            }
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
@@ -1025,7 +1037,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         Object parsePInt(PythonClass cls, PString arg, int keywordArg) {
             return parsePInt(cls, arg.getValue(), keywordArg);
         }
@@ -1042,9 +1053,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return Long.parseLong(arg, keywordArg);
         }
 
-        @Specialization
-        Object parsePInt(PythonClass cls, String arg, int keywordArg) {
-            Object int2 = toInt(arg, keywordArg);
+        @Specialization(rewriteOn = NumberFormatException.class)
+        Object parsePInt(PythonClass cls, String arg, int base) {
+            Object int2 = toInt(arg, base);
             if (int2 instanceof BigInteger) {
                 return factory().createInt(cls, (BigInteger) int2);
             } else if (isPrimitiveInt(cls)) {
@@ -1052,6 +1063,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else {
                 assert int2 instanceof Integer;
                 return factory().createInt(cls, (int) int2);
+            }
+        }
+
+        @Specialization(replaces = "parsePInt")
+        Object parsePIntError(PythonClass cls, String arg, int base) {
+            try {
+                return parsePInt(cls, arg, base);
+            } catch (NumberFormatException e) {
+                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
             }
         }
 
@@ -1113,6 +1133,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
         }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+        }
+
     }
 
     // bool([x])
@@ -1815,6 +1844,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "code", constructsClass = {PCode.class}, isPublic = false, minNumOfArguments = 14, maxNumOfArguments = 16)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         @Specialization
         Object call(PythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -1840,7 +1871,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PBytes lnotab) {
             return factory().createCode(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
-                            new String(codestring.getInternalByteArray()), constants, names,
+                            toString(getByteArray(codestring)), constants, names,
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
                             filename.getValue(), name.getValue(), firstlineno,
                             lnotab);
@@ -1855,6 +1886,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object filename, Object name, Object firstlineno,
                         Object lnotab) {
             throw raise(PythonErrorType.NotImplementedError, "code object instance from generic arguments");
+        }
+
+        @TruffleBoundary
+        private static String toString(byte[] data) {
+            return new String(data);
+        }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
         }
     }
 

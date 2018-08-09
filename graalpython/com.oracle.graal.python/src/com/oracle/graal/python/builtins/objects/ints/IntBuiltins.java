@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -1597,8 +1598,9 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public PInt fromPBytes(PBytes str, String byteorder, Object[] args, PNone keywordArg) {
-            byte[] bytes = littleToBig(str.getInternalByteArray(), byteorder);
+        public PInt fromPBytes(PBytes str, String byteorder, Object[] args, PNone keywordArg,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            byte[] bytes = littleToBig(toBytesNode.execute(str), byteorder);
             return factory().createInt(new BigInteger(bytes));
         }
     }

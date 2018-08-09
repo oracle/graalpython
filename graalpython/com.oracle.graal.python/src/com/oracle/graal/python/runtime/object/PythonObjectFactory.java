@@ -265,7 +265,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PBytes(cls, array));
     }
 
-    public Object createBytes(PythonClass cls, ByteSequenceStorage storage) {
+    public PBytes createBytes(SequenceStorage storage) {
+        return trace(new PBytes(lookupClass(PythonBuiltinClassType.PBytes), storage));
+    }
+
+    public PBytes createBytes(PythonClass cls, ByteSequenceStorage storage) {
         return trace(new PBytes(cls, storage));
     }
 

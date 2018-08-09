@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
@@ -1198,7 +1199,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Bytes_AsString extends NativeBuiltin {
         @Specialization
         Object doBytes(PBytes bytes, @SuppressWarnings("unused") Object errorMarker) {
-            return new CByteArrayWrapper(bytes.getInternalByteArray());
+            return new PySequenceArrayWrapper(bytes, 1);
         }
 
         @Specialization

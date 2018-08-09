@@ -35,6 +35,7 @@ import java.io.UnsupportedEncodingException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class BytesUtils {
@@ -96,12 +97,27 @@ public final class BytesUtils {
         return bytes;
     }
 
-    public static String __repr__(byte[] bytes) {
-        return __repr__(bytes, bytes.length);
+    @TruffleBoundary
+    public static void byteRepr(StringBuilder sb, byte b) {
+        if (b == 9) {
+            sb.append("\\t");
+        } else if (b == 10) {
+            sb.append("\\n");
+        } else if (b == 13) {
+            sb.append("\\r");
+        } else if (b > 31 && b <= 126) {
+            Character chr = (char) b;
+            if (chr == '\'' || chr == '\\') {
+                sb.append('\\');
+            }
+            sb.append(chr);
+        } else {
+            sb.append(String.format("\\x%02x", b));
+        }
     }
 
-    @TruffleBoundary
-    public static String __repr__(byte[] bytes, int length) {
+    public static String bytesRepr(byte[] bytes, int length) {
+        CompilerAsserts.neverPartOfCompilation();
         int len = length;
         if (len > bytes.length) {
             len = bytes.length;
@@ -110,28 +126,13 @@ public final class BytesUtils {
         StringBuilder sb = new StringBuilder();
         sb.append("b'");
         for (int i = 0; i < len; i++) {
-            byte b = bytes[i];
-            if (b == 9) {
-                sb.append("\\t");
-            } else if (b == 10) {
-                sb.append("\\n");
-            } else if (b == 13) {
-                sb.append("\\r");
-            } else if (b > 31 && b <= 126) {
-                Character chr = (char) b;
-                if (chr == '\'' || chr == '\\') {
-                    sb.append('\\');
-                }
-                sb.append(chr);
-            } else {
-                sb.append(String.format("\\x%02x", b));
-            }
+            byteRepr(sb, bytes[i]);
         }
         sb.append("'");
         return sb.toString();
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
+    @TruffleBoundary(transferToInterpreterOnException = false)
     public static StringBuilder decodeEscapes(PythonCore core, String string, boolean regexMode) {
         // see _PyBytes_DecodeEscape from
         // https://github.com/python/cpython/blob/master/Objects/bytesobject.c
@@ -254,68 +255,5 @@ public final class BytesUtils {
             bytes[i] = (byte) sb.charAt(i);
         }
         return bytes;
-    }
-
-    private static int normalizeIndex(int index, int length) {
-        int idx = index;
-        if (idx < 0) {
-            idx += length;
-        }
-        return idx;
-    }
-
-    public static int find(PIBytesLike primary, PIBytesLike sub, int starting, int ending) {
-        byte[] haystack = primary.getInternalByteArray();
-        int len1 = primary.len();
-        byte[] needle = sub.getInternalByteArray();
-        int len2 = sub.len();
-
-        int start = normalizeIndex(starting, len1);
-        int end = normalizeIndex(ending, len1);
-
-        if (start >= len1 || len1 < len2) {
-            return -1;
-        } else if (end > len1) {
-            end = len1;
-        }
-
-        outer: for (int i = start; i < end; i++) {
-            for (int j = 0; j < len2; j++) {
-                if (needle[j] != haystack[i + j] || i + j >= end) {
-                    continue outer;
-                }
-            }
-            return i;
-        }
-        return -1;
-    }
-
-    public static int find(PIBytesLike primary, int sub, int starting, @SuppressWarnings("unused") int ending) {
-        byte[] haystack = primary.getInternalByteArray();
-        int len1 = primary.len();
-
-        int start = normalizeIndex(starting, len1);
-        if (start >= len1) {
-            return -1;
-        }
-
-        for (int i = start; i < len1; i++) {
-            if (haystack[i] == sub) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    public static boolean startsWith(PIBytesLike primary, PIBytesLike prefix, int start, int ending) {
-        return find(primary, prefix, start, ending) != -1;
-    }
-
-    public static boolean startsWith(PIBytesLike primary, PIBytesLike prefix) {
-        return find(primary, prefix, 0, primary.len()) != -1;
-    }
-
-    public static boolean endsWith(PIBytesLike primary, PIBytesLike suffix) {
-        return find(primary, suffix, primary.len() - suffix.len(), primary.len()) != -1;
     }
 }

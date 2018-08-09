@@ -366,4 +366,9 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return true;
     }
 
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
+    }
+
 }

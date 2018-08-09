@@ -60,8 +60,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -312,9 +314,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__truffle_decode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends PythonBuiltinNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         @Specialization
         Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            String string = decodeBytes(bytes.getBytesBuffer(), "utf-8", "strict");
+            String string = decodeBytes(getBytesBuffer(bytes), "utf-8", "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -322,7 +326,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object decode(PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            String string = decodeBytes(bytes.getBytesBuffer(), profiledEncoding.toString(), "strict");
+            String string = decodeBytes(getBytesBuffer(bytes), profiledEncoding.toString(), "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -330,7 +334,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            String string = decodeBytes(bytes.getBytesBuffer(), "utf-8", profiledErrors.toString());
+            String string = decodeBytes(getBytesBuffer(bytes), "utf-8", profiledErrors.toString());
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -340,13 +344,22 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            String string = decodeBytes(bytes.getBytesBuffer(), profiledEncoding.toString(), profiledErrors.toString());
+            String string = decodeBytes(getBytesBuffer(bytes), profiledEncoding.toString(), profiledErrors.toString());
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
         @Fallback
         Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", bytes);
+        }
+
+        private ByteBuffer getBytesBuffer(PIBytesLike bytesLike) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create(false));
+            }
+            byte[] barr = toByteArrayNode.execute(bytesLike.getSequenceStorage());
+            return ByteBuffer.wrap(barr, 0, bytesLike.len());
         }
 
         @TruffleBoundary

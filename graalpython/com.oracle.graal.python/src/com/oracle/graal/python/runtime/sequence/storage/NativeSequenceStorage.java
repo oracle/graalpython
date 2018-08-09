@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.truffle.api.CompilerAsserts;
+
 public class NativeSequenceStorage extends SequenceStorage {
 
     public static enum ElementType {
@@ -97,6 +99,12 @@ public class NativeSequenceStorage extends SequenceStorage {
     public void setNewLength(int length) {
         assert length <= capacity;
         this.length = length;
+    }
+
+    @Override
+    public String toString() {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, length, capacity, ptr);
     }
 
     /**
@@ -211,5 +219,10 @@ public class NativeSequenceStorage extends SequenceStorage {
     @Override
     public void copyItem(int idxTo, int idxFrom) {
         throw new AssertionError("should not reach");
+    }
+
+    @Override
+    public Object getInternalArrayObject() {
+        return ptr;
     }
 }

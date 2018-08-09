@@ -49,6 +49,12 @@ public abstract class SequenceStorage {
 
     public abstract SequenceStorage createEmpty(int newCapacity);
 
+    /**
+     * Get internal array object without copying. Note: The length must be taken from the sequence
+     * storage object.
+     */
+    public abstract Object getInternalArrayObject();
+
     public abstract Object[] getInternalArray();
 
     public abstract Object[] getCopyOfInternalArray();

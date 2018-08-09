@@ -39,7 +39,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
@@ -65,6 +64,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -162,16 +162,35 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     abstract static class CmpNode extends PythonBinaryBuiltinNode {
+        @Child SequenceStorageNodes.GetItemNode getLeftItemNode;
+        @Child SequenceStorageNodes.GetItemNode getRightItemNode;
+
         int cmp(PBytes self, PBytes other) {
-            byte[] a = self.getInternalByteArray();
-            byte[] b = other.getInternalByteArray();
-            for (int i = 0; i < Math.min(a.length, b.length); i++) {
-                if (a[i] != b[i]) {
+            for (int i = 0; i < Math.min(self.len(), other.len()); i++) {
+                byte a = (byte) getGetLeftItemNode().execute(self.getSequenceStorage(), i);
+                byte b = (byte) getGetRightItemNode().execute(other.getSequenceStorage(), i);
+                if (a != b) {
                     // CPython uses 'memcmp'; so do unsigned comparison
-                    return a[i] & 0xFF - b[i] & 0xFF;
+                    return a & 0xFF - b & 0xFF;
                 }
             }
-            return a.length - b.length;
+            return self.len() - other.len();
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetLeftItemNode() {
+            if (getLeftItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getLeftItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getLeftItemNode;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetRightItemNode() {
+            if (getRightItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getRightItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getRightItemNode;
         }
     }
 
@@ -238,24 +257,12 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        public Object add(PBytes self, PIBytesLike other) {
-            return self.concat(factory(), other);
-        }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        public Object add(Object self, Object other) {
-            throw raise(TypeError, "can't concat bytes to %p", other);
-        }
-    }
-
-    @Builtin(name = __RADD__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class RAddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object add(PBytes self, PIBytesLike other) {
-            return self.concat(factory(), other);
+        public Object add(PBytes left, PIBytesLike right,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+            SequenceStorage res = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return factory().createBytes(res);
         }
 
         @SuppressWarnings("unused")
@@ -269,8 +276,10 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object mul(PBytes self, int times) {
-            return self.__mul__(factory(), times);
+        public Object mul(PBytes self, int times,
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
+            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), times);
+            return factory().createBytes(res);
         }
 
         @SuppressWarnings("unused")
@@ -290,8 +299,16 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object repr(PBytes self) {
-            return self.toString();
+        public Object repr(PBytes self,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
+            SequenceStorage store = self.getSequenceStorage();
+            int len = store.length();
+            StringBuilder sb = new StringBuilder("b'");
+            for (int i = 0; i < len; i++) {
+                BytesUtils.byteRepr(sb, (byte) getItemNode.executeInt(store, i));
+            }
+            sb.append("'");
+            return sb.toString();
         }
     }
 
@@ -301,8 +318,9 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
         public PBytes join(PBytes bytes, Object iterable,
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createBytes(bytesJoinNode.execute(bytes.getInternalByteArray(), iterable));
+            return factory().createBytes(bytesJoinNode.execute(toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
@@ -326,14 +344,16 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        boolean contains(PBytes self, PBytes other) {
-            return new String(self.getInternalByteArray()).contains(new String(other.getInternalByteArray()));
+        boolean contains(PBytes self, PBytes other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, self.len()) != -1;
         }
 
         @Specialization
         @TruffleBoundary
-        boolean contains(PBytes self, PByteArray other) {
-            return new String(self.getInternalByteArray()).contains(new String(other.getInternalByteArray()));
+        boolean contains(PBytes self, PByteArray other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, self.len()) != -1;
         }
 
         @Specialization(guards = "!isBytes(other)")
@@ -355,24 +375,21 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StartsWithNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        boolean startswith(PBytes self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return new String(self.getInternalByteArray()).startsWith(prefix);
+        boolean startswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, 0, self.len()) == 0;
         }
 
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.startsWith(self, prefix);
+        boolean startswith(PBytes self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, start, self.len()) == start;
         }
 
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.startsWith(self, prefix, start, -1);
-        }
-
-        @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, int start, int end) {
-            return BytesUtils.startsWith(self, prefix, start, end);
+        boolean startswith(PBytes self, PIBytesLike prefix, int start, int end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, start, end) == start;
         }
     }
 
@@ -380,14 +397,9 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EndsWithNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        boolean endswith(PBytes self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return new String(self.getInternalByteArray()).endsWith(prefix);
-        }
-
-        @Specialization
-        boolean endswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.endsWith(self, prefix);
+        boolean endswith(PBytes self, PIBytesLike suffix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, suffix, self.len() - suffix.len(), self.len()) != -1;
         }
     }
 
@@ -396,8 +408,9 @@ public class BytesBuiltins extends PythonBuiltins {
     abstract static class StripNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        PBytes strip(PBytes self, @SuppressWarnings("unused") PNone bytes) {
-            return factory().createBytes(new String(self.getInternalByteArray()).trim().getBytes());
+        PBytes strip(PBytes self, @SuppressWarnings("unused") PNone bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return factory().createBytes(new String(toBytesNode.execute(self)).trim().getBytes());
         }
     }
 
@@ -405,34 +418,29 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "find", minNumOfArguments = 2, maxNumOfArguments = 4)
     @GenerateNodeFactory
     abstract static class FindNode extends PythonBuiltinNode {
+        @Child private BytesNodes.FindNode findNode;
+
         @Specialization
-        int find(PBytes self, int sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+        int find(PBytes self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return find(self, sub, 0, self.len());
         }
 
         @Specialization
-        int find(PBytes self, int sub, int start, @SuppressWarnings("unused") PNone end) {
+        int find(PBytes self, Object sub, int start, @SuppressWarnings("unused") PNone end) {
             return find(self, sub, start, self.len());
         }
 
         @Specialization
-        int find(PBytes self, int sub, int start, int ending) {
-            return BytesUtils.find(self, sub, start, ending);
+        int find(PBytes self, Object sub, int start, int ending) {
+            return getFindNode().execute(self, sub, start, ending);
         }
 
-        @Specialization
-        int find(PBytes self, PIBytesLike sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, 0, self.len());
-        }
-
-        @Specialization
-        int find(PBytes self, PIBytesLike sub, int start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, start, self.len());
-        }
-
-        @Specialization
-        int find(PBytes self, PIBytesLike sub, int start, int ending) {
-            return BytesUtils.find(self, sub, start, ending);
+        private BytesNodes.FindNode getFindNode() {
+            if (findNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                findNode = insert(BytesNodes.FindNode.create());
+            }
+            return findNode;
         }
     }
 

@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
@@ -166,30 +165,31 @@ public class PySequenceArrayWrapperMR {
          * {@code uint64_t} since we do not know how many bytes are requested.
          */
         @Specialization
-        long doBytesI32(PBytes bytes, long byteIdx) {
+        long doBytesI64(PBytes bytes, long byteIdx,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
             int len = bytes.len();
             // simulate sentinel value
             if (byteIdx == len) {
                 return 0L;
             }
             int i = (int) byteIdx;
-            byte[] barr = bytes.getInternalByteArray();
             long result = 0;
-            result |= barr[i];
+            SequenceStorage store = bytes.getSequenceStorage();
+            result |= getItemNode.executeInt(store, i);
             if (i + 1 < len)
-                result |= ((long) barr[i + 1] << 8L) & 0xFF00L;
+                result |= ((long) getItemNode.executeInt(store, i + 1) << 8L) & 0xFF00L;
             if (i + 2 < len)
-                result |= ((long) barr[i + 2] << 16L) & 0xFF0000L;
+                result |= ((long) getItemNode.executeInt(store, i + 2) << 16L) & 0xFF0000L;
             if (i + 3 < len)
-                result |= ((long) barr[i + 3] << 24L) & 0xFF000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 3) << 24L) & 0xFF000000L;
             if (i + 4 < len)
-                result |= ((long) barr[i + 4] << 32L) & 0xFF00000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 4) << 32L) & 0xFF00000000L;
             if (i + 5 < len)
-                result |= ((long) barr[i + 5] << 40L) & 0xFF0000000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 5) << 40L) & 0xFF0000000000L;
             if (i + 6 < len)
-                result |= ((long) barr[i + 6] << 48L) & 0xFF000000000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 6) << 48L) & 0xFF000000000000L;
             if (i + 7 < len)
-                result |= ((long) barr[i + 7] << 56L) & 0xFF00000000000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 7) << 56L) & 0xFF00000000000000L;
             return result;
         }
 
@@ -257,9 +257,9 @@ public class PySequenceArrayWrapperMR {
         }
 
         @Specialization
-        Object doByteArray(PByteArray tuple, long idx, byte value) {
-            // TODO(fa) do proper index conversion
-            tuple.getInternalByteArray()[(int) idx] = value;
+        Object doByteArray(PByteArray tuple, long idx, byte value,
+                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.executeLong(tuple.getSequenceStorage(), idx, value);
             return value;
         }
 

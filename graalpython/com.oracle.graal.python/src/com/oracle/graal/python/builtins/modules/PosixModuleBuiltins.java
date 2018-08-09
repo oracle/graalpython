@@ -68,6 +68,9 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -700,6 +703,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class WriteNode extends PythonFileNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         public abstract Object executeWith(Object fd, Object data);
 
@@ -746,31 +750,39 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "fd == 0 || fd > 2")
         @TruffleBoundary
         Object write(int fd, PBytes data) {
-            return write(fd, data.getBytesExact());
+            return write(fd, getByteArray(data));
         }
 
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, PBytes data) {
-            return writeStd(fd, data.getBytesExact());
+            return writeStd(fd, getByteArray(data));
         }
 
         @Specialization(guards = "fd == 0 || fd > 2")
         @TruffleBoundary
         Object write(int fd, PByteArray data) {
-            return write(fd, data.getBytesExact());
+            return write(fd, getByteArray(data));
         }
 
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, PByteArray data) {
-            return writeStd(fd, data.getBytesExact());
+            return writeStd(fd, getByteArray(data));
         }
 
         @Specialization
         Object writePInt(PInt fd, Object data,
                         @Cached("create()") WriteNode recursive) {
             return recursive.executeWith(fd.intValue(), data);
+        }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
         }
 
         protected WriteNode create() {

@@ -101,6 +101,10 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return getIntItemNormalized(idx);
     }
 
+    public final byte getByteItemNormalized(int idx) {
+        return values[idx];
+    }
+
     public int getIntItemNormalized(int idx) {
         return values[idx] & 0xFF;
     }
@@ -528,5 +532,10 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
 
         return true;
+    }
+
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
     }
 }

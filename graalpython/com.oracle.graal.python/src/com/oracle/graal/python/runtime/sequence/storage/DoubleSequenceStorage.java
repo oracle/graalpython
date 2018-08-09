@@ -362,4 +362,9 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         return true;
     }
 
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
+    }
+
 }
