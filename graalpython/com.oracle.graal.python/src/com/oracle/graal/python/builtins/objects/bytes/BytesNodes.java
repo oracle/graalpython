@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNode
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -271,6 +272,39 @@ public abstract class BytesNodes {
 
         public static FindNode create() {
             return FindNodeGen.create();
+        }
+    }
+
+    public abstract static class FromListNode extends PBaseNode {
+
+        @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Child private SequenceStorageNodes.CastToByteNode castToByteNode;
+
+        public byte[] execute(PList list) {
+            int len = list.len();
+            SequenceStorage listStore = list.getSequenceStorage();
+            byte[] bytes = new byte[len];
+            for (int i = 0; i < len; i++) {
+                Object item = getGetItemNode().execute(listStore, i);
+                bytes[i] = getCastToByteNode().execute(item);
+            }
+            return bytes;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList()));
+            }
+            return getItemNode;
+        }
+
+        private SequenceStorageNodes.CastToByteNode getCastToByteNode() {
+            if (castToByteNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToByteNode = insert(SequenceStorageNodes.CastToByteNode.create());
+            }
+            return castToByteNode;
         }
     }
 }

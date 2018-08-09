@@ -168,7 +168,7 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean contains(PSequence self, PSequence other) {
+        boolean contains(PArray self, PSequence other) {
             return self.lessThan(other);
         }
     }

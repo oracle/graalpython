@@ -27,13 +27,10 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.UnsupportedEncodingException;
 
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -54,47 +51,13 @@ public final class BytesUtils {
         return decodeEscapeToBytes(core, source);
     }
 
-    @TruffleBoundary
+    @TruffleBoundary(transferToInterpreterOnException = false)
     public static byte[] fromStringAndEncoding(PythonCore core, String source, String encoding) {
         try {
             return source.getBytes(encoding);
         } catch (UnsupportedEncodingException e) {
             throw core.raise(LookupError, "unknown encoding: %s", encoding);
         }
-    }
-
-    public static byte[] fromList(PythonCore core, PList list) {
-        int len = list.len();
-        byte[] bytes = new byte[len];
-        for (int i = 0; i < len; i++) {
-            Object item = list.getItem(i);
-            if (item instanceof Integer) {
-                Integer integer = (Integer) item;
-                if (integer >= 0 && integer < 256) {
-                    bytes[i] = integer.byteValue();
-                    continue;
-                }
-            } else if (item instanceof Long) {
-                Long integer = (Long) item;
-                if (integer >= 0 && integer < 256) {
-                    bytes[i] = integer.byteValue();
-                    continue;
-                }
-            } else if (item instanceof PInt) {
-                try {
-                    long integer = ((PInt) item).intValueExact();
-                    if (integer >= 0 && integer < 256) {
-                        bytes[i] = (byte) integer;
-                        continue;
-                    }
-                } catch (ArithmeticException e) {
-                }
-            } else {
-                throw core.raise(TypeError, "'%p' object cannot be interpreted as an integer", item);
-            }
-            throw core.raise(ValueError, "byte must be in range(0, 256)");
-        }
-        return bytes;
     }
 
     @TruffleBoundary

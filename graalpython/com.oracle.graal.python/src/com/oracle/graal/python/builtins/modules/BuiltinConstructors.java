@@ -50,10 +50,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -75,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -138,6 +141,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -146,6 +150,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -240,42 +245,76 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // bytearray([source[, encoding[, errors]]])
     @Builtin(name = BYTEARRAY, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PByteArray.class)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ByteArrayNode extends PythonBuiltinNode {
+        @Child private IsIndexNode isIndexNode;
+        @Child private CastToIndexNode castToIndexNode;
 
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, PNone source, PNone encoding, PNone errors) {
+        @Specialization(guards = {"isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public PByteArray bytearray(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
             return factory().createByteArray(cls, new byte[0]);
         }
 
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, int source, PNone encoding, PNone errors) {
-            return factory().createByteArray(cls, BytesUtils.fromSize(getCore(), source));
+        @Specialization(guards = {"isInt(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public PByteArray bytearray(PythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            int cap = getCastToIndexNode().execute(capObj);
+            return factory().createByteArray(cls, BytesUtils.fromSize(getCore(), cap));
         }
 
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, PInt source, PNone encoding, PNone errors) {
-            try {
-                return factory().createByteArray(cls, BytesUtils.fromSize(getCore(), source.intValueExact()));
-            } catch (ArithmeticException e) {
-                // TODO: fix me, in python the array can take long sizes, we are bound to ints for
-                // now
-                throw raise(OverflowError, "byte string is too large");
-            }
-        }
-
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, String source, String encoding, PNone errors) {
+        @Specialization(guards = "isNoValue(errors)")
+        public PByteArray fromString(PythonClass cls, String source, String encoding, @SuppressWarnings("unused") PNone errors) {
             return factory().createByteArray(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
         }
 
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, PythonObject source, PNone encoding, PNone errors,
-                        @Cached("create()") ConstructListNode constructListNode,
-                        @Cached("create()") GetClassNode getClassNode) {
-            PythonClass sourceClass = getClassNode.execute(source);
-            PList list = constructListNode.execute(source, sourceClass);
-            return factory().createByteArray(cls, BytesUtils.fromList(getCore(), list));
+        @Specialization(guards = {"isNoValue(encoding)", "isNoValue(errors)"})
+        @SuppressWarnings("unused")
+        public PByteArray fromString(PythonClass cls, String source, PNone encoding, PNone errors) {
+            throw raise(PythonErrorType.TypeError, "string argument without an encoding");
+        }
+
+        @Specialization(guards = {"!isInt(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public PByteArray bytearray(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached("create()") GetIteratorNode getIteratorNode,
+                        @Cached("create()") GetNextNode getNextNode,
+                        @Cached("createBinaryProfile()") ConditionProfile stopIterationProfile,
+                        @Cached("create()") CastToByteNode castToByteNode) {
+
+            Object it = getIteratorNode.executeWith(iterable);
+            byte[] arr = new byte[16];
+            int i = 0;
+            while (true) {
+                try {
+                    byte item = castToByteNode.execute(getNextNode.execute(it));
+                    if (i >= arr.length) {
+                        arr = resize(arr);
+                    }
+                    arr[i++] = item;
+                } catch (PException e) {
+                    e.expect(StopIteration, getCore(), stopIterationProfile);
+                    return factory().createByteArray(cls, arr);
+                }
+            }
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private static byte[] resize(byte[] arr) {
+            return Arrays.copyOf(arr, arr.length * 2);
+        }
+
+        protected boolean isInt(Object o) {
+            if (isIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isIndexNode = insert(IsIndexNode.create());
+            }
+            return isIndexNode.execute(o);
+        }
+
+        protected CastToIndexNode getCastToIndexNode() {
+            if (castToIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToIndexNode = insert(CastToIndexNode.create());
+            }
+            return castToIndexNode;
         }
     }
 
