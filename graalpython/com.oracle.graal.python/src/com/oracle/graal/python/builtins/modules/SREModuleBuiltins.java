@@ -289,7 +289,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached("createExecute()") Node invokeNode) {
             return doIt(callable, arg1, arg2, runtimeError, typeError, invokeNode);
         }
-        
+
         protected static Node createExecute() {
             return Message.createExecute(0).createNode();
         }
