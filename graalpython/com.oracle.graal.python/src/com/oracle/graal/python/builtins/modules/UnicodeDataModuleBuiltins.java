@@ -88,8 +88,8 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"form.equals(cachedForm)"}, limit = "4")
-        public String normalize(@SuppressWarnings("unused") String form, PString unistr,
-                        @SuppressWarnings("unused") @Cached("form") String cachedForm,
+        public String normalize(String form, PString unistr,
+                        @Cached("form") String cachedForm,
                         @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
             return normalize(form, unistr.getValue(), cachedForm, cachedNormForm);
         }
