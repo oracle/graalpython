@@ -91,10 +91,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
         public String normalize(@SuppressWarnings("unused") String form, PString unistr,
                         @SuppressWarnings("unused") @Cached("form") String cachedForm,
                         @Cached("getForm(cachedForm)") Normalizer.Form cachedNormForm) {
-            if (cachedNormForm == null) {
-                throw raise(ValueError, "invalid normalization form");
-            }
-            return Normalizer.normalize(unistr.getValue(), cachedNormForm);
+            return normalize(form, unistr.getValue(), cachedForm, cachedNormForm);
         }
 
     }

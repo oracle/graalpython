@@ -265,7 +265,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 // TODO This is a hack. The right solution would be to fix it
                 // in
                 // com.oracle.truffle.regex.RegexEngine.RegexEngineMessageResolution.RegexEngineExecuteNode
-                // where is only check whether the argumen is instance of String.
+                // where is only check whether the argument is instance of String.
                 // PString should be there unboxed.
                 for (int i = 0; i < arguments.length; i++) {
                     if (arguments[i] instanceof PString) {
