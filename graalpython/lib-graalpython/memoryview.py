@@ -38,11 +38,11 @@
 # SOFTWARE.
 
 # memoryview is mainly implemented in C
+from python_cext import PyTruffle_SetAttr
 
 
 def __memoryview_init(self, *args, **kwargs):
     import _memoryview
-    from python_cext import PyTruffle_SetAttr
     # NOTE: DO NOT CHANGE THE NAME OF PROPERTY '__c_memoryview'
     # it is also referenced in native code and Java code
     if args and isinstance(args[0], _memoryview.nativememoryview):
