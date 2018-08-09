@@ -260,14 +260,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class TRegexCallSafe extends PythonBuiltinNode {
 
-        private Node invokeNode;
-
         private Object doIt(TruffleObject callable, String arg1, Object arg2,
-                        @Cached("create()") BranchProfile runtimeError,
-                        @Cached("create()") BranchProfile typeError) {
-            if (invokeNode == null) {
-                invokeNode = Message.createExecute(0).createNode();
-            }
+                        BranchProfile runtimeError,
+                        BranchProfile typeError, Node invokeNode) {
             try {
                 return ForeignAccess.sendExecute(invokeNode, callable, new Object[]{arg1, arg2});
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
@@ -282,16 +277,21 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isForeignObject(callable)")
         Object call(TruffleObject callable, String arg1, String arg2,
                         @Cached("create()") BranchProfile runtimeError,
-                        @Cached("create()") BranchProfile typeError) {
-            return doIt(callable, arg1, arg2, runtimeError, typeError);
+                        @Cached("create()") BranchProfile typeError,
+                        @Cached("createExecute()") Node invokeNode) {
+            return doIt(callable, arg1, arg2, runtimeError, typeError, invokeNode);
         }
 
         @Specialization(guards = "isForeignObject(callable)")
         Object call(TruffleObject callable, String arg1, int arg2,
                         @Cached("create()") BranchProfile runtimeError,
-                        @Cached("create()") BranchProfile typeError) {
-            return doIt(callable, arg1, arg2, runtimeError, typeError);
+                        @Cached("create()") BranchProfile typeError,
+                        @Cached("createExecute()") Node invokeNode) {
+            return doIt(callable, arg1, arg2, runtimeError, typeError, invokeNode);
         }
-
+        
+        protected static Node createExecute() {
+            return Message.createExecute(0).createNode();
+        }
     }
 }
