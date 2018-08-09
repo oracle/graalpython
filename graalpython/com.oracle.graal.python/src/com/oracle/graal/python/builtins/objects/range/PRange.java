@@ -103,12 +103,6 @@ public final class PRange extends PImmutableSequence {
         return stop;
     }
 
-    @Override
-    public Object getItem(int idx) {
-        final int index = SequenceUtil.normalizeIndex(idx, length, "range object index out of range");
-        return getItemNormalized(index);
-    }
-
     public Object getItemNormalized(int index) {
         if (index >= length) {
             CompilerDirectives.transferToInterpreter();

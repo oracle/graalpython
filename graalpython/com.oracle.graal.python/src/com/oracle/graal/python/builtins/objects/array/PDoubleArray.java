@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.array;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerAsserts;
 
 public final class PDoubleArray extends PArray {
@@ -41,12 +40,6 @@ public final class PDoubleArray extends PArray {
 
     public double[] getSequence() {
         return array;
-    }
-
-    @Override
-    public Object getItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, array.length, "array index out of range");
-        return getDoubleItemNormalized(index);
     }
 
     @Override

@@ -51,12 +51,6 @@ public final class PList extends PSequence {
     }
 
     @Override
-    public final Object getItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "list index out of range");
-        return store.getItemNormalized(index);
-    }
-
-    @Override
     public final void setSequenceStorage(SequenceStorage newStorage) {
         this.store = newStorage;
     }

@@ -58,12 +58,6 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
         return array.length == 0;
     }
 
-    @Override
-    public Object getItem(int idx) {
-        final int index = SequenceUtil.normalizeIndex(idx, len(), "tuple index out of range");
-        return getItemNormalized(index);
-    }
-
     public Object getItemNormalized(int index) {
         return array[index];
     }

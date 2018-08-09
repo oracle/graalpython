@@ -40,8 +40,6 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
         super(cls);
     }
 
-    public abstract Object getItem(int idx);
-
     public final Object getSlice(PythonObjectFactory factory, PSlice slice) {
         SliceInfo info = slice.computeActualIndices(len());
         return getSlice(factory, info.start, info.stop, info.step, info.length);

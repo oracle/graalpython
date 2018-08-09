@@ -61,11 +61,6 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     @Override
-    public Object getItem(int idx) {
-        return getItemNormalized(SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range"));
-    }
-
-    @Override
     public Object getItemNormalized(int idx) {
         return store.getItemNormalized(idx);
     }

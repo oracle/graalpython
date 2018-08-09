@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
@@ -70,12 +69,6 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     @Override
     public int len() {
         return store.length();
-    }
-
-    @Override
-    public Object getItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range");
-        return getItemNormalized(index);
     }
 
     public Object getItemNormalized(int index) {
