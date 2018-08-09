@@ -544,4 +544,27 @@ public abstract class CExtNodes {
             return new SizeofWCharNode();
         }
     }
+
+    public static class IsNode extends CExtBaseNode {
+        @CompilationFinal private TruffleObject isFunc = null;
+        @Child Node executeNode = Message.createExecute(2).createNode();
+
+        public boolean execute(PythonNativeObject a, PythonNativeObject b) {
+            try {
+                return (int) ForeignAccess.sendExecute(executeNode, getNativeFunction(), a.object, b.object) != 0;
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(NativeCAPISymbols.FUN_PTR_COMPARE + " didn't work!");
+            }
+        }
+
+        TruffleObject getNativeFunction() {
+            if (isFunc == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isFunc = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PTR_COMPARE);
+            }
+            return isFunc;
+        }
+
+    }
 }

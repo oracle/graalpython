@@ -415,6 +415,38 @@ def PyNumber_BinOp(v, w, binop, name):
 
 
 @may_raise
+def PyNumber_InPlaceBinOp(v, w, binop, name):
+    control = v
+    if binop == 0:
+        v += w
+    elif binop == 1:
+        v -= w
+    elif binop == 2:
+        v *= w
+    elif binop == 3:
+        v /= w
+    elif binop == 4:
+        v <<= w
+    elif binop == 5:
+        v >>= w
+    elif binop == 6:
+        v |= w
+    elif binop == 7:
+        v &= w
+    elif binop == 8:
+        v ^= w
+    elif binop == 9:
+        v //= w
+    elif binop == 10:
+        v %= w
+    else:
+        raise SystemError("unknown binary operator %s" % name)
+    if control is not v:
+        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (name, type(v), type(w)))
+    return control
+
+
+@may_raise
 def PyNumber_UnaryOp(v, unaryop, name):
     if unaryop == 0:
         return +v

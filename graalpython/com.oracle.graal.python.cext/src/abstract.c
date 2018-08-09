@@ -41,7 +41,8 @@
 #include "capi.h"
 
 typedef enum e_binop {
-	ADD=0, SUB, MUL, TRUEDIV, LSHIFT, RSHIFT, OR, AND, XOR, FLOORDIV, MOD
+    ADD=0, SUB, MUL, TRUEDIV, LSHIFT, RSHIFT, OR, AND, XOR, FLOORDIV, MOD,
+    INPLACE_OFFSET,
 } BinOp;
 
 typedef enum e_unaryop {
@@ -69,6 +70,10 @@ static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop, char *unaryop_name) {
 
 static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop, char *binop_name) {
     return UPCALL_CEXT_O("PyNumber_BinOp", native_to_java(v), native_to_java(w), binop, polyglot_from_string(binop_name, SRC_CS));
+}
+
+static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop, char *binop_name) {
+    return UPCALL_CEXT_O("PyNumber_InPlaceBinOp", native_to_java(v), native_to_java(w), binop, polyglot_from_string(binop_name, SRC_CS));
 }
 
 PyObject * PyNumber_Add(PyObject *o1, PyObject *o2) {
@@ -132,6 +137,10 @@ PyObject * PyNumber_Index(PyObject *o) {
         return null_error();
     }
     return UPCALL_CEXT_O("PyNumber_Index", native_to_java(o));
+}
+
+PyObject * PyNumber_InPlaceTrueDivide(PyObject *o1, PyObject *o2) {
+    return do_inplace_binop(o1, o2, TRUEDIV, "/");
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {

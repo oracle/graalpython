@@ -56,4 +56,5 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
     public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
     public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";
+    public static final String FUN_PTR_COMPARE = "truffle_ptr_compare";
 }

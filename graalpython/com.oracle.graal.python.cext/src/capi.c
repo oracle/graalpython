@@ -597,3 +597,7 @@ void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObj
 void* wrap_unsupported(void *fun, ...) {
     return NULL;
 }
+
+int truffle_ptr_compare(void* x, void* y) {
+    return x == y;
+}
