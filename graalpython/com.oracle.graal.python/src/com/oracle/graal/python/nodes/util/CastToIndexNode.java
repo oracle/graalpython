@@ -88,7 +88,7 @@ public abstract class CastToIndexNode extends PBaseNode {
     int doLongOvf(long x) {
         try {
             return PInt.intValueExact(x);
-        } catch (PException e) {
+        } catch (ArithmeticException e) {
             throw raiseIndexError();
         }
     }
@@ -102,7 +102,7 @@ public abstract class CastToIndexNode extends PBaseNode {
     int doPIntOvf(PInt x) {
         try {
             return x.intValueExact();
-        } catch (PException e) {
+        } catch (ArithmeticException e) {
             throw raiseIndexError();
         }
     }
