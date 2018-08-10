@@ -53,17 +53,15 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -427,20 +425,14 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isScalar(idx)")
-        Object doScalar(PBytes self, Object idx,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
-            return getSequenceItemNode.execute(self.getSequenceStorage(), idx);
-        }
-
         @Specialization
-        Object doSlice(PBytes self, PSlice slice,
-                        @Cached("create()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
-            return factory().createBytes(self.getPythonClass(), (ByteSequenceStorage) getSequenceItemNode.execute(self.getSequenceStorage(), slice));
+        Object doSlice(PBytes self, Object key,
+                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
+            return getSequenceItemNode.execute(self.getSequenceStorage(), key);
         }
 
-        protected boolean isScalar(Object obj) {
-            return PGuards.isInteger(obj) || PGuards.isPInt(obj);
+        protected static SequenceStorageNodes.GetItemNode createGetItem() {
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.create(), (s, f) -> f.createByteArray(s));
         }
     }
 

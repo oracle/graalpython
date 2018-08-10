@@ -651,24 +651,14 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isScalar(idx)")
-        Object doScalar(PByteArray self, Object idx,
-                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
-            return getSequenceItemNode.execute(self.getSequenceStorage(), idx);
-        }
-
         @Specialization
-        Object doSlice(PByteArray self, PSlice slice,
+        Object doSlice(PByteArray self, Object key,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
-            return factory().createByteArray(self.getPythonClass(), (ByteSequenceStorage) getSequenceItemNode.execute(self.getSequenceStorage(), slice));
+            return getSequenceItemNode.execute(self.getSequenceStorage(), key);
         }
 
         protected static GetItemNode createGetItem() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forBytearray());
-        }
-
-        protected boolean isScalar(Object obj) {
-            return PGuards.isInteger(obj) || PGuards.isPInt(obj);
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forBytearray(), (s, f) -> f.createByteArray(s));
         }
     }
 

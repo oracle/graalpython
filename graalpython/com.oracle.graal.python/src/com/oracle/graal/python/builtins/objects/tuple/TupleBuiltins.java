@@ -331,14 +331,20 @@ public class TupleBuiltins extends PythonBuiltins {
 
         public abstract Object execute(PTuple tuple, Object index);
 
-        @Specialization
+        @Specialization(guards = "!isPSlice(key)")
         public Object doPTuple(PTuple tuple, Object key,
                         @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(tuple.getSequenceStorage(), key);
         }
 
+        @Specialization
+        public Object doPTuple(PTuple tuple, PSlice key,
+                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
+            return getItemNode.execute(tuple.getSequenceStorage(), key);
+        }
+
         protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
-            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), TYPE_ERROR_MESSAGE);
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forTuple(), TYPE_ERROR_MESSAGE, (s, f) -> f.createTuple(s));
         }
 
         protected boolean isPSlice(Object object) {
@@ -369,8 +375,8 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPTuple(PTuple left, PTuple right,
-                        @Cached("createNe()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
+            return !eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback

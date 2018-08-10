@@ -154,8 +154,8 @@ public class ArrayBuiltins extends PythonBuiltins {
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean lessThan(PArray left, PArray right,
-                        @Cached("createNe()") SequenceStorageNodes.CmpNode eqNode) {
-            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
+            return !eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 

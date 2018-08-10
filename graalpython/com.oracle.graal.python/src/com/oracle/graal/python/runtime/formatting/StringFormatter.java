@@ -76,7 +76,7 @@ public class StringFormatter {
                 argIndex = -2;
                 return args;
             default:
-                ret = getItemNode.executeObject(((PSequence) args).getSequenceStorage(), argIndex++);
+                ret = getItemNode.executeObject(args, argIndex++);
                 break;
         }
         if (ret == null) {

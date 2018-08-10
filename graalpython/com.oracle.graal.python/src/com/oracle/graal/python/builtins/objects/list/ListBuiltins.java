@@ -1538,8 +1538,8 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPList(PList left, PList right,
-                        @Cached("createNe()") SequenceStorageNodes.CmpNode neNode) {
-            return neNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
+            return !eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
