@@ -248,7 +248,7 @@ def punittest(args):
     # IMPORTANT! This must not be --suite graalpython, because a
     # --dynamicimports sulong will otherwise not put sulong.jar on the
     # classpath, which means we cannot run our C extension tests!
-    unittest(args + ['--regex', '(graal\.python)|(com\.oracle\.truffle\.tck\.tests)'])
+    unittest(args + ['--regex', '(graal\.python)|(com\.oracle\.truffle\.tck\.tests)', "-Dgraal.TraceTruffleCompilation=true"])
 
 
 def nativebuild(args):
