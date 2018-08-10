@@ -31,7 +31,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -46,7 +45,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 
-public final class PByteArray extends PArray implements PIBytesLike {
+public final class PByteArray extends PSequence implements PIBytesLike {
 
     private SequenceStorage store;
 
@@ -58,11 +57,6 @@ public final class PByteArray extends PArray implements PIBytesLike {
     public PByteArray(PythonClass cls, SequenceStorage store) {
         super(cls);
         this.store = store;
-    }
-
-    @Override
-    public Object getItemNormalized(int idx) {
-        return store.getItemNormalized(idx);
     }
 
     public void setItem(int idx, Object value) {
@@ -142,7 +136,7 @@ public final class PByteArray extends PArray implements PIBytesLike {
 
     @Override
     public boolean lessThan(PSequence sequence) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -237,10 +237,6 @@ public abstract class PGuards {
         return args.len() == 1;
     }
 
-    public static boolean firstArgIsDict(PTuple args) {
-        return args.getItem(0) instanceof PDict;
-    }
-
     @SuppressWarnings("unused")
     public static boolean isForJSON(Object obj, String id, Object defaultValue) {
         return id.equals("for_json");

@@ -41,10 +41,7 @@
 package com.oracle.graal.python.nodes.datamodel;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
-import com.oracle.graal.python.builtins.objects.array.PIntArray;
-import com.oracle.graal.python.builtins.objects.array.PLongArray;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -63,22 +60,7 @@ public abstract class IsIterableNode extends PDataModelEmulationNode {
     }
 
     @Specialization
-    public boolean isIterable(@SuppressWarnings("unused") PIntArray array) {
-        return true;
-    }
-
-    @Specialization
-    public boolean isIterable(@SuppressWarnings("unused") PLongArray array) {
-        return true;
-    }
-
-    @Specialization
-    public boolean isIterable(@SuppressWarnings("unused") PDoubleArray array) {
-        return true;
-    }
-
-    @Specialization
-    public boolean isIterable(@SuppressWarnings("unused") PCharArray array) {
+    public boolean isIterable(@SuppressWarnings("unused") PArray array) {
         return true;
     }
 

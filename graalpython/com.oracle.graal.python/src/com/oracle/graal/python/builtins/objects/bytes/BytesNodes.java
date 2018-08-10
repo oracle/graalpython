@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -65,7 +66,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class BytesNodes {
 
@@ -305,6 +308,48 @@ public abstract class BytesNodes {
                 castToByteNode = insert(SequenceStorageNodes.CastToByteNode.create());
             }
             return castToByteNode;
+        }
+    }
+
+    public static class CmpNode extends PBaseNode {
+        @Child SequenceStorageNodes.GetItemNode getLeftItemNode;
+        @Child SequenceStorageNodes.GetItemNode getRightItemNode;
+
+        private final ValueProfile leftProfile = ValueProfile.createClassProfile();
+        private final ValueProfile rightProfile = ValueProfile.createClassProfile();
+
+        public int execute(PIBytesLike left, PIBytesLike right) {
+            PIBytesLike leftProfiled = leftProfile.profile(left);
+            PIBytesLike rightProfiled = rightProfile.profile(right);
+            for (int i = 0; i < Math.min(leftProfiled.len(), rightProfiled.len()); i++) {
+                byte a = (byte) getGetLeftItemNode().execute(leftProfiled.getSequenceStorage(), i);
+                byte b = (byte) getGetRightItemNode().execute(rightProfiled.getSequenceStorage(), i);
+                if (a != b) {
+                    // CPython uses 'memcmp'; so do unsigned comparison
+                    return a & 0xFF - b & 0xFF;
+                }
+            }
+            return leftProfiled.len() - rightProfiled.len();
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetLeftItemNode() {
+            if (getLeftItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getLeftItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getLeftItemNode;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetRightItemNode() {
+            if (getRightItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getRightItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getRightItemNode;
+        }
+
+        public static CmpNode create() {
+            return new CmpNode();
         }
     }
 }

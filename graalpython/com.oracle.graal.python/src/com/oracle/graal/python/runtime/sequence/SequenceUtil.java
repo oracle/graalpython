@@ -99,18 +99,19 @@ public class SequenceUtil {
      * the end of sequence2 without a difference
      */
     public static int cmp(PSequence sequence1, PSequence sequence2) {
-        int length1 = sequence1.len();
-        int length2 = sequence2.len();
-
-        for (int i = 0; i < length1 && i < length2; i++) {
-            if (!sequence1.getItem(i).equals(sequence2.getItem(i))) {
-                return i;
-            }
-        }
-        if (length1 == length2) {
-            return -2;
-        }
-        return length1 < length2 ? -1 : -3;
+        throw new UnsupportedOperationException();
+// int length1 = sequence1.len();
+// int length2 = sequence2.len();
+//
+// for (int i = 0; i < length1 && i < length2; i++) {
+// if (!sequence1.getItem(i).equals(sequence2.getItem(i))) {
+// return i;
+// }
+// }
+// if (length1 == length2) {
+// return -2;
+// }
+// return length1 < length2 ? -1 : -3;
     }
 
     public static int normalizeIndex(int index, int length, String outOfBoundsMessage) {

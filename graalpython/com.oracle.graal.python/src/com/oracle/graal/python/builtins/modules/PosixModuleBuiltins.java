@@ -930,7 +930,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (times.len() <= index) {
                 throw tupleError(argname);
             }
-            Object mtimeObj = times.getItem(index);
+            Object mtimeObj = times.getItemNormalized(index);
             long mtime;
             if (mtimeObj instanceof Integer) {
                 mtime = ((Integer) mtimeObj).longValue();

@@ -161,37 +161,17 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class CmpNode extends PythonBinaryBuiltinNode {
-        @Child SequenceStorageNodes.GetItemNode getLeftItemNode;
-        @Child SequenceStorageNodes.GetItemNode getRightItemNode;
+    public abstract static class CmpNode extends PythonBinaryBuiltinNode {
+        @Child private BytesNodes.CmpNode cmpNode;
 
         int cmp(PBytes self, PBytes other) {
-            for (int i = 0; i < Math.min(self.len(), other.len()); i++) {
-                byte a = (byte) getGetLeftItemNode().execute(self.getSequenceStorage(), i);
-                byte b = (byte) getGetRightItemNode().execute(other.getSequenceStorage(), i);
-                if (a != b) {
-                    // CPython uses 'memcmp'; so do unsigned comparison
-                    return a & 0xFF - b & 0xFF;
-                }
+            if (cmpNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                cmpNode = insert(BytesNodes.CmpNode.create());
             }
-            return self.len() - other.len();
+            return cmpNode.execute(self, other);
         }
 
-        private SequenceStorageNodes.GetItemNode getGetLeftItemNode() {
-            if (getLeftItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getLeftItemNode = insert(SequenceStorageNodes.GetItemNode.create());
-            }
-            return getLeftItemNode;
-        }
-
-        private SequenceStorageNodes.GetItemNode getGetRightItemNode() {
-            if (getRightItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getRightItemNode = insert(SequenceStorageNodes.GetItemNode.create());
-            }
-            return getRightItemNode;
-        }
     }
 
     @Builtin(name = __LT__, fixedNumOfArguments = 2)

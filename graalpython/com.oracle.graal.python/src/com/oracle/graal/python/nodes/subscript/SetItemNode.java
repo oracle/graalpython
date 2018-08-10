@@ -27,14 +27,7 @@ package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
-import com.oracle.graal.python.builtins.objects.array.PIntArray;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode;
 import com.oracle.graal.python.nodes.PNode;
@@ -42,7 +35,6 @@ import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
@@ -53,8 +45,6 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeInfo(shortName = __SETITEM__)
 @NodeChildren({@NodeChild(value = "primary", type = PNode.class), @NodeChild(value = "slice", type = PNode.class), @NodeChild(value = "right", type = PNode.class)})
 public abstract class SetItemNode extends StatementNode implements WriteNode {
-
-    @Child private NormalizeIndexNode normalize;
 
     public abstract PNode getPrimary();
 
@@ -73,14 +63,6 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     @Override
     public PNode getRhs() {
         return getRight();
-    }
-
-    private NormalizeIndexNode ensureNormalize() {
-        if (normalize == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            normalize = insert(NormalizeIndexNode.forArrayAssign());
-        }
-        return normalize;
     }
 
     @Override
@@ -121,33 +103,6 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     public abstract Object executeWith(Object primary, Object slice, double value);
 
     public abstract Object executeWith(Object primary, Object slice, Object value);
-
-    @Specialization
-    public Object doPArray(PArray primary, PSlice slice, PArray value) {
-        primary.setSlice(slice, value);
-        return PNone.NONE;
-    }
-
-    /**
-     * Unboxed array stores.
-     */
-    @Specialization
-    public Object doPArrayInt(PIntArray primary, int index, int value) {
-        primary.setIntItemNormalized(ensureNormalize().execute(index, primary.len()), value);
-        return PNone.NONE;
-    }
-
-    @Specialization
-    public Object doPArrayDouble(PDoubleArray primary, int index, double value) {
-        primary.setDoubleItemNormalized(ensureNormalize().execute(index, primary.len()), value);
-        return PNone.NONE;
-    }
-
-    @Specialization
-    public Object doPArrayChar(PCharArray primary, int index, char value) {
-        primary.setCharItemNormalized(ensureNormalize().execute(index, primary.len()), value);
-        return PNone.NONE;
-    }
 
     @Specialization
     public Object doSpecialObject(PythonObject primary, int index, Object value,

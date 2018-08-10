@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -84,6 +85,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1292,12 +1294,9 @@ public final class StringBuiltins extends PythonBuiltins {
         Object doGeneric(String left, Object right,
                         @Cached("create()") CallDispatchNode callNode,
                         @Cached("create()") GetClassNode getClassNode,
-                        @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key));
-        }
-
-        protected BuiltinFunctions.ReprNode createReprNode() {
-            return BuiltinFunctionsFactory.ReprNodeFactory.create(null);
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
+            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
         }
     }
 

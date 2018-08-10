@@ -161,7 +161,7 @@ public final class PBaseException extends PythonObject {
         } else if (args.len() == 0) {
             return getPythonClass().getName();
         } else if (args.len() == 1) {
-            return getPythonClass().getName() + ": " + args.getItem(0).toString();
+            return getPythonClass().getName() + ": " + args.getItemNormalized(0).toString();
         } else {
             return getPythonClass().getName() + ": " + args.toString();
         }

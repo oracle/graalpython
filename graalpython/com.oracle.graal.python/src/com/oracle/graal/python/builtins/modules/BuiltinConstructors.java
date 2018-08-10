@@ -92,13 +92,11 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PDoubleArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PIntArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PLongArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
@@ -1759,9 +1757,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "iterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {
                     PRangeIterator.class, PIntegerSequenceIterator.class, PSequenceIterator.class,
-                    PBaseSetIterator.class, PRangeIterator.class, PDoubleArrayIterator.class,
-                    PDoubleSequenceIterator.class, PLongSequenceIterator.class, PLongArrayIterator.class,
-                    PIntArrayIterator.class, PStringIterator.class, PRangeReverseIterator.class,
+                    PBaseSetIterator.class, PRangeIterator.class, PArrayIterator.class,
+                    PDoubleSequenceIterator.class, PLongSequenceIterator.class,
+                    PStringIterator.class, PRangeReverseIterator.class,
     }, isPublic = false)
     @GenerateNodeFactory
     public abstract static class IteratorTypeNode extends PythonBuiltinNode {

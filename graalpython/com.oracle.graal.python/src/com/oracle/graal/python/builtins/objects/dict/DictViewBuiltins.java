@@ -141,8 +141,8 @@ public final class DictViewBuiltins extends PythonBuiltins {
                 return false;
             }
             HashingStorage dictStorage = self.getDict().getDictStorage();
-            Object value = getItemNode.execute(dictStorage, key.getItem(0));
-            return value != null && equivalenceNode.equals(value, key.getItem(1));
+            Object value = getItemNode.execute(dictStorage, key.getItemNormalized(0));
+            return value != null && equivalenceNode.equals(value, key.getItemNormalized(1));
         }
     }
 

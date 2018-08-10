@@ -1109,9 +1109,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } else {
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < values.len() - 1; i++) {
-                        sb.append(callStr.executeObject(values.getItem(i)) + " ");
+                        sb.append(callStr.executeObject(values.getItemNormalized(i)) + " ");
                     }
-                    sb.append(callStr.executeObject(values.getItem(values.len() - 1)));
+                    sb.append(callStr.executeObject(values.getItemNormalized(values.len() - 1)));
                     sb.append(end);
                     write(context, sb.toString());
                 }
@@ -1131,7 +1131,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // repr(object)
     @Builtin(name = REPR, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonBuiltinNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         public Object repr(Object obj,

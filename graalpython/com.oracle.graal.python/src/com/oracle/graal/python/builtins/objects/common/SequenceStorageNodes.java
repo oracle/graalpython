@@ -1,7 +1,13 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -10,7 +16,9 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CastToByteNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ContainsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.EqNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
@@ -24,14 +32,22 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.VerifyNativeItemNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -57,6 +73,7 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SequenceStorageNodes {
 
@@ -87,18 +104,33 @@ public abstract class SequenceStorageNodes {
             return store instanceof NativeSequenceStorage;
         }
 
+        protected boolean isEmpty(SequenceStorage left) {
+            // TODO use a node or profile
+            return left instanceof EmptySequenceStorage || left.length() == 0;
+        }
     }
 
     public abstract static class GetItemNode extends PBaseNode {
+
+        private static final String KEY_TYPE_ERROR_MESSAGE = "indices must be integers or slices, not %p";
+
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
         @Child private NormalizeIndexNode normalizeIndexNode;
+        @Child private CastToIndexNode castToIndexNode;
 
-        public GetItemNode(NormalizeIndexNode normalizeIndexNode) {
+        private final String keyTypeErrorMessage;
+
+        public GetItemNode(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
             this.normalizeIndexNode = normalizeIndexNode;
+            this.keyTypeErrorMessage = keyTypeErrorMessage;
         }
 
         public abstract Object execute(SequenceStorage s, Object key);
+
+        public abstract Object execute(SequenceStorage s, int key);
+
+        public abstract Object execute(SequenceStorage s, long key);
 
         public abstract int executeInt(SequenceStorage s, int key);
 
@@ -106,23 +138,28 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doScalarInt(SequenceStorage storage, int idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage.length()));
         }
 
         @Specialization
         protected Object doScalarLong(SequenceStorage storage, long idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage.length()));
         }
 
         @Specialization
         protected Object doScalarPInt(SequenceStorage storage, PInt idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndexNode.execute(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage.length()));
         }
 
         @Specialization
         protected Object doSlice(SequenceStorage storage, PSlice slice) {
             SliceInfo info = slice.computeActualIndices(storage.length());
             return getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, info.length);
+        }
+
+        @Fallback
+        protected Object doInvalidKey(@SuppressWarnings("unused") SequenceStorage storage, @SuppressWarnings("unused") Object key) {
+            throw raise(TypeError, keyTypeErrorMessage);
         }
 
         private GetItemScalarNode getGetItemScalarNode() {
@@ -141,12 +178,60 @@ public abstract class SequenceStorageNodes {
             return getItemSliceNode;
         }
 
+        private CastToIndexNode getCastToIndexNode() {
+            if (castToIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToIndexNode = insert(CastToIndexNode.create());
+            }
+            return castToIndexNode;
+        }
+
+        private int normalizeIndex(Object idx, int length) {
+            if (normalizeIndexNode != null) {
+                return normalizeIndexNode.execute(idx, length);
+            } else {
+                return getCastToIndexNode().execute(idx);
+            }
+        }
+
+        private int normalizeIndex(int idx, int length) {
+            if (normalizeIndexNode != null) {
+                return normalizeIndexNode.execute(idx, length);
+            } else {
+                return getCastToIndexNode().execute(idx);
+            }
+        }
+
+        private int normalizeIndex(long idx, int length) {
+            if (normalizeIndexNode != null) {
+                return normalizeIndexNode.execute(idx, length);
+            } else {
+                return getCastToIndexNode().execute(idx);
+            }
+        }
+
+        public static GetItemNode createNotNormalized() {
+            return GetItemNodeGen.create(null, KEY_TYPE_ERROR_MESSAGE);
+        }
+
         public static GetItemNode create(NormalizeIndexNode normalizeIndexNode) {
-            return GetItemNodeGen.create(normalizeIndexNode);
+            return GetItemNodeGen.create(normalizeIndexNode, KEY_TYPE_ERROR_MESSAGE);
         }
 
         public static GetItemNode create() {
-            return GetItemNodeGen.create(NormalizeIndexNode.create());
+            return GetItemNodeGen.create(NormalizeIndexNode.create(), KEY_TYPE_ERROR_MESSAGE);
+        }
+
+        public static GetItemNode createNotNormalized(String keyTypeErrorMessage) {
+            return GetItemNodeGen.create(null, keyTypeErrorMessage);
+        }
+
+        public static GetItemNode create(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
+            return GetItemNodeGen.create(normalizeIndexNode, keyTypeErrorMessage);
+        }
+
+        public static GetItemNode create(String keyTypeErrorMessage) {
+            return GetItemNodeGen.create(NormalizeIndexNode.create(), keyTypeErrorMessage);
         }
     }
 
@@ -163,6 +248,8 @@ public abstract class SequenceStorageNodes {
             return GetItemScalarNodeGen.create();
         }
 
+        public abstract boolean executeBoolean(SequenceStorage s, int idx);
+
         public abstract byte executeByte(SequenceStorage s, int idx);
 
         public abstract int executeInt(SequenceStorage s, int idx);
@@ -172,8 +259,18 @@ public abstract class SequenceStorageNodes {
         public abstract double executeDouble(SequenceStorage s, int idx);
 
         @Specialization
+        protected boolean doBoolean(BoolSequenceStorage storage, int idx) {
+            return storage.getBoolItemNormalized(idx);
+        }
+
+        @Specialization
         protected int doByte(ByteSequenceStorage storage, int idx) {
             return storage.getIntItemNormalized(idx);
+        }
+
+        @Specialization
+        protected char doChar(CharSequenceStorage storage, int idx) {
+            return storage.getCharItemNormalized(idx);
         }
 
         @Specialization
@@ -188,6 +285,16 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected double doDouble(DoubleSequenceStorage storage, int idx) {
             return storage.getDoubleItemNormalized(idx);
+        }
+
+        @Specialization
+        protected PList doObject(ListSequenceStorage storage, int idx) {
+            return storage.getListItemNormalized(idx);
+        }
+
+        @Specialization
+        protected PTuple doObject(TupleSequenceStorage storage, int idx) {
+            return storage.getPTupleItemNormalized(idx);
         }
 
         @Specialization
@@ -750,10 +857,402 @@ public abstract class SequenceStorageNodes {
 
     }
 
+    protected abstract static class BinCmpOp {
+        protected abstract boolean cmp(int l, int r);
+
+        protected abstract boolean cmp(long l, long r);
+
+        protected abstract boolean cmp(char l, char r);
+
+        protected abstract boolean cmp(byte l, byte r);
+
+        protected abstract boolean cmp(double l, double r);
+
+        protected abstract BinaryComparisonNode createBinaryComparisonNode();
+    }
+
+    private static final class Le extends BinCmpOp {
+        private static final Le INSTANCE = new Le();
+
+        @Override
+        protected boolean cmp(int l, int r) {
+            return l <= r;
+        }
+
+        @Override
+        protected boolean cmp(long l, long r) {
+            return l <= r;
+        }
+
+        @Override
+        protected boolean cmp(char l, char r) {
+            return l <= r;
+        }
+
+        @Override
+        protected boolean cmp(byte l, byte r) {
+            return l <= r;
+        }
+
+        @Override
+        protected boolean cmp(double l, double r) {
+            return l <= r;
+        }
+
+        @Override
+        protected BinaryComparisonNode createBinaryComparisonNode() {
+            return BinaryComparisonNode.create(__LE__, __GE__, "<=");
+        }
+
+    }
+
+    private static final class Lt extends BinCmpOp {
+
+        private static final Lt INSTANCE = new Lt();
+
+        @Override
+        protected boolean cmp(int l, int r) {
+            return l < r;
+        }
+
+        @Override
+        protected boolean cmp(long l, long r) {
+            return l < r;
+        }
+
+        @Override
+        protected boolean cmp(char l, char r) {
+            return l < r;
+        }
+
+        @Override
+        protected boolean cmp(byte l, byte r) {
+            return l < r;
+        }
+
+        @Override
+        protected boolean cmp(double l, double r) {
+            return l < r;
+        }
+
+        @Override
+        protected BinaryComparisonNode createBinaryComparisonNode() {
+            return BinaryComparisonNode.create(__LT__, __GT__, "<");
+        }
+
+    }
+
+    private static final class Ge extends BinCmpOp {
+
+        private static final Ge INSTANCE = new Ge();
+
+        @Override
+        protected boolean cmp(int l, int r) {
+            return l >= r;
+        }
+
+        @Override
+        protected boolean cmp(long l, long r) {
+            return l >= r;
+        }
+
+        @Override
+        protected boolean cmp(char l, char r) {
+            return l >= r;
+        }
+
+        @Override
+        protected boolean cmp(byte l, byte r) {
+            return l >= r;
+        }
+
+        @Override
+        protected boolean cmp(double l, double r) {
+            return l >= r;
+        }
+
+        @Override
+        protected BinaryComparisonNode createBinaryComparisonNode() {
+            return BinaryComparisonNode.create(__GE__, __LE__, ">=");
+        }
+
+    }
+
+    private static final class Gt extends BinCmpOp {
+
+        private static final Gt INSTANCE = new Gt();
+
+        @Override
+        protected boolean cmp(int l, int r) {
+            return l > r;
+        }
+
+        @Override
+        protected boolean cmp(long l, long r) {
+            return l > r;
+        }
+
+        @Override
+        protected boolean cmp(char l, char r) {
+            return l > r;
+        }
+
+        @Override
+        protected boolean cmp(byte l, byte r) {
+            return l > r;
+        }
+
+        @Override
+        protected boolean cmp(double l, double r) {
+            return l > r;
+        }
+
+        @Override
+        protected BinaryComparisonNode createBinaryComparisonNode() {
+            return BinaryComparisonNode.create(__GT__, __LT__, ">");
+        }
+
+    }
+
+    private static final class Ne extends BinCmpOp {
+
+        private static final Ne INSTANCE = new Ne();
+
+        @Override
+        protected boolean cmp(int l, int r) {
+            return l != r;
+        }
+
+        @Override
+        protected boolean cmp(long l, long r) {
+            return l != r;
+        }
+
+        @Override
+        protected boolean cmp(char l, char r) {
+            return l != r;
+        }
+
+        @Override
+        protected boolean cmp(byte l, byte r) {
+            return l != r;
+        }
+
+        @Override
+        protected boolean cmp(double l, double r) {
+            return l != r;
+        }
+
+        @Override
+        protected BinaryComparisonNode createBinaryComparisonNode() {
+            return BinaryComparisonNode.create(__NE__, __NE__, "!=");
+        }
+
+    }
+
+    private static final class Eq extends BinCmpOp {
+
+        private static final Eq INSTANCE = new Eq();
+
+        @Override
+        protected boolean cmp(int l, int r) {
+            return l == r;
+        }
+
+        @Override
+        protected boolean cmp(long l, long r) {
+            return l == r;
+        }
+
+        @Override
+        protected boolean cmp(char l, char r) {
+            return l == r;
+        }
+
+        @Override
+        protected boolean cmp(byte l, byte r) {
+            return l == r;
+        }
+
+        @Override
+        protected boolean cmp(double l, double r) {
+            return l == r;
+        }
+
+        @Override
+        protected BinaryComparisonNode createBinaryComparisonNode() {
+            return BinaryComparisonNode.create(__EQ__, __EQ__, "==");
+        }
+
+    }
+
+    public abstract static class CmpNode extends SequenceStorageBaseNode {
+        @Child private GetItemScalarNode getItemNode;
+        @Child private GetItemScalarNode getRightItemNode;
+        @Child private BinaryComparisonNode comparisonNode;
+        @Child private CastToBooleanNode castToBooleanNode;
+
+        private final BinCmpOp cmpOp;
+
+        protected CmpNode(BinCmpOp cmpOp) {
+            this.cmpOp = cmpOp;
+        }
+
+        public abstract boolean execute(SequenceStorage left, SequenceStorage right);
+
+        @Specialization(guards = {"isEmpty(left)", "isEmpty(right)"})
+        boolean doEmpty(@SuppressWarnings("unused") SequenceStorage left, @SuppressWarnings("unused") SequenceStorage right) {
+            return cmpOp.cmp(0, 0);
+        }
+
+        @Specialization
+        boolean doBoolStorage(BoolSequenceStorage left, BoolSequenceStorage right) {
+            int llen = left.length();
+            int rlen = right.length();
+            for (int i = 0; i < Math.min(llen, rlen); i++) {
+                if (!cmpOp.cmp(PInt.intValue(left.getBoolItemNormalized(i)), PInt.intValue(right.getBoolItemNormalized(i)))) {
+                    return false;
+                }
+            }
+            return cmpOp.cmp(llen, rlen);
+        }
+
+        @Specialization
+        boolean doByteStorage(ByteSequenceStorage left, ByteSequenceStorage right) {
+            int llen = left.length();
+            int rlen = right.length();
+            for (int i = 0; i < Math.min(llen, rlen); i++) {
+                if (!cmpOp.cmp(left.getIntItemNormalized(i), right.getIntItemNormalized(i))) {
+                    return false;
+                }
+            }
+            return cmpOp.cmp(llen, rlen);
+        }
+
+        @Specialization
+        boolean doCharStorage(CharSequenceStorage left, CharSequenceStorage right) {
+            int llen = left.length();
+            int rlen = right.length();
+            for (int i = 0; i < Math.min(llen, rlen); i++) {
+                if (!cmpOp.cmp(left.getCharItemNormalized(i), right.getCharItemNormalized(i))) {
+                    return false;
+                }
+            }
+            return cmpOp.cmp(llen, rlen);
+        }
+
+        @Specialization
+        boolean doIntStorage(IntSequenceStorage left, IntSequenceStorage right) {
+            int llen = left.length();
+            int rlen = right.length();
+            for (int i = 0; i < Math.min(llen, rlen); i++) {
+                if (!cmpOp.cmp(left.getIntItemNormalized(i), right.getIntItemNormalized(i))) {
+                    return false;
+                }
+            }
+            return cmpOp.cmp(llen, rlen);
+        }
+
+        @Specialization
+        boolean doLongStorage(LongSequenceStorage left, LongSequenceStorage right) {
+            int llen = left.length();
+            int rlen = right.length();
+            for (int i = 0; i < Math.min(llen, rlen); i++) {
+                if (!cmpOp.cmp(left.getLongItemNormalized(i), right.getLongItemNormalized(i))) {
+                    return false;
+                }
+            }
+            return cmpOp.cmp(llen, rlen);
+        }
+
+        @Specialization
+        boolean doDoubleStorage(DoubleSequenceStorage left, DoubleSequenceStorage right) {
+            int llen = left.length();
+            int rlen = right.length();
+            for (int i = 0; i < Math.min(llen, rlen); i++) {
+                if (!cmpOp.cmp(left.getDoubleItemNormalized(i), right.getDoubleItemNormalized(i))) {
+                    return false;
+                }
+            }
+            return cmpOp.cmp(llen, rlen);
+        }
+
+        @Fallback
+        boolean doGeneric(SequenceStorage left, SequenceStorage right) {
+            int llen = left.length();
+            int rlen = right.length();
+            for (int i = 0; i < Math.min(llen, rlen); i++) {
+                Object leftItem = getGetItemNode().execute(left, i);
+                Object rightItem = getGetRightItemNode().execute(right, i);
+                if (!eq(leftItem, rightItem)) {
+                    return false;
+                }
+            }
+            return cmpOp.cmp(llen, rlen);
+        }
+
+        private GetItemScalarNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(GetItemScalarNode.create());
+            }
+            return getItemNode;
+        }
+
+        private GetItemScalarNode getGetRightItemNode() {
+            if (getRightItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getRightItemNode = insert(GetItemScalarNode.create());
+            }
+            return getRightItemNode;
+        }
+
+        private boolean eq(Object left, Object right) {
+            if (comparisonNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                comparisonNode = insert(cmpOp.createBinaryComparisonNode());
+            }
+            return castToBoolean(comparisonNode.executeWith(left, right));
+        }
+
+        private boolean castToBoolean(Object value) {
+            if (castToBooleanNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
+            }
+            return castToBooleanNode.executeWith(value);
+        }
+
+        public static CmpNode createLe() {
+            return CmpNodeGen.create(Le.INSTANCE);
+        }
+
+        public static CmpNode createLt() {
+            return CmpNodeGen.create(Lt.INSTANCE);
+        }
+
+        public static CmpNode createGe() {
+            return CmpNodeGen.create(Ge.INSTANCE);
+        }
+
+        public static CmpNode createGt() {
+            return CmpNodeGen.create(Gt.INSTANCE);
+        }
+
+        public static CmpNode createEq() {
+            return CmpNodeGen.create(Eq.INSTANCE);
+        }
+
+        public static CmpNode createNe() {
+            return CmpNodeGen.create(Ne.INSTANCE);
+        }
+    }
+
     public abstract static class EqNode extends SequenceStorageBaseNode {
-        @Child private GetItemNode getItemNode;
-        @Child private GetItemNode getRightItemNode;
+        @Child private GetItemScalarNode getItemNode;
+        @Child private GetItemScalarNode getRightItemNode;
         @Child private BinaryComparisonNode equalsNode;
+        @Child private CastToBooleanNode castToBooleanNode;
 
         public abstract boolean execute(SequenceStorage left, SequenceStorage right);
 
@@ -765,6 +1264,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = {"left.getClass() == right.getClass()", "!isNative(left)"})
         boolean doManagedManagedSameType(SequenceStorage left, SequenceStorage right) {
             assert !isNative(right);
+            // TODO type profile or cache on class
             return left.equals(right);
         }
 
@@ -778,7 +1278,7 @@ public abstract class SequenceStorageNodes {
                 // use the same 'getItemNode'
                 Object leftItem = getGetItemNode().execute(left, i);
                 Object rightItem = getGetItemNode().execute(right, i);
-                if (!getEqualsNode().executeBool(leftItem, rightItem)) {
+                if (!eq(leftItem, rightItem)) {
                     return false;
                 }
             }
@@ -794,7 +1294,7 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < left.length(); i++) {
                 Object leftItem = getGetItemNode().execute(left, i);
                 Object rightItem = getGetRightItemNode().execute(right, i);
-                if (!getEqualsNode().executeBool(leftItem, rightItem)) {
+                if (!eq(leftItem, rightItem)) {
                     return false;
                 }
             }
@@ -811,39 +1311,41 @@ public abstract class SequenceStorageNodes {
             return false;
         }
 
-        protected boolean isEmpty(SequenceStorage left) {
-            // TODO use a node
-            return left.length() == 0;
-        }
-
-        private GetItemNode getGetItemNode() {
+        private GetItemScalarNode getGetItemNode() {
             if (getItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemNode.create(NormalizeIndexNode.create()));
+                getItemNode = insert(GetItemScalarNode.create());
             }
             return getItemNode;
         }
 
-        private GetItemNode getGetRightItemNode() {
+        private GetItemScalarNode getGetRightItemNode() {
             if (getRightItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getRightItemNode = insert(GetItemNode.create(NormalizeIndexNode.create()));
+                getRightItemNode = insert(GetItemScalarNode.create());
             }
             return getRightItemNode;
         }
 
-        private BinaryComparisonNode getEqualsNode() {
+        private boolean eq(Object left, Object right) {
             if (equalsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 equalsNode = insert(BinaryComparisonNode.create(__EQ__, __EQ__, "=="));
             }
-            return equalsNode;
+            return castToBoolean(equalsNode.executeWith(left, right));
+        }
+
+        private boolean castToBoolean(Object value) {
+            if (castToBooleanNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
+            }
+            return castToBooleanNode.executeWith(value);
         }
 
         public static EqNode create() {
             return EqNodeGen.create();
         }
-
     }
 
     public abstract static class NormalizeIndexNode extends PBaseNode {
@@ -1033,37 +1535,92 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(SequenceStorage left, SequenceStorage right);
 
+        @Specialization(guards = "!isNative(right)")
+        SequenceStorage doLeftEmpty(@SuppressWarnings("unused") EmptySequenceStorage left, SequenceStorage right,
+                        @Cached("create()") BranchProfile outOfMemProfile,
+                        @Cached("createClassProfile()") ValueProfile storageTypeProfile) {
+            try {
+                return storageTypeProfile.profile(right).copy();
+            } catch (OutOfMemoryError e) {
+                outOfMemProfile.enter();
+                throw raise(MemoryError);
+            }
+        }
+
+        @Specialization(guards = "!isNative(left)")
+        SequenceStorage doRightEmpty(SequenceStorage left, @SuppressWarnings("unused") EmptySequenceStorage right,
+                        @Cached("create()") BranchProfile outOfMemProfile,
+                        @Cached("createClassProfile()") ValueProfile storageTypeProfile) {
+            try {
+                return storageTypeProfile.profile(left).copy();
+            } catch (OutOfMemoryError e) {
+                outOfMemProfile.enter();
+                throw raise(MemoryError);
+            }
+        }
+
         @Specialization(guards = {"left.getClass() == right.getClass()", "!isNative(left)", "cachedClass == left.getClass()"})
         SequenceStorage doManagedManagedSameType(SequenceStorage left, SequenceStorage right,
+                        @Cached("create()") BranchProfile outOfMemProfile,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            SequenceStorage leftProfiled = cachedClass.cast(left);
-            SequenceStorage rightProfiled = cachedClass.cast(right);
-            Object arr1 = leftProfiled.getInternalArrayObject();
-            int len1 = leftProfiled.length();
-            Object arr2 = rightProfiled.getInternalArrayObject();
-            int len2 = rightProfiled.length();
-            SequenceStorage dest = leftProfiled.createEmpty(len1 + len2);
-            concat(dest.getInternalArrayObject(), arr1, len1, arr2, len2);
-            dest.setNewLength(len1 + len2);
-            return dest;
+            // TODO, there should be better specialization, which will check,
+            // whether there is enough free memory. If not, then fire OOM.
+            // The reason is that GC is trying to find out enough space for arrays
+            // that can fit to the free memory, but at the end there is no conti-
+            // nual space for such big array and this can takes looong time (a few mimutes).
+            try {
+                SequenceStorage leftProfiled = cachedClass.cast(left);
+                SequenceStorage rightProfiled = cachedClass.cast(right);
+                Object arr1 = leftProfiled.getInternalArrayObject();
+                int len1 = leftProfiled.length();
+                Object arr2 = rightProfiled.getInternalArrayObject();
+                int len2 = rightProfiled.length();
+                SequenceStorage dest = leftProfiled.createEmpty(Math.addExact(len1, len2));
+                concat(dest.getInternalArrayObject(), arr1, len1, arr2, len2);
+                dest.setNewLength(len1 + len2);
+                return dest;
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raise(MemoryError);
+            }
         }
 
         @Specialization(guards = {"!isNative(left)", "compatible(left, right)"})
-        SequenceStorage doManagedNative(SequenceStorage left, NativeSequenceStorage right) {
-            int len1 = left.length();
-            SequenceStorage dest = left.createEmpty(len1 + right.length());
-            for (int i = 0; i < len1; i++) {
-                getSetItemNode().execute(dest, i, getGetItemNode().execute(left, i));
+        SequenceStorage doManagedNative(SequenceStorage left, NativeSequenceStorage right,
+                        @Cached("create()") BranchProfile outOfMemProfile) {
+            try {
+                int len1 = left.length();
+                SequenceStorage dest = left.createEmpty(Math.addExact(len1, right.length()));
+                for (int i = 0; i < len1; i++) {
+                    getSetItemNode().execute(dest, i, getGetItemNode().execute(left, i));
+                }
+                for (int i = 0; i < right.length(); i++) {
+                    getSetItemNode().execute(dest, i + len1, getGetRightItemNode().execute(right, i));
+                }
+                return dest;
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raise(MemoryError);
             }
-            for (int i = 0; i < right.length(); i++) {
-                getSetItemNode().execute(dest, i + len1, getGetRightItemNode().execute(right, i));
-            }
-            return dest;
         }
 
         @Specialization(guards = {"!isNative(right)", "compatible(right, left)"})
-        SequenceStorage doNatveManaged(NativeSequenceStorage left, SequenceStorage right) {
-            return doManagedNative(right, left);
+        SequenceStorage doNatveManaged(NativeSequenceStorage left, SequenceStorage right,
+                        @Cached("create()") BranchProfile outOfMemProfile) {
+            try {
+                int len1 = left.length();
+                SequenceStorage dest = right.createEmpty(Math.addExact(len1, right.length()));
+                for (int i = 0; i < len1; i++) {
+                    getSetItemNode().execute(dest, i, getGetItemNode().execute(left, i));
+                }
+                for (int i = 0; i < right.length(); i++) {
+                    getSetItemNode().execute(dest, i + len1, getGetRightItemNode().execute(right, i));
+                }
+                return dest;
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raise(MemoryError);
+            }
         }
 
         @Specialization
@@ -1111,36 +1668,69 @@ public abstract class SequenceStorageNodes {
         @Child private SetItemScalarNode setItemNode;
         @Child private GetItemScalarNode getItemNode;
         @Child private GetItemScalarNode getRightItemNode;
+        @Child private IsIndexNode isIndexNode;
+        @Child private CastToIndexNode castToindexNode;
+        @Child private RepeatNode recursive;
+
+        public abstract SequenceStorage execute(SequenceStorage left, Object times);
 
         public abstract SequenceStorage execute(SequenceStorage left, int times);
 
+        @Specialization(guards = "times <= 0")
+        SequenceStorage doGeneric(SequenceStorage s, @SuppressWarnings("unused") int times,
+                        @Cached("createClassProfile()") ValueProfile storageTypeProfile) {
+            return storageTypeProfile.profile(s).createEmpty(0);
+        }
+
         @Specialization(limit = "2", guards = {"!isNative(s)", "s.getClass() == cachedClass"})
         SequenceStorage doManaged(SequenceStorage s, int times,
+                        @Cached("create()") BranchProfile outOfMemProfile,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            SequenceStorage profiled = cachedClass.cast(s);
-            Object arr1 = profiled.getInternalArrayObject();
-            int len = profiled.length();
-            SequenceStorage repeated = profiled.createEmpty(len * times);
-            Object destArr = repeated.getInternalArrayObject();
-            repeat(destArr, arr1, len, times);
-            repeated.setNewLength(len * times);
-            return repeated;
+            try {
+                SequenceStorage profiled = cachedClass.cast(s);
+                Object arr1 = profiled.getInternalArrayObject();
+                int len = profiled.length();
+                SequenceStorage repeated = profiled.createEmpty(Math.multiplyExact(len, times));
+                Object destArr = repeated.getInternalArrayObject();
+                repeat(destArr, arr1, len, times);
+                repeated.setNewLength(len * times);
+                return repeated;
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raise(MemoryError);
+            }
         }
 
         @Specialization(replaces = "doManaged")
-        SequenceStorage doGeneric(SequenceStorage s, int times) {
-            int len = s.length();
+        SequenceStorage doGeneric(SequenceStorage s, int times,
+                        @Cached("create()") BranchProfile outOfMemProfile) {
+            try {
+                int len = s.length();
 
-            // TODO avoid temporary array
-            Object[] values = new Object[len];
-            for (int i = 0; i < len; i++) {
-                values[i] = getGetItemNode().execute(s, i);
+                ObjectSequenceStorage repeated = new ObjectSequenceStorage(Math.multiplyExact(len, times));
+
+                // TODO avoid temporary array
+                Object[] values = new Object[len];
+                for (int i = 0; i < len; i++) {
+                    values[i] = getGetItemNode().execute(s, i);
+                }
+
+                Object destArr = repeated.getInternalArrayObject();
+                repeat(destArr, values, len, times);
+                return repeated;
+            } catch (OutOfMemoryError | ArithmeticException e) {
+                outOfMemProfile.enter();
+                throw raise(MemoryError);
             }
+        }
 
-            ObjectSequenceStorage repeated = new ObjectSequenceStorage(len * times);
-            Object destArr = repeated.getInternalArrayObject();
-            repeat(destArr, values, len, times);
-            return repeated;
+        @Fallback
+        SequenceStorage doGeneric(SequenceStorage s, Object times) {
+            int i = toIndex(times);
+            if (recursive == null) {
+                recursive = insert(RepeatNodeGen.create());
+            }
+            return recursive.execute(s, i);
         }
 
         private GetItemScalarNode getGetItemNode() {
@@ -1158,8 +1748,76 @@ public abstract class SequenceStorageNodes {
             }
         }
 
+        private int toIndex(Object times) {
+            if (isIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isIndexNode = insert(IsIndexNode.create());
+            }
+            if (isIndexNode.execute(times)) {
+                if (castToindexNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    castToindexNode = insert(CastToIndexNode.create());
+                }
+                return castToindexNode.execute(times);
+            }
+            throw raise(TypeError, "can't multiply sequence by non-int of type '%p'", times);
+        }
+
         public static RepeatNode create() {
             return RepeatNodeGen.create();
+        }
+    }
+
+    public abstract static class ContainsNode extends SequenceStorageBaseNode {
+        @Child private GetItemScalarNode getItemNode;
+        @Child private BinaryComparisonNode equalsNode;
+        @Child private CastToBooleanNode castToBooleanNode;
+
+        public abstract boolean execute(SequenceStorage left, Object item);
+
+        @Specialization(guards = "isEmpty(left)")
+        @SuppressWarnings("unused")
+        boolean doEmpty(SequenceStorage left, Object item) {
+            return false;
+        }
+
+        @Specialization
+        boolean doGeneric(SequenceStorage left, Object item) {
+            for (int i = 0; i < left.length(); i++) {
+                Object leftItem = getGetItemNode().execute(left, i);
+                if (eq(leftItem, item)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private GetItemScalarNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(GetItemScalarNode.create());
+            }
+            return getItemNode;
+        }
+
+        private boolean eq(Object left, Object right) {
+            if (equalsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                equalsNode = insert(BinaryComparisonNode.create(__EQ__, __EQ__, "=="));
+            }
+            return castToBoolean(equalsNode.executeWith(left, right));
+        }
+
+        private boolean castToBoolean(Object value) {
+            if (castToBooleanNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
+            }
+            return castToBooleanNode.executeWith(value);
+        }
+
+        public static ContainsNode create() {
+            return ContainsNodeGen.create();
         }
     }
 

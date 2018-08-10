@@ -28,8 +28,14 @@ package com.oracle.graal.python.builtins.objects.array;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
@@ -39,10 +45,16 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
@@ -50,6 +62,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,95 +77,27 @@ public class ArrayBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ADD__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBuiltinNode {
+    abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        PLongArray doPArray(PLongArray left, PLongArray right) {
-            long[] joined = new long[left.len() + right.len()];
-            System.arraycopy(left.getSequence(), 0, joined, 0, left.len());
-            System.arraycopy(right.getSequence(), 0, joined, left.len(), right.len());
-            return factory().createLongArray(joined);
-        }
-
-        @Specialization
-        PCharArray doPArray(PCharArray left, PCharArray right) {
-            char[] joined = new char[left.len() + right.len()];
-            System.arraycopy(left.getSequence(), 0, joined, 0, left.len());
-            System.arraycopy(right.getSequence(), 0, joined, left.len(), right.len());
-            return factory().createCharArray(joined);
-        }
-
-        @Specialization
-        PDoubleArray doPArray(PDoubleArray left, PDoubleArray right) {
-            double[] joined = new double[left.len() + right.len()];
-            System.arraycopy(left.getSequence(), 0, joined, 0, left.len());
-            System.arraycopy(right.getSequence(), 0, joined, left.len(), right.len());
-            return factory().createDoubleArray(joined);
-        }
-
-        @Specialization
-        PIntArray doPArray(PIntArray left, PIntArray right) {
-            int[] joined = new int[left.len() + right.len()];
-            System.arraycopy(left.getSequence(), 0, joined, 0, left.len());
-            System.arraycopy(right.getSequence(), 0, joined, left.len(), right.len());
-            return factory().createIntArray(joined);
-        }
-    }
-
-    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class RMulNode extends PythonBuiltinNode {
-        @Specialization
-        PLongArray doIntPArray(PLongArray right, int left) {
-            long[] newArray = new long[left * right.len()];
-            int count = 0;
-            for (int i = 0; i < left; i++) {
-                for (int j = 0; j < right.len(); j++) {
-                    newArray[count++] = right.getSequence()[i];
-                }
-            }
-            return factory().createLongArray(newArray);
-        }
-
-        @Specialization
-        PCharArray doIntPArray(PCharArray right, int left) {
-            char[] newArray = new char[left * right.len()];
-            int count = 0;
-            for (int i = 0; i < left; i++) {
-                for (int j = 0; j < right.len(); j++) {
-                    newArray[count++] = right.getSequence()[i];
-                }
-            }
-            return factory().createCharArray(newArray);
-        }
-
-        @Specialization
-        PDoubleArray doIntPArray(PDoubleArray right, int left) {
-            double[] newArray = new double[left * right.len()];
-            int count = 0;
-            for (int i = 0; i < left; i++) {
-                for (int j = 0; j < right.len(); j++) {
-                    newArray[count++] = right.getSequence()[i];
-                }
-            }
-            return factory().createDoubleArray(newArray);
-        }
-
-        @Specialization
-        PIntArray doIntPArray(PIntArray right, int left) {
-            int[] newArray = new int[left * right.len()];
-            int count = 0;
-            for (int i = 0; i < left; i++) {
-                for (int j = 0; j < right.len(); j++) {
-                    newArray[count++] = right.getSequence()[i];
-                }
-            }
-            return factory().createIntArray(newArray);
+        PArray doPArray(PArray left, PArray right,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+            return factory().createArray(concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage()));
         }
     }
 
     @Builtin(name = __MUL__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class MulNode extends RMulNode {
+    abstract static class MulNode extends PythonBuiltinNode {
+        @Specialization
+        PArray mul(PArray self, Object times,
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
+            return factory().createArray(repeatNode.execute(self.getSequenceStorage(), times));
+        }
+    }
+
+    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class RMulNode extends MulNode {
     }
 
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
@@ -168,49 +113,68 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean contains(PArray self, PSequence other) {
-            return self.lessThan(other);
+        boolean lessThan(PArray left, PArray right,
+                        @Cached("createLt()") SequenceStorageNodes.CmpNode eqNode) {
+            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        }
+    }
+
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean lessThan(PArray left, PArray right,
+                        @Cached("createLe()") SequenceStorageNodes.CmpNode eqNode) {
+            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        }
+    }
+
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GtNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean lessThan(PArray left, PArray right,
+                        @Cached("createGt()") SequenceStorageNodes.CmpNode eqNode) {
+            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        }
+    }
+
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean lessThan(PArray left, PArray right,
+                        @Cached("createGe()") SequenceStorageNodes.CmpNode eqNode) {
+            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        }
+    }
+
+    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class NeNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        boolean lessThan(PArray left, PArray right,
+                        @Cached("createNe()") SequenceStorageNodes.CmpNode eqNode) {
+            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBuiltinNode {
+    abstract static class EqNode extends PythonBinaryBuiltinNode {
+
         protected abstract boolean executeWith(Object left, Object right);
 
-        @Specialization(guards = "areBothIntStorage(left,right)")
-        boolean doPArrayInt(PArray left, PArray right) {
-            IntSequenceStorage leftStore = (IntSequenceStorage) left.getSequenceStorage();
-            IntSequenceStorage rightStore = (IntSequenceStorage) right.getSequenceStorage();
-            return leftStore.equals(rightStore);
-        }
-
-        @Specialization(guards = "areBothByteStorage(left,right)")
-        boolean doPArrayByte(PArray left, PArray right) {
-            ByteSequenceStorage leftStore = (ByteSequenceStorage) left.getSequenceStorage();
-            ByteSequenceStorage rightStore = (ByteSequenceStorage) right.getSequenceStorage();
-            return leftStore.equals(rightStore);
-        }
-
         @Specialization
-        boolean doPArray(PArray left, PArray right,
-                        @Cached("create(__EQ__, __EQ__)") LookupAndCallBinaryNode equalNode) {
-            if (left.len() == right.len()) {
-                for (int i = 0; i < left.len(); i++) {
-                    if (equalNode.executeObject(left.getItem(i), right.getItem(i)) != Boolean.TRUE) {
-                        return false;
-                    }
-                }
-                return true;
-            } else {
-                return false;
-            }
+        boolean eq(PArray left, PArray right,
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
+            return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
     }
 
     @Builtin(name = __STR__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    abstract static class StrNode extends PythonBuiltinNode {
+    abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
         String str(PArray self) {
@@ -230,6 +194,57 @@ public class ArrayBuiltins extends PythonBuiltins {
                 array = Arrays.toString(((DoubleSequenceStorage) sequenceStorage).getInternalDoubleArray());
             }
             return String.format("array('%s', %s)", typeCode, array);
+        }
+    }
+
+    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        Object getitem(PArray self, Object idx,
+                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getItemNode) {
+            return getItemNode.execute(self.getSequenceStorage(), idx);
+        }
+
+        @Fallback
+        Object doGeneric(Object self, @SuppressWarnings("unused") Object idx) {
+            throw raise(PythonErrorType.TypeError, "descriptor '__getitem__' requires a 'array.array' object but received a '%p'", self);
+        }
+
+        protected static SequenceStorageNodes.GetItemNode createGetItem() {
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forArray());
+        }
+    }
+
+    @Builtin(name = SpecialMethodNames.__SETITEM__, fixedNumOfArguments = 3)
+    @GenerateNodeFactory
+    abstract static class SetItemNode extends PythonTernaryBuiltinNode {
+
+        @Specialization
+        PNone getitem(PArray self, Object key, Object value,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.execute(self.getSequenceStorage(), key, value);
+            return PNone.NONE;
+        }
+
+        @Fallback
+        Object doGeneric(Object self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value) {
+            throw raise(PythonErrorType.TypeError, "descriptor '__setitem__' requires a 'array.array' object but received a '%p'", self);
+        }
+
+        protected static SequenceStorageNodes.SetItemNode createSetItem() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forArrayAssign());
+        }
+    }
+
+    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class IterNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object getitem(PArray self) {
+            return factory().createArrayIterator(self);
         }
     }
 }

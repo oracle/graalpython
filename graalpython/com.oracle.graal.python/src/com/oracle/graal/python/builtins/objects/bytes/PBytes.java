@@ -95,7 +95,7 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     @Override
     public boolean lessThan(PSequence sequence) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override

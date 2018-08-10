@@ -90,7 +90,7 @@ public final class PList extends PSequence {
 
     @Override
     public final boolean lessThan(PSequence sequence) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override

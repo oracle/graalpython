@@ -42,8 +42,6 @@ package com.oracle.graal.python.nodes.builtins;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
@@ -52,8 +50,6 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -84,66 +80,6 @@ public abstract class JoinInternalNode extends PBaseNode {
         }
 
         sb.append(Character.toString(joinString[joinString.length - 1]));
-        return sb.toString();
-    }
-
-    @Specialization(guards = {"cannotBeOverridden(iterableClass)", "isObjectStorage(list)"})
-    @TruffleBoundary
-    protected String join(String string, PList list, @SuppressWarnings("unused") PythonClass iterableClass) {
-        if (list.len() == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        ObjectSequenceStorage store = (ObjectSequenceStorage) list.getSequenceStorage();
-
-        int lastIdx = list.len() - 1;
-        for (int i = 0; i < lastIdx; i++) {
-            sb.append(checkItem(store.getItemNormalized(i), i));
-            sb.append(string);
-        }
-
-        sb.append(checkItem(list.getItem(lastIdx), lastIdx));
-        return sb.toString();
-    }
-
-    @Specialization(guards = "cannotBeOverridden(iterableClass)")
-    @TruffleBoundary
-    protected String join(String string, PCharArray array, @SuppressWarnings("unused") PythonClass iterableClass) {
-        if (array.len() == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        char[] stringList = array.getSequence();
-
-        for (int i = 0; i < stringList.length - 1; i++) {
-            sb.append(Character.toString(stringList[i]));
-            sb.append(string);
-        }
-
-        sb.append(Character.toString(stringList[stringList.length - 1]));
-        return sb.toString();
-    }
-
-    @Specialization(guards = "cannotBeOverridden(iterableClass)")
-    @TruffleBoundary
-    protected String join(String string, PSequence seq, @SuppressWarnings("unused") PythonClass iterableClass) {
-        if (seq.len() == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        int l = seq.len();
-        if (l == 0) {
-            return "";
-        }
-        for (int i = 0; i < l - 1; i++) {
-            sb.append(checkItem(seq.getItem(i), i));
-            sb.append(string);
-        }
-
-        sb.append(seq.getItem(seq.len() - 1));
         return sb.toString();
     }
 

@@ -89,7 +89,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 intArray[index++] = i;
             }
 
-            return factory().createIntArray(cls, intArray);
+            return factory().createArray(cls, intArray);
         }
 
         @Specialization
@@ -98,7 +98,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 typeError(typeCode, str);
             }
 
-            return factory().createCharArray(cls, str.toCharArray());
+            return factory().createArray(cls, str.toCharArray());
         }
 
         /**
@@ -132,7 +132,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         }
                     }
 
-                    return factory().createIntArray(cls, intArray);
+                    return factory().createArray(cls, intArray);
                 case 'd':
                     store = initializer.getSequenceStorage();
                     double[] doubleArray = new double[store.length()];
@@ -142,7 +142,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         doubleArray[i] = (double) val;
                     }
 
-                    return factory().createDoubleArray(cls, doubleArray);
+                    return factory().createArray(cls, doubleArray);
                 case 'b':
                     store = initializer.getSequenceStorage();
                     byte[] byteArray = new byte[store.length()];
@@ -156,7 +156,8 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         }
                     }
 
-                    return factory().createByteArray(cls, byteArray);
+                    // TODO
+// return factory().createByteArray(cls, byteArray);
                 default:
                     return null;
             }
@@ -173,11 +174,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 case 'c':
                 case 'b':
                 case 'B':
-                    return factory().createCharArray(cls, new char[0]);
+                    return factory().createArray(cls, new char[0]);
                 case 'i':
-                    return factory().createIntArray(cls, new int[0]);
+                    return factory().createArray(cls, new int[0]);
                 case 'd':
-                    return factory().createDoubleArray(cls, new double[0]);
+                    return factory().createArray(cls, new double[0]);
                 default:
                     return null;
             }

@@ -28,10 +28,6 @@ package com.oracle.graal.python.nodes.control;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
-import com.oracle.graal.python.builtins.objects.array.PIntArray;
-import com.oracle.graal.python.builtins.objects.array.PLongArray;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
@@ -89,26 +85,6 @@ public abstract class GetIteratorNode extends UnaryOpNode {
     @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doPRange(PRange value) {
         return factory().createRangeIterator(value.getStart(), value.getStop(), value.getStep());
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doPIntArray(PIntArray value) {
-        return factory().createIntArrayIterator(value);
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doPLongArray(PLongArray value) {
-        return factory().createLongArrayIterator(value);
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doPDoubleArray(PDoubleArray value) {
-        return factory().createDoubleArrayIterator(value);
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doCharArray(PCharArray value) {
-        return factory().createCharArrayIterator(value);
     }
 
     @Specialization(guards = "iterCannotBeOverridden(value)")

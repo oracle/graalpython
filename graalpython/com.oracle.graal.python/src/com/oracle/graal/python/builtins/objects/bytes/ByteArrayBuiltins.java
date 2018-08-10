@@ -35,6 +35,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
@@ -208,12 +211,76 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
+    public abstract static class CmpNode extends PythonBinaryBuiltinNode {
+        @Child private BytesNodes.CmpNode cmpNode;
+
+        int cmp(PByteArray self, PIBytesLike other) {
+            if (cmpNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                cmpNode = insert(BytesNodes.CmpNode.create());
+            }
+            return cmpNode.execute(self, other);
+        }
+
+    }
+
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
+    abstract static class LtNode extends CmpNode {
         @Specialization
-        boolean contains(PSequence self, PSequence other) {
-            return self.lessThan(other);
+        boolean doBytes(PByteArray self, PIBytesLike other) {
+            return cmp(self, other) < 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PByteArray self, PIBytesLike other) {
+            return cmp(self, other) <= 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GtNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PByteArray self, PIBytesLike other) {
+            return cmp(self, other) > 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PByteArray self, PIBytesLike other) {
+            return cmp(self, other) >= 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

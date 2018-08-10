@@ -40,25 +40,36 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
         super(cls);
     }
 
+    @Deprecated
     public final Object getSlice(PythonObjectFactory factory, PSlice slice) {
         SliceInfo info = slice.computeActualIndices(len());
         return getSlice(factory, info.start, info.stop, info.step, info.length);
     }
 
+    @Deprecated
     protected abstract Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length);
 
+    @Deprecated
     public abstract void setSlice(int start, int stop, int step, PSequence value);
 
+    @Deprecated
     public abstract void setSlice(PSlice slice, PSequence value);
 
+    @Deprecated
     public abstract void delItem(int idx);
 
     public abstract int index(Object value);
 
     public abstract SequenceStorage getSequenceStorage();
 
+    /**
+     * Note: Sequences are never immutable for us because they can go <it>to native</it>, i.e., the
+     * storage will be exchanged and also, native code often allows to modify <it>immutable</it>
+     * objects (like {@code _PyTuple_Resize}).
+     */
     public abstract void setSequenceStorage(SequenceStorage newStorage);
 
+    @Deprecated
     public abstract boolean lessThan(PSequence sequence);
 
     public static PSequence require(Object value) {

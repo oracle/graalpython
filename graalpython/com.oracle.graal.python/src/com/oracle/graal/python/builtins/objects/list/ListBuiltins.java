@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
@@ -72,7 +73,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -729,10 +729,12 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNotSpecialCase(list, value)")
         public PNone remove(PList list, Object value,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
             int len = list.len();
+            SequenceStorage listStore = list.getSequenceStorage();
             for (int i = 0; i < len; i++) {
-                Object object = list.getItem(i);
+                Object object = getItemNode.execute(listStore, i);
                 if (eqNode.executeBool(object, value)) {
                     list.delItem(i);
                     return PNone.NONE;
@@ -751,6 +753,8 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = "pop", minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class ListPopNode extends PythonBuiltinNode {
+
+        @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
         @Specialization(guards = "isIntStorage(list)")
         public int popInt(PList list, @SuppressWarnings("unused") PNone none,
@@ -788,7 +792,7 @@ public class ListBuiltins extends PythonBuiltins {
         public Object popLast(PList list, @SuppressWarnings("unused") PNone none,
                         @Cached("createBinaryProfile()") ConditionProfile isEmpty) {
             raiseIndexError(isEmpty.profile(list.len() == 0));
-            Object ret = list.getItem(list.len() - 1);
+            Object ret = getGetItemNode().execute(list.getSequenceStorage(), -1);
             list.delItem(list.len() - 1);
             return ret;
         }
@@ -830,9 +834,17 @@ public class ListBuiltins extends PythonBuiltins {
             if (cp.profile((index < 0 && (index + len) < 0) || index >= len)) {
                 throw raise(PythonErrorType.IndexError, "pop index out of range");
             }
-            Object ret = list.getItem(index);
+            Object ret = getGetItemNode().execute(list.getSequenceStorage(), index);
             list.delItem(index);
             return ret;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getItemNode;
         }
     }
 
@@ -843,6 +855,8 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListIndexNode extends PythonBuiltinNode {
         protected final static String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
+
+        @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
         public abstract int execute(Object arg1, Object arg2, Object arg3, Object arg4);
 
@@ -872,7 +886,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         private int findIndex(PList list, Object value, int start, int end, BinaryComparisonNode eqNode) {
             for (int i = start; i < end && i < list.len(); i++) {
-                Object object = list.getItem(i);
+                Object object = getGetItemNode().execute(list.getSequenceStorage(), i);
                 if (eqNode.executeBool(object, value)) {
                     return i;
                 }
@@ -964,6 +978,13 @@ public class ListBuiltins extends PythonBuiltins {
             return ListBuiltinsFactory.ListIndexNodeFactory.create(new PNode[0]);
         }
 
+        private SequenceStorageNodes.GetItemNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getItemNode;
+        }
     }
 
     // list.count(x)
@@ -973,10 +994,11 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         long count(PList self, Object value,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
             long count = 0;
             for (int i = 0; i < self.len(); i++) {
-                Object object = self.getItem(i);
+                Object object = getItemNode.execute(self.getSequenceStorage(), i);
                 if (eqNode.executeBool(object, value)) {
                     count++;
                 }
@@ -1495,153 +1517,101 @@ public class ListBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBuiltinNode {
-        protected abstract boolean executeWith(Object left, Object right);
-
-        @Specialization(guards = "areBothIntStorage(left,right)")
-        boolean doPListInt(PList left, PList right) {
-            IntSequenceStorage leftStore = (IntSequenceStorage) left.getSequenceStorage();
-            IntSequenceStorage rightStore = (IntSequenceStorage) right.getSequenceStorage();
-            return leftStore.equals(rightStore);
-        }
-
-        @Specialization(guards = "areBothLongStorage(left,right)")
-        boolean doPListLong(PList left, PList right) {
-            LongSequenceStorage leftStore = (LongSequenceStorage) left.getSequenceStorage();
-            LongSequenceStorage rightStore = (LongSequenceStorage) right.getSequenceStorage();
-            return leftStore.equals(rightStore);
-        }
+    abstract static class EqNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         boolean doPList(PList left, PList right,
-                        @Cached("create(__EQ__, __EQ__)") LookupAndCallBinaryNode equalNode) {
-            if (left.len() == right.len()) {
-                for (int i = 0; i < left.len(); i++) {
-                    if (equalNode.executeObject(left.getItem(i), right.getItem(i)) != Boolean.TRUE) {
-                        return false;
-                    }
-                }
-                return true;
-            } else {
-                return false;
-            }
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode neNode) {
+            return neNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
-        PNotImplemented contains(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        @SuppressWarnings("unused")
+        boolean doOther(Object left, Object right) {
+            return false;
         }
     }
 
     @Builtin(name = __NE__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class NeNode extends PythonBuiltinNode {
-        @Specialization(guards = "areBothIntStorage(left,right)")
-        boolean doPListInt(PList left, PList right) {
-            IntSequenceStorage leftStore = (IntSequenceStorage) left.getSequenceStorage();
-            IntSequenceStorage rightStore = (IntSequenceStorage) right.getSequenceStorage();
-            return !leftStore.equals(rightStore);
-        }
-
-        protected abstract boolean executeWith(Object left, Object right);
-
-        @Specialization(guards = "areBothObjectStorage(left,right)")
-        boolean doPListObject(PList left, PList right) {
-            ObjectSequenceStorage leftStore = (ObjectSequenceStorage) left.getSequenceStorage();
-            ObjectSequenceStorage rightStore = (ObjectSequenceStorage) right.getSequenceStorage();
-            return !leftStore.equals(rightStore);
-        }
+    abstract static class NeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         boolean doPList(PList left, PList right,
-                        @Cached("create(__EQ__, __EQ__)") LookupAndCallBinaryNode equalNode) {
-            if (left.len() == right.len()) {
-                for (int i = 0; i < left.len(); i++) {
-                    if (equalNode.executeObject(left.getItem(i), right.getItem(i)) != Boolean.TRUE) {
-                        return true;
-                    }
-                }
-                return false;
-            } else {
-                return true;
-            }
+                        @Cached("createNe()") SequenceStorageNodes.CmpNode neNode) {
+            return neNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
-        PNotImplemented contains(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
+        @SuppressWarnings("unused")
+        boolean doOther(Object left, Object right) {
+            return true;
+        }
+    }
+
+    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        boolean doPList(PList left, PList right,
+                        @Cached("createGe()") SequenceStorageNodes.CmpNode neNode) {
+            return neNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        PNotImplemented doOther(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+    }
+
+    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        boolean doPList(PList left, PList right,
+                        @Cached("createLe()") SequenceStorageNodes.CmpNode neNode) {
+            return neNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        PNotImplemented doOther(Object left, Object right) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+    }
+
+    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class GtNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        boolean doPList(PList left, PList right,
+                        @Cached("createGt()") SequenceStorageNodes.CmpNode neNode) {
+            return neNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+        }
+
+        @Fallback
+        PNotImplemented doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
     @Builtin(name = __LT__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
-    abstract static class LtNode extends ListComparisonNode {
-
-        @Specialization
-        boolean contains(PList self, PList other,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
-                        @Cached("create(__LT__, __GT__, __LT__)") BinaryComparisonNode ltNode) {
-            return doComparison(self, other, eqNode, ltNode);
-        }
-    }
-
-    @Builtin(name = __GT__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class GtNode extends ListComparisonNode {
-
-        @Specialization
-        boolean contains(PList self, PList other,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
-                        @Cached("create(__GT__, __LT__, __GT__)") BinaryComparisonNode gtNode) {
-            return doComparison(self, other, eqNode, gtNode);
-        }
-    }
-
-    @Builtin(name = __GE__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class GeNode extends ListComparisonNode {
-
-        @Specialization
-        boolean doPTuple(PList left, PList right,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
-                        @Cached("create(__GE__, __LE__, __GE__)") BinaryComparisonNode geNode) {
-            return doComparison(left, right, eqNode, geNode);
-        }
-    }
-
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class LeNode extends ListComparisonNode {
-
+    abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doPList(PList left, PList right,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode,
-                        @Cached("create(__LE__, __GE__, __LE__)") BinaryComparisonNode leNode) {
-            return doComparison(left, right, eqNode, leNode);
-        }
-    }
-
-    abstract static class ListComparisonNode extends PythonBinaryBuiltinNode {
-
-        static boolean doComparison(PList self, PList other,
-                        BinaryComparisonNode eqNode,
-                        BinaryComparisonNode compNode) {
-            int len = self.len();
-            int len2 = other.len();
-            int min = Math.min(len, len2);
-            for (int i = 0; i < min; i++) {
-                Object left = self.getItem(i);
-                Object right = other.getItem(i);
-                if (!eqNode.executeBool(left, right)) {
-                    return compNode.executeBool(left, right);
-                }
-            }
-            return compNode.executeBool(len, len2);
+                        @Cached("createLt()") SequenceStorageNodes.CmpNode neNode) {
+            return neNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
 
         @Fallback
-        @SuppressWarnings("unused")
-        PNotImplemented doOther(Object left, Object right) {
+        PNotImplemented contains(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
