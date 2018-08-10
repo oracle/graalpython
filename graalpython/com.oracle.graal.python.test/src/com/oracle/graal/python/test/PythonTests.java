@@ -84,18 +84,28 @@ public class PythonTests {
     public static void enterContext(String... newArgs) {
         PythonTests.outArray.reset();
         PythonTests.errArray.reset();
-        if (context != null) {
-            closeContext();
-        }
+        Context prevContext = context;
         context = Context.newBuilder().engine(engine).allowAllAccess(true).arguments("python", newArgs).build();
         context.initialize("python");
+        if (prevContext != null) {
+            closeContext(prevContext);
+        }
         context.enter();
     }
 
+    private static void closeContext(Context ctxt) {
+        try {
+            ctxt.leave();
+        } catch (RuntimeException e) {
+        }
+        ctxt.close();
+    }
+
     public static void closeContext() {
-        context.leave();
-        context.close();
-        context = null;
+        if (context != null) {
+            closeContext(context);
+            context = null;
+        }
     }
 
     public static void assertBenchNoError(Path scriptName, String[] args) {
