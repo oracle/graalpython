@@ -727,14 +727,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython
         // floatobject.c we have to first create a temporary float, then fill it into
         // a natively allocated subtype structure
-        @Specialization(guards = "isSubtype.execute(cls, floatCls)", limit = "1")
+        @Specialization(guards = "isSubtype.execute(cls, getBuiltinFloatClass())", limit = "1")
         Object doPythonObject(PythonNativeClass cls, Object obj,
-                        @Cached("getBuiltinFloatClass()") PythonBuiltinClass floatCls,
                         @SuppressWarnings("unused") @Cached("create()") IsSubtypeNode isSubtype,
                         @Cached("create(__FLOAT__)") LookupAndCallUnaryNode callFloatNode,
                         @Cached("create()") BranchProfile gotException,
                         @Cached("createSubtypeNew()") CExtNodes.SubtypeNew subtypeNew) {
-            double realFloat = doubleFromObject(floatCls, obj, callFloatNode, gotException);
+            double realFloat = doubleFromObject(getBuiltinFloatClass(), obj, callFloatNode, gotException);
             return subtypeNew.execute(cls, realFloat);
         }
 
@@ -1627,13 +1626,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         protected PythonClass getNotImplementedClass() {
-            return getCore().lookupType(PNotImplemented.class);
+            return getCore().lookupType(PythonBuiltinClassType.PNotImplemented);
         }
 
         @Specialization
-        public PNotImplemented module(Object cls,
-                        @Cached("getNotImplementedClass()") PythonClass notImplementedClass) {
-            if (cls != notImplementedClass) {
+        public PNotImplemented module(Object cls) {
+            if (cls != getNotImplementedClass()) {
                 throw raise(TypeError, "'NotImplementedType' object is not callable");
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
@@ -1655,13 +1653,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
         protected PythonClass getNoneClass() {
-            return getCore().lookupType(PNone.class);
+            return getCore().lookupType(PythonBuiltinClassType.PNone);
         }
 
         @Specialization
-        public PNone module(Object cls,
-                        @Cached("getNoneClass()") PythonClass noneClass) {
-            if (cls != noneClass) {
+        public PNone module(Object cls) {
+            if (cls != getNoneClass()) {
                 throw raise(TypeError, "NoneType.__new__(%s) is not a subtype of NoneType", cls);
             } else {
                 return PNone.NONE;

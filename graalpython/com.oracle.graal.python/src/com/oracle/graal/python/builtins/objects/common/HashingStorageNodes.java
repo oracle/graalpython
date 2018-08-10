@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
@@ -361,7 +362,7 @@ public abstract class HashingStorageNodes {
             Object it = getIterator.executeWith(iterable);
 
             ArrayList<PSequence> elements = new ArrayList<>();
-            PythonClass listClass = getCore().lookupType(PList.class);
+            PythonClass listClass = getCore().lookupType(PythonBuiltinClassType.PList);
             boolean isStringKey = false;
             try {
                 while (true) {

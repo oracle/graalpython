@@ -56,6 +56,7 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.PNativeToPTypeNodeGen;
@@ -248,7 +249,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Fallback
         Object runGeneric(Object value) {
             // TODO(fa) force primitive
-            return getIntNode().executeWith(getCore().lookupType(Integer.class), value, PNone.NONE);
+            return getIntNode().executeWith(getCore().lookupType(PythonBuiltinClassType.PInt), value, PNone.NONE);
         }
 
         private BuiltinConstructors.IntNode getIntNode() {

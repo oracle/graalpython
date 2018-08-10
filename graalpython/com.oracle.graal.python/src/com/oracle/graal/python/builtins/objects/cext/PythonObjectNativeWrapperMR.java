@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -278,8 +279,10 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         Object doTpAsBuffer(PythonClass object, @SuppressWarnings("unused") String key) {
-            if (object == getCore().lookupType(PBytes.class) || object == getCore().lookupType(PByteArray.class) || object == getCore().lookupType(PMemoryView.class) ||
-                            object == getCore().lookupType(PBuffer.class)) {
+            if (object == getCore().lookupType(PythonBuiltinClassType.PBytes) ||
+                            object == getCore().lookupType(PythonBuiltinClassType.PByteArray) ||
+                            object == getCore().lookupType(PythonBuiltinClassType.PMemoryView) ||
+                            object == getCore().lookupType(PythonBuiltinClassType.PBuffer)) {
                 return new PyBufferProcsWrapper(object);
             }
 
@@ -623,7 +626,7 @@ public class PythonObjectNativeWrapperMR {
                         @Cached("create()") HashingStorageNodes.GetItemNode getItem,
                         @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
             Object value = asPythonObjectNode.execute(nativeValue);
-            if (value instanceof PDict && ((PDict) value).getPythonClass() == getCore().lookupType(PDict.class)) {
+            if (value instanceof PDict && ((PDict) value).getPythonClass() == getCore().lookupType(PythonBuiltinClassType.PDict)) {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 for (Object k : d.keys()) {

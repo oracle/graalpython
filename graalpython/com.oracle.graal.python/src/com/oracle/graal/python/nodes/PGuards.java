@@ -296,10 +296,6 @@ public abstract class PGuards {
         return obj instanceof String || obj instanceof PString;
     }
 
-    public static PythonBuiltinClass getClassFor(Class<? extends PythonBuiltinObject> cls, PythonCore core) {
-        return core.lookupType(cls);
-    }
-
     public static boolean isBuiltinFunction(Object obj) {
         return obj instanceof PBuiltinFunction;
     }
