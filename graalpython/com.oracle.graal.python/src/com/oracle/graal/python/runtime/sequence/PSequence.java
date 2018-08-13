@@ -38,13 +38,10 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
         super(cls);
     }
 
-    @Deprecated
     public abstract void setSlice(int start, int stop, int step, PSequence value);
 
-    @Deprecated
     public abstract void setSlice(PSlice slice, PSequence value);
 
-    @Deprecated
     public abstract void delItem(int idx);
 
     public abstract SequenceStorage getSequenceStorage();

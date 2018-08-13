@@ -90,13 +90,15 @@ public class PRangeTests {
     @Test
     public void getItem() {
         PRange range = PythonObjectFactory.create().createRange(10);
-        assertEquals(3, range.getItem(3));
+        assertEquals(3, range.getItemNormalized(3));
     }
 
     @Test
     public void getItemNegative() {
         PRange range = PythonObjectFactory.create().createRange(10);
-        assertEquals(7, range.getItem(-3));
+        assertEquals(7, range.getItemNormalized(-3));
+        String source = "print(range(10)[-3])\n";
+        assertPrints("7\n", source);
     }
 
     @Test
