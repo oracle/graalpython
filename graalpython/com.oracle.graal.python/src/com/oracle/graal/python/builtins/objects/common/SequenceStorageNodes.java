@@ -471,9 +471,9 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(SequenceStorage s, Object key, Object value);
 
-        public abstract void execute(SequenceStorage s, int key, Object value);
+        public abstract void executeInt(SequenceStorage s, int key, Object value);
 
-        public abstract void execute(SequenceStorage s, long key, Object value);
+        public abstract void executeLong(SequenceStorage s, long key, Object value);
 
         @Specialization
         protected void doScalarInt(SequenceStorage storage, int idx, Object value) {

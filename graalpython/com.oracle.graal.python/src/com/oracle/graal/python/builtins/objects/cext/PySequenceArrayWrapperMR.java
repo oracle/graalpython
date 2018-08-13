@@ -236,6 +236,13 @@ public class PySequenceArrayWrapperMR {
         public abstract Object execute(Object arrayObject, Object idx, Object value);
 
         @Specialization
+        Object doTuple(PBytes s, long idx, byte value,
+                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.executeLong(s.getSequenceStorage(), idx, value);
+            return value;
+        }
+
+        @Specialization
         Object doTuple(PSequence s, long idx, Object value,
                         @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
             setItemNode.execute(s.getSequenceStorage(), idx, getToJavaNode().execute(value));
