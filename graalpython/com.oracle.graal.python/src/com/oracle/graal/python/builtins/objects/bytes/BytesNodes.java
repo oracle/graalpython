@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -66,7 +65,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.Node.Child;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -322,8 +320,8 @@ public abstract class BytesNodes {
             PIBytesLike leftProfiled = leftProfile.profile(left);
             PIBytesLike rightProfiled = rightProfile.profile(right);
             for (int i = 0; i < Math.min(leftProfiled.len(), rightProfiled.len()); i++) {
-                byte a = (byte) getGetLeftItemNode().execute(leftProfiled.getSequenceStorage(), i);
-                byte b = (byte) getGetRightItemNode().execute(rightProfiled.getSequenceStorage(), i);
+                int a = getGetLeftItemNode().executeInt(leftProfiled.getSequenceStorage(), i);
+                int b = getGetRightItemNode().executeInt(rightProfiled.getSequenceStorage(), i);
                 if (a != b) {
                     // CPython uses 'memcmp'; so do unsigned comparison
                     return a & 0xFF - b & 0xFF;
