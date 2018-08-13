@@ -226,19 +226,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 try {
                     byte item = castToByteNode.execute(getNextNode.execute(it));
                     if (i >= arr.length) {
-                        arr = resize(arr);
+                        arr = resize(arr, arr.length * 2);
                     }
                     arr[i++] = item;
                 } catch (PException e) {
                     e.expect(StopIteration, getCore(), stopIterationProfile);
-                    return create(cls, arr);
+                    return create(cls, resize(arr, i));
                 }
             }
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false)
-        private static byte[] resize(byte[] arr) {
-            return Arrays.copyOf(arr, arr.length * 2);
+        private static byte[] resize(byte[] arr, int len) {
+            return Arrays.copyOf(arr, len);
         }
 
         protected boolean isInt(Object o) {
