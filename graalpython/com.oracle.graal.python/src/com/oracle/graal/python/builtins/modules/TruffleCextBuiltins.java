@@ -78,6 +78,8 @@ import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeA
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -326,27 +328,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTuple_SetItem extends NativeBuiltin {
         @Specialization
-        int doI(PTuple tuple, int position, Object element) {
-            Object[] store = tuple.getArray();
-            if (position < 0 || position >= store.length) {
-                return raiseNative(-1, PythonErrorType.IndexError, "tuple assignment index out of range");
-            }
-            store[position] = element;
+        int doI(PTuple tuple, Object position, Object element,
+                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.execute(tuple.getSequenceStorage(), position, element);
             return 0;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doL(PTuple tuple, long position, Object element) {
-            return doI(tuple, PInt.intValueExact(position), element);
-        }
-
-        @Specialization
-        int doLOvf(PTuple tuple, long position, Object element) {
-            try {
-                return doI(tuple, PInt.intValueExact(position), element);
-            } catch (ArithmeticException e) {
-                return raiseNative(-1, PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
-            }
+        protected static SequenceStorageNodes.SetItemNode createSetItem() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign());
         }
     }
 

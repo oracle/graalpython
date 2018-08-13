@@ -471,9 +471,9 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(SequenceStorage s, Object key, Object value);
 
-        public abstract void executeInt(SequenceStorage s, int key, Object value);
+        public abstract void execute(SequenceStorage s, int key, Object value);
 
-        public abstract void executeLong(SequenceStorage s, long key, Object value);
+        public abstract void execute(SequenceStorage s, long key, Object value);
 
         @Specialization
         protected void doScalarInt(SequenceStorage storage, int idx, Object value) {
@@ -1221,6 +1221,7 @@ public abstract class SequenceStorageNodes {
         public static final String INDEX_OUT_OF_BOUNDS = "index out of range";
         public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
         public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
+        public static final String TUPLE_ASSIGN_OUT_OF_BOUNDS = "tuple assignment index out of range";
         public static final String LIST_OUT_OF_BOUNDS = "list index out of range";
         public static final String LIST_ASSIGN_OUT_OF_BOUNDS = "list assignment index out of range";
         public static final String ARRAY_OUT_OF_BOUNDS = "array index out of range";
@@ -1325,6 +1326,10 @@ public abstract class SequenceStorageNodes {
 
         public static NormalizeIndexNode forTuple() {
             return create(TUPLE_OUT_OF_BOUNDS);
+        }
+
+        public static NormalizeIndexNode forTupleAssign() {
+            return create(TUPLE_ASSIGN_OUT_OF_BOUNDS);
         }
 
         public static NormalizeIndexNode forArray() {

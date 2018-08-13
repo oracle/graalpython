@@ -236,30 +236,9 @@ public class PySequenceArrayWrapperMR {
         public abstract Object execute(Object arrayObject, Object idx, Object value);
 
         @Specialization
-        Object doTuple(PTuple tuple, long idx, Object value) {
-            Object[] store = tuple.getArray();
-            // TODO(fa) do proper index conversion
-            store[(int) idx] = getToJavaNode().execute(value);
-            return value;
-        }
-
-        @Specialization
-        Object doList(PList list, long idx, Object value,
-                        @Cached("createListSetItem()") ListBuiltins.SetItemNode setItemNode) {
-            return setItemNode.execute(list, idx, getToJavaNode().execute(value));
-        }
-
-        @Specialization
-        Object doBytes(PBytes tuple, long idx, byte value,
+        Object doTuple(PSequence s, long idx, Object value,
                         @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.executeLong(tuple.getSequenceStorage(), idx, value);
-            return value;
-        }
-
-        @Specialization
-        Object doByteArray(PByteArray tuple, long idx, byte value,
-                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
-            setItemNode.executeLong(tuple.getSequenceStorage(), idx, value);
+            setItemNode.execute(s.getSequenceStorage(), idx, getToJavaNode().execute(value));
             return value;
         }
 

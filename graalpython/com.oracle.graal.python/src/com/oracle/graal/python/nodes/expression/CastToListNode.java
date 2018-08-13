@@ -85,7 +85,7 @@ public abstract class CastToListNode extends PNode {
     public Object[] getArray(VirtualFrame frame) {
         Object result = execute(frame);
         if (result instanceof PTuple) {
-            return ((PTuple) result).getArray();
+            return ((PTuple) result).getSequenceStorage().getInternalArray();
         } else if (result instanceof PList) {
             return ((PList) result).getSequenceStorage().getInternalArray();
         } else {
