@@ -65,9 +65,14 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
     type_handle->tp_basicsize = basicsize;
 }
 
+#define ctor_hidden(a) __attribute__((constructor (10 ## a
+#define ctor(a) ctor_hidden(a))))
+#define init_hidden(a, b) initialize ## a ## _ ## b ## _gen
+#define init(a, b) init_hidden(a, b)
+
 #define initialize_type(typeobject, typename, struct)                   \
-    __attribute__((constructor))                                        \
-    static void initialize_ ## typeobject ## _gen(void) {               \
+    ctor(__COUNTER__)                                                   \
+    static void init(__COUNTER__, typeobject)(void) {                   \
         initialize_type_structure(&typeobject,                          \
                                   #typename,                            \
                                   polyglot_ ## struct ## _typeid());    \
@@ -158,7 +163,7 @@ static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
 }
 
-__attribute__((constructor))
+__attribute__((constructor (20000)))
 static void initialize_capi() {
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
