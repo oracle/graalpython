@@ -52,8 +52,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
 /**
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
@@ -63,12 +61,14 @@ public abstract class CastToIndexNode extends PBaseNode {
     private static final String ERROR_MESSAGE = "cannot fit 'int' into an index-sized integer";
 
     @Child private LookupAndCallUnaryNode callIndexNode;
+    @Child private CastToIndexNode recursiveNode;
 
-    private final BranchProfile errorProfile = BranchProfile.create();
     private final PythonErrorType errorType;
+    private final boolean recursive;
 
-    public CastToIndexNode(PythonErrorType errorType) {
+    public CastToIndexNode(PythonErrorType errorType, boolean recursive) {
         this.errorType = errorType;
+        this.recursive = recursive;
     }
 
     public abstract int execute(Object x);
@@ -119,23 +119,25 @@ public abstract class CastToIndexNode extends PBaseNode {
 
     @Fallback
     int doGeneric(Object x) {
-        try {
+        if (recursive) {
             if (callIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callIndexNode = insert(LookupAndCallUnaryNode.create(__INDEX__));
             }
-            return callIndexNode.executeInt(x);
-        } catch (UnexpectedResultException e) {
-            errorProfile.enter();
-            throw raise(TypeError, "__index__ returned non-int (type %p)", e.getResult());
+            if (recursiveNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                recursiveNode = insert(CastToIndexNodeGen.create(errorType, false));
+            }
+            return recursiveNode.execute(callIndexNode.executeObject(x));
         }
+        throw raise(TypeError, "__index__ returned non-int (type %p)", x);
     }
 
     public static CastToIndexNode create() {
-        return CastToIndexNodeGen.create(IndexError);
+        return CastToIndexNodeGen.create(IndexError, true);
     }
 
     public static CastToIndexNode createOverflow() {
-        return CastToIndexNodeGen.create(OverflowError);
+        return CastToIndexNodeGen.create(OverflowError, true);
     }
 }
