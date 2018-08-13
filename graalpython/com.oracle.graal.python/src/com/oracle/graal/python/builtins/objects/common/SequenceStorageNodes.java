@@ -729,7 +729,7 @@ public abstract class SequenceStorageNodes {
         private Node getCallNode() {
             if (callNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(Message.createExecute(2).createNode());
+                callNode = insert(Message.EXECUTE.createNode());
             }
             return callNode;
         }
