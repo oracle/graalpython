@@ -49,7 +49,6 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
         this.store = store;
     }
 
-    @Deprecated
     public Object[] getArray() {
         // TODO disallow direct array access
         if (store instanceof ObjectSequenceStorage) {
@@ -65,11 +64,6 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
 
     public boolean isEmpty() {
         return len() == 0;
-    }
-
-    @Deprecated
-    public Object getItemNormalized(int index) {
-        return store.getItemNormalized(index);
     }
 
     @Override
@@ -96,11 +90,6 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
         } else {
             return String.format("tuple(%s)", store);
         }
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    public PTuple __mul__(int value) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

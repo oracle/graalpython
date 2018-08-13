@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -873,6 +874,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UtimeNode extends PythonBuiltinNode {
+        @Child private GetItemNode getItemNode;
+
         @SuppressWarnings("unused")
         @Specialization
         Object utime(String path, PNone times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
@@ -930,7 +933,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (times.len() <= index) {
                 throw tupleError(argname);
             }
-            Object mtimeObj = times.getItemNormalized(index);
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(GetItemNode.createNotNormalized());
+            }
+            Object mtimeObj = getItemNode.execute(times.getSequenceStorage(), index);
             long mtime;
             if (mtimeObj instanceof Integer) {
                 mtime = ((Integer) mtimeObj).longValue();

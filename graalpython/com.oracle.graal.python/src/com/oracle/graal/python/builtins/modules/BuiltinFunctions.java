@@ -139,6 +139,7 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -1101,17 +1102,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object print(PTuple values, String sep, String end, Object file, boolean flush,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode callStr) {
             try {
                 PythonContext context = getContext();
                 if (values.len() == 0) {
                     write(context, end);
                 } else {
+                    SequenceStorage store = values.getSequenceStorage();
                     StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < values.len() - 1; i++) {
-                        sb.append(callStr.executeObject(values.getItemNormalized(i)) + " ");
+                    for (int i = 0; i < store.length() - 1; i++) {
+                        append(sb, callStr.executeObject(getItemNode.execute(store, i)));
+                        append(sb, " ");
                     }
-                    sb.append(callStr.executeObject(values.getItemNormalized(values.len() - 1)));
+                    append(sb, callStr.executeObject(getItemNode.execute(store, store.length() - 1)));
                     sb.append(end);
                     write(context, sb.toString());
                 }
@@ -1120,6 +1124,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
 
             return PNone.NONE;
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private static void append(StringBuilder sb, Object o) {
+            sb.append(o);
         }
 
         @TruffleBoundary
