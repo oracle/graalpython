@@ -203,7 +203,7 @@ public class PyUnicodeWrapperMR {
         private Object callUnaryIntoCapi(TruffleObject fun, Object arg) {
             if (callNativeUnary == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeUnary = insert(PCallNativeNode.create(1));
+                callNativeUnary = insert(PCallNativeNode.create());
             }
             return callNativeUnary.execute(fun, new Object[]{arg});
         }

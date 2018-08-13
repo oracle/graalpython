@@ -783,7 +783,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
         protected Object doInteropCall(TruffleObject callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Cached("createNew(0).createNode()") Node newNode,
+                        @Cached("NEW.createNode()") Node newNode,
                         @Cached("create()") PTypeToForeignNode toForeignNode,
                         @Cached("create()") PForeignToPTypeNode toPTypeNode) {
             try {
@@ -814,8 +814,8 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"})
         protected Object doInteropCall(TruffleObject callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Cached("IS_EXECUTABLE.createNode()") Node isExecutableNode,
-                        @Cached("createExecute(0).createNode()") Node executeNode,
-                        @Cached("createNew(0).createNode()") Node newNode,
+                        @Cached("EXECUTE.createNode()") Node executeNode,
+                        @Cached("NEW.createNode()") Node newNode,
                         @Cached("create()") PTypeToForeignNode toForeignNode,
                         @Cached("create()") PForeignToPTypeNode toPTypeNode) {
             try {

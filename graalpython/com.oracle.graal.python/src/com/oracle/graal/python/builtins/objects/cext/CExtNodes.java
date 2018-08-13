@@ -87,7 +87,7 @@ public abstract class CExtNodes {
      */
     public static class SubtypeNew extends PBaseNode {
         private final TruffleObject subtypeFunc;
-        @Child private Node executeNode = Message.createExecute(2).createNode();
+        @Child private Node executeNode = Message.EXECUTE.createNode();
         @Child private ToSulongNode toSulongNode = ToSulongNode.create();
         @Child private ToJavaNode toJavaNode = ToJavaNode.create();
 
@@ -134,7 +134,7 @@ public abstract class CExtNodes {
         private Node getExecNode() {
             if (executeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(1).createNode());
+                executeNode = insert(Message.EXECUTE.createNode());
             }
             return executeNode;
         }
@@ -362,7 +362,7 @@ public abstract class CExtNodes {
         Object doForeign(Object value) {
             if (callNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeNode = insert(PCallNativeNode.create(1));
+                callNativeNode = insert(PCallNativeNode.create());
             }
             if (callNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -388,13 +388,13 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doPString(PString str,
-                        @Cached("createExecute(1)") Node executeNode) {
+                        @Cached("createExecute()") Node executeNode) {
             return doString(str.getValue(), executeNode);
         }
 
         @Specialization
         Object doString(String str,
-                        @Cached("createExecute(1)") Node executeNode) {
+                        @Cached("createExecute()") Node executeNode) {
             try {
                 return ForeignAccess.sendExecute(executeNode, getTruffleStringToCstr(), str, str.length());
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -404,7 +404,7 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doByteArray(byte[] arr,
-                        @Cached("createExecute(2)") Node executeNode) {
+                        @Cached("createExecute()") Node executeNode) {
             try {
                 return ForeignAccess.sendExecute(executeNode, getTruffleByteArrayToNative(), getContext().getEnv().asGuestValue(arr), arr.length);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -428,8 +428,8 @@ public abstract class CExtNodes {
             return truffle_byte_array_to_native;
         }
 
-        protected Node createExecute(int arity) {
-            return Message.createExecute(arity).createNode();
+        protected Node createExecute() {
+            return Message.EXECUTE.createNode();
         }
 
         public static AsCharPointer create() {
@@ -453,7 +453,7 @@ public abstract class CExtNodes {
         private Node getExecuteNode() {
             if (executeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(1).createNode());
+                executeNode = insert(Message.EXECUTE.createNode());
             }
             return executeNode;
         }
@@ -495,7 +495,7 @@ public abstract class CExtNodes {
         private PCallNativeNode getCallGetObTypeNode() {
             if (callGetObTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callGetObTypeNode = insert(PCallNativeNode.create(1));
+                callGetObTypeNode = insert(PCallNativeNode.create());
             }
             return callGetObTypeNode;
         }
@@ -521,7 +521,7 @@ public abstract class CExtNodes {
             if (wcharSize < 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 try {
-                    wcharSize = (long) ForeignAccess.sendExecute(Message.createExecute(0).createNode(), getNativeFunction());
+                    wcharSize = (long) ForeignAccess.sendExecute(Message.EXECUTE.createNode(), getNativeFunction());
                     assert wcharSize >= 0L;
                 } catch (InteropException e) {
                     throw e.raise();
