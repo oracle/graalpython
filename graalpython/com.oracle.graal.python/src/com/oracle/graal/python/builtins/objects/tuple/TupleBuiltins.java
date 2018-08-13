@@ -358,7 +358,7 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean doPTuple(PTuple left, PTuple right,
-                        @Cached("create()") SequenceStorageNodes.EqNode eqNode) {
+                        @Cached("createEq()") SequenceStorageNodes.CmpNode eqNode) {
             return eqNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
         }
 

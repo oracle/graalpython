@@ -19,7 +19,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ContainsNodeGen;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.EqNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemSliceNodeGen;
@@ -1271,106 +1270,6 @@ public abstract class SequenceStorageNodes {
 
         public static CmpNode createEq() {
             return CmpNodeGen.create(Eq.INSTANCE);
-        }
-    }
-
-    public abstract static class EqNode extends SequenceStorageBaseNode {
-        @Child private GetItemScalarNode getItemNode;
-        @Child private GetItemScalarNode getRightItemNode;
-        @Child private BinaryComparisonNode equalsNode;
-        @Child private CastToBooleanNode castToBooleanNode;
-
-        public abstract boolean execute(SequenceStorage left, SequenceStorage right);
-
-        @Specialization(guards = {"isEmpty(left)", "isEmpty(right)"})
-        boolean doEmpty(@SuppressWarnings("unused") SequenceStorage left, @SuppressWarnings("unused") SequenceStorage right) {
-            return true;
-        }
-
-        @Specialization(guards = {"left.getClass() == right.getClass()", "!isNative(left)"})
-        boolean doManagedManagedSameType(SequenceStorage left, SequenceStorage right) {
-            assert !isNative(right);
-            // TODO type profile or cache on class
-            return left.equals(right);
-        }
-
-        @Specialization(guards = "left.getElementType() == right.getElementType()")
-        boolean doNativeNativeSameType(NativeSequenceStorage left, NativeSequenceStorage right) {
-            // TODO profile or guard !
-            if (left.length() != right.length()) {
-                return false;
-            }
-            for (int i = 0; i < left.length(); i++) {
-                // use the same 'getItemNode'
-                Object leftItem = getGetItemNode().execute(left, i);
-                Object rightItem = getGetItemNode().execute(right, i);
-                if (!eq(leftItem, rightItem)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Specialization(guards = {"!isNative(left)", "compatible(left, right)"})
-        boolean doManagedNative(SequenceStorage left, NativeSequenceStorage right) {
-            // TODO profile or guard !
-            if (left.length() != right.length()) {
-                return false;
-            }
-            for (int i = 0; i < left.length(); i++) {
-                Object leftItem = getGetItemNode().execute(left, i);
-                Object rightItem = getGetRightItemNode().execute(right, i);
-                if (!eq(leftItem, rightItem)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Specialization(guards = {"!isNative(right)", "compatible(right, left)"})
-        boolean doNatveManaged(NativeSequenceStorage left, SequenceStorage right) {
-            return doManagedNative(right, left);
-        }
-
-        @Fallback
-        boolean doFallback(@SuppressWarnings("unused") SequenceStorage left, @SuppressWarnings("unused") SequenceStorage right) {
-            return false;
-        }
-
-        private GetItemScalarNode getGetItemNode() {
-            if (getItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(GetItemScalarNode.create());
-            }
-            return getItemNode;
-        }
-
-        private GetItemScalarNode getGetRightItemNode() {
-            if (getRightItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getRightItemNode = insert(GetItemScalarNode.create());
-            }
-            return getRightItemNode;
-        }
-
-        private boolean eq(Object left, Object right) {
-            if (equalsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                equalsNode = insert(BinaryComparisonNode.create(__EQ__, __EQ__, "=="));
-            }
-            return castToBoolean(equalsNode.executeWith(left, right));
-        }
-
-        private boolean castToBoolean(Object value) {
-            if (castToBooleanNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CastToBooleanNode.createIfTrueNode());
-            }
-            return castToBooleanNode.executeWith(value);
-        }
-
-        public static EqNode create() {
-            return EqNodeGen.create();
         }
     }
 

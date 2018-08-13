@@ -106,7 +106,7 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = __EQ__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
-        @Child SequenceStorageNodes.EqNode eqNode;
+        @Child SequenceStorageNodes.CmpNode eqNode;
 
         @Specialization
         public boolean eq(PBytes self, PByteArray other) {
@@ -127,10 +127,10 @@ public class BytesBuiltins extends PythonBuiltins {
             throw raise(TypeError, "descriptor '__eq__' requires a 'bytes' object but received a '%p'", self);
         }
 
-        private SequenceStorageNodes.EqNode getEqNode() {
+        private SequenceStorageNodes.CmpNode getEqNode() {
             if (eqNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                eqNode = insert(SequenceStorageNodes.EqNode.create());
+                eqNode = insert(SequenceStorageNodes.CmpNode.createEq());
             }
             return eqNode;
         }
