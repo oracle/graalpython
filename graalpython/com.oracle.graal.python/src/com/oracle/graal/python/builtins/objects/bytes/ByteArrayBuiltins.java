@@ -489,9 +489,8 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ByteArrayIterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object iter(PByteArray byteArray,
-                        @Cached("create()") GetIteratorNode getIterator) {
-            return getIterator.executeWith(byteArray);
+        public Object iter(PByteArray byteArray) {
+            return factory().createSequenceIterator(byteArray);
         }
     }
 

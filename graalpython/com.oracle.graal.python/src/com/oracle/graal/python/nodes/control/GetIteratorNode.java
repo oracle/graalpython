@@ -29,11 +29,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -43,7 +40,6 @@ import com.oracle.graal.python.nodes.control.GetIteratorNodeGen.IsIteratorObject
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -81,21 +77,6 @@ public abstract class GetIteratorNode extends UnaryOpNode {
     }
 
     public abstract Object executeWith(Object value);
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doPRange(PRange value) {
-        return factory().createRangeIterator(value.getStart(), value.getStop(), value.getStep());
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PSequenceIterator doPSequence(PSequence value) {
-        return factory().createSequenceIterator(value);
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PStringIterator doString(String value) {
-        return factory().createStringIterator(value);
-    }
 
     @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doPZip(PZip value) {
