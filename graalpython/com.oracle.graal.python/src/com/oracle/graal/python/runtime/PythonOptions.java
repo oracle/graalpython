@@ -91,6 +91,12 @@ public final class PythonOptions {
     @Option(category = OptionCategory.DEBUG, help = "Turn on verbose mode") //
     public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
+    public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.DEBUG, help = "Minimal size of string, when lazy strings are used. Default 20") //
+    public static final OptionKey<Integer> MinLazyStringLength = new OptionKey<>(20);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
@@ -117,5 +123,13 @@ public final class PythonOptions {
 
     public static int getVariableArgumentInlineCacheLimit() {
         return getOption(PythonLanguage.getContextRef().get(), VariableArgumentInlineCacheLimit);
+    }
+
+    public static boolean useLazyString() {
+        return getOption(PythonLanguage.getContextRef().get(), LazyStrings);
+    }
+
+    public static int getMinLazyStringLength() {
+        return getOption(PythonLanguage.getContextRef().get(), MinLazyStringLength);
     }
 }
