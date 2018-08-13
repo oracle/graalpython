@@ -28,16 +28,19 @@ package com.oracle.graal.python.nodes.generator;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
+public class GeneratorIfNode extends StatementNode implements GeneratorControlNode {
 
     @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
+    @Child protected CastToBooleanNode condition;
+    @Child protected PNode then;
+    @Child protected PNode orelse;
 
     protected final int thenFlagSlot;
     protected final int elseFlagSlot;
@@ -48,7 +51,9 @@ public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
     protected final BranchProfile seenYield = BranchProfile.create();
 
     public GeneratorIfNode(CastToBooleanNode condition, PNode then, PNode orelse, int thenFlagSlot, int elseFlagSlot) {
-        super(condition, then, orelse);
+        this.condition = condition;
+        this.then = then;
+        this.orelse = orelse;
         this.thenFlagSlot = thenFlagSlot;
         this.elseFlagSlot = elseFlagSlot;
     }
@@ -59,14 +64,6 @@ public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
         } else {
             return new GeneratorIfWithoutElseNode(condition, then, thenFlagSlot);
         }
-    }
-
-    public int getThenFlagSlot() {
-        return thenFlagSlot;
-    }
-
-    public int getElseFlagSlot() {
-        return elseFlagSlot;
     }
 
     @Override
@@ -82,9 +79,9 @@ public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
                 thenFlag = condition.executeBoolean(frame);
             }
             if (thenFlag) {
-                then.execute(frame);
+                then.executeVoid(frame);
             } else {
-                orelse.execute(frame);
+                orelse.executeVoid(frame);
             }
             return PNone.NONE;
         } catch (YieldException e) {
@@ -122,7 +119,7 @@ public class GeneratorIfNode extends IfNode implements GeneratorControlNode {
                     thenFlag = condition.executeBoolean(frame);
                 }
                 if (thenFlag) {
-                    then.execute(frame);
+                    then.executeVoid(frame);
                 }
                 return PNone.NONE;
             } catch (YieldException e) {

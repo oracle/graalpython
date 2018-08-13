@@ -49,7 +49,7 @@ final class WhileRepeatingNode extends Node implements RepeatingNode {
         if (!condition.executeBoolean(frame)) {
             return false;
         }
-        body.execute(frame);
+        body.executeVoid(frame);
         return true;
     }
 }

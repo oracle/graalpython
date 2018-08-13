@@ -65,7 +65,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         // store current exception state for later restore
         PException exceptionState = getContext().getCurrentException();
         try {
-            body.execute(frame);
+            body.executeVoid(frame);
         } catch (PException ex) {
             catchException(frame, ex, exceptionState);
             return PNone.NONE;

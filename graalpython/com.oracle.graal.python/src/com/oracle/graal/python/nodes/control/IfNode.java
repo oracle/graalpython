@@ -30,19 +30,16 @@ import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public class IfNode extends StatementNode {
-    @Child protected CastToBooleanNode condition;
-    @Child protected PNode then;
-    @Child protected PNode orelse;
+public final class IfNode extends StatementNode {
+
+    @Child private CastToBooleanNode condition;
+    @Child private PNode then;
+    @Child private PNode orelse;
 
     public IfNode(CastToBooleanNode condition, PNode then, PNode orelse) {
         this.condition = condition;
         this.then = then;
         this.orelse = orelse;
-    }
-
-    public static IfNode create(CastToBooleanNode condition, PNode then, PNode orelse) {
-        return new IfNode(condition, then, orelse);
     }
 
     public CastToBooleanNode getCondition() {
@@ -63,6 +60,15 @@ public class IfNode extends StatementNode {
             return then.execute(frame);
         } else {
             return orelse.execute(frame);
+        }
+    }
+
+    @Override
+    public void executeVoid(VirtualFrame frame) {
+        if (condition.executeBoolean(frame)) {
+            then.executeVoid(frame);
+        } else {
+            orelse.executeVoid(frame);
         }
     }
 }

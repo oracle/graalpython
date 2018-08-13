@@ -82,7 +82,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         }
 
         try {
-            getBody().execute(frame);
+            getBody().executeVoid(frame);
         } catch (PException ex) {
             gen.setActive(frame, exceptFlag, true);
             gen.setActiveException(frame, ex);

@@ -63,14 +63,14 @@ public class AssignmentNode extends PNode {
 
     public Object doWrite(VirtualFrame frame, Object value) {
         ((WriteNode) writeTemp).doWrite(frame, value);
-        assignment.execute(frame);
+        assignment.executeVoid(frame);
         return PNone.NONE;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        writeTemp.execute(frame);
-        assignment.execute(frame);
+        writeTemp.executeVoid(frame);
+        assignment.executeVoid(frame);
         return PNone.NONE;
     }
 }

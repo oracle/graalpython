@@ -49,7 +49,7 @@ public final class ElseNode extends StatementNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        then.execute(frame);
+        then.executeVoid(frame);
         return orelse.execute(frame);
     }
 }
