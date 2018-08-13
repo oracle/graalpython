@@ -40,6 +40,7 @@ import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -826,7 +827,7 @@ public abstract class SequenceStorageNodes {
             try {
                 return PInt.byteValueExact(value);
             } catch (ArithmeticException e) {
-                throw raise(ValueError, "byte must be in range(0, 256)");
+                throw raiseByteRangeError();
             }
         }
 
@@ -840,21 +841,21 @@ public abstract class SequenceStorageNodes {
             try {
                 return PInt.byteValueExact(value);
             } catch (ArithmeticException e) {
-                throw raise(ValueError, "byte must be in range(0, 256)");
+                throw raiseByteRangeError();
             }
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         protected byte doPInt(PInt value) {
-            return value.byteValueExact();
+            return PInt.byteValueExact(value.longValueExact());
         }
 
         @Specialization(replaces = "doPInt")
         protected byte doPIntOvf(PInt value) {
             try {
-                return value.byteValueExact();
+                return PInt.byteValueExact(value.longValueExact());
             } catch (ArithmeticException e) {
-                throw raise(ValueError, "byte must be in range(0, 256)");
+                throw raiseByteRangeError();
             }
         }
 
@@ -866,6 +867,10 @@ public abstract class SequenceStorageNodes {
         @Fallback
         protected byte doGeneric(@SuppressWarnings("unused") Object val) {
             throw raise(TypeError, "an integer is required");
+        }
+
+        private PException raiseByteRangeError() {
+            throw raise(ValueError, "byte must be in range(0, 256)");
         }
 
         public static CastToByteNode create() {
