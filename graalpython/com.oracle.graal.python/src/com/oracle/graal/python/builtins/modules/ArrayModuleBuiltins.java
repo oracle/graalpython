@@ -33,6 +33,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -64,8 +65,8 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PythonArrayNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "noInitializer(typeCode,initializer)")
-        PArray array(PythonClass cls, String typeCode, @SuppressWarnings("unused") Object initializer) {
+        @Specialization(guards = "isNoValue(initializer)")
+        PArray array(PythonClass cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
             /**
              * TODO @param typeCode should be a char, not a string
              */
@@ -156,8 +157,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         }
                     }
 
-                    // TODO
-// return factory().createByteArray(cls, byteArray);
+                    return factory().createArray(cls, byteArray);
                 default:
                     return null;
             }

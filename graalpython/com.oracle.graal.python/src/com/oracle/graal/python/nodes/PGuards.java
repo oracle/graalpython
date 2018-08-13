@@ -262,11 +262,6 @@ public abstract class PGuards {
         return idx < 0;
     }
 
-    @SuppressWarnings("unused")
-    public static boolean noInitializer(String typeCode, Object initializer) {
-        return (initializer instanceof PNone);
-    }
-
     public static boolean isPythonUserClass(Object klass) {
         return !isPythonBuiltinClass(klass);
     }
