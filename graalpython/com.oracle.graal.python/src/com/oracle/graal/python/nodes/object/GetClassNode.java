@@ -74,6 +74,12 @@ public abstract class GetClassNode extends PNode {
 
     public abstract PythonClass execute(Object object);
 
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
+    }
+
     @Specialization
     protected PythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object) {
         return getCore().lookupType(PythonBuiltinClassType.GetSetDescriptor);
@@ -85,9 +91,21 @@ public abstract class GetClassNode extends PNode {
         return profile.profile(object.getPythonClass());
     }
 
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") PNone object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
+    }
+
     @Specialization
     protected PythonClass getIt(@SuppressWarnings("unused") PNone object) {
         return getCore().lookupType(PythonBuiltinClassType.PNone);
+    }
+
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") PNotImplemented object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
     }
 
     @SuppressWarnings("unused")
@@ -96,10 +114,22 @@ public abstract class GetClassNode extends PNode {
         return getCore().lookupType(PythonBuiltinClassType.PNotImplemented);
     }
 
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") PEllipsis object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
+    }
+
     @SuppressWarnings("unused")
     @Specialization
     protected PythonClass getIt(PEllipsis object) {
         return getCore().lookupType(PythonBuiltinClassType.PEllipsis);
+    }
+
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") boolean object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
     }
 
     @SuppressWarnings("unused")
@@ -108,10 +138,22 @@ public abstract class GetClassNode extends PNode {
         return getCore().lookupType(PythonBuiltinClassType.Boolean);
     }
 
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") int object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
+    }
+
     @SuppressWarnings("unused")
     @Specialization
     protected PythonClass getIt(int object) {
         return getCore().lookupType(PythonBuiltinClassType.PInt);
+    }
+
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") long object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
     }
 
     @SuppressWarnings("unused")
@@ -120,10 +162,22 @@ public abstract class GetClassNode extends PNode {
         return getCore().lookupType(PythonBuiltinClassType.PInt);
     }
 
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") double object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
+    }
+
     @SuppressWarnings("unused")
     @Specialization
     protected PythonClass getIt(double object) {
         return getCore().lookupType(PythonBuiltinClassType.PFloat);
+    }
+
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") String object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
     }
 
     @SuppressWarnings("unused")
@@ -141,6 +195,12 @@ public abstract class GetClassNode extends PNode {
     protected PythonClass getIt(PythonNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
+    }
+
+    @Specialization(guards = "isForeignObject(object)", assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") TruffleObject object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
     }
 
     @SuppressWarnings("unused")

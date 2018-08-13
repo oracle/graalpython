@@ -53,6 +53,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -88,6 +89,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
+
+    public static Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
     private final NodeFactory nodeFactory;
@@ -393,5 +396,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public boolean isNativeBuildTime() {
         return nativeBuildTime;
+    }
+
+    @Override
+    protected void initializeMultipleContexts() {
+        super.initializeMultipleContexts();
+        singleContextAssumption.invalidate();
     }
 }
