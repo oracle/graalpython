@@ -547,7 +547,7 @@ public abstract class CExtNodes {
 
     public static class IsNode extends CExtBaseNode {
         @CompilationFinal private TruffleObject isFunc = null;
-        @Child Node executeNode = Message.createExecute(2).createNode();
+        @Child Node executeNode = Message.EXECUTE.createNode();
 
         public boolean execute(PythonNativeObject a, PythonNativeObject b) {
             try {
