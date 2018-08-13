@@ -566,7 +566,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // delattr(object, name)
-    @Builtin(name = DELATTR, fixedNumOfArguments = 2)
+    @Builtin(name = DELATTR, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DelAttrNode extends PythonBinaryBuiltinNode {
         @Child DeleteAttributeNode delNode = DeleteAttributeNode.create();

@@ -507,7 +507,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyType_Dict", fixedNumOfArguments = 1)
+    @Builtin(name = "PyType_Dict", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyType_DictNode extends PythonBuiltinNode {
         @Specialization
@@ -518,7 +518,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_SetAttr", fixedNumOfArguments = 3)
+    @Builtin(name = "PyTruffle_SetAttr", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyObject_Setattr extends PythonBuiltinNode {
         @Specialization
@@ -1378,7 +1378,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_GetSetDescriptor", fixedNumOfArguments = 0, keywordArguments = {"fget", "fset", "name", "owner"})
+    @Builtin(name = "PyTruffle_GetSetDescriptor", keywordArguments = {"fget", "fset", "name", "owner"})
     @GenerateNodeFactory
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
         @Specialization
@@ -1397,7 +1397,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_SeqIter_New", fixedNumOfArguments = 1)
+    @Builtin(name = "PyTruffle_SeqIter_New", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class SeqIterNewNode extends PythonBuiltinNode {
         @Specialization
@@ -1406,7 +1406,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_BuiltinMethod", fixedNumOfArguments = 2)
+    @Builtin(name = "PyTruffle_BuiltinMethod", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodNode extends PythonBuiltinNode {
         @Specialization
@@ -1534,7 +1534,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_KEYWORDS", fixedNumOfArguments = 1)
+    @Builtin(name = "METH_KEYWORDS", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
@@ -1545,7 +1545,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_VARARGS", fixedNumOfArguments = 1)
+    @Builtin(name = "METH_VARARGS", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethVarargsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
@@ -1556,7 +1556,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_NOARGS", fixedNumOfArguments = 1)
+    @Builtin(name = "METH_NOARGS", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethNoargsNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
@@ -1567,7 +1567,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_O", fixedNumOfArguments = 1)
+    @Builtin(name = "METH_O", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethONode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
@@ -1578,7 +1578,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "METH_FASTCALL", fixedNumOfArguments = 1)
+    @Builtin(name = "METH_FASTCALL", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MethFastcallNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
