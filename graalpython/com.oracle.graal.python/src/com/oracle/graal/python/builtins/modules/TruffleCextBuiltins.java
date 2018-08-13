@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.PNati
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
@@ -757,7 +758,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         protected boolean isByteArray(TruffleObject o) {
-            return o instanceof CByteArrayWrapper || ForeignAccess.sendHasSize(getHasSizeNode(), o);
+            return o instanceof PySequenceArrayWrapper || o instanceof CByteArrayWrapper || ForeignAccess.sendHasSize(getHasSizeNode(), o);
         }
 
         protected byte[] getByteArray(TruffleObject o) {
@@ -1119,9 +1120,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long size) {
             return o.getDelegate();
+        }
+
+        @Specialization
+        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper o, @SuppressWarnings("unused") long size,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return toBytesNode.execute(o.getDelegate());
         }
 
         @Fallback
