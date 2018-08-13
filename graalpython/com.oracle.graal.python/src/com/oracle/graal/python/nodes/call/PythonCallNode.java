@@ -145,7 +145,7 @@ public abstract class PythonCallNode extends PNode {
     }
 
     protected static Node createInvoke() {
-        return Message.createInvoke(0).createNode();
+        return Message.INVOKE.createNode();
     }
 
     @Specialization

@@ -31,7 +31,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.runtime.exception.YieldException;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -39,27 +38,14 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GeneratorBlockNode extends BaseBlockNode implements GeneratorControlNode {
 
-    private static final boolean[] EMPTY = new boolean[0];
-
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
     private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
     private final BranchProfile seenYield = BranchProfile.create();
-    @CompilationFinal(dimensions = 1) private final boolean[] isYield;
     private final int indexSlot;
 
     public GeneratorBlockNode(PNode[] statements, int indexSlot) {
         super(statements);
-        boolean[] yields = EMPTY;
-        for (int i = 0; i < statements.length; i++) {
-            if (statements[i] instanceof YieldNode) {
-                if (yields.length == 0) {
-                    yields = new boolean[statements.length];
-                }
-                yields[i] = true;
-            }
-        }
-        this.isYield = yields;
         this.indexSlot = indexSlot;
     }
 
@@ -71,7 +57,6 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
         return indexSlot;
     }
 
-    @Override
     public GeneratorBlockNode insertNodesBefore(PNode insertBefore, List<PNode> insertees) {
         return new GeneratorBlockNode(insertStatementsBefore(insertBefore, insertees), getIndexSlot());
     }
@@ -92,12 +77,7 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
             return result;
         } catch (YieldException e) {
             seenYield.enter();
-            if (i < isYield.length && isYield[i]) {
-                // continue after the yield
-                nextIndex = i + 1;
-            } else {
-                nextIndex = i;
-            }
+            nextIndex = i;
             throw e;
         } finally {
             if (needsUpdateProfile.profile(nextIndex != startIndex)) {

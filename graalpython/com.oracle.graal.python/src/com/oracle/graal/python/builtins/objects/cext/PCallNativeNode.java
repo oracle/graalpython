@@ -51,18 +51,12 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 
 public class PCallNativeNode extends PBaseNode {
-    private final int arity;
-
     @Child private Node executeNode;
-
-    public PCallNativeNode(int arity) {
-        this.arity = arity;
-    }
 
     private Node getExecuteNode() {
         if (executeNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.createExecute(arity).createNode());
+            executeNode = insert(Message.EXECUTE.createNode());
         }
         return executeNode;
     }
@@ -76,7 +70,7 @@ public class PCallNativeNode extends PBaseNode {
         }
     }
 
-    public static PCallNativeNode create(int arity) {
-        return new PCallNativeNode(arity);
+    public static PCallNativeNode create() {
+        return new PCallNativeNode();
     }
 }

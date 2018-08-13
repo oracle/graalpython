@@ -52,7 +52,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PythonNFICallNode extends PythonBuiltinNode {
     @Child private Node readNode = Message.READ.createNode();
-    @Child private Node bindNode = Message.createInvoke(3).createNode();
+    @Child private Node bindNode = Message.EXECUTE.createNode();
     @Child private Node executeNode;
 
     protected TruffleObject getDefaultLibrary() {
@@ -67,7 +67,7 @@ public abstract class PythonNFICallNode extends PythonBuiltinNode {
     protected Object sendExecute(TruffleObject function, Object... arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
         if (executeNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.createExecute(arguments.length).createNode());
+            executeNode = insert(Message.EXECUTE.createNode());
         }
         return ForeignAccess.sendExecute(executeNode, function, arguments);
     }

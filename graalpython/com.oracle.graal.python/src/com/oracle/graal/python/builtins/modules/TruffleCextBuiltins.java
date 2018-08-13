@@ -636,11 +636,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             this.name = name;
             this.cwrapper = cwrapper;
             this.callable = callable;
-            if (cwrapper != null) {
-                this.executeNode = Message.createExecute(3).createNode();
-            } else {
-                this.executeNode = Message.createExecute(2).createNode();
-            }
+            this.executeNode = Message.EXECUTE.createNode();
         }
 
         public TruffleObject getCallable() {

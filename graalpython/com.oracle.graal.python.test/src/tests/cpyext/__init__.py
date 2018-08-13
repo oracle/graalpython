@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import sys
+from importlib import invalidate_caches
 from string import Formatter
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
@@ -87,6 +88,11 @@ def ccompile(self, name):
     binary_file_llvm = '%s/%s.bc' % (__dir__, name)
     if GRAALPYTHON:
         file_not_empty(binary_file_llvm)
+    # IMPORTANT:
+    # Invalidate caches after creating the native module.
+    # FileFinder caches directory contents, and the check for directory
+    # changes has whole-second precision, so it can miss quick updates.
+    invalidate_caches()
 
 
 def file_not_empty(path):

@@ -264,7 +264,7 @@ public class PythonMessageResolution {
 
             Object profiledCallable = classProfile.profile(callable);
             if (profiledCallable == PNone.NO_VALUE) {
-                throw UnsupportedMessageException.raise(Message.createExecute(convertedArgs.length));
+                throw UnsupportedMessageException.raise(Message.EXECUTE);
             }
 
             PKeyword[] emptyKeywords = new PKeyword[0];

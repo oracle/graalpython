@@ -313,7 +313,7 @@ public class PySequenceArrayWrapperMR {
         private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, Object arg1) {
             if (callNativeBinary == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeBinary = insert(PCallNativeNode.create(1));
+                callNativeBinary = insert(PCallNativeNode.create());
             }
             return callNativeBinary.execute(fun, new Object[]{arg0, arg1});
         }
@@ -355,7 +355,7 @@ public class PySequenceArrayWrapperMR {
     @ImportStatic(SpecialMethodNames.class)
     abstract static class GetTypeIDNode extends PBaseNode {
 
-        @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create(1);
+        @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create();
 
         @CompilationFinal TruffleObject funGetByteArrayTypeID;
         @CompilationFinal TruffleObject funGetPtrArrayTypeID;

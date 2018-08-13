@@ -227,7 +227,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     public abstract static class executeNode extends PythonBuiltinNode {
         @Specialization
         Object remove(TruffleObject receiver, Object[] arguments,
-                        @Cached("createExecute(0).createNode()") Node executeNode) {
+                        @Cached("EXECUTE.createNode()") Node executeNode) {
             try {
                 return ForeignAccess.sendExecute(executeNode, receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
@@ -242,7 +242,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     public abstract static class newNode extends PythonBuiltinNode {
         @Specialization
         Object remove(TruffleObject receiver, Object[] arguments,
-                        @Cached("createNew(0).createNode()") Node executeNode) {
+                        @Cached("NEW.createNode()") Node executeNode) {
             try {
                 return ForeignAccess.sendNew(executeNode, receiver, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
@@ -257,7 +257,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     public abstract static class invokeNode extends PythonBuiltinNode {
         @Specialization
         Object remove(TruffleObject receiver, String key, Object[] arguments,
-                        @Cached("createInvoke(0).createNode()") Node executeNode) {
+                        @Cached("INVOKE.createNode()") Node executeNode) {
             try {
                 return ForeignAccess.sendInvoke(executeNode, receiver, key, arguments);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {

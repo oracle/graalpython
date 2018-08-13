@@ -25,11 +25,8 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import java.util.List;
-
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -46,15 +43,10 @@ public final class BlockNode extends BaseBlockNode {
         if (length == 0) {
             return EmptyNode.create();
         } else if (length == 1) {
-            return statements[0] instanceof YieldNode ? new BlockNode(statements) : statements[0];
+            return statements[0];
         } else {
             return new BlockNode(statements);
         }
-    }
-
-    @Override
-    public BaseBlockNode insertNodesBefore(PNode insertBefore, List<PNode> insertees) {
-        return new BlockNode(insertStatementsBefore(insertBefore, insertees));
     }
 
     @ExplodeLoop

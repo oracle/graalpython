@@ -76,7 +76,6 @@ import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.DictConcatNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
-import com.oracle.graal.python.nodes.generator.YieldResumeNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
 import com.oracle.graal.python.nodes.literal.BytesLiteralNode;
@@ -213,7 +212,7 @@ public class NodeFactory {
     }
 
     public PNode createYield(PNode right, FrameSlot returnSlot) {
-        return createBlock(new YieldNode(createWriteLocal(right, returnSlot)), new YieldResumeNode());
+        return new YieldNode(createWriteLocal(right, returnSlot));
     }
 
     public PNode createIntegerLiteral(int value) {

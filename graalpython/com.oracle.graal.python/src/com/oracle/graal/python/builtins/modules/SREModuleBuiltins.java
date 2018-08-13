@@ -273,7 +273,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         protected static Node createExecute() {
-            return Message.createExecute(0).createNode();
+            return Message.EXECUTE.createNode();
         }
 
     }

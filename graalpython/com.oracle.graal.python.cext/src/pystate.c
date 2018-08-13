@@ -49,3 +49,12 @@ PyThreadState * PyThreadState_Get() {
     // TODO: (tfel) how much ThreadState will we actually support?
     return (PyThreadState*)PyThreadState_GetDict();
 }
+
+PyGILState_STATE PyGILState_Ensure() {
+    // ignore for the time being
+    return NULL;
+}
+
+void PyGILState_Release(PyGILState_STATE state) {
+    // ignore for the time being
+}

@@ -25,14 +25,26 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class YieldNode extends StatementNode implements GeneratorControlNode {
 
     @Child private PNode right;
+    @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
+
+    @CompilationFinal private int flagSlot;
+
+    private final BranchProfile gotException = BranchProfile.create();
+    private final BranchProfile gotValue = BranchProfile.create();
+    private final BranchProfile gotNothing = BranchProfile.create();
 
     public YieldNode(PNode right) {
         this.right = right;
@@ -44,7 +56,28 @@ public class YieldNode extends StatementNode implements GeneratorControlNode {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        right.execute(frame);
-        throw YieldException.INSTANCE;
+        if (access.isActive(frame, flagSlot)) {
+            // yield is active -> resume
+            access.setActive(frame, flagSlot, false);
+            Object specialArgument = PArguments.getSpecialArgument(frame);
+            if (specialArgument == null) {
+                gotNothing.enter();
+                return PNone.NONE;
+            } else if (specialArgument instanceof PException) {
+                gotException.enter();
+                throw (PException) specialArgument;
+            } else {
+                gotValue.enter();
+                return specialArgument;
+            }
+        } else {
+            right.executeVoid(frame);
+            access.setActive(frame, flagSlot, true);
+            throw YieldException.INSTANCE;
+        }
+    }
+
+    public void setFlagSlot(int slot) {
+        this.flagSlot = slot;
     }
 }

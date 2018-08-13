@@ -39,8 +39,6 @@ public abstract class BaseBlockNode extends StatementNode {
         assert statements.length > 0;
     }
 
-    public abstract BaseBlockNode insertNodesBefore(PNode insertBefore, List<PNode> insertees);
-
     protected PNode[] insertStatementsBefore(PNode insertBefore, List<PNode> insertees) {
         int insertAt = -1;
         for (int i = 0; i < statements.length; i++) {
