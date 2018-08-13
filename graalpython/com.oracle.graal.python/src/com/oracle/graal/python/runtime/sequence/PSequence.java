@@ -27,9 +27,7 @@ package com.oracle.graal.python.runtime.sequence;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -39,15 +37,6 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
     public PSequence(PythonClass cls) {
         super(cls);
     }
-
-    @Deprecated
-    public final Object getSlice(PythonObjectFactory factory, PSlice slice) {
-        SliceInfo info = slice.computeActualIndices(len());
-        return getSlice(factory, info.start, info.stop, info.step, info.length);
-    }
-
-    @Deprecated
-    protected abstract Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length);
 
     @Deprecated
     public abstract void setSlice(int start, int stop, int step, PSequence value);

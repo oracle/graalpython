@@ -74,11 +74,6 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
     }
 
     @Override
-    public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        return factory.createTuple(store.getSliceInBound(start, stop, step, length));
-    }
-
-    @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         if (store instanceof ObjectSequenceStorage) {

@@ -377,6 +377,12 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(SequenceStorage s, int start, int stop, int step, int length);
 
+        @Specialization
+        @SuppressWarnings("unused")
+        protected EmptySequenceStorage doEmpty(EmptySequenceStorage storage, int start, int stop, int step, int length) {
+            return EmptySequenceStorage.INSTANCE;
+        }
+
         @Specialization(limit = "5", guards = {"storage.getClass() == cachedClass"})
         protected SequenceStorage doManagedStorage(BasicSequenceStorage storage, int start, int stop, int step, int length,
                         @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
@@ -487,7 +493,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected void doSlice(SequenceStorage storage, PSlice slice, PSequence value) {
             SliceInfo info = slice.computeActualIndices(storage.length());
-            getSetItemSliceNode().execute(storage, info.start, info.stop, info.step, info.length);
+            getSetItemSliceNode().execute(storage, info, value);
         }
 
         private SetItemScalarNode getSetItemScalarNode() {
@@ -612,78 +618,11 @@ public abstract class SequenceStorageNodes {
         @Child private Node readNode;
         @Child private Node executeNode;
 
-        public abstract Object execute(SequenceStorage s, int start, int stop, int step, int length);
+        public abstract Object execute(SequenceStorage s, SliceInfo info, Object iterable);
 
-        @Specialization(limit = "5", guards = {"storage.getClass() == cachedClass"})
-        protected SequenceStorage doManagedStorage(BasicSequenceStorage storage, int start, int stop, int step, int length,
-                        @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
-            return cachedClass.cast(storage).getSliceInBound(start, stop, step, length);
-        }
-
-        @Specialization(guards = "storage.getElementType() == BYTE")
-        protected NativeSequenceStorage doNativeByte(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            byte[] newArray = new byte[length];
-            for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (byte) readNativeElement((TruffleObject) storage.getPtr(), i);
-            }
-            return storageToNativeNode.execute(newArray);
-        }
-
-        @Specialization(guards = "storage.getElementType() == INT")
-        protected NativeSequenceStorage doNativeInt(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            int[] newArray = new int[length];
-            for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (int) readNativeElement((TruffleObject) storage.getPtr(), i);
-            }
-            return storageToNativeNode.execute(newArray);
-        }
-
-        @Specialization(guards = "storage.getElementType() == LONG")
-        protected NativeSequenceStorage doNativeLong(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            long[] newArray = new long[length];
-            for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (long) readNativeElement((TruffleObject) storage.getPtr(), i);
-            }
-            return storageToNativeNode.execute(newArray);
-        }
-
-        @Specialization(guards = "storage.getElementType() == DOUBLE")
-        protected NativeSequenceStorage doNativeDouble(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            double[] newArray = new double[length];
-            for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = (double) readNativeElement((TruffleObject) storage.getPtr(), i);
-            }
-            return storageToNativeNode.execute(newArray);
-        }
-
-        @Specialization(guards = "storage.getElementType() == OBJECT")
-        protected NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode) {
-            Object[] newArray = new Object[length];
-            for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = readNativeElement((TruffleObject) storage.getPtr(), i);
-            }
-            return storageToNativeNode.execute(newArray);
-        }
-
-        private Object readNativeElement(TruffleObject ptr, int idx) {
-            try {
-                return ForeignAccess.sendRead(getReadNode(), ptr, idx);
-            } catch (InteropException e) {
-                throw e.raise();
-            }
-        }
-
-        private Node getReadNode() {
-            if (readNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readNode = insert(Message.READ.createNode());
-            }
-            return readNode;
+        @Specialization
+        Object doGeneric(@SuppressWarnings("unused") SequenceStorage s, @SuppressWarnings("unused") SliceInfo info, @SuppressWarnings("unused") Object iterable) {
+            throw new UnsupportedOperationException();
         }
 
         public static SetItemSliceNode create() {

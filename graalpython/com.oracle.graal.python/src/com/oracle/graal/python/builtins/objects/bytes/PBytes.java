@@ -76,12 +76,6 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     }
 
     @Override
-    public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        CompilerDirectives.transferToInterpreter();
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int index(Object value) {
         int index = store.index(value);
 

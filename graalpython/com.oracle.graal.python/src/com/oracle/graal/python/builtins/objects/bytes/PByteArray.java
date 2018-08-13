@@ -78,11 +78,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     }
 
     @Override
-    public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        return factory.createByteArray(this.getPythonClass(), store.getSliceInBound(start, stop, step, length));
-    }
-
-    @Override
     public void setSlice(int start, int stop, int step, PSequence value) {
         final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length());
         int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length());

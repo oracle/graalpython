@@ -79,10 +79,4 @@ public class PArray extends PSequence implements PLenSupplier {
     public int len() {
         return store.length();
     }
-
-    @Override
-    protected Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        throw new UnsupportedOperationException();
-    }
-
 }

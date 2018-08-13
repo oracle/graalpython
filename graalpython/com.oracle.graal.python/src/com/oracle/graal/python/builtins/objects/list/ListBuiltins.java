@@ -268,82 +268,18 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forList();
-
-        @Specialization(guards = "isIntStorage(primary)")
-        protected int doPListInt(PList primary, long idx) {
-            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            return storage.getIntItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
-        @Specialization(guards = "isLongStorage(primary)")
-        protected long doPListLong(PList primary, long idx) {
-            LongSequenceStorage storage = (LongSequenceStorage) primary.getSequenceStorage();
-            return storage.getLongItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
-        @Specialization(guards = "isDoubleStorage(primary)")
-        protected double doPListDouble(PList primary, long idx) {
-            DoubleSequenceStorage storage = (DoubleSequenceStorage) primary.getSequenceStorage();
-            return storage.getDoubleItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
-        @Specialization(guards = "isObjectStorage(primary)")
-        protected Object doPListObject(PList primary, long idx) {
-            ObjectSequenceStorage storage = (ObjectSequenceStorage) primary.getSequenceStorage();
-            return storage.getItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
         @Specialization
-        protected Object doPList(PList list, long idx) {
-            SequenceStorage storage = list.getSequenceStorage();
-            return storage.getItemNormalized(normalize.execute(idx, storage.length()));
+        protected Object doScalar(PList self, Object key,
+                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
+            return getItemNode.execute(self.getSequenceStorage(), key);
         }
 
-        @Specialization(guards = "isIntStorage(primary)")
-        protected int doPListInt(PList primary, PInt idx) {
-            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            return storage.getIntItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
-        @Specialization(guards = "isLongStorage(primary)")
-        protected long doPListLong(PList primary, PInt idx) {
-            LongSequenceStorage storage = (LongSequenceStorage) primary.getSequenceStorage();
-            return storage.getLongItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
-        @Specialization(guards = "isDoubleStorage(primary)")
-        protected double doPListDouble(PList primary, PInt idx) {
-            DoubleSequenceStorage storage = (DoubleSequenceStorage) primary.getSequenceStorage();
-            return storage.getDoubleItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
-        @Specialization(guards = "isObjectStorage(primary)")
-        protected Object doPListObject(PList primary, PInt idx) {
-            ObjectSequenceStorage storage = (ObjectSequenceStorage) primary.getSequenceStorage();
-            return storage.getItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
-        @Specialization
-        protected Object doPList(PList list, PInt idx) {
-            SequenceStorage storage = list.getSequenceStorage();
-            return storage.getItemNormalized(normalize.execute(idx, storage.length()));
-        }
-
-        @Specialization
-        protected Object doPListSlice(PList self, PSlice slice) {
-            return self.getSlice(factory(), slice);
+        protected static SequenceStorageNodes.GetItemNode createGetItemNode() {
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList(), (s, f) -> f.createList(s));
         }
 
         protected static GetItemNode create() {
             return ListBuiltinsFactory.GetItemNodeFactory.create();
-        }
-
-        @Specialization
-        protected Object doObjectIndex(PList self, Object objectIdx,
-                        @Cached("create()") IndexNode getIndexNode,
-                        @Cached("create()") GetItemNode getRecursiveNode) {
-            return getRecursiveNode.execute(self, getIndexNode.execute(objectIdx));
         }
 
         @SuppressWarnings("unused")

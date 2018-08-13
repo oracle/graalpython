@@ -56,11 +56,6 @@ public final class PList extends PSequence {
     }
 
     @Override
-    public final Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        return factory.createList(getPythonClass(), store.getSliceInBound(start, stop, step, length));
-    }
-
-    @Override
     public final void setSlice(PSlice slice, PSequence value) {
         // Should not be used. Replaces with ListNodes.SetSliceNode.
         // When it will be replaced in other PSequence implementeations,

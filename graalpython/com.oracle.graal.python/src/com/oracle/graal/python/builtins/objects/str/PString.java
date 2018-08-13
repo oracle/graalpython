@@ -53,11 +53,6 @@ public final class PString extends PImmutableSequence {
     }
 
     @Override
-    public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String toString() {
         return value.toString();
     }
