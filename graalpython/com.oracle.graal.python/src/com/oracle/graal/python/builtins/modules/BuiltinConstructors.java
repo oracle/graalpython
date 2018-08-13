@@ -252,7 +252,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         protected CastToIndexNode getCastToIndexNode() {
             if (castToIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToIndexNode = insert(CastToIndexNode.create());
+                castToIndexNode = insert(CastToIndexNode.createOverflow());
             }
             return castToIndexNode;
         }

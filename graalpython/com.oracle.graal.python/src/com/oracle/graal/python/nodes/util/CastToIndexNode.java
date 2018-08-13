@@ -41,12 +41,14 @@
 package com.oracle.graal.python.nodes.util;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -58,8 +60,16 @@ import com.oracle.truffle.api.profiles.BranchProfile;
  */
 public abstract class CastToIndexNode extends PBaseNode {
 
+    private static final String ERROR_MESSAGE = "cannot fit 'int' into an index-sized integer";
+
     @Child private LookupAndCallUnaryNode callIndexNode;
+
     private final BranchProfile errorProfile = BranchProfile.create();
+    private final PythonErrorType errorType;
+
+    public CastToIndexNode(PythonErrorType errorType) {
+        this.errorType = errorType;
+    }
 
     public abstract int execute(Object x);
 
@@ -89,7 +99,7 @@ public abstract class CastToIndexNode extends PBaseNode {
         try {
             return PInt.intValueExact(x);
         } catch (ArithmeticException e) {
-            throw raiseIndexError();
+            throw raise(errorType, ERROR_MESSAGE);
         }
     }
 
@@ -103,7 +113,7 @@ public abstract class CastToIndexNode extends PBaseNode {
         try {
             return x.intValueExact();
         } catch (ArithmeticException e) {
-            throw raiseIndexError();
+            throw raise(errorType, ERROR_MESSAGE);
         }
     }
 
@@ -122,6 +132,10 @@ public abstract class CastToIndexNode extends PBaseNode {
     }
 
     public static CastToIndexNode create() {
-        return CastToIndexNodeGen.create();
+        return CastToIndexNodeGen.create(IndexError);
+    }
+
+    public static CastToIndexNode createOverflow() {
+        return CastToIndexNodeGen.create(OverflowError);
     }
 }
