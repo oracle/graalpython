@@ -31,9 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -118,11 +116,7 @@ public final class PRange extends PImmutableSequence {
 
     @Override
     public SequenceStorage getSequenceStorage() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int index(Object value) {
+        CompilerDirectives.transferToInterpreter();
         throw new UnsupportedOperationException();
     }
 

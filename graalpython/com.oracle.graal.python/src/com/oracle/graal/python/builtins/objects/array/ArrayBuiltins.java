@@ -55,7 +55,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -104,8 +103,9 @@ public class ArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean contains(PSequence self, Object other) {
-            return self.index(other) != -1;
+        boolean contains(PArray self, Object other,
+                        @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
+            return containsNode.execute(self.getSequenceStorage(), other);
         }
     }
 

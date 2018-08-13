@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.str;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
@@ -59,12 +58,6 @@ public final class PString extends PImmutableSequence {
 
     @Override
     public SequenceStorage getSequenceStorage() {
-        throw new UnsupportedOperationException();
-    }
-
-    @SuppressWarnings("hiding")
-    @Override
-    public int index(Object value) {
         throw new UnsupportedOperationException();
     }
 

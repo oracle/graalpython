@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.list;
 
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
@@ -181,11 +180,6 @@ public final class PList extends PSequence {
         }
 
         return new PList(getPythonClass(), newStore);
-    }
-
-    @Override
-    public final int index(Object value) {
-        return store.index(value);
     }
 
     public final void insert(int index, Object value) {

@@ -1658,6 +1658,26 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        public boolean doByteStorage(ByteSequenceStorage s, int item) {
+            return s.indexOfInt(item) != -1;
+        }
+
+        @Specialization
+        public boolean doIntStorage(IntSequenceStorage s, int item) {
+            return s.indexOfInt(item) != -1;
+        }
+
+        @Specialization
+        public boolean doLongStorage(LongSequenceStorage s, long item) {
+            return s.indexOfLong(item) != -1;
+        }
+
+        @Specialization
+        public boolean doDoubleStorage(DoubleSequenceStorage s, double item) {
+            return s.indexOfDouble(item) != -1;
+        }
+
+        @Specialization
         boolean doGeneric(SequenceStorage left, Object item) {
             for (int i = 0; i < left.length(); i++) {
                 Object leftItem = getGetItemNode().execute(left, i);

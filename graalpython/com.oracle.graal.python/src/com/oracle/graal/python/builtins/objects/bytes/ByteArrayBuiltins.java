@@ -88,6 +88,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PByteArray.class)
@@ -445,8 +446,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ByteArrayIndexNode extends PythonBuiltinNode {
         @Specialization
-        public int index(PByteArray byteArray, Object arg) {
-            return byteArray.index(arg);
+        public int index(PByteArray byteArray, Object arg,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(byteArray, arg, 0, byteArray.len());
         }
     }
 
@@ -557,8 +559,15 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean contains(PSequence self, Object other) {
-            return self.index(other) != -1;
+        boolean contains(PSequence self, Object other,
+                        @Cached("create()") BranchProfile errorProfile,
+                        @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
+
+            if (!containsNode.execute(self.getSequenceStorage(), other)) {
+                errorProfile.enter();
+                throw raise(ValueError, "%s is not in bytes literal", other);
+            }
+            return true;
         }
     }
 

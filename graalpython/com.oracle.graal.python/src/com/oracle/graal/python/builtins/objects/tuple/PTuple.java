@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.tuple;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
@@ -112,11 +111,6 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
     @Override
     public void setSequenceStorage(SequenceStorage store) {
         this.store = store;
-    }
-
-    @Override
-    public int index(Object value) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

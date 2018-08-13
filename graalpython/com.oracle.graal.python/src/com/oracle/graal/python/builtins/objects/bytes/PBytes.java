@@ -25,11 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
@@ -39,7 +36,6 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
@@ -73,18 +69,6 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     public Object getItemNormalized(int index) {
         return store.getItemNormalized(index);
-    }
-
-    @Override
-    public int index(Object value) {
-        int index = store.index(value);
-
-        if (index != -1) {
-            return index;
-        }
-
-        CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, "%s is not in bytes literal", value);
     }
 
     @Override

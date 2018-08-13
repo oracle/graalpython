@@ -27,7 +27,6 @@ package com.oracle.graal.python.builtins.objects.array;
 
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PLenSupplier;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -57,11 +56,6 @@ public class PArray extends PSequence implements PLenSupplier {
 
     @Override
     public void delItem(int idx) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int index(Object value) {
         throw new UnsupportedOperationException();
     }
 

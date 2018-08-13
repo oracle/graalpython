@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.Arrays;
 
@@ -43,7 +42,6 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.El
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 
 public final class PByteArray extends PSequence implements PIBytesLike {
 
@@ -104,18 +102,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     public void delItem(int idx) {
         int index = SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range");
         store.delItemInBound(index);
-    }
-
-    @Override
-    public int index(Object value) {
-        int index = store.index(value);
-
-        if (index != -1) {
-            return index;
-        }
-
-        CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, "%s is not in bytes literal", value);
     }
 
     @Override

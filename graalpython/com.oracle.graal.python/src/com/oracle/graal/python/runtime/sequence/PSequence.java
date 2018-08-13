@@ -47,8 +47,6 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
     @Deprecated
     public abstract void delItem(int idx);
 
-    public abstract int index(Object value);
-
     public abstract SequenceStorage getSequenceStorage();
 
     /**

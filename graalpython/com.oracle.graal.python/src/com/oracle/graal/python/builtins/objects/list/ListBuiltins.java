@@ -1546,27 +1546,10 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization(guards = "isEmptyStorage(self)")
-        public boolean doPListEmpty(PList self, Object arg) {
-            return false;
-        }
-
-        @Specialization(guards = "isIntStorage(self)")
-        public boolean doPListInt(PList self, int arg) {
-            IntSequenceStorage store = (IntSequenceStorage) self.getSequenceStorage();
-            return store.indexOfInt(arg) != -1;
-        }
-
-        @Specialization(guards = "isDoubleStorage(self)")
-        public boolean doPListDouble(PList self, double other) {
-            DoubleSequenceStorage store = (DoubleSequenceStorage) self.getSequenceStorage();
-            return store.indexOfDouble(other) != -1;
-        }
-
         @Specialization
-        boolean contains(PSequence self, Object other) {
-            return self.index(other) != -1;
+        boolean contains(PSequence self, Object other,
+                        @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
+            return containsNode.execute(self.getSequenceStorage(), other);
         }
     }
 
