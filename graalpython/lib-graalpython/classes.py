@@ -113,7 +113,7 @@ def __build_class__(func, name, *bases, **kwargs):
     if not hasattr(func, "__call__"):
         raise TypeError("__build_class__: func must be a function")
     if not isinstance(name, str):
-        raise TypeError("__build_class__: name is not a string")
+        raise TypeError("__build_class__: name is not a string, got '%s'" % type(name))
     return new_class(name, bases=bases, kwds=kwargs, exec_body=func)
 
 

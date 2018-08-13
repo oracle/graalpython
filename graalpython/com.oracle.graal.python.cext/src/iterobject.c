@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,55 +38,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+#include "capi.h"
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.TruffleObject;
-
-public abstract class PyAttributeProcsWrapper extends PythonNativeWrapper {
-
-    private final Object delegate;
-
-    public PyAttributeProcsWrapper(Object delegate) {
-        this.delegate = delegate;
+PyObject* PySeqIter_New(PyObject *seq) {
+    if (!PySequence_Check(seq)) {
+        PyErr_BadInternalCall();
+        return NULL;
     }
-
-    @Override
-    public Object getDelegate() {
-        return delegate;
-    }
-
-    static boolean isInstance(TruffleObject o) {
-        return o instanceof PyAttributeProcsWrapper;
-    }
-
-    @Override
-    public ForeignAccess getForeignAccess() {
-        return PyAttributeProcsWrapperMRForeign.ACCESS;
-    }
-
-    static class GetAttrWrapper extends PyAttributeProcsWrapper {
-
-        public GetAttrWrapper(Object delegate) {
-            super(delegate);
-        }
-
-    }
-
-    static class SetAttrWrapper extends PyAttributeProcsWrapper {
-
-        public SetAttrWrapper(Object delegate) {
-            super(delegate);
-        }
-
-    }
-
-    public static GetAttrWrapper createGetAttrWrapper(Object getAttrMethod) {
-        return new GetAttrWrapper(getAttrMethod);
-    }
-
-    public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
-        return new SetAttrWrapper(setAttrMethod);
-    }
+    return UPCALL_CEXT_O("PyTruffle_SeqIter_New", native_to_java(seq));
 }

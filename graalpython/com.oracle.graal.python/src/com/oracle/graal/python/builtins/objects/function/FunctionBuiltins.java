@@ -105,6 +105,7 @@ public class FunctionBuiltins extends PythonBuiltins {
                 writeNode = insert(WriteAttributeToObjectNode.create());
             }
             writeNode.execute(self, __NAME__, value);
+            self.getArity().setFunctionName(value);
             return PNone.NONE;
         }
 

@@ -103,7 +103,15 @@ def _PyModule_CreateInitialized_PyModule_New(name):
         if _imp._py_package_context.endswith(name):
             name = _imp._py_package_context
             _imp._py_package_context = None
-    return moduletype(name)
+    new_module = moduletype(name)
+    # TODO: (tfel) I don't think this is the right place to set it, but somehow
+    # at least in the import of sklearn.neighbors.dist_metrics through
+    # sklearn.neighbors.ball_tree the __package__ attribute seems to be already
+    # set in CPython. To not produce a warning, I'm setting it here, although I
+    # could not find what CPython really does
+    if "." in name:
+        new_module.__package__ = name.rpartition('.')[0]
+    return new_module
 
 
 def PyModule_SetDocString(module, string):
@@ -415,6 +423,38 @@ def PyNumber_BinOp(v, w, binop, name):
 
 
 @may_raise
+def PyNumber_InPlaceBinOp(v, w, binop, name):
+    control = v
+    if binop == 0:
+        v += w
+    elif binop == 1:
+        v -= w
+    elif binop == 2:
+        v *= w
+    elif binop == 3:
+        v /= w
+    elif binop == 4:
+        v <<= w
+    elif binop == 5:
+        v >>= w
+    elif binop == 6:
+        v |= w
+    elif binop == 7:
+        v &= w
+    elif binop == 8:
+        v ^= w
+    elif binop == 9:
+        v //= w
+    elif binop == 10:
+        v %= w
+    else:
+        raise SystemError("unknown binary operator %s" % name)
+    if control is not v:
+        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (name, type(v), type(w)))
+    return control
+
+
+@may_raise
 def PyNumber_UnaryOp(v, unaryop, name):
     if unaryop == 0:
         return +v
@@ -512,6 +552,11 @@ def PySequence_SetItem(obj, key, value):
         return -1
     obj.__setitem__(key, value)
     return 0
+
+
+@may_raise(-1)
+def PySequence_Contains(haystack, needle):
+    return needle in haystack
 
 
 ##################### UNICODE
@@ -649,44 +694,12 @@ def PyStructSequence_New(typ):
     return stat_result([None] * stat_result.n_sequence_fields * 2)
 
 
-def METH_KEYWORDS(fun):
-    def wrapped(self, *args, **kwds):
-        return fun(self, args, kwds)
-    return wrapped
-
-
-def METH_VARARGS(fun):
-    def wrapped(self, *args):
-        return fun(self, args)
-    return wrapped
-
-
-def METH_NOARGS(fun):
-    def wrapped(self):
-        return fun(self, None)
-    return wrapped
-
-
-def METH_O(fun):
-    def wrapped(self, arg):
-        return fun(self, (arg,));
-    return wrapped
-
-
-def METH_FASTCALL(fun):
-    def wrapped(self, *args, **kwargs):
-        return fun(self, args, len(args), kwargs)
-    return wrapped
-
-
 def METH_UNSUPPORTED(fun):
     raise NotImplementedError("unsupported message type")
 
 
 def METH_DIRECT(fun):
-    def wrapped(*args, **kwargs):
-        return fun(*args, **kwargs)
-    return wrapped
+    return fun
 
 
 methodtype = classmethod.method
@@ -720,8 +733,8 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
             func = classmethod(func)
         elif isstatic:
             func = cstaticmethod(func)
-        func.__name__ = name
-        func.__doc__ = doc
+        PyTruffle_SetAttr(func, "__name__", name)
+        PyTruffle_SetAttr(func, "__doc__", doc)
         if name == "__init__":
             def __init__(self, *args, **kwargs):
                 if func(self, *args, **kwargs) != 0:
@@ -733,10 +746,10 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
 
 def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
     func = wrapper(CreateFunction(name, cfunc, cwrapper))
-    func.__name__ = name
-    func.__doc__ = doc
-    method = methodtype(self, func)
-    method.__module__ = module.__name__
+    PyTruffle_SetAttr(func, "__name__", name)
+    PyTruffle_SetAttr(func, "__doc__", doc)
+    method = PyTruffle_BuiltinMethod(self, func)
+    PyTruffle_SetAttr(method, "__module__", module.__name__)
     return method
 
 
@@ -756,15 +769,16 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
     object.__setattr__(pclass, name, member)
 
 
+getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
     pclass = to_java(primary)
-    getset = property()
+    fset = fget = None
     if getter:
         getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
         def member_getter(self):
             return capi_to_java(getter_w(self, closure))
 
-        getset.getter(member_getter)
+        fget = member_getter
     if setter:
         setter_w = CreateFunction(name, setter, setter_wrapper, pclass)
         def member_setter(self, value):
@@ -772,11 +786,14 @@ def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc
             if result != 0:
                 raise
             return None
-        getset.setter(member_setter)
+
+        fset = member_setter
     else:
-        getset.setter(lambda self, value: GetSet_SetNotWritable(self, value, name))
-    getset.__doc__ = doc
-    object.__setattr__(pclass, name, getset)
+        fset = lambda self, value: GetSet_SetNotWritable(self, value, name)
+
+    getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
+    PyTruffle_SetAttr(getset, "__doc__", doc)
+    PyTruffle_SetAttr(pclass, name, getset)
 
 
 def GetSet_SetNotWritable(self, value, attr):
@@ -1116,28 +1133,37 @@ def PyTruffle_GetBuiltin(name):
 
 
 def PyTruffle_Type(type_name):
+    import types
     if type_name == "mappingproxy":
-        return type(dict().keys())
+        return types.MappingProxyType
     elif type_name == "NotImplementedType":
         return type(NotImplemented)
     elif type_name == "module":
-        return type(sys)
+        return types.ModuleType
     elif type_name == "NoneType":
         return type(None)
     elif type_name == "PyCapsule":
         return PyCapsule
     elif type_name == "function":
-        return type(PyTruffle_Type)
+        return types.FunctionType
+    elif type_name == "method_descriptor" or type_name == "wrapper_descriptor":
+        return type(list.append)
+    elif type_name == "getset_descriptor":
+        return getset_descriptor
+    elif type_name == "member_descriptor":
+        return property
+    elif type_name == "builtin_function_or_method":
+        return types.BuiltinFunctionType
     elif type_name == "ellipsis":
-        return type(Py_Ellipsis())
+        return type(...)
     elif type_name == "method":
-        return type({}.update)
+        return types.MethodType
     elif type_name == "code":
-        return codetype
+        return types.CodeType
     elif type_name == "traceback":
-        return tbtype
+        return types.TracebackType
     elif type_name == "frame":
-        return type(sys._getframe(0))
+        return types.FrameType
     else:
         return getattr(sys.modules["builtins"], type_name)
 
@@ -1210,6 +1236,7 @@ def initialize_datetime_capi():
         def Time_FromTimeAndFold(h, m, s, us, tz, fold, typ):
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
+    import_c_func("set_PyDateTime_CAPI_typeid")(PyDateTime_CAPI)
     datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
 
 

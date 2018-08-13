@@ -32,7 +32,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
 public class Arity {
 
-    private final String functionName;
+    @CompilationFinal private String functionName;
     private final int minNumOfArgs;
     private final int maxNumOfArgs;
 
@@ -94,6 +94,10 @@ public class Arity {
 
     public String getFunctionName() {
         return this.functionName;
+    }
+
+    public String setFunctionName(String name) {
+        return this.functionName = name;
     }
 
     public String[] getParameterIds() {

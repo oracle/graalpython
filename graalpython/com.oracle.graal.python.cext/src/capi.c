@@ -97,9 +97,14 @@ declare_type(PySet_Type, set, PySetObject);
 declare_type(PyFloat_Type, float, PyFloatObject);
 declare_type(PySlice_Type, slice, PySliceObject);
 declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
-declare_type(PyCFunction_Type, function, PyCFunctionObject);
+declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
+declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject);
+declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject);
+declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
+declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject);
 declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
 declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
+declare_type(PyFunction_Type, function, PyFunctionObject);
 declare_type(PyMethod_Type, method, PyMethodObject);
 declare_type(PyCode_Type, code, PyCodeObject);
 declare_type(PyFrame_Type, frame, PyFrameObject);
@@ -591,4 +596,8 @@ void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObj
 
 void* wrap_unsupported(void *fun, ...) {
     return NULL;
+}
+
+int truffle_ptr_compare(void* x, void* y) {
+    return x == y;
 }

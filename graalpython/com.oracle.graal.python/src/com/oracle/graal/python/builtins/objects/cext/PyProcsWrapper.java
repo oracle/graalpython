@@ -38,19 +38,66 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function;
+package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.NativeConversions;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.TruffleObject;
 
-@ReportPolymorphism
-@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class, NativeConversions.class})
-public abstract class PythonBuiltinBaseNode extends PBaseNode {
+public abstract class PyProcsWrapper extends PythonNativeWrapper {
+
+    private final Object delegate;
+
+    public PyProcsWrapper(Object delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public Object getDelegate() {
+        return delegate;
+    }
+
+    static boolean isInstance(TruffleObject o) {
+        return o instanceof PyProcsWrapper;
+    }
+
+    @Override
+    public ForeignAccess getForeignAccess() {
+        return PyProcsWrapperMRForeign.ACCESS;
+    }
+
+    static class GetAttrWrapper extends PyProcsWrapper {
+
+        public GetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+    }
+
+    static class SetAttrWrapper extends PyProcsWrapper {
+
+        public SetAttrWrapper(Object delegate) {
+            super(delegate);
+        }
+
+    }
+
+    static class SsizeargfuncWrapper extends PyProcsWrapper {
+        public SsizeargfuncWrapper(Object delegate) {
+            super(delegate);
+        }
+    }
+
+    public static GetAttrWrapper createGetAttrWrapper(Object getAttrMethod) {
+        return new GetAttrWrapper(getAttrMethod);
+    }
+
+    public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
+        return new SetAttrWrapper(setAttrMethod);
+    }
+
+    public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod) {
+        return new SsizeargfuncWrapper(ssizeArgMethod);
+    }
+
 }

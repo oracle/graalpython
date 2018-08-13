@@ -323,6 +323,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
                     return 0;
                 }
             } else {
+                PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
                 PyTruffle_WriteOut(output_idx, PyObject*, arg);
             }
             break;

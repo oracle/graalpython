@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -63,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -279,6 +279,10 @@ public abstract class PGuards {
         return klass instanceof PythonBuiltinClass;
     }
 
+    public static boolean isNativeObject(Object object) {
+        return object instanceof PythonNativeObject;
+    }
+
     public static boolean isNativeClass(Object klass) {
         return klass instanceof PythonNativeClass;
     }
@@ -289,10 +293,6 @@ public abstract class PGuards {
 
     public static boolean isString(Object obj) {
         return obj instanceof String || obj instanceof PString;
-    }
-
-    public static PythonBuiltinClass getClassFor(Class<? extends PythonBuiltinObject> cls, PythonCore core) {
-        return core.lookupType(cls);
     }
 
     public static boolean isBuiltinFunction(Object obj) {

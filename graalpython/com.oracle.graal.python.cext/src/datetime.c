@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,19 +38,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function;
+#include "capi.h"
 
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.NativeConversions;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
+POLYGLOT_DECLARE_TYPE(PyDateTime_CAPI);
 
-@ReportPolymorphism
-@ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class, NativeConversions.class})
-public abstract class PythonBuiltinBaseNode extends PBaseNode {
+/** to be used from Java code only; returns the type ID for a PyDateTime_CAPI */
+extern PyObject* set_PyDateTime_CAPI_typeid(PyTypeObject* type) {
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", type, polyglot_PyDateTime_CAPI_typeid());
+    return Py_True;
 }
+

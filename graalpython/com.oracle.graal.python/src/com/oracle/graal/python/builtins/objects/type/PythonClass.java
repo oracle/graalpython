@@ -144,8 +144,8 @@ public class PythonClass extends PythonObject {
         attrAssumptions.add(assumption);
     }
 
+    @TruffleBoundary
     public void invalidateAttributeInMROFinalAssumptions(String name) {
-        CompilerAsserts.neverPartOfCompilation();
         List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, new ArrayList<>());
         if (!assumptions.isEmpty()) {
             String message = className + "." + name;

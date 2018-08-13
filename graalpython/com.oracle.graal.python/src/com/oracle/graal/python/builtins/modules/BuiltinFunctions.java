@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.BIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.CALLABLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.CHR;
 import static com.oracle.graal.python.nodes.BuiltinNames.COMPILE;
+import static com.oracle.graal.python.nodes.BuiltinNames.DELATTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DIR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DIVMOD;
 import static com.oracle.graal.python.nodes.BuiltinNames.EVAL;
@@ -101,6 +102,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -121,6 +123,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -555,6 +558,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object compile(PCode code, String filename, String mode, Object flags, Object dontInherit, Object optimize) {
             return code;
+        }
+    }
+
+    // delattr(object, name)
+    @Builtin(name = DELATTR, fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class DelAttrNode extends PythonBinaryBuiltinNode {
+        @Child DeleteAttributeNode delNode = DeleteAttributeNode.create();
+
+        @Specialization
+        Object delattr(Object object, Object name) {
+            return delNode.execute(object, name);
         }
     }
 

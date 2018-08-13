@@ -50,8 +50,8 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -62,7 +62,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -89,14 +88,13 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @Builtin(name = __GET__, fixedNumOfArguments = 3)
     @GenerateNodeFactory
     abstract static class GetSetGetNode extends PythonTernaryBuiltinNode {
-        private PythonBuiltinClass noneClass;
         @Child CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
         private final BranchProfile branchProfile = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
         Object get(GetSetDescriptor descr, Object obj, PythonClass type) {
-            if (descr_check(getCore(), descr, obj, type, getNoneType())) {
+            if (descr_check(getCore(), descr, obj, type, getCore().lookupType(PythonBuiltinClassType.PNone))) {
                 return descr;
             }
             if (descr.getGet() != null) {
@@ -105,14 +103,6 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 branchProfile.enter();
                 throw raise(AttributeError, "attribute '%s' of '%s' objects is not readable", descr.getName(), descr.getType().getName());
             }
-        }
-
-        private PythonBuiltinClass getNoneType() {
-            if (noneClass == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                noneClass = getCore().lookupType(PNone.class);
-            }
-            return noneClass;
         }
     }
 

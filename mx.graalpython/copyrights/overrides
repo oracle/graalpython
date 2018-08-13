@@ -92,6 +92,7 @@ graalpython/com.oracle.graal.python.cext/include/dictobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/fileobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/floatobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/frameobject.h,python.copyright
+graalpython/com.oracle.graal.python.cext/include/funcobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/import.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/iterobject.h,python.copyright
 graalpython/com.oracle.graal.python.cext/include/listobject.h,python.copyright

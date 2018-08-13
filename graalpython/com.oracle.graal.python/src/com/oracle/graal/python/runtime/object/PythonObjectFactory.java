@@ -321,6 +321,10 @@ public final class PythonObjectFactory extends Node {
         return trace(new PythonModule(lookupClass(PythonBuiltinClassType.PythonModule), name));
     }
 
+    public PythonModule createPythonModule(PythonClass cls, String name) {
+        return trace(new PythonModule(cls, name));
+    }
+
     public PythonClass createPythonClass(PythonClass metaclass, String name, PythonClass[] bases) {
         return trace(new PythonClass(metaclass, name, bases));
     }

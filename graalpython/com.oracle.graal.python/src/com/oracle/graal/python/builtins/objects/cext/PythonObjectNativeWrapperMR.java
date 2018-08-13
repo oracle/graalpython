@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.Assumption;
@@ -182,6 +184,11 @@ public class PythonObjectNativeWrapperMR {
             return getToSulongNode().execute(o);
         }
 
+        @Specialization(guards = "eq(D_COMMON, key)")
+        Object doDCommon(Object o, @SuppressWarnings("unused") String key) {
+            return getToSulongNode().execute(o);
+        }
+
         @Specialization(guards = "eq(_BASE, key)")
         Object doObBase(PString o, @SuppressWarnings("unused") String key) {
             return getToSulongNode().execute(o);
@@ -272,8 +279,10 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
         Object doTpAsBuffer(PythonClass object, @SuppressWarnings("unused") String key) {
-            if (object == getCore().lookupType(PBytes.class) || object == getCore().lookupType(PByteArray.class) || object == getCore().lookupType(PMemoryView.class) ||
-                            object == getCore().lookupType(PBuffer.class)) {
+            if (object == getCore().lookupType(PythonBuiltinClassType.PBytes) ||
+                            object == getCore().lookupType(PythonBuiltinClassType.PByteArray) ||
+                            object == getCore().lookupType(PythonBuiltinClassType.PMemoryView) ||
+                            object == getCore().lookupType(PythonBuiltinClassType.PBuffer)) {
                 return new PyBufferProcsWrapper(object);
             }
 
@@ -299,7 +308,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_HASH, key)")
         Object doTpHash(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__HASH__)") LookupInheritedAttributeNode getHashNode) {
+                        @Cached("create(__HASH__)") LookupAttributeInMRONode getHashNode) {
             return getToSulongNode().execute(getHashNode.execute(object));
         }
 
@@ -311,7 +320,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")
         Object doTpRichcompare(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(RICHCMP)") LookupInheritedAttributeNode getCmpNode) {
+                        @Cached("create(RICHCMP)") LookupAttributeInMRONode getCmpNode) {
             return getToSulongNode().execute(getCmpNode.execute(object));
         }
 
@@ -335,14 +344,20 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(TP_GETATTRO, key)")
         Object doTpGetattro(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__GETATTRIBUTE__)") LookupInheritedAttributeNode lookupAttrNode) {
-            return PyAttributeProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
+                        @Cached("create(__GETATTRIBUTE__)") LookupAttributeInMRONode lookupAttrNode) {
+            return PyProcsWrapper.createGetAttrWrapper(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(TP_SETATTRO, key)")
         Object doTpSetattro(PythonClass object, @SuppressWarnings("unused") String key,
-                        @Cached("create(__SETATTR__)") LookupInheritedAttributeNode lookupAttrNode) {
-            return PyAttributeProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
+                        @Cached("create(__SETATTR__)") LookupAttributeInMRONode lookupAttrNode) {
+            return PyProcsWrapper.createSetAttrWrapper(lookupAttrNode.execute(object));
+        }
+
+        @Specialization(guards = "eq(TP_ITERNEXT, key)")
+        Object doTpIternext(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create(__NEXT__)") LookupAttributeInMRONode lookupAttrNode) {
+            return getToSulongNode().execute(lookupAttrNode.execute(object));
         }
 
         @Specialization(guards = "eq(OB_ITEM, key)")
@@ -467,6 +482,17 @@ public class PythonObjectNativeWrapperMR {
                 }
             }
             throw new IllegalStateException("delegate of memoryview object is not native");
+        }
+
+        protected static boolean isPyDateTimeCAPI(PythonObject object) {
+            return object.getPythonClass().getName().equals("PyDateTime_CAPI");
+        }
+
+        @Specialization(guards = "isPyDateTimeCAPI(object)")
+        Object doDatetimeCAPI(PythonObject object, String key,
+                        @Cached("create()") GetClassNode getClass,
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic getAttrNode) {
+            return getToSulongNode().execute(getAttrNode.execute(getClass.execute(object), key));
         }
 
         @Fallback
@@ -605,7 +631,7 @@ public class PythonObjectNativeWrapperMR {
                         @Cached("create()") HashingStorageNodes.GetItemNode getItem,
                         @Cached("create()") WriteAttributeToObjectNode writeAttrNode) {
             Object value = asPythonObjectNode.execute(nativeValue);
-            if (value instanceof PDict && ((PDict) value).getPythonClass() == getCore().lookupType(PDict.class)) {
+            if (value instanceof PDict && ((PDict) value).getPythonClass() == getCore().lookupType(PythonBuiltinClassType.PDict)) {
                 // special and fast case: commit items and change store
                 PDict d = (PDict) value;
                 for (Object k : d.keys()) {
@@ -697,7 +723,13 @@ public class PythonObjectNativeWrapperMR {
             for (int i = 0; i < arguments.length; i++) {
                 converted[i] = getToJavaNode().execute(arguments[i]);
             }
-            return getToSulongNode().execute(executeNode.execute(object.getDelegate(), converted));
+            Object result;
+            try {
+                result = executeNode.execute(object.getDelegate(), converted);
+            } catch (PException e) {
+                result = PNone.NO_VALUE;
+            }
+            return getToSulongNode().execute(result);
         }
 
         private ToJavaNode getToJavaNode() {

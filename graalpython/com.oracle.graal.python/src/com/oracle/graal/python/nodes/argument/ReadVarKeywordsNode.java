@@ -42,6 +42,8 @@ public abstract class ReadVarKeywordsNode extends PNode {
     @CompilationFinal(dimensions = 1) private final String[] keywordNames;
     private final boolean doWrap;
 
+    public abstract PKeyword[] executePKeyword(VirtualFrame frame);
+
     public static ReadVarKeywordsNode create(String[] keywordNames) {
         return ReadVarKeywordsNodeGen.create(keywordNames, false);
     }

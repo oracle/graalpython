@@ -103,6 +103,21 @@ static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObj
 	return f(a, b, (int)PyLong_AsLong(n));
 }
 
+#undef RICHCMP_WRAPPER
+#define RICHCMP_WRAPPER(NAME, OP)                                       \
+    static PyObject* wrap_richcmpfunc_##NAME(richcmpfunc f,             \
+                                             PyObject* a,               \
+                                             PyObject* b) {             \
+        return f(a, b, OP);                                             \
+    }
+
+RICHCMP_WRAPPER(lt, Py_LT)
+RICHCMP_WRAPPER(le, Py_LE)
+RICHCMP_WRAPPER(eq, Py_EQ)
+RICHCMP_WRAPPER(ne, Py_NE)
+RICHCMP_WRAPPER(gt, Py_GT)
+RICHCMP_WRAPPER(ge, Py_GE)
+
 static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* size, PyObject* b) {
 	return PyLong_FromLong(f(a, PyLong_AsSsize_t(size), b));
 }
@@ -125,6 +140,10 @@ static PyObject* wrap_objobjproc(objobjproc f, PyObject* a, PyObject* b) {
 
 static PyObject* wrap_inquiry(inquiry f, PyObject* a) {
 	return PyLong_FromLong(f(a));
+}
+
+static PyObject* wrap_nb_bool(inquiry f, PyObject* a) {
+    return f(a) ? Py_True : Py_False;
 }
 
 /* very special case: operator '**' has an optional third arg */
@@ -315,7 +334,15 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT("__getattr__", cls->tp_getattro, -2);
     ADD_SLOT_CONV("__setattr__", wrap_setattrofunc, cls->tp_setattro, -3);
     ADD_SLOT("__clear__", cls->tp_clear, -1);
-    ADD_SLOT_CONV("__compare__", wrap_richcmpfunc, cls->tp_richcompare, -3);
+    if (cls->tp_richcompare) {
+        ADD_SLOT_CONV("__compare__", wrap_richcmpfunc, cls->tp_richcompare, -3);
+        ADD_SLOT_CONV("__lt__", wrap_richcmpfunc_lt, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__le__", wrap_richcmpfunc_le, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__eq__", wrap_richcmpfunc_eq, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__ne__", wrap_richcmpfunc_ne, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__gt__", wrap_richcmpfunc_gt, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__ge__", wrap_richcmpfunc_ge, cls->tp_richcompare, -2);
+    }
     ADD_SLOT("__iter__", cls->tp_iter, -1);
     ADD_SLOT("__next__", cls->tp_iternext, -1);
     ADD_SLOT("__get__", cls->tp_descr_get, -3);
@@ -340,7 +367,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
-        ADD_SLOT_CONV("__bool__", wrap_inquiry, numbers->nb_bool, -1);
+        ADD_SLOT_CONV("__bool__", wrap_nb_bool, numbers->nb_bool, -1);
         ADD_SLOT("__invert__", numbers->nb_invert, -1);
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);

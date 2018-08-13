@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
@@ -69,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsHashableNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -114,6 +115,7 @@ public abstract class HashingStorageNodes {
     public static class PythonEquivalence extends Equivalence {
         @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(SpecialMethodNames.__EQ__, SpecialMethodNames.__EQ__, "==", null, null);
+        @Child private CastToBooleanNode castToBoolean = CastToBooleanNode.createIfTrueNode();
         @CompilationFinal private int state = 0;
 
         @Override
@@ -164,7 +166,7 @@ public abstract class HashingStorageNodes {
 
         @Override
         public boolean equals(Object left, Object right) {
-            return callEqNode.executeBool(left, right);
+            return castToBoolean.executeWith(callEqNode.executeWith(left, right));
         }
 
         public static PythonEquivalence create() {
@@ -359,7 +361,7 @@ public abstract class HashingStorageNodes {
             Object it = getIterator.executeWith(iterable);
 
             ArrayList<PSequence> elements = new ArrayList<>();
-            PythonClass listClass = getCore().lookupType(PList.class);
+            PythonClass listClass = getCore().lookupType(PythonBuiltinClassType.PList);
             boolean isStringKey = false;
             try {
                 while (true) {

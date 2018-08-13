@@ -52,6 +52,8 @@ public abstract class ReadVarArgsNode extends ReadIndexedArgumentNode {
         return ReadVarArgsNodeGen.create(paramIndex, isBuiltin);
     }
 
+    public abstract Object[] executeObjectArray(VirtualFrame frame);
+
     protected int getAndCheckUserArgsLen(VirtualFrame frame) {
         int length = getUserArgsLen(frame);
         if (length >= PythonOptions.getIntOption(getContext(), PythonOptions.VariableArgumentReadUnrollingLimit)) {

@@ -89,7 +89,7 @@ public final class BytesUtils {
                 } catch (ArithmeticException e) {
                 }
             } else {
-                throw core.raise(TypeError, "'%s' object cannot be interpreted as an integer", core.lookupType(item.getClass()));
+                throw core.raise(TypeError, "'%p' object cannot be interpreted as an integer", item);
             }
             throw core.raise(ValueError, "byte must be in range(0, 256)");
         }
