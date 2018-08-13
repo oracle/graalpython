@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -43,6 +44,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -143,6 +146,20 @@ public class IteratorBuiltins extends PythonBuiltins {
             if (self.hasNext()) {
                 return self.next();
             }
+            throw raise(StopIteration);
+        }
+
+        @Specialization(guards = "self.isPList()")
+        public Object nextList(PSequenceIterator self,
+                        @Cached("createClassProfile()") ValueProfile storageProfile,
+                        @Cached("create()") NormalizeIndexNode normalize) {
+            SequenceStorage storage = storageProfile.profile(((PList) self.getPSequence()).getSequenceStorage());
+            int length = storage.length();
+            if (!self.stopIterationReached && self.index < length) {
+                int index = normalize.execute(self.index++, length, "list index out of range");
+                return storage.getItemNormalized(index);
+            }
+            self.stopIterationReached = true;
             throw raise(StopIteration);
         }
 

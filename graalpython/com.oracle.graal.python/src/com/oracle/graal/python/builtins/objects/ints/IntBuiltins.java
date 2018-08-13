@@ -567,6 +567,11 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.multiplyExact(x, y);
         }
 
+        @Specialization(replaces = "doII")
+        long doIIL(int x, int y) {
+            return x * (long) y;
+        }
+
         @Specialization(rewriteOn = ArithmeticException.class)
         long doLL(long x, long y) {
             return Math.multiplyExact(x, y);

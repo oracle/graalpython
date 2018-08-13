@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 
@@ -48,5 +49,9 @@ public final class PSequenceIterator extends PBuiltinIterator {
 
     public boolean isPSequence() {
         return sequence instanceof PSequence;
+    }
+
+    public boolean isPList() {
+        return sequence instanceof PList;
     }
 }
