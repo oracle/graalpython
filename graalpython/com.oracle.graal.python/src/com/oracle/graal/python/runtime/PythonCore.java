@@ -84,8 +84,6 @@ public interface PythonCore {
 
     public PythonBuiltinClass lookupType(PythonBuiltinClassType type);
 
-    public PythonBuiltinClass lookupType(Class<? extends Object> clazz);
-
     public String[] builtinModuleNames();
 
     public PythonClass getErrorClass(PythonErrorType type);

@@ -44,6 +44,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -68,7 +69,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // ReferenceType constructor
-    @Builtin(name = "ReferenceType", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PReferenceType.class)
+    @Builtin(name = "ReferenceType", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PythonBuiltinClassType.PReferenceType)
     @GenerateNodeFactory
     public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
         @Specialization

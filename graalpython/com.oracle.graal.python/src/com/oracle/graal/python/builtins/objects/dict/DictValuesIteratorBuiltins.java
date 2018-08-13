@@ -32,6 +32,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -44,7 +45,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PDictValuesIterator.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PDictValuesIterator)
 public final class DictValuesIteratorBuiltins extends PythonBuiltins {
 
     @Override

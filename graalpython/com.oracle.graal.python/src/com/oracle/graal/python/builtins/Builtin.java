@@ -35,9 +35,9 @@ public @interface Builtin {
 
     String doc() default "";
 
-    Class<?>[] constructsClass() default {};
+    PythonBuiltinClassType[] constructsClass() default {};
 
-    Class<?>[] base() default {};
+    PythonBuiltinClassType[] base() default {};
 
     int fixedNumOfArguments() default 0;
 

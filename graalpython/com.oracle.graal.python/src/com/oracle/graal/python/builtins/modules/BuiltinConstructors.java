@@ -65,13 +65,10 @@ import com.oracle.graal.python.builtins.objects.PEllipsis;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
-import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -79,48 +76,24 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.builtins.objects.reversed.PSequenceReverseIterator;
-import com.oracle.graal.python.builtins.objects.reversed.PStringReverseIterator;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -259,7 +232,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // bytes([source[, encoding[, errors]]])
-    @Builtin(name = BYTES, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PBytes.class)
+    @Builtin(name = BYTES, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PythonBuiltinClassType.PBytes)
     @GenerateNodeFactory
     public abstract static class BytesNode extends CreateByteOrByteArrayNode {
         @Override
@@ -269,7 +242,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // bytearray([source[, encoding[, errors]]])
-    @Builtin(name = BYTEARRAY, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PByteArray.class)
+    @Builtin(name = BYTEARRAY, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PythonBuiltinClassType.PByteArray)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ByteArrayNode extends CreateByteOrByteArrayNode {
@@ -280,7 +253,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // complex([real[, imag]])
-    @Builtin(name = COMPLEX, minNumOfArguments = 1, maxNumOfArguments = 3, constructsClass = PComplex.class, doc = "complex(real[, imag]) -> complex number\n\n" +
+    @Builtin(name = COMPLEX, minNumOfArguments = 1, maxNumOfArguments = 3, constructsClass = PythonBuiltinClassType.PComplex, doc = "complex(real[, imag]) -> complex number\n\n" +
                     "Create a complex number from a real part and an optional imaginary part.\n" +
                     "This is equivalent to (real + imag*1j) where imag defaults to 0.")
     @GenerateNodeFactory
@@ -468,7 +441,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // dict(**kwarg)
     // dict(mapping, **kwarg)
     // dict(iterable, **kwarg)
-    @Builtin(name = DICT, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true, constructsClass = PDict.class)
+    @Builtin(name = DICT, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true, constructsClass = PythonBuiltinClassType.PDict)
     @GenerateNodeFactory
     public abstract static class DictionaryNode extends PythonBuiltinNode {
         @Specialization
@@ -479,7 +452,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // enumerate(iterable, start=0)
-    @Builtin(name = ENUMERATE, fixedNumOfArguments = 2, keywordArguments = {"start"}, constructsClass = PEnumerate.class)
+    @Builtin(name = ENUMERATE, fixedNumOfArguments = 2, keywordArguments = {"start"}, constructsClass = PythonBuiltinClassType.PEnumerate)
     @GenerateNodeFactory
     public abstract static class EnumerateNode extends PythonBuiltinNode {
 
@@ -508,7 +481,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // reversed(seq)
-    @Builtin(name = REVERSED, fixedNumOfArguments = 2, constructsClass = {PStringReverseIterator.class, PSequenceReverseIterator.class})
+    @Builtin(name = REVERSED, fixedNumOfArguments = 2, constructsClass = {PythonBuiltinClassType.PStringReverseIterator, PythonBuiltinClassType.PSequenceReverseIterator})
     @GenerateNodeFactory
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
@@ -576,7 +549,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // float([x])
-    @Builtin(name = FLOAT, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PFloat.class)
+    @Builtin(name = FLOAT, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
     public abstract static class FloatNode extends PythonBuiltinNode {
         private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
@@ -746,7 +719,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // frozenset([iterable])
-    @Builtin(name = FROZENSET, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PFrozenSet.class)
+    @Builtin(name = FROZENSET, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PythonBuiltinClassType.PFrozenSet)
     @GenerateNodeFactory
     public abstract static class FrozenSetNode extends PythonBuiltinNode {
 
@@ -797,7 +770,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // int(x=0)
     // int(x, base=10)
-    @Builtin(name = INT, fixedNumOfArguments = 1, keywordArguments = {"x", "base"}, constructsClass = PInt.class)
+    @Builtin(name = INT, fixedNumOfArguments = 1, keywordArguments = {"x", "base"}, constructsClass = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
@@ -1145,7 +1118,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // bool([x])
-    @Builtin(name = BOOL, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = Boolean.class, base = PInt.class)
+    @Builtin(name = BOOL, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PythonBuiltinClassType.Boolean, base = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
@@ -1187,7 +1160,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // list([iterable])
-    @Builtin(name = LIST, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PList.class)
+    @Builtin(name = LIST, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PythonBuiltinClassType.PList)
     @GenerateNodeFactory
     public abstract static class ListNode extends PythonBinaryBuiltinNode {
 
@@ -1207,7 +1180,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // object()
-    @Builtin(name = OBJECT, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonObject.class})
+    @Builtin(name = OBJECT, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true, constructsClass = PythonBuiltinClassType.PythonObject)
     @GenerateNodeFactory
     public abstract static class ObjectNode extends PythonVarargsBuiltinNode {
         @Override
@@ -1237,7 +1210,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // range(stop)
     // range(start, stop[, step])
-    @Builtin(name = RANGE, minNumOfArguments = 2, maxNumOfArguments = 4, constructsClass = PRange.class)
+    @Builtin(name = RANGE, minNumOfArguments = 2, maxNumOfArguments = 4, constructsClass = PythonBuiltinClassType.PRange)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class RangeNode extends PythonBuiltinNode {
@@ -1357,7 +1330,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // set([iterable])
-    @Builtin(name = SET, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PSet.class)
+    @Builtin(name = SET, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PythonBuiltinClassType.PSet)
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBuiltinNode {
 
@@ -1376,7 +1349,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // str(object='')
     // str(object=b'', encoding='utf-8', errors='strict')
-    @Builtin(name = STR, minNumOfArguments = 1, keywordArguments = {"object", "encoding", "errors"}, takesVariableKeywords = true, constructsClass = PString.class)
+    @Builtin(name = STR, minNumOfArguments = 1, keywordArguments = {"object", "encoding", "errors"}, takesVariableKeywords = true, constructsClass = PythonBuiltinClassType.PString)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonBuiltinNode {
         @Child private LookupAndCallTernaryNode callDecodeNode;
@@ -1466,7 +1439,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // tuple([iterable])
-    @Builtin(name = TUPLE, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PTuple.class)
+    @Builtin(name = TUPLE, minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PythonBuiltinClassType.PTuple)
     @GenerateNodeFactory
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
@@ -1484,7 +1457,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // zip(*iterables)
-    @Builtin(name = ZIP, minNumOfArguments = 1, takesVariableArguments = true, constructsClass = PZip.class)
+    @Builtin(name = ZIP, minNumOfArguments = 1, takesVariableArguments = true, constructsClass = PythonBuiltinClassType.PZip)
     @GenerateNodeFactory
     public abstract static class ZipNode extends PythonBuiltinNode {
         @Specialization
@@ -1501,7 +1474,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // function(code, globals[, name[, argdefs[, closure]]])
-    @Builtin(name = "function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PFunction.class, PGeneratorFunction.class}, isPublic = false)
+    @Builtin(name = "function", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PGeneratorFunction}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
 
@@ -1513,7 +1486,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // builtin-function(method-def, self, module)
-    @Builtin(name = "method_descriptor", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PBuiltinFunction.class}, isPublic = false)
+    @Builtin(name = "method_descriptor", minNumOfArguments = 3, maxNumOfArguments = 6, constructsClass = {PythonBuiltinClassType.PBuiltinFunction}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class BuiltinFunctionNode extends PythonBuiltinNode {
         @Specialization
@@ -1525,7 +1498,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // type(object)
     // type(object, bases, dict)
-    @Builtin(name = TYPE, minNumOfArguments = 2, maxNumOfArguments = 4, takesVariableKeywords = true, constructsClass = {PythonClass.class, PythonBuiltinClass.class})
+    @Builtin(name = TYPE, minNumOfArguments = 2, maxNumOfArguments = 4, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonBuiltinClass})
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
@@ -1631,7 +1604,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = MODULE, minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = {PythonModule.class}, isPublic = false)
+    @Builtin(name = MODULE, minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = {PythonBuiltinClassType.PythonModule}, isPublic = false)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     @SuppressWarnings("unused")
@@ -1651,7 +1624,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NotImplementedType", fixedNumOfArguments = 1, constructsClass = {PNotImplemented.class}, isPublic = false)
+    @Builtin(name = "NotImplementedType", fixedNumOfArguments = 1, constructsClass = {PythonBuiltinClassType.PNotImplemented}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NotImplementedTypeNode extends PythonBuiltinNode {
         protected PythonClass getNotImplementedClass() {
@@ -1668,7 +1641,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "ellipsis", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PEllipsis.class}, isPublic = false)
+    @Builtin(name = "ellipsis", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PEllipsis}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class EllipsisTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1678,7 +1651,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "NoneType", fixedNumOfArguments = 1, constructsClass = {PNone.class}, isPublic = false)
+    @Builtin(name = "NoneType", fixedNumOfArguments = 1, constructsClass = {PythonBuiltinClassType.PNone}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class NoneTypeNode extends PythonBuiltinNode {
         protected PythonClass getNoneClass() {
@@ -1695,7 +1668,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_keys", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PDictView.PDictKeysView.class}, isPublic = false)
+    @Builtin(name = "dict_keys", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PDictKeysView}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictKeysTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1705,7 +1678,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_keysiterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PDictView.PDictKeysIterator.class}, isPublic = false)
+    @Builtin(name = "dict_keysiterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PDictKeysIterator}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictKeysIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1715,7 +1688,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_values", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PDictView.PDictValuesView.class}, isPublic = false)
+    @Builtin(name = "dict_values", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PDictValuesView}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictValuesTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1725,7 +1698,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_valuesiterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PDictView.PDictValuesIterator.class}, isPublic = false)
+    @Builtin(name = "dict_valuesiterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PDictValuesIterator}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictValuesIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1735,7 +1708,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_items", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PDictView.PDictItemsView.class}, isPublic = false)
+    @Builtin(name = "dict_items", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PDictItemsView}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictItemsTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1745,7 +1718,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dict_itemsiterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PDictView.PDictItemsIterator.class}, isPublic = false)
+    @Builtin(name = "dict_itemsiterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PDictItemsIterator}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class DictItemsIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1756,10 +1729,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     @Builtin(name = "iterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {
-                    PRangeIterator.class, PIntegerSequenceIterator.class, PSequenceIterator.class,
-                    PBaseSetIterator.class, PRangeIterator.class, PArrayIterator.class,
-                    PDoubleSequenceIterator.class, PLongSequenceIterator.class,
-                    PStringIterator.class, PRangeReverseIterator.class,
+                    PythonBuiltinClassType.PRangeIterator, PythonBuiltinClassType.PIntegerSequenceIterator, PythonBuiltinClassType.PSequenceIterator,
+                    PythonBuiltinClassType.PBaseSetIterator, PythonBuiltinClassType.PRangeIterator, PythonBuiltinClassType.PArrayIterator,
+                    PythonBuiltinClassType.PDoubleSequenceIterator, PythonBuiltinClassType.PLongSequenceIterator,
+                    PythonBuiltinClassType.PStringIterator, PythonBuiltinClassType.PRangeReverseIterator,
     }, isPublic = false)
     @GenerateNodeFactory
     public abstract static class IteratorTypeNode extends PythonBuiltinNode {
@@ -1770,7 +1743,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "callable_iterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PSentinelIterator.class}, isPublic = false)
+    @Builtin(name = "callable_iterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PSentinelIterator}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class CallableIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1780,7 +1753,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "foreign_iterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PForeignArrayIterator.class}, isPublic = false)
+    @Builtin(name = "foreign_iterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PForeignArrayIterator}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class ForeignIteratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1790,7 +1763,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "generator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PGenerator.class}, isPublic = false)
+    @Builtin(name = "generator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {PythonBuiltinClassType.PGenerator}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class GeneratorTypeNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1800,7 +1773,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "method", fixedNumOfArguments = 3, constructsClass = {PMethod.class}, isPublic = false)
+    @Builtin(name = "method", fixedNumOfArguments = 3, constructsClass = {PythonBuiltinClassType.PMethod}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class MethodTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1814,7 +1787,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "builtin_function_or_method", fixedNumOfArguments = 3, constructsClass = {PBuiltinMethod.class}, isPublic = false)
+    @Builtin(name = "builtin_function_or_method", fixedNumOfArguments = 3, constructsClass = {PythonBuiltinClassType.PBuiltinMethod}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class BuiltinMethodTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1823,7 +1796,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "frame", constructsClass = {PFrame.class}, isPublic = false)
+    @Builtin(name = "frame", constructsClass = {PythonBuiltinClassType.PFrame}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FrameTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1832,7 +1805,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "traceback", constructsClass = {PTraceback.class}, isPublic = false)
+    @Builtin(name = "traceback", constructsClass = {PythonBuiltinClassType.PTraceback}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class TracebackTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1841,7 +1814,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = {PCode.class}, isPublic = false, minNumOfArguments = 14, maxNumOfArguments = 16)
+    @Builtin(name = "code", constructsClass = {PythonBuiltinClassType.PCode}, isPublic = false, minNumOfArguments = 14, maxNumOfArguments = 16)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
@@ -1902,7 +1875,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "cell", constructsClass = {PCell.class}, isPublic = false)
+    @Builtin(name = "cell", constructsClass = {PythonBuiltinClassType.PCell}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class CellTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -1911,7 +1884,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "BaseException", constructsClass = {PBaseException.class}, isPublic = true, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = "BaseException", constructsClass = {PythonBuiltinClassType.PBaseException}, isPublic = true, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
     @GenerateNodeFactory
     public abstract static class BaseExceptionNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -1921,7 +1894,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mappingproxy", constructsClass = {PMappingproxy.class}, isPublic = false, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "mappingproxy", constructsClass = {PythonBuiltinClassType.PMappingproxy}, isPublic = false, minNumOfArguments = 1, maxNumOfArguments = 2)
     @GenerateNodeFactory
     public abstract static class MappingproxyNode extends PythonBuiltinNode {
         @Child private IsSequenceNode isMappingNode;
@@ -1962,7 +1935,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getset_descriptor", constructsClass = {GetSetDescriptor.class}, isPublic = false, fixedNumOfArguments = 1, keywordArguments = {"fget", "fset", "name", "owner"})
+    @Builtin(name = "getset_descriptor", constructsClass = {PythonBuiltinClassType.GetSetDescriptor}, isPublic = false, fixedNumOfArguments = 1, keywordArguments = {"fget", "fset", "name", "owner"})
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
@@ -2002,7 +1975,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // slice(stop)
     // slice(start, stop[, step])
-    @Builtin(name = "slice", minNumOfArguments = 2, maxNumOfArguments = 4, constructsClass = PSlice.class)
+    @Builtin(name = "slice", minNumOfArguments = 2, maxNumOfArguments = 4, constructsClass = PythonBuiltinClassType.PSlice)
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class CreateSliceNode extends PythonBuiltinNode {
@@ -2034,7 +2007,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // buffer([iterable])
-    @Builtin(name = "buffer", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PBuffer.class)
+    @Builtin(name = "buffer", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PythonBuiltinClassType.PBuffer)
     @GenerateNodeFactory
     public abstract static class BufferNode extends PythonBuiltinNode {
         @Child private LookupInheritedAttributeNode getSetItemNode;
@@ -2064,7 +2037,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // memoryview(obj)
-    @Builtin(name = MEMORYVIEW, fixedNumOfArguments = 2, constructsClass = PMemoryView.class)
+    @Builtin(name = MEMORYVIEW, fixedNumOfArguments = 2, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
         @Specialization
