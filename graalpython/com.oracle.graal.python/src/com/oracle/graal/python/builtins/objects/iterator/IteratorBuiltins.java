@@ -45,7 +45,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -140,15 +139,13 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isPList()")
         public Object nextList(PSequenceIterator self,
-                        @Cached("createClassProfile()") ValueProfile storageProfile,
-                        @Cached("create()") NormalizeIndexNode normalize) {
+                        @Cached("createClassProfile()") ValueProfile storageProfile) {
             SequenceStorage storage = storageProfile.profile(((PList) self.getPSequence()).getSequenceStorage());
             int length = storage.length();
-            if (!self.stopIterationReached && self.index < length) {
-                int index = normalize.execute(self.index++, length, "list index out of range");
-                return storage.getItemNormalized(index);
+            if (!self.isExhausted() && self.index < length) {
+                return storage.getItemNormalized(self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
