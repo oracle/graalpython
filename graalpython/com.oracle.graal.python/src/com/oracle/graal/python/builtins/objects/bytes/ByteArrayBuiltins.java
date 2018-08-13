@@ -531,10 +531,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PBytes join(PByteArray bytes, Object iterable,
+        public PByteArray join(PByteArray bytes, Object iterable,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
                         @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
-            return factory().createBytes(bytesJoinNode.execute(toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
+            return factory().createByteArray(bytesJoinNode.execute(toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
