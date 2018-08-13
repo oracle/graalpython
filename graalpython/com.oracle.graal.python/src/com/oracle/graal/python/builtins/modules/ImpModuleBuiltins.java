@@ -150,7 +150,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run(PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
-                        @Cached("createExecute(0).createNode()") Node executeNode,
+                        @Cached("EXECUTE.createNode()") Node executeNode,
                         @Cached("READ.createNode()") Node readNode) {
             String name = moduleSpec.getAttribute("name").toString();
             String path = moduleSpec.getAttribute("origin").toString();

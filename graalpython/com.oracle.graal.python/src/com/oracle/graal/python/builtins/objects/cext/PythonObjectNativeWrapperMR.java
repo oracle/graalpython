@@ -890,7 +890,7 @@ public class PythonObjectNativeWrapperMR {
         private Object callUnaryIntoCapi(TruffleObject fun, Object arg) {
             if (callNativeUnary == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeUnary = insert(PCallNativeNode.create(1));
+                callNativeUnary = insert(PCallNativeNode.create());
             }
             return callNativeUnary.execute(fun, new Object[]{arg});
         }
@@ -898,7 +898,7 @@ public class PythonObjectNativeWrapperMR {
         private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, Object arg1) {
             if (callNativeBinary == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeBinary = insert(PCallNativeNode.create(1));
+                callNativeBinary = insert(PCallNativeNode.create());
             }
             return callNativeBinary.execute(fun, new Object[]{arg0, arg1});
         }
