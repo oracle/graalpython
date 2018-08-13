@@ -543,8 +543,30 @@ public abstract class SequenceStorageNodes {
             storage.setIntItemNormalized(idx, value);
         }
 
+        @Specialization
+        protected void doInt(IntSequenceStorage storage, int idx, PInt value) {
+            try {
+                storage.setIntItemNormalized(idx, value.intValueExact());
+            } catch (ArithmeticException e) {
+                // TODO implement store generalization
+                CompilerDirectives.transferToInterpreter();
+                throw new UnsupportedOperationException();
+            }
+        }
+
         protected void doLong(LongSequenceStorage storage, int idx, long value) {
             storage.setLongItemNormalized(idx, value);
+        }
+
+        @Specialization
+        protected void doLong(LongSequenceStorage storage, int idx, PInt value) {
+            try {
+                storage.setLongItemNormalized(idx, value.longValueExact());
+            } catch (ArithmeticException e) {
+                // TODO implement store generalization
+                CompilerDirectives.transferToInterpreter();
+                throw new UnsupportedOperationException();
+            }
         }
 
         @Specialization
