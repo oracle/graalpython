@@ -69,9 +69,6 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
      */
     public abstract void setSequenceStorage(SequenceStorage newStorage);
 
-    @Deprecated
-    public abstract boolean lessThan(PSequence sequence);
-
     public static PSequence require(Object value) {
         if (value instanceof PSequence) {
             return (PSequence) value;

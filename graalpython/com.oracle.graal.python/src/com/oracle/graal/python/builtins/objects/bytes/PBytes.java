@@ -94,11 +94,6 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     }
 
     @Override
-    public boolean lessThan(PSequence sequence) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String toString() {
         // TODO(fa) really required ?
         CompilerAsserts.neverPartOfCompilation();

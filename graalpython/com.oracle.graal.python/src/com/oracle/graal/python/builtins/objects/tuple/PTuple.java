@@ -79,11 +79,6 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
     }
 
     @Override
-    public boolean lessThan(PSequence sequence) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         if (store instanceof ObjectSequenceStorage) {

@@ -33,7 +33,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -119,11 +118,6 @@ public final class PRange extends PImmutableSequence {
         int newStart = sliceStart == SequenceUtil.MISSING_INDEX ? start : start + sliceStart * step;
         int newStop = sliceStop == SequenceUtil.MISSING_INDEX ? stop : Math.min(stop, newStart + slicelength * newStep);
         return factory.createRange(newStart, newStop, newStep);
-    }
-
-    @Override
-    public boolean lessThan(PSequence sequence) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

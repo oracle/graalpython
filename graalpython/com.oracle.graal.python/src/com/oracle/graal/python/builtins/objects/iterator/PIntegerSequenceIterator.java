@@ -32,7 +32,6 @@ public final class PIntegerSequenceIterator extends PIntegerIterator {
 
     final IntSequenceStorage sequence;
     int index;
-    protected boolean stopIterationReached = false;
 
     public PIntegerSequenceIterator(PythonClass clazz, IntSequenceStorage sequence) {
         super(clazz);

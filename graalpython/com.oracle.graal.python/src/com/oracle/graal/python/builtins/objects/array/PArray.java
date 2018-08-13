@@ -76,11 +76,6 @@ public class PArray extends PSequence implements PLenSupplier {
     }
 
     @Override
-    public boolean lessThan(PSequence sequence) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int len() {
         return store.length();
     }

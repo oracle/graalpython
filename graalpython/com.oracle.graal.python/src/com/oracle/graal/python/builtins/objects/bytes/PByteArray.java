@@ -135,11 +135,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     }
 
     @Override
-    public boolean lessThan(PSequence sequence) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int len() {
         return store.length();
     }

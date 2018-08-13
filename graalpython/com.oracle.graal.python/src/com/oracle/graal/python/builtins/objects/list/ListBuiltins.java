@@ -1035,15 +1035,6 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class ListIterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public Object iter(PList list) {
-            return factory().createSequenceIterator(list);
-        }
-    }
-
     @Builtin(name = __LEN__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
@@ -1682,7 +1673,7 @@ public class ListBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ITER__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class IterNode extends PythonBuiltinNode {
+    public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = {"isIntStorage(primary)"})
         public PIntegerSequenceIterator doPListInt(PList primary) {
             return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage());

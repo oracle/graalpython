@@ -89,11 +89,6 @@ public final class PList extends PSequence {
     }
 
     @Override
-    public final boolean lessThan(PSequence sequence) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public final String toString() {
         StringBuilder buf = new StringBuilder("[");
 
