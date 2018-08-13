@@ -85,10 +85,10 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public int next(PIntegerSequenceIterator self) {
-            if (!self.stopIterationReached && self.index < self.sequence.length()) {
+            if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
@@ -114,19 +114,19 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization
         public double next(PDoubleSequenceIterator self) {
-            if (!self.stopIterationReached && self.index < self.sequence.length()) {
+            if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
         @Specialization
         public long next(PLongSequenceIterator self) {
-            if (!self.stopIterationReached && self.index < self.sequence.length()) {
+            if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getLongItemNormalized(self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
@@ -157,10 +157,10 @@ public class IteratorBuiltins extends PythonBuiltins {
                         @Cached("createClassProfile()") ValueProfile sequenceProfile,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getItemNode) {
             PSequence sequence = sequenceProfile.profile(self.getPSequence());
-            if (!self.stopIterationReached && self.index < sequence.len()) {
+            if (!self.isExhausted() && self.index < sequence.len()) {
                 return getItemNode.execute(sequence.getSequenceStorage(), self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 

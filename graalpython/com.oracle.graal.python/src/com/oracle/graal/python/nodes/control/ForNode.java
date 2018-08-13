@@ -95,6 +95,7 @@ abstract class ForNextElementNode extends PBaseNode {
                     @Cached("iterator.getClass()") Class<? extends PIntegerIterator> clazz) {
         PIntegerIterator profiledIterator = clazz.cast(iterator);
         if (!profiledIterator.hasNext()) {
+            profiledIterator.setExhausted();
             return false;
         }
         ((WriteNode) target).doWrite(frame, profiledIterator.next());
@@ -106,6 +107,7 @@ abstract class ForNextElementNode extends PBaseNode {
                     @Cached("iterator.getClass()") Class<? extends PLongIterator> clazz) {
         PLongIterator profiledIterator = clazz.cast(iterator);
         if (!profiledIterator.hasNext()) {
+            profiledIterator.setExhausted();
             return false;
         }
         ((WriteNode) target).doWrite(frame, profiledIterator.next());
@@ -117,6 +119,7 @@ abstract class ForNextElementNode extends PBaseNode {
                     @Cached("iterator.getClass()") Class<? extends PDoubleIterator> clazz) {
         PDoubleIterator profiledIterator = clazz.cast(iterator);
         if (!profiledIterator.hasNext()) {
+            profiledIterator.setExhausted();
             return false;
         }
         ((WriteNode) target).doWrite(frame, profiledIterator.next());
