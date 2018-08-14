@@ -27,15 +27,13 @@ package com.oracle.graal.python.builtins.objects.tuple;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-public final class PTuple extends PImmutableSequence implements Comparable<Object> {
+public final class PTuple extends PImmutableSequence {
 
     private SequenceStorage store;
 
@@ -100,11 +98,6 @@ public final class PTuple extends PImmutableSequence implements Comparable<Objec
     @Override
     public void setSequenceStorage(SequenceStorage store) {
         this.store = store;
-    }
-
-    @Override
-    public int compareTo(Object o) {
-        return SequenceUtil.cmp(this, (PSequence) o);
     }
 
     @Override
