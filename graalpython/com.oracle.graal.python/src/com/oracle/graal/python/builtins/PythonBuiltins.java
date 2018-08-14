@@ -62,15 +62,18 @@ public abstract class PythonBuiltins {
         }
         initializeEachFactoryWith((factory, builtin) -> {
             CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
-            boolean declaresExplicitSelf = true;
+            final boolean declaresExplicitSelf;
             if (annotation.defineModule().length() > 0 && builtin.constructsClass().length == 0) {
                 assert !builtin.isGetter();
                 assert !builtin.isSetter();
                 assert annotation.extendClasses().length == 0;
                 // for module functions, explicit self is false by default
                 declaresExplicitSelf = builtin.declaresExplicitSelf();
+            } else {
+                declaresExplicitSelf = true;
             }
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf));
+            RootCallTarget callTarget = core.getLanguage().builtinCallTargetCache.computeIfAbsent(factory.getNodeClass(),
+                            (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
             if (builtin.constructsClass().length > 0) {
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin, declaresExplicitSelf), callTarget);
                 PythonBuiltinClass builtinClass = createBuiltinClassFor(core, builtin);
