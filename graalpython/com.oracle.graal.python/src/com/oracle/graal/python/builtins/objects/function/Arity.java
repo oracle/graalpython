@@ -119,7 +119,7 @@ public class Arity {
         return num;
     }
 
-    private int computeMinNumPositionalArgs(int value) {
+    private static int computeMinNumPositionalArgs(int value) {
         return value < 0 ? 0 : value;
     }
 

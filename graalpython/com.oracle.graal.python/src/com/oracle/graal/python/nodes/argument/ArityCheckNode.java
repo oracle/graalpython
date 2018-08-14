@@ -174,7 +174,7 @@ public abstract class ArityCheckNode extends PBaseNode {
     }
 
     @ExplodeLoop
-    private int countMissingPositionalParamIds(int numParameterIds, Object[] arguments) {
+    private static int countMissingPositionalParamIds(int numParameterIds, Object[] arguments) {
         int cntMissingPositional = 0;
         for (int i = 0; i < numParameterIds; i++) {
             if (PArguments.getArgument(arguments, i) == null) {
@@ -216,7 +216,7 @@ public abstract class ArityCheckNode extends PBaseNode {
     }
 
     @TruffleBoundary
-    private String getMissingRequiredKeywordsErrorMessage(Arity arity, int cntGivenRequiredKeywords, String[] givenKeywords) {
+    private static String getMissingRequiredKeywordsErrorMessage(Arity arity, int cntGivenRequiredKeywords, String[] givenKeywords) {
         int missingRequiredKeywords = arity.getNumOfRequiredKeywords() - cntGivenRequiredKeywords;
         Set<String> givenKeywordsSet = new HashSet<>(Arrays.asList(givenKeywords));
 
@@ -249,7 +249,7 @@ public abstract class ArityCheckNode extends PBaseNode {
     }
 
     @TruffleBoundary
-    private String getMissingPositionalArgsErrorMessage(Arity arity, Object[] arguments, int cntMissingPositional) {
+    private static String getMissingPositionalArgsErrorMessage(Arity arity, Object[] arguments, int cntMissingPositional) {
         StringBuilder builder = new StringBuilder();
         String currentName = null;
         String[] parameterIds = arity.getParameterIds();
@@ -280,7 +280,7 @@ public abstract class ArityCheckNode extends PBaseNode {
     }
 
     @TruffleBoundary
-    private String getExtraPositionalArgsErrorMessage(Arity arity, int numOfArgs, String[] givenKeywords) {
+    private static String getExtraPositionalArgsErrorMessage(Arity arity, int numOfArgs, String[] givenKeywords) {
         String givenCountMessage = (numOfArgs == 1) ? "was" : "were";
         Set<String> keywordsOnly = arity.getKeywordsOnlyArgs();
         int givenKeywordOnlyArgs = 0;
