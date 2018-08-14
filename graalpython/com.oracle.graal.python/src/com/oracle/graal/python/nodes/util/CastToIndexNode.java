@@ -66,7 +66,7 @@ public abstract class CastToIndexNode extends PBaseNode {
     private final PythonErrorType errorType;
     private final boolean recursive;
 
-    public CastToIndexNode(PythonErrorType errorType, boolean recursive) {
+    protected CastToIndexNode(PythonErrorType errorType, boolean recursive) {
         this.errorType = errorType;
         this.recursive = recursive;
     }
