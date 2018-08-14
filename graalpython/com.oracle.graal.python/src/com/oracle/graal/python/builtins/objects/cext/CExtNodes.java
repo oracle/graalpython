@@ -298,6 +298,11 @@ public abstract class CExtNodes {
         }
 
         @Specialization
+        byte doLong(byte b) {
+            return b;
+        }
+
+        @Specialization
         int doLong(int i) {
             return i;
         }

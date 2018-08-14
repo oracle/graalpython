@@ -39,6 +39,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -742,9 +744,10 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public PTuple frexpPI(PInt value) {
+        public PTuple frexpPI(PInt value,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             PTuple result = frexpD(value.getValue().doubleValue());
-            if (Double.isInfinite((double) result.getItem(0))) {
+            if (Double.isInfinite((double) getItemNode.execute(result.getSequenceStorage(), 0))) {
                 throw raise(OverflowError, "int too large to convert to float");
             }
             return result;
@@ -1038,9 +1041,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
         /*
          * This implementation is taken from CPython. The performance is not good. Should be faster.
          * It can be easily replace with much simpler code based on BigDecimal:
-         * 
+         *
          * BigDecimal result = BigDecimal.ZERO;
-         * 
+         *
          * in cycle just: result = result.add(BigDecimal.valueof(x); ... The current implementation
          * is little bit faster. The testFSum in test_math.py takes in different implementations:
          * CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
@@ -1661,6 +1664,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class Log2Node extends MathDoubleUnaryBuiltinNode {
 
+        @Child private SequenceStorageNodes.GetItemNode getItemNode;
+
         private static final double LOG2 = Math.log(2);
         private static final BigInteger TWO = BigInteger.valueOf(2);
 
@@ -1683,13 +1688,21 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public double count(double value) {
             checkMathDomainError(value <= 0);
             PTuple frexpR = FrexpNode.frexp(value, factory());
-            double m = (double) frexpR.getItem(0);
-            int e = (int) frexpR.getItem(1);
+            double m = (double) getItem(frexpR.getSequenceStorage(), 0);
+            int e = (int) getItem(frexpR.getSequenceStorage(), 1);
             if (value >= 1.0) {
                 return Math.log(2.0 * m) / LOG2 + (e - 1);
             } else {
                 return Math.log(m) / LOG2 + e;
             }
+        }
+
+        private Object getItem(SequenceStorage store, int idx) {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
+            }
+            return getItemNode.execute(store, idx);
         }
     }
 

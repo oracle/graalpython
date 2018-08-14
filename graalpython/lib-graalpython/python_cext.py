@@ -237,10 +237,11 @@ def PyTruffle_Object_LEN(obj):
 
 ##################### BYTES
 
-def PyBytes_FromStringAndSize(string, encoding):
+def PyBytes_FromStringAndSize(string, size, encoding):
     if string is not None:
         return bytes(string, encoding)
-    return bytes()
+    assert size >= 0;
+    return PyTruffle_Bytes_EmptyWithCapacity(size, error_handler)
 
 
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):

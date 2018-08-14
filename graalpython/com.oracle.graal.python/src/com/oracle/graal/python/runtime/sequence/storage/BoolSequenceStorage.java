@@ -372,4 +372,9 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         return true;
     }
 
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
+    }
+
 }

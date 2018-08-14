@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
@@ -136,13 +137,14 @@ public final class DictViewBuiltins extends PythonBuiltins {
         boolean contains(PDictItemsView self, PTuple key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
                         @Cached("create()") HashingStorageNodes.PythonEquivalence equivalenceNode,
-                        @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getSeqItemNode) {
             if (tupleLenProfile.profile(key.len() != 2)) {
                 return false;
             }
             HashingStorage dictStorage = self.getDict().getDictStorage();
-            Object value = getItemNode.execute(dictStorage, key.getItem(0));
-            return value != null && equivalenceNode.equals(value, key.getItem(1));
+            Object value = getItemNode.execute(dictStorage, getSeqItemNode.execute(key.getSequenceStorage(), 0));
+            return value != null && equivalenceNode.equals(value, getSeqItemNode.execute(key.getSequenceStorage(), 1));
         }
     }
 

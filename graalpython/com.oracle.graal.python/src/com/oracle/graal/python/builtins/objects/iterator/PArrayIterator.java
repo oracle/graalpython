@@ -25,27 +25,16 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.array.PLongArray;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
-public final class PLongArrayIterator extends PLongIterator {
+public final class PArrayIterator extends PBuiltinIterator {
 
-    final PLongArray array;
+    final PArray array;
     int index;
 
-    public PLongArrayIterator(PythonClass clazz, PLongArray array) {
+    public PArrayIterator(PythonClass clazz, PArray array) {
         super(clazz);
         this.array = array;
-    }
-
-    @Override
-    public long next() {
-        assert hasNext();
-        return array.getLongItemNormalized(index++);
-    }
-
-    @Override
-    public boolean hasNext() {
-        return index < array.len();
     }
 }

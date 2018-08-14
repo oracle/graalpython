@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -63,10 +64,12 @@ import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.PNati
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
@@ -75,6 +78,8 @@ import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeA
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -323,27 +328,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTuple_SetItem extends NativeBuiltin {
         @Specialization
-        int doI(PTuple tuple, int position, Object element) {
-            Object[] store = tuple.getArray();
-            if (position < 0 || position >= store.length) {
-                return raiseNative(-1, PythonErrorType.IndexError, "tuple assignment index out of range");
-            }
-            store[position] = element;
+        int doI(PTuple tuple, Object position, Object element,
+                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.execute(tuple.getSequenceStorage(), position, element);
             return 0;
         }
 
-        @Specialization(rewriteOn = ArithmeticException.class)
-        int doL(PTuple tuple, long position, Object element) {
-            return doI(tuple, PInt.intValueExact(position), element);
-        }
-
-        @Specialization
-        int doLOvf(PTuple tuple, long position, Object element) {
-            try {
-                return doI(tuple, PInt.intValueExact(position), element);
-            } catch (ArithmeticException e) {
-                return raiseNative(-1, PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
-            }
+        protected static SequenceStorageNodes.SetItemNode createSetItem() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign());
         }
     }
 
@@ -755,7 +747,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         protected boolean isByteArray(TruffleObject o) {
-            return o instanceof CByteArrayWrapper || ForeignAccess.sendHasSize(getHasSizeNode(), o);
+            return o instanceof PySequenceArrayWrapper || o instanceof CByteArrayWrapper || ForeignAccess.sendHasSize(getHasSizeNode(), o);
         }
 
         protected byte[] getByteArray(TruffleObject o) {
@@ -1117,9 +1109,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         byte[] doCArrayWrapper(CByteArrayWrapper o, @SuppressWarnings("unused") long size) {
             return o.getDelegate();
+        }
+
+        @Specialization
+        byte[] doSequenceArrayWrapper(PySequenceArrayWrapper o, @SuppressWarnings("unused") long size,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return toBytesNode.execute(o.getDelegate());
         }
 
         @Fallback
@@ -1197,7 +1194,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffle_Bytes_AsString extends NativeBuiltin {
         @Specialization
         Object doBytes(PBytes bytes, @SuppressWarnings("unused") Object errorMarker) {
-            return new CByteArrayWrapper(bytes.getInternalByteArray());
+            return new PySequenceArrayWrapper(bytes, 1);
         }
 
         @Specialization
@@ -1579,6 +1576,54 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object call(PBuiltinFunction function) {
             return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
                             Truffle.getRuntime().createCallTarget(new MethFastcallRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Bytes_EmptyWithCapacity extends NativeBuiltin {
+
+        @Specialization
+        PBytes doInt(int size, @SuppressWarnings("unused") Object errorMarker) {
+            return factory().createBytes(new byte[size]);
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        PBytes doLong(long size, Object errorMarker) {
+            return doInt(PInt.intValueExact(size), errorMarker);
+        }
+
+        @Specialization(replaces = "doLong")
+        PBytes doLongOvf(long size, Object errorMarker) {
+            try {
+                return doInt(PInt.intValueExact(size), errorMarker);
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        PBytes doPInt(PInt size, Object errorMarker) {
+            return doInt(size.intValueExact(), errorMarker);
+        }
+
+        @Specialization(replaces = "doPInt")
+        PBytes doPIntOvf(PInt size, Object errorMarker) {
+            try {
+                return doInt(size.intValueExact(), errorMarker);
+            } catch (ArithmeticException e) {
+                throw raiseIndexError();
+            }
+        }
+
+        @Fallback
+        Object doGeneric(Object size, Object errorMarker) {
+            return raiseNative(errorMarker, TypeError, "expected 'int', but was '%p'", size);
+        }
+
+        @TruffleBoundary
+        private static void addToSet(PythonClass base, PythonClass value) {
+            base.getSubClasses().add(value);
         }
     }
 }

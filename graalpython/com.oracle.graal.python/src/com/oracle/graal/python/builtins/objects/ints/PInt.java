@@ -149,4 +149,23 @@ public final class PInt extends PythonBuiltinObject {
         return (int) val;
     }
 
+    public static byte byteValueExact(int val) {
+        if (val < 0 || val >= 256) {
+            throw new ArithmeticException();
+        }
+        return (byte) val;
+    }
+
+    public static byte byteValueExact(long val) {
+        if (val < 0 || val >= 256) {
+            throw new ArithmeticException();
+        }
+        return (byte) val;
+    }
+
+    @TruffleBoundary(transferToInterpreterOnException = false)
+    public byte byteValueExact() {
+        return value.byteValueExact();
+    }
+
 }

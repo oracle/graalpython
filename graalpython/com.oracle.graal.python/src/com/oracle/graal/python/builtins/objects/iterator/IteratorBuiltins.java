@@ -35,6 +35,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -44,7 +45,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -71,19 +71,23 @@ public class IteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public int next(PIntArrayIterator self) {
+        public Object next(PArrayIterator self,
+                        @Cached("createClassProfile()") ValueProfile itemTypeProfile,
+                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getItemNode) {
             if (self.index < self.array.len()) {
-                return self.array.getIntItemNormalized(self.index++);
+                // TODO avoid boxing by getting the array's typecode and using primitive return
+                // types
+                return itemTypeProfile.profile(getItemNode.execute(self.array.getSequenceStorage(), self.index++));
             }
             throw raise(StopIteration);
         }
 
         @Specialization
         public int next(PIntegerSequenceIterator self) {
-            if (!self.stopIterationReached && self.index < self.sequence.length()) {
+            if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
@@ -108,36 +112,20 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double next(PDoubleArrayIterator self) {
-            if (self.index < self.array.len()) {
-                return self.array.getDoubleItemNormalized(self.index++);
-            }
-            throw raise(StopIteration);
-        }
-
-        @Specialization
         public double next(PDoubleSequenceIterator self) {
-            if (!self.stopIterationReached && self.index < self.sequence.length()) {
+            if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
-            self.stopIterationReached = true;
-            throw raise(StopIteration);
-        }
-
-        @Specialization
-        public long next(PLongArrayIterator self) {
-            if (self.index < self.array.len()) {
-                return self.array.getLongItemNormalized(self.index++);
-            }
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
         @Specialization
         public long next(PLongSequenceIterator self) {
-            if (!self.stopIterationReached && self.index < self.sequence.length()) {
+            if (!self.isExhausted() && self.index < self.sequence.length()) {
                 return self.sequence.getLongItemNormalized(self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
@@ -151,26 +139,25 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isPList()")
         public Object nextList(PSequenceIterator self,
-                        @Cached("createClassProfile()") ValueProfile storageProfile,
-                        @Cached("create()") NormalizeIndexNode normalize) {
+                        @Cached("createClassProfile()") ValueProfile storageProfile) {
             SequenceStorage storage = storageProfile.profile(((PList) self.getPSequence()).getSequenceStorage());
             int length = storage.length();
-            if (!self.stopIterationReached && self.index < length) {
-                int index = normalize.execute(self.index++, length, "list index out of range");
-                return storage.getItemNormalized(index);
+            if (!self.isExhausted() && self.index < length) {
+                return storage.getItemNormalized(self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
         @Specialization(guards = "self.isPSequence()")
         public Object next(PSequenceIterator self,
-                        @Cached("createClassProfile()") ValueProfile sequenceProfile) {
+                        @Cached("createClassProfile()") ValueProfile sequenceProfile,
+                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getItemNode) {
             PSequence sequence = sequenceProfile.profile(self.getPSequence());
-            if (!self.stopIterationReached && self.index < sequence.len()) {
-                return sequence.getItem(self.index++);
+            if (!self.isExhausted() && self.index < sequence.len()) {
+                return getItemNode.execute(sequence.getSequenceStorage(), self.index++);
             }
-            self.stopIterationReached = true;
+            self.setExhausted();
             throw raise(StopIteration);
         }
 
@@ -193,6 +180,10 @@ public class IteratorBuiltins extends PythonBuiltins {
                 throw raise(StopIteration);
             }
         }
+
+        protected static SequenceStorageNodes.GetItemNode createGetItem() {
+            return SequenceStorageNodes.GetItemNode.createNotNormalized();
+        }
     }
 
     @Builtin(name = __ITER__, fixedNumOfArguments = 1)
@@ -209,7 +200,7 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LengthHintNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int lengthHint(PIntArrayIterator self) {
+        public int lengthHint(PArrayIterator self) {
             return self.array.len() - self.index;
         }
 
@@ -229,18 +220,8 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public double lengthHint(PDoubleArrayIterator self) {
-            return self.array.len() - self.index;
-        }
-
-        @Specialization
         public double lengthHint(PDoubleSequenceIterator self) {
             return self.sequence.length() - self.index;
-        }
-
-        @Specialization
-        public long lengthHint(PLongArrayIterator self) {
-            return self.array.len() - self.index;
         }
 
         @Specialization

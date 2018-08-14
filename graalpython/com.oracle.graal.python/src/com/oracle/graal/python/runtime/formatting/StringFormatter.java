@@ -28,6 +28,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -64,7 +65,7 @@ public class StringFormatter {
         buffer = new StringBuilder(format.length() + 100);
     }
 
-    Object getarg() {
+    Object getarg(LookupAndCallBinaryNode getItemNode) {
         Object ret = null;
         switch (argIndex) {
             case -3: // special index indicating a mapping
@@ -75,7 +76,7 @@ public class StringFormatter {
                 argIndex = -2;
                 return args;
             default:
-                ret = ((PSequence) args).getItem(argIndex++);
+                ret = getItemNode.executeObject(args, argIndex++);
                 break;
         }
         if (ret == null) {
@@ -84,10 +85,10 @@ public class StringFormatter {
         return ret;
     }
 
-    int getNumber() {
+    int getNumber(LookupAndCallBinaryNode getItemNode) {
         char c = pop();
         if (c == '*') {
-            Object o = getarg();
+            Object o = getarg(getItemNode);
             if (o instanceof Long) {
                 return ((Long) o).intValue();
             } else if (o instanceof Integer) {
@@ -158,7 +159,7 @@ public class StringFormatter {
      * @return result of formatting
      */
     @TruffleBoundary
-    public Object format(Object args1, CallDispatchNode callNode, BiFunction<Object, String, Object> lookupAttribute) {
+    public Object format(Object args1, CallDispatchNode callNode, BiFunction<Object, String, Object> lookupAttribute, LookupAndCallBinaryNode getItemNode) {
         PDict dict = null;
         this.args = args1;
 
@@ -265,7 +266,7 @@ public class StringFormatter {
              * after the minimum field width and optional precision. A custom getNumber() takes care
              * of the '*' case.
              */
-            width = getNumber();
+            width = getNumber(getItemNode);
             if (width < 0) {
                 width = -width;
                 align = '<';
@@ -279,7 +280,7 @@ public class StringFormatter {
              */
             c = pop();
             if (c == '.') {
-                precision = getNumber();
+                precision = getNumber(getItemNode);
                 if (precision < -1) {
                     precision = 0;
                 }
@@ -334,7 +335,7 @@ public class StringFormatter {
 
             switch (spec.type) {
                 case 'b':
-                    Object arg = getarg();
+                    Object arg = getarg(getItemNode);
                     f = ft = new TextFormatter(core, buffer, spec);
                     ft.setBytes(true);
                     Object bytesAttribute;
@@ -353,7 +354,7 @@ public class StringFormatter {
                     break;
                 case 's': // String: converts any object using __str__(), __unicode__() ...
                 case 'r': // ... or repr().
-                    arg = getarg();
+                    arg = getarg(getItemNode);
                     // Get hold of the actual object to display (may set needUnicode)
                     Object attribute = spec.type == 's' ? lookupAttribute.apply(arg, __STR__) : lookupAttribute.apply(arg, __REPR__);
                     if (attribute != PNone.NO_VALUE) {
@@ -377,7 +378,7 @@ public class StringFormatter {
                     // Format the argument using this Spec.
                     f = fi = new IntegerFormatter.Traditional(core, buffer, spec);
 
-                    arg = getarg();
+                    arg = getarg(getItemNode);
 
                     // Note various types accepted here as long as they have an __int__ method.
                     Object argAsNumber = asNumber(arg, callNode, lookupAttribute);
@@ -407,7 +408,7 @@ public class StringFormatter {
                     f = ff = new FloatFormatter(core, buffer, spec);
 
                     // Note various types accepted here as long as they have a __float__ method.
-                    arg = getarg();
+                    arg = getarg(getItemNode);
                     Object argAsFloat = asFloat(arg, callNode, lookupAttribute);
 
                     // We have to check what we got back..

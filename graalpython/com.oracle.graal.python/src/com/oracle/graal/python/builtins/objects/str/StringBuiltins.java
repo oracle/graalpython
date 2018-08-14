@@ -31,6 +31,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
@@ -60,13 +61,12 @@ import java.util.regex.Pattern;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -1292,12 +1292,9 @@ public final class StringBuiltins extends PythonBuiltins {
         Object doGeneric(String left, Object right,
                         @Cached("create()") CallDispatchNode callNode,
                         @Cached("create()") GetClassNode getClassNode,
-                        @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key));
-        }
-
-        protected BuiltinFunctions.ReprNode createReprNode() {
-            return BuiltinFunctionsFactory.ReprNodeFactory.create(null);
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
+            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
         }
     }
 
@@ -1581,4 +1578,15 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class IterNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PStringIterator doString(String self) {
+            return factory().createStringIterator(self);
+        }
+
+    }
 }

@@ -55,6 +55,8 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.TruffleStackTraceElement;
@@ -161,7 +163,9 @@ public final class PBaseException extends PythonObject {
         } else if (args.len() == 0) {
             return getPythonClass().getName();
         } else if (args.len() == 1) {
-            return getPythonClass().getName() + ": " + args.getItem(0).toString();
+            SequenceStorage store = args.getSequenceStorage();
+            Object item = store instanceof BasicSequenceStorage ? store.getItemNormalized(0) : "<unknown>";
+            return getPythonClass().getName() + ": " + item.toString();
         } else {
             return getPythonClass().getName() + ": " + args.toString();
         }

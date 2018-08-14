@@ -223,3 +223,23 @@ class TestPyBytes(CPyExtTestCase):
         arguments=["PyObject* arg"],
         cmpfunc=unhandled_error_compare
     )
+
+    test_PyBytes_Mutation = CPyExtFunction(
+        lambda args: args[1],
+        lambda: (
+            (b"hello", b"hallo"),
+        ),
+        code="""PyObject* mutate_bytes(PyObject* bytesObj, PyObject* expected) {
+            char* content = PyBytes_AS_STRING(bytesObj);
+            char* copy = (char*) malloc(PyBytes_Size(bytesObj)+1);
+            content[1] = 'a';
+            memcpy(copy, content, PyBytes_Size(bytesObj)+1);
+            return PyBytes_FromString(copy);
+        }
+        """,
+        resultspec="O",
+        argspec="OO",
+        arguments=["PyObject* bytesObj", "PyObject* expected"],
+        callfunction="mutate_bytes",
+        cmpfunc=unhandled_error_compare
+    )

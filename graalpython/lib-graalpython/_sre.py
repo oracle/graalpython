@@ -331,30 +331,30 @@ class SRE_Pattern():
         n = 0
         try:
             pattern = self.__tregex_compile(self.pattern)
-            string = self._decode_string(string)
+            decoded_string = self._decode_string(string)
             result = []
             pos = 0
             is_string_rep = isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray)
             if is_string_rep:
                 repl = _process_escape_sequences(repl)
             progress = True
-            while (count == 0 or n < count) and pos <= len(string) and progress:
-                match_result = tregex_call_safe(pattern.exec, string, pos)
+            while (count == 0 or n < count) and pos <= len(decoded_string) and progress:
+                match_result = tregex_call_safe(pattern.exec, decoded_string, pos)
                 if not match_result.isMatch:
                     break
                 n += 1
                 start = match_result.start[0]
                 end = match_result.end[0]
-                result.append(self._emit(string[pos:start]))
+                result.append(self._emit(decoded_string[pos:start]))
                 if is_string_rep:
-                    result.append(self.__replace_groups(repl, string, match_result, pattern))
+                    result.append(self.__replace_groups(repl, decoded_string, match_result, pattern))
                 else:
                     _srematch = SRE_Match(self, pos, -1, match_result)
                     _repl = repl(_srematch)
                     result.append(_repl)
                 pos = end
                 progress = (start != end)
-            result.append(self._emit(string[pos:]))
+            result.append(self._emit(decoded_string[pos:]))
             return self._emit("").join(result)
         except BaseException:
             return self.__compile_cpython_sre().sub(repl, string, count)

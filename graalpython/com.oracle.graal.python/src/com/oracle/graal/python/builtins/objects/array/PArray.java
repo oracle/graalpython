@@ -27,13 +27,21 @@ package com.oracle.graal.python.builtins.objects.array;
 
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.runtime.sequence.PLenSupplier;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
-public abstract class PArray extends PSequence {
+public class PArray extends PSequence implements PLenSupplier {
+
+    private SequenceStorage store;
 
     public PArray(PythonClass clazz) {
         super(clazz);
+    }
+
+    public PArray(PythonClass clazz, SequenceStorage store) {
+        super(clazz);
+        this.store = store;
     }
 
     @Override
@@ -47,25 +55,17 @@ public abstract class PArray extends PSequence {
     }
 
     @Override
-    public void delItem(int idx) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int index(Object value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public SequenceStorage getSequenceStorage() {
-        throw new UnsupportedOperationException();
+        return store;
     }
 
     @Override
-    public boolean lessThan(PSequence sequence) {
-        throw new UnsupportedOperationException();
+    public void setSequenceStorage(SequenceStorage store) {
+        this.store = store;
     }
 
-    public abstract Object getItemNormalized(int idx);
-
+    @Override
+    public int len() {
+        return store.length();
+    }
 }

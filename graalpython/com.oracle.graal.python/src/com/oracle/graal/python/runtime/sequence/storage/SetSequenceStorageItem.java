@@ -25,9 +25,9 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -40,7 +40,7 @@ public abstract class SetSequenceStorageItem extends Node {
         return SetSequenceStorageItemNodeGen.create();
     }
 
-    @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
+    @Child private SequenceStorageNodes.NormalizeIndexNode normalize = SequenceStorageNodes.NormalizeIndexNode.forListAssign();
 
     private final BranchProfile normalProfile = BranchProfile.create();
     private final ConditionProfile isEmptyProfile = ConditionProfile.createBinaryProfile();
@@ -54,7 +54,7 @@ public abstract class SetSequenceStorageItem extends Node {
             if (isEmptyProfile.profile(storage instanceof EmptySequenceStorage)) {
                 SequenceStorage newStorage = ((EmptySequenceStorage) storage).generalizeFor(value, null);
                 try {
-                    newStorage.setItemNormalized(normalize.execute(index, newStorage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+                    newStorage.setItemNormalized(normalize.execute(index, newStorage.length()), value);
                 } catch (SequenceStoreException ex) {
                     throw new IllegalStateException();
                 }
@@ -62,56 +62,56 @@ public abstract class SetSequenceStorageItem extends Node {
             } else {
                 assert !(storage instanceof ObjectSequenceStorage);
                 ObjectSequenceStorage newStorage = ((TypedSequenceStorage) storage).generalizeFor(value, null);
-                newStorage.setItemNormalized(normalize.execute(index, newStorage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+                newStorage.setItemNormalized(normalize.execute(index, newStorage.length()), value);
                 list.setSequenceStorage(newStorage);
             }
         }
     }
 
     public final void setItem(PList list, long index, Object value) {
-        setItem(list, normalize.execute(index, list.getSequenceStorage().length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        setItem(list, normalize.execute(index, list.getSequenceStorage().length()), value);
     }
 
     public abstract void execute(SequenceStorage storage, int index, Object value);
 
     @Specialization
     protected void setItem(BoolSequenceStorage storage, int index, boolean value) {
-        storage.setBoolItemNormalized(normalize.execute(index, storage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        storage.setBoolItemNormalized(normalize.execute(index, storage.length()), value);
     }
 
     @Specialization
     protected void setItem(ByteSequenceStorage storage, int index, byte value) {
-        storage.setByteItemNormalized(normalize.execute(index, storage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        storage.setByteItemNormalized(normalize.execute(index, storage.length()), value);
     }
 
     @Specialization
     protected void setItem(DoubleSequenceStorage storage, int index, double value) {
-        storage.setDoubleItemNormalized(normalize.execute(index, storage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        storage.setDoubleItemNormalized(normalize.execute(index, storage.length()), value);
     }
 
     @Specialization
     protected void setItem(IntSequenceStorage storage, int index, int value) {
-        storage.setIntItemNormalized(normalize.execute(index, storage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        storage.setIntItemNormalized(normalize.execute(index, storage.length()), value);
     }
 
     @Specialization
     protected void setItem(ListSequenceStorage storage, int index, PList value) {
-        storage.setListItemNormalized(normalize.execute(index, storage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        storage.setListItemNormalized(normalize.execute(index, storage.length()), value);
     }
 
     @Specialization
     protected void setItem(LongSequenceStorage storage, int index, long value) {
-        storage.setLongItemNormalized(normalize.execute(index, storage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        storage.setLongItemNormalized(normalize.execute(index, storage.length()), value);
     }
 
     @Specialization
     protected void setItem(TupleSequenceStorage storage, int index, PTuple value) {
-        storage.setPTupleItemNormalized(normalize.execute(index, storage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        storage.setPTupleItemNormalized(normalize.execute(index, storage.length()), value);
     }
 
     @Specialization
     protected void setItem(ObjectSequenceStorage storage, int index, Object value) {
-        storage.setItemNormalized(normalize.execute(index, storage.length(), NormalizeIndexNode.LIST_ASSIGN_OUT_OF_BOUNDS), value);
+        storage.setItemNormalized(normalize.execute(index, storage.length()), value);
     }
 
     @SuppressWarnings("unused")

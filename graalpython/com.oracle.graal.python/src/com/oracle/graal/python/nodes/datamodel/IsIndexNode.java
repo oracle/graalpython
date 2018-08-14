@@ -38,27 +38,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.nodes.datamodel;
 
-public abstract class NativeCAPISymbols {
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 
-    public static final String FUN_NATIVE_TO_JAVA = "native_to_java";
-    public static final String FUN_PY_TRUFFLE_STRING_TO_CSTR = "PyTruffle_StringToCstr";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT = "PyObjectHandle_ForJavaObject";
-    public static final String FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE = "PyObjectHandle_ForJavaType";
-    public static final String FUN_NATIVE_HANDLE_FOR_ARRAY = "NativeHandle_ForArray";
-    public static final String FUN_PY_NONE_HANDLE = "PyNoneHandle";
-    public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
-    public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
-    public static final String FUN_PY_FLOAT_AS_DOUBLE = "PyFloat_AsDouble";
-    public static final String FUN_GET_OB_TYPE = "get_ob_type";
-    public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
-    public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
-    public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";
-    public static final String FUN_PTR_COMPARE = "truffle_ptr_compare";
-    public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE = "PyTruffle_ByteArrayToNative";
-    public static final String FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE = "PyTruffle_IntArrayToNative";
-    public static final String FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE = "PyTruffle_LongArrayToNative";
-    public static final String FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE = "PyTruffle_DoubleArrayToNative";
-    public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE = "PyTruffle_ObjectArrayToNative";
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.Specialization;
+
+/**
+ * Equivalent to {@code PyIndex_Check}; tests if the object can be interpreted as integer.
+ */
+public abstract class IsIndexNode extends PDataModelEmulationNode {
+
+    @Child private HasInheritedAttributeNode hasIndexAttrNode;
+
+    @Specialization
+    public boolean isIterable(@SuppressWarnings("unused") boolean range) {
+        return true;
+    }
+
+    @Specialization
+    public boolean isIterable(@SuppressWarnings("unused") int array) {
+        return true;
+    }
+
+    @Specialization
+    public boolean isIterable(@SuppressWarnings("unused") long array) {
+        return true;
+    }
+
+    @Specialization
+    public boolean isIterable(@SuppressWarnings("unused") PInt array) {
+        return true;
+    }
+
+    @Fallback
+    public boolean isIterable(Object obj) {
+        return getHasIndexAttrNode().execute(obj);
+    }
+
+    private HasInheritedAttributeNode getHasIndexAttrNode() {
+        if (hasIndexAttrNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            hasIndexAttrNode = insert(HasInheritedAttributeNode.create(__INDEX__));
+        }
+        return hasIndexAttrNode;
+    }
+
+    public static IsIndexNode create() {
+        return IsIndexNodeGen.create();
+    }
 }

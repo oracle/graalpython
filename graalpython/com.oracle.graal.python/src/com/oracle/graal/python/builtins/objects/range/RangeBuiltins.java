@@ -38,15 +38,17 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
+import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -181,21 +183,35 @@ public class RangeBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
     @GenerateNodeFactory
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
-        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.create();
+        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forRange();
+
+        @Specialization
+        Object doPRange(PRange primary, boolean idx) {
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
+        }
 
         @Specialization
         Object doPRange(PRange primary, int idx) {
-            return primary.getItemNormalized(normalize.forRange(idx, primary.len()));
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
         }
 
         @Specialization
         Object doPRange(PRange primary, long idx) {
-            return primary.getItemNormalized(normalize.forRange(idx, primary.len()));
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
+        }
+
+        @Specialization
+        Object doPRange(PRange primary, PInt idx) {
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
         }
 
         @Specialization
         Object doPRange(PRange range, PSlice slice) {
-            return range.getSlice(factory(), slice);
+            SliceInfo info = slice.computeActualIndices(range.len());
+            int newStep = range.getStep() * info.step;
+            int newStart = info.start == SequenceUtil.MISSING_INDEX ? range.getStart() : range.getStart() + info.start * range.getStep();
+            int newStop = info.stop == SequenceUtil.MISSING_INDEX ? range.getStop() : Math.min(range.getStop(), newStart + info.length * newStep);
+            return factory().createRange(newStart, newStop, newStep);
         }
 
         @Fallback

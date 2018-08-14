@@ -187,4 +187,9 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
     }
 
+    @Override
+    public Object getInternalArrayObject() {
+        return null;
+    }
+
 }

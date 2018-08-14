@@ -26,23 +26,11 @@
 package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 
-import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
-import com.oracle.graal.python.builtins.objects.array.PIntArray;
-import com.oracle.graal.python.builtins.objects.array.PLongArray;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -50,10 +38,6 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
-
-    @Child private NormalizeIndexNode normalize;
-
-    public abstract Object execute(Object primary, Object slice);
 
     public PNode getPrimary() {
         return getLeftNode();
@@ -65,6 +49,14 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
+    public abstract Object execute(Object primary, Object slice);
+
+    @Specialization
+    public Object doSpecialObject(Object primary, Object index,
+                    @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetitemNode) {
+        return callGetitemNode.executeObject(primary, index);
+    }
+
     public static GetItemNode create() {
         return GetItemNodeGen.create(null, null);
     }
@@ -73,107 +65,9 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         return GetItemNodeGen.create(primary, slice);
     }
 
-    private NormalizeIndexNode ensureNormalize() {
-        if (normalize == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            normalize = insert(NormalizeIndexNode.create());
-        }
-        return normalize;
-    }
-
-    private int toInt(PInt index) {
-        try {
-            return index.intValueExact();
-        } catch (ArithmeticException e) {
-            // anything outside the int range is considered to be "out of range"
-            throw raise(IndexError, "index out of range");
-        }
-    }
-
     @Override
     public PNode makeWriteNode(PNode rhs) {
         return SetItemNode.create(getPrimary(), getSlice(), rhs);
-    }
-
-    @Specialization
-    public Object doPArray(PArray primary, PSlice slice) {
-        return primary.getSlice(factory(), slice);
-    }
-
-    @Specialization
-    public Object doPBytes(PBytes primary, int idx) {
-        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPBytes(PBytes bytes, PInt idx) {
-        return doPBytes(bytes, toInt(idx));
-    }
-
-    @Specialization
-    public Object doPByteArray(PByteArray primary, int idx) {
-        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPByteArray(PByteArray bytearray, PInt idx) {
-        return doPByteArray(bytearray, toInt(idx));
-    }
-
-    @Specialization
-    public int doPIntArray(PIntArray primary, int idx) {
-        return primary.getIntItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public int doPIntArray(PIntArray primary, long idx) {
-        return primary.getIntItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public long doPLongArray(PLongArray primary, int idx) {
-        return primary.getLongItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public long doPLongArray(PLongArray primary, long idx) {
-        return primary.getLongItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public double doPDoubleArray(PDoubleArray primary, int idx) {
-        return primary.getDoubleItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public double doPDoubleArray(PDoubleArray primary, long idx) {
-        return primary.getDoubleItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public char doPCharArray(PCharArray primary, int idx) {
-        return primary.getCharItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public char doPCharArray(PCharArray primary, long idx) {
-        return primary.getCharItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPArray(PArray primary, long idx) {
-        return primary.getItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPArray(PArray primary, PInt idx) {
-        return primary.getItemNormalized(ensureNormalize().forArray(toInt(idx), primary.len()));
-    }
-
-    @Specialization
-    public Object doSpecialObject(Object primary, Object index,
-                    @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetitemNode) {
-        return callGetitemNode.executeObject(primary, index);
     }
 
 }

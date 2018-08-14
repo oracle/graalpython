@@ -52,13 +52,13 @@ PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
     setlocale(LC_ALL, NULL);
     const char* encoding = nl_langinfo(CODESET);
     void *jstr = str != NULL ? polyglot_from_string_n(str, sz, SRC_CS) : to_java(NULL);
-	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", jstr, polyglot_from_string(encoding, SRC_CS));
+	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", jstr, sz, polyglot_from_string(encoding, SRC_CS));
 }
 
 PyObject * PyBytes_FromString(const char *str) {
 	setlocale(LC_ALL, NULL);
 	const char* encoding = nl_langinfo(CODESET);
-	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", polyglot_from_string(str, SRC_CS), polyglot_from_string(encoding, SRC_CS));
+	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", polyglot_from_string(str, SRC_CS), 0, polyglot_from_string(encoding, SRC_CS));
 }
 
 char* PyBytes_AsString(PyObject *obj) {

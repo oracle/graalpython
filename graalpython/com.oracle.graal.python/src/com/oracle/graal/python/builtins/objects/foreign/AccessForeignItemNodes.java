@@ -55,6 +55,8 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
@@ -219,6 +221,7 @@ abstract class AccessForeignItemNodes {
 
     }
 
+    @ImportStatic(SpecialMethodNames.class)
     protected abstract static class SetForeignItemNode extends AccessForeignItemBaseNode {
 
         public abstract Object execute(TruffleObject object, Object idx, Object value);
@@ -229,13 +232,14 @@ abstract class AccessForeignItemNodes {
                         @Cached("KEY_INFO.createNode()") Node keyInfoNode,
                         @Cached("HAS_SIZE.createNode()") Node hasSizeNode,
                         @Cached("GET_SIZE.createNode()") Node getSizeNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("create()") PTypeToForeignNode valueToForeignNode,
                         @Cached("create()") PForeignToPTypeNode foreign2PTypeNode) {
 
             try {
                 SliceInfo mslice = materializeSlice(idxSlice, object, getSizeNode, foreign2PTypeNode);
-                for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
-                    Object convertedValue = valueToForeignNode.executeConvert(pvalues.getItem(i));
+                for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
+                    Object convertedValue = valueToForeignNode.executeConvert(getItemNode.executeObject(pvalues, j));
                     writeForeignValue(object, i, convertedValue, foreignWrite, keyInfoNode, hasSizeNode, foreign2PTypeNode);
                 }
                 return PNone.NONE;

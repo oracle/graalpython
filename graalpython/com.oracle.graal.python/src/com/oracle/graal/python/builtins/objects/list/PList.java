@@ -27,9 +27,7 @@ package com.oracle.graal.python.builtins.objects.list;
 
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
@@ -51,24 +49,14 @@ public final class PList extends PSequence {
     }
 
     @Override
-    public final Object getItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "list index out of range");
-        return store.getItemNormalized(index);
-    }
-
     public final void setSequenceStorage(SequenceStorage newStorage) {
         this.store = newStorage;
     }
 
     @Override
-    public final Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        return factory.createList(getPythonClass(), store.getSliceInBound(start, stop, step, length));
-    }
-
-    @Override
     public final void setSlice(PSlice slice, PSequence value) {
         // Should not be used. Replaces with ListNodes.SetSliceNode.
-        // When it will be replaced in other PSequence implementeations,
+        // When it will be replaced in other PSequence implementations,
         // then the setSlice from PSequence can be removed.
         throw new UnsupportedOperationException();
     }
@@ -78,12 +66,6 @@ public final class PList extends PSequence {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public final void delItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "list index out of range");
-        store.delItemInBound(index);
-    }
-
     public final void delSlice(PSlice slice) {
         PSlice.SliceInfo sliceInfo = slice.computeActualIndices(this.len());
         store.delSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step);
@@ -91,11 +73,6 @@ public final class PList extends PSequence {
 
     public final void clear() {
         store.delSlice(0, store.length(), 1);
-    }
-
-    @Override
-    public final boolean lessThan(PSequence sequence) {
-        return false;
     }
 
     @Override
@@ -196,11 +173,6 @@ public final class PList extends PSequence {
         }
 
         return new PList(getPythonClass(), newStore);
-    }
-
-    @Override
-    public final int index(Object value) {
-        return store.index(value);
     }
 
     public final void insert(int index, Object value) {

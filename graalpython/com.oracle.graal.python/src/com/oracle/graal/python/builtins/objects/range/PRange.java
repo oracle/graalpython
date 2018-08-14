@@ -31,10 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -103,12 +100,6 @@ public final class PRange extends PImmutableSequence {
         return stop;
     }
 
-    @Override
-    public Object getItem(int idx) {
-        final int index = SequenceUtil.normalizeIndex(idx, length, "range object index out of range");
-        return getItemNormalized(index);
-    }
-
     public Object getItemNormalized(int index) {
         if (index >= length) {
             CompilerDirectives.transferToInterpreter();
@@ -119,31 +110,13 @@ public final class PRange extends PImmutableSequence {
     }
 
     @Override
-    public Object getSlice(PythonObjectFactory factory, int sliceStart, int sliceStop, int sliceStep, int slicelength) {
-        // Parameters 'sliceStart', 'sliceStop', ... are again a range but of indices.
-        int newStep = step * sliceStep;
-        int newStart = sliceStart == SequenceUtil.MISSING_INDEX ? start : start + sliceStart * step;
-        int newStop = sliceStop == SequenceUtil.MISSING_INDEX ? stop : Math.min(stop, newStart + slicelength * newStep);
-        return factory.createRange(newStart, newStop, newStep);
-    }
-
-    @Override
-    public boolean lessThan(PSequence sequence) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int len() {
         return length;
     }
 
     @Override
     public SequenceStorage getSequenceStorage() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int index(Object value) {
+        CompilerDirectives.transferToInterpreter();
         throw new UnsupportedOperationException();
     }
 

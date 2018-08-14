@@ -45,7 +45,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -54,14 +58,15 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class BytesNodes {
 
@@ -119,7 +124,8 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    abstract static class ToBytesNode extends PBaseNode {
+    public abstract static class ToBytesNode extends PBaseNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         protected final boolean allowRecursive;
 
@@ -129,19 +135,20 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(Object obj);
 
-        @Specialization
-        byte[] doBytes(PBytes bytes) {
-            return bytes.getInternalByteArray();
+        @Specialization(rewriteOn = PException.class)
+        byte[] doBytes(PIBytesLike bytes) {
+            return getToByteArrayNode().execute(bytes.getSequenceStorage());
         }
 
-        @Specialization
-        byte[] doByteArray(PByteArray byteArray) {
-            return byteArray.getInternalByteArray();
-        }
-
-        @Specialization(guards = "isByteStorage(sequence)")
-        byte[] doSequence(PSequence sequence) {
-            return ((ByteSequenceStorage) sequence.getSequenceStorage()).getInternalByteArray();
+        @Specialization(replaces = "doBytes")
+        byte[] doBytesErro(PIBytesLike bytes,
+                        @Cached("createBinaryProfile()") ConditionProfile exceptionProfile) {
+            try {
+                return getToByteArrayNode().execute(bytes.getSequenceStorage());
+            } catch (PException e) {
+                e.expect(TypeError, getCore(), exceptionProfile);
+                return doError(bytes);
+            }
         }
 
         @Specialization(guards = "allowRecursive")
@@ -154,6 +161,14 @@ public abstract class BytesNodes {
         @Fallback
         byte[] doError(Object obj) {
             throw raise(TypeError, "expected a bytes-like object, %p found", obj);
+        }
+
+        private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+            }
+            return toByteArrayNode;
         }
 
         protected ToBytesNode createRecursive() {
@@ -169,4 +184,170 @@ public abstract class BytesNodes {
         }
     }
 
+    public abstract static class FindNode extends PBaseNode {
+
+        @Child NormalizeIndexNode normalizeIndexNode;
+        @Child SequenceStorageNodes.GetItemNode getLeftItemNode;
+        @Child SequenceStorageNodes.GetItemNode getRightItemNode;
+
+        public abstract int execute(PIBytesLike bytes, Object sub, Object starting, Object ending);
+
+        @Specialization
+        int find(PIBytesLike primary, PIBytesLike sub, Object starting, Object ending) {
+            SequenceStorage haystack = primary.getSequenceStorage();
+            int len1 = haystack.length();
+
+            SequenceStorage needle = sub.getSequenceStorage();
+            int len2 = needle.length();
+
+            int start = getNormalizeIndexNode().execute(starting, len1);
+            int end = getNormalizeIndexNode().execute(ending, len1);
+
+            if (start >= len1 || len1 < len2) {
+                return -1;
+            } else if (end > len1) {
+                end = len1;
+            }
+
+            // TODO implement a more efficient algorithm
+            outer: for (int i = start; i < end; i++) {
+                for (int j = 0; j < len2; j++) {
+                    int hb = getGetLeftItemNode().executeInt(haystack, i + j);
+                    int nb = getGetRightItemNode().executeInt(needle, j);
+                    if (nb != hb || i + j >= end) {
+                        continue outer;
+                    }
+                }
+                return i;
+            }
+            return -1;
+        }
+
+        @Specialization
+        int find(PIBytesLike primary, int sub, Object starting, @SuppressWarnings("unused") Object ending) {
+            SequenceStorage haystack = primary.getSequenceStorage();
+            int len1 = haystack.length();
+
+            int start = getNormalizeIndexNode().execute(starting, len1);
+            if (start >= len1) {
+                return -1;
+            }
+
+            for (int i = start; i < len1; i++) {
+                int hb = getGetLeftItemNode().executeInt(haystack, i);
+                if (hb == sub) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        @Fallback
+        int doError(@SuppressWarnings("unused") PIBytesLike bytes, Object sub, @SuppressWarnings("unused") Object starting, @SuppressWarnings("unused") Object ending) {
+            throw raise(TypeError, "expected a bytes-like object, %p found", sub);
+        }
+
+        private NormalizeIndexNode getNormalizeIndexNode() {
+            if (normalizeIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                normalizeIndexNode = insert(NormalizeIndexNode.create(false));
+            }
+            return normalizeIndexNode;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetLeftItemNode() {
+            if (getLeftItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getLeftItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getLeftItemNode;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetRightItemNode() {
+            if (getRightItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getRightItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getRightItemNode;
+        }
+
+        public static FindNode create() {
+            return FindNodeGen.create();
+        }
+    }
+
+    public abstract static class FromListNode extends PBaseNode {
+
+        @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Child private SequenceStorageNodes.CastToByteNode castToByteNode;
+
+        public byte[] execute(PList list) {
+            int len = list.len();
+            SequenceStorage listStore = list.getSequenceStorage();
+            byte[] bytes = new byte[len];
+            for (int i = 0; i < len; i++) {
+                Object item = getGetItemNode().execute(listStore, i);
+                bytes[i] = getCastToByteNode().execute(item);
+            }
+            return bytes;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetItemNode() {
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.forList()));
+            }
+            return getItemNode;
+        }
+
+        private SequenceStorageNodes.CastToByteNode getCastToByteNode() {
+            if (castToByteNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToByteNode = insert(SequenceStorageNodes.CastToByteNode.create());
+            }
+            return castToByteNode;
+        }
+    }
+
+    public static class CmpNode extends PBaseNode {
+        @Child SequenceStorageNodes.GetItemNode getLeftItemNode;
+        @Child SequenceStorageNodes.GetItemNode getRightItemNode;
+
+        private final ValueProfile leftProfile = ValueProfile.createClassProfile();
+        private final ValueProfile rightProfile = ValueProfile.createClassProfile();
+
+        public int execute(PIBytesLike left, PIBytesLike right) {
+            PIBytesLike leftProfiled = leftProfile.profile(left);
+            PIBytesLike rightProfiled = rightProfile.profile(right);
+            for (int i = 0; i < Math.min(leftProfiled.len(), rightProfiled.len()); i++) {
+                int a = getGetLeftItemNode().executeInt(leftProfiled.getSequenceStorage(), i);
+                int b = getGetRightItemNode().executeInt(rightProfiled.getSequenceStorage(), i);
+                if (a != b) {
+                    // CPython uses 'memcmp'; so do unsigned comparison
+                    return a & 0xFF - b & 0xFF;
+                }
+            }
+            return leftProfiled.len() - rightProfiled.len();
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetLeftItemNode() {
+            if (getLeftItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getLeftItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getLeftItemNode;
+        }
+
+        private SequenceStorageNodes.GetItemNode getGetRightItemNode() {
+            if (getRightItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getRightItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+            }
+            return getRightItemNode;
+        }
+
+        public static CmpNode create() {
+            return new CmpNode();
+        }
+    }
 }

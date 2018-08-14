@@ -49,11 +49,12 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -74,6 +75,8 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
@@ -89,13 +92,11 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PDoubleArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PIntArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PLongArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
@@ -137,6 +138,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
 import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -145,6 +147,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -178,103 +181,101 @@ public final class BuiltinConstructors extends PythonBuiltins {
         builtinConstants.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
     }
 
-    // bytes([source[, encoding[, errors]]])
-    @Builtin(name = BYTES, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PBytes.class)
-    @GenerateNodeFactory
-    public abstract static class BytesNode extends PythonBuiltinNode {
+    protected abstract static class CreateByteOrByteArrayNode extends PythonBuiltinNode {
+        @Child private IsIndexNode isIndexNode;
+        @Child private CastToIndexNode castToIndexNode;
 
-        @Specialization(guards = "isNoValue(source)")
-        public PBytes bytes(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, new byte[0]);
+        @SuppressWarnings("unused")
+        protected Object create(PythonClass cls, byte[] barr) {
+            throw new AssertionError("should not reach");
         }
 
-        @Specialization
-        public PBytes bytes(PythonClass cls, int source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, BytesUtils.fromSize(getCore(), source));
+        @Specialization(guards = {"isNoValue(source)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public Object bytearray(PythonClass cls, @SuppressWarnings("unused") PNone source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            return create(cls, new byte[0]);
         }
 
-        @Specialization
-        public PBytes bytes(PythonClass cls, PInt source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            try {
-                return factory().createBytes(cls, BytesUtils.fromSize(getCore(), source.intValueExact()));
-            } catch (ArithmeticException e) {
-                // TODO: fix me, in python the array can take long sizes, we are bound to ints for
-                // now
-                throw raise(OverflowError, "byte string is too large");
+        @Specialization(guards = {"isInt(capObj)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public Object bytearray(PythonClass cls, Object capObj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
+            int cap = getCastToIndexNode().execute(capObj);
+            return create(cls, BytesUtils.fromSize(getCore(), cap));
+        }
+
+        @Specialization(guards = "isNoValue(errors)")
+        public Object fromString(PythonClass cls, String source, String encoding, @SuppressWarnings("unused") PNone errors) {
+            return create(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
+        }
+
+        @Specialization(guards = {"isNoValue(encoding)", "isNoValue(errors)"})
+        @SuppressWarnings("unused")
+        public Object fromString(PythonClass cls, String source, PNone encoding, PNone errors) {
+            throw raise(PythonErrorType.TypeError, "string argument without an encoding");
+        }
+
+        @Specialization(guards = {"!isInt(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
+        public Object bytearray(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @Cached("create()") GetIteratorNode getIteratorNode,
+                        @Cached("create()") GetNextNode getNextNode,
+                        @Cached("createBinaryProfile()") ConditionProfile stopIterationProfile,
+                        @Cached("create()") CastToByteNode castToByteNode) {
+
+            Object it = getIteratorNode.executeWith(iterable);
+            byte[] arr = new byte[16];
+            int i = 0;
+            while (true) {
+                try {
+                    byte item = castToByteNode.execute(getNextNode.execute(it));
+                    if (i >= arr.length) {
+                        arr = resize(arr, arr.length * 2);
+                    }
+                    arr[i++] = item;
+                } catch (PException e) {
+                    e.expect(StopIteration, getCore(), stopIterationProfile);
+                    return create(cls, resize(arr, i));
+                }
             }
         }
 
-        @Specialization
-        public PBytes bytes(PythonClass cls, String source, String encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private static byte[] resize(byte[] arr, int len) {
+            return Arrays.copyOf(arr, len);
         }
 
-        @Specialization
-        public PBytes bytes(PythonClass cls, PString source, String encoding, @SuppressWarnings("unused") PNone errors) {
-            return factory().createBytes(cls, BytesUtils.fromStringAndEncoding(getCore(), source.getValue(), encoding));
+        protected boolean isInt(Object o) {
+            if (isIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isIndexNode = insert(IsIndexNode.create());
+            }
+            return isIndexNode.execute(o);
         }
 
-        @Specialization(guards = "isString(source)")
-        @SuppressWarnings("unused")
-        public PBytes bytes(PythonClass cls, Object source, PNone encoding, PNone errors) {
-            throw raise(TypeError, "string argument without an encoding");
+        protected CastToIndexNode getCastToIndexNode() {
+            if (castToIndexNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToIndexNode = insert(CastToIndexNode.createOverflow());
+            }
+            return castToIndexNode;
         }
+    }
 
-        @Specialization
-        public PBytes bytes(PythonClass cls, PythonObject source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached("create()") ConstructListNode constructListNode,
-                        @Cached("create()") GetClassNode getClassNode) {
-            PythonClass sourceClass = getClassNode.execute(source);
-            PList list = constructListNode.execute(source, sourceClass);
-            return factory().createBytes(cls, BytesUtils.fromList(getCore(), list));
-        }
-
-        @Specialization(guards = "!isString(source)")
-        @SuppressWarnings("unused")
-        public PBytes bytes(Object cls, Object source, Object encoding, Object errors) {
-            throw raise(TypeError, "encoding without a string argument");
+    // bytes([source[, encoding[, errors]]])
+    @Builtin(name = BYTES, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PBytes.class)
+    @GenerateNodeFactory
+    public abstract static class BytesNode extends CreateByteOrByteArrayNode {
+        @Override
+        protected Object create(PythonClass cls, byte[] barr) {
+            return factory().createBytes(cls, barr);
         }
     }
 
     // bytearray([source[, encoding[, errors]]])
     @Builtin(name = BYTEARRAY, minNumOfArguments = 1, maxNumOfArguments = 4, constructsClass = PByteArray.class)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
-    public abstract static class ByteArrayNode extends PythonBuiltinNode {
-
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, PNone source, PNone encoding, PNone errors) {
-            return factory().createByteArray(cls, new byte[0]);
-        }
-
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, int source, PNone encoding, PNone errors) {
-            return factory().createByteArray(cls, BytesUtils.fromSize(getCore(), source));
-        }
-
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, PInt source, PNone encoding, PNone errors) {
-            try {
-                return factory().createByteArray(cls, BytesUtils.fromSize(getCore(), source.intValueExact()));
-            } catch (ArithmeticException e) {
-                // TODO: fix me, in python the array can take long sizes, we are bound to ints for
-                // now
-                throw raise(OverflowError, "byte string is too large");
-            }
-        }
-
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, String source, String encoding, PNone errors) {
-            return factory().createByteArray(cls, BytesUtils.fromStringAndEncoding(getCore(), source, encoding));
-        }
-
-        @Specialization
-        public PByteArray bytearray(PythonClass cls, PythonObject source, PNone encoding, PNone errors,
-                        @Cached("create()") ConstructListNode constructListNode,
-                        @Cached("create()") GetClassNode getClassNode) {
-            PythonClass sourceClass = getClassNode.execute(source);
-            PList list = constructListNode.execute(source, sourceClass);
-            return factory().createByteArray(cls, BytesUtils.fromList(getCore(), list));
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class ByteArrayNode extends CreateByteOrByteArrayNode {
+        @Override
+        protected Object create(PythonClass cls, byte[] barr) {
+            return factory().createByteArray(cls, barr);
         }
     }
 
@@ -800,6 +801,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IntNode extends PythonBuiltinNode {
 
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         @TruffleBoundary(transferToInterpreterOnException = false)
         private Object stringToInt(String num, int base) {
             String s = num.replace("_", "");
@@ -998,19 +1001,28 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
         int parseInt(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseInt(cls, new String(arg.getInternalByteArray()), keywordArg);
+            return parseInt(cls, new String(getByteArray(arg)), keywordArg);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
         @TruffleBoundary
         long parseLong(Object cls, PIBytesLike arg, int keywordArg) throws NumberFormatException {
-            return parseLong(cls, new String(arg.getInternalByteArray()), keywordArg);
+            return parseLong(cls, new String(getByteArray(arg)), keywordArg);
         }
 
-        @Specialization
+        @Specialization(rewriteOn = NumberFormatException.class)
         @TruffleBoundary
-        Object parsePInt(PythonClass cls, PIBytesLike arg, int keywordArg) {
-            return parsePInt(cls, new String(arg.getInternalByteArray()), keywordArg);
+        Object parseBytes(PythonClass cls, PIBytesLike arg, int base) {
+            return parsePInt(cls, new String(getByteArray(arg)), base);
+        }
+
+        @Specialization(replaces = "parseBytes")
+        Object parseBytesError(PythonClass cls, PIBytesLike arg, int base) {
+            try {
+                return parseBytes(cls, arg, base);
+            } catch (NumberFormatException e) {
+                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
+            }
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
@@ -1025,7 +1037,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         Object parsePInt(PythonClass cls, PString arg, int keywordArg) {
             return parsePInt(cls, arg.getValue(), keywordArg);
         }
@@ -1042,9 +1053,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return Long.parseLong(arg, keywordArg);
         }
 
-        @Specialization
-        Object parsePInt(PythonClass cls, String arg, int keywordArg) {
-            Object int2 = toInt(arg, keywordArg);
+        @Specialization(rewriteOn = NumberFormatException.class)
+        Object parsePInt(PythonClass cls, String arg, int base) {
+            Object int2 = toInt(arg, base);
             if (int2 instanceof BigInteger) {
                 return factory().createInt(cls, (BigInteger) int2);
             } else if (isPrimitiveInt(cls)) {
@@ -1052,6 +1063,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
             } else {
                 assert int2 instanceof Integer;
                 return factory().createInt(cls, (int) int2);
+            }
+        }
+
+        @Specialization(replaces = "parsePInt")
+        Object parsePIntError(PythonClass cls, String arg, int base) {
+            try {
+                return parsePInt(cls, arg, base);
+            } catch (NumberFormatException e) {
+                throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
             }
         }
 
@@ -1113,6 +1133,15 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 }
             }
         }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+        }
+
     }
 
     // bool([x])
@@ -1728,9 +1757,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "iterator", takesVariableArguments = true, takesVariableKeywords = true, constructsClass = {
                     PRangeIterator.class, PIntegerSequenceIterator.class, PSequenceIterator.class,
-                    PBaseSetIterator.class, PRangeIterator.class, PDoubleArrayIterator.class,
-                    PDoubleSequenceIterator.class, PLongSequenceIterator.class, PLongArrayIterator.class,
-                    PIntArrayIterator.class, PStringIterator.class, PRangeReverseIterator.class,
+                    PBaseSetIterator.class, PRangeIterator.class, PArrayIterator.class,
+                    PDoubleSequenceIterator.class, PLongSequenceIterator.class,
+                    PStringIterator.class, PRangeReverseIterator.class,
     }, isPublic = false)
     @GenerateNodeFactory
     public abstract static class IteratorTypeNode extends PythonBuiltinNode {
@@ -1815,6 +1844,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "code", constructsClass = {PCode.class}, isPublic = false, minNumOfArguments = 14, maxNumOfArguments = 16)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         @Specialization
         Object call(PythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -1840,7 +1871,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         PBytes lnotab) {
             return factory().createCode(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
-                            new String(codestring.getInternalByteArray()), constants, names,
+                            toString(getByteArray(codestring)), constants, names,
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
                             filename.getValue(), name.getValue(), firstlineno,
                             lnotab);
@@ -1855,6 +1886,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object filename, Object name, Object firstlineno,
                         Object lnotab) {
             throw raise(PythonErrorType.NotImplementedError, "code object instance from generic arguments");
+        }
+
+        @TruffleBoundary
+        private static String toString(byte[] data) {
+            return new String(data);
+        }
+
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
         }
     }
 

@@ -144,7 +144,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
+    public DoubleSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         double[] newArray = new double[sliceLength];
 
         if (step == 1) {
@@ -360,6 +360,11 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         }
 
         return true;
+    }
+
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
     }
 
 }

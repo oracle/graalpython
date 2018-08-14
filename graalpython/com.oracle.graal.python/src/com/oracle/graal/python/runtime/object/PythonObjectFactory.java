@@ -31,10 +31,7 @@ import java.util.Optional;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
-import com.oracle.graal.python.builtins.objects.array.PIntArray;
-import com.oracle.graal.python.builtins.objects.array.PLongArray;
+import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -66,15 +63,12 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PCharArrayIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PDoubleArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PIntArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PLongArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
@@ -108,6 +102,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.CharSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
@@ -265,7 +260,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PBytes(cls, array));
     }
 
-    public Object createBytes(PythonClass cls, ByteSequenceStorage storage) {
+    public PBytes createBytes(SequenceStorage storage) {
+        return trace(new PBytes(lookupClass(PythonBuiltinClassType.PBytes), storage));
+    }
+
+    public PBytes createBytes(PythonClass cls, ByteSequenceStorage storage) {
         return trace(new PBytes(cls, storage));
     }
 
@@ -281,8 +280,16 @@ public final class PythonObjectFactory extends Node {
         return trace(new PTuple(lookupClass(PythonBuiltinClassType.PTuple), objects));
     }
 
+    public final PTuple createTuple(SequenceStorage store) {
+        return trace(new PTuple(lookupClass(PythonBuiltinClassType.PTuple), store));
+    }
+
     public final PTuple createTuple(PythonClass cls, Object[] objects) {
         return trace(new PTuple(cls, objects));
+    }
+
+    public final PTuple createTuple(PythonClass cls, SequenceStorage store) {
+        return trace(new PTuple(cls, store));
     }
 
     public final PComplex createComplex(PythonClass cls, double real, double imag) {
@@ -555,20 +562,28 @@ public final class PythonObjectFactory extends Node {
      * Arrays
      */
 
-    public PIntArray createIntArray(PythonClass cls, int[] array) {
-        return trace(new PIntArray(cls, array));
+    public PArray createArray(PythonClass cls, byte[] array) {
+        return trace(new PArray(cls, new ByteSequenceStorage(array)));
     }
 
-    public PDoubleArray createDoubleArray(PythonClass cls, double[] array) {
-        return trace(new PDoubleArray(cls, array));
+    public PArray createArray(PythonClass cls, int[] array) {
+        return trace(new PArray(cls, new IntSequenceStorage(array)));
     }
 
-    public PCharArray createCharArray(PythonClass cls, char[] array) {
-        return trace(new PCharArray(cls, array));
+    public PArray createArray(PythonClass cls, double[] array) {
+        return trace(new PArray(cls, new DoubleSequenceStorage(array)));
     }
 
-    public PLongArray createLongArray(PythonClass cls, long[] array) {
-        return trace(new PLongArray(cls, array));
+    public PArray createArray(PythonClass cls, char[] array) {
+        return trace(new PArray(cls, new CharSequenceStorage(array)));
+    }
+
+    public PArray createArray(PythonClass cls, long[] array) {
+        return trace(new PArray(cls, new LongSequenceStorage(array)));
+    }
+
+    public PArray createArray(PythonClass cls, SequenceStorage store) {
+        return trace(new PArray(cls, store));
     }
 
     public PByteArray createByteArray(PythonClass cls, byte[] array) {
@@ -583,20 +598,28 @@ public final class PythonObjectFactory extends Node {
         return trace(new PByteArray(cls, storage));
     }
 
-    public PIntArray createIntArray(int[] array) {
-        return trace(new PIntArray(lookupClass(PythonBuiltinClassType.PIntArray), array));
+    public PArray createArray(byte[] array) {
+        return trace(new PArray(lookupClass(PythonBuiltinClassType.PArray), new ByteSequenceStorage(array)));
     }
 
-    public PDoubleArray createDoubleArray(double[] array) {
-        return trace(new PDoubleArray(lookupClass(PythonBuiltinClassType.PDoubleArray), array));
+    public PArray createArray(int[] array) {
+        return trace(new PArray(lookupClass(PythonBuiltinClassType.PArray), new IntSequenceStorage(array)));
     }
 
-    public PCharArray createCharArray(char[] array) {
-        return trace(new PCharArray(lookupClass(PythonBuiltinClassType.PCharArray), array));
+    public PArray createArray(double[] array) {
+        return trace(new PArray(lookupClass(PythonBuiltinClassType.PArray), new DoubleSequenceStorage(array)));
     }
 
-    public PLongArray createLongArray(long[] array) {
-        return trace(new PLongArray(lookupClass(PythonBuiltinClassType.PLongArray), array));
+    public PArray createArray(char[] array) {
+        return trace(new PArray(lookupClass(PythonBuiltinClassType.PArray), new CharSequenceStorage(array)));
+    }
+
+    public PArray createArray(long[] array) {
+        return trace(new PArray(lookupClass(PythonBuiltinClassType.PArray), new LongSequenceStorage(array)));
+    }
+
+    public PArray createArray(SequenceStorage store) {
+        return trace(new PArray(lookupClass(PythonBuiltinClassType.PArray), store));
     }
 
     public PByteArray createByteArray(byte[] array) {
@@ -645,20 +668,8 @@ public final class PythonObjectFactory extends Node {
         return trace(object);
     }
 
-    public PIntArrayIterator createIntArrayIterator(PIntArray array) {
-        return trace(new PIntArrayIterator(lookupClass(PythonBuiltinClassType.PIntArrayIterator), array));
-    }
-
-    public PDoubleArrayIterator createDoubleArrayIterator(PDoubleArray array) {
-        return trace(new PDoubleArrayIterator(lookupClass(PythonBuiltinClassType.PDoubleArrayIterator), array));
-    }
-
-    public PLongArrayIterator createLongArrayIterator(PLongArray array) {
-        return trace(new PLongArrayIterator(lookupClass(PythonBuiltinClassType.PLongArrayIterator), array));
-    }
-
-    public PCharArrayIterator createCharArrayIterator(PCharArray array) {
-        return trace(new PCharArrayIterator(lookupClass(PythonBuiltinClassType.PCharArrayIterator), array));
+    public PArrayIterator createArrayIterator(PArray array) {
+        return trace(new PArrayIterator(lookupClass(PythonBuiltinClassType.PArrayIterator), array));
     }
 
     public PBaseSetIterator createBaseSetIterator(PBaseSet set) {

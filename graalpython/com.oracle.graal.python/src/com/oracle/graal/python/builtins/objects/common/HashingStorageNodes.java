@@ -355,6 +355,7 @@ public abstract class HashingStorageNodes {
         public HashingStorage doSequence(PythonObject iterable, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") FastConstructListNode createListNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile lengthTwoProfile,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
 
@@ -379,7 +380,7 @@ public abstract class HashingStorageNodes {
                     }
 
                     // really check for Java String since PString can be subclassed
-                    isStringKey = isStringKey || element.getItem(0) instanceof String;
+                    isStringKey = isStringKey || getItemNode.executeObject(element, 0) instanceof String;
 
                     elements.add(element);
                 }
@@ -393,7 +394,8 @@ public abstract class HashingStorageNodes {
 
             HashingStorage storage = PDict.createNewStorage(isStringKey, elements.size());
             for (int j = 0; j < elements.size(); j++) {
-                storage = getSetItemNode().execute(storage, elements.get(j).getItem(0), elements.get(j).getItem(1));
+                PSequence element = elements.get(j);
+                storage = getSetItemNode().execute(storage, getItemNode.executeObject(element, 0), getItemNode.executeObject(element, 1));
             }
 
             return storage;

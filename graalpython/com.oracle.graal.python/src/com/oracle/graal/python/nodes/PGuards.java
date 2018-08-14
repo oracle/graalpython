@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -237,10 +236,6 @@ public abstract class PGuards {
         return args.len() == 1;
     }
 
-    public static boolean firstArgIsDict(PTuple args) {
-        return args.getItem(0) instanceof PDict;
-    }
-
     @SuppressWarnings("unused")
     public static boolean isForJSON(Object obj, String id, Object defaultValue) {
         return id.equals("for_json");
@@ -264,11 +259,6 @@ public abstract class PGuards {
 
     public static boolean isIndexNegative(long idx) {
         return idx < 0;
-    }
-
-    @SuppressWarnings("unused")
-    public static boolean noInitializer(String typeCode, Object initializer) {
-        return (initializer instanceof PNone);
     }
 
     public static boolean isPythonUserClass(Object klass) {

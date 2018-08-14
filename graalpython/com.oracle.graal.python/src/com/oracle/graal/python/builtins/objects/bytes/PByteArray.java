@@ -25,14 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.__repr__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -40,12 +37,13 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 
-public final class PByteArray extends PArray implements PIBytesLike {
+public final class PByteArray extends PSequence implements PIBytesLike {
 
     private SequenceStorage store;
 
@@ -57,20 +55,6 @@ public final class PByteArray extends PArray implements PIBytesLike {
     public PByteArray(PythonClass cls, SequenceStorage store) {
         super(cls);
         this.store = store;
-    }
-
-    @Override
-    public Object getItem(int idx) {
-        return getItemNormalized(SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range"));
-    }
-
-    @Override
-    public Object getItemNormalized(int idx) {
-        return store.getItemNormalized(idx);
-    }
-
-    public void setItem(int idx, Object value) {
-        setItemNormalized(SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range"), value);
     }
 
     public void setItemNormalized(int index, Object value) {
@@ -85,11 +69,6 @@ public final class PByteArray extends PArray implements PIBytesLike {
                 throw new IllegalStateException();
             }
         }
-    }
-
-    @Override
-    public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        return factory.createByteArray(this.getPythonClass(), store.getSliceInBound(start, stop, step, length));
     }
 
     @Override
@@ -116,35 +95,14 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     @Override
-    public void delItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range");
-        store.delItemInBound(index);
-    }
-
-    @Override
-    public int index(Object value) {
-        int index = store.index(value);
-
-        if (index != -1) {
-            return index;
-        }
-
-        CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, "%s is not in bytes literal", value);
-    }
-
-    @Override
     public SequenceStorage getSequenceStorage() {
         return store;
     }
 
-    public final void setSequenceStorage(SequenceStorage newStorage) {
-        this.store = newStorage;
-    }
-
     @Override
-    public boolean lessThan(PSequence sequence) {
-        return false;
+    public final void setSequenceStorage(SequenceStorage store) {
+        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && ((NativeSequenceStorage) store).getElementType() == ElementType.BYTE;
+        this.store = store;
     }
 
     @Override
@@ -155,7 +113,12 @@ public final class PByteArray extends PArray implements PIBytesLike {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("bytearray(%s)", __repr__(getInternalByteArray(), store.length()));
+        if (store instanceof ByteSequenceStorage) {
+            byte[] barr = ((ByteSequenceStorage) store).getInternalByteArray();
+            return String.format("bytearray(%s)", BytesUtils.bytesRepr(barr, barr.length));
+        } else {
+            return String.format("bytearray(%s)", store);
+        }
     }
 
     @Override
@@ -208,15 +171,6 @@ public final class PByteArray extends PArray implements PIBytesLike {
 
     public int count(Object arg) {
         return this.store.count(arg);
-    }
-
-    @Override
-    public byte[] getInternalByteArray() {
-        if (store instanceof ByteSequenceStorage) {
-            return ((ByteSequenceStorage) store).getInternalByteArray();
-        } else {
-            throw new UnsupportedOperationException("this case is not yet supported!");
-        }
     }
 
     @Override

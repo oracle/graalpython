@@ -367,4 +367,9 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         return true;
     }
 
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
+    }
+
 }

@@ -78,9 +78,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -137,6 +139,7 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -532,8 +535,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class CompileNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize) {
-            return compile(new String(source.getInternalByteArray()), filename, mode, kwFlags, kwDontInherit, kwOptimize);
+        Object compile(PBytes source, String filename, String mode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return compile(new String(toBytesNode.execute(source)), filename, mode, kwFlags, kwDontInherit, kwOptimize);
         }
 
         @SuppressWarnings("unused")
@@ -1081,12 +1085,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization
-        public int ord(PBytes chr) {
+        public int ord(PBytes chr,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
             if (chr.len() != 1) {
                 raise(TypeError, "ord() expected a character, but string of length %d found", chr.len());
             }
 
-            return chr.getInternalByteArray()[0];
+            return (byte) getItemNode.execute(chr.getSequenceStorage(), 0);
         }
     }
 
@@ -1097,17 +1102,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object print(PTuple values, String sep, String end, Object file, boolean flush,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode callStr) {
             try {
                 PythonContext context = getContext();
                 if (values.len() == 0) {
                     write(context, end);
                 } else {
+                    SequenceStorage store = values.getSequenceStorage();
                     StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < values.len() - 1; i++) {
-                        sb.append(callStr.executeObject(values.getItem(i)) + " ");
+                    for (int i = 0; i < store.length() - 1; i++) {
+                        append(sb, callStr.executeObject(getItemNode.execute(store, i)));
+                        append(sb, " ");
                     }
-                    sb.append(callStr.executeObject(values.getItem(values.len() - 1)));
+                    append(sb, callStr.executeObject(getItemNode.execute(store, store.length() - 1)));
                     sb.append(end);
                     write(context, sb.toString());
                 }
@@ -1116,6 +1124,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
 
             return PNone.NONE;
+        }
+
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private static void append(StringBuilder sb, Object o) {
+            sb.append(o);
         }
 
         @TruffleBoundary
@@ -1127,7 +1140,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // repr(object)
     @Builtin(name = REPR, fixedNumOfArguments = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonBuiltinNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         public Object repr(Object obj,

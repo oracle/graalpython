@@ -48,23 +48,31 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.GetTypeIDNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ReadArrayItemNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -152,30 +160,31 @@ public class PySequenceArrayWrapperMR {
          * {@code uint64_t} since we do not know how many bytes are requested.
          */
         @Specialization
-        long doBytesI32(PBytes bytes, long byteIdx) {
+        long doBytesI64(PBytes bytes, long byteIdx,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
             int len = bytes.len();
             // simulate sentinel value
             if (byteIdx == len) {
                 return 0L;
             }
             int i = (int) byteIdx;
-            byte[] barr = bytes.getInternalByteArray();
             long result = 0;
-            result |= barr[i];
+            SequenceStorage store = bytes.getSequenceStorage();
+            result |= getItemNode.executeInt(store, i);
             if (i + 1 < len)
-                result |= ((long) barr[i + 1] << 8L) & 0xFF00L;
+                result |= ((long) getItemNode.executeInt(store, i + 1) << 8L) & 0xFF00L;
             if (i + 2 < len)
-                result |= ((long) barr[i + 2] << 16L) & 0xFF0000L;
+                result |= ((long) getItemNode.executeInt(store, i + 2) << 16L) & 0xFF0000L;
             if (i + 3 < len)
-                result |= ((long) barr[i + 3] << 24L) & 0xFF000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 3) << 24L) & 0xFF000000L;
             if (i + 4 < len)
-                result |= ((long) barr[i + 4] << 32L) & 0xFF00000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 4) << 32L) & 0xFF00000000L;
             if (i + 5 < len)
-                result |= ((long) barr[i + 5] << 40L) & 0xFF0000000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 5) << 40L) & 0xFF0000000000L;
             if (i + 6 < len)
-                result |= ((long) barr[i + 6] << 48L) & 0xFF000000000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 6) << 48L) & 0xFF000000000000L;
             if (i + 7 < len)
-                result |= ((long) barr[i + 7] << 56L) & 0xFF00000000000000L;
+                result |= ((long) getItemNode.executeInt(store, i + 7) << 56L) & 0xFF00000000000000L;
             return result;
         }
 
@@ -222,30 +231,16 @@ public class PySequenceArrayWrapperMR {
         public abstract Object execute(Object arrayObject, Object idx, Object value);
 
         @Specialization
-        Object doTuple(PTuple tuple, long idx, Object value) {
-            Object[] store = tuple.getArray();
-            // TODO(fa) do proper index conversion
-            store[(int) idx] = getToJavaNode().execute(value);
+        Object doTuple(PBytes s, long idx, byte value,
+                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.executeLong(s.getSequenceStorage(), idx, value);
             return value;
         }
 
         @Specialization
-        Object doList(PList list, long idx, Object value,
-                        @Cached("createListSetItem()") ListBuiltins.SetItemNode setItemNode) {
-            return setItemNode.execute(list, idx, getToJavaNode().execute(value));
-        }
-
-        @Specialization
-        Object doBytes(PBytes tuple, long idx, byte value) {
-            // TODO(fa) do proper index conversion
-            tuple.getInternalByteArray()[(int) idx] = value;
-            return value;
-        }
-
-        @Specialization
-        Object doByteArray(PByteArray tuple, long idx, byte value) {
-            // TODO(fa) do proper index conversion
-            tuple.getInternalByteArray()[(int) idx] = value;
+        Object doTuple(PSequence s, long idx, Object value,
+                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.execute(s.getSequenceStorage(), idx, getToJavaNode().execute(value));
             return value;
         }
 
@@ -289,11 +284,27 @@ public class PySequenceArrayWrapperMR {
         }
     }
 
-    static class ToNativeArrayNode extends TransformToNativeNode {
+    abstract static class ToNativeArrayNode extends TransformToNativeNode {
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
         @Child private PCallNativeNode callNativeBinary;
+        @Child private ToNativeStorageNode toNativeStorageNode;
 
-        public Object execute(PySequenceArrayWrapper object) {
+        public abstract Object execute(PySequenceArrayWrapper object);
+
+        @Specialization(guards = "isPSequence(object.getDelegate())")
+        Object doPSequence(PySequenceArrayWrapper object) {
+            PSequence sequence = (PSequence) object.getDelegate();
+            NativeSequenceStorage nativeStorage = getToNativeStorageNode().execute(sequence.getSequenceStorage());
+            if (nativeStorage == null) {
+                throw new AssertionError("could not allocate native storage");
+            }
+            // switch to native storage
+            sequence.setSequenceStorage(nativeStorage);
+            return nativeStorage.getPtr();
+        }
+
+        @Fallback
+        Object doGeneric(PySequenceArrayWrapper object) {
             // TODO correct element size
             return ensureIsPointer(callBinaryIntoCapi(getNativeHandleForArray(), object, 8L));
         }
@@ -306,8 +317,16 @@ public class PySequenceArrayWrapperMR {
             return PyObjectHandle_FromJavaObject;
         }
 
-        protected boolean isNonNative(PythonClass klass) {
-            return !(klass instanceof PythonNativeClass);
+        protected boolean isPSequence(Object obj) {
+            return obj instanceof PSequence;
+        }
+
+        private ToNativeStorageNode getToNativeStorageNode() {
+            if (toNativeStorageNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toNativeStorageNode = insert(ToNativeStorageNode.create());
+            }
+            return toNativeStorageNode;
         }
 
         private Object callBinaryIntoCapi(TruffleObject fun, Object arg0, Object arg1) {
@@ -319,13 +338,13 @@ public class PySequenceArrayWrapperMR {
         }
 
         public static ToNativeArrayNode create() {
-            return new ToNativeArrayNode();
+            return ToNativeArrayNodeGen.create();
         }
     }
 
     @Resolve(message = "IS_POINTER")
     abstract static class IsPointerNode extends Node {
-        Object access(PySequenceArrayWrapper obj) {
+        boolean access(PySequenceArrayWrapper obj) {
             return obj.isNative();
         }
     }
@@ -427,6 +446,50 @@ public class PySequenceArrayWrapperMR {
 
         public static GetTypeIDNode create() {
             return GetTypeIDNodeGen.create();
+        }
+    }
+
+    static abstract class ToNativeStorageNode extends TransformToNativeNode {
+        @Child private StorageToNativeNode storageToNativeNode;
+
+        public abstract NativeSequenceStorage execute(SequenceStorage object);
+
+        @Specialization(guards = "!isNative(s)")
+        NativeSequenceStorage doManaged(SequenceStorage s) {
+            return getStorageToNativeNode().execute(s.getInternalArrayObject());
+        }
+
+        @Specialization
+        NativeSequenceStorage doNative(NativeSequenceStorage s) {
+            return s;
+        }
+
+        @Specialization
+        NativeSequenceStorage doEmptyStorage(@SuppressWarnings("unused") EmptySequenceStorage s) {
+            // TODO(fa): not sure if that completely reflects semantics
+            return getStorageToNativeNode().execute(new byte[0]);
+        }
+
+        @Fallback
+        NativeSequenceStorage doGeneric(@SuppressWarnings("unused") SequenceStorage s) {
+            CompilerDirectives.transferToInterpreter();
+            throw new UnsupportedOperationException("Unknown storage type: " + s);
+        }
+
+        protected static boolean isNative(SequenceStorage s) {
+            return s instanceof NativeSequenceStorage;
+        }
+
+        private StorageToNativeNode getStorageToNativeNode() {
+            if (storageToNativeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                storageToNativeNode = insert(StorageToNativeNode.create());
+            }
+            return storageToNativeNode;
+        }
+
+        public static ToNativeStorageNode create() {
+            return ToNativeStorageNodeGen.create();
         }
     }
 

@@ -119,11 +119,8 @@ initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
 initialize_type(PyDictProxy_Type, mappingproxy, _object);
 initialize_type(PyEllipsis_Type, ellipsis, _object);
 
-typedef uint8_t ByteArray[0];
-POLYGLOT_DECLARE_TYPE(ByteArray);
-
-typedef PyObject* PtrArray[0];
-POLYGLOT_DECLARE_TYPE(PtrArray);
+typedef PyObject* PyObjectPtr;
+POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
 static void initialize_globals() {
     // None
@@ -210,12 +207,12 @@ void* get_ob_type(PyObject* obj) {
 
 /** to be used from Java code only; returns the type ID for a byte array */
 polyglot_typeid get_byte_array_typeid(uint64_t len) {
-    return polyglot_ByteArray_typeid();
+    return polyglot_array_typeid(polyglot_i8_typeid(), len);
 }
 
 /** to be used from Java code only; returns the type ID for a 'PyObject*' array */
 polyglot_typeid get_ptr_array_typeid(uint64_t len) {
-    return polyglot_PtrArray_typeid();
+    return polyglot_array_typeid(polyglot_PyObjectPtr_typeid(), len);
 }
 
 typedef struct PyObjectHandle {
@@ -264,16 +261,23 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
     return str;
 }
 
-const char* PyTruffle_ByteArrayToNative(const void* jbyteArray, int len) {
-    int i;
-    int size = len != 0 ? len : 1;
-    char* barr = (const char*) malloc(size * sizeof(char));
-    barr[0] = '\0';
-    for(i=0; i < len; i++) {
-        barr[i] = (char) polyglot_get_array_element(jbyteArray, i);
-    }
-    return (const char*) barr;
-}
+#define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
+    void* PyTruffle_##__jtype__##ArrayToNative(const void* jarray, int64_t len) { \
+        int64_t i; \
+        int64_t size = len + 1; \
+        __ctype__* carr = (__ctype__*) malloc(size * sizeof(__ctype__)); \
+        carr[len] = (__ctype__)0; \
+        for (i=0; i < len; i++) { \
+            carr[i] = __element_cast__(polyglot_get_array_element(jarray, i)); \
+        } \
+        return polyglot_from_##__polyglot_type__##_array(carr, len); \
+    } \
+
+PRIMITIVE_ARRAY_TO_NATIVE(Byte, int8_t, i8, polyglot_as_i8);
+PRIMITIVE_ARRAY_TO_NATIVE(Int, int32_t, i32, polyglot_as_i32);
+PRIMITIVE_ARRAY_TO_NATIVE(Long, int64_t, i64, polyglot_as_i64);
+PRIMITIVE_ARRAY_TO_NATIVE(Double, double, double, polyglot_as_double);
+PRIMITIVE_ARRAY_TO_NATIVE(Object, PyObjectPtr, PyObjectPtr, (PyObjectPtr));
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
 

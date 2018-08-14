@@ -52,8 +52,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -193,6 +193,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_process_escape_sequences", fixedNumOfArguments = 1)
     @GenerateNodeFactory
     abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
+
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         @CompilationFinal private Pattern namedCaptGroupPattern;
 
         @Specialization
@@ -211,17 +214,8 @@ public class SREModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object run(PBytes str) {
-            byte[] bytes = doBytes(str.getInternalByteArray());
-            if (bytes != null) {
-                return factory().createByteArray(bytes);
-            }
-            return str;
-        }
-
-        @Specialization
-        Object run(PByteArray str) {
-            byte[] bytes = doBytes(str.getInternalByteArray());
+        Object run(PIBytesLike str) {
+            byte[] bytes = doBytes(getToByteArrayNode().execute(str.getSequenceStorage()));
             if (bytes != null) {
                 return factory().createByteArray(bytes);
             }
@@ -251,6 +245,14 @@ public class SREModuleBuiltins extends PythonBuiltins {
         @Fallback
         Object run(Object o) {
             throw raise(PythonErrorType.TypeError, "expected string, not %p", o);
+        }
+
+        private SequenceStorageNodes.ToByteArrayNode getToByteArrayNode() {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
+            }
+            return toByteArrayNode;
         }
 
     }

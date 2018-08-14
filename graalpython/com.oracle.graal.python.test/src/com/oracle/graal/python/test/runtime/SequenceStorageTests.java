@@ -48,7 +48,7 @@ public class SequenceStorageTests {
     @Test
     public void objectsGetSlice() {
         ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        ObjectSequenceStorage slice = (ObjectSequenceStorage) store.getSliceInBound(1, 4, 1, 3);
+        ObjectSequenceStorage slice = store.getSliceInBound(1, 4, 1, 3);
 
         for (int i = 0; i < 3; i++) {
             assertEquals(i + 2, slice.getItemNormalized(i));
@@ -140,7 +140,7 @@ public class SequenceStorageTests {
     @Test
     public void intGetSlice() {
         IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        IntSequenceStorage slice = (IntSequenceStorage) store.getSliceInBound(1, 4, 1, 3);
+        IntSequenceStorage slice = store.getSliceInBound(1, 4, 1, 3);
 
         for (int i = 0; i < 3; i++) {
             assertEquals(i + 2, slice.getItemNormalized(i));
