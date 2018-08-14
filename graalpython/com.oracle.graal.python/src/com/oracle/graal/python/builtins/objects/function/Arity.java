@@ -213,6 +213,14 @@ public class Arity {
         return takesFixedNumOfPositionalArgs() && minNumOfArgs == 1;
     }
 
+    public int getNumParameterIds() {
+        return parameterIds.length;
+    }
+
+    public int getNumKeywordNames() {
+        return keywordNames.length;
+    }
+
     public static class KeywordName {
         public final String name;
         public final boolean required;

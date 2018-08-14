@@ -93,21 +93,31 @@ public abstract class ArityCheckNode extends PBaseNode {
         return extractKeywordNames(keywords.length, keywords);
     }
 
-    @Specialization(guards = {"cachedLen == keywords.length", "cachedDeclLen == arity.getKeywordNames().length"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {
+                    "cachedLen == keywords.length",
+                    "cachedNumParamIds == arity.getNumParameterIds()",
+                    "cachedDeclLen == arity.getNumKeywordNames()"
+    }, limit = "getVariableArgumentInlineCacheLimit()")
     void arityCheck(Arity arity, Object[] arguments, PKeyword[] keywords,
-                    @Cached("arity.getKeywordNames().length") int cachedDeclLen,
+                    @Cached("arity.getNumParameterIds()") int cachedNumParamIds,
+                    @Cached("arity.getNumKeywordNames()") int cachedDeclLen,
                     @Cached("keywords.length") int cachedLen) {
         String[] kwNames = extractKeywordNames(cachedLen, keywords);
-        arityCheck(arity, arguments, PArguments.getNumberOfUserArgs(arguments), cachedDeclLen, cachedLen, kwNames);
+        arityCheck(arity, arguments, cachedNumParamIds, PArguments.getNumberOfUserArgs(arguments), cachedDeclLen, cachedLen, kwNames);
     }
 
-    @Specialization(guards = {"cachedLen == keywords.length", "cachedDeclLen == callee.getArity().getKeywordNames().length"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {
+                    "cachedLen == keywords.length",
+                    "cachedNumParamIds == callee.getArity().getNumParameterIds()",
+                    "cachedDeclLen == callee.getArity().getNumKeywordNames()"
+    }, limit = "getVariableArgumentInlineCacheLimit()")
     void arityCheckCallable(PythonCallable callee, Object[] arguments, PKeyword[] keywords,
-                    @Cached("callee.getArity().getKeywordNames().length") int cachedDeclLen,
+                    @Cached("callee.getArity().getNumParameterIds()") int cachedNumParamIds,
+                    @Cached("callee.getArity().getNumKeywordNames()") int cachedDeclLen,
                     @Cached("keywords.length") int cachedLen) {
         String[] kwNames = extractKeywordNames(cachedLen, keywords);
         Arity arity = callee.getArity();
-        arityCheck(arity, arguments, PArguments.getNumberOfUserArgs(arguments), cachedDeclLen, cachedLen, kwNames);
+        arityCheck(arity, arguments, cachedNumParamIds, PArguments.getNumberOfUserArgs(arguments), cachedDeclLen, cachedLen, kwNames);
     }
 
     @Specialization(replaces = "arityCheck")
@@ -122,13 +132,23 @@ public abstract class ArityCheckNode extends PBaseNode {
         arityCheck(callee.getArity(), arguments, PArguments.getNumberOfUserArgs(arguments), kwNames);
     }
 
+    @TruffleBoundary
     private void arityCheck(Arity arity, Object[] arguments, int numOfArgs, String[] keywords) {
-        arityCheck(arity, arguments, numOfArgs, arity.getKeywordNames().length, keywords.length, keywords);
+        arityCheck(arity, arguments, arity.getParameterIds().length, numOfArgs, arity.getKeywordNames().length, keywords.length, keywords);
     }
 
-    private void checkPositional(Arity arity, Object[] arguments, int numOfArgs, String[] keywords) {
+    private void arityCheck(Arity arity, Object[] arguments, int numParameterIds, int numOfArgs, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
+        checkPositional(arity, arguments, numParameterIds, numOfArgs, keywords);
+        checkKeywords(arity, numOfKeywordsDeclared, numOfKeywordsGiven, keywords);
+    }
+
+    private void checkPositional(Arity arity, Object[] arguments, int numParameterIds, int numOfArgs, String[] keywords) {
         // check missing paramIds
-        checkMissingPositionalParamIds(arity, arguments);
+        int cntMissingPositional = countMissingPositionalParamIds(numParameterIds, arguments);
+
+        if (missingPositionalArgs.profile(cntMissingPositional > 0)) {
+            throw raise(TypeError, getMissingPositionalArgsErrorMessage(arity, arguments, cntMissingPositional));
+        }
 
         if (lessPositionalArgs.profile(numOfArgs < arity.getMinNumOfPositionalArgs())) {
             throw raise(TypeError, "%s() takes %s %d positional argument%s (%d given)",
@@ -142,19 +162,38 @@ public abstract class ArityCheckNode extends PBaseNode {
         }
     }
 
+    private void checkKeywords(Arity arity, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
+        int cntGivenRequiredKeywords = countGivenRequiredKeywords(arity, numOfKeywordsDeclared, numOfKeywordsGiven, keywords);
+
+        if (missingKeywordArgs.profile(arity.takesRequiredKeywordArgs() && cntGivenRequiredKeywords < arity.getNumOfRequiredKeywords())) {
+            throw raise(TypeError, getMissingRequiredKeywordsErrorMessage(arity, cntGivenRequiredKeywords, keywords));
+        } else if (noKeywordArgs.profile(!arity.takesKeywordArgs() && numOfKeywordsGiven > 0)) {
+            throw raise(TypeError, "%s() takes no keyword arguments",
+                            arity.getFunctionName());
+        }
+    }
+
     @ExplodeLoop
-    private void checkMissingPositionalParamIds(Arity arity, Object[] arguments) {
+    private int countMissingPositionalParamIds(int numParameterIds, Object[] arguments) {
         int cntMissingPositional = 0;
-        String[] parameterIds = arity.getParameterIds();
-        for (int i = 0; i < parameterIds.length; i++) {
+        for (int i = 0; i < numParameterIds; i++) {
             if (PArguments.getArgument(arguments, i) == null) {
                 cntMissingPositional += 1;
             }
         }
+        return cntMissingPositional;
+    }
 
-        if (missingPositionalArgs.profile(cntMissingPositional > 0)) {
-            throw raise(TypeError, getMissingPositionalArgsErrorMessage(arity, arguments, cntMissingPositional));
+    @ExplodeLoop
+    private int countGivenRequiredKeywords(Arity arity, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
+        int cntGivenRequiredKeywords = 0;
+
+        for (int i = 0; i < numOfKeywordsGiven; i++) {
+            String keyword = keywords[i];
+            cntGivenRequiredKeywords += checkKeyword(arity, keyword, numOfKeywordsDeclared);
         }
+
+        return cntGivenRequiredKeywords;
     }
 
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
@@ -174,22 +213,6 @@ public abstract class ArityCheckNode extends PBaseNode {
         }
 
         return 0;
-    }
-
-    @ExplodeLoop
-    private void checkKeywords(Arity arity, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
-        int cntGivenRequiredKeywords = 0;
-
-        for (int i = 0; i < numOfKeywordsGiven; i++) {
-            String keyword = keywords[i];
-            cntGivenRequiredKeywords += checkKeyword(arity, keyword, numOfKeywordsDeclared);
-        }
-
-        if (missingKeywordArgs.profile(arity.takesRequiredKeywordArgs() && cntGivenRequiredKeywords < arity.getNumOfRequiredKeywords())) {
-            throw raise(TypeError, getMissingRequiredKeywordsErrorMessage(arity, cntGivenRequiredKeywords, keywords));
-        } else if (noKeywordArgs.profile(!arity.takesKeywordArgs() && numOfKeywordsGiven > 0)) {
-            throw raise(TypeError, "%s() takes no keyword arguments", arity.getFunctionName());
-        }
     }
 
     @TruffleBoundary
@@ -280,10 +303,5 @@ public abstract class ArityCheckNode extends PBaseNode {
                         arity.getMaxNumOfArgs(),
                         numOfArgs,
                         givenCountMessage);
-    }
-
-    private void arityCheck(Arity arity, Object[] arguments, int numOfArgs, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
-        checkPositional(arity, arguments, numOfArgs, keywords);
-        checkKeywords(arity, numOfKeywordsDeclared, numOfKeywordsGiven, keywords);
     }
 }
