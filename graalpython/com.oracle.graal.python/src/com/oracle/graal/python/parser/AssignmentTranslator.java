@@ -59,10 +59,10 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
 
     private final NodeFactory factory;
     private final TranslationEnvironment environment;
-    private final PythonBaseTreeTranslator<?> translator;
+    private final PythonTreeTranslator translator;
     private final PythonCore core;
 
-    public AssignmentTranslator(PythonCore core, TranslationEnvironment environment, PythonBaseTreeTranslator<?> translator) {
+    public AssignmentTranslator(PythonCore core, TranslationEnvironment environment, PythonTreeTranslator translator) {
         this.core = core;
         this.factory = core.getLanguage().getNodeFactory();
         this.environment = environment;
@@ -103,37 +103,37 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
     }
 
     private PNode createDestructuringAssignment(PNode[] leftHandSides, PNode rhs) {
-        List<PNode> statements = new ArrayList<>();
-        List<ReadNode> temps = new ArrayList<>();
+        PNode[] statements = new PNode[leftHandSides.length];
+        ReadNode[] temps = new ReadNode[leftHandSides.length];
         int starredIndex = -1;
         for (int i = 0; i < leftHandSides.length; i++) {
             ReadNode tempRead = environment.makeTempLocalVariable();
-            temps.add(tempRead);
+            temps[i] = tempRead;
             if (leftHandSides[i] instanceof StarredExpressionNode) {
                 if (starredIndex != -1) {
                     throw core.raise(SyntaxError, "two starred expressions in assignment");
                 }
                 starredIndex = i;
-                statements.add(createAssignment(((StarredExpressionNode) leftHandSides[i]).getValue(), (PNode) tempRead));
+                statements[i] = createAssignment(((StarredExpressionNode) leftHandSides[i]).getValue(), (PNode) tempRead);
             } else {
-                statements.add(createAssignment(leftHandSides[i], (PNode) tempRead));
+                statements[i] = createAssignment(leftHandSides[i], (PNode) tempRead);
             }
         }
-        return factory.createDestructuringAssignment(rhs, temps, starredIndex, statements.toArray(new PNode[0]));
+        return factory.createDestructuringAssignment(rhs, temps, starredIndex, statements);
     }
 
     private PNode createMultiAssignment(List<NormassignContext> normassign, PNode mostRhs, PNode mostLhs) {
         ReadNode tmp = environment.makeTempLocalVariable();
         PNode tmpWrite = tmp.makeWriteNode(mostRhs);
-        List<PNode> assignments = new ArrayList<>();
-        assignments.add(tmpWrite);
-        assignments.add(createAssignment(mostLhs, (PNode) tmp));
+        PNode[] assignments = new PNode[normassign.size() + 1];
+        assignments[0] = tmpWrite;
+        assignments[1] = createAssignment(mostLhs, (PNode) tmp);
         for (int i = 0; i < normassign.size() - 1; i++) {
             NormassignContext normassignContext = normassign.get(i);
             if (normassignContext.yield_expr() != null) {
                 throw core.raise(SyntaxError, "assignment to yield expression not possible");
             }
-            assignments.add(createAssignment(normassignContext.accept(this), (PNode) tmp));
+            assignments[i + 2] = createAssignment(normassignContext.accept(this), (PNode) tmp);
         }
         return factory.createBlock(assignments);
     }

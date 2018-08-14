@@ -27,7 +27,6 @@ package com.oracle.graal.python.nodes;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -274,7 +273,7 @@ public class NodeFactory {
         return ListLiteralNode.create(values);
     }
 
-    public PNode createSetLiteral(Set<PNode> values) {
+    public PNode createSetLiteral(List<PNode> values) {
         PNode[] convertedValues = values.toArray(new PNode[values.size()]);
         return new SetLiteralNode(convertedValues);
     }
@@ -524,7 +523,7 @@ public class NodeFactory {
         return SetAttributeNode.create(key, object, rhs);
     }
 
-    public PNode createDestructuringAssignment(PNode rhs, List<ReadNode> slots, int starredIndex, PNode[] assignments) {
+    public PNode createDestructuringAssignment(PNode rhs, ReadNode[] slots, int starredIndex, PNode[] assignments) {
         return DestructuringAssignmentNode.create(rhs, slots, starredIndex, assignments);
     }
 

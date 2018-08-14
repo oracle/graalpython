@@ -37,7 +37,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 
-public class ScopeInfo {
+public final class ScopeInfo {
 
     public enum ScopeKind {
         Module,
@@ -53,21 +53,23 @@ public class ScopeInfo {
     private final FrameDescriptor frameDescriptor;
     private ScopeKind scopeKind;
     private final ScopeInfo parent;
-    private final Set<ScopeInfo> childScopes = new HashSet<>();
+
+    private ScopeInfo firstChildScope; // start of a linked list
+    private ScopeInfo nextChildScope; // next pointer for the linked list
 
     /**
      * Symbols declared using 'global' or 'nonlocal' statements.
      */
-    private Set<String> explicitGlobalVariables = new HashSet<>();
-    private Set<String> explicitNonlocalVariables = new HashSet<>();
+    private Set<String> explicitGlobalVariables;
+    private Set<String> explicitNonlocalVariables;
 
     /**
      * Symbols which are local variables but are closed over in nested scopes
      */
     // variables that are referenced in enclosed contexts
-    private Set<String> cellVars = new LinkedHashSet<>();
+    private LinkedHashSet<String> cellVars;
     // variables that are referenced from enclosing contexts
-    private Set<String> freeVars = new LinkedHashSet<>();
+    private LinkedHashSet<String> freeVars;
 
     /**
      * An optional field that stores translated nodes of default argument values.
@@ -82,11 +84,12 @@ public class ScopeInfo {
     public ScopeInfo(String scopeId, ScopeKind kind, FrameDescriptor frameDescriptor, ScopeInfo parent) {
         this.scopeId = scopeId;
         this.scopeKind = kind;
-        this.frameDescriptor = frameDescriptor;
+        this.frameDescriptor = frameDescriptor == null ? new FrameDescriptor() : frameDescriptor;
         this.parent = parent;
         // register current scope as child to parent scope
         if (this.parent != null) {
-            this.parent.childScopes.add(this);
+            this.nextChildScope = this.parent.firstChildScope;
+            this.parent.firstChildScope = this;
         }
     }
 
@@ -102,8 +105,12 @@ public class ScopeInfo {
         this.loopCount = 0;
     }
 
-    public Set<ScopeInfo> getChildScopes() {
-        return childScopes;
+    public ScopeInfo getFirstChildScope() {
+        return firstChildScope;
+    }
+
+    public ScopeInfo getNextChildScope() {
+        return nextChildScope;
     }
 
     public String getScopeId() {
@@ -128,10 +135,12 @@ public class ScopeInfo {
     }
 
     public FrameSlot findFrameSlot(String identifier) {
+        assert identifier != null : "identifier is null!";
         return this.getFrameDescriptor().findFrameSlot(identifier);
     }
 
     private void createSlotIfNotPresent(String identifier) {
+        assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
             this.getFrameDescriptor().addFrameSlot(identifier);
@@ -139,19 +148,25 @@ public class ScopeInfo {
     }
 
     public void addExplicitGlobalVariable(String identifier) {
+        if (explicitGlobalVariables == null) {
+            explicitGlobalVariables = new HashSet<>();
+        }
         explicitGlobalVariables.add(identifier);
     }
 
     public void addExplicitNonlocalVariable(String identifier) {
+        if (explicitNonlocalVariables == null) {
+            explicitNonlocalVariables = new HashSet<>();
+        }
         explicitNonlocalVariables.add(identifier);
     }
 
     public boolean isExplicitGlobalVariable(String identifier) {
-        return explicitGlobalVariables.contains(identifier);
+        return explicitGlobalVariables != null && explicitGlobalVariables.contains(identifier);
     }
 
     public boolean isExplicitNonlocalVariable(String identifier) {
-        return explicitNonlocalVariables.contains(identifier);
+        return explicitNonlocalVariables != null && explicitNonlocalVariables.contains(identifier);
     }
 
     public void addCellVar(String identifier) {
@@ -159,7 +174,10 @@ public class ScopeInfo {
     }
 
     public void addCellVar(String identifier, boolean createFrameSlot) {
-        this.cellVars.add(identifier);
+        if (cellVars == null) {
+            cellVars = new LinkedHashSet<>();
+        }
+        cellVars.add(identifier);
         if (createFrameSlot) {
             this.createSlotIfNotPresent(identifier);
         }
@@ -170,21 +188,29 @@ public class ScopeInfo {
     }
 
     protected void addFreeVar(String identifier, boolean createFrameSlot) {
-        this.freeVars.add(identifier);
+        if (freeVars == null) {
+            freeVars = new LinkedHashSet<>();
+        }
+        freeVars.add(identifier);
         if (createFrameSlot) {
             this.createSlotIfNotPresent(identifier);
         }
     }
 
     public boolean isCellVar(String identifier) {
-        return this.cellVars.contains(identifier);
+        return cellVars != null && cellVars.contains(identifier);
     }
 
     public boolean isFreeVar(String identifier) {
-        return this.freeVars.contains(identifier);
+        return freeVars != null && freeVars.contains(identifier);
     }
 
+    private static final FrameSlot[] EMPTY = new FrameSlot[0];
+
     private static FrameSlot[] getFrameSlots(Collection<String> identifiers, ScopeInfo scope) {
+        if (identifiers == null) {
+            return EMPTY;
+        }
         assert scope != null : "getting frame slots: scope cannot be null!";
         FrameSlot[] slots = new FrameSlot[identifiers.size()];
         int i = 0;
@@ -224,11 +250,15 @@ public class ScopeInfo {
     }
 
     public void createFrameSlotsForCellAndFreeVars() {
-        for (String identifier : cellVars) {
-            createSlotIfNotPresent(identifier);
+        if (cellVars != null) {
+            for (String identifier : cellVars) {
+                createSlotIfNotPresent(identifier);
+            }
         }
-        for (String identifier : freeVars) {
-            createSlotIfNotPresent(identifier);
+        if (freeVars != null) {
+            for (String identifier : freeVars) {
+                createSlotIfNotPresent(identifier);
+            }
         }
     }
 

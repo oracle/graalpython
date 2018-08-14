@@ -491,7 +491,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/Generator
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/InlineScopeTranslator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/LoopInfo.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/LoopsBookKeeper.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/PythonBaseTreeTranslator.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/PythonTreeTranslator.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/PythonParserImpl.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ScopeInfo.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ScopeTranslator.java,zippy.copyright

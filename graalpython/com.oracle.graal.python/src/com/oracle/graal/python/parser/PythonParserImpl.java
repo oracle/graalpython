@@ -27,14 +27,11 @@ package com.oracle.graal.python.parser;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
-import java.util.function.Consumer;
-
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
 
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.parser.ScopeTranslator.ScopeTranslatorFactory;
 import com.oracle.graal.python.parser.antlr.Builder;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -42,6 +39,7 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -57,6 +55,7 @@ public final class PythonParserImpl implements PythonParser {
     @Override
     @TruffleBoundary
     public Node parse(ParserMode mode, PythonCore core, Source source, Frame currentFrame) {
+        // ANTLR parsing
         Python3Parser parser = getPython3Parser(source.getCharacters().toString());
         ParserRuleContext input;
         try {
@@ -91,19 +90,19 @@ public final class PythonParserImpl implements PythonParser {
                 throw handleParserError(core, source, e);
             }
         }
+
+        // prepare scope translator
         TranslationEnvironment environment = new TranslationEnvironment(core.getLanguage());
-        Node result;
-        Consumer<TranslationEnvironment> environmentConsumer = (env) -> env.setFreeVarsInRootScope(currentFrame);
-        if (mode == ParserMode.InlineEvaluation) {
-            ScopeTranslatorFactory scopeTranslator = (env, trackCells) -> new InlineScopeTranslator<>(core, env, currentFrame.getFrameDescriptor(), trackCells);
-            ScopeTranslator.accept(input, environment, scopeTranslator, environmentConsumer);
-            result = new PythonInlineTreeTranslator(core, source.getName(), input, environment, source).getTranslationResult();
-        } else {
-            ScopeTranslatorFactory scopeTranslator = (env, trackCells) -> new ScopeTranslator<>(core, env, source.isInteractive(), trackCells);
-            ScopeTranslator.accept(input, environment, scopeTranslator, environmentConsumer);
-            result = new PythonTreeTranslator(core, source.getName(), input, environment, source).getTranslationResult();
-        }
-        return result;
+        FrameDescriptor inlineLocals = mode == ParserMode.InlineEvaluation ? currentFrame.getFrameDescriptor() : null;
+        ScopeTranslator<Object> defineScopes = new ScopeTranslator<>(core, environment, source.isInteractive(), inlineLocals);
+        // first pass of the scope translator -> define the scopes
+        input.accept(defineScopes);
+        // create frame slots for cell and free vars
+        defineScopes.setFreeVarsInRootScope(currentFrame);
+        defineScopes.createFrameSlotsForCellAndFreeVars();
+
+        // create Truffle ASTs
+        return PythonTreeTranslator.translate(core, source.getName(), input, environment, source, mode == ParserMode.InlineEvaluation);
     }
 
     @Override
