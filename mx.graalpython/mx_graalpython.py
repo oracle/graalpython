@@ -21,7 +21,6 @@
 # AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
-from argparse import ArgumentParser
 import os
 import platform
 import re
@@ -29,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from argparse import ArgumentParser
 
 import mx
 import mx_benchmark
@@ -36,7 +36,6 @@ import mx_gate
 import mx_sdk
 import mx_subst
 import mx_urlrewrites
-from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
 from mx_unittest import unittest
@@ -57,9 +56,11 @@ def _get_stdlib_home():
 def _get_svm_binary():
     return os.path.join(_suite.dir, "graalpython-svm")
 
+
 def __get_svm_binary_from_graalvm():
     vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
     return os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
+
 
 def _extract_graalpython_internal_options(args):
     internal = []
@@ -147,6 +148,10 @@ def _extract_graalpython_internal_options(args):
             # internal += ['-Dgraal.InliningDepthError=10']
             # internal += ['-Dgraal.MaximumLoopExplosionCount=1000']
             # internal += ['-Dgraal.TruffleCompilationThreshold=100000']
+
+        elif arg == '-compile-truffle-immediately' and _mx_graal:
+            internal += ['-Dgraal.TruffleCompileImmediately=true']
+            internal += ['-Dgraal.TruffleCompilationExceptionsAreThrown=true']
 
         else:
             non_internal += [arg]
@@ -856,6 +861,7 @@ def import_python_sources(args):
         _suite.vc.git_command(_suite.dir, ["push", "origin", "python-import:python-import"])
     _suite.vc.update(_suite.dir, rev=tip)
     _suite.vc.git_command(_suite.dir, ["merge", "python-import"])
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
