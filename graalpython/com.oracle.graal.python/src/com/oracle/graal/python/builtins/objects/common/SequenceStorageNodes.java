@@ -160,6 +160,8 @@ public abstract class SequenceStorageNodes {
         @Child private NormalizeIndexNode normalizeIndexNode;
         @Child private CastToIndexNode castToIndexNode;
 
+        @CompilationFinal private ValueProfile storeProfile;
+
         private final String keyTypeErrorMessage;
         private final BiFunction<SequenceStorage, PythonObjectFactory, Object> factoryMethod;
 
@@ -181,22 +183,22 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doScalarInt(SequenceStorage storage, int idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
         }
 
         @Specialization
         protected Object doScalarLong(SequenceStorage storage, long idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
         }
 
         @Specialization
         protected Object doScalarPInt(SequenceStorage storage, PInt idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
         }
 
         @Specialization(guards = "!isPSlice(idx)")
         protected Object doScalarPInt(SequenceStorage storage, Object idx) {
-            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage.length()));
+            return getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
         }
 
         @Specialization
@@ -242,27 +244,35 @@ public abstract class SequenceStorageNodes {
             return castToIndexNode;
         }
 
-        private int normalizeIndex(Object idx, int length) {
+        private int normalizeIndex(Object idx, SequenceStorage store) {
             int intIdx = getCastToIndexNode().execute(idx);
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.doInt(intIdx, length);
+                return normalizeIndexNode.doInt(intIdx, getStoreProfile().profile(store).length());
             }
             return intIdx;
         }
 
-        private int normalizeIndex(int idx, int length) {
+        private int normalizeIndex(int idx, SequenceStorage store) {
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.doInt(idx, length);
+                return normalizeIndexNode.doInt(idx, getStoreProfile().profile(store).length());
             }
             return idx;
         }
 
-        private int normalizeIndex(long idx, int length) {
+        private int normalizeIndex(long idx, SequenceStorage store) {
             int intIdx = getCastToIndexNode().execute(idx);
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.doInt(intIdx, length);
+                return normalizeIndexNode.doInt(intIdx, getStoreProfile().profile(store).length());
             }
             return intIdx;
+        }
+
+        private ValueProfile getStoreProfile() {
+            if (storeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                storeProfile = ValueProfile.createClassProfile();
+            }
+            return storeProfile;
         }
 
         public static GetItemNode createNotNormalized() {
