@@ -101,8 +101,8 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
             if (kwIdx != -1) {
                 if (PArguments.getArgument(combined, kwIdx) != null) {
                     throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'",
-                            calleeArity.getFunctionName(),
-                            kwArg.getName());
+                                    calleeArity.getFunctionName(),
+                                    kwArg.getName());
                 }
                 PArguments.setArgument(combined, kwIdx, kwArg.getValue());
             } else {

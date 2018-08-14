@@ -1589,7 +1589,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", fixedNumOfArguments = 2)
+    @Builtin(name = "PyTruffle_Bytes_EmptyWithCapacity", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffle_Bytes_EmptyWithCapacity extends NativeBuiltin {
 
