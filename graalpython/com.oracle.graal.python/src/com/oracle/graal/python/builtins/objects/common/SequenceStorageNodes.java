@@ -245,23 +245,22 @@ public abstract class SequenceStorageNodes {
         private int normalizeIndex(Object idx, int length) {
             int intIdx = getCastToIndexNode().execute(idx);
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.execute(intIdx, length);
+                return normalizeIndexNode.doInt(intIdx, length);
             }
             return intIdx;
         }
 
         private int normalizeIndex(int idx, int length) {
-            int intIdx = getCastToIndexNode().execute(idx);
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.execute(intIdx, length);
+                return normalizeIndexNode.doInt(idx, length);
             }
-            return intIdx;
+            return idx;
         }
 
         private int normalizeIndex(long idx, int length) {
             int intIdx = getCastToIndexNode().execute(idx);
             if (normalizeIndexNode != null) {
-                return normalizeIndexNode.execute(intIdx, length);
+                return normalizeIndexNode.doInt(intIdx, length);
             }
             return intIdx;
         }
@@ -1304,7 +1303,7 @@ public abstract class SequenceStorageNodes {
         public abstract int execute(Object index, int length);
 
         @Specialization
-        int doInt(int index, int length) {
+        public int doInt(int index, int length) {
             int idx = index;
             if (negativeIndexProfile.profile(idx < 0)) {
                 idx += length;

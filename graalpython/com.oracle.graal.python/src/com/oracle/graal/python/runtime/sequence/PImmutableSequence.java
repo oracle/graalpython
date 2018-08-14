@@ -58,10 +58,4 @@ public abstract class PImmutableSequence extends PSequence {
     public final void setSlice(int start, int stop, int step, PSequence value) {
         throw new UnsupportedOperationException();
     }
-
-    @Override
-    public final void delItem(int idx) {
-        throw new UnsupportedOperationException();
-    }
-
 }

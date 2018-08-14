@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.list;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
@@ -57,7 +56,7 @@ public final class PList extends PSequence {
     @Override
     public final void setSlice(PSlice slice, PSequence value) {
         // Should not be used. Replaces with ListNodes.SetSliceNode.
-        // When it will be replaced in other PSequence implementeations,
+        // When it will be replaced in other PSequence implementations,
         // then the setSlice from PSequence can be removed.
         throw new UnsupportedOperationException();
     }
@@ -65,12 +64,6 @@ public final class PList extends PSequence {
     @Override
     public final void setSlice(int start, int stop, int step, PSequence value) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public final void delItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "list index out of range");
-        store.delItemInBound(index);
     }
 
     public final void delSlice(PSlice slice) {

@@ -42,8 +42,6 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
 
     public abstract void setSlice(PSlice slice, PSequence value);
 
-    public abstract void delItem(int idx);
-
     public abstract SequenceStorage getSequenceStorage();
 
     /**

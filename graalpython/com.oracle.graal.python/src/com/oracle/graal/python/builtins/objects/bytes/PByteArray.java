@@ -57,10 +57,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         this.store = store;
     }
 
-    public void setItem(int idx, Object value) {
-        setItemNormalized(SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range"), value);
-    }
-
     public void setItemNormalized(int index, Object value) {
         try {
             store.setItemNormalized(index, value);
@@ -96,12 +92,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     public void setSlice(PSlice slice, PSequence value) {
         PSlice.SliceInfo sliceInfo = slice.computeActualIndices(len());
         setSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step, value);
-    }
-
-    @Override
-    public void delItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range");
-        store.delItemInBound(index);
     }
 
     @Override

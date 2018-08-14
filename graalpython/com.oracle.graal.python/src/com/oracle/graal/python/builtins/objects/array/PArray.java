@@ -55,11 +55,6 @@ public class PArray extends PSequence implements PLenSupplier {
     }
 
     @Override
-    public void delItem(int idx) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public SequenceStorage getSequenceStorage() {
         return store;
     }

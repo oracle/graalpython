@@ -98,6 +98,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.graal.python.runtime.sequence.storage.SetSequenceStorageItem;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -672,7 +673,7 @@ public class ListBuiltins extends PythonBuiltins {
             for (int i = 0; i < len; i++) {
                 Object object = getItemNode.execute(listStore, i);
                 if (eqNode.executeBool(object, value)) {
-                    list.delItem(i);
+                    listStore.delItemInBound(i);
                     return PNone.NONE;
                 }
             }
@@ -691,6 +692,8 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class ListPopNode extends PythonBuiltinNode {
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
+
+        @CompilationFinal private ValueProfile storeProfile;
 
         @Specialization(guards = "isIntStorage(list)")
         public int popInt(PList list, @SuppressWarnings("unused") PNone none,
@@ -725,11 +728,11 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object popLast(PList list, @SuppressWarnings("unused") PNone none,
-                        @Cached("createBinaryProfile()") ConditionProfile isEmpty) {
-            raiseIndexError(isEmpty.profile(list.len() == 0));
-            Object ret = getGetItemNode().execute(list.getSequenceStorage(), -1);
-            list.delItem(list.len() - 1);
+        public Object popLast(PList list, @SuppressWarnings("unused") PNone none) {
+            SequenceStorage store = getStoreProfile().profile(list.getSequenceStorage());
+            int len = store.length();
+            Object ret = getGetItemNode().execute(store, -1);
+            store.delItemInBound(len - 1);
             return ret;
         }
 
@@ -737,13 +740,13 @@ public class ListBuiltins extends PythonBuiltins {
         public Object pop(PList list, boolean bindex,
                         @Cached("createBinaryProfile()") ConditionProfile isOutOfRange) {
             int index = bindex ? 1 : 0;
-            return popOnIndex(list, index, isOutOfRange);
+            return popOnIndex(list.getSequenceStorage(), index, isOutOfRange);
         }
 
         @Specialization
         public Object pop(PList list, int index,
                         @Cached("createBinaryProfile()") ConditionProfile isOutOfRange) {
-            return popOnIndex(list, index, isOutOfRange);
+            return popOnIndex(list.getSequenceStorage(), index, isOutOfRange);
         }
 
         @Specialization
@@ -765,20 +768,31 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object popOnIndex(PList list, int index, ConditionProfile cp) {
-            int len = list.len();
+        private Object popOnIndex(SequenceStorage store, int index, ConditionProfile cp) {
+
+            SequenceStorage profiled = getStoreProfile().profile(store);
+            int len = profiled.length();
             if (cp.profile((index < 0 && (index + len) < 0) || index >= len)) {
                 throw raise(PythonErrorType.IndexError, "pop index out of range");
             }
-            Object ret = getGetItemNode().execute(list.getSequenceStorage(), index);
-            list.delItem(index);
+            Object ret = getGetItemNode().execute(profiled, index);
+            // this is safe because index is already verified by 'GetItemNode'
+            profiled.delItemInBound(index);
             return ret;
+        }
+
+        private ValueProfile getStoreProfile() {
+            if (storeProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                storeProfile = ValueProfile.createClassProfile();
+            }
+            return storeProfile;
         }
 
         private SequenceStorageNodes.GetItemNode getGetItemNode() {
             if (getItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+                getItemNode = insert(SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.create("pop index out of range")));
             }
             return getItemNode;
         }
