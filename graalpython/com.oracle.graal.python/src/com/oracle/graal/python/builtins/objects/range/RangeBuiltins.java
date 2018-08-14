@@ -186,12 +186,22 @@ public class RangeBuiltins extends PythonBuiltins {
         @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forRange();
 
         @Specialization
+        Object doPRange(PRange primary, boolean idx) {
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
+        }
+
+        @Specialization
         Object doPRange(PRange primary, int idx) {
             return primary.getItemNormalized(normalize.execute(idx, primary.len()));
         }
 
         @Specialization
         Object doPRange(PRange primary, long idx) {
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
+        }
+
+        @Specialization
+        Object doPRange(PRange primary, PInt idx) {
             return primary.getItemNormalized(normalize.execute(idx, primary.len()));
         }
 
