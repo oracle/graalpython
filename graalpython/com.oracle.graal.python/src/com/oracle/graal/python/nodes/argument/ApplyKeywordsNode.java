@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
-import java.util.ArrayList;
-
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -65,7 +63,8 @@ public abstract class ApplyKeywordsNode extends Node {
             combined = PArguments.create(parameters.length);
             System.arraycopy(arguments, 0, combined, 0, arguments.length);
         }
-        ArrayList<PKeyword> unusedKeywords = new ArrayList<>();
+        PKeyword[] unusedKeywords = new PKeyword[keywords.length];
+        int unusedKeywordsIdx = 0;
         for (int i = 0; i < keywords.length; i++) {
             PKeyword keyarg = keywords[i];
             int keywordIdx = -1;
@@ -80,10 +79,13 @@ public abstract class ApplyKeywordsNode extends Node {
                 assert PArguments.getArgument(combined, keywordIdx) == null : calleeArity.getFunctionName() + " got multiple values for argument '" + keyarg.getName() + "'";
                 PArguments.setArgument(combined, keywordIdx, keyarg.getValue());
             } else {
-                unusedKeywords.add(keyarg);
+                unusedKeywords[unusedKeywordsIdx] = keyarg;
+                unusedKeywordsIdx++;
             }
         }
-        PArguments.setKeywordArguments(combined, unusedKeywords.toArray(new PKeyword[unusedKeywords.size()]));
+        PKeyword[] keywordArguments = new PKeyword[unusedKeywordsIdx];
+        System.arraycopy(unusedKeywords, 0, keywordArguments, 0, unusedKeywordsIdx);
+        PArguments.setKeywordArguments(combined, keywordArguments);
         return combined;
     }
 
@@ -112,7 +114,8 @@ public abstract class ApplyKeywordsNode extends Node {
                 combined[i] = arguments[i];
             }
         }
-        ArrayList<PKeyword> unusedKeywords = new ArrayList<>();
+        PKeyword[] unusedKeywords = new PKeyword[kwLen];
+        int unusedKeywordsIdx = 0;
         for (int i = 0; i < kwLen; i++) {
             PKeyword keyarg = keywords[i];
             int keywordIdx = searchParamNode.execute(parameters, keyarg.getName());
@@ -120,10 +123,13 @@ public abstract class ApplyKeywordsNode extends Node {
                 assert PArguments.getArgument(combined, keywordIdx) == null : calleeArity.getFunctionName() + " got multiple values for argument '" + keyarg.getName() + "'";
                 PArguments.setArgument(combined, keywordIdx, keyarg.getValue());
             } else {
-                unusedKeywords.add(keyarg);
+                unusedKeywords[unusedKeywordsIdx] = keyarg;
+                unusedKeywordsIdx++;
             }
         }
-        PArguments.setKeywordArguments(combined, unusedKeywords.toArray(new PKeyword[unusedKeywords.size()]));
+        PKeyword[] keywordArguments = new PKeyword[unusedKeywordsIdx];
+        System.arraycopy(unusedKeywords, 0, keywordArguments, 0, unusedKeywordsIdx);
+        PArguments.setKeywordArguments(combined, keywordArguments);
         return combined;
     }
 
