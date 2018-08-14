@@ -48,12 +48,16 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ApplyKeywordsNode extends PBaseNode {
+    private final ConditionProfile expandArgs = ConditionProfile.createBinaryProfile();
+
     public abstract Object[] execute(Arity calleeArity, Object[] arguments, PKeyword[] keywords);
 
     public static ApplyKeywordsNode create() {
@@ -68,11 +72,9 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
         return SearchNamedParameterNodeGen.create();
     }
 
-    @ExplodeLoop
+    @TruffleBoundary
     private static void copyArgs(Object[] src, Object[] dst, int len) {
-        for (int i = 0; i < len; i++) {
-            dst[i] = src[i];
-        }
+        System.arraycopy(src, 0, dst, 0, len);
     }
 
     @Specialization(guards = {"kwLen == keywords.length", "argLen == arguments.length", "calleeArity == cachedArity"})
@@ -86,7 +88,7 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
                     @Cached("parameters.length") int paramLen,
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode) {
         Object[] combined = arguments;
-        if (paramLen > userArgLen) {
+        if (expandArgs.profile(paramLen > userArgLen)) {
             combined = PArguments.create(paramLen);
             copyArgs(arguments, combined, argLen);
         }
@@ -98,7 +100,9 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
 
             if (kwIdx != -1) {
                 if (PArguments.getArgument(combined, kwIdx) != null) {
-                    throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'", calleeArity.getFunctionName(), kwArg.getName());
+                    throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'",
+                            calleeArity.getFunctionName(),
+                            kwArg.getName());
                 }
                 PArguments.setArgument(combined, kwIdx, kwArg.getValue());
             } else {
