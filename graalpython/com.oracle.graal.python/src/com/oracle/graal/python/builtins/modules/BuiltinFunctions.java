@@ -1319,7 +1319,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object doIt(PFunction func) {
+        synchronized public Object doIt(PFunction func) {
             /*
              * (tfel): To be compatible with CPython, builtin module functions must be bound to
              * their respective builtin module. We ignore that builtin functions should really be
