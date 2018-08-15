@@ -185,7 +185,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(PythonErrorType.TypeError, "string argument without an encoding");
         }
 
-        @Specialization(guards = {"!isInt(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
+        @Specialization(guards = {"!isInt(iterable)", "!isNoValue(iterable)", "isNoValue(encoding)", "isNoValue(errors)"})
         public Object bytearray(PythonClass cls, Object iterable, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") GetNextNode getNextNode,
@@ -1072,7 +1072,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, "int() can't convert non-string with explicit base");
         }
 
-        @Specialization(guards = "isNoValue(keywordArg)")
+        @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)"})
         public Object createInt(PythonClass cls, Object obj, PNone keywordArg,
                         @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
                         @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
@@ -1379,7 +1379,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return asPString(strClass, PFloat.doubleToString(arg));
         }
 
-        @Specialization
+        @Specialization(guards = {"!isNoValue(obj)", "!isNone(obj)"})
         public Object str(Object strClass, Object obj, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode callNode) {
             Object result = callNode.executeObject(obj);
