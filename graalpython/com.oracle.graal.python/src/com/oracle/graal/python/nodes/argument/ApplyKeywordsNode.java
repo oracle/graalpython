@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -72,11 +71,6 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
         return SearchNamedParameterNodeGen.create();
     }
 
-    @TruffleBoundary
-    private static void copyArgs(Object[] src, Object[] dst, int len) {
-        System.arraycopy(src, 0, dst, 0, len);
-    }
-
     @Specialization(guards = {"kwLen == keywords.length", "argLen == arguments.length", "calleeArity == cachedArity"})
     @ExplodeLoop
     Object[] applyCached(Arity calleeArity, Object[] arguments, PKeyword[] keywords,
@@ -90,10 +84,11 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
         Object[] combined = arguments;
         if (expandArgs.profile(paramLen > userArgLen)) {
             combined = PArguments.create(paramLen);
-            copyArgs(arguments, combined, argLen);
+            System.arraycopy(arguments, 0, combined, 0, argLen);
         }
 
-        ArrayList<PKeyword> unusedKeywords = new ArrayList<>();
+        PKeyword[] unusedKeywords = new PKeyword[kwLen];
+        int k = 0;
         for (int i = 0; i < kwLen; i++) {
             PKeyword kwArg = keywords[i];
             int kwIdx = searchParamNode.execute(parameters, kwArg.getName());
@@ -106,10 +101,10 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
                 }
                 PArguments.setArgument(combined, kwIdx, kwArg.getValue());
             } else {
-                unusedKeywords.add(kwArg);
+                unusedKeywords[k++] = kwArg;
             }
         }
-        PArguments.setKeywordArguments(combined, unusedKeywords.toArray(new PKeyword[unusedKeywords.size()]));
+        PArguments.setKeywordArguments(combined, Arrays.copyOf(unusedKeywords, k));
         return combined;
     }
 
@@ -122,7 +117,8 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
             System.arraycopy(arguments, 0, combined, 0, arguments.length);
         }
 
-        ArrayList<PKeyword> unusedKeywords = new ArrayList<>();
+        PKeyword[] unusedKeywords = new PKeyword[keywords.length];
+        int k = 0;
         for (int i = 0; i < keywords.length; i++) {
             PKeyword kwArg = keywords[i];
             int kwIdx = -1;
@@ -139,10 +135,10 @@ public abstract class ApplyKeywordsNode extends PBaseNode {
                 }
                 PArguments.setArgument(combined, kwIdx, kwArg.getValue());
             } else {
-                unusedKeywords.add(kwArg);
+                unusedKeywords[k++] = kwArg;
             }
         }
-        PArguments.setKeywordArguments(combined, unusedKeywords.toArray(new PKeyword[unusedKeywords.size()]));
+        PArguments.setKeywordArguments(combined, Arrays.copyOf(unusedKeywords, k));
         return combined;
     }
 

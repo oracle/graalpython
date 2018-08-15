@@ -1474,7 +1474,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     // function(code, globals[, name[, argdefs[, closure]]])
-    @Builtin(name = "function", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PGeneratorFunction}, isPublic = false)
+    @Builtin(name = "function", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 6, constructsClass = {PythonBuiltinClassType.PFunction,
+                    PythonBuiltinClassType.PGeneratorFunction}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
 
@@ -1498,7 +1499,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     // type(object)
     // type(object, bases, dict)
-    @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonBuiltinClass})
+    @Builtin(name = TYPE, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, takesVarKeywordArgs = true, constructsClass = {PythonBuiltinClassType.PythonClass,
+                    PythonBuiltinClassType.PythonBuiltinClass})
     @GenerateNodeFactory
     public abstract static class TypeNode extends PythonBuiltinNode {
         @Specialization(guards = {"isNoValue(bases)", "isNoValue(dict)"})
@@ -1935,7 +1937,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getset_descriptor", constructsClass = {PythonBuiltinClassType.GetSetDescriptor}, isPublic = false, fixedNumOfPositionalArgs = 1, keywordArguments = {"fget", "fset", "name", "owner"})
+    @Builtin(name = "getset_descriptor", constructsClass = {PythonBuiltinClassType.GetSetDescriptor}, isPublic = false, fixedNumOfPositionalArgs = 1, keywordArguments = {"fget", "fset", "name",
+                    "owner"})
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
