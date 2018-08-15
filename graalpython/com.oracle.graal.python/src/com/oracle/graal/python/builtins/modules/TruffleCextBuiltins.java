@@ -692,6 +692,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         public String getName() {
             return name;
         }
+
+        @Override
+        public boolean isCloningAllowed() {
+            return true;
+        }
     }
 
     abstract static class PNativeToPTypeNode extends PForeignToPTypeNode {
@@ -1421,6 +1426,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             this.factory = factory;
             this.readSelfNode = ReadIndexedArgumentNode.create(0);
             this.directCallNode = Truffle.getRuntime().createDirectCallNode(callTarget);
+        }
+
+        @Override
+        public boolean isCloningAllowed() {
+            return true;
         }
     }
 
