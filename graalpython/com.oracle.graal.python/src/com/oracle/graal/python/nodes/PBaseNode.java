@@ -60,7 +60,11 @@ public abstract class PBaseNode extends Node {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
-        return getCore().factory();
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
+        return factory;
     }
 
     public final PythonCore getCore() {
