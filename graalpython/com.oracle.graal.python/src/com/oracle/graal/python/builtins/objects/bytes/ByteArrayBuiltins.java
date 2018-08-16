@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -91,6 +92,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PByteArray)
 public class ByteArrayBuiltins extends PythonBuiltins {
@@ -456,11 +458,23 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     // bytearray.count(x)
     @Builtin(name = "count", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ByteArrayCountNode extends PythonBuiltinNode {
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class ByteArrayCountNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public int count(PByteArray byteArray, Object arg) {
-            return byteArray.count(arg);
+        public int count(PByteArray byteArray, Object arg,
+                        @Cached("createClassProfile()") ValueProfile storeProfile,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
+
+            SequenceStorage profiled = storeProfile.profile(byteArray.getSequenceStorage());
+            int cnt = 0;
+            for (int i = 0; i < profiled.length(); i++) {
+                if (eqNode.executeBool(arg, getItemNode.execute(profiled, i))) {
+                    cnt++;
+                }
+            }
+            return cnt;
         }
     }
 

@@ -101,14 +101,4 @@ public abstract class SequenceStorage {
     public void clear() {
         this.delSlice(0, length(), 1);
     }
-
-    public int count(Object arg) {
-        int count = 0;
-        for (Object obj : getInternalArray()) {
-            if (obj.equals(arg)) {
-                count++;
-            }
-        }
-        return count;
-    }
 }

@@ -128,10 +128,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         store.delSlice(start, stop, step);
     }
 
-    public int count(Object arg) {
-        return this.store.count(arg);
-    }
-
     @Override
     public PIBytesLike createFromBytes(PythonObjectFactory factory, byte[] bytes) {
         return factory.createByteArray(bytes);

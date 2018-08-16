@@ -171,10 +171,6 @@ public final class PList extends PSequence {
         return super.hashCode();
     }
 
-    public int count(Object arg) {
-        return store.count(arg);
-    }
-
     public static PList require(Object value) {
         if (value instanceof PList) {
             return (PList) value;
