@@ -313,6 +313,9 @@ class ListTest(list_tests.CommonTest):
         a = [1, 2]
         a[:] = (1, 2, 4, 5)
         self.assertEqual([1, 2, 4, 5], a)
+        a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        a[0:10:2] = [10, 30, 50, 70, 90]
+        self.assertEqual([10, 2, 30, 4, 50, 6, 70, 8, 90, 10], a)
 
     def test_set_slice_class_iter(self):
 
