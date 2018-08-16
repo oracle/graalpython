@@ -53,19 +53,6 @@ public final class PList extends PSequence {
         this.store = newStorage;
     }
 
-    @Override
-    public final void setSlice(PSlice slice, PSequence value) {
-        // Should not be used. Replaces with ListNodes.SetSliceNode.
-        // When it will be replaced in other PSequence implementations,
-        // then the setSlice from PSequence can be removed.
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public final void setSlice(int start, int stop, int step, PSequence value) {
-        throw new UnsupportedOperationException();
-    }
-
     public final void delSlice(PSlice slice) {
         PSlice.SliceInfo sliceInfo = slice.computeActualIndices(this.len());
         store.delSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step);

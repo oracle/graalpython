@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PLenSupplier;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -42,16 +41,6 @@ public class PArray extends PSequence implements PLenSupplier {
     public PArray(PythonClass clazz, SequenceStorage store) {
         super(clazz);
         this.store = store;
-    }
-
-    @Override
-    public void setSlice(int start, int stop, int step, PSequence value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setSlice(PSlice slice, PSequence value) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

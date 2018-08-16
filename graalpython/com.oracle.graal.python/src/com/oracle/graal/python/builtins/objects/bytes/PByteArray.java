@@ -25,11 +25,8 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -39,7 +36,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerAsserts;
 
@@ -55,29 +51,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     public PByteArray(PythonClass cls, SequenceStorage store) {
         super(cls);
         this.store = store;
-    }
-
-    @Override
-    public void setSlice(int start, int stop, int step, PSequence value) {
-        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length());
-        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length());
-
-        if (normalizedStop < normalizedStart) {
-            normalizedStop = normalizedStart;
-        }
-
-        SequenceStorage other = value.getSequenceStorage();
-        try {
-            store.setSliceInBound(normalizedStart, normalizedStop, step, other);
-        } catch (SequenceStoreException e) {
-            throw PythonLanguage.getCore().raise(TypeError, "an integer is required");
-        }
-    }
-
-    @Override
-    public void setSlice(PSlice slice, PSequence value) {
-        PSlice.SliceInfo sliceInfo = slice.computeActualIndices(len());
-        setSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step, value);
     }
 
     @Override

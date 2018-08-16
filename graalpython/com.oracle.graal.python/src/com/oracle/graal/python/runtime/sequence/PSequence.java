@@ -26,7 +26,6 @@
 package com.oracle.graal.python.runtime.sequence;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -37,10 +36,6 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
     public PSequence(PythonClass cls) {
         super(cls);
     }
-
-    public abstract void setSlice(int start, int stop, int step, PSequence value);
-
-    public abstract void setSlice(PSlice slice, PSequence value);
 
     public abstract SequenceStorage getSequenceStorage();
 
