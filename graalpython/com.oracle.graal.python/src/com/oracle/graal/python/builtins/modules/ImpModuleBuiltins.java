@@ -93,7 +93,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.Builder;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -178,7 +178,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String basename = name.substring(name.lastIndexOf('.') + 1);
             TruffleObject sulongLibrary;
             try {
-                CallTarget callTarget = env.parse(env.newSourceBuilder(env.getTruffleFile(path)).language(LLVM_LANGUAGE).build());
+                CallTarget callTarget = env.parse(Source.newBuilder(LLVM_LANGUAGE, env.getTruffleFile(path)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
                 throw raise(ImportError, "cannot load %s: %s", path, e.getMessage());
@@ -232,9 +232,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "capi.bc");
                 Object capi = null;
                 try {
-                    Builder<IOException, RuntimeException, RuntimeException> capiSrcBuilder = env.newSourceBuilder(capiFile).language(LLVM_LANGUAGE);
+                    SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
                     if (!PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources)) {
-                        capiSrcBuilder.internal();
+                        capiSrcBuilder.internal(true);
                     }
                     capi = ctxt.getEnv().parse(capiSrcBuilder.build()).call();
                 } catch (SecurityException | IOException e) {

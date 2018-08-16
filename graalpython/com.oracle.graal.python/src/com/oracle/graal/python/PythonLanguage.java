@@ -74,7 +74,7 @@ import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.Builder;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.EXCLUSIVE)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, DebuggerTags.AlwaysHalt.class})
@@ -366,24 +366,27 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public static Source newSource(PythonContext ctxt, String src, String name) {
-        return newSource(ctxt, Source.newBuilder(src), name);
+        try {
+            return newSource(ctxt, Source.newBuilder(ID, src, name), name);
+        } catch (IOException e) {
+            throw new AssertionError();
+        }
     }
 
     public static Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
-        return newSource(ctxt, ctxt.getEnv().newSourceBuilder(src), name);
+        return newSource(ctxt, Source.newBuilder(ID, src), name);
     }
 
     public static Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
-        return newSource(ctxt, Source.newBuilder(url), name);
+        return newSource(ctxt, Source.newBuilder(ID, url), name);
     }
 
-    private static <E1 extends Exception, E2 extends Exception, E3 extends Exception> Source newSource(PythonContext ctxt, Builder<E1, E2, E3> srcBuilder,
-                    String name) throws E1 {
-        Builder<E1, RuntimeException, RuntimeException> newBuilder = srcBuilder.name(name).mimeType(MIME_TYPE);
+    private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder, String name) throws IOException {
+        SourceBuilder newBuilder = srcBuilder.name(name).mimeType(MIME_TYPE);
         boolean coreIsInitialized = ctxt.getCore().isInitialized();
         boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
         if (internal) {
-            srcBuilder.internal();
+            srcBuilder.internal(true);
         }
         return newBuilder.build();
     }

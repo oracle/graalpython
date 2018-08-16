@@ -117,7 +117,7 @@ public class TestParserTranslator {
     }
 
     RootNode parse(String src) {
-        Source source = Source.newBuilder(src).mimeType(PythonLanguage.MIME_TYPE).name("foo").build();
+        Source source = Source.newBuilder(PythonLanguage.ID, src, "foo").build();
         return (RootNode) context.getCore().getParser().parse(ParserMode.File, context.getCore(), source, null);
     }
 
