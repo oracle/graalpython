@@ -129,6 +129,11 @@ public abstract class HashingStorage {
         public SourceSection getSourceSection() {
             return null;
         }
+
+        @Override
+        public boolean isCloningAllowed() {
+            return true;
+        }
     }
 
     private static class EqualsRootNode extends RootNode {
@@ -148,6 +153,11 @@ public abstract class HashingStorage {
         @Override
         public SourceSection getSourceSection() {
             return null;
+        }
+
+        @Override
+        public boolean isCloningAllowed() {
+            return true;
         }
     }
 
