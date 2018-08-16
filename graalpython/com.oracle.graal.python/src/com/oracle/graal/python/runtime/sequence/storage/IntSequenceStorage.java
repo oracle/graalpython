@@ -339,14 +339,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void sort() {
-        int[] copy = Arrays.copyOf(values, length);
-        Arrays.sort(copy);
-        values = copy;
-        minimizeCapacity();
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return 0;
     }

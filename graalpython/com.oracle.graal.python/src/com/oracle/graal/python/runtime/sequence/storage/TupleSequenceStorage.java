@@ -339,14 +339,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void sort() {
-        PTuple[] copy = Arrays.copyOf(values, length);
-        Arrays.sort(copy);
-        values = copy;
-        minimizeCapacity();
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return length > 0 ? values[0] : null;
     }

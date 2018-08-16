@@ -155,11 +155,6 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void sort() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return '\0';
     }

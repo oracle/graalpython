@@ -335,14 +335,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void sort() {
-        double[] copy = Arrays.copyOf(values, length);
-        Arrays.sort(copy);
-        values = copy;
-        minimizeCapacity();
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return .0;
     }

@@ -331,26 +331,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         }
     }
 
-    // TODO: Should use Collection for sorting boolean
-    @Override
-    public void sort() {
-        boolean[] copy = Arrays.copyOf(values, length);
-        int count = 0;
-        for (boolean b : copy) {
-            if (!b)
-                count++;
-        }
-        for (int i = 0; i < length; i++) {
-            if (count != 0) {
-                copy[i] = false;
-                count--;
-            } else
-                copy[i] = true;
-        }
-        values = copy;
-        minimizeCapacity();
-    }
-
     @Override
     public Object getIndicativeValue() {
         return 0;

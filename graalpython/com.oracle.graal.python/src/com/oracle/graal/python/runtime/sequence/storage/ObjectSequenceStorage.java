@@ -279,14 +279,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public void sort() {
-        Object[] copy = getCopyOfInternalArray();
-        Arrays.sort(copy);
-        values = copy;
-        minimizeCapacity();
-    }
-
-    @Override
     public ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
         return this;
     }

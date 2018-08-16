@@ -371,15 +371,6 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void sort() {
-        // TODO: need to be tested
-        Object[] copy = Arrays.copyOf(values, length);
-        Arrays.sort(copy);
-        values = (PList[]) copy;
-        minimizeCapacity();
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return length > 0 ? values[0] : null;
     }

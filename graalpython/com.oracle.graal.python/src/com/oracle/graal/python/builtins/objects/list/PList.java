@@ -79,10 +79,6 @@ public final class PList extends PSequence {
         return buf.toString();
     }
 
-    public final void sort() {
-        store.sort();
-    }
-
     @Override
     public final int len() {
         return store.length();

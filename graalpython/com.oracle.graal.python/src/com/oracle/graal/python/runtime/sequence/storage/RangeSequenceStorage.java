@@ -119,11 +119,6 @@ public class RangeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void sort() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean equals(SequenceStorage other) {
         if (other instanceof RangeSequenceStorage) {
             return range.equals(((RangeSequenceStorage) other).range);

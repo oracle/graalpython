@@ -190,11 +190,6 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void sort() {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
     public boolean equals(SequenceStorage other) {
         CompilerAsserts.neverPartOfCompilation();
         throw new AssertionError("should not reach");
