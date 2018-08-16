@@ -72,7 +72,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callUnary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                     @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
-                    @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                    @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) {
         return builtinNode.execute(arguments[0]);
     }
 
@@ -80,7 +80,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callBinary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                     @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
-                    @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                    @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) {
         return builtinNode.execute(arguments[0], arguments[1]);
     }
 
@@ -88,7 +88,7 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
                     "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callTernary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                     @Cached("func") @SuppressWarnings("unused") PBuiltinFunction cachedFunc,
-                    @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                    @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
         return builtinNode.execute(arguments[0], arguments[1], arguments[2]);
     }
 
@@ -102,21 +102,21 @@ public abstract class CallVarargsMethodNode extends CallSpecialMethodNode {
     @Specialization(guards = {"arguments.length == 1", "keywords.length == 0", "func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callUnary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                    @Cached("getUnary(func)") PythonUnaryBuiltinNode builtinNode) {
         return builtinNode.execute(arguments[0]);
     }
 
     @Specialization(guards = {"arguments.length == 2", "keywords.length == 0", "func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callBinary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                    @Cached("getBinary(func)") PythonBinaryBuiltinNode builtinNode) {
         return builtinNode.execute(arguments[0], arguments[1]);
     }
 
     @Specialization(guards = {"arguments.length == 3", "keywords.length == 0", "func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callTernary(@SuppressWarnings("unused") PBuiltinFunction func, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) throws VarargsBuiltinDirectInvocationNotSupported {
+                    @Cached("getTernary(func)") PythonTernaryBuiltinNode builtinNode) {
         return builtinNode.execute(arguments[0], arguments[1], arguments[2]);
     }
 
