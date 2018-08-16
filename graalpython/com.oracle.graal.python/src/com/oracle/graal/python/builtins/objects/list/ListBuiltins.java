@@ -415,8 +415,10 @@ public class ListBuiltins extends PythonBuiltins {
         public PNone extend(PList list, Object source,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode) {
             Object workSource = list != source ? source : factory().createList(((PList) source).getSequenceStorage().copy());
+            SequenceStorage s = list.getSequenceStorage();
             Object iterator = getIterator.executeWith(workSource);
             while (true) {
                 Object value;
@@ -424,14 +426,25 @@ public class ListBuiltins extends PythonBuiltins {
                     value = next.execute(iterator);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
+                    updateSequenceStorage(list, s);
                     return PNone.NONE;
                 }
-                list.append(value);
+                s = appendNode.execute(s, value);
+            }
+        }
+
+        private static void updateSequenceStorage(PList list, SequenceStorage s) {
+            if (list.getSequenceStorage() != s) {
+                list.setSequenceStorage(s);
             }
         }
 
         protected boolean isPSequenceWithStorage(Object source) {
             return (source instanceof PSequence && !(source instanceof PTuple || source instanceof PRange));
+        }
+
+        protected static SequenceStorageNodes.AppendNode createAppend() {
+            return SequenceStorageNodes.AppendNode.create(() -> ListGeneralizationNode.create());
         }
 
     }
@@ -1082,73 +1095,15 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
-        public static String CANNOT_FIT_MESSAGE = "cannot fit 'int' into an index-sized integer";
 
         @Specialization
-        PList doPListInt(PList left, boolean right,
-                        @Cached("createClassProfile()") ValueProfile profile) {
-            return doPListInt(left, PInt.intValue(right), profile);
-        }
-
-        @Specialization
-        PList doPListInt(PList left, int right,
-                        @Cached("createClassProfile()") ValueProfile profile) {
+        PList doPListInt(PList left, Object right,
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
             try {
-                return right > 0 ? left.__mul__(profile, right) : factory().createList();
+                SequenceStorage repeated = repeatNode.execute(left.getSequenceStorage(), right);
+                return factory().createList(repeated);
             } catch (ArithmeticException | OutOfMemoryError e) {
                 throw raise(MemoryError);
-            }
-        }
-
-        @Specialization(guards = "right <= 0")
-        PList doPListLongNegative(@SuppressWarnings("unused") PList left, @SuppressWarnings("unused") long right) {
-            return factory().createList();
-        }
-
-        @Specialization(guards = "right > 0", rewriteOn = ArithmeticException.class)
-        PList doPListLong(PList left, long right,
-                        @Cached("createClassProfile()") ValueProfile profile) {
-            return doPListInt(left, PInt.intValueExact(right), profile);
-        }
-
-        @Specialization(replaces = "doPListLong")
-        PList doPListLongOvf(PList left, long right,
-                        @Cached("create()") BranchProfile notPositiveProfile,
-                        @Cached("createClassProfile()") ValueProfile profile) {
-            if (right <= 0) {
-                notPositiveProfile.enter();
-                return factory().createList();
-            }
-            try {
-                return doPListInt(left, PInt.intValueExact(right), profile);
-            } catch (ArithmeticException e) {
-                throw raise(OverflowError, CANNOT_FIT_MESSAGE);
-            }
-        }
-
-        @Specialization(guards = "right.isZeroOrNegative()", rewriteOn = ArithmeticException.class)
-        PList doPListBigIntNegative(@SuppressWarnings("unused") PList left, @SuppressWarnings("unused") PInt right) {
-            return factory().createList();
-        }
-
-        @Specialization(guards = "!right.isZeroOrNegative()", rewriteOn = ArithmeticException.class)
-        PList doPListBigInt(PList left, PInt right,
-                        @Cached("createClassProfile()") ValueProfile profile) {
-            return doPListInt(left, right.intValueExact(), profile);
-        }
-
-        @Specialization(replaces = "doPListBigInt")
-        PList doPListBigIntOvf(PList left, PInt right,
-                        @Cached("create()") BranchProfile notPositiveProfile,
-                        @Cached("createClassProfile()") ValueProfile profile) {
-            if (right.isZeroOrNegative()) {
-                notPositiveProfile.enter();
-                return factory().createList();
-            }
-            try {
-                return doPListInt(left, right.intValueExact(), profile);
-            } catch (ArithmeticException | OutOfMemoryError e) {
-                throw raise(OverflowError, CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1163,6 +1118,7 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IMulNode extends PythonBuiltinNode {
         protected static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
+        public static String CANNOT_FIT_MESSAGE = "cannot fit 'int' into an index-sized integer";
 
         public abstract PList execute(PList list, Object value);
 
@@ -1182,7 +1138,7 @@ public class ListBuiltins extends PythonBuiltins {
                 PInt.intValueExact(right);
                 return list;
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1192,7 +1148,7 @@ public class ListBuiltins extends PythonBuiltins {
                 right.intValueExact();
                 return list;
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1217,7 +1173,7 @@ public class ListBuiltins extends PythonBuiltins {
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1226,7 +1182,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doIntInt(list, PInt.intValueExact(right));
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1235,7 +1191,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doIntInt(list, right.intValueExact());
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1260,7 +1216,7 @@ public class ListBuiltins extends PythonBuiltins {
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1269,7 +1225,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doLongInt(list, PInt.intValueExact(right));
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1278,7 +1234,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doLongInt(list, right.intValueExact());
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1303,7 +1259,7 @@ public class ListBuiltins extends PythonBuiltins {
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1312,7 +1268,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doDoubleInt(list, PInt.intValueExact(right));
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1321,7 +1277,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doLongInt(list, right.intValueExact());
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1346,7 +1302,7 @@ public class ListBuiltins extends PythonBuiltins {
             } catch (OutOfMemoryError e) {
                 throw raise(MemoryError);
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1355,7 +1311,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doObjectInt(list, PInt.intValueExact(right));
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 
@@ -1364,7 +1320,7 @@ public class ListBuiltins extends PythonBuiltins {
             try {
                 return doObjectInt(list, right.intValueExact());
             } catch (ArithmeticException e) {
-                throw raise(OverflowError, MulNode.CANNOT_FIT_MESSAGE);
+                throw raise(OverflowError, IMulNode.CANNOT_FIT_MESSAGE);
             }
         }
 

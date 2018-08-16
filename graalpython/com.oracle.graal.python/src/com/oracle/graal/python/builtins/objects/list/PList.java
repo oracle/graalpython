@@ -33,7 +33,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public final class PList extends PSequence {
     private SequenceStorage store;
@@ -82,23 +81,6 @@ public final class PList extends PSequence {
     @Override
     public final int len() {
         return store.length();
-    }
-
-    public final PList __mul__(ValueProfile storeProfile, int value) {
-        assert value > 0;
-
-        SequenceStorage profiledStore = storeProfile.profile(store);
-        SequenceStorage newStore = profiledStore.createEmpty(Math.multiplyExact(value, profiledStore.length()));
-
-        try {
-            for (int i = 0; i < value; i++) {
-                newStore.extend(profiledStore);
-            }
-        } catch (SequenceStoreException e) {
-            throw new IllegalStateException();
-        }
-
-        return new PList(getPythonClass(), newStore);
     }
 
     public final void reverse() {
