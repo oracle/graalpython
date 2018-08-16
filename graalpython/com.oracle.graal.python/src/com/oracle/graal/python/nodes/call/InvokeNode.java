@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.call;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -41,6 +42,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNode;
 import com.oracle.graal.python.nodes.argument.ArityCheckNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -58,6 +60,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 abstract class AbstractInvokeNode extends Node {
 
     private final ConditionProfile needsFrameProfile = ConditionProfile.createBinaryProfile();
+
+    protected static boolean shouldInlineGenerators() {
+        return PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.ForceInlineGeneratorCalls);
+    }
 
     @TruffleBoundary
     protected static RootCallTarget getCallTarget(PythonCallable callee) {
@@ -151,7 +157,7 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
         if (isBuiltin) {
             callNode.cloneCallTarget();
         }
-        if (isGenerator) {
+        if (isGenerator && shouldInlineGenerators()) {
             this.callNode.forceInlining();
         }
         this.isBuiltin = isBuiltin;
@@ -209,7 +215,7 @@ public abstract class InvokeNode extends AbstractInvokeNode {
         if (isBuiltin) {
             callNode.cloneCallTarget();
         }
-        if (isGenerator) {
+        if (isGenerator && shouldInlineGenerators()) {
             this.callNode.forceInlining();
         }
         this.arity = calleeArity;
