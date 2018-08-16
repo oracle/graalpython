@@ -25,13 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.range;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
+import com.oracle.graal.python.runtime.sequence.storage.RangeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -100,12 +100,8 @@ public final class PRange extends PImmutableSequence {
         return stop;
     }
 
-    public Object getItemNormalized(int index) {
-        if (index >= length) {
-            CompilerDirectives.transferToInterpreter();
-            throw PythonLanguage.getCore().raise(IndexError, "range object index out of range");
-        }
-
+    public int getItemNormalized(int index) {
+        assert index < length;
         return index * step + start;
     }
 
@@ -116,8 +112,7 @@ public final class PRange extends PImmutableSequence {
 
     @Override
     public SequenceStorage getSequenceStorage() {
-        CompilerDirectives.transferToInterpreter();
-        throw new UnsupportedOperationException();
+        return new RangeSequenceStorage(this);
     }
 
     @Override
@@ -145,5 +140,4 @@ public final class PRange extends PImmutableSequence {
             return false;
         }
     }
-
 }
