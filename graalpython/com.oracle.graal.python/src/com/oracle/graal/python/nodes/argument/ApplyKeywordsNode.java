@@ -133,7 +133,7 @@ public abstract class ApplyKeywordsNode extends Node {
         return combined;
     }
 
-    @Specialization
+    @Specialization(replaces = "applyCached")
     Object[] applyUncached(Arity calleeArity, Object[] arguments, PKeyword[] keywords) {
         return applyKeywordArgs(calleeArity, arguments, keywords);
     }
@@ -154,7 +154,7 @@ public abstract class ApplyKeywordsNode extends Node {
             return idx;
         }
 
-        @Specialization
+        @Specialization(replaces = "cached")
         @ExplodeLoop
         int uncached(String[] parameters, String name) {
             for (int i = 0; i < parameters.length; i++) {
