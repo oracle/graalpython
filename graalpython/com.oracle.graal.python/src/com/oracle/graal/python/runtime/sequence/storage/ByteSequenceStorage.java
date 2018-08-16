@@ -538,4 +538,19 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     public Object getInternalArrayObject() {
         return values;
     }
+
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (byte[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Byte;
+    }
 }

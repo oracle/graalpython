@@ -1131,7 +1131,7 @@ public class ListBuiltins extends PythonBuiltins {
 
     @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class MulNode extends PythonBuiltinNode {
+    abstract static class MulNode extends PythonBinaryBuiltinNode {
         public static String CANNOT_FIT_MESSAGE = "cannot fit 'int' into an index-sized integer";
 
         @Specialization

@@ -44,14 +44,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 
 public class NativeSequenceStorage extends SequenceStorage {
 
-    public static enum ElementType {
-        BYTE,
-        INT,
-        LONG,
-        DOUBLE,
-        OBJECT;
-    }
-
     /* native pointer object */
     private Object ptr;
 
@@ -61,9 +53,9 @@ public class NativeSequenceStorage extends SequenceStorage {
     /* allocated capacity */
     protected int capacity;
 
-    protected final ElementType elementType;
+    protected final ListStorageType elementType;
 
-    public NativeSequenceStorage(Object ptr, int length, int capacity, ElementType elementType) {
+    public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
         this.ptr = ptr;
         this.capacity = capacity;
         this.length = length;
@@ -86,7 +78,8 @@ public class NativeSequenceStorage extends SequenceStorage {
         this.capacity = capacity;
     }
 
-    public ElementType getElementType() {
+    @Override
+    public ListStorageType getElementType() {
         return elementType;
     }
 

@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class DoubleSequenceStorage extends TypedSequenceStorage {
 
@@ -162,17 +163,17 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
     @Override
     public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
         if (sequence instanceof DoubleSequenceStorage) {
-            setDoubleSliceInBound(start, stop, step, (DoubleSequenceStorage) sequence);
+            setDoubleSliceInBound(start, stop, step, (DoubleSequenceStorage) sequence, null);
         } else {
             throw new SequenceStoreException();
         }
     }
 
-    public void setDoubleSliceInBound(int start, int stop, int step, DoubleSequenceStorage sequence) {
+    public void setDoubleSliceInBound(int start, int stop, int step, DoubleSequenceStorage sequence, ConditionProfile sameLengthProfile) {
         int otherLength = sequence.length();
 
         // range is the whole sequence?
-        if (start == 0 && stop == length) {
+        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
             values = Arrays.copyOf(sequence.values, otherLength);
             length = otherLength;
             minimizeCapacity();
@@ -367,4 +368,18 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         return values;
     }
 
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (double[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Double;
+    }
 }

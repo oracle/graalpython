@@ -184,4 +184,19 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
     public Object getInternalArrayObject() {
         return values;
     }
+
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (char[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Char;
+    }
 }

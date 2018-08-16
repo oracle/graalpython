@@ -29,6 +29,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class LongSequenceStorage extends TypedSequenceStorage {
 
@@ -167,17 +168,17 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     @Override
     public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
         if (sequence instanceof LongSequenceStorage) {
-            setLongSliceInBound(start, stop, step, (LongSequenceStorage) sequence);
+            setLongSliceInBound(start, stop, step, (LongSequenceStorage) sequence, null);
         } else {
             throw new SequenceStoreException();
         }
     }
 
-    public void setLongSliceInBound(int start, int stop, int step, LongSequenceStorage sequence) {
+    public void setLongSliceInBound(int start, int stop, int step, LongSequenceStorage sequence, ConditionProfile sameLengthProfile) {
         int otherLength = sequence.length();
 
         // range is the whole sequence?
-        if (start == 0 && stop == length) {
+        if (sameLengthProfile.profile(start == 0 && stop == length)) {
             values = Arrays.copyOf(sequence.values, otherLength);
             length = otherLength;
             minimizeCapacity();
@@ -382,4 +383,18 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return values;
     }
 
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (long[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Long;
+    }
 }

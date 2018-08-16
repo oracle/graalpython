@@ -675,17 +675,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
-        @Child private SequenceStorageNodes.NormalizeIndexNode normalize;
+        @Child private SequenceStorageNodes.SetItemNode setItemNode;
 
-        @Specialization
-        PNone doInt(PByteArray self, int idx, Object value) {
-            self.setItemNormalized(ensureNormalize().execute(idx, self.len()), value);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        PNone doSliceSequence(PByteArray self, PSlice slice, PSequence value) {
-            self.setSlice(slice, value);
+        @Specialization(guards = "!isMemoryView(value)")
+        PNone doBasic(PByteArray self, Object idx, Object value) {
+            getSetItemNode().execute(self.getSequenceStorage(), idx, value);
             return PNone.NONE;
         }
 
@@ -695,45 +689,18 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
             Object bytesObj = callToBytesNode.executeObject(value);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
-                doSliceSequence(self, slice, (PBytes) bytesObj);
+                doBasic(self, slice, bytesObj);
                 return PNone.NONE;
             }
             throw raise(SystemError, "could not get bytes of memoryview");
         }
 
-        @Specialization(guards = "isScalar(value)")
-        @SuppressWarnings("unused")
-        PNone doSliceScalar(PByteArray self, PSlice slice, Object value) {
-            throw raise(TypeError, "can assign only bytes, buffers, or iterables of ints in range(0, 256)");
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public Object doLong(PByteArray primary, long idx, Object value) {
-            return doInt(primary, PInt.intValueExact(idx), value);
-        }
-
-        @Specialization(replaces = "doLong")
-        public Object doLongOvf(PByteArray primary, long idx, Object value) {
-            try {
-                return doInt(primary, PInt.intValueExact(idx), value);
-            } catch (ArithmeticException e) {
-                throw raiseIndexError();
-            }
-        }
-
-        @Specialization(rewriteOn = ArithmeticException.class)
-        public Object doPInt(PByteArray primary, PInt idx, Object value) {
-            return doInt(primary, idx.intValueExact(), value);
-        }
-
-        @Specialization(replaces = "doPInt")
-        public Object doPIntOvf(PByteArray primary, PInt idx, Object value) {
-            try {
-                return doInt(primary, idx.intValueExact(), value);
-            } catch (ArithmeticException e) {
-                throw raiseIndexError();
-            }
-        }
+        // TODO error message
+// @Specialization(guards = "isScalar(value)")
+// @SuppressWarnings("unused")
+// PNone doSliceScalar(PByteArray self, PSlice slice, Object value) {
+// throw raise(TypeError, "can assign only bytes, buffers, or iterables of ints in range(0, 256)");
+// }
 
         @Fallback
         @SuppressWarnings("unused")
@@ -741,16 +708,16 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        private SequenceStorageNodes.NormalizeIndexNode ensureNormalize() {
-            if (normalize == null) {
+        private SequenceStorageNodes.SetItemNode getSetItemNode() {
+            if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                normalize = insert(SequenceStorageNodes.NormalizeIndexNode.forArrayAssign());
+                setItemNode = insert(SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray()));
             }
-            return normalize;
+            return setItemNode;
         }
 
-        protected boolean isScalar(Object value) {
-            return !(value instanceof PSequence || value instanceof PMemoryView);
+        protected static boolean isMemoryView(Object value) {
+            return value instanceof PMemoryView;
         }
     }
 

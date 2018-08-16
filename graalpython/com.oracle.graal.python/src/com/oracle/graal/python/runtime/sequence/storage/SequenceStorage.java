@@ -31,6 +31,9 @@ public abstract class SequenceStorage {
 
     public enum ListStorageType {
         Uninitialized,
+        Boolean,
+        Byte,
+        Char,
         Int,
         Long,
         Double,
@@ -54,6 +57,8 @@ public abstract class SequenceStorage {
      * storage object.
      */
     public abstract Object getInternalArrayObject();
+
+    public abstract ListStorageType getElementType();
 
     public abstract Object[] getInternalArray();
 

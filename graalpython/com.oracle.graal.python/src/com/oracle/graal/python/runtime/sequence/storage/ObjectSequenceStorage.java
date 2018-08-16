@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
@@ -111,6 +112,26 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
         for (int i = start, j = 0; i < stop; i += step, j++) {
             values[i] = sequence.getInternalArray()[j];
+        }
+
+        length = length > stop ? length : stop;
+    }
+
+    public void setObjectSliceInBound(int start, int stop, int step, ObjectSequenceStorage sequence, ConditionProfile sameLengthProfile) {
+        int otherLength = sequence.length();
+
+        // range is the whole sequence?
+        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
+            values = Arrays.copyOf(sequence.values, otherLength);
+            length = otherLength;
+            minimizeCapacity();
+            return;
+        }
+
+        ensureCapacity(stop);
+
+        for (int i = start, j = 0; i < stop; i += step, j++) {
+            values[i] = sequence.values[j];
         }
 
         length = length > stop ? length : stop;
@@ -299,4 +320,18 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         return values;
     }
 
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (Object[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Generic;
+    }
 }

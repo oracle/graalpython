@@ -192,4 +192,8 @@ public final class EmptySequenceStorage extends SequenceStorage {
         return null;
     }
 
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Uninitialized;
+    }
 }
