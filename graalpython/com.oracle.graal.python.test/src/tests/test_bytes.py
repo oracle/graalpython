@@ -183,6 +183,38 @@ def test_setitem():
         pass
 
 
+def test_setslice():
+    # whole sequence
+    b = bytearray(b"hello")
+    b[0:5] = b"HELLO"
+    assert b == bytearray(b"HELLO")
+
+    # whole same length as slice
+    b = bytearray(b"hellohellohello")
+    b[5:10] = b"HELLO"
+    assert b == bytearray(b"helloHELLOhello")
+
+    # shrink
+    b = bytearray(b"hellohellohello")
+    b[5:10] = b"hi"
+    assert b == bytearray(b"hellohihello")
+
+    # extend
+    b = bytearray(b"hellohelloworld")
+    b[5:10] = b"beautiful"
+    assert b == bytearray(b"hellobeautifulworld")
+
+    # assign list with integers
+    b = bytearray(b"hellohellohello")
+    b[5:10] = [4, 5, 6, 7, 8]
+    assert b == bytearray(b"hello\x04\x05\x06\x07\x08hello")
+
+    # assign range
+    b = bytearray(b"hellohellohello")
+    b[5:10] = range(5)
+    assert b == bytearray(b"hello\x04\x05\x06\x07\x08hello")
+
+
 def test_delitem():
     b = bytearray(range(10))
     del b[0]
