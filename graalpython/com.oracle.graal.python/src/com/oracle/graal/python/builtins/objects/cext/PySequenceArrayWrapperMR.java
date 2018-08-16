@@ -233,14 +233,14 @@ public class PySequenceArrayWrapperMR {
 
         @Specialization
         Object doTuple(PBytes s, long idx, byte value,
-                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+                        @Cached("createStorageSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             setItemNode.executeLong(s.getSequenceStorage(), idx, value);
             return value;
         }
 
         @Specialization
         Object doTuple(PSequence s, long idx, Object value,
-                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+                        @Cached("createStorageSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             setItemNode.execute(s.getSequenceStorage(), idx, getToJavaNode().execute(value));
             return value;
         }
@@ -252,8 +252,8 @@ public class PySequenceArrayWrapperMR {
             return value;
         }
 
-        protected static ListBuiltins.SetItemNode createListSetItem() {
-            return ListBuiltinsFactory.SetItemNodeFactory.create();
+        protected static SequenceStorageNodes.SetItemNode createStorageSetItem() {
+            return SequenceStorageNodes.SetItemNode.create("invalid item for assignment");
         }
 
         protected static LookupAndCallTernaryNode createSetItem() {

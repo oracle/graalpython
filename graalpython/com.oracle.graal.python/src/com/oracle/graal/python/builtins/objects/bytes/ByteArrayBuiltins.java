@@ -613,7 +613,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Child private SequenceStorageNodes.GetItemNode getSelfItemNode;
         @Child private SequenceStorageNodes.GetItemNode getTableItemNode;
-        @Child private SequenceStorageNodes.SetItemNode setItemNode;
 
         @Specialization
         PByteArray translate(PByteArray self, PBytes table, @SuppressWarnings("unused") PNone delete) {
@@ -711,7 +710,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         private SequenceStorageNodes.SetItemNode getSetItemNode() {
             if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray()));
+                setItemNode = insert(SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), "an integer is required"));
             }
             return setItemNode;
         }

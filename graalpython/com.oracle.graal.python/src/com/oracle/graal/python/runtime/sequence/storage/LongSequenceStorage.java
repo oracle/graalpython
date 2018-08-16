@@ -113,7 +113,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Long) {
             setLongItemNormalized(idx, (long) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -128,7 +128,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Long) {
             insertLongItem(idx, (long) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -170,7 +170,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         if (sequence instanceof LongSequenceStorage) {
             setLongSliceInBound(start, stop, step, (LongSequenceStorage) sequence, null);
         } else {
-            throw new SequenceStoreException();
+            throw new SequenceStoreException(sequence);
         }
     }
 
@@ -303,7 +303,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Long) {
             appendLong((long) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -318,7 +318,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         if (other instanceof LongSequenceStorage) {
             extendWithLongStorage((LongSequenceStorage) other);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(other);
         }
     }
 

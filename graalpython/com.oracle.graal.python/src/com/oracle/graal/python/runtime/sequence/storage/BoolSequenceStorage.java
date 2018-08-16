@@ -103,7 +103,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Boolean) {
             setBoolItemNormalized(idx, (boolean) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -116,7 +116,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Boolean) {
             insertBoolItem(idx, (boolean) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -158,7 +158,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         if (sequence instanceof BoolSequenceStorage) {
             setBoolSliceInBound(start, stop, step, (BoolSequenceStorage) sequence);
         } else {
-            throw new SequenceStoreException();
+            throw new SequenceStoreException(sequence);
         }
     }
 
@@ -285,7 +285,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Boolean) {
             appendBool((boolean) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -300,7 +300,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         if (other instanceof BoolSequenceStorage) {
             extendWithBoolStorage((BoolSequenceStorage) other);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(other);
         }
     }
 

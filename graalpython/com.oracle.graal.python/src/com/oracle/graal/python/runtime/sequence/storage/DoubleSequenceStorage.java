@@ -110,7 +110,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Double) {
             setDoubleItemNormalized(idx, (double) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -123,7 +123,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Double) {
             insertDoubleItem(idx, (double) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -165,7 +165,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         if (sequence instanceof DoubleSequenceStorage) {
             setDoubleSliceInBound(start, stop, step, (DoubleSequenceStorage) sequence, null);
         } else {
-            throw new SequenceStoreException();
+            throw new SequenceStoreException(sequence);
         }
     }
 
@@ -288,7 +288,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Double) {
             appendDouble((double) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -303,7 +303,7 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         if (other instanceof DoubleSequenceStorage) {
             extendWithDoubleStorage((DoubleSequenceStorage) other);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(other);
         }
     }
 

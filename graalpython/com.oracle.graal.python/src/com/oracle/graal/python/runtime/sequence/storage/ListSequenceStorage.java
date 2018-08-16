@@ -136,7 +136,7 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         if (value instanceof PList) {
             setListItemNormalized(idx, (PList) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -149,7 +149,7 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         if (value instanceof PList) {
             insertListItem(idx, (PList) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -191,7 +191,7 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         if (sequence instanceof ListSequenceStorage) {
             setListSliceInBound(start, stop, step, (ListSequenceStorage) sequence);
         } else {
-            throw new SequenceStoreException();
+            throw new SequenceStoreException(sequence);
         }
     }
 
@@ -322,9 +322,9 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
             else if (list.getClass() == kind)
                 appendList((PList) value);
             else
-                throw SequenceStoreException.INSTANCE;
+                throw new SequenceStoreException(value);
         } else
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
 
     }
 
@@ -339,7 +339,7 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         if (other instanceof ListSequenceStorage) {
             extendWithListStorage((ListSequenceStorage) other);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(other);
         }
     }
 

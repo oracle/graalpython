@@ -238,7 +238,8 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forArrayAssign());
+            // TODO correct error message depending on array's element type
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forArrayAssign(), "invalid item for assignment");
         }
     }
 

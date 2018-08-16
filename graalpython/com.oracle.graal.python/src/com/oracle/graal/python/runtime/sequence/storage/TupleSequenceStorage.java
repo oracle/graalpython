@@ -110,7 +110,7 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         if (value instanceof PTuple) {
             setPTupleItemNormalized(idx, (PTuple) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -123,7 +123,7 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         if (value instanceof PTuple) {
             insertPTupleItem(idx, (PTuple) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -165,7 +165,7 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         if (sequence instanceof TupleSequenceStorage) {
             setPTupleSliceInBound(start, stop, step, (TupleSequenceStorage) sequence);
         } else {
-            throw new SequenceStoreException();
+            throw new SequenceStoreException(sequence);
         }
     }
 
@@ -292,7 +292,7 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         if (value instanceof PTuple) {
             appendPTuple((PTuple) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -307,7 +307,7 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         if (other instanceof TupleSequenceStorage) {
             extendWithPTupleStorage((TupleSequenceStorage) other);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(other);
         }
     }
 

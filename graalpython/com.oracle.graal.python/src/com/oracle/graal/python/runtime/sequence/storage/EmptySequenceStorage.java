@@ -123,7 +123,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public void insertItem(int idx, Object value) throws SequenceStoreException {
         assert idx == 0;
-        throw SequenceStoreException.INSTANCE;
+        throw new SequenceStoreException(value);
     }
 
     @Override
@@ -138,7 +138,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
     @Override
     public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        throw SequenceStoreException.INSTANCE;
+        throw new SequenceStoreException(sequence);
     }
 
     @Override
@@ -158,14 +158,14 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
     @Override
     public void append(Object value) throws SequenceStoreException {
-        throw SequenceStoreException.INSTANCE;
+        throw new SequenceStoreException(value);
     }
 
     @Override
     public void extend(SequenceStorage other) throws SequenceStoreException {
         // allow an empty storage to be extended by an empty storage
         if (!(other instanceof EmptySequenceStorage)) {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(other);
         }
     }
 

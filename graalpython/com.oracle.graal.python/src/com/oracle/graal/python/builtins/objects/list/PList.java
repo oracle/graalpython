@@ -156,25 +156,6 @@ public final class PList extends PSequence {
         }
     }
 
-    public final PList __add__(PList other) throws ArithmeticException {
-        SequenceStorage otherStore = other.getSequenceStorage();
-        SequenceStorage newStore = store.copy();
-
-        try {
-            newStore.extend(otherStore);
-        } catch (SequenceStoreException e) {
-            newStore = newStore.generalizeFor(otherStore.getIndicativeValue(), otherStore);
-
-            try {
-                newStore.extend(otherStore);
-            } catch (SequenceStoreException e1) {
-                throw new IllegalStateException();
-            }
-        }
-
-        return new PList(getPythonClass(), newStore);
-    }
-
     public final void insert(int index, Object value) {
         try {
             store.insertItem(index, value);

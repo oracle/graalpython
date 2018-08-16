@@ -134,7 +134,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         } else if (value instanceof Integer) {
             insertByteItem(idx, ((Integer) value).byteValue());
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -180,7 +180,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         } else if (sequence instanceof EmptySequenceStorage) {
             setByteSliceInBound(start, stop, step, new IntSequenceStorage(0));
         } else {
-            throw new SequenceStoreException();
+            throw new SequenceStoreException(sequence);
         }
     }
 
@@ -388,18 +388,18 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             try {
                 appendInt(((PInt) value).intValueExact());
             } catch (ArithmeticException e) {
-                throw SequenceStoreException.INSTANCE;
+                throw new SequenceStoreException(value);
             }
         } else if (value instanceof Byte) {
             appendByte((byte) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
     public void appendLong(long value) {
         if (value < 0 || value >= 256) {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
         ensureCapacity(length + 1);
         values[length] = (byte) value;
@@ -408,7 +408,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     public void appendInt(int value) {
         if (value < 0 || value >= 256) {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
         ensureCapacity(length + 1);
         values[length] = (byte) value;
@@ -430,7 +430,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         } else if (other instanceof ObjectSequenceStorage) {
             extendWithObjectStorage((ObjectSequenceStorage) other);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(other);
         }
     }
 
@@ -454,7 +454,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         for (int i = length, j = 0; i < extendedLength; i++, j++) {
             int otherValue = otherValues[j];
             if (otherValue < 0 || otherValue >= 256) {
-                throw SequenceStoreException.INSTANCE;
+                throw new SequenceStoreException(otherValue);
             }
             values[i] = (byte) otherValue;
         }
@@ -478,11 +478,11 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
                 try {
                     value = ((PInt) otherValue).intValueExact();
                 } catch (ArithmeticException e) {
-                    throw SequenceStoreException.INSTANCE;
+                    throw new SequenceStoreException(other);
                 }
             }
             if (value < 0 || value >= 256) {
-                throw SequenceStoreException.INSTANCE;
+                throw new SequenceStoreException(value);
             }
             values[i] = (byte) value;
         }

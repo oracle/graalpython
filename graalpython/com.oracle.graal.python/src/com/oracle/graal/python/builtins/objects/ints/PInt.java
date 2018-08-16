@@ -143,21 +143,29 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     public static int intValueExact(long val) {
-        if (val != (int) val) {
+        if (!isIntRange(val)) {
             throw new ArithmeticException();
         }
         return (int) val;
     }
 
+    public static boolean isByteRange(int val) {
+        return val >= 0 && val < 256;
+    }
+
+    public static boolean isByteRange(long val) {
+        return val >= 0 && val < 256;
+    }
+
     public static byte byteValueExact(int val) {
-        if (val < 0 || val >= 256) {
+        if (!isByteRange(val)) {
             throw new ArithmeticException();
         }
         return (byte) val;
     }
 
     public static byte byteValueExact(long val) {
-        if (val < 0 || val >= 256) {
+        if (!isByteRange(val)) {
             throw new ArithmeticException();
         }
         return (byte) val;
@@ -166,6 +174,10 @@ public final class PInt extends PythonBuiltinObject {
     @TruffleBoundary(transferToInterpreterOnException = false)
     public byte byteValueExact() {
         return value.byteValueExact();
+    }
+
+    public static boolean isIntRange(long val) {
+        return val == (int) val;
     }
 
 }

@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
@@ -97,7 +98,6 @@ import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
-import com.oracle.graal.python.runtime.sequence.storage.SetSequenceStorageItem;
 import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -297,71 +297,47 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
         @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forListAssign();
+        private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public PNone doPList(PList list, PSlice slice, Object value,
+        public PNone doPList(PList primary, PSlice slice, Object value,
                         @Cached("create()") ListNodes.SetSliceNode sliceNode) {
-            return sliceNode.execute(list, slice, value);
+            return sliceNode.execute(primary, slice, value);
         }
 
-        @Specialization(guards = "isIntStorage(primary)")
-        public Object doPListInt(PList primary, int idx, int value) {
-            IntSequenceStorage store = (IntSequenceStorage) primary.getSequenceStorage();
-            store.setIntItemNormalized(normalize.execute(idx, store.length()), value);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isDoubleStorage(primary)")
-        public Object doPListDouble(PList primary, int idx, double value) {
-            DoubleSequenceStorage store = (DoubleSequenceStorage) primary.getSequenceStorage();
-            store.setDoubleItemNormalized(normalize.execute(idx, store.length()), value);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isObjectStorage(primary)")
-        public Object doPListObject(PList primary, int idx, Object value) {
-            ObjectSequenceStorage store = (ObjectSequenceStorage) primary.getSequenceStorage();
-            store.setItemNormalized(normalize.execute(idx, store.length()), value);
+        @Specialization
+        public Object doPListInt(PList primary, int idx, Object value,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+            updateStorage(primary, setItemNode.execute(primary.getSequenceStorage(), idx, value));
             return PNone.NONE;
         }
 
         @Specialization
-        public Object doPList(PList list, int idx, Object value,
-                        @Cached("create()") SetSequenceStorageItem setItem) {
-            setItem.setItem(list, idx, value);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isIntStorage(primary)")
-        public Object doPListInt(PList primary, long idx, int value) {
-            IntSequenceStorage store = (IntSequenceStorage) primary.getSequenceStorage();
-            store.setIntItemNormalized(normalize.execute(idx, store.length()), value);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isDoubleStorage(primary)")
-        public Object doPListDouble(PList primary, long idx, double value) {
-            DoubleSequenceStorage store = (DoubleSequenceStorage) primary.getSequenceStorage();
-            store.setDoubleItemNormalized(normalize.execute(idx, store.length()), value);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isObjectStorage(primary)")
-        public Object doPListObject(PList primary, long idx, Object value) {
-            ObjectSequenceStorage store = (ObjectSequenceStorage) primary.getSequenceStorage();
-            store.setItemNormalized(normalize.execute(idx, store.length()), value);
+        public Object doPListLong(PList primary, long idx, Object value,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+            updateStorage(primary, setItemNode.execute(primary.getSequenceStorage(), idx, value));
             return PNone.NONE;
         }
 
         @Specialization
-        public Object doPList(PList list, long idx, Object value,
-                        @Cached("create()") SetSequenceStorageItem setItem) {
-            setItem.setItem(list, idx, value);
+        public Object doPListPInt(PList primary, PInt idx, Object value,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+            updateStorage(primary, setItemNode.execute(primary.getSequenceStorage(), idx, value));
             return PNone.NONE;
+        }
+
+        private void updateStorage(PList primary, SequenceStorage newStorage) {
+            if (generalizedProfile.profile(primary.getSequenceStorage() != newStorage)) {
+                primary.setSequenceStorage(newStorage);
+            }
         }
 
         protected static SetItemNode create() {
             return ListBuiltinsFactory.SetItemNodeFactory.create();
+        }
+
+        protected static SequenceStorageNodes.SetItemNode createSetItem() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forArrayAssign(), () -> ListGeneralizationNode.create());
         }
 
         @Specialization
@@ -458,14 +434,15 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isPSequenceWithStorage(source)"})
-        public PNone extendSequence(PList list, Object source) {
+        public PNone extendSequence(PList list, Object source,
+                        @Cached("create()") SequenceStorageNodes.ListGeneralizationNode genNode) {
             SequenceStorage eSource = ((PSequence) source).getSequenceStorage();
             if (eSource.length() > 0) {
                 SequenceStorage target = list.getSequenceStorage();
                 try {
                     target.extend(eSource);
                 } catch (SequenceStoreException e) {
-                    target = target.generalizeFor(eSource.getItemNormalized(0), eSource);
+                    target = genNode.execute(target, e.getIndicationValue());
                     list.setSequenceStorage(target);
                     try {
                         target.extend(eSource);
@@ -1057,9 +1034,26 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PList doPList(PList left, PList right) {
+        PList doPList(PList left, PList other,
+                        @Cached("create()") SequenceStorageNodes.ListGeneralizationNode genNode) {
             try {
-                return left.__add__(right);
+                SequenceStorage store = left.getSequenceStorage();
+                SequenceStorage otherStore = other.getSequenceStorage();
+                SequenceStorage newStore = store.copy();
+
+                try {
+                    newStore.extend(otherStore);
+                } catch (SequenceStoreException e) {
+                    newStore = genNode.execute(newStore, e.getIndicationValue());
+
+                    try {
+                        newStore.extend(otherStore);
+                    } catch (SequenceStoreException e1) {
+                        throw new IllegalStateException();
+                    }
+                }
+
+                return factory().createList(left.getPythonClass(), newStore);
             } catch (ArithmeticException e) {
                 throw raise(MemoryError);
             }

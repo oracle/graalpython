@@ -57,20 +57,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         this.store = store;
     }
 
-    public void setItemNormalized(int index, Object value) {
-        try {
-            store.setItemNormalized(index, value);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value, null);
-
-            try {
-                store.setItemNormalized(index, value);
-            } catch (SequenceStoreException ex) {
-                throw new IllegalStateException();
-            }
-        }
-    }
-
     @Override
     public void setSlice(int start, int stop, int step, PSequence value) {
         final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length());

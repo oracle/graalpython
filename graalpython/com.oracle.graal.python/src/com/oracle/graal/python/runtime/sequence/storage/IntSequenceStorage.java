@@ -110,7 +110,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Integer) {
             setIntItemNormalized(idx, (int) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -123,7 +123,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Integer) {
             insertIntItem(idx, (int) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -165,7 +165,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         if (sequence instanceof IntSequenceStorage) {
             setIntSliceInBound(start, stop, step, (IntSequenceStorage) sequence, null);
         } else {
-            throw new SequenceStoreException();
+            throw new SequenceStoreException(sequence);
         }
     }
 
@@ -292,7 +292,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Integer) {
             appendInt((int) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -307,7 +307,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         if (other instanceof IntSequenceStorage) {
             extendWithIntStorage((IntSequenceStorage) other);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(other);
         }
     }
 
