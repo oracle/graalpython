@@ -57,6 +57,7 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallBinaryCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.AppendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CastToByteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
@@ -1998,7 +1999,7 @@ public abstract class SequenceStorageNodes {
     // Implements list generalization rules; previously in 'SequenceStroage.generalizeFor'.
     public abstract static class ListGeneralizationNode extends GeneralizationNode {
 
-        private static final int DEFAULT_CAPACITY = 16;
+        private static final int DEFAULT_CAPACITY = 8;
 
         @Specialization
         SequenceStorage doObject(@SuppressWarnings("unused") ObjectSequenceStorage s, @SuppressWarnings("unused") Object indicationValue) {
@@ -2051,6 +2052,11 @@ public abstract class SequenceStorageNodes {
         }
 
         @Specialization
+        SequenceStorage doEmptyObject(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") Object val) {
+            return new ObjectSequenceStorage(DEFAULT_CAPACITY);
+        }
+
+        @Specialization
         IntSequenceStorage doByteInteger(@SuppressWarnings("unused") ByteSequenceStorage s, @SuppressWarnings("unused") int val) {
             int[] copied = new int[s.length()];
             for (int i = 0; i < copied.length; i++) {
@@ -2099,4 +2105,67 @@ public abstract class SequenceStorageNodes {
 
     }
 
+    public abstract static class AppendNode extends SequenceStorageBaseNode {
+
+        @Child private GeneralizationNode genNode;
+
+        private final Supplier<GeneralizationNode> genNodeProvider;
+
+        public AppendNode(Supplier<GeneralizationNode> genNodeProvider) {
+            this.genNodeProvider = genNodeProvider;
+        }
+
+        public abstract SequenceStorage execute(SequenceStorage s, Object val);
+
+        @Specialization
+        SequenceStorage doEmpty(EmptySequenceStorage s, Object val,
+                        @Cached("createRecursive()") AppendNode recursive) {
+            SequenceStorage newStorage = generalizeStore(s, val);
+            return recursive.execute(newStorage, val);
+        }
+
+        @Specialization(limit = "9", guards = "s.getClass() == cachedClass")
+        SequenceStorage doManaged(BasicSequenceStorage s, Object val,
+                        @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
+                        @Cached("create()") SetItemScalarNode setItemNode) {
+            BasicSequenceStorage profiled = cachedClass.cast(s);
+            int len = profiled.length();
+            profiled.ensureCapacity(len + 1);
+            try {
+                setItemNode.execute(profiled, len, val);
+                profiled.setNewLength(len + 1);
+                return profiled;
+            } catch (SequenceStoreException e) {
+                SequenceStorage generalized = generalizeStore(profiled, e.getIndicationValue());
+                generalized.ensureCapacity(len + 1);
+                try {
+                    setItemNode.execute(generalized, len, val);
+                    generalized.setNewLength(len + 1);
+                    return generalized;
+                } catch (SequenceStoreException e1) {
+                    CompilerDirectives.transferToInterpreter();
+                    throw new IllegalStateException();
+                }
+            }
+        }
+
+        // TODO native sequence storage
+
+        protected AppendNode createRecursive() {
+            return AppendNodeGen.create(genNodeProvider);
+        }
+
+        private SequenceStorage generalizeStore(SequenceStorage storage, Object value) {
+            if (genNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                genNode = insert(genNodeProvider.get());
+            }
+            return genNode.execute(storage, value);
+        }
+
+        public static AppendNode create(Supplier<GeneralizationNode> genNodeProvider) {
+            return AppendNodeGen.create(genNodeProvider);
+        }
+
+    }
 }

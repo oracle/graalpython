@@ -93,12 +93,10 @@ import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
-import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -360,62 +358,20 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListAppendNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isEmptyStorage(list)")
-        public PNone appendEmpty(PList list, Object arg) {
-            list.append(arg);
+        @Specialization
+        public PNone appendObjectGeneric(PList list, Object arg,
+                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode,
+                        @Cached("create()") BranchProfile updateStoreProfile) {
+            SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), arg);
+            if (list.getSequenceStorage() != newStore) {
+                updateStoreProfile.enter();
+                list.setSequenceStorage(newStore);
+            }
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isIntStorage(list)")
-        public PNone appendInt(PList list, int arg) {
-            IntSequenceStorage store = (IntSequenceStorage) list.getSequenceStorage();
-            store.appendInt(arg);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isLongStorage(list)")
-        public PNone appendLong(PList list, long arg) {
-            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
-            store.appendLong(arg);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isDoubleStorage(list)")
-        public PNone appendDouble(PList list, double arg) {
-            DoubleSequenceStorage store = (DoubleSequenceStorage) list.getSequenceStorage();
-            store.appendDouble(arg);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isListStorage(list)")
-        public PNone appendList(PList list, PList arg) {
-            ListSequenceStorage store = (ListSequenceStorage) list.getSequenceStorage();
-            store.appendList(arg);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isTupleStorage(list)")
-        public PNone appendTuple(PList list, PTuple arg) {
-            TupleSequenceStorage store = (TupleSequenceStorage) list.getSequenceStorage();
-            store.appendPTuple(arg);
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"!isKnownStorage(list)"}, rewriteOn = {SequenceStoreException.class})
-        public PNone appendObject(PList list, Object arg) throws SequenceStoreException {
-            list.getSequenceStorage().append(arg);
-            return PNone.NONE;
-        }
-
-        @Specialization()
-        public PNone appendObjectGeneric(PList list, Object arg) {
-            list.append(arg);
-            return PNone.NONE;
-        }
-
-        protected boolean isKnownStorage(PList list) {
-            return PGuards.isEmptyStorage(list) || PGuards.isIntStorage(list) || PGuards.isLongStorage(list) || PGuards.isDoubleStorage(list) || PGuards.isListStorage(list) ||
-                            PGuards.isTupleStorage(list);
+        protected static SequenceStorageNodes.AppendNode createAppend() {
+            return SequenceStorageNodes.AppendNode.create(() -> ListGeneralizationNode.create());
         }
     }
 
