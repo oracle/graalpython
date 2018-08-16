@@ -50,6 +50,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -467,6 +468,8 @@ public abstract class ListNodes {
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class SetSliceNode extends PBaseNode {
 
+        @Child private ListGeneralizationNode genNode;
+
         public abstract PNone execute(PList list, PSlice slice, Object value);
 
         @Specialization(guards = {"isPTuple(value)", "isEmptyStorage(list)"})
@@ -474,7 +477,7 @@ public abstract class ListNodes {
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
             if (value.len() > 0) {
                 PList pvalue = factory().createList(((PTuple) value).getArray());
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(pvalue.getSequenceStorage().getIndicativeValue(), pvalue.getSequenceStorage());
+                SequenceStorage newStorage = getGenNode().execute(list.getSequenceStorage(), pvalue.getSequenceStorage().getIndicativeValue());
                 list.setSequenceStorage(newStorage);
                 setSlice(list, slice, pvalue, wrongLength);
             }
@@ -493,7 +496,7 @@ public abstract class ListNodes {
         public PNone doPListEmpty(PList list, PSlice slice, PSequence value,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
             if (value.len() > 0) {
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
+                SequenceStorage newStorage = getGenNode().execute(list.getSequenceStorage(), value.getSequenceStorage().getIndicativeValue());
                 list.setSequenceStorage(newStorage);
                 setSlice(list, slice, value, wrongLength);
             }
@@ -511,7 +514,7 @@ public abstract class ListNodes {
         @Specialization(guards = {"!areTheSameType(list, value)"})
         public PNone doPList(PList list, PSlice slice, PSequence value,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
-            SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
+            SequenceStorage newStorage = getGenNode().execute(list.getSequenceStorage(), value.getSequenceStorage().getIndicativeValue());
             list.setSequenceStorage(newStorage);
             setSlice(list, slice, value, wrongLength);
             return PNone.NONE;
@@ -542,7 +545,7 @@ public abstract class ListNodes {
             try {
                 setSlice(list, slice, value, wrongLength);
             } catch (SequenceStoreException e) {
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
+                SequenceStorage newStorage = getGenNode().execute(list.getSequenceStorage(), value.getSequenceStorage().getIndicativeValue());
                 list.setSequenceStorage(newStorage);
                 try {
                     setSlice(list, slice, value, wrongLength);
@@ -550,6 +553,14 @@ public abstract class ListNodes {
                     throw new IllegalStateException();
                 }
             }
+        }
+
+        private ListGeneralizationNode getGenNode() {
+            if (genNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                genNode = insert(ListGeneralizationNode.create());
+            }
+            return genNode;
         }
 
         private void setSlice(PSequence list, PSlice slice, PSequence value, ConditionProfile wrongLength) {
