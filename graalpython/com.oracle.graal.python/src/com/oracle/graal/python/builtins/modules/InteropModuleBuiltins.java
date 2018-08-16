@@ -46,7 +46,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -68,9 +70,11 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.Builder;
+import com.oracle.truffle.api.source.Source.LiteralBuilder;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @CoreFunctions(defineModule = "polyglot")
 public final class InteropModuleBuiltins extends PythonBuiltins {
@@ -99,9 +103,16 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
     abstract static class EvalInteropNode extends PythonBuiltinNode {
         @TruffleBoundary
         @Specialization
-        Object evalString(@SuppressWarnings("unused") PNone path, String value, String lang) {
+        Object evalString(@SuppressWarnings("unused") PNone path, String value, String langOrMimeType) {
+            Env env = getContext().getEnv();
             try {
-                return getContext().getEnv().parse(builderWithMimeType(lang, Source.newBuilder(value).name(value)).build()).call();
+                boolean mimeType = isMimeType(langOrMimeType);
+                String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
+                LiteralBuilder newBuilder = Source.newBuilder(lang, value, value);
+                if (mimeType) {
+                    newBuilder = newBuilder.mimeType(langOrMimeType);
+                }
+                return env.parse(newBuilder.build()).call();
             } catch (RuntimeException e) {
                 throw raise(NotImplementedError, e.getMessage());
             }
@@ -109,10 +120,16 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
-        Object evalFile(String path, @SuppressWarnings("unused") PNone string, String lang) {
+        Object evalFile(String path, @SuppressWarnings("unused") PNone string, String langOrMimeType) {
             Env env = getContext().getEnv();
             try {
-                return getContext().getEnv().parse(builderWithMimeType(lang, env.newSourceBuilder(env.getTruffleFile(path)).name(path)).build()).call();
+                boolean mimeType = isMimeType(langOrMimeType);
+                String lang = mimeType ? findLanguageByMimeType(env, langOrMimeType) : langOrMimeType;
+                SourceBuilder newBuilder = Source.newBuilder(lang, env.getTruffleFile(path));
+                if (mimeType) {
+                    newBuilder = newBuilder.mimeType(langOrMimeType);
+                }
+                return getContext().getEnv().parse(newBuilder.name(path).build()).call();
             } catch (IOException e) {
                 throw raise(OSError, "%s", e);
             } catch (RuntimeException e) {
@@ -125,7 +142,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         Object evalFile(String path, @SuppressWarnings("unused") PNone string, @SuppressWarnings("unused") PNone lang) {
             Env env = getContext().getEnv();
             try {
-                return getContext().getEnv().parse(env.newSourceBuilder(env.getTruffleFile(path)).name(path).build()).call();
+                return getContext().getEnv().parse(Source.newBuilder(PythonLanguage.ID, env.getTruffleFile(path)).name(path).build()).call();
             } catch (IOException e) {
                 throw raise(OSError, "%s", e);
             } catch (RuntimeException e) {
@@ -145,15 +162,19 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
             throw raise(ValueError, "polyglot.eval must pass strings as either 'path' or a 'string' keyword");
         }
 
-        private static <T extends Exception, T2 extends Exception> Builder<T, RuntimeException, RuntimeException> builderWithMimeType(String lang,
-                        Builder<T, T2, RuntimeException> baseBuilder) {
-            Builder<T, RuntimeException, RuntimeException> builder;
-            if (lang.contains("/")) {
-                builder = baseBuilder.mimeType(lang);
-            } else {
-                builder = baseBuilder.language(lang);
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private static String findLanguageByMimeType(Env env, String mimeType) {
+            Map<String, LanguageInfo> languages = env.getLanguages();
+            for (String registeredMimeType : languages.keySet()) {
+                if (mimeType.equals(registeredMimeType)) {
+                    return languages.get(registeredMimeType).getId();
+                }
             }
-            return builder;
+            return null;
+        }
+
+        protected boolean isMimeType(String lang) {
+            return lang.contains("/");
         }
     }
 
