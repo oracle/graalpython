@@ -41,18 +41,8 @@
 #include "capi.h"
 
 
-MUST_INLINE static void force_to_native(void* obj) {
-    if (polyglot_is_value(obj)) {
-        polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", obj, truffle_deref_handle_for_managed(obj));
-    }
-}
-
 static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {
     PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(typname, SRC_CS));
-
-    // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
-    // TODO Remove this as soon as this is properly supported.
-    force_to_native(ptype);
 
     // Store the Sulong struct type id to be used for instances of this class
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, typeid);
@@ -130,30 +120,24 @@ POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 static void initialize_globals() {
     // None
     PyObject* jnone = UPCALL_CEXT_O("Py_None");
-    force_to_native(jnone);
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented
     void *jnotimpl = UPCALL_CEXT_O("Py_NotImplemented");
-    force_to_native(jnotimpl);
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
     // Ellipsis
     void *jellipsis = UPCALL_CEXT_O("Py_Ellipsis");
-    force_to_native(jellipsis);
     truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
 
     // True, False
     void *jtrue = UPCALL_CEXT_O("Py_True");
-    force_to_native(jtrue);
     truffle_assign_managed(&_Py_TrueStruct, jtrue);
     void *jfalse = UPCALL_CEXT_O("Py_False");
-    force_to_native(jfalse);
     truffle_assign_managed(&_Py_FalseStruct, jfalse);
 
     // error marker
     void *jerrormarker = UPCALL_CEXT_PTR("Py_ErrorHandler");
-    force_to_native(jerrormarker);
     truffle_assign_managed(&marker_struct, jerrormarker);
 }
 
@@ -177,6 +161,10 @@ inline void* handle_exception(void* val) {
     return val == ERROR_MARKER ? NULL : val;
 }
 
+// Heuristic to test if some value is a pointer object
+// TODO we need a reliable solution for that
+#define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
+
 void* native_to_java(PyObject* obj) {
     if (obj == Py_None) {
         return Py_None;
@@ -188,6 +176,8 @@ void* native_to_java(PyObject* obj) {
         return truffle_managed_from_handle(obj);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {
         return truffle_managed_from_handle(obj->ob_refcnt);
+    } else if (IS_POINTER(obj->ob_refcnt)) {
+        return obj->ob_refcnt;
     }
     return obj;
 }
