@@ -57,24 +57,19 @@ int PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
 }
 
 static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
-    void* key = PyLong_FromVoidPtr((void *) type);
+    void* key = (void *) type;
     if (key == NULL) {
         return -1;
     }
-    if (polyglot_is_value(base)) {
-        return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", native_to_java((PyObject*)base), native_to_java(key), native_to_java((PyObject*)type)));
-    } else {
-        PyObject *dict = base->tp_subclasses;
+    PyObject *dict = base->tp_subclasses;
+    if (dict == NULL) {
+        base->tp_subclasses = dict = PyDict_New();
         if (dict == NULL) {
-            base->tp_subclasses = dict = PyDict_New();
-            if (dict == NULL) {
-                return -1;
-            }
+            return -1;
         }
-        // TODO value should be a weak reference !
-        return PyDict_SetItem(base->tp_subclasses, key, (PyObject*)type);
     }
-	return -1;
+    // TODO value should be a weak reference !
+    return PyDict_SetItem(base->tp_subclasses, key, (PyObject*)type);
 }
 
 /* Special C landing functions that convert some arguments to primitives. */
