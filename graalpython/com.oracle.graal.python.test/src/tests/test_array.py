@@ -58,5 +58,22 @@ def test_import():
 
 def test_create():
     from array import array
-    a = array('b', b'x'*10)
+    a = array('b', b'x' * 10)
     assert str(a) == "array('b', [120, 120, 120, 120, 120, 120, 120, 120, 120, 120])"
+
+
+def test_add():
+    from array import array
+    a0 = array("b", b"hello")
+    a1 = array("b", b"world")
+    assert a0 + a1 == array("b", b"helloworld")
+
+    a0 = array("b", b"hello")
+    a1 = array("l", b"abcdabcd")
+    try:
+        res = a0 + a1
+    except TypeError:
+        assert True
+    else:
+        assert False
+

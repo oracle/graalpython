@@ -212,7 +212,52 @@ def test_setslice():
     # assign range
     b = bytearray(b"hellohellohello")
     b[5:10] = range(5)
-    assert b == bytearray(b"hello\x04\x05\x06\x07\x08hello")
+    assert b == bytearray(b'hello\x00\x01\x02\x03\x04hello')
+
+    b = bytearray(range(10))
+    assert list(b) == list(range(10))
+
+    b[0:5] = bytearray([1, 1, 1, 1, 1])
+    assert b == bytearray([1, 1, 1, 1, 1, 5, 6, 7, 8, 9])
+
+    # TODO: seq storage does not yet support deletion ...
+    # del b[0:-5]
+    # assert b == bytearray([5, 6, 7, 8, 9])
+    b = bytearray([5, 6, 7, 8, 9])
+
+    # TODO: seq setSlice is broken ...
+    # b[0:0] = bytearray([0, 1, 2, 3, 4])
+    # assert b == bytearray(range(10))
+    b = bytearray(range(10))
+
+    b[-7:-3] = bytearray([100, 101])
+    assert b == bytearray([0, 1, 2, 100, 101, 7, 8, 9])
+
+    b[3:5] = [3, 4, 5, 6]
+    assert b == bytearray(range(10))
+
+    b[3:0] = [42, 42, 42]
+    assert b == bytearray([0, 1, 2, 42, 42, 42, 3, 4, 5, 6, 7, 8, 9])
+
+    b[3:] = b'foo'
+    assert b == bytearray([0, 1, 2, 102, 111, 111])
+
+    b[:3] = memoryview(b'foo')
+    assert b == bytearray([102, 111, 111, 102, 111, 111])
+
+    b[3:4] = []
+    assert b == bytearray([102, 111, 111, 111, 111])
+
+    for elem in [5, -5, 0, int(10e20), 'str', 2.3,
+                 ['a', 'b'], [b'a', b'b'], [[]]]:
+        def assign():
+            b[3:4] = elem
+        assert_raises(TypeError, assign)
+
+    for elem in [[254, 255, 256], [-256, 9000]]:
+        def assign():
+            b[3:4] = elem
+        assert_raises(ValueError, assign)
 
 
 def test_delitem():
@@ -293,53 +338,6 @@ def test_join():
     _test_join(bytearray, ByteArraySubclass)
     assert b"--".join([]) == b""
     assert b"--".join([b"hello"]) == b"hello"
-
-
-def test_setslice():
-    b = bytearray(range(10))
-    assert list(b) == list(range(10))
-
-    b[0:5] = bytearray([1, 1, 1, 1, 1])
-    assert b == bytearray([1, 1, 1, 1, 1, 5, 6, 7, 8, 9])
-
-    # TODO: seq storage does not yet support deletion ...
-    # del b[0:-5]
-    # assert b == bytearray([5, 6, 7, 8, 9])
-    b = bytearray([5, 6, 7, 8, 9])
-
-    # TODO: seq setSlice is broken ...
-    # b[0:0] = bytearray([0, 1, 2, 3, 4])
-    # assert b == bytearray(range(10))
-    b = bytearray(range(10))
-
-    b[-7:-3] = bytearray([100, 101])
-    assert b == bytearray([0, 1, 2, 100, 101, 7, 8, 9])
-
-    b[3:5] = [3, 4, 5, 6]
-    assert b == bytearray(range(10))
-
-    b[3:0] = [42, 42, 42]
-    assert b == bytearray([0, 1, 2, 42, 42, 42, 3, 4, 5, 6, 7, 8, 9])
-
-    b[3:] = b'foo'
-    assert b == bytearray([0, 1, 2, 102, 111, 111])
-
-    b[:3] = memoryview(b'foo')
-    assert b == bytearray([102, 111, 111, 102, 111, 111])
-
-    b[3:4] = []
-    assert b == bytearray([102, 111, 111, 111, 111])
-
-    for elem in [5, -5, 0, int(10e20), 'str', 2.3,
-                 ['a', 'b'], [b'a', b'b'], [[]]]:
-        def assign():
-            b[3:4] = elem
-        assert_raises(TypeError, assign)
-
-    for elem in [[254, 255, 256], [-256, 9000]]:
-        def assign():
-            b[3:4] = elem
-        assert_raises(ValueError, assign)
 
 
 def test_concat():

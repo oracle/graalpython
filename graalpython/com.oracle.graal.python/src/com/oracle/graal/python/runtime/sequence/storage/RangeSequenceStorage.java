@@ -31,7 +31,7 @@ public class RangeSequenceStorage extends SequenceStorage {
 
     @Override
     public SequenceStorage createEmpty(int newCapacity) {
-        throw new UnsupportedOperationException();
+        return new IntSequenceStorage(newCapacity);
     }
 
     @Override

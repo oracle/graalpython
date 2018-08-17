@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -96,7 +95,6 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -335,7 +333,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forArrayAssign(), () -> ListGeneralizationNode.create());
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), () -> ListGeneralizationNode.create());
         }
 
         @Specialization
@@ -378,59 +376,15 @@ public class ListBuiltins extends PythonBuiltins {
     // list.extend(L)
     @Builtin(name = "extend", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ListExtendNode extends PythonBuiltinNode {
+    public abstract static class ListExtendNode extends PythonBinaryBuiltinNode {
 
         public abstract PNone execute(PList list, Object source);
 
-        @Specialization(guards = {"isPSequenceWithStorage(source)"}, rewriteOn = {SequenceStoreException.class})
-        public PNone extendSequenceStore(PList list, Object source) throws SequenceStoreException {
-            SequenceStorage target = list.getSequenceStorage();
-            target.extend(((PSequence) source).getSequenceStorage());
+        @Specialization
+        public PNone extendSequence(PList list, Object iterable,
+                        @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
+            updateSequenceStorage(list, extendNode.execute(list.getSequenceStorage(), iterable));
             return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isPSequenceWithStorage(source)"})
-        public PNone extendSequence(PList list, Object source,
-                        @Cached("create()") SequenceStorageNodes.ListGeneralizationNode genNode) {
-            SequenceStorage eSource = ((PSequence) source).getSequenceStorage();
-            if (eSource.length() > 0) {
-                SequenceStorage target = list.getSequenceStorage();
-                try {
-                    target.extend(eSource);
-                } catch (SequenceStoreException e) {
-                    target = genNode.execute(target, e.getIndicationValue());
-                    list.setSequenceStorage(target);
-                    try {
-                        target.extend(eSource);
-                    } catch (SequenceStoreException e1) {
-                        CompilerDirectives.transferToInterpreter();
-                        throw new IllegalStateException();
-                    }
-                }
-            }
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "!isPSequenceWithStorage(source)")
-        public PNone extend(PList list, Object source,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
-                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode) {
-            Object workSource = list != source ? source : factory().createList(((PList) source).getSequenceStorage().copy());
-            SequenceStorage s = list.getSequenceStorage();
-            Object iterator = getIterator.executeWith(workSource);
-            while (true) {
-                Object value;
-                try {
-                    value = next.execute(iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
-                    updateSequenceStorage(list, s);
-                    return PNone.NONE;
-                }
-                s = appendNode.execute(s, value);
-            }
         }
 
         private static void updateSequenceStorage(PList list, SequenceStorage s) {
@@ -439,14 +393,9 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        protected boolean isPSequenceWithStorage(Object source) {
-            return (source instanceof PSequence && !(source instanceof PTuple || source instanceof PRange));
+        protected static SequenceStorageNodes.ExtendNode createExtend() {
+            return SequenceStorageNodes.ExtendNode.create(() -> ListGeneralizationNode.create());
         }
-
-        protected static SequenceStorageNodes.AppendNode createAppend() {
-            return SequenceStorageNodes.AppendNode.create(() -> ListGeneralizationNode.create());
-        }
-
     }
 
     // list.insert(i, x)
@@ -981,114 +930,42 @@ public class ListBuiltins extends PythonBuiltins {
 
     @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class AddNode extends PythonBuiltinNode {
-        @Specialization(guards = "areBothIntStorage(left,right)")
-        PList doPListInt(PList left, PList right) {
-            IntSequenceStorage leftStore = (IntSequenceStorage) left.getSequenceStorage().copy();
-            IntSequenceStorage rightStore = (IntSequenceStorage) right.getSequenceStorage();
-            leftStore.extendWithIntStorage(rightStore);
-            return factory().createList(leftStore);
-        }
-
-        @Specialization(guards = "areBothObjectStorage(left,right)")
-        PList doPListObject(PList left, PList right) {
-            try {
-                ObjectSequenceStorage leftStore = (ObjectSequenceStorage) left.getSequenceStorage().copy();
-                ObjectSequenceStorage rightStore = (ObjectSequenceStorage) right.getSequenceStorage();
-                leftStore.extend(rightStore);
-                return factory().createList(leftStore);
-            } catch (ArithmeticException e) {
-                throw raise(MemoryError);
-            }
-        }
-
+    abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
         PList doPList(PList left, PList other,
-                        @Cached("create()") SequenceStorageNodes.ListGeneralizationNode genNode) {
-            try {
-                SequenceStorage store = left.getSequenceStorage();
-                SequenceStorage otherStore = other.getSequenceStorage();
-                SequenceStorage newStore = store.copy();
-
-                try {
-                    newStore.extend(otherStore);
-                } catch (SequenceStoreException e) {
-                    newStore = genNode.execute(newStore, e.getIndicationValue());
-
-                    try {
-                        newStore.extend(otherStore);
-                    } catch (SequenceStoreException e1) {
-                        throw new IllegalStateException();
-                    }
-                }
-
-                return factory().createList(left.getPythonClass(), newStore);
-            } catch (ArithmeticException e) {
-                throw raise(MemoryError);
-            }
+                        @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
+            SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), other.getSequenceStorage());
+            return factory().createList(left.getPythonClass(), newStore);
         }
 
         @Specialization(guards = "!isList(right)")
         Object doGeneric(@SuppressWarnings("unused") Object left, Object right) {
             throw raise(TypeError, "can only concatenate list (not \"%p\") to list", right);
         }
+
+        protected static SequenceStorageNodes.ConcatNode createConcat() {
+            return SequenceStorageNodes.ConcatNode.create(() -> SequenceStorageNodes.ListGeneralizationNode.create());
+        }
     }
 
     @Builtin(name = __IADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class IAddNode extends PythonBuiltinNode {
-
-        @Specialization(guards = "areBothIntStorage(left,right)")
-        PList doPListInt(PList left, PList right) {
-            IntSequenceStorage leftStore = (IntSequenceStorage) left.getSequenceStorage();
-            IntSequenceStorage rightStore = (IntSequenceStorage) right.getSequenceStorage();
-            leftStore.extendWithIntStorage(rightStore);
-            return left;
+    abstract static class IAddNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PList extendSequence(PList list, Object iterable,
+                        @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
+            updateSequenceStorage(list, extendNode.execute(list.getSequenceStorage(), iterable));
+            return list;
         }
 
-        @Specialization(guards = "areBothLongStorage(left,right)")
-        PList doPListLong(PList left, PList right) {
-            LongSequenceStorage leftStore = (LongSequenceStorage) left.getSequenceStorage();
-            LongSequenceStorage rightStore = (LongSequenceStorage) right.getSequenceStorage();
-            leftStore.extendWithLongStorage(rightStore);
-            return left;
+        private static void updateSequenceStorage(PList list, SequenceStorage s) {
+            if (list.getSequenceStorage() != s) {
+                list.setSequenceStorage(s);
+            }
         }
 
-        @Specialization(guards = "areBothDoubleStorage(left,right)")
-        PList doPListDouble(PList left, PList right) {
-            DoubleSequenceStorage leftStore = (DoubleSequenceStorage) left.getSequenceStorage();
-            DoubleSequenceStorage rightStore = (DoubleSequenceStorage) right.getSequenceStorage();
-            leftStore.extendWithDoubleStorage(rightStore);
-            return left;
-        }
-
-        @Specialization(guards = "areBothObjectStorage(left,right)")
-        PList doPListObject(PList left, PList right) {
-            ObjectSequenceStorage leftStore = (ObjectSequenceStorage) left.getSequenceStorage();
-            ObjectSequenceStorage rightStore = (ObjectSequenceStorage) right.getSequenceStorage();
-            leftStore.extend(rightStore);
-            return left;
-        }
-
-        @Specialization(guards = "isNotSameStorage(left, right)")
-        PList doPList(PList left, PList right) {
-            left.extend(right);
-            return left;
-        }
-
-        @Specialization(guards = "!isList(right)")
-        PList doPList(PList left, Object right,
-                        @Cached("createExtendNode()") ListExtendNode extendNode) {
-            extendNode.execute(left, right);
-            return left;
-        }
-
-        protected ListExtendNode createExtendNode() {
-            return ListBuiltinsFactory.ListExtendNodeFactory.create(new PNode[0]);
-        }
-
-        protected boolean isNotSameStorage(PList left, PList right) {
-            return !(PGuards.areBothIntStorage(right, left) || PGuards.areBothDoubleStorage(right, left) || PGuards.areBothLongStorage(right, left) || PGuards.areBothObjectStorage(right, left));
+        protected static SequenceStorageNodes.ExtendNode createExtend() {
+            return SequenceStorageNodes.ExtendNode.create(() -> ListGeneralizationNode.create());
         }
     }
 

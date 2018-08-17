@@ -105,22 +105,6 @@ public final class PList extends PSequence {
         }
     }
 
-    public final void extend(PList appendee) {
-        SequenceStorage other = appendee.getSequenceStorage();
-
-        try {
-            store.extend(other);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(other.getIndicativeValue(), other);
-
-            try {
-                store.extend(other);
-            } catch (SequenceStoreException e1) {
-                throw new IllegalStateException();
-            }
-        }
-    }
-
     public final void insert(int index, Object value) {
         try {
             store.insertItem(index, value);

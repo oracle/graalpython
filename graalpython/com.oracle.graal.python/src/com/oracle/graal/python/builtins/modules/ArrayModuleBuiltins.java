@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -36,13 +37,16 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -115,6 +119,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isByteArray(typeCode)")
         PArray arrayByteInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("createCast()") CastToByteNode castToByteNode,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
@@ -130,20 +135,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(getCore(), errorProfile);
                     break;
                 }
-
-                if (nextValue instanceof Byte) {
-                    byteArray[i++] = (byte) nextValue;
-                }
-                if (nextValue instanceof Integer) {
-                    int intValue = (int) nextValue;
-                    if (0 <= intValue && intValue <= 255) {
-                        byteArray[i++] = (byte) intValue;
-                    } else {
-                        throw raise(ValueError, "signed char is greater than maximum");
-                    }
-                } else {
-                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
-                }
+                byteArray[i++] = castToByteNode.execute(nextValue);
             }
 
             return factory().createArray(cls, byteArray);
@@ -226,6 +218,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 default:
                     return null;
             }
+        }
+
+        protected CastToByteNode createCast() {
+            return CastToByteNode.create(val -> {
+                throw raise(OverflowError, "signed char is greater than maximum");
+            }, null);
+
         }
 
         @TruffleBoundary

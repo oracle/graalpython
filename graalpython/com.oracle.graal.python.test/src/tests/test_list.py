@@ -50,6 +50,10 @@ class ListTest(list_tests.CommonTest):
         x.extend(-y for y in x)
         self.assertEqual(x, [])
 
+        l = [0x1FFFFFFFF, 1, 2, 3, 4]
+        l[0] = "hello"
+        self.assertEqual(l, ["hello", 1, 2, 3, 4])
+
     def test_truth(self):
         super().test_truth()
         self.assertTrue(not [])
@@ -481,6 +485,11 @@ class ListTest(list_tests.CommonTest):
         l.append(3)
         self.assertRaises(StopIteration, i.__next__)
 
+    def test_add(self):
+        l1 = [1, 2, 3]
+        l2 = ["a", "b", "c"]
+        self.assertEqual(l1 + l2, [1, 2, 3, "a", "b", "c"])
+
     def test_iadd_special(self):
         a = [1]
         a += (2, 3)
@@ -571,6 +580,14 @@ class ListTest(list_tests.CommonTest):
         l = [1]
         ob = My(10)
         self.assertRaises(TypeError, l.__imul__, ob)
+
+    def test_append(self):
+        l = []
+        l.append(1)
+        l.append(0x1FF)
+        l.append(0x1FFFFFFFF)
+        l.append("hello")
+        self.assertEqual(l, [1, 0x1FF, 0x1FFFFFFFF, "hello"])
 
 
 class ListCompareTest(CompareTest):

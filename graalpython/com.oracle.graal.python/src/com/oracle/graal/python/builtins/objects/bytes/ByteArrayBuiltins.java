@@ -31,13 +31,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -66,8 +67,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.control.GetIteratorNode;
-import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -75,7 +74,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -380,51 +378,18 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     // bytearray.extend(L)
     @Builtin(name = "extend", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ByteArrayExtendNode extends PythonBuiltinNode {
+    public abstract static class ByteArrayExtendNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"isPSequenceWithStorage(source)"}, rewriteOn = {SequenceStoreException.class})
-        public PNone extendSequenceStore(PByteArray byteArray, Object source) throws SequenceStoreException {
-            SequenceStorage target = byteArray.getSequenceStorage();
-            target.extend(((PSequence) source).getSequenceStorage());
+        @Specialization
+        public PNone doGeneric(PByteArray byteArray, Object source,
+                        @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
+            SequenceStorage execute = extendNode.execute(byteArray.getSequenceStorage(), source);
+            assert byteArray.getSequenceStorage() == execute;
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isPSequenceWithStorage(source)"})
-        public PNone extendSequence(PByteArray byteArray, Object source) {
-            SequenceStorage eSource = ((PSequence) source).getSequenceStorage();
-            if (eSource.length() > 0) {
-                SequenceStorage target = byteArray.getSequenceStorage();
-                try {
-                    target.extend(eSource);
-                } catch (SequenceStoreException e) {
-                    throw raise(ValueError, "byte must be in range(0, 256)");
-                }
-            }
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "!isPSequenceWithStorage(source)")
-        public PNone extend(PByteArray byteArray, Object source,
-                        @Cached("create()") GetIteratorNode getIterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            Object workSource = byteArray != source ? source : factory().createByteArray(((PSequence) source).getSequenceStorage().copy());
-            Object iterator = getIterator.executeWith(workSource);
-            while (true) {
-                Object value;
-                try {
-                    value = next.execute(iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
-                    return PNone.NONE;
-                }
-
-                try {
-                    byteArray.append(value);
-                } catch (SequenceStoreException e) {
-                    throw raise(ValueError, "byte must be in range(0, 256)");
-                }
-            }
+        protected static SequenceStorageNodes.ExtendNode createExtend() {
+            return SequenceStorageNodes.ExtendNode.create(() -> NoGeneralizationNode.create("byte must be in range(0, 256)"));
         }
 
         protected boolean isPSequenceWithStorage(Object source) {
