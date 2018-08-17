@@ -200,6 +200,9 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
         dists.append('SULONG')
 
+    if mx.suite("sulong-managed", fatalIfMissing=False):
+        dists.append('SULONG_MANAGED')
+
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
         def _is_user(user, home=None):
@@ -272,6 +275,7 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     cpyext = 'python-cpyext'
+    cpyext_managed = 'python-cpyext-managed'
     svmunit = 'python-svm-unittest'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
@@ -352,30 +356,44 @@ def python_svm(args):
     return svm_image
 
 
-def graalpython_gate_runner(args, tasks):
+def gate_unittests(args=[], subdir=""):
     _graalpytest_driver = "graalpython/com.oracle.graal.python.test/src/graalpytest.py"
     _test_project = "graalpython/com.oracle.graal.python.test/"
+    for idx, arg in enumerate(args):
+        if arg.startswith("--subdir="):
+            subdir = args.pop(idx).split("=")[1]
+            break
+    test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/" + subdir]
+    if "--" in args:
+        idx = args.index("--")
+        pre_args = args[:idx]
+        post_args = args[idx + 1:]
+    else:
+        pre_args = []
+        post_args = args
+    mx.command_function("python")(["--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
+    if platform.system() != 'Darwin':
+        # TODO: re-enable when python3 is available on darwin
+        mx.log("Running tests with CPython")
+        mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+
+
+def graalpython_gate_runner(args, tasks):
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
             punittest(['--verbose'])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/"]
-            mx.command_function("python")(["--python.CatchAllExceptions=true"] + test_args)
-            if platform.system() != 'Darwin':
-                # TODO: re-enable when python3 is available on darwin
-                mx.log("Running tests with CPython")
-                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+            gate_unittests()
 
     with Task('GraalPython C extension tests', tasks, tags=[GraalPythonTags.cpyext]) as task:
         if task:
-            test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/cpyext/"]
-            mx.command_function("python")(test_args)
-            if platform.system() != 'Darwin':
-                # TODO: re-enable when python3 is available on darwin
-                mx.log("Running tests with CPython")
-                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+            gate_unittests(subdir="cpyext/")
+
+    with Task('GraalPython C extension managed tests', tasks, tags=[GraalPythonTags.cpyext_managed]) as task:
+        if task:
+            mx.run_mx(["--dynamicimports", "sulong-managed", "python-gate-unittests", "--llvm.configuration=managed", "--subdir=cpyext", "--"])
 
     with Task('GraalPython Python tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
@@ -929,6 +947,7 @@ mx.update_commands(_suite, {
     'punittest': [punittest, ''],
     'python3-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
     'python-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
+    'python-gate-unittests': [gate_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],
