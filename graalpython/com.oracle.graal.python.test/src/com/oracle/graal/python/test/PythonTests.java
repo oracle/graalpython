@@ -58,10 +58,8 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.MissingMIMETypeException;
-import com.oracle.truffle.api.source.MissingNameException;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.Builder;
+import com.oracle.truffle.api.source.Source.LiteralBuilder;
 
 public class PythonTests {
     static {
@@ -260,12 +258,12 @@ public class PythonTests {
 
     public static RootNode getParseResult(String code) {
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-        Builder<RuntimeException, MissingMIMETypeException, MissingNameException> newBuilder = Source.newBuilder(code);
-        newBuilder.mimeType(PythonLanguage.MIME_TYPE);
+
+        LiteralBuilder newBuilder = Source.newBuilder(PythonLanguage.ID, code, code);
         newBuilder.name("test");
         try {
             return PythonTests.getParseResult(newBuilder.build(), new PrintStream(byteArray), System.err);
-        } catch (RuntimeException | MissingMIMETypeException | MissingNameException e) {
+        } catch (RuntimeException e) {
             e.printStackTrace();
             return null;
         }

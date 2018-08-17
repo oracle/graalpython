@@ -22,6 +22,7 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
+
 import mx
 
 py = ".py"
@@ -101,13 +102,12 @@ pythonBenchmarks = {
 # the python micro benchmarks
 #
 # ----------------------------------------------------------------------------------------------------------------------
-# TODO: commented out benchmarks are probably too slow atm, revisit this at a later time once performance picks up
 pythonMicroBenchmarks = {
     'arith-binop': [],
     'attribute-access': [],
     'attribute-access-polymorphic': [],
-    # 'attribute-bool': [],
-    # 'boolean-logic': [],
+    'attribute-bool': [],
+    'boolean-logic': [],
     'builtin-len': [],
     'builtin-len-tuple': [],
     'call-method-polymorphic': [],
@@ -121,11 +121,11 @@ pythonMicroBenchmarks = {
     'list-indexing': [],
     'list-iterating': [],
     'math-sqrt': [],
-    # 'object-allocate': [],
-    # 'object-layout-change': [],
-    # 'special-add': [],
-    # 'special-add-int': [],
-    # 'special-len': [],
+    'object-allocate': [],
+    'object-layout-change': [],
+    'special-add': [],
+    'special-add-int': [],
+    'special-len': [],
 }
 
 # XXX: testing

@@ -48,18 +48,18 @@ function info {
 
 function bench-py-hotspot {
     info "benchmarking GRAALPYTHON with HOTSPOT"
-    mx --dynamicimports /graal-enterprise benchmark micro-graalpython:*  --  --python-vm  graalpython  --python-vm-config default --jvm server --jvm-config default
+    mx --dynamicimports /compiler benchmark micro-graalpython:*  --  --python-vm  graalpython  --python-vm-config default --jvm server --jvm-config default
 }
 
 function bench-py-graal-core {
     info "benchmarking GRAALPYTHON with GRAAL-CORE"
-    mx --dynamicimports /graal-enterprise benchmark micro-graalpython:*  --  --python-vm  graalpython  --python-vm-config default --jvm server --jvm-config graal-core
+    mx --dynamicimports /compiler benchmark micro-graalpython:*  --  --python-vm  graalpython  --python-vm-config default --jvm server --jvm-config graal-core
 }
 
-function bench-py-graal-enterprise {
-    info "benchmarking GRAALPYTHON with GRAAL-ENTERPRISE"
-    mx --dynamicimports /graal-enterprise benchmark micro-graalpython:*  --  --python-vm  graalpython  --python-vm-config default --jvm server --jvm-config graal-enterprise
-}
+# function bench-py-graal-enterprise {
+#     info "benchmarking GRAALPYTHON with GRAAL-ENTERPRISE"
+#     mx --dynamicimports /compiler benchmark micro-graalpython:*  --  --python-vm  graalpython  --python-vm-config default --jvm server --jvm-config graal-enterprise
+# }
 
 function bench-cpython {
     info "benchmarking CPYTHON"
@@ -73,12 +73,11 @@ function bench-pypy {
 
 
 
-echo "If you are running this script for the first time, you may consider setting up your local env with <setup_bench_local.sh>"
-
-read -p "core, enterprise, hotspot, cpython, pypy? " vm
+# read -p "core, enterprise, hotspot, cpython, pypy? " vm
+read -p "core, hotspot, cpython, pypy? " vm
 case ${vm} in
     'core') bench-py-graal-core;;
-    'enterprise') bench-py-graal-enterprise;;
+    # 'enterprise') bench-py-graal-enterprise;;
     'hotspot') bench-py-hotspot;;
     'cpython') bench-cpython;;
     'pypy') bench-pypy;;
