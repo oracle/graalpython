@@ -34,5 +34,5 @@ public @interface CoreFunctions {
 
     String publicName() default "";
 
-    Class<?>[] extendClasses() default {};
+    PythonBuiltinClassType[] extendClasses() default {};
 }

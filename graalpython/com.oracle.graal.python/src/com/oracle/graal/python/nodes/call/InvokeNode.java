@@ -25,11 +25,9 @@
  */
 package com.oracle.graal.python.nodes.call;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -44,8 +42,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNode;
 import com.oracle.graal.python.nodes.argument.ArityCheckNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -56,13 +54,16 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 abstract class AbstractInvokeNode extends Node {
 
     private final ConditionProfile needsFrameProfile = ConditionProfile.createBinaryProfile();
+
+    protected static boolean shouldInlineGenerators() {
+        return PythonOptions.getOption(PythonLanguage.getContextRef().get(), PythonOptions.ForceInlineGeneratorCalls);
+    }
 
     @TruffleBoundary
     protected static RootCallTarget getCallTarget(PythonCallable callee) {
@@ -146,6 +147,61 @@ final class GenericInvokeNode extends AbstractInvokeNode {
     }
 }
 
+abstract class CallTargetInvokeNode extends AbstractInvokeNode {
+    @Child private DirectCallNode callNode;
+    @Child private ArityCheckNode arityCheck = ArityCheckNode.create();
+    protected final boolean isBuiltin;
+
+    protected CallTargetInvokeNode(CallTarget callTarget, boolean isBuiltin, boolean isGenerator) {
+        this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
+        if (isBuiltin) {
+            callNode.cloneCallTarget();
+        }
+        if (isGenerator && shouldInlineGenerators()) {
+            this.callNode.forceInlining();
+        }
+        this.isBuiltin = isBuiltin;
+    }
+
+    @TruffleBoundary
+    public static CallTargetInvokeNode create(PythonCallable callee) {
+        RootCallTarget callTarget = getCallTarget(callee);
+        boolean builtin = isBuiltin(callee);
+        return CallTargetInvokeNodeGen.create(callTarget, builtin, callee.isGeneratorFunction());
+    }
+
+    public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Arity arity, Object[] arguments, PKeyword[] keywords);
+
+    @Specialization(guards = {"keywords.length == 0"})
+    protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Arity arity, Object[] arguments, PKeyword[] keywords) {
+        PArguments.setGlobals(arguments, globals);
+        PArguments.setClosure(arguments, closure);
+        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
+        arityCheck.execute(arity, arguments, keywords);
+        return callNode.call(arguments);
+    }
+
+    @Specialization(guards = {"!isBuiltin"})
+    protected Object doWithKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Arity arity, Object[] arguments, PKeyword[] keywords,
+                    @Cached("create()") ApplyKeywordsNode applyKeywords) {
+        Object[] combined = applyKeywords.execute(arity, arguments, keywords);
+        PArguments.setGlobals(combined, globals);
+        PArguments.setClosure(combined, closure);
+        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
+        arityCheck.execute(arity, combined, PArguments.getKeywordArguments(combined));
+        return callNode.call(combined);
+    }
+
+    @Specialization(guards = "isBuiltin")
+    protected Object doBuiltinWithKeywords(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Arity arity, Object[] arguments,
+                    PKeyword[] keywords) {
+        PArguments.setKeywordArguments(arguments, keywords);
+        PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
+        arityCheck.execute(arity, arguments, keywords);
+        return callNode.call(arguments);
+    }
+}
+
 public abstract class InvokeNode extends AbstractInvokeNode {
     @Child private DirectCallNode callNode;
     @Child private ArityCheckNode arityCheck = ArityCheckNode.create();
@@ -156,7 +212,10 @@ public abstract class InvokeNode extends AbstractInvokeNode {
 
     protected InvokeNode(CallTarget callTarget, Arity calleeArity, PythonObject globals, PCell[] closure, boolean isBuiltin, boolean isGenerator) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
-        if (isGenerator) {
+        if (isBuiltin) {
+            callNode.cloneCallTarget();
+        }
+        if (isGenerator && shouldInlineGenerators()) {
             this.callNode.forceInlining();
         }
         this.arity = calleeArity;
@@ -170,28 +229,8 @@ public abstract class InvokeNode extends AbstractInvokeNode {
     @TruffleBoundary
     public static InvokeNode create(PythonCallable callee) {
         RootCallTarget callTarget = getCallTarget(callee);
-
         boolean builtin = isBuiltin(callee);
-        if (builtin && shouldSplit(callee)) {
-            callTarget = split(callTarget);
-        }
         return InvokeNodeGen.create(callTarget, getArity(callee), callee.getGlobals(), callee.getClosure(), builtin, callee.isGeneratorFunction());
-    }
-
-    /**
-     * Replicate the CallTarget to let each builtin call site executes its own AST.
-     */
-    protected static RootCallTarget split(RootCallTarget callTarget) {
-        CompilerAsserts.neverPartOfCompilation();
-        RootNode rootNode = callTarget.getRootNode();
-        return Truffle.getRuntime().createCallTarget(NodeUtil.cloneNode(rootNode));
-    }
-
-    protected static boolean shouldSplit(PythonCallable callee) {
-        return callee.getName().equals(__INIT__) ||
-                        callee.getName().equals(__GET__) ||
-                        callee.getName().equals(__NEW__) ||
-                        callee.getName().equals(__CALL__);
     }
 
     @Specialization(guards = {"keywords.length == 0"})

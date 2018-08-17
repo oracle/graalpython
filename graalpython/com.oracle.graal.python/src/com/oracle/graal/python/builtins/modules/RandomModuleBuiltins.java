@@ -29,6 +29,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -48,7 +49,7 @@ public class RandomModuleBuiltins extends PythonBuiltins {
     }
 
     // _random.Random([seed])
-    @Builtin(name = "Random", minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PRandom.class)
+    @Builtin(name = "Random", minNumOfArguments = 1, maxNumOfArguments = 2, constructsClass = PythonBuiltinClassType.PRandom)
     @GenerateNodeFactory
     abstract static class PRandomNode extends PythonBuiltinNode {
         @Child LookupAndCallBinaryNode setSeed = LookupAndCallBinaryNode.create("seed");

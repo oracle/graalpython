@@ -32,6 +32,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -61,7 +62,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     }
 
     // array.array(typecode[, initializer])
-    @Builtin(name = "array", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PArray.class)
+    @Builtin(name = "array", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PythonBuiltinClassType.PArray)
     @GenerateNodeFactory
     abstract static class PythonArrayNode extends PythonBuiltinNode {
 

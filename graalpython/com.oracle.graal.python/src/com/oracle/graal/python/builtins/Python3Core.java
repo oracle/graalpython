@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
@@ -98,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
@@ -137,7 +139,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 
@@ -273,6 +274,8 @@ public final class Python3Core implements PythonCore {
     @CompilationFinal private PythonBuiltinClass objectClass;
     @CompilationFinal private PythonBuiltinClass moduleClass;
     @CompilationFinal private PythonBuiltinClass foreignClass;
+    @CompilationFinal private PInt pyTrue;
+    @CompilationFinal private PInt pyFalse;
 
     @CompilationFinal(dimensions = 1) private PythonClass[] errorClasses;
     private final PythonParser parser;
@@ -409,11 +412,6 @@ public final class Python3Core implements PythonCore {
     }
 
     @TruffleBoundary
-    public PythonBuiltinClass lookupType(Class<? extends Object> clazz) {
-        return lookupType(PythonBuiltinClassType.fromClass(clazz));
-    }
-
-    @TruffleBoundary
     public String[] builtinModuleNames() {
         return builtinModules.keySet().toArray(new String[0]);
     }
@@ -494,11 +492,11 @@ public final class Python3Core implements PythonCore {
         foreignClass = new PythonBuiltinClass(typeClass, FOREIGN, objectClass);
         typeClass.unsafeSetSuperClass(objectClass);
         // Prepare core classes that are required all for core setup
-        addType(PythonClass.class, typeClass);
-        addType(PythonBuiltinClass.class, typeClass);
-        addType(PythonObject.class, objectClass);
-        addType(PythonModule.class, moduleClass);
-        addType(TruffleObject.class, foreignClass);
+        addType(PythonBuiltinClassType.PythonClass, typeClass);
+        addType(PythonBuiltinClassType.PythonBuiltinClass, typeClass);
+        addType(PythonBuiltinClassType.PythonObject, objectClass);
+        addType(PythonBuiltinClassType.PythonModule, moduleClass);
+        addType(PythonBuiltinClassType.TruffleObject, foreignClass);
         // n.b.: the builtin modules and classes and their constructors are initialized first here,
         // so we have the mapping from java classes to python classes and builtin names to modules
         // available.
@@ -508,13 +506,16 @@ public final class Python3Core implements PythonCore {
                 createModule(annotation.defineModule());
             }
             builtin.initializeClasses(this);
-            for (Entry<PythonBuiltinClass, Entry<Class<?>[], Boolean>> entry : builtin.getBuiltinClasses().entrySet()) {
+            for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtin.getBuiltinClasses().entrySet()) {
                 PythonBuiltinClass pythonClass = entry.getKey();
-                for (Class<?> klass : entry.getValue().getKey()) {
+                for (PythonBuiltinClassType klass : entry.getValue().getKey()) {
                     addType(klass, pythonClass);
                 }
             }
         }
+        // now initialize well-known objects
+        pyTrue = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ONE);
+        pyFalse = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
     }
 
     private void populateBuiltins() {
@@ -524,7 +525,7 @@ public final class Python3Core implements PythonCore {
             if (annotation.defineModule().length() > 0) {
                 addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
             }
-            for (Class<?> klass : annotation.extendClasses()) {
+            for (PythonBuiltinClassType klass : annotation.extendClasses()) {
                 addBuiltinsTo(lookupType(klass), builtin);
             }
         }
@@ -540,8 +541,9 @@ public final class Python3Core implements PythonCore {
         builtinModules.put("_frozen_importlib", bootstrap);
     }
 
-    private void addType(Class<? extends Object> clazz, PythonBuiltinClass typ) {
-        builtinTypes[PythonBuiltinClassType.fromClass(clazz).ordinal()] = typ;
+    private void addType(PythonBuiltinClassType klass, PythonBuiltinClass typ) {
+        builtinTypes[klass.ordinal()] = typ;
+        typ.setType(klass);
     }
 
     private PythonModule createModule(String name) {
@@ -572,8 +574,8 @@ public final class Python3Core implements PythonCore {
             obj.setAttribute(methodName, value);
         }
 
-        Map<PythonBuiltinClass, Entry<Class<?>[], Boolean>> builtinClasses = builtins.getBuiltinClasses();
-        for (Entry<PythonBuiltinClass, Entry<Class<?>[], Boolean>> entry : builtinClasses.entrySet()) {
+        Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = builtins.getBuiltinClasses();
+        for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtinClasses.entrySet()) {
             boolean isPublic = entry.getValue().getValue();
             if (isPublic) {
                 PythonBuiltinClass pythonClass = entry.getKey();
@@ -645,5 +647,13 @@ public final class Python3Core implements PythonCore {
     public void setContext(PythonContext context) {
         assert singletonContext == null;
         singletonContext = context;
+    }
+
+    public PInt getTrue() {
+        return pyTrue;
+    }
+
+    public PInt getFalse() {
+        return pyFalse;
     }
 }

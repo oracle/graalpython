@@ -33,6 +33,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -43,7 +44,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-@CoreFunctions(extendClasses = Boolean.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.Boolean)
 public final class BoolBuiltins extends PythonBuiltins {
 
     @Override

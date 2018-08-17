@@ -43,12 +43,15 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
+@ImportStatic(PythonOptions.class)
 public abstract class LookupAttributeInMRONode extends PBaseNode {
 
     public abstract static class Dynamic extends PBaseNode {
@@ -132,7 +135,7 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         return new PythonClassAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = {"klass == cachedKlass"}, limit = "5", assumptions = {"cachedClassInMROInfo.assumption"})
+    @Specialization(guards = {"klass == cachedKlass"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = {"cachedClassInMROInfo.assumption"})
     protected Object lookupConstantMROCached(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
                     @Cached("findAttrClassAndAssumptionInMRO(cachedKlass)") PythonClassAssumptionPair cachedClassInMROInfo) {
@@ -147,7 +150,7 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         return nodes;
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "5", assumptions = "lookupStable")
+    @Specialization(guards = {"klass == cachedKlass", "mroLength < 32"}, limit = "getIntOption(getContext(), AttributeAccessInlineCacheMaxDepth)", assumptions = "lookupStable")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonClass cachedKlass,
@@ -165,7 +168,7 @@ public abstract class LookupAttributeInMRONode extends PBaseNode {
         return PNone.NO_VALUE;
     }
 
-    @Specialization
+    @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO"})
     protected Object lookup(PythonClass klass,
                     @Cached("create()") ReadAttributeFromObjectNode readAttrNode) {
         return lookupSlow(klass, key, readAttrNode);

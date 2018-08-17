@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins;
 
-import java.util.HashMap;
-
 import com.oracle.truffle.api.CompilerAsserts;
 
 public enum PythonBuiltinClassType {
@@ -95,11 +93,9 @@ public enum PythonBuiltinClassType {
     PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip"),
     PBuffer(com.oracle.graal.python.builtins.objects.memoryview.PBuffer.class, "buffer");
 
-    private final Class<?> clazz;
     private final String shortName;
 
-    PythonBuiltinClassType(Class<?> clazz, String shortName) {
-        this.clazz = clazz;
+    PythonBuiltinClassType(@SuppressWarnings("unused") Class<?> clazz, String shortName) {
         this.shortName = shortName;
     }
 
@@ -107,22 +103,5 @@ public enum PythonBuiltinClassType {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return shortName;
-    }
-
-    private static final HashMap<Class<?>, PythonBuiltinClassType> fromJavaClass = new HashMap<>();
-
-    static {
-        for (PythonBuiltinClassType builtinClass : values()) {
-            fromJavaClass.put(builtinClass.clazz, builtinClass);
-        }
-        fromJavaClass.put(String.class, PString);
-        fromJavaClass.put(Integer.class, PInt);
-        fromJavaClass.put(Long.class, PInt);
-        fromJavaClass.put(Double.class, PFloat);
-    }
-
-    public static PythonBuiltinClassType fromClass(Class<?> clazz) {
-        assert fromJavaClass.containsKey(clazz) : clazz + " is not in list of known classes";
-        return fromJavaClass.get(clazz);
     }
 }

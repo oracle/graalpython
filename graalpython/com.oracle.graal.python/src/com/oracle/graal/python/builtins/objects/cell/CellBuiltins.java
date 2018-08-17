@@ -50,19 +50,22 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PCell.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PCell)
 public class CellBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -110,12 +113,13 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public String repr(PCell self) {
+        public String repr(PCell self,
+                        @Cached("create()") GetClassNode getClassNode) {
             Object ref = self.getRef();
             if (ref == null) {
                 return String.format("<cell at %s: empty>", this.hashCode());
             }
-            PythonBuiltinClass refClass = getCore().lookupType(ref.getClass());
+            PythonClass refClass = getClassNode.execute(ref);
             return String.format("<cell at %s: %s object at %s>", this.hashCode(), refClass, ref.hashCode());
         }
 

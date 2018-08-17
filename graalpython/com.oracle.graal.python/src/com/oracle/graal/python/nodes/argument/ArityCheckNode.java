@@ -114,8 +114,7 @@ public abstract class ArityCheckNode extends PBaseNode {
         if (numOfKeywordsGiven == 0) {
             arityCheck(arity, numOfArgs);
         } else if (!arity.takesKeywordArg() && numOfKeywordsGiven > 0) {
-            Object[] args = {};
-            throw raise(TypeError, arity.getFunctionName() + "() takes no keyword arguments", args);
+            throw raise(TypeError, "%s() takes no keyword arguments", arity.getFunctionName());
         } else {
             for (int i = 0; i < numOfKeywordsGiven; i++) {
                 String keyword = keywords[i];
@@ -136,37 +135,24 @@ public abstract class ArityCheckNode extends PBaseNode {
                 return;
             }
         }
-        Object[] args = {arity.getFunctionName(), keyword};
-        throw raise(TypeError, "%s() got an unexpected keyword argument '%s'", args);
+        throw raise(TypeError, "%s() got an unexpected keyword argument '%s'", arity.getFunctionName(), keyword);
     }
 
     private void arityCheck(Arity arity, int numOfArgs) {
-        String argMessage;
         if (!arity.takesVarArgs() && arity.getMinNumOfArgs() == arity.getMaxNumOfArgs()) {
             if (numOfArgs != arity.getMinNumOfArgs()) {
                 if (arity.getMinNumOfArgs() == 0) {
-                    argMessage = "no arguments";
+                    throw raise(TypeError, "%s() takes no arguments (%d given)", arity.getFunctionName(), numOfArgs);
                 } else if (arity.getMinNumOfArgs() == 1) {
-                    argMessage = "exactly one argument";
+                    throw raise(TypeError, "%s() takes exactly one argument (%d given)", arity.getFunctionName(), numOfArgs);
                 } else {
-                    argMessage = arity.getMinNumOfArgs() + " arguments";
+                    throw raise(TypeError, "%s() takes %d arguments (%d given)", arity.getFunctionName(), arity.getMinNumOfArgs(), numOfArgs);
                 }
-                Object[] args = {arity.getFunctionName(), argMessage, numOfArgs};
-                throw raise(TypeError, "%s() takes %s (%d given)", args);
             }
         } else if (numOfArgs < arity.getMinNumOfArgs()) {
-            /**
-             * For ex, iter(object[, sentinel]) takes at least 1 argument.
-             */
-            Object[] args = {arity.getFunctionName(), arity.getMinNumOfArgs(), numOfArgs};
-            throw raise(TypeError, "%s() expected at least %d arguments (%d) given", args);
+            throw raise(TypeError, "%s() expected at least %d arguments (%d) given", arity.getFunctionName(), arity.getMinNumOfArgs(), numOfArgs);
         } else if (!arity.takesVarArgs() && numOfArgs > arity.getMaxNumOfArgs()) {
-            /**
-             * For ex, complex([real[, imag]]) takes at most 2 arguments.
-             */
-            argMessage = "at most " + arity.getMaxNumOfArgs() + " arguments";
-            Object[] args = {arity.getFunctionName(), argMessage, numOfArgs};
-            throw raise(TypeError, "%s() takes %s (%d given)", args);
+            throw raise(TypeError, "%s() takes at most %d arguments (%d given)", arity.getFunctionName(), arity.getMaxNumOfArgs(), numOfArgs);
         }
     }
 }

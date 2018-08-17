@@ -111,7 +111,6 @@ public abstract class CExtNodes {
     public static class FromNativeSubclassNode<T> extends PBaseNode {
         private final PythonBuiltinClassType expectedType;
         private final String conversionFuncName;
-        @CompilationFinal private PythonBuiltinClass expectedClass;
         @CompilationFinal private TruffleObject conversionFunc;
         @Child private Node executeNode;
         @Child private GetClassNode getClass = GetClassNode.create();
@@ -124,11 +123,7 @@ public abstract class CExtNodes {
         }
 
         private PythonBuiltinClass getExpectedClass() {
-            if (expectedClass == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                expectedClass = getCore().lookupType(expectedType);
-            }
-            return expectedClass;
+            return getCore().lookupType(expectedType);
         }
 
         private Node getExecNode() {
