@@ -31,6 +31,7 @@ import java.io.IOException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -111,6 +112,10 @@ public interface PythonCore {
     public void setContext(PythonContext context);
 
     public PythonContext getContext();
+
+    public PInt getTrue();
+
+    public PInt getFalse();
 
     static void writeWarning(TruffleLanguage.Env env, String warning) {
         if (!LIBPOLYGLOT || env.getOptions().get(PythonOptions.VerboseFlag)) {

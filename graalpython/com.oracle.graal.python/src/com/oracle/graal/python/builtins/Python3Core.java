@@ -33,6 +33,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
@@ -98,6 +99,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.iterator.PZipBuiltins;
@@ -272,6 +274,8 @@ public final class Python3Core implements PythonCore {
     @CompilationFinal private PythonBuiltinClass objectClass;
     @CompilationFinal private PythonBuiltinClass moduleClass;
     @CompilationFinal private PythonBuiltinClass foreignClass;
+    @CompilationFinal private PInt pyTrue;
+    @CompilationFinal private PInt pyFalse;
 
     @CompilationFinal(dimensions = 1) private PythonClass[] errorClasses;
     private final PythonParser parser;
@@ -509,6 +513,9 @@ public final class Python3Core implements PythonCore {
                 }
             }
         }
+        // now initialize well-known objects
+        pyTrue = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ONE);
+        pyFalse = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
     }
 
     private void populateBuiltins() {
@@ -640,5 +647,13 @@ public final class Python3Core implements PythonCore {
     public void setContext(PythonContext context) {
         assert singletonContext == null;
         singletonContext = context;
+    }
+
+    public PInt getTrue() {
+        return pyTrue;
+    }
+
+    public PInt getFalse() {
+        return pyFalse;
     }
 }

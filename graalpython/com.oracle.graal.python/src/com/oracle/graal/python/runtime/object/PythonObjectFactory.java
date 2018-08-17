@@ -190,18 +190,9 @@ public final class PythonObjectFactory extends Node {
     /*
      * Primitive types
      */
-    @CompilationFinal PInt pyTrue = null;
-    @CompilationFinal PInt pyFalse = null;
-
     public PInt createInt(boolean value) {
-        if (value && pyTrue == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pyTrue = new PInt(lookupClass(PythonBuiltinClassType.Boolean), BigInteger.ONE);
-        } else if (!value && pyFalse == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pyFalse = new PInt(lookupClass(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
-        }
-        return value ? pyTrue : pyFalse;
+        PythonCore core = getCore();
+        return value ? core.getTrue() : core.getFalse();
     }
 
     public PInt createInt(int value) {
