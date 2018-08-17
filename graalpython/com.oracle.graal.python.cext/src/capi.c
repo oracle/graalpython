@@ -156,6 +156,10 @@ inline void* handle_exception(void* val) {
     return val == ERROR_MARKER ? NULL : val;
 }
 
+// Heuristic to test if some value is a pointer object
+// TODO we need a reliable solution for that
+#define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
+
 void* native_to_java(PyObject* obj) {
     if (obj == Py_None) {
         return Py_None;
@@ -167,6 +171,8 @@ void* native_to_java(PyObject* obj) {
         return truffle_managed_from_handle(obj);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {
         return truffle_managed_from_handle(obj->ob_refcnt);
+    } else if (IS_POINTER(obj->ob_refcnt)) {
+        return obj->ob_refcnt;
     }
     return obj;
 }

@@ -284,7 +284,7 @@ public class PySequenceArrayWrapperMR {
         }
     }
 
-    abstract static class ToNativeArrayNode extends TransformToNativeNode {
+    abstract static class ToNativeArrayNode extends PBaseNode {
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
         @Child private PCallNativeNode callNativeBinary;
         @Child private ToNativeStorageNode toNativeStorageNode;
@@ -306,7 +306,7 @@ public class PySequenceArrayWrapperMR {
         @Fallback
         Object doGeneric(PySequenceArrayWrapper object) {
             // TODO correct element size
-            return ensureIsPointer(callBinaryIntoCapi(getNativeHandleForArray(), object, 8L));
+            return callBinaryIntoCapi(getNativeHandleForArray(), object, 8L);
         }
 
         private TruffleObject getNativeHandleForArray() {
@@ -449,7 +449,7 @@ public class PySequenceArrayWrapperMR {
         }
     }
 
-    static abstract class ToNativeStorageNode extends TransformToNativeNode {
+    static abstract class ToNativeStorageNode extends PBaseNode {
         @Child private StorageToNativeNode storageToNativeNode;
 
         public abstract NativeSequenceStorage execute(SequenceStorage object);

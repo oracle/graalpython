@@ -189,6 +189,23 @@ public abstract class NativeWrappers {
     }
 
     /**
+     * Used to wrap {@link PythonClass} just for the time when a natively defined type is processed
+     * in {@code PyType_Ready} and we need to pass the mirroring managed class to native to marry
+     * these two objects.
+     */
+    public static class PythonClassInitNativeWrapper extends PythonObjectNativeWrapper {
+
+        public PythonClassInitNativeWrapper(PythonClass object) {
+            super(object);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("PythonClassNativeInitWrapper(%s, isNative=%s)", getPythonObject(), isNative());
+        }
+    }
+
+    /**
      * Wraps a sequence object (like a list) such that it behaves like a bare C array.
      */
     public static class PySequenceArrayWrapper extends PythonNativeWrapper {

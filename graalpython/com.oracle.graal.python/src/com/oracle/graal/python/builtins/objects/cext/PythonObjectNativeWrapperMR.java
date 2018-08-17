@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeData;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeState;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMRFactory.PAsPointerNodeGen;
@@ -790,7 +791,15 @@ public class PythonObjectNativeWrapperMR {
     abstract static class ToNativeNode extends Node {
         @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNode.create();
 
+        Object access(PythonClassInitNativeWrapper obj) {
+            if (!obj.isNative()) {
+                obj.setNativePointer(toPyObjectNode.getHandleForObject(obj.getDelegate(), 0));
+            }
+            return obj;
+        }
+
         Object access(PythonNativeWrapper obj) {
+            assert !(obj instanceof PythonClassInitNativeWrapper);
             if (!obj.isNative()) {
                 obj.setNativePointer(toPyObjectNode.execute(obj.getDelegate()));
             }
@@ -857,7 +866,7 @@ public class PythonObjectNativeWrapperMR {
 
     }
 
-    abstract static class ToPyObjectNode extends TransformToNativeNode {
+    abstract static class ToPyObjectNode extends PBaseNode {
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
         @CompilationFinal private TruffleObject PyNoneHandle;
@@ -870,23 +879,27 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization
         Object runNativeClass(PythonNativeClass object) {
-            return ensureIsPointer(object.object);
+            return object.object;
         }
 
         @Specialization
         Object runNativeObject(PythonNativeObject object) {
-            return ensureIsPointer(object.object);
+            return object.object;
         }
 
         @Specialization(guards = "isManagedPythonClass(object)")
         Object runClass(PythonClass object) {
-            return ensureIsPointer(callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), getToSulongNode().execute(object)));
+            return callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), getToSulongNode().execute(object));
         }
 
         @Fallback
         Object runObject(Object object) {
             PythonClass clazz = getClassNode().execute(object);
-            return ensureIsPointer(callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), getToSulongNode().execute(object), clazz.getFlags()));
+            return callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), getToSulongNode().execute(object), clazz.getFlags());
+        }
+
+        Object getHandleForObject(Object object, long flags) {
+            return callBinaryIntoCapi(getPyObjectHandle_ForJavaObject(), object, flags);
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {

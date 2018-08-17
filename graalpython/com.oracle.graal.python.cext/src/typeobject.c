@@ -245,7 +245,7 @@ int PyType_Ready(PyTypeObject* cls) {
                                             native_to_java(native_members));
 
     // remember the managed wrapper
-    ((PyObject*)cls)->ob_refcnt = truffle_handle_for_managed(javacls);
+    ((PyObject*)cls)->ob_refcnt = javacls;
     if (cls->tp_dict != NULL) {
         javacls->tp_dict = native_to_java(cls->tp_dict);
     } else {

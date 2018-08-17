@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -179,7 +180,7 @@ public class PyUnicodeWrapperMR {
         }
     }
 
-    abstract static class PyUnicodeToNativeNode extends TransformToNativeNode {
+    abstract static class PyUnicodeToNativeNode extends PBaseNode {
         @CompilationFinal private TruffleObject derefHandleIntrinsic;
         @Child private PCallNativeNode callNativeUnary;
         @Child private PCallNativeNode callNativeBinary;
@@ -189,7 +190,7 @@ public class PyUnicodeWrapperMR {
 
         @Specialization
         Object doUnicodeWrapper(PyUnicodeWrapper object) {
-            return ensureIsPointer(callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), object));
+            return callUnaryIntoCapi(getPyObjectHandle_ForJavaType(), object);
         }
 
         private TruffleObject getPyObjectHandle_ForJavaType() {

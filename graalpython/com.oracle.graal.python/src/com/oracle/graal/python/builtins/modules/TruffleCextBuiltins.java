@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWr
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
@@ -574,7 +575,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             if (module != null) {
                 writeNode.execute(cclass, SpecialAttributeNames.__MODULE__, module);
             }
-            return PythonClassNativeWrapper.wrap(cclass);
+            return new PythonClassInitNativeWrapper(cclass);
         }
 
         private String getStringItem(PDict nativeMembers, String key) {
