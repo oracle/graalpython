@@ -44,6 +44,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -54,7 +55,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PMemoryView.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
 public class MemoryviewBuiltins extends PythonBuiltins {
     private static final String C_MEMORYVIEW = "__c_memoryview";
 

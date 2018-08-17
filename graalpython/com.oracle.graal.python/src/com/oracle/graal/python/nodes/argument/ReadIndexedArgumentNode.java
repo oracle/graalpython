@@ -28,13 +28,13 @@ package com.oracle.graal.python.nodes.argument;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-public class ReadIndexedArgumentNode extends PNode {
-    protected final int index;
-    private final BranchProfile wasOffBounds = BranchProfile.create();
+public abstract class ReadIndexedArgumentNode extends PNode {
+    private final int index;
     private final ValueProfile profile = ValueProfile.createClassProfile();
 
     ReadIndexedArgumentNode(int index) {
@@ -42,18 +42,25 @@ public class ReadIndexedArgumentNode extends PNode {
     }
 
     public static ReadIndexedArgumentNode create(int idx) {
-        return new ReadIndexedArgumentNode(idx);
+        return ReadIndexedArgumentNodeGen.create(idx);
     }
 
-    @Override
-    public Object execute(VirtualFrame frame) {
+    @Specialization(rewriteOn = InvalidAssumptionException.class)
+    Object readArg(VirtualFrame frame) throws InvalidAssumptionException {
         Object argumentAt = PArguments.getArgument(frame, index);
         if (argumentAt == null) {
-            wasOffBounds.enter();
-            return PNone.NO_VALUE;
-        } else {
-            return profile.profile(argumentAt);
+            throw new InvalidAssumptionException();
         }
+        return profile.profile(argumentAt);
+    }
+
+    @Specialization(replaces = "readArg")
+    Object readArgOffBounds(VirtualFrame frame) {
+        Object argumentAt = PArguments.getArgument(frame, index);
+        if (argumentAt == null) {
+            return PNone.NO_VALUE;
+        }
+        return profile.profile(argumentAt);
     }
 
     public int getIndex() {

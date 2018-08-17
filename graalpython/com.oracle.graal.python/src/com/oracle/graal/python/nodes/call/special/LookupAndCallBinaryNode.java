@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.call.special;
 
 import java.util.function.Supplier;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -123,7 +122,7 @@ public abstract class LookupAndCallBinaryNode extends PNode {
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return getCore().lookupType(PythonBuiltinClassType.fromClass(receiver.getClass())).getAttribute(methodName);
+        return GetClassNode.getItSlowPath(receiver).getAttribute(methodName);
     }
 
     protected boolean isReversible() {
@@ -158,7 +157,7 @@ public abstract class LookupAndCallBinaryNode extends PNode {
 
     protected PythonBinaryBuiltinNode getBuiltin(Object receiver) {
         assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String;
-        Object attribute = getCore().lookupType(PythonBuiltinClassType.fromClass(receiver.getClass())).getAttribute(name);
+        Object attribute = GetClassNode.getItSlowPath(receiver).getAttribute(name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonBinaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {

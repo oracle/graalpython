@@ -49,6 +49,7 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -59,7 +60,11 @@ public abstract class PBaseNode extends Node {
     @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
-        return getCore().factory();
+        if (factory == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            factory = insert(PythonObjectFactory.create());
+        }
+        return factory;
     }
 
     public final PythonCore getCore() {
@@ -100,5 +105,9 @@ public abstract class PBaseNode extends Node {
             contextRef = PythonLanguage.getContextRef();
         }
         return contextRef.get();
+    }
+
+    protected Assumption singleContextAssumption() {
+        return PythonLanguage.singleContextAssumption;
     }
 }

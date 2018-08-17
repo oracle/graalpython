@@ -79,7 +79,7 @@
   linuxMixin: linuxMixin,
 
   local linuxBenchMixin = linuxMixin + {
-    capabilities +: ["no_frequency_scaling", "tmpfs25g", "x62"],
+    capabilities +: ["no_frequency_scaling", "tmpfs25g", "x52"],
   },
   linuxBenchMixin: linuxBenchMixin,
 

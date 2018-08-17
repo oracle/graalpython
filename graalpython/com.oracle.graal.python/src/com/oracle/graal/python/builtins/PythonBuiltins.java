@@ -52,7 +52,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 public abstract class PythonBuiltins {
     protected final Map<String, Object> builtinConstants = new HashMap<>();
     private final Map<String, BoundBuiltinCallable<?>> builtinFunctions = new HashMap<>();
-    private final Map<PythonBuiltinClass, Map.Entry<Class<?>[], Boolean>> builtinClasses = new HashMap<>();
+    private final Map<PythonBuiltinClass, Map.Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = new HashMap<>();
 
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
 
@@ -62,15 +62,18 @@ public abstract class PythonBuiltins {
         }
         initializeEachFactoryWith((factory, builtin) -> {
             CoreFunctions annotation = getClass().getAnnotation(CoreFunctions.class);
-            boolean declaresExplicitSelf = true;
+            final boolean declaresExplicitSelf;
             if (annotation.defineModule().length() > 0 && builtin.constructsClass().length == 0) {
                 assert !builtin.isGetter();
                 assert !builtin.isSetter();
                 assert annotation.extendClasses().length == 0;
                 // for module functions, explicit self is false by default
                 declaresExplicitSelf = builtin.declaresExplicitSelf();
+            } else {
+                declaresExplicitSelf = true;
             }
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf));
+            RootCallTarget callTarget = core.getLanguage().builtinCallTargetCache.computeIfAbsent(factory.getNodeClass(),
+                            (b) -> Truffle.getRuntime().createCallTarget(new BuiltinFunctionRootNode(core.getLanguage(), builtin, factory, declaresExplicitSelf)));
             if (builtin.constructsClass().length > 0) {
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, null, createArity(builtin, declaresExplicitSelf), callTarget);
                 PythonBuiltinClass builtinClass = createBuiltinClassFor(core, builtin);
@@ -101,22 +104,22 @@ public abstract class PythonBuiltins {
 
     private PythonBuiltinClass createBuiltinClassFor(PythonCore core, Builtin builtin) {
         PythonBuiltinClass builtinClass = null;
-        for (Class<?> klass : builtin.constructsClass()) {
+        for (PythonBuiltinClassType klass : builtin.constructsClass()) {
             builtinClass = core.lookupType(klass);
             if (builtinClass != null) {
                 break;
             }
         }
         if (builtinClass == null) {
-            Class<?>[] bases = builtin.base();
+            PythonBuiltinClassType[] bases = builtin.base();
             PythonBuiltinClass base = null;
             if (bases.length == 0) {
                 base = core.lookupType(PythonBuiltinClassType.PythonObject);
             } else {
                 assert bases.length == 1;
                 // Search the "local scope" for builtin classes to inherit from
-                outer: for (Entry<PythonBuiltinClass, Entry<Class<?>[], Boolean>> localClasses : builtinClasses.entrySet()) {
-                    for (Class<?> o : localClasses.getValue().getKey()) {
+                outer: for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> localClasses : builtinClasses.entrySet()) {
+                    for (PythonBuiltinClassType o : localClasses.getValue().getKey()) {
                         if (o == bases[0]) {
                             base = localClasses.getKey();
                             break outer;
@@ -166,8 +169,8 @@ public abstract class PythonBuiltins {
         builtinFunctions.put(name, function);
     }
 
-    private void setBuiltinClass(PythonBuiltinClass builtinClass, Class<?>[] classes, boolean isPublic) {
-        SimpleEntry<Class<?>[], Boolean> simpleEntry = new AbstractMap.SimpleEntry<>(classes, isPublic);
+    private void setBuiltinClass(PythonBuiltinClass builtinClass, PythonBuiltinClassType[] pythonBuiltinClassTypes, boolean isPublic) {
+        SimpleEntry<PythonBuiltinClassType[], Boolean> simpleEntry = new AbstractMap.SimpleEntry<>(pythonBuiltinClassTypes, isPublic);
         builtinClasses.put(builtinClass, simpleEntry);
     }
 
@@ -175,8 +178,8 @@ public abstract class PythonBuiltins {
         return builtinFunctions;
     }
 
-    protected Map<PythonBuiltinClass, Entry<Class<?>[], Boolean>> getBuiltinClasses() {
-        Map<PythonBuiltinClass, Entry<Class<?>[], Boolean>> tmp = builtinClasses;
+    protected Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> getBuiltinClasses() {
+        Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> tmp = builtinClasses;
         assert (tmp = Collections.unmodifiableMap(tmp)) != null;
         return tmp;
     }

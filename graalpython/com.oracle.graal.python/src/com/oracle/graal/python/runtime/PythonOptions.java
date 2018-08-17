@@ -50,10 +50,10 @@ public final class PythonOptions {
     public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(4);
+    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(3);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(4);
+    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(3);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);
@@ -62,7 +62,7 @@ public final class PythonOptions {
     public static final OptionKey<Integer> VariableArgumentInlineCacheLimit = new OptionKey<>(3);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> InlineGeneratorCalls = new OptionKey<>(true);
+    public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);

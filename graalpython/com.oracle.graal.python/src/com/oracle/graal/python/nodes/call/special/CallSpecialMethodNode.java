@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -48,6 +49,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -68,6 +70,10 @@ abstract class CallSpecialMethodNode extends Node {
         } else {
             return null;
         }
+    }
+
+    protected Assumption singleContextAssumption() {
+        return PythonLanguage.singleContextAssumption;
     }
 
     protected static PythonUnaryBuiltinNode getUnary(PBuiltinFunction func) {

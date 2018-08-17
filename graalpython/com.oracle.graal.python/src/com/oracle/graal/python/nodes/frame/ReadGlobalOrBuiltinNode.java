@@ -33,6 +33,8 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -101,7 +103,15 @@ public abstract class ReadGlobalOrBuiltinNode extends GlobalNode implements Read
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readFromBuiltinsNode = insert(ReadAttributeFromObjectNode.create());
             }
-            Object builtin = readFromBuiltinsNode.execute(getCore().isInitialized() ? getContext().getBuiltins() : getCore().lookupBuiltinModule("builtins"), attributeId);
+            PythonContext context = getContext();
+            PythonCore core = context.getCore();
+            Object builtin;
+            if (core.isInitialized()) {
+                builtin = readFromBuiltinsNode.execute(context.getBuiltins(), attributeId);
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                builtin = readFromBuiltinsNode.execute(core.lookupBuiltinModule("builtins"), attributeId);
+            }
             if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
                 return builtin;
             } else {

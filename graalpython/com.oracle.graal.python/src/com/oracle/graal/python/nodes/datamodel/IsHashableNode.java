@@ -76,10 +76,9 @@ public abstract class IsHashableNode extends PDataModelEmulationNode {
     @Specialization
     protected boolean isHashableGeneric(Object object,
                     @Cached("create(__HASH__)") LookupAndCallUnaryNode lookupHashAttributeNode,
-                    @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode,
-                    @Cached("getBuiltinIntType()") PythonClass IntType) {
+                    @Cached("create()") BuiltinFunctions.IsInstanceNode isInstanceNode) {
         Object hashValue = lookupHashAttributeNode.executeObject(object);
-        if (isInstanceNode.executeWith(hashValue, IntType)) {
+        if (isInstanceNode.executeWith(hashValue, getBuiltinIntType())) {
             return true;
         }
         throw raise(PythonErrorType.TypeError, "__hash__ method should return an integer");

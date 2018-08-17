@@ -68,7 +68,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@CoreFunctions(extendClasses = GetSetDescriptor.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.GetSetDescriptor)
 public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -94,7 +94,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
         Object get(GetSetDescriptor descr, Object obj, PythonClass type) {
-            if (descr_check(getCore(), descr, obj, type, getCore().lookupType(PythonBuiltinClassType.PNone))) {
+            if (descr_check(getCore(), descr, obj, type)) {
                 return descr;
             }
             if (descr.getGet() != null) {
@@ -116,7 +116,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object set(GetSetDescriptor descr, Object obj, Object value) {
             // the noneType is not important here - there are no setters on None
-            if (descr_check(getCore(), descr, obj, getClassNode.execute(obj), null)) {
+            if (descr_check(getCore(), descr, obj, getClassNode.execute(obj))) {
                 return descr;
             }
             if (descr.getSet() != null) {
@@ -129,9 +129,11 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     }
 
     // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-    private static boolean descr_check(PythonCore core, GetSetDescriptor descr, Object obj, PythonClass type, PythonBuiltinClass noneType) {
-        if (PGuards.isNone(obj) && type != noneType) {
-            return true;
+    private static boolean descr_check(PythonCore core, GetSetDescriptor descr, Object obj, PythonClass type) {
+        if (PGuards.isNone(obj)) {
+            if (!(type instanceof PythonBuiltinClass) || ((PythonBuiltinClass) type).getType() != PythonBuiltinClassType.PNone) {
+                return true;
+            }
         }
         for (Object o : type.getMethodResolutionOrder()) {
             if (o == descr.getType()) {
