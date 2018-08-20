@@ -197,11 +197,12 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         graalpython_args.insert(0, '--python.WithJavaStacktrace')
 
     if _sulong:
-        vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
         dists.append('SULONG')
-
-    if mx.suite("sulong-managed", fatalIfMissing=False):
-        dists.append('SULONG_MANAGED')
+        if mx.suite("sulong-managed", fatalIfMissing=False):
+            dists.append('SULONG_MANAGED')
+            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>:<path:SULONG_MANAGED_LIBS>'))
+        else:
+            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
 
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
