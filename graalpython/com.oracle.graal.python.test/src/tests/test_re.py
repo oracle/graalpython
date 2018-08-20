@@ -65,6 +65,19 @@ def test_special_re_compile():
     _dquote_re = re.compile(r'"(?:[^"\\]|\\.)*"')
 
 
+def test_json_bytes_re_compile():
+    import json
+    assert isinstance(json.encoder.HAS_UTF8.pattern, bytes)
+    assert json.encoder.HAS_UTF8.search(b"\x80") is not None
+    assert json.encoder.HAS_UTF8.search(b"space") is None
+    try:
+        json.encoder.HAS_UTF8.search("\x80")
+    except TypeError as e:
+        assert "cannot use a bytes pattern on a string-like object" in str(e)
+    else:
+        assert False
+
+
 class S(str):
     def __getitem__(self, index):
         return S(super().__getitem__(index))

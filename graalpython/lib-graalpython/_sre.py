@@ -161,34 +161,22 @@ class SRE_Pattern():
     def __compile_cpython_sre(self):
         if not self.__compiled_sre_pattern:
             import _cpython_sre
-            self.__compiled_sre_pattern = _cpython_sre.compile(self._emit(self.pattern), self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
+            self.__compiled_sre_pattern = _cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
         return self.__compiled_sre_pattern
 
 
-    def _decode_string(self, string, flags=0):
-        if isinstance(string, str):
-            return string
-        elif isinstance(string, bytes):
-            return string.decode()
-        elif isinstance(string, bytearray):
-            return string.decode()
-        elif isinstance(string, memoryview):
-            # return bytes(string).decode()
-            raise TypeError("'memoryview' is currently unsupported as search pattern")
-        raise TypeError("invalid search pattern {!r}".format(string))
-
-
     def _decode_pattern(self, string, flags=0):
-        pattern = self._decode_string(string, flags)
+        if isinstance(string, str):
+            # TODO: fix this in the regex engine
+            pattern = string.replace(r'\"', '"').replace(r"\'", "'")
 
-        # TODO: fix this in the regex engine
-        pattern = pattern.replace(r'\"', '"').replace(r"\'", "'")
-
-        # TODO: that's not nearly complete but should be sufficient for now
-        from sre_compile import SRE_FLAG_VERBOSE
-        if flags & SRE_FLAG_VERBOSE:
-            pattern = tregex_preprocess_for_verbose(pattern)
-        return tregex_preprocess_default(pattern)
+            # TODO: that's not nearly complete but should be sufficient for now
+            from sre_compile import SRE_FLAG_VERBOSE
+            if flags & SRE_FLAG_VERBOSE:
+                pattern = tregex_preprocess_for_verbose(pattern)
+            return tregex_preprocess_default(pattern)
+        else:
+            return string
 
 
     def __repr__(self):
@@ -210,7 +198,6 @@ class SRE_Pattern():
 
     def _search(self, pattern, string, pos, endpos):
         pattern = self.__tregex_compile(pattern)
-        string = self._decode_string(string)
         if endpos == -1 or endpos >= len(string):
             result = tregex_call_safe(pattern.exec, string, pos)
         else:
@@ -227,29 +214,33 @@ class SRE_Pattern():
             return self.__compile_cpython_sre().search(string, pos, default(endpos, maxsize()))
 
     def match(self, string, pos=0, endpos=None):
-        try:
-            if not self.pattern.startswith("^"):
-                return self._search("^" + self.pattern, string, pos, default(endpos, -1))
-            else:
-                return self._search(self.pattern, string, pos, default(endpos, -1))
-        except RuntimeError:
-            return self.__compile_cpython_sre().match(string, pos, default(endpos, maxsize()))
+        pattern = self.pattern
+        if isinstance(pattern, str):
+            try:
+                if not pattern.startswith("^"):
+                    return self._search("^" + pattern, string, pos, default(endpos, -1))
+                else:
+                    return self._search(pattern, string, pos, default(endpos, -1))
+            except RuntimeError:
+                pass
+        return self.__compile_cpython_sre().match(string, pos, default(endpos, maxsize()))
 
     def fullmatch(self, string, pos=0, endpos=None):
-        try:
-            pattern = self.pattern
-            if not pattern.startswith("^"):
-                pattern = "^" + pattern
-            if not pattern.endswith("$"):
-                pattern = pattern + "$"
-            return self._search(pattern, string, pos, default(endpos, -1))
-        except RuntimeError:
-            return self.__compile_cpython_sre().fullmatch(string, pos, default(endpos, maxsize()))
+        pattern = self.pattern
+        if isinstance(pattern, str):
+            try:
+                if not pattern.startswith("^"):
+                    pattern = "^" + pattern
+                if not pattern.endswith("$"):
+                    pattern = pattern + "$"
+                return self._search(pattern, string, pos, default(endpos, -1))
+            except RuntimeError:
+                pass
+        return self.__compile_cpython_sre().fullmatch(string, pos, default(endpos, maxsize()))
 
     def findall(self, string, pos=0, endpos=-1):
         try:
             pattern = self.__tregex_compile(self.pattern)
-            string = self._decode_string(string)
             if endpos > len(string):
                 endpos = len(string)
             elif endpos < 0:
@@ -281,9 +272,9 @@ class SRE_Pattern():
             return string[group_start:group_end]
 
         n = len(repl)
-        result = self._emit("")
+        result = ""
         start = 0
-        backslash = self._emit('\\')
+        backslash = '\\'
         pos = repl.find(backslash, start)
         while pos != -1 and start < n:
             if pos+1 < n:
@@ -292,7 +283,7 @@ class SRE_Pattern():
                     group_str = group(match_result, group_nr, string)
                     if group_str is None:
                         raise ValueError("invalid group reference %s at position %s" % (group_nr, pos))
-                    result += repl[start:pos] + self._emit(group_str)
+                    result += repl[start:pos] + group_str
                     start = pos + 2
                 elif repl[pos + 1] == 'g':
                     group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
@@ -300,7 +291,7 @@ class SRE_Pattern():
                         group_str = group(match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
                         if group_str is None:
                             raise ValueError("invalid group reference %s at position %s" % (group_ref, pos))
-                        result += repl[start:pos] + self._emit(group_str)
+                        result += repl[start:pos] + group_str
                     start = group_ref_end + 1
                 elif repl[pos + 1] == backslash:
                     result += repl[start:pos] + backslash
@@ -331,39 +322,32 @@ class SRE_Pattern():
         n = 0
         try:
             pattern = self.__tregex_compile(self.pattern)
-            decoded_string = self._decode_string(string)
             result = []
             pos = 0
             is_string_rep = isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray)
             if is_string_rep:
                 repl = _process_escape_sequences(repl)
             progress = True
-            while (count == 0 or n < count) and pos <= len(decoded_string) and progress:
-                match_result = tregex_call_safe(pattern.exec, decoded_string, pos)
+            while (count == 0 or n < count) and pos <= len(string) and progress:
+                match_result = tregex_call_safe(pattern.exec, string, pos)
                 if not match_result.isMatch:
                     break
                 n += 1
                 start = match_result.start[0]
                 end = match_result.end[0]
-                result.append(self._emit(decoded_string[pos:start]))
+                result.append(string[pos:start])
                 if is_string_rep:
-                    result.append(self.__replace_groups(repl, decoded_string, match_result, pattern))
+                    result.append(self.__replace_groups(repl, string, match_result, pattern))
                 else:
                     _srematch = SRE_Match(self, pos, -1, match_result)
                     _repl = repl(_srematch)
                     result.append(_repl)
                 pos = end
                 progress = (start != end)
-            result.append(self._emit(decoded_string[pos:]))
-            return self._emit("").join(result)
+            result.append(string[pos:])
+            return "".join(result)
         except BaseException:
             return self.__compile_cpython_sre().sub(repl, string, count)
-
-    def _emit(self, str_like_obj):
-        assert isinstance(str_like_obj, str) or isinstance(str_like_obj, bytes)
-        if self.__was_bytes != isinstance(str_like_obj, bytes):
-            return str_like_obj.encode()
-        return str_like_obj
 
 
 compile = SRE_Pattern
