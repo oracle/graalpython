@@ -276,6 +276,7 @@ class GraalPythonTags(object):
     unittest = 'python-unittest'
     cpyext = 'python-cpyext'
     cpyext_managed = 'python-cpyext-managed'
+    cpyext_sandboxed = 'python-cpyext-sandboxed'
     svmunit = 'python-svm-unittest'
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
@@ -394,6 +395,10 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython C extension managed tests', tasks, tags=[GraalPythonTags.cpyext_managed]) as task:
         if task:
             mx.run_mx(["--dynamicimports", "sulong-managed", "python-gate-unittests", "--llvm.configuration=managed", "--subdir=cpyext", "--"])
+
+    with Task('GraalPython C extension sandboxed tests', tasks, tags=[GraalPythonTags.cpyext_sandboxed]) as task:
+        if task:
+            mx.run_mx(["--dynamicimports", "sulong-managed", "python-gate-unittests", "--llvm.configuration=sandboxed", "--subdir=cpyext", "--"])
 
     with Task('GraalPython Python tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
