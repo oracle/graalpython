@@ -178,7 +178,7 @@
 
     setup +: [
       ["mx", "sforceimport"],
-      ["mx", "-v", "--dynamicimports", self.dynamicImports, "build"],
+      ["mx", "--dynamicimports", self.dynamicImports, "build"],
     ]
   },
   commonBuilder: commonBuilder,

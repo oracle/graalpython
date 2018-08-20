@@ -109,7 +109,6 @@ def postprocess(file):
 
 if __name__ == '__main__':
         fpath = sys.argv[1]
-        print("postprocessing {}".format(fpath))
         with open(fpath, 'r') as FILE:
                 content = COPYRIGHT_HEADER.format(postprocess(FILE))
         with open(fpath, 'w+') as FILE:
