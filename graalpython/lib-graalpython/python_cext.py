@@ -42,19 +42,6 @@ import sys
 import python_cext
 
 
-class CErrorHandler(object):
-    def __enter__(self, *args):
-        pass
-
-    def __exit__(self, typ, val, tb):
-        if typ != None:
-            PyErr_Restore(typ, val, tb)
-            return True
-
-
-error_handler = CErrorHandler()
-
-
 def may_raise(error_result=error_handler):
     if isinstance(error_result, type(may_raise)):
         # direct annotation
@@ -1292,77 +1279,3 @@ def PySlice_GetIndicesEx(start, stop, step, length):
 @may_raise
 def PySlice_New(start, stop, step):
     return slice(start, stop, step)
-
-
-@may_raise(to_sulong(error_handler))
-def PyTruffle_Upcall(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_sulong(getattr(to_java(rcv), name)(*converted))
-
-
-@may_raise(to_long(-1))
-def PyTruffle_Upcall_l(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_long(getattr(rcv, name)(*converted))
-
-
-@may_raise(to_double(-1.0))
-def PyTruffle_Upcall_d(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_double(getattr(rcv, name)(*converted))
-
-
-@may_raise(0)
-def PyTruffle_Upcall_ptr(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    # returns a pointer, i.e., we do no conversion since this can be any pointer object
-    return getattr(rcv, name)(*converted)
-
-
-@__builtin__
-def PyTruffle_Cext_Upcall(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_sulong(getattr(python_cext, name)(*converted))
-
-
-@__builtin__
-def PyTruffle_Cext_Upcall_l(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_long(getattr(python_cext, name)(*converted))
-
-
-@__builtin__
-def PyTruffle_Cext_Upcall_d(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_double(getattr(python_cext, name)(*converted))
-
-
-@__builtin__
-def PyTruffle_Cext_Upcall_ptr(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    # returns a pointer, i.e., we do no conversion since this can be any pointer object
-    return getattr(python_cext, name)(*converted)
