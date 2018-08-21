@@ -22,11 +22,12 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import print_function
-import argparse
-import re
+
 import os
+import re
 from abc import ABCMeta, abstractproperty, abstractmethod
-from os.path import join, exists
+from os.path import join
+
 import mx
 from mx_benchmark import StdOutRule, VmRegistry, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite
 from mx_graalpython_bench_param import benchmarks_list
@@ -48,7 +49,7 @@ VM_NAME_TRUFFLE_PYTHON = "graalpython"
 VM_NAME_CPYTHON = "cpython"
 VM_NAME_PYPY = "pypy"
 GROUP_GRAAL = "Graal"
-SUBGROUP_TRUFFLE_PYTHON = "graalpython"
+SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
 _HRULE = ''.join(['-' for _ in range(120)])
@@ -242,7 +243,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
         return self._name
 
     def subgroup(self):
-        return SUBGROUP_TRUFFLE_PYTHON
+        return SUBGROUP_GRAAL_PYTHON
 
     def get_vm_registry(self):
         return python_vm_registry
