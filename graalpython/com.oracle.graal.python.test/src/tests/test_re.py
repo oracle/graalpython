@@ -65,6 +65,19 @@ def test_special_re_compile():
     _dquote_re = re.compile(r'"(?:[^"\\]|\\.)*"')
 
 
+def test_json_bytes_re_compile():
+    import json
+    assert isinstance(json.encoder.HAS_UTF8.pattern, bytes)
+    assert json.encoder.HAS_UTF8.search(b"\x80") is not None
+    assert json.encoder.HAS_UTF8.search(b"space") is None
+    try:
+        json.encoder.HAS_UTF8.search("\x80")
+    except TypeError as e:
+        pass
+    else:
+        assert False, "searching a bytes-pattern in a str did not raise"
+
+
 class S(str):
     def __getitem__(self, index):
         return S(super().__getitem__(index))
@@ -297,4 +310,3 @@ class ReTests(unittest.TestCase):
         self.assertTrue(match)
         assert "frac" in match.groupdict()
         assert match.groupdict()["frac"] == "1"
-

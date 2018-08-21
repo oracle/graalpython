@@ -292,6 +292,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return doIt(callable, arg1, arg2, runtimeError, typeError, invokeNode);
         }
 
+        @SuppressWarnings("unused")
+        @Fallback
+        Object call(Object callable, Object arg1, Object arg2) {
+            throw raise(RuntimeError);
+        }
+
         protected static Node createExecute() {
             return Message.EXECUTE.createNode();
         }
