@@ -39,6 +39,7 @@
 
 import _imp
 import sys
+import python_cext
 
 
 class CErrorHandler(object):
@@ -69,7 +70,7 @@ def may_raise(error_result=error_handler):
                 PyErr_Restore(typ, val, tb)
                 return error_result
             wrapper.__name__ = fun.__name__
-            return wrapper
+            return __builtin__(wrapper)
         return decorator
 
 
@@ -1330,34 +1331,38 @@ def PyTruffle_Upcall_ptr(rcv, name, *args):
     return getattr(rcv, name)(*converted)
 
 
+@__builtin__
 def PyTruffle_Cext_Upcall(name, *args):
     nargs = len(args)
     converted = [None] * nargs
     for i in range(nargs):
         converted[i] = to_java(args[i])
-    return to_sulong(globals()[name](*converted))
+    return to_sulong(getattr(python_cext, name)(*converted))
 
 
+@__builtin__
 def PyTruffle_Cext_Upcall_l(name, *args):
     nargs = len(args)
     converted = [None] * nargs
     for i in range(nargs):
         converted[i] = to_java(args[i])
-    return to_long(globals()[name](*converted))
+    return to_long(getattr(python_cext, name)(*converted))
 
 
+@__builtin__
 def PyTruffle_Cext_Upcall_d(name, *args):
     nargs = len(args)
     converted = [None] * nargs
     for i in range(nargs):
         converted[i] = to_java(args[i])
-    return to_double(globals()[name](*converted))
+    return to_double(getattr(python_cext, name)(*converted))
 
 
+@__builtin__
 def PyTruffle_Cext_Upcall_ptr(name, *args):
     nargs = len(args)
     converted = [None] * nargs
     for i in range(nargs):
         converted[i] = to_java(args[i])
     # returns a pointer, i.e., we do no conversion since this can be any pointer object
-    return globals()[name](*converted)
+    return getattr(python_cext, name)(*converted)
