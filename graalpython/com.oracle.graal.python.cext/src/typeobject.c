@@ -52,8 +52,9 @@ PyTypeObject PyType_Type = PY_TRUFFLE_TYPE("type", &PyType_Type, Py_TPFLAGS_DEFA
 PyTypeObject PyBaseObject_Type = PY_TRUFFLE_TYPE("object", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, sizeof(PyObject));
 PyTypeObject PySuper_Type = PY_TRUFFLE_TYPE("super", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(superobject));
 
+UPCALL_ID(PyType_IsSubtype);
 int PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
-    return UPCALL_CEXT_I("PyType_IsSubtype", native_to_java((PyObject*)a), native_to_java((PyObject*)b));
+    return UPCALL_CEXT_I(_jls_PyType_IsSubtype, native_to_java((PyObject*)a), native_to_java((PyObject*)b));
 }
 
 static int add_subclass(PyTypeObject *base, PyTypeObject *type) {

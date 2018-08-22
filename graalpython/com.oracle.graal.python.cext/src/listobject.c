@@ -42,38 +42,45 @@
 
 PyTypeObject PyList_Type = PY_TRUFFLE_TYPE("list", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_LIST_SUBCLASS, sizeof(PyListObject));
 
+UPCALL_ID(PyList_New);
 PyObject* PyList_New(Py_ssize_t size) {
-    return UPCALL_CEXT_O("PyList_New", size);
+    return UPCALL_CEXT_O(_jls_PyList_New, size);
 }
 
+UPCALL_ID(PyList_GetItem);
 PyObject* PyList_GetItem(PyObject *op, Py_ssize_t i) {
-    return UPCALL_CEXT_O("PyList_GetItem", native_to_java(op), i);
+    return UPCALL_CEXT_O(_jls_PyList_GetItem, native_to_java(op), i);
 }
 
+UPCALL_ID(PyList_SetItem);
 int PyList_SetItem(PyObject *op, Py_ssize_t i, PyObject *newitem) {
-    return UPCALL_CEXT_I("PyList_SetItem", native_to_java(op), i, native_to_java(newitem));
+    return UPCALL_CEXT_I(_jls_PyList_SetItem, native_to_java(op), i, native_to_java(newitem));
 }
 
+UPCALL_ID(PyList_Append);
 int PyList_Append(PyObject *op, PyObject *newitem) {
-	if (newitem == NULL) {
-		PyErr_BadInternalCall();
-		return -1;
-	}
-    return UPCALL_CEXT_I("PyList_Append", native_to_java(op), native_to_java(newitem));
+    if (newitem == NULL) {
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    return UPCALL_CEXT_I(_jls_PyList_Append, native_to_java(op), native_to_java(newitem));
 }
 
+UPCALL_ID(PyList_AsTuple);
 PyObject* PyList_AsTuple(PyObject *v) {
     if (v == NULL) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    return UPCALL_CEXT_O("PyList_AsTuple", native_to_java(v));
+    return UPCALL_CEXT_O(_jls_PyList_AsTuple, native_to_java(v));
 }
 
+UPCALL_ID(PyList_GetSlice);
 PyObject* PyList_GetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh) {
-    return UPCALL_CEXT_O("PyList_GetSlice", native_to_java(a), ilow, ihigh);
+    return UPCALL_CEXT_O(_jls_PyList_GetSlice, native_to_java(a), ilow, ihigh);
 }
 
+UPCALL_ID(PyList_Size);
 Py_ssize_t PyList_Size(PyObject *op) {
-    return UPCALL_CEXT_I("PyList_Size", native_to_java(op));
+    return UPCALL_CEXT_I(_jls_PyList_Size, native_to_java(op));
 }

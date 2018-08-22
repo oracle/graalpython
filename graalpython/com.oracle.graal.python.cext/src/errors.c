@@ -40,20 +40,23 @@
  */
 #include "capi.h"
 
+UPCALL_ID(_PyErr_BadInternalCall);
 void _PyErr_BadInternalCall(const char *filename, int lineno) {
-    UPCALL_CEXT_VOID("_PyErr_BadInternalCall", polyglot_from_string(filename, SRC_CS), lineno, native_to_java(NULL));
+    UPCALL_CEXT_VOID(_jls__PyErr_BadInternalCall, polyglot_from_string(filename, SRC_CS), lineno, native_to_java(NULL));
 }
 
 #undef PyErr_BadInternalCall
+UPCALL_ID(PyTruffle_Err_Format);
 void PyErr_BadInternalCall(void) {
     assert(0 && "bad argument to internal function");
-    UPCALL_CEXT_VOID("PyTruffle_Err_Format", native_to_java(PyExc_SystemError), polyglot_from_string("bad argument to internal function", SRC_CS));
+    UPCALL_CEXT_VOID(_jls_PyTruffle_Err_Format, native_to_java(PyExc_SystemError), polyglot_from_string("bad argument to internal function", SRC_CS));
 }
 #define PyErr_BadInternalCall() _PyErr_BadInternalCall(__FILE__, __LINE__)
 
 
+UPCALL_ID(PyErr_Occurred);
 PyObject* PyErr_Occurred() {
-    return UPCALL_CEXT_O("PyErr_Occurred", ERROR_MARKER);
+    return UPCALL_CEXT_O(_jls_PyErr_Occurred, ERROR_MARKER);
 }
 
 void PyErr_SetString(PyObject *exception, const char *string) {
@@ -61,18 +64,21 @@ void PyErr_SetString(PyObject *exception, const char *string) {
     PyErr_SetObject(exception, value);
 }
 
+UPCALL_ID(PyErr_CreateAndSetException);
 void PyErr_SetObject(PyObject *exception, PyObject *value) {
-    UPCALL_CEXT_VOID("PyErr_CreateAndSetException", native_to_java(exception), native_to_java(value));
+    UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(value));
 }
 
 void PyErr_Clear(void) {
     PyErr_Restore(NULL, NULL, NULL);
 }
 
+UPCALL_ID(PyErr_Restore);
 void PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback) {
-    UPCALL_CEXT_VOID("PyErr_Restore", native_to_java(type), native_to_java(value), native_to_java(traceback));
+    UPCALL_CEXT_VOID(_jls_PyErr_Restore, native_to_java(type), native_to_java(value), native_to_java(traceback));
 }
 
+UPCALL_ID(PyErr_NewException);
 PyObject* PyErr_NewException(const char *name, PyObject *base, PyObject *dict) {
     if (base == NULL) {
         base = PyExc_Exception;
@@ -80,23 +86,25 @@ PyObject* PyErr_NewException(const char *name, PyObject *base, PyObject *dict) {
     if (dict == NULL) {
         dict = PyDict_New();
     }
-    return UPCALL_CEXT_O("PyErr_NewException", polyglot_from_string(name, SRC_CS), native_to_java(base), native_to_java(dict));
+    return UPCALL_CEXT_O(_jls_PyErr_NewException, polyglot_from_string(name, SRC_CS), native_to_java(base), native_to_java(dict));
 }
 
+UPCALL_ID(PyErr_GivenExceptionMatches);
 int PyErr_GivenExceptionMatches(PyObject *err, PyObject *exc) {
     if (err == NULL || exc == NULL) {
         /* maybe caused by "import exceptions" that failed early on */
         return 0;
     }
-    return UPCALL_CEXT_I("PyErr_GivenExceptionMatches", native_to_java(err), native_to_java(exc));
+    return UPCALL_CEXT_I(_jls_PyErr_GivenExceptionMatches, native_to_java(err), native_to_java(exc));
 }
 
 void PyErr_SetNone(PyObject *exception) {
-    UPCALL_CEXT_VOID("PyErr_CreateAndSetException", native_to_java(exception), native_to_java(Py_None));
+    UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(Py_None));
 }
 
+UPCALL_ID(PyErr_Fetch);
 static void _PyErr_GetOrFetchExcInfo(int consume, PyObject **p_type, PyObject **p_value, PyObject **p_traceback) {
-    PyObject* result = UPCALL_CEXT_O("PyErr_Fetch", (consume ? Py_True : Py_False), ERROR_MARKER);
+    PyObject* result = UPCALL_CEXT_O(_jls_PyErr_Fetch, (consume ? Py_True : Py_False), ERROR_MARKER);
     if(result == NULL) {
     	*p_type = NULL;
     	*p_value = NULL;
@@ -124,8 +132,9 @@ void PyErr_Print(void) {
     PyErr_PrintEx(1);
 }
 
+UPCALL_ID(PyErr_PrintEx);
 void PyErr_PrintEx(int set_sys_last_vars) {
-    UPCALL_CEXT_VOID("PyErr_PrintEx", set_sys_last_vars);
+    UPCALL_CEXT_VOID(_jls_PyErr_PrintEx, set_sys_last_vars);
 }
 
 // taken from CPython "Python/errors.c"
@@ -147,16 +156,18 @@ int PyErr_ExceptionMatches(PyObject *exc) {
 
 PyObject* PyTruffle_Err_Format(PyObject* exception, const char* fmt, int s, void* v0, void* v1, void* v2, void* v3, void* v4, void* v5, void* v6, void* v7, void* v8, void* v9) {
     PyObject *formatted_msg = PyTruffle_Unicode_FromFormat(fmt, s, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-    UPCALL_CEXT_VOID("PyErr_CreateAndSetException", native_to_java(exception), native_to_java(formatted_msg));
+    UPCALL_CEXT_VOID(_jls_PyErr_CreateAndSetException, native_to_java(exception), native_to_java(formatted_msg));
     return NULL;
 }
 
+UPCALL_ID(PyErr_WriteUnraisable);
 void PyErr_WriteUnraisable(PyObject *obj) {
-    UPCALL_CEXT_VOID("PyErr_WriteUnraisable", native_to_java(obj));
+    UPCALL_CEXT_VOID(_jls_PyErr_WriteUnraisable, native_to_java(obj));
 }
 
+UPCALL_ID(PyErr_Display);
 void PyErr_Display(PyObject *exception, PyObject *value, PyObject *tb) {
-    UPCALL_CEXT_VOID("PyErr_Display", native_to_java(exception), native_to_java(value), native_to_java(tb));
+    UPCALL_CEXT_VOID(_jls_PyErr_Display, native_to_java(exception), native_to_java(value), native_to_java(tb));
 }
 
 void PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb) {

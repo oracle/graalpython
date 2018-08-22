@@ -121,9 +121,6 @@
 #include "iterobject.h"
 #include "datetime.h"
 
-#define PY_TRUFFLE_CEXT ((void*)polyglot_import("python_cext"))
-#define PY_BUILTIN ((void*)polyglot_import("python_builtins"))
-
 #undef Py_NoValue
 #define Py_NoValue UPCALL_CEXT_O("Py_NoValue")
 

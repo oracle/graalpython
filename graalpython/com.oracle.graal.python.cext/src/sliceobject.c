@@ -85,6 +85,7 @@ Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_
     return PyLong_AsSsize_t(PyTuple_GetItem(result, 3)); // adjusted length
 }
 
+UPCALL_ID(PySlice_New);
 PyObject* PySlice_New(PyObject* start, PyObject *stop, PyObject *step) {
-    return UPCALL_CEXT_O("PySlice_New", native_to_java(start), native_to_java(stop), native_to_java(step));
+    return UPCALL_CEXT_O(_jls_PySlice_New, native_to_java(start), native_to_java(stop), native_to_java(step));
 }

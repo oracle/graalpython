@@ -42,13 +42,14 @@
 
 PyTypeObject PyCode_Type = PY_TRUFFLE_TYPE("code", &PyType_Type, Py_TPFLAGS_DEFAULT, sizeof(PyTypeObject));
 
+UPCALL_ID(PyCode_New);
 PyCodeObject* PyCode_New(int argcount, int kwonlyargcount,
                          int nlocals, int stacksize, int flags,
                          PyObject *code, PyObject *consts, PyObject *names,
                          PyObject *varnames, PyObject *freevars, PyObject *cellvars,
                          PyObject *filename, PyObject *name, int firstlineno,
                          PyObject *lnotab) {
-    return UPCALL_CEXT_O("PyCode_New", argcount, kwonlyargcount,
+    return UPCALL_CEXT_O(_jls_PyCode_New, argcount, kwonlyargcount,
                          nlocals, stacksize, flags,
                          native_to_java(code), native_to_java(consts), native_to_java(names),
                          native_to_java(varnames), native_to_java(freevars), native_to_java(cellvars),
