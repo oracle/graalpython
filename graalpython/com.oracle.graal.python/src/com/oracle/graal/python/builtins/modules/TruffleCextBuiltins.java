@@ -1708,4 +1708,26 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                             Truffle.getRuntime().createCallTarget(new MayRaiseWrapper(getRootNode().getLanguage(PythonLanguage.class), factory(), func, errorResult)));
         }
     }
+
+    @Builtin(name = "to_long", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class AsLong extends PythonBuiltinNode {
+        @Child CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
+
+        @Specialization
+        long doIt(Object object) {
+            return asLongNode.execute(object);
+        }
+    }
+
+    @Builtin(name = "to_double", fixedNumOfArguments = 1)
+    @GenerateNodeFactory
+    abstract static class AsDouble extends PythonBuiltinNode {
+        @Child CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
+
+        @Specialization
+        double doIt(Object object) {
+            return asDoubleNode.execute(object);
+        }
+    }
 }
