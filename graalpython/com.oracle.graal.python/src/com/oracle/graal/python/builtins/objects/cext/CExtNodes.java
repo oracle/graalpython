@@ -246,8 +246,15 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object);
         }
 
-        @Specialization(guards = {"!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"})
-        Object runNativeObject(PythonAbstractObject object) {
+        @Specialization(guards = {"cachedClass == object.getClass()", "!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, limit = "3")
+        Object runAbstractObjectCached(PythonAbstractObject object,
+                        @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass) {
+            assert object != PNone.NO_VALUE;
+            return PythonObjectNativeWrapper.wrap(CompilerDirectives.castExact(object, cachedClass));
+        }
+
+        @Specialization(guards = {"!isPythonClass(object)", "!isNativeObject(object)", "!isNoValue(object)"}, replaces = "runAbstractObjectCached")
+        Object runAbstractObject(PythonAbstractObject object) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object);
         }
@@ -289,8 +296,14 @@ public abstract class CExtNodes {
 
         @Child GetClassNode getClassNode;
 
-        @Specialization
-        Object doNativeWrapper(PythonNativeWrapper object) {
+        @Specialization(guards = "object.getClass() == cachedClass", limit = "3")
+        Object doNativeWrapper(PythonNativeWrapper object,
+                        @SuppressWarnings("unused") @Cached("object.getClass()") Class<? extends PythonNativeWrapper> cachedClass) {
+            return CompilerDirectives.castExact(object, cachedClass).getDelegate();
+        }
+
+        @Specialization(replaces = "doNativeWrapper")
+        Object doNativeWrapperGeneric(PythonNativeWrapper object) {
             return object.getDelegate();
         }
 
