@@ -38,6 +38,7 @@
 # SOFTWARE.
 import copy
 import random
+import sys
 import unittest
 from collections import deque
 
@@ -209,6 +210,7 @@ class TestBasic(unittest.TestCase):
         d.extend(d)
         self.assertEqual(list(d), list('abcdabcd'))
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
     def test_add(self):
         d = deque()
         e = deque('abc')
@@ -265,6 +267,7 @@ class TestBasic(unittest.TestCase):
         self.assertRaises(IndexError, d.__getitem__, 0)
         self.assertRaises(IndexError, d.__getitem__, -1)
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
     def test_index(self):
         for n in 1, 2, 30, 40, 200:
 
@@ -301,11 +304,13 @@ class TestBasic(unittest.TestCase):
                     else:
                         self.assertEqual(d.index(element, start, stop), target)
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
     def test_index_bug_24913(self):
         d = deque('A' * 3)
         with self.assertRaises(ValueError):
             i = d.index("Hello world", 0, 4)
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
     def test_imul(self):
         for n in (-10, -1, 0, 1, 2, 10, 1000):
             d = deque()
@@ -337,6 +342,7 @@ class TestBasic(unittest.TestCase):
             self.assertEqual(d, deque(('abcdef' * n)[-500:]))
             self.assertEqual(d.maxlen, 500)
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
     def test_mul(self):
         d = deque('abc')
         self.assertEqual(d * -5, deque())
@@ -586,6 +592,7 @@ class TestBasic(unittest.TestCase):
         self.assertNotEqual(id(d), id(e))
         self.assertEqual(list(d), list(e))
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
     def test_copy(self):
         mut = [10]
         d = deque([mut])
@@ -604,6 +611,7 @@ class TestBasic(unittest.TestCase):
                 self.assertEqual(d.maxlen, e.maxlen)
                 self.assertTrue(all(x is y for x, y in zip(d, e)))
 
+    @unittest.skipIf(sys.implementation.name == 'cpython' and sys.version_info[0:2] < (3, 5), "skipping for cPython versions < 3.5")
     def test_copy_method(self):
         mut = [10]
         d = deque([mut])
