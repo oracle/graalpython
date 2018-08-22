@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -48,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -62,12 +62,10 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.ArityCheckNode;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
@@ -81,10 +79,18 @@ import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.interop.PythonMessageResolutionFactory.ArgumentsFromForeignNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.CanResolve;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
@@ -94,6 +100,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -236,41 +243,55 @@ public class PythonMessageResolution {
         }
     }
 
-    public static final class ExecuteNode extends Node {
-        @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
+    abstract static class ArgumentsFromForeignNode extends Node {
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
-        @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create(__CALL__);
-        @Child private CallDispatchNode dispatch;
-        @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-        @Child private ArityCheckNode arityCheckNode = ArityCheckNode.create();
-        final ValueProfile classProfile = ValueProfile.createClassProfile();
 
-        private CallDispatchNode getDispatchNode() {
-            if (dispatch == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                dispatch = insert(CallDispatchNode.create());
+        public abstract Object[] execute(Object[] arguments);
+
+        @Specialization(guards = "arguments.length == cachedLen", limit = "1")
+        @ExplodeLoop
+        Object[] cached(Object[] arguments,
+                        @Cached("arguments.length") int cachedLen) {
+            Object[] convertedArgs = new Object[cachedLen];
+            for (int i = 0; i < cachedLen; i++) {
+                convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
             }
-            return dispatch;
+            return convertedArgs;
         }
 
-        public Object execute(Object receiver, Object[] arguments) {
-            Object callable = getCall.execute(receiver);
-
-            // convert foreign argument values to Python values
+        @Specialization(replaces = "cached")
+        Object[] cached(Object[] arguments) {
             Object[] convertedArgs = new Object[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
                 convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
             }
+            return convertedArgs;
+        }
+    }
 
-            Object profiledCallable = classProfile.profile(callable);
-            if (profiledCallable == PNone.NO_VALUE) {
+    public static final class ExecuteNode extends Node {
+        @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
+        @Child private CallNode callNode = CallNode.create();
+        @Child private ArgumentsFromForeignNode convertArgsNode = ArgumentsFromForeignNodeGen.create();
+        final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+        public Object execute(Object receiver, Object[] arguments) {
+            Object[] convertedArgs = convertArgsNode.execute(arguments);
+            try {
+                return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, new PKeyword[0]));
+            } catch (PException e) {
+                e.expect(PythonErrorType.TypeError, getCore(), errorProfile);
                 throw UnsupportedMessageException.raise(Message.EXECUTE);
             }
+        }
 
-            PKeyword[] emptyKeywords = new PKeyword[0];
-            Object[] pArguments = createArgs.executeWithSelf(receiver, convertedArgs);
-
-            return toForeign.executeConvert(getDispatchNode().executeCall(null, profiledCallable, pArguments, emptyKeywords));
+        private PythonCore getCore() {
+            if (contextRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                contextRef = PythonLanguage.getContextRef();
+            }
+            return contextRef.get().getCore();
         }
     }
 
