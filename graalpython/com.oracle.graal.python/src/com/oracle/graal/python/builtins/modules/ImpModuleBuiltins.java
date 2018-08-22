@@ -242,7 +242,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
-                CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
+                CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
                 callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
                 ctxt.setCapiWasLoaded();
 

@@ -108,6 +108,6 @@ public abstract class PBaseNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        return PythonLanguage.singleContextAssumption;
+        return getRootNode().getLanguage(PythonLanguage.class).singleContextAssumption;
     }
 }
