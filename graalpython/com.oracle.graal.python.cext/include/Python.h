@@ -121,9 +121,6 @@
 #include "iterobject.h"
 #include "datetime.h"
 
-#undef Py_NoValue
-#define Py_NoValue UPCALL_CEXT_O("Py_NoValue")
-
 // TODO: we must extend the refcounting behavior to support handles to managed objects
 #undef Py_DECREF
 #define Py_DECREF(o) 0

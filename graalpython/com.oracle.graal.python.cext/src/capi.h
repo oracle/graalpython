@@ -77,6 +77,7 @@ PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 
 extern void *PY_TRUFFLE_CEXT;
 extern void *PY_BUILTIN;
+extern void *Py_NoValue;
 
 /* upcall functions for calling into Python */
 extern PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);

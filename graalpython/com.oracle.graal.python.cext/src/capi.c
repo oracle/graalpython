@@ -42,6 +42,7 @@
 
 void *PY_TRUFFLE_CEXT;
 void *PY_BUILTIN;
+void *Py_NoValue;
 
 PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
 PyObject*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
@@ -56,6 +57,7 @@ __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT = (void*)polyglot_import("python_cext");
     PY_BUILTIN = (void*)polyglot_import("python_builtins");
+
     PY_TRUFFLE_LANDING = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)));
     PY_TRUFFLE_LANDING_L = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
     PY_TRUFFLE_LANDING_D = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)));
@@ -64,6 +66,8 @@ static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT_LANDING_L = ((uint64_t (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_D = ((double (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)));
     PY_TRUFFLE_CEXT_LANDING_PTR = ((void* (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)));
+
+    Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {
