@@ -226,7 +226,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_encode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends PythonBuiltinNode {
         @Specialization(guards = "isString(str)")
@@ -311,7 +311,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_decode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends PythonBuiltinNode {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
@@ -396,7 +396,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.lookup(name)
-    @Builtin(name = "__truffle_lookup", fixedNumOfArguments = 1)
+    @Builtin(name = "__truffle_lookup", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality

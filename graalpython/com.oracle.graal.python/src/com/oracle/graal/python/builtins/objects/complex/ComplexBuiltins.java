@@ -91,7 +91,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __ABS__, fixedNumOfArguments = 1)
+    @Builtin(name = __ABS__, fixedNumOfPositionalArgs = 1)
     static abstract class AbsNode extends PythonBuiltinNode {
         @Specialization
         double abs(PComplex c) {
@@ -223,7 +223,7 @@ public class ComplexBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     static abstract class AddNode extends PythonBuiltinNode {
@@ -256,12 +256,12 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __RADD__, fixedNumOfPositionalArgs = 2)
     static abstract class RAddNode extends AddNode {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __TRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = __TRUEDIV__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     static abstract class DivNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -288,7 +288,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RTRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = __RTRUEDIV__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     static abstract class RDivNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -307,7 +307,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     static abstract class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -340,12 +340,12 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
     static abstract class RMulNode extends MulNode {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUB__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     static abstract class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -366,7 +366,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     static abstract class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -381,7 +381,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
     static abstract class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -396,7 +396,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
     static abstract class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -411,7 +411,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
     static abstract class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -426,7 +426,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
     static abstract class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -441,7 +441,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     static abstract class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doComplex(PComplex left, PComplex right) {
@@ -456,7 +456,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     static abstract class ReprNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -466,7 +466,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __STR__, fixedNumOfArguments = 1)
+    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
     static abstract class StrNode extends PythonBuiltinNode {
         @Specialization
         String repr(PComplex self) {
@@ -475,7 +475,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
     static abstract class BoolNode extends PythonBuiltinNode {
         @Specialization
         boolean bool(PComplex self) {
@@ -484,7 +484,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __NEG__, fixedNumOfArguments = 1)
+    @Builtin(name = __NEG__, fixedNumOfPositionalArgs = 1)
     static abstract class NegNode extends PythonBuiltinNode {
         @Specialization
         PComplex neg(PComplex self) {
@@ -493,7 +493,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __POS__, fixedNumOfArguments = 1)
+    @Builtin(name = __POS__, fixedNumOfPositionalArgs = 1)
     static abstract class PosNode extends PythonBuiltinNode {
         @Specialization
         PComplex pos(PComplex self) {
@@ -502,7 +502,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __GETNEWARGS__, fixedNumOfArguments = 1)
+    @Builtin(name = __GETNEWARGS__, fixedNumOfPositionalArgs = 1)
     static abstract class GetNewArgsNode extends PythonBuiltinNode {
         @Specialization
         PTuple get(PComplex self) {
@@ -511,7 +511,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
+    @Builtin(name = "real", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends PythonBuiltinNode {
         @Specialization
         double get(PComplex self) {
@@ -520,7 +520,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true, doc = "the imaginary part of a complex number")
+    @Builtin(name = "imag", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     static abstract class ImagNode extends PythonBuiltinNode {
         @Specialization
         double get(PComplex self) {
@@ -529,7 +529,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
     static abstract class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary

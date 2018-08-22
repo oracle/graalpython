@@ -97,7 +97,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         return ObjectBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __CLASS__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CLASS__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClassNode extends PythonBuiltinNode {
         @Specialization
@@ -107,7 +107,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INIT__, takesVariableArguments = true, minNumOfArguments = 1, takesVariableKeywords = true)
+    @Builtin(name = __INIT__, takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
         @Override
@@ -124,7 +124,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
@@ -134,7 +134,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -148,7 +148,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -157,7 +157,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __STR__, fixedNumOfArguments = 1)
+    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -167,7 +167,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -182,7 +182,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Child private LookupAndCallUnaryNode callLenNode;
@@ -222,7 +222,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTRIBUTE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetAttributeNode extends PythonBinaryBuiltinNode {
         private final BranchProfile hasDescProfile = BranchProfile.create();
@@ -346,7 +346,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GETATTR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__GETATTR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -355,7 +355,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__SETATTR__, fixedNumOfArguments = 3)
+    @Builtin(name = SpecialMethodNames.__SETATTR__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -387,7 +387,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELATTR__, fixedNumOfArguments = 2)
+    @Builtin(name = __DELATTR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -423,7 +423,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -449,7 +449,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __FORMAT__, fixedNumOfArguments = 2)
+    @Builtin(name = __FORMAT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     static abstract class FormatNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isString(formatString)")
@@ -464,7 +464,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = RICHCMP, fixedNumOfArguments = 3)
+    @Builtin(name = RICHCMP, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     static abstract class RichCompareNode extends PythonTernaryBuiltinNode {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;

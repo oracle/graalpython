@@ -94,7 +94,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROUND__, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
@@ -117,7 +117,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -164,12 +164,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RADD__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RAddNode extends AddNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -221,7 +221,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RSUB__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RSUB__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RSubNode extends PythonBinaryBuiltinNode {
@@ -273,7 +273,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__TRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__TRUEDIV__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TrueDivNode extends PythonBinaryBuiltinNode {
@@ -337,7 +337,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RTrueDivNode extends PythonBinaryBuiltinNode {
@@ -396,7 +396,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOORDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__FLOORDIV__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class FloorDivNode extends IntBinaryBuiltinNode {
@@ -449,7 +449,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RFloorDivNode extends IntBinaryBuiltinNode {
@@ -495,7 +495,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MOD__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__MOD__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class ModNode extends IntBinaryBuiltinNode {
@@ -559,7 +559,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -615,12 +615,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__POW__, minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = SpecialMethodNames.__POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PowNode extends PythonTernaryBuiltinNode {
@@ -761,7 +761,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
@@ -814,7 +814,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CEIL__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__CEIL__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CeilNode extends PythonUnaryBuiltinNode {
@@ -834,7 +834,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOOR__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__FLOOR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloorNode extends PythonUnaryBuiltinNode {
@@ -854,7 +854,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__POS__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__POS__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
@@ -874,7 +874,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NEG__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__NEG__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
@@ -910,7 +910,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INVERT__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__INVERT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
@@ -940,7 +940,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LSHIFT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__LSHIFT__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class LShiftNode extends PythonBinaryBuiltinNode {
@@ -1081,7 +1081,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__RSHIFT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RSHIFT__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RShiftNode extends PythonBinaryBuiltinNode {
@@ -1189,7 +1189,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__AND__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__AND__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class AndNode extends BinaryBitwiseNode {
@@ -1211,13 +1211,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RAND__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RAND__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RAndNode extends AndNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__OR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__OR__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class OrNode extends BinaryBitwiseNode {
@@ -1239,12 +1239,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__ROR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ROrNode extends OrNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__XOR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__XOR__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class XorNode extends BinaryBitwiseNode {
@@ -1265,12 +1265,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RXOR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RXOR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RXorNode extends XorNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -1329,7 +1329,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
@@ -1378,7 +1378,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
@@ -1423,7 +1423,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
@@ -1468,7 +1468,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GtNode extends PythonBinaryBuiltinNode {
@@ -1514,7 +1514,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
@@ -1560,7 +1560,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "from_bytes", fixedNumOfArguments = 2, takesVariableArguments = true, keywordArguments = {"signed"})
+    @Builtin(name = "from_bytes", fixedNumOfPositionalArgs = 2, takesVarArgs = true, keywordArguments = {"signed"})
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1606,7 +1606,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization
@@ -1630,7 +1630,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__STR__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__STR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class StrNode extends PythonBuiltinNode {
@@ -1653,12 +1653,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
@@ -1680,7 +1680,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "bit_length", fixedNumOfArguments = 1)
+    @Builtin(name = "bit_length", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class BitLengthNode extends PythonBuiltinNode {
@@ -1702,13 +1702,13 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
+    @Builtin(name = "real", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true, doc = "the imaginary part of a complex number")
+    @Builtin(name = "imag", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     static abstract class ImagNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
@@ -1717,19 +1717,19 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "numerator", fixedNumOfArguments = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
+    @Builtin(name = "numerator", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
     static abstract class NumeratorNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any int.")
+    @Builtin(name = "conjugate", fixedNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any int.")
     static abstract class ConjugateNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "denominator", fixedNumOfArguments = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
+    @Builtin(name = "denominator", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
     static abstract class DenominatorNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
@@ -1738,12 +1738,12 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__TRUNC__, fixedNumOfArguments = 1, doc = "Truncating an Integral returns itself.")
+    @Builtin(name = SpecialMethodNames.__TRUNC__, fixedNumOfPositionalArgs = 1, doc = "Truncating an Integral returns itself.")
     static abstract class TruncNode extends IntNode {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IntNode extends PythonBuiltinNode {
@@ -1783,12 +1783,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INDEX__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__INDEX__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends IntNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOAT__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__FLOAT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloatNode extends PythonBuiltinNode {

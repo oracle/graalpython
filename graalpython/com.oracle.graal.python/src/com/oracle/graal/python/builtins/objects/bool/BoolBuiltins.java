@@ -52,7 +52,7 @@ public final class BoolBuiltins extends PythonBuiltins {
         return BoolBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __STR__, fixedNumOfArguments = 1)
+    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class StrNode extends PythonBuiltinNode {
@@ -67,7 +67,7 @@ public final class BoolBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class RepNode extends StrNode {
     }

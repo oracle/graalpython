@@ -51,7 +51,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         return BuiltinFunctionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {

@@ -62,7 +62,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     }
 
     // array.array(typecode[, initializer])
-    @Builtin(name = "array", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PythonBuiltinClassType.PArray)
+    @Builtin(name = "array", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PArray)
     @GenerateNodeFactory
     abstract static class PythonArrayNode extends PythonBuiltinNode {
 

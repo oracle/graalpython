@@ -60,7 +60,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         return JavaModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "type", fixedNumOfArguments = 1)
+    @Builtin(name = "type", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
         @Specialization

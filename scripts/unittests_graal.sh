@@ -37,8 +37,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# mx --strict-compliance --dynamicimports sulong --primary gate --tags python-junit,python-unittest
-# 
-# DEFAULT_DYNAMIC_IMPORTS="sulong,/compiler"
-mx --strict-compliance --dynamicimports sulong,/compiler --primary gate --tags python-junit -B=--force-deprecation-as-warning-for-dependencies
-# mx --dynamicimports /compiler python-gate --tags python-junit,python-unittest
+#!/bin/bash
+
+cd "$(dirname $0)"
+cd ..
+mx --strict-compliance --dynamicimports sulong,/compiler python3 -compile-truffle-immediately graalpython/com.oracle.graal.python.test/src/graalpytest.py -v graalpython/com.oracle.graal.python.test/src/tests/

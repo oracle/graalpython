@@ -254,7 +254,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("environ", core.factory().createDict());
     }
 
-    @Builtin(name = "getcwd", fixedNumOfArguments = 0)
+    @Builtin(name = "getcwd", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class CwdNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -266,7 +266,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "chdir", fixedNumOfArguments = 1)
+    @Builtin(name = "chdir", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ChdirNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -285,7 +285,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getpid", fixedNumOfArguments = 0)
+    @Builtin(name = "getpid", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
         @Specialization
@@ -296,7 +296,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fstat", fixedNumOfArguments = 1)
+    @Builtin(name = "fstat", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class FstatNode extends PythonFileNode {
 
@@ -346,7 +346,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "set_inheritable", fixedNumOfArguments = 2)
+    @Builtin(name = "set_inheritable", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetInheritableNode extends PythonFileNode {
         @Specialization(guards = {"fd >= 0", "fd <= 2"})
@@ -368,7 +368,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stat", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
@@ -503,7 +503,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "listdir", fixedNumOfArguments = 1)
+    @Builtin(name = "listdir", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
@@ -530,7 +530,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dup", fixedNumOfArguments = 1)
+    @Builtin(name = "dup", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DupNode extends PythonFileNode {
@@ -547,7 +547,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "open", minNumOfArguments = 2, maxNumOfArguments = 4, keywordArguments = {"mode", "dir_fd"})
+    @Builtin(name = "open", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, keywordArguments = {"mode", "dir_fd"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
@@ -606,7 +606,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "lseek", fixedNumOfArguments = 3)
+    @Builtin(name = "lseek", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LseekNode extends PythonFileNode {
@@ -636,7 +636,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "close", fixedNumOfArguments = 1)
+    @Builtin(name = "close", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonFileNode {
         @Specialization
@@ -653,7 +653,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unlink", fixedNumOfArguments = 1)
+    @Builtin(name = "unlink", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UnlinkNode extends PythonFileNode {
@@ -669,17 +669,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "remove", fixedNumOfArguments = 1)
+    @Builtin(name = "remove", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RemoveNode extends UnlinkNode {
     }
 
-    @Builtin(name = "rmdir", fixedNumOfArguments = 1)
+    @Builtin(name = "rmdir", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RmdirNode extends UnlinkNode {
     }
 
-    @Builtin(name = "mkdir", fixedNumOfArguments = 1, keywordArguments = {"mode", "dir_fd"})
+    @Builtin(name = "mkdir", fixedNumOfPositionalArgs = 1, keywordArguments = {"mode", "dir_fd"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MkdirNode extends PythonFileNode {
@@ -700,7 +700,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "write", fixedNumOfArguments = 2)
+    @Builtin(name = "write", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class WriteNode extends PythonFileNode {
@@ -791,7 +791,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "read", fixedNumOfArguments = 2)
+    @Builtin(name = "read", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReadNode extends PythonFileNode {
@@ -813,7 +813,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isatty", fixedNumOfArguments = 1)
+    @Builtin(name = "isatty", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IsATTYNode extends PythonBuiltinNode {
@@ -833,7 +833,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_exit", fixedNumOfArguments = 1)
+    @Builtin(name = "_exit", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ExitNode extends PythonBuiltinNode {
@@ -844,7 +844,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "chmod", minNumOfArguments = 2, keywordArguments = {"dir_fd", "follow_symlinks"})
+    @Builtin(name = "chmod", minNumOfPositionalArgs = 2, keywordArguments = {"dir_fd", "follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ChmodNode extends PythonBuiltinNode {
@@ -870,7 +870,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "utime", minNumOfArguments = 1, keywordArguments = {"times", "ns", "dir_fd", "follow_symlinks"})
+    @Builtin(name = "utime", minNumOfPositionalArgs = 1, keywordArguments = {"times", "ns", "dir_fd", "follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UtimeNode extends PythonBuiltinNode {
@@ -980,7 +980,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     // FIXME: this is not nearly ready, just good enough for now
-    @Builtin(name = "system", fixedNumOfArguments = 1)
+    @Builtin(name = "system", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
@@ -1073,7 +1073,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "rename", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = "rename", minNumOfPositionalArgs = 2, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class RenameNode extends PythonFileNode {
         @Specialization
@@ -1123,12 +1123,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "replace", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = "replace", minNumOfPositionalArgs = 2, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends RenameNode {
     }
 
-    @Builtin(name = "urandom", fixedNumOfArguments = 1)
+    @Builtin(name = "urandom", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonBuiltinNode {

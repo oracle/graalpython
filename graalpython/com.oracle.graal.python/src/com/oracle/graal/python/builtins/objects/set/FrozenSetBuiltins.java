@@ -81,7 +81,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         return FrozenSetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -90,7 +90,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -99,7 +99,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REDUCE__, fixedNumOfArguments = 1)
+    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -111,7 +111,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -127,7 +127,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode = HashingStorageNodes.ContainsKeyNode.create();
@@ -148,7 +148,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __AND__, fixedNumOfArguments = 2)
+    @Builtin(name = __AND__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.IntersectNode intersectNode;
@@ -208,7 +208,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUB__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.DiffNode diffNode;
@@ -239,7 +239,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -249,7 +249,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "union", minNumOfArguments = 1, takesVariableArguments = true)
+    @Builtin(name = "union", minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UnionNode extends PythonBuiltinNode {
 
@@ -350,7 +350,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "issubset", fixedNumOfArguments = 2)
+    @Builtin(name = "issubset", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IsSubsetNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -368,7 +368,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "issuperset", fixedNumOfArguments = 2)
+    @Builtin(name = "issuperset", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IsSupersetNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -386,7 +386,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessEqualNode extends IsSubsetNode {
         @Specialization
@@ -400,7 +400,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterEqualNode extends IsSupersetNode {
         @Specialization
@@ -414,7 +414,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessThanNode extends PythonBinaryBuiltinNode {
         @Child LessEqualNode lessEqualNode;
@@ -456,7 +456,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterThanNode extends PythonBinaryBuiltinNode {
         @Child GreaterEqualNode greaterEqualNode;

@@ -84,7 +84,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         return InteropModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "import_value", minNumOfArguments = 1, keywordArguments = {"name"})
+    @Builtin(name = "import_value", minNumOfPositionalArgs = 1, keywordArguments = {"name"})
     @GenerateNodeFactory
     public abstract static class ImportNode extends PythonBuiltinNode {
         @Specialization
@@ -98,7 +98,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "eval", minNumOfArguments = 0, keywordArguments = {"path", "string", "language"})
+    @Builtin(name = "eval", minNumOfPositionalArgs = 0, keywordArguments = {"path", "string", "language"})
     @GenerateNodeFactory
     abstract static class EvalInteropNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -178,7 +178,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "export_value", minNumOfArguments = 1, keywordArguments = {"name"})
+    @Builtin(name = "export_value", minNumOfPositionalArgs = 1, keywordArguments = {"name"})
     @GenerateNodeFactory
     public abstract static class ExportSymbolNode extends PythonBuiltinNode {
         @Specialization
@@ -197,7 +197,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__read__", fixedNumOfArguments = 2)
+    @Builtin(name = "__read__", fixedNumOfPositionalArgs = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class ReadNode extends PythonBuiltinNode {
@@ -212,7 +212,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__write__", fixedNumOfArguments = 3)
+    @Builtin(name = "__write__", fixedNumOfPositionalArgs = 3)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBuiltinNode {
@@ -227,7 +227,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__remove__", fixedNumOfArguments = 2)
+    @Builtin(name = "__remove__", fixedNumOfPositionalArgs = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class removeNode extends PythonBuiltinNode {
@@ -242,7 +242,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__execute__", minNumOfArguments = 1, takesVariableArguments = true)
+    @Builtin(name = "__execute__", minNumOfPositionalArgs = 1, takesVarArgs = true)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class executeNode extends PythonBuiltinNode {
@@ -257,7 +257,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__new__", minNumOfArguments = 1, takesVariableArguments = true)
+    @Builtin(name = "__new__", minNumOfPositionalArgs = 1, takesVarArgs = true)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class newNode extends PythonBuiltinNode {
@@ -272,7 +272,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__invoke__", minNumOfArguments = 2, takesVariableArguments = true)
+    @Builtin(name = "__invoke__", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class invokeNode extends PythonBuiltinNode {
@@ -287,7 +287,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__is_null__", fixedNumOfArguments = 1)
+    @Builtin(name = "__is_null__", fixedNumOfPositionalArgs = 1)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class IsNullNode extends PythonBuiltinNode {
@@ -298,7 +298,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__has_size__", fixedNumOfArguments = 1)
+    @Builtin(name = "__has_size__", fixedNumOfPositionalArgs = 1)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class HasSizeNode extends PythonBuiltinNode {
@@ -314,7 +314,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__get_size__", fixedNumOfArguments = 1)
+    @Builtin(name = "__get_size__", fixedNumOfPositionalArgs = 1)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class GetSizeNode extends PythonBuiltinNode {
@@ -329,7 +329,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__is_boxed__", fixedNumOfArguments = 1)
+    @Builtin(name = "__is_boxed__", fixedNumOfPositionalArgs = 1)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class IsBoxedNode extends PythonBuiltinNode {
@@ -340,7 +340,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__has_keys__", fixedNumOfArguments = 1)
+    @Builtin(name = "__has_keys__", fixedNumOfPositionalArgs = 1)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class HasKeysNode extends PythonBuiltinNode {
@@ -356,7 +356,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__key_info__", fixedNumOfArguments = 2)
+    @Builtin(name = "__key_info__", fixedNumOfPositionalArgs = 2)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class KeyInfoNode extends PythonBuiltinNode {
@@ -367,7 +367,7 @@ public final class InteropModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__keys__", fixedNumOfArguments = 1)
+    @Builtin(name = "__keys__", fixedNumOfPositionalArgs = 1)
     @ImportStatic(Message.class)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonBuiltinNode {

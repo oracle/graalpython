@@ -66,7 +66,7 @@ public class RangeBuiltins extends PythonBuiltins {
         return RangeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
@@ -76,7 +76,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -85,7 +85,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -117,7 +117,7 @@ public class RangeBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
@@ -172,7 +172,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -181,7 +181,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forRange();

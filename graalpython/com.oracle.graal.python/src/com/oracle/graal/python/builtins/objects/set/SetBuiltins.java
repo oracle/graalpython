@@ -56,7 +56,7 @@ public final class SetBuiltins extends PythonBuiltins {
         return SetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
@@ -68,7 +68,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "add", fixedNumOfArguments = 2)
+    @Builtin(name = "add", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
@@ -80,7 +80,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -89,7 +89,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __OR__, fixedNumOfArguments = 2)
+    @Builtin(name = __OR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -105,7 +105,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "remove", fixedNumOfArguments = 2)
+    @Builtin(name = "remove", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -119,7 +119,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "discard", fixedNumOfArguments = 2)
+    @Builtin(name = "discard", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
         @Specialization

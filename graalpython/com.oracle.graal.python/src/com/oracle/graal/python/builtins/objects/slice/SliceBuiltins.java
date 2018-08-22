@@ -53,7 +53,7 @@ public class SliceBuiltins extends PythonBuiltins {
         return SliceBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
@@ -63,7 +63,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
@@ -72,7 +72,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "start", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "start", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     @ImportStatic(SequenceUtil.class)
     abstract static class StartNode extends PythonUnaryBuiltinNode {
@@ -88,7 +88,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stop", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "stop", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     @ImportStatic(SequenceUtil.class)
     abstract static class StopNode extends PythonUnaryBuiltinNode {
@@ -104,7 +104,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "step", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "step", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     @ImportStatic(SequenceUtil.class)
     abstract static class StepNode extends PythonUnaryBuiltinNode {

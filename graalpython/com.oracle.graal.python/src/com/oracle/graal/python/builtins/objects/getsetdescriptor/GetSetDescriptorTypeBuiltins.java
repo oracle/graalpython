@@ -75,7 +75,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         return GetSetDescriptorTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSetReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -85,7 +85,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, fixedNumOfArguments = 3)
+    @Builtin(name = __GET__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetGetNode extends PythonTernaryBuiltinNode {
         @Child CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
@@ -106,7 +106,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SET__, fixedNumOfArguments = 3)
+    @Builtin(name = __SET__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetSetNode extends PythonTernaryBuiltinNode {
         @Child GetClassNode getClassNode = GetClassNode.create();

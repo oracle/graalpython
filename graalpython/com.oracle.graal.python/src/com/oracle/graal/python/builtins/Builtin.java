@@ -39,19 +39,19 @@ public @interface Builtin {
 
     PythonBuiltinClassType[] base() default {};
 
-    int fixedNumOfArguments() default 0;
+    int fixedNumOfPositionalArgs() default 0;
 
-    int minNumOfArguments() default 0;
+    int minNumOfPositionalArgs() default 0;
 
-    int maxNumOfArguments() default 0;
+    int maxNumOfPositionalArgs() default 0;
 
     boolean isGetter() default false;
 
     boolean isSetter() default false;
 
-    boolean takesVariableArguments() default false;
+    boolean takesVarArgs() default false;
 
-    boolean takesVariableKeywords() default false;
+    boolean takesVarKeywordArgs() default false;
 
     String[] keywordArguments() default {};
 
