@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.Arrays;
 
@@ -175,7 +176,7 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
         } catch (PException e) {
             notEnoughValuesProfile.enter();
             if (e.getType() == getCore().getErrorClass(IndexError)) {
-                throw raise(SyntaxError, "not enough values to unpack");
+                throw raise(ValueError, "not enough values to unpack");
             } else {
                 otherErrorsProfile.enter();
                 throw e;

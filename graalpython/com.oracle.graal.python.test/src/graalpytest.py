@@ -52,6 +52,13 @@ BOLD = '\033[1m'
 verbose = False
 
 
+def dump_truffle_ast(func):
+    try:
+        print(__dump_truffle_ast__(func))
+    except:
+        pass
+
+
 class SkipTest(BaseException):
     pass
 
@@ -152,24 +159,24 @@ class TestCase(object):
             assert expected_value == next(actual_iter), msg
 
     class assertRaises():
-
         def __init__(self, exc_type, function=None, *args, **kwargs):
-            if function is None:
+            self.function = function
+            if self.function is None:
                 self.exc_type = exc_type
             else:
                 try:
-                    function(*args, **kwargs)
+                    self.function(*args, **kwargs)
                 except exc_type:
                     pass
                 else:
-                    assert False, "expected '%r' to raise '%r'" % (function, exc_type)
+                    assert False, "expected '%r' to raise '%r'" % (self.function, exc_type)
 
         def __enter__(self):
             return self
 
         def __exit__(self, exc_type, exc, traceback):
             if not exc_type:
-                assert False, "expected '%r' to raise '%r'" % (function, exc_type)
+                assert False, "expected '%r' to raise '%r'" % (self.function, exc_type)
             elif self.exc_type in exc_type.mro():
                 self.exception = exc
                 return True
