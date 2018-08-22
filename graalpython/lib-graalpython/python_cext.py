@@ -48,16 +48,7 @@ def may_raise(error_result=error_handler):
         return may_raise(error_handler)(error_result)
     else:
         def decorator(fun):
-            def wrapper(*args):
-                typ = val = tb = None
-                try:
-                    return fun(*args)
-                except BaseException as e:
-                    typ, val, tb = sys.exc_info()
-                PyErr_Restore(typ, val, tb)
-                return error_result
-            wrapper.__name__ = fun.__name__
-            return __builtin__(wrapper)
+            return make_may_raise_wrapper(fun, error_result)
         return decorator
 
 

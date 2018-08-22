@@ -106,11 +106,13 @@ import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -1658,6 +1660,52 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object upcall(VirtualFrame frame, PythonModule cextModule, String name, Object[] args) {
             return upcallNode.execute(frame, cextModule, name, args);
+        }
+    }
+
+    @Builtin(name = "make_may_raise_wrapper", fixedNumOfArguments = 2)
+    @GenerateNodeFactory
+    abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
+        static class MayRaiseWrapper extends RootNode {
+            @Child private InvokeNode invokeNode;
+            @Child private ReadVarArgsNode readVarargsNode;
+            @Child private CreateArgumentsNode createArgsNode;
+            @Child private PythonObjectFactory factory;
+            private final Object errorResult;
+
+            @TruffleBoundary
+            protected MayRaiseWrapper(PythonLanguage language, PythonObjectFactory factory, PythonCallable callable, Object errorResult) {
+                super(language);
+                this.factory = factory;
+                this.readVarargsNode = ReadVarArgsNode.create(0, true);
+                this.createArgsNode = CreateArgumentsNode.create();
+                this.invokeNode = InvokeNode.create(callable);
+                this.errorResult = errorResult;
+            }
+
+            @Override
+            public boolean isCloningAllowed() {
+                return true;
+            }
+
+            @Override
+            public Object execute(VirtualFrame frame) {
+                Object[] args = readVarargsNode.executeObjectArray(frame);
+                try {
+                    Object[] arguments = createArgsNode.execute(args);
+                    return invokeNode.execute(null, arguments, new PKeyword[0]);
+                } catch (PException e) {
+                    PythonContext context = factory.getCore().getContext();
+                    context.setCurrentException(e);
+                    return errorResult;
+                }
+            }
+        }
+
+        @Specialization
+        Object make(PythonCallable func, Object errorResult) {
+            return factory().createBuiltinFunction(func.getName(), null, func.getArity(),
+                            Truffle.getRuntime().createCallTarget(new MayRaiseWrapper(getRootNode().getLanguage(PythonLanguage.class), factory(), func, errorResult)));
         }
     }
 }
