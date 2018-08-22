@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -420,6 +421,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object setattr(PythonBuiltinObject object, String key, Object value) {
             object.getStorage().define(key, value);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object setattr(PythonBuiltinClass object, String key, Object value) {
+            object.setAttributeUnsafe(key, value);
             return PNone.NONE;
         }
 
