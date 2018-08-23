@@ -669,8 +669,8 @@ def PyModule_AddObject(m, k, v):
     return None
 
 
+from posix import stat_result
 def PyStructSequence_New(typ):
-    from posix import stat_result
     return stat_result([None] * stat_result.n_sequence_fields * 2)
 
 

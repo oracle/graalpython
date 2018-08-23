@@ -160,7 +160,9 @@ class SRE_Pattern():
 
     def __compile_cpython_sre(self):
         if not self.__compiled_sre_pattern:
-            import _cpython_sre
+            global _cpython_sre
+            if not _cpython_sre:
+                import _cpython_sre
             self.__compiled_sre_pattern = _cpython_sre.compile(self._emit(self.pattern), self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
         return self.__compiled_sre_pattern
 
