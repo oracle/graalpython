@@ -523,7 +523,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private final String name;
         @CompilationFinal ContextReference<PythonContext> ctxt;
         @Child private Node executeNode;
-        @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
+        @Child CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
         @Child CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
         @Child private Node isNullNode = Message.IS_NULL.createNode();
         @Child private PNativeToPTypeNode fromForeign = PNativeToPTypeNode.create();
@@ -551,15 +551,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     fun = cwrapper;
                     arguments = new Object[1 + frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
                     arguments[0] = callable;
-                    for (int i = 1; i < arguments.length; i++) {
-                        arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET - 1]);
-                    }
+                    toSulongNode.executeInto(frameArgs, PArguments.USER_ARGUMENTS_OFFSET, arguments, 1);
                 } else {
                     fun = callable;
                     arguments = new Object[frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
-                    for (int i = 0; i < arguments.length; i++) {
-                        arguments[i] = toSulongNode.execute(frameArgs[i + PArguments.USER_ARGUMENTS_OFFSET]);
-                    }
+                    toSulongNode.executeInto(frameArgs, PArguments.USER_ARGUMENTS_OFFSET, arguments, 0);
                 }
                 // save current exception state
                 PException exceptionState = getContext().getCurrentException();

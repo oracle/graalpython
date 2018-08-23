@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
@@ -628,6 +629,70 @@ public abstract class CExtNodes {
 
         public static AllToJavaNode create() {
             return AllToJavaNodeGen.create();
+        }
+    }
+
+    public abstract static class AllToSulongNode extends PBaseNode {
+        public abstract void executeInto(Object[] args, int argsOffset, Object[] dest, int destOffset);
+
+        protected boolean isArgsOffsetPlus(int len, int off, int plus) {
+            return len == off + plus;
+        }
+
+        protected boolean isLeArgsOffsetPlus(int len, int off, int plus) {
+            return len < plus + off;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"args.length == argsOffset"})
+        void cached0(Object[] args, int argsOffset, Object[] dest, int destOffset) {
+        }
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 1)"})
+        void cached1(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+        }
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 2)"})
+        void cached2(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1,
+                        @Cached("create()") ToSulongNode toSulongNode2) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
+        }
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void cached3(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1,
+                        @Cached("create()") ToSulongNode toSulongNode2,
+                        @Cached("create()") ToSulongNode toSulongNode3) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
+            dest[destOffset + 2] = toSulongNode3.execute(args[argsOffset + 2]);
+        }
+
+        @Specialization(guards = {"args.length == cachedLength", "isLeArgsOffsetPlus(cachedLength, argsOffset, 8)"}, limit = "1", replaces = {"cached0", "cached1", "cached2", "cached3"})
+        @ExplodeLoop
+        void cachedLoop(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("args.length") int cachedLength,
+                        @Cached("create()") ToSulongNode toSulongNode) {
+            for (int i = 0; i < cachedLength - argsOffset; i++) {
+                dest[destOffset + i] = toSulongNode.execute(args[argsOffset + i]);
+            }
+        }
+
+        @Specialization(replaces = {"cached0", "cached1", "cached2", "cached3", "cachedLoop"})
+        void uncached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode) {
+            int len = args.length;
+            for (int i = 0; i < len - argsOffset; i++) {
+                dest[destOffset + i] = toSulongNode.execute(args[argsOffset + i]);
+            }
+        }
+
+        public static AllToSulongNode create() {
+            return AllToSulongNodeGen.create();
         }
     }
 
