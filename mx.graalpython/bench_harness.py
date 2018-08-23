@@ -43,23 +43,29 @@ import os
 import sys
 from time import time
 
-_HRULE = '-'.join(['' for i in range(120)])
-ATTR_WARMUP = '__warmup__'
+_HRULE = '-'.join(['' for i in range(80)])
 ATTR_BENCHMARK = '__benchmark__'
 
 
+def _as_int(value):
+    if isinstance(value, (list, tuple)):
+        value = value[0]
+
+    if not isinstance(value, int):
+        return int(value)
+    return value
+
+
 class BenchRunner(object):
-    def __init__(self, bench_file, bench_args=None, iterations=1, verbose=False):
+    def __init__(self, bench_file, bench_args=None, iterations=1, warmup=0):
         if bench_args is None:
             bench_args = []
         self.bench_module = BenchRunner.get_bench_module(bench_file)
         self.bench_args = bench_args
-        self.verbose = verbose
-        if isinstance(iterations, (list, tuple)):
-            iterations = iterations[0]
-        if isinstance(iterations, str):
-            iterations = int(iterations)
-        self.iterations = iterations
+        self.iterations = _as_int(iterations)
+        assert isinstance(self.iterations, int)
+        self.warmup = _as_int(warmup)
+        assert isinstance(self.warmup, int)
 
     @staticmethod
     def get_bench_module(bench_file):
@@ -95,33 +101,33 @@ class BenchRunner(object):
             attr()
 
     def run(self):
-        if self.verbose:
-            print(_HRULE)
-            print(self.bench_module.__name__)
-            print(_HRULE)
-
-        print("### warming up ... ")
-        self._call_attr(ATTR_WARMUP)
-        print("### running benchmark ... ")
+        print(_HRULE)
+        print("### %s, %s warmup iterations, %s bench iterations " % (self.bench_module.__name__, self.warmup, self.iterations))
+        print(_HRULE)
 
         bench_func = self._get_attr(ATTR_BENCHMARK)
         if bench_func and hasattr(bench_func, '__call__'):
-            for i in range(self.iterations):
+            if self.warmup:
+                print("### warming up for %s iterations ... " % self.warmup)
+                for _ in range(self.warmup):
+                    bench_func(*self.bench_args)
+
+            for iteration in range(self.iterations):
                 start = time()
                 bench_func(*self.bench_args)
-                duration = "%.3f\n" % (time() - start)
-                print("### iteration={}, name={}, duration={}".format(i, self.bench_module.__name__, duration))
+                duration = "%.3f" % (time() - start)
+                print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration))
 
 
 def run_benchmark(prog, args):
     parser = argparse.ArgumentParser(prog=prog, description="Run specified benchmark.")
-    parser.add_argument("-v", "--verbose", help="Verbose output.", action="store_true")
+    parser.add_argument("-w", "--warmup", help="The number of iterations to skip as warmup.", default=0)
     parser.add_argument("-i", "--iterations", help="The number of iterations top run each benchmark.", default=1)
     parser.add_argument("bench_file", metavar='BENCH', help="Path to the benchmark to execute.", nargs=1)
     parser.add_argument("bench_args", metavar='ARGS', help="Path to the benchmarks to execute.", nargs='*', default=None)
 
     args = parser.parse_args(args)
-    BenchRunner(args.bench_file[0], bench_args=args.bench_args, iterations=args.iterations, verbose=args.verbose).run()
+    BenchRunner(args.bench_file[0], bench_args=args.bench_args, iterations=args.iterations, warmup=args.warmup).run()
 
 
 if __name__ == '__main__':
