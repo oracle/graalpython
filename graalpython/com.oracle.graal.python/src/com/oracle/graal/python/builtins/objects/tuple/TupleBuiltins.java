@@ -257,8 +257,14 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfArguments = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        public int len(PTuple self) {
+        @Specialization(guards = "cachedClass == self.getSequenceStorage().getClass()", limit = "2")
+        public int len(PTuple self,
+                        @Cached("self.getSequenceStorage().getClass()") Class<? extends SequenceStorage> cachedClass) {
+            return CompilerDirectives.castExact(self.getSequenceStorage(), cachedClass).length();
+        }
+
+        @Specialization(replaces = "len")
+        public int lenGeneric(PTuple self) {
             return self.len();
         }
     }
