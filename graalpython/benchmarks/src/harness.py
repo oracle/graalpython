@@ -38,7 +38,6 @@
 # SOFTWARE.
 
 import _io
-import argparse
 import os
 import sys
 from time import time
@@ -120,14 +119,31 @@ class BenchRunner(object):
 
 
 def run_benchmark(prog, args):
-    parser = argparse.ArgumentParser(prog=prog, description="Run specified benchmark.")
-    parser.add_argument("-w", "--warmup", help="The number of iterations to skip as warmup.", default=0)
-    parser.add_argument("-i", "--iterations", help="The number of iterations top run each benchmark.", default=1)
-    parser.add_argument("bench_file", metavar='BENCH', help="Path to the benchmark to execute.", nargs=1)
-    parser.add_argument("bench_args", metavar='ARGS', help="Path to the benchmarks to execute.", nargs='*', default=None)
+    warmup = 0
+    iterations = 1
+    bench_file = None
+    bench_args = []
 
-    args = parser.parse_args(args)
-    BenchRunner(args.bench_file[0], bench_args=args.bench_args, iterations=args.iterations, warmup=args.warmup).run()
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg == '-i':
+            i += 1
+            iterations = _as_int(args[i])
+        elif arg.startswith("--iterations"):
+            iterations = _as_int(arg.split("=")[1])
+        elif arg == '-w':
+            i += 1
+            warmup = _as_int(args[i])
+        elif arg.startswith("--warmup"):    
+            warmup = _as_int(arg.split("=")[1])
+        elif bench_file is None:
+            bench_file = arg
+        else:
+            bench_args.append(arg)
+        i += 1
+
+    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup).run()
 
 
 if __name__ == '__main__':
