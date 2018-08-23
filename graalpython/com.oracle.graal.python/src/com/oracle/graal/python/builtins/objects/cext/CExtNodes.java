@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AllToJavaNodeGen;
@@ -48,9 +49,10 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPoin
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.UpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
@@ -629,9 +631,8 @@ public abstract class CExtNodes {
         }
     }
 
-    public abstract static class UpcallNode extends PBaseNode {
+    protected abstract static class UpcallNode extends PBaseNode {
         @Child AllToJavaNode allToJava = null;
-        @Child ReadAttributeFromObjectNode getAttr = ReadAttributeFromObjectNode.create();
 
         protected AllToJavaNode getAllToJavaNode() {
             if (allToJava == null) {
@@ -641,8 +642,8 @@ public abstract class CExtNodes {
             return allToJava;
         }
 
-        public static UpcallNode create() {
-            return UpcallNodeGen.create();
+        protected Object getAttr(@SuppressWarnings("unused") Object object, @SuppressWarnings("unused") String name) {
+            throw new IllegalStateException();
         }
 
         public abstract Object execute(VirtualFrame frame, Object cextModule, String name, Object[] args);
@@ -650,7 +651,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "args.length == 0")
         Object upcall0(VirtualFrame frame, Object cextModule, String name, @SuppressWarnings("unused") Object[] args,
                         @Cached("create()") CallNode callNode) {
-            Object callable = getAttr.execute(cextModule, name);
+            Object callable = getAttr(cextModule, name);
             return callNode.execute(frame, callable, new Object[0], new PKeyword[0]);
         }
 
@@ -658,7 +659,7 @@ public abstract class CExtNodes {
         Object upcall1(Object cextModule, String name, Object[] args,
                         @Cached("create()") CallUnaryMethodNode callNode,
                         @Cached("create()") CExtNodes.AsPythonObjectNode toJavaNode) {
-            Object callable = getAttr.execute(cextModule, name);
+            Object callable = getAttr(cextModule, name);
             return callNode.executeObject(callable, toJavaNode.execute(args[0]));
         }
 
@@ -666,7 +667,7 @@ public abstract class CExtNodes {
         Object upcall2(Object cextModule, String name, Object[] args,
                         @Cached("create()") CallBinaryMethodNode callNode) {
             Object[] converted = getAllToJavaNode().execute(args);
-            Object callable = getAttr.execute(cextModule, name);
+            Object callable = getAttr(cextModule, name);
             return callNode.executeObject(callable, converted[0], converted[1]);
         }
 
@@ -674,7 +675,7 @@ public abstract class CExtNodes {
         Object upcall3(Object cextModule, String name, Object[] args,
                         @Cached("create()") CallTernaryMethodNode callNode) {
             Object[] converted = getAllToJavaNode().execute(args);
-            Object callable = getAttr.execute(cextModule, name);
+            Object callable = getAttr(cextModule, name);
             return callNode.execute(callable, converted[0], converted[1], converted[2]);
         }
 
@@ -682,8 +683,34 @@ public abstract class CExtNodes {
         Object upcall(VirtualFrame frame, Object cextModule, String name, Object[] args,
                         @Cached("create()") CallNode callNode) {
             Object[] converted = getAllToJavaNode().execute(args);
-            Object callable = getAttr.execute(cextModule, name);
+            Object callable = getAttr(cextModule, name);
             return callNode.execute(frame, callable, converted, new PKeyword[0]);
+        }
+    }
+
+    public abstract static class CextUpcallNode extends UpcallNode {
+        @Child ReadAttributeFromObjectNode getAttrNode = ReadAttributeFromObjectNode.create();
+
+        public static CextUpcallNode create() {
+            return CextUpcallNodeGen.create();
+        }
+
+        @Override
+        protected final Object getAttr(Object object, String name) {
+            return getAttrNode.execute(object, name);
+        }
+    }
+
+    public abstract static class ObjectUpcallNode extends UpcallNode {
+        @Child GetAttrNode getAttrNode = GetAttrNode.create();
+
+        public static ObjectUpcallNode create() {
+            return ObjectUpcallNodeGen.create();
+        }
+
+        @Override
+        protected final Object getAttr(Object object, String name) {
+            return getAttrNode.executeWithArgs(object, name, PNone.NO_VALUE);
         }
     }
 

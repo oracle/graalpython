@@ -76,6 +76,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -581,6 +582,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = GETATTR, minNumOfArguments = 2, maxNumOfArguments = 3)
     @GenerateNodeFactory
     public abstract static class GetAttrNode extends PythonTernaryBuiltinNode {
+        public static GetAttrNode create() {
+            return GetAttrNodeFactory.create();
+        }
+
         public abstract Object executeWithArgs(Object primary, String name, Object defaultValue);
 
         @SuppressWarnings("unused")
