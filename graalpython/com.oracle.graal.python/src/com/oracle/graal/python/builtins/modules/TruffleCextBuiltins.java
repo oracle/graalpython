@@ -595,6 +595,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Override
+        public String toString() {
+            return "<external function root " + name + ">";
+        }
+
+        @Override
         public boolean isCloningAllowed() {
             return true;
         }
@@ -1332,6 +1337,16 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public boolean isCloningAllowed() {
             return true;
+        }
+
+        @Override
+        public String getName() {
+            return directCallNode.getCurrentRootNode().getName();
+        }
+
+        @Override
+        public String toString() {
+            return "<METH root " + directCallNode.getCurrentRootNode().getName() + ">";
         }
     }
 
