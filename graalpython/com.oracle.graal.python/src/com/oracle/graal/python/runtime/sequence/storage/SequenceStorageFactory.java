@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import java.math.BigInteger;
-
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 
@@ -85,9 +83,7 @@ public class SequenceStorageFactory {
 
     public static boolean canSpecializeToLong(Object[] values) {
         for (Object item : values) {
-            Object val = item;
-            val = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-            if (!(item instanceof Long)) {
+            if (!(item instanceof Long || item instanceof Integer)) {
                 return false;
             }
         }
@@ -98,7 +94,7 @@ public class SequenceStorageFactory {
     public static long[] specializeToLong(Object[] values) {
         final long[] intVals = new long[values.length];
         for (int i = 0; i < values.length; i++) {
-            long value = (values[i] instanceof Integer) ? BigInteger.valueOf((int) values[i]).longValue() : (long) values[i];
+            long value = (values[i] instanceof Integer) ? (long) ((int) values[i]) : (long) values[i];
             intVals[i] = value;
         }
 
