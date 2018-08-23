@@ -789,7 +789,7 @@ def PyObject_Repr(o):
 
 
 def PyType_IsSubtype(a, b):
-    return 1 if b in a.mro() else 0
+    return 1 if issubclass(b, a) else 0
 
 
 def PyTuple_New(size):
