@@ -1559,6 +1559,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     readErrorHandlerNode = ReadAttributeFromObjectNode.create();
                 }
+                getContext().setCurrentException(e);
                 return toSulongNode.execute(readErrorHandlerNode.execute(cextModule, ERROR_HANDLER));
             }
         }
@@ -1578,6 +1579,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return asLongNode.execute(upcallNode.execute(frame, toJavaNode.execute(receiver), name, args));
             } catch (PException e) {
                 errorProfile.enter();
+                getContext().setCurrentException(e);
                 return -1;
             }
         }
@@ -1597,6 +1599,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return asDoubleNode.execute(upcallNode.execute(frame, toJavaNode.execute(receiver), name, args));
             } catch (PException e) {
                 errorProfile.enter();
+                getContext().setCurrentException(e);
                 return -1.0;
             }
         }
@@ -1615,6 +1618,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 return upcallNode.execute(frame, toJavaNode.execute(receiver), name, args);
             } catch (PException e) {
                 errorProfile.enter();
+                getContext().setCurrentException(e);
                 return 0;
             }
         }
