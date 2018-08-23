@@ -23,13 +23,14 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import print_function
 
+import argparse
 import os
 import re
 from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
-from mx_benchmark import StdOutRule, VmRegistry, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite
+from mx_benchmark import StdOutRule, VmRegistry, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import benchmarks_list, harnessPath
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -52,6 +53,8 @@ GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
+
+DEFAULT_ITERATIONS = 10
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -174,7 +177,7 @@ class GraalPythonVm(GuestVm):
 # the benchmark definition
 #
 # ----------------------------------------------------------------------------------------------------------------------
-class PythonBenchmarkSuite(VmBenchmarkSuite):
+class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, harness_path):
         self._name = name
         self._harness_path = harness_path
@@ -193,7 +196,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
                 r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
                 {
                     "benchmark": '{}.{}'.format(self._name, bench_name),
-                    "metric.name": "time",
+                    "metric.name": "warmup",
                     "metric.iteration": ("<iteration>", int),
                     "metric.type": "numeric",
                     "metric.value": ("<time>", float),
@@ -205,6 +208,24 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
             ),
         ]
 
+    def run(self, benchmarks, bmSuiteArgs):
+        results = super(PythonBenchmarkSuite, self).run(benchmarks, bmSuiteArgs)
+        self.addAverageAcrossLatestResults(results)
+        return results
+
+    def postprocessRunArgs(self, run_args):
+        parser = argparse.ArgumentParser(add_help=False)
+        parser.add_argument("-i", default=None)
+        args, remaining = parser.parse_known_args(run_args)
+        if args.i:
+            if args.i.isdigit():
+                return ["-i", args.i] + remaining
+            if args.i == "-1":
+                return remaining
+        else:
+            iterations = DEFAULT_ITERATIONS + self.getExtraIterationCount(DEFAULT_ITERATIONS)
+            return ["-i", str(iterations)] + remaining
+
     def createVmCommandLineArgs(self, benchmarks, run_args):
         if not benchmarks or len(benchmarks) != 1:
             mx.abort("Please run a specific benchmark (mx benchmark {}:<benchmark-name>) or all the benchmarks "
@@ -214,10 +235,9 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
 
         cmd_args = [self._harness_path, join(self._bench_path, "{}.py".format(benchmark))]
         if len(run_args) == 0:
-            cmd_args.extend(self._benchmarks[benchmark])
-        else:
-            cmd_args.extend(run_args)
-
+            run_args = self._benchmarks[benchmark]
+        run_args = self.postprocessRunArgs(run_args)
+        cmd_args.extend(run_args)
         return cmd_args
 
     def benchmarkList(self, bm_suite_args):
