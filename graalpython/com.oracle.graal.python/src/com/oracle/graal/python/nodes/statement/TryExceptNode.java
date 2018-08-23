@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.PNode;
@@ -34,6 +35,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -52,12 +54,16 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     @CompilationFinal private ValueProfile exceptionStateProfile;
 
     @CompilationFinal boolean seenException;
+    private final boolean shouldCatchAll;
+    private final Assumption singleContextAssumption;
 
     public TryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse) {
         this.body = body;
         body.markAsTryBlock();
         this.exceptNodes = exceptNodes;
         this.orelse = orelse;
+        this.shouldCatchAll = PythonOptions.getOption(getContext(), CatchAllExceptions);
+        this.singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
     }
 
     @Override
@@ -75,7 +81,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                 seenException = true;
             }
 
-            if (PythonOptions.getOption(getContext(), CatchAllExceptions)) {
+            if (shouldCatchAll()) {
                 if (e instanceof ControlFlowException) {
                     throw e;
                 } else {
@@ -94,6 +100,14 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
             }
         }
         return orelse.execute(frame);
+    }
+
+    private boolean shouldCatchAll() {
+        if (singleContextAssumption.isValid()) {
+            return shouldCatchAll;
+        } else {
+            return PythonOptions.getOption(getContext(), CatchAllExceptions);
+        }
     }
 
     @TruffleBoundary
