@@ -30,7 +30,7 @@ from os.path import join
 
 import mx
 from mx_benchmark import StdOutRule, VmRegistry, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite
-from mx_graalpython_bench_param import benchmarks_list
+from mx_graalpython_bench_param import benchmarks_list, harnessPath
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -52,7 +52,6 @@ GROUP_GRAAL = "Graal"
 SUBGROUP_GRAAL_PYTHON = "graalpython"
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
-_HRULE = ''.join(['-' for _ in range(120)])
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -61,12 +60,8 @@ _HRULE = ''.join(['-' for _ in range(120)])
 #
 # ----------------------------------------------------------------------------------------------------------------------
 def _check_vm_args(name, args):
-    if len(args) != 1:
-        mx.abort("Expected only a single benchmark path, got {} instead".format(args))
-    benchmark_name = os.path.basename(os.path.splitext(args[0])[0])
-    print(_HRULE)
-    print(name, benchmark_name)
-    print(_HRULE)
+    if len(args) < 2:
+        mx.abort("Expected at least 2 args (a single benchmark path in addition to the harness), got {} instead".format(args))
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -180,8 +175,13 @@ class GraalPythonVm(GuestVm):
 #
 # ----------------------------------------------------------------------------------------------------------------------
 class PythonBenchmarkSuite(VmBenchmarkSuite):
-    def __init__(self, name):
+    def __init__(self, name, harness_path):
         self._name = name
+        self._harness_path = harness_path
+        self._harness_path = join(_graalpython_suite.dir, self._harness_path)
+        if not self._harness_path:
+            mx.abort("python harness path not specified!")
+
         self._bench_path, self._benchmarks = benchmarks_list[self._name]
         self._bench_path = join(_graalpython_suite.dir, self._bench_path)
 
@@ -190,10 +190,11 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
         arg = " ".join(self._benchmarks[bench_name])
         return [
             StdOutRule(
-                r"^(?P<benchmark>[a-zA-Z0-9\.\-]+): (?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
+                r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
                 {
                     "benchmark": '{}.{}'.format(self._name, bench_name),
                     "metric.name": "time",
+                    "metric.iteration": ("<iteration>", int),
                     "metric.type": "numeric",
                     "metric.value": ("<time>", float),
                     "metric.unit": "s",
@@ -211,8 +212,8 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
 
         benchmark = benchmarks[0]
 
-        cmd_args = [join(self._bench_path, "{}.py".format(benchmark))]
-        if len(run_args) != 0:
+        cmd_args = [self._harness_path, join(self._bench_path, "{}.py".format(benchmark))]
+        if len(run_args) == 0:
             cmd_args.extend(self._benchmarks[benchmark])
         else:
             cmd_args.extend(run_args)
@@ -228,7 +229,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
 
     def successPatterns(self):
         return [
-            re.compile(r"^(?P<benchmark>[a-zA-Z0-9.\-]+): (?P<score>[0-9]+(\.[0-9]+)?$)", re.MULTILINE)
+            re.compile(r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE)  # pylint: disable=line-too-long
         ]
 
     def failurePatterns(self):
@@ -250,7 +251,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
 
     @classmethod
     def get_benchmark_suites(cls):
-        return [cls(suite_name) for suite_name in benchmarks_list]
+        return [cls(suite_name, harnessPath) for suite_name in benchmarks_list]
 
 
 # ----------------------------------------------------------------------------------------------------------------------

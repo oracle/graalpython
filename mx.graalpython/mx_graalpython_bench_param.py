@@ -26,6 +26,8 @@ import os
 import mx
 
 py = ".py"
+harnessPath = os.path.join('graalpython', 'benchmarks', 'src', 'harness.py')
+
 pathBench = "graalpython/benchmarks/src/benchmarks/"
 pathMicro = "graalpython/benchmarks/src/micro/"
 pathInterop = "graalpython/benchmarks/src/interop/"
@@ -103,7 +105,7 @@ pythonBenchmarks = {
 #
 # ----------------------------------------------------------------------------------------------------------------------
 pythonMicroBenchmarks = {
-    'arith-binop': [],
+    'arith-binop': ['-i', '10', '5'],
     'attribute-access': [],
     'attribute-access-polymorphic': [],
     'attribute-bool': [],
