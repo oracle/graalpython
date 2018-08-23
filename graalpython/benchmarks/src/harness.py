@@ -44,6 +44,7 @@ from time import time
 
 _HRULE = '-'.join(['' for i in range(80)])
 ATTR_BENCHMARK = '__benchmark__'
+ATTR_PROCESS_ARGS = '__process_args__'
 
 
 def _as_int(value):
@@ -94,14 +95,22 @@ class BenchRunner(object):
         if hasattr(self.bench_module, attr_name):
             return getattr(self.bench_module, attr_name)
 
-    def _call_attr(self, attr_name):
+    def _call_attr(self, attr_name, *args):
         attr = self._get_attr(attr_name)
         if attr and hasattr(attr, '__call__'):
-            attr()
+            return attr(*args)
 
     def run(self):
         print(_HRULE)
         print("### %s, %s warmup iterations, %s bench iterations " % (self.bench_module.__name__, self.warmup, self.iterations))
+        
+        # process the args if the processor function is defined 
+        args = self._call_attr(ATTR_PROCESS_ARGS, *self.bench_args)
+        if args is None:
+            # default args processor considers all args as ints
+            args = list(map(int, self.bench_args))
+
+        print("### args = %s" % args)
         print(_HRULE)
 
         bench_func = self._get_attr(ATTR_BENCHMARK)
@@ -109,11 +118,11 @@ class BenchRunner(object):
             if self.warmup:
                 print("### warming up for %s iterations ... " % self.warmup)
                 for _ in range(self.warmup):
-                    bench_func(*self.bench_args)
+                    bench_func(*args)
 
             for iteration in range(self.iterations):
                 start = time()
-                bench_func(*self.bench_args)
+                bench_func(*args)
                 duration = "%.3f" % (time() - start)
                 print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration))
 
