@@ -37,7 +37,7 @@ from mx_graalpython_bench_param import benchmarks_list
 # the graalpython suite
 #
 # ----------------------------------------------------------------------------------------------------------------------
-_truffle_python_suite = mx.suite("graalpython")
+_graalpython_suite = mx.suite("graalpython")
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -158,7 +158,7 @@ class GraalPythonVm(GuestVm):
         ]
 
         vm_args = [
-            "-Dpython.home=%s" % join(_truffle_python_suite.dir, "graalpython"),
+            "-Dpython.home=%s" % join(_graalpython_suite.dir, "graalpython"),
             '-cp',
             mx.classpath(["com.oracle.graal.python", "com.oracle.graal.python.shell"]),
             "com.oracle.graal.python.shell.GraalPythonMain"
@@ -183,7 +183,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
     def __init__(self, name):
         self._name = name
         self._bench_path, self._benchmarks = benchmarks_list[self._name]
-        self._bench_path = join(_truffle_python_suite.dir, self._bench_path)
+        self._bench_path = join(_graalpython_suite.dir, self._bench_path)
 
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = os.path.basename(os.path.splitext(benchmarks[0])[0])
@@ -259,6 +259,6 @@ class PythonBenchmarkSuite(VmBenchmarkSuite):
 #
 # ----------------------------------------------------------------------------------------------------------------------
 python_vm_registry = VmRegistry(PYTHON_VM_REGISTRY_NAME, known_host_registries=[java_vm_registry])
-python_vm_registry.add_vm(CPythonVm(CONFIGURATION_DEFAULT), _truffle_python_suite)
-python_vm_registry.add_vm(PyPyVm(CONFIGURATION_DEFAULT), _truffle_python_suite)
-python_vm_registry.add_vm(GraalPythonVm(), _truffle_python_suite, 10)
+python_vm_registry.add_vm(CPythonVm(CONFIGURATION_DEFAULT), _graalpython_suite)
+python_vm_registry.add_vm(PyPyVm(CONFIGURATION_DEFAULT), _graalpython_suite)
+python_vm_registry.add_vm(GraalPythonVm(), _graalpython_suite, 10)
