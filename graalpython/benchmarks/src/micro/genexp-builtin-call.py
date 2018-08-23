@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # generator expression as argument to a built-in call
-import time
 
 
 # test
@@ -56,25 +55,10 @@ def call_generator_localvar(num, iteration):
     return item
 
 
-def measure():
-    num = 1000
-
-    for i in range(5):
-        call_generator(num, 10000)  # 1000000
-
-    print("Start timing...")
-    start = time.time()
-
+def measure(num):
     last_item = call_generator(num, 10000)
     print("Last item ", last_item)
 
-    duration = "%.3f\n" % (time.time() - start)
-    print("genexp-builtin-call: " + duration)
 
-
-# warm up
-print('warming up ...')
-for run in range(10000):
-    call_generator(10, 100)
-
-measure()
+def __benchmark__(num=1000):
+    measure(num)

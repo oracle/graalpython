@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # object layout change
-import time
 
 
 class Foo(object):
@@ -48,15 +47,8 @@ def main(n):
 
 
 def measure(n):
-    print("Start timing...")
-    start = time.time()
     main(n)
-    duration = "%.3f\n" % (time.time() - start)
-    print("object-layout-change: " + duration)
+    
 
-
-print('warming up ...')
-for i in range(100):
-    main(500)
-
-measure(1000000)
+def __benchmark__(num=1000000):
+    measure(num)

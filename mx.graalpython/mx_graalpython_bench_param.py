@@ -104,30 +104,35 @@ pythonBenchmarks = {
 # the python micro benchmarks
 #
 # ----------------------------------------------------------------------------------------------------------------------
+# the argument list contains both the harness and benchmark args
+DEFAULT_MICRO_ITERATIONS = ['-i', '25']
+
 pythonMicroBenchmarks = {
-    'arith-binop': ['-i', '10', '5'],
-    'attribute-access': [],
-    'attribute-access-polymorphic': [],
-    'attribute-bool': [],
-    'boolean-logic': [],
-    'builtin-len': [],
-    'builtin-len-tuple': [],
-    'call-method-polymorphic': [],
-    'for-range': [],
-    'function-call': [],
-    'generator': [],
-    'generator-notaligned': [],
-    'generator-expression': [],
-    'genexp-builtin-call': [],
-    'list-comp': [],
-    'list-indexing': [],
-    'list-iterating': [],
-    'math-sqrt': [],
-    'object-allocate': [],
-    'object-layout-change': [],
-    'special-add': [],
-    'special-add-int': [],
-    'special-len': [],
+    'arith-binop': DEFAULT_MICRO_ITERATIONS + ['5'],
+    'arith-modulo': DEFAULT_MICRO_ITERATIONS + ['50'],
+    'attribute-access-polymorphic': DEFAULT_MICRO_ITERATIONS + ['1000'],
+    'attribute-access': DEFAULT_MICRO_ITERATIONS + ['5000'],
+    'attribute-bool': DEFAULT_MICRO_ITERATIONS + ['3000'],
+    'boolean-logic': DEFAULT_MICRO_ITERATIONS + ['1000'],
+    'builtin-len-tuple': DEFAULT_MICRO_ITERATIONS + [],
+    'builtin-len': DEFAULT_MICRO_ITERATIONS + [],
+    'call-method-polymorphic': DEFAULT_MICRO_ITERATIONS + ['1000'],
+    'for-range': DEFAULT_MICRO_ITERATIONS + ['50000'],
+    'function-call': DEFAULT_MICRO_ITERATIONS + [],
+    'generator-expression': DEFAULT_MICRO_ITERATIONS + [],
+    'generator-notaligned': DEFAULT_MICRO_ITERATIONS + [],
+    'generator': DEFAULT_MICRO_ITERATIONS + [],
+    'genexp-builtin-call': DEFAULT_MICRO_ITERATIONS + ['1000'],
+    'list-comp': DEFAULT_MICRO_ITERATIONS + ['5000'],
+    'list-indexing': DEFAULT_MICRO_ITERATIONS + ['1000000'],
+    'list-iterating-explicit': DEFAULT_MICRO_ITERATIONS + ['1000000'],
+    'list-iterating': DEFAULT_MICRO_ITERATIONS + ['1000000'],
+    'math-sqrt': DEFAULT_MICRO_ITERATIONS + ['500000000'],
+    'object-allocate': DEFAULT_MICRO_ITERATIONS + ['5000'],
+    'object-layout-change': DEFAULT_MICRO_ITERATIONS + ['1000000'],
+    'special-add-int': DEFAULT_MICRO_ITERATIONS + ['5'],
+    'special-add': DEFAULT_MICRO_ITERATIONS + ['5'],
+    'special-len': DEFAULT_MICRO_ITERATIONS + ['5'],
 }
 
 # XXX: testing

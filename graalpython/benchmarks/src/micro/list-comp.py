@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # micro benchmark: list comprehension
-import time
 
 
 def make_list(size):
@@ -36,19 +35,9 @@ def make_lists(num):
     print(ll[-1])
 
 
-def measure():
-    print("Start timing...")
-    start = time.time()
-
-    make_lists(5000)  # 50000
-
-    duration = "%.3f\n" % (time.time() - start)
-    print("list-comp: " + duration)
+def measure(num):
+    make_lists(num)  # 50000
 
 
-# warm up
-print('warming up ...')
-for i in range(5):
-    make_lists(500)
-
-measure()
+def __benchmark__(num=5000):
+    measure(num)
