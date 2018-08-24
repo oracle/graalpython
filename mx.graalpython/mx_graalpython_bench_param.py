@@ -105,34 +105,36 @@ pythonBenchmarks = {
 #
 # ----------------------------------------------------------------------------------------------------------------------
 # the argument list contains both the harness and benchmark args
-DEFAULT_MICRO_ITERATIONS = ['-i', '25']
+ITERATIONS_25 = ['-i', '25']
+ITERATIONS_15 = ['-i', '15']
+ITERATIONS_10 = ['-i', '10']
 
 pythonMicroBenchmarks = {
-    'arith-binop': DEFAULT_MICRO_ITERATIONS + ['5'],
-    'arith-modulo': DEFAULT_MICRO_ITERATIONS + ['50'],
-    'attribute-access-polymorphic': DEFAULT_MICRO_ITERATIONS + ['1000'],
-    'attribute-access': DEFAULT_MICRO_ITERATIONS + ['5000'],
-    'attribute-bool': DEFAULT_MICRO_ITERATIONS + ['3000'],
-    'boolean-logic': DEFAULT_MICRO_ITERATIONS + ['1000'],
-    'builtin-len-tuple': DEFAULT_MICRO_ITERATIONS + [],
-    'builtin-len': DEFAULT_MICRO_ITERATIONS + [],
-    'call-method-polymorphic': DEFAULT_MICRO_ITERATIONS + ['1000'],
-    'for-range': DEFAULT_MICRO_ITERATIONS + ['50000'],
-    'function-call': DEFAULT_MICRO_ITERATIONS + [],
-    'generator-expression': DEFAULT_MICRO_ITERATIONS + [],
-    'generator-notaligned': DEFAULT_MICRO_ITERATIONS + [],
-    'generator': DEFAULT_MICRO_ITERATIONS + [],
-    'genexp-builtin-call': DEFAULT_MICRO_ITERATIONS + ['1000'],
-    'list-comp': DEFAULT_MICRO_ITERATIONS + ['5000'],
-    'list-indexing': DEFAULT_MICRO_ITERATIONS + ['1000000'],
-    'list-iterating-explicit': DEFAULT_MICRO_ITERATIONS + ['1000000'],
-    'list-iterating': DEFAULT_MICRO_ITERATIONS + ['1000000'],
-    'math-sqrt': DEFAULT_MICRO_ITERATIONS + ['500000000'],
-    'object-allocate': DEFAULT_MICRO_ITERATIONS + ['5000'],
-    'object-layout-change': DEFAULT_MICRO_ITERATIONS + ['1000000'],
-    'special-add-int': DEFAULT_MICRO_ITERATIONS + ['5'],
-    'special-add': DEFAULT_MICRO_ITERATIONS + ['5'],
-    'special-len': DEFAULT_MICRO_ITERATIONS + ['5'],
+    'arith-binop': ITERATIONS_25 + ['5'],
+    'arith-modulo': ITERATIONS_25 + ['50'],
+    'attribute-access-polymorphic': ITERATIONS_10 + ['1000'],
+    'attribute-access': ITERATIONS_25 + ['5000'],
+    'attribute-bool': ITERATIONS_25 + ['3000'],
+    'boolean-logic': ITERATIONS_15 + ['1000'],
+    'builtin-len-tuple': ITERATIONS_10 + [],
+    'builtin-len': ITERATIONS_25 + [],
+    'call-method-polymorphic': ITERATIONS_10 + ['1000'],
+    'for-range': ITERATIONS_25 + ['50000'],
+    'function-call': ITERATIONS_25 + [],
+    'generator-expression': ITERATIONS_25 + [],
+    'generator-notaligned': ITERATIONS_25 + [],
+    'generator': ITERATIONS_25 + [],
+    'genexp-builtin-call': ITERATIONS_25 + ['1000'],
+    'list-comp': ITERATIONS_15 + ['5000'],
+    'list-indexing': ITERATIONS_15 + ['1000000'],
+    'list-iterating-explicit': ITERATIONS_25 + ['1000000'],
+    'list-iterating': ITERATIONS_25 + ['1000000'],
+    'math-sqrt': ITERATIONS_15 + ['500000000'],
+    'object-allocate': ITERATIONS_10 + ['5000'],
+    'object-layout-change': ITERATIONS_15 + ['1000000'],
+    'special-add-int': ITERATIONS_15 + ['5'],
+    'special-add': ITERATIONS_15 + ['5'],
+    'special-len': ITERATIONS_10 + ['5'],
 }
 
 # XXX: testing
