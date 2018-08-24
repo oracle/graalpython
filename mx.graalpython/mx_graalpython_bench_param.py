@@ -27,12 +27,16 @@ import mx
 _graalpython_suite = mx.suite('graalpython')
 
 py = ".py"
-HARNESS_PATH = os.path.join('graalpython', 'benchmarks', 'src', 'harness.py')
+_BASE_PATH = os.path.join('graalpython', 'benchmarks', 'src')
+HARNESS_PATH = os.path.join(_BASE_PATH, 'harness.py')
 
-PATH_BENCH = "graalpython/benchmarks/src/benchmarks/"
-PATH_MICRO = "graalpython/benchmarks/src/micro/"
+PATH_BENCH = os.path.join(_BASE_PATH, 'benchmarks')
+PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
+PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
+PATH_MESO = os.path.join(_BASE_PATH, 'meso')
+
 # TODO: add/enable interop benchmarks
-# PATH_INTEROP = "graalpython/benchmarks/src/interop/"
+# PATH_INTEROP = os.path.join(_BASE_PATH, 'interop')
 #
 #
 # def _compile_interop():
@@ -139,6 +143,13 @@ MICRO_BENCHMARKS = {
     'special-len': ITER_10 + ['5'],
 }
 
+MACRO_BENCHMARKS = {
+    'gcbench': ITER_10 + ['10'],
+}
+
+MESO_BENCHMARKS = {
+}
+
 # pythonInteropBenchmarks = {
 #     'cext-modulo': [],
 #     'for-range-cext': [],
@@ -150,8 +161,12 @@ MICRO_BENCHMARKS = {
 #
 # ----------------------------------------------------------------------------------------------------------------------
 BENCHMARKS = {
-    "normal": [PATH_BENCH, PYTHON_BENCHMARKS],
     "micro": [PATH_MICRO, MICRO_BENCHMARKS],
+    "meso": [PATH_MESO, MESO_BENCHMARKS],
+    "macro": [PATH_MACRO, MACRO_BENCHMARKS],
+
+
+    "normal": [PATH_BENCH, PYTHON_BENCHMARKS],
     "generator": [PATH_BENCH, GENERATOR_BENCHMARKS],
     "object": [PATH_BENCH, OBJECT_BENCHMARKS],
     # "interop": [pathInterop, pythonInteropBenchmarks],
