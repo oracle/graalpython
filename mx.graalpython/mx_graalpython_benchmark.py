@@ -31,7 +31,7 @@ from os.path import join
 
 import mx
 from mx_benchmark import StdOutRule, VmRegistry, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
-from mx_graalpython_bench_param import benchmarks_list, harnessPath
+from mx_graalpython_bench_param import BENCHMARKS, HARNESS_PATH
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -185,7 +185,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         if not self._harness_path:
             mx.abort("python harness path not specified!")
 
-        self._bench_path, self._benchmarks = benchmarks_list[self._name]
+        self._bench_path, self._benchmarks = BENCHMARKS[self._name]
         self._bench_path = join(_graalpython_suite.dir, self._bench_path)
 
     def rules(self, output, benchmarks, bm_suite_args):
@@ -271,7 +271,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     @classmethod
     def get_benchmark_suites(cls):
-        return [cls(suite_name, harnessPath) for suite_name in benchmarks_list]
+        return [cls(suite_name, HARNESS_PATH) for suite_name in BENCHMARKS]
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -22,30 +22,32 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
-
 import mx
 
+_graalpython_suite = mx.suite('graalpython')
+
 py = ".py"
-harnessPath = os.path.join('graalpython', 'benchmarks', 'src', 'harness.py')
+HARNESS_PATH = os.path.join('graalpython', 'benchmarks', 'src', 'harness.py')
 
-pathBench = "graalpython/benchmarks/src/benchmarks/"
-pathMicro = "graalpython/benchmarks/src/micro/"
-pathInterop = "graalpython/benchmarks/src/interop/"
+PATH_BENCH = "graalpython/benchmarks/src/benchmarks/"
+PATH_MICRO = "graalpython/benchmarks/src/micro/"
+# TODO: add/enable interop benchmarks
+# PATH_INTEROP = "graalpython/benchmarks/src/interop/"
+#
+#
+# def _compile_interop():
+#     cc = os.path.join(_graalpython_suite.dir, 'graalpython', 'bin', 'sulongcc')
+#     fp = os.path.join(_graalpython_suite.dir, PATH_INTEROP)
+#     src = "%s/cextmodule.c" % fp
+#     bc = "%s/cextmodule.bc" % fp
+#     if os.path.exists(cc):
+#         if not os.path.exists(bc) or os.stat(src).st_atime > os.stat(bc).st_atime:
+#             os.system("%s %s 2>/dev/null >/dev/null" % (cc, src))
+#
+#
+# _compile_interop()
 
-
-def _compile_interop():
-    cc = os.path.join(mx.suite('graalpython').dir, 'graalpython', 'bin', 'sulongcc')
-    fp = os.path.join(mx.suite('graalpython').dir, pathInterop)
-    src = "%s/cextmodule.c" % fp
-    bc = "%s/cextmodule.bc" % fp
-    if os.path.exists(cc):
-        if not os.path.exists(bc) or os.stat(src).st_atime > os.stat(bc).st_atime:
-            os.system("%s %s 2>/dev/null >/dev/null" % (cc, src))
-
-
-_compile_interop()
-
-pythonGeneratorBenchmarks = {
+GENERATOR_BENCHMARKS = {
     'euler31-timed': ['200'],
     'euler11-timed': ['10000'],
     'ai-nqueen-timed': ['10'],
@@ -59,7 +61,7 @@ pythonGeneratorBenchmarks = {
     # 'sympy-bench'     : '20000',
 }
 
-pythonObjectBenchmarks = {
+OBJECT_BENCHMARKS = {
     'richards3-timed': ['200'],
     'bm-float-timed': ['1000'],
     'pypy-chaos-timed': ['1000'],
@@ -67,7 +69,7 @@ pythonObjectBenchmarks = {
     'pypy-deltablue': ['2000'],
 }
 
-pythonBenchmarks = {
+PYTHON_BENCHMARKS = {
     'binarytrees3t': ['18'],
     'fannkuchredux3t': ['11'],
     'fasta3t': ['25000000'],
@@ -105,60 +107,52 @@ pythonBenchmarks = {
 #
 # ----------------------------------------------------------------------------------------------------------------------
 # the argument list contains both the harness and benchmark args
-ITERATIONS_25 = ['-i', '25']
-ITERATIONS_15 = ['-i', '15']
-ITERATIONS_10 = ['-i', '10']
+ITER_25 = ['-i', '25']
+ITER_15 = ['-i', '15']
+ITER_10 = ['-i', '10']
 
-pythonMicroBenchmarks = {
-    'arith-binop': ITERATIONS_25 + ['5'],
-    'arith-modulo': ITERATIONS_25 + ['50'],
-    'attribute-access-polymorphic': ITERATIONS_10 + ['1000'],
-    'attribute-access': ITERATIONS_25 + ['5000'],
-    'attribute-bool': ITERATIONS_25 + ['3000'],
-    'boolean-logic': ITERATIONS_15 + ['1000'],
-    'builtin-len-tuple': ITERATIONS_10 + [],
-    'builtin-len': ITERATIONS_25 + [],
-    'call-method-polymorphic': ITERATIONS_10 + ['1000'],
-    'for-range': ITERATIONS_25 + ['50000'],
-    'function-call': ITERATIONS_25 + [],
-    'generator-expression': ITERATIONS_25 + [],
-    'generator-notaligned': ITERATIONS_25 + [],
-    'generator': ITERATIONS_25 + [],
-    'genexp-builtin-call': ITERATIONS_25 + ['1000'],
-    'list-comp': ITERATIONS_15 + ['5000'],
-    'list-indexing': ITERATIONS_15 + ['1000000'],
-    'list-iterating-explicit': ITERATIONS_25 + ['1000000'],
-    'list-iterating': ITERATIONS_25 + ['1000000'],
-    'math-sqrt': ITERATIONS_15 + ['500000000'],
-    'object-allocate': ITERATIONS_10 + ['5000'],
-    'object-layout-change': ITERATIONS_15 + ['1000000'],
-    'special-add-int': ITERATIONS_15 + ['5'],
-    'special-add': ITERATIONS_15 + ['5'],
-    'special-len': ITERATIONS_10 + ['5'],
+MICRO_BENCHMARKS = {
+    'arith-binop': ITER_25 + ['5'],
+    'arith-modulo': ITER_25 + ['50'],
+    'attribute-access-polymorphic': ITER_10 + ['1000'],
+    'attribute-access': ITER_25 + ['5000'],
+    'attribute-bool': ITER_25 + ['3000'],
+    'boolean-logic': ITER_15 + ['1000'],
+    'builtin-len-tuple': ITER_10 + [],
+    'builtin-len': ITER_25 + [],
+    'call-method-polymorphic': ITER_10 + ['1000'],
+    'for-range': ITER_25 + ['50000'],
+    'function-call': ITER_25 + [],
+    'generator-expression': ITER_25 + [],
+    'generator-notaligned': ITER_25 + [],
+    'generator': ITER_25 + [],
+    'genexp-builtin-call': ITER_25 + ['1000'],
+    'list-comp': ITER_15 + ['5000'],
+    'list-indexing': ITER_15 + ['1000000'],
+    'list-iterating-explicit': ITER_25 + ['1000000'],
+    'list-iterating': ITER_25 + ['1000000'],
+    'math-sqrt': ITER_15 + ['500000000'],
+    'object-allocate': ITER_10 + ['5000'],
+    'object-layout-change': ITER_15 + ['1000000'],
+    'special-add-int': ITER_15 + ['5'],
+    'special-add': ITER_15 + ['5'],
+    'special-len': ITER_10 + ['5'],
 }
 
-# XXX: testing
-# pythonBenchmarks = {
-#     'binarytrees3t'                 : ['8'],
-#     'mandelbrot3t'                  : ['300'],
-#     'ai-nqueen-timed'               : ['5'],
-# }
-# pythonMicroBenchmarks = {
-#     'arith-binop'                   : [],
-#     'for-range'                     : [],
+# pythonInteropBenchmarks = {
+#     'cext-modulo': [],
+#     'for-range-cext': [],
 # }
 
-pythonInteropBenchmarks = {
-    'cext-modulo': [],
-    'for-range-cext': [],
-}
-
-# helper list
-
-benchmarks_list = {
-    "normal": [pathBench, pythonBenchmarks],
-    "micro": [pathMicro, pythonMicroBenchmarks],
-    "generator": [pathBench, pythonGeneratorBenchmarks],
-    "object": [pathBench, pythonObjectBenchmarks],
-    "interop": [pathInterop, pythonInteropBenchmarks],
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# the benchmarks
+#
+# ----------------------------------------------------------------------------------------------------------------------
+BENCHMARKS = {
+    "normal": [PATH_BENCH, PYTHON_BENCHMARKS],
+    "micro": [PATH_MICRO, MICRO_BENCHMARKS],
+    "generator": [PATH_BENCH, GENERATOR_BENCHMARKS],
+    "object": [PATH_BENCH, OBJECT_BENCHMARKS],
+    # "interop": [pathInterop, pythonInteropBenchmarks],
 }
