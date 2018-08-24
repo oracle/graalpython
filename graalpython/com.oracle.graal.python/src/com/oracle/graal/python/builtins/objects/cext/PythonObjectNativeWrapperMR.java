@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
@@ -125,9 +126,10 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
     abstract static class GetDynamicTypeNode extends Node {
         @Child GetClassNode getClass = GetClassNode.create();
+        @Child AsPythonObjectNode getDelegate = AsPythonObjectNode.create();
 
         public Object access(PythonNativeWrapper object) {
-            PythonClass klass = getClass.execute(object.getDelegate());
+            PythonClass klass = getClass.execute(getDelegate.execute(object));
             Object sulongType = klass.getSulongType();
             if (sulongType == null) {
                 CompilerDirectives.transferToInterpreter();
@@ -156,17 +158,19 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         @Child private ReadNativeMemberNode readNativeMemberNode;
+        @Child AsPythonObjectNode getDelegate = AsPythonObjectNode.create();
 
         public Object access(PythonNativeWrapper object, String key) {
             // special key for the debugger
+            Object delegate = getDelegate.execute(object);
             if (key.equals(GP_OBJECT)) {
-                return object.getDelegate();
+                return delegate;
             }
             if (readNativeMemberNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 readNativeMemberNode = insert(ReadNativeMemberNode.create());
             }
-            return readNativeMemberNode.execute(object.getDelegate(), key);
+            return readNativeMemberNode.execute(delegate, key);
         }
     }
 
