@@ -49,6 +49,19 @@ def python_method():
     return "Hello from Python!"
 ```
 
+Finally, to interoperate with Java (only when running on the JVM), you can use
+the `java` module:
+```python
+import java
+BigInteger = java.type("java.math.BigInteger")
+myBigInt = BigInteger(42)
+myBigInt.shiftLeft(128)            # public Java methods can just be called
+myBigInt["not"]()                  # Java method names that are keywords in
+                                   # Python can be accessed using "[]"
+byteArray = myBigInt.toByteArray()
+print(list(byteArray))             # Java arrays can act like Python lists
+```
+
 #### Python responses to Truffle interop messages
 
 ###### READ
