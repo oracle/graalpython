@@ -32,8 +32,8 @@ HARNESS_PATH = os.path.join(_BASE_PATH, 'harness.py')
 
 PATH_BENCH = os.path.join(_BASE_PATH, 'benchmarks')
 PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
-PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
 PATH_MESO = os.path.join(_BASE_PATH, 'meso')
+PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
 
 # TODO: add/enable interop benchmarks
 # PATH_INTEROP = os.path.join(_BASE_PATH, 'interop')
@@ -50,60 +50,6 @@ PATH_MESO = os.path.join(_BASE_PATH, 'meso')
 #
 #
 # _compile_interop()
-
-GENERATOR_BENCHMARKS = {
-    'euler31-timed': ['200'],
-    'euler11-timed': ['10000'],
-    'ai-nqueen-timed': ['10'],
-    'pads-eratosthenes-timed': ['100000'],
-    'pads-integerpartitions': ['700'],
-    'pads-lyndon': ['100000000'],
-    'python-graph-bench': ['200'],
-    'simplejson-bench': ['10000'],
-    # 'whoosh-bench'    : '5000',
-    # 'pymaging-bench'  : '5000',
-    # 'sympy-bench'     : '20000',
-}
-
-OBJECT_BENCHMARKS = {
-    'richards3-timed': ['200'],
-    'bm-float-timed': ['1000'],
-    'pypy-chaos-timed': ['1000'],
-    'pypy-go-timed': ['50'],
-    'pypy-deltablue': ['2000'],
-}
-
-PYTHON_BENCHMARKS = {
-    'binarytrees3t': ['18'],
-    'fannkuchredux3t': ['11'],
-    'fasta3t': ['25000000'],
-    'mandelbrot3t': ['4000'],
-    'meteor3t': ['2098'],
-    'nbody3t': ['5000000'],
-    'spectralnorm3t': ['3000'],
-    'pidigits-timed': ['0'],
-    'euler31-timed': ['200'],
-    'euler11-timed': ['10000'],
-    'ai-nqueen-timed': ['10'],
-    'pads-eratosthenes-timed': ['100000'],
-    'pads-integerpartitions': ['700'],
-    'pads-lyndon': ['100000000'],
-    'richards3-timed': ['200'],
-    'bm-float-timed': ['1000'],
-    'pypy-chaos-timed': ['1000'],
-    'pypy-go-timed': ['50'],
-    'pypy-deltablue': ['2000'],
-    'python-graph-bench': ['200'],
-    'simplejson-bench': ['10000'],
-    'sieve': ['100000'],
-    # 'whoosh-bench'    : '5000',
-    # type not supported to adopt to Jython! <scoring.WeightScorer...
-    # 'pymaging-bench'  : '5000',
-    # Multiple super class is not supported yet! + File "JYTHON.jar/Lib/abc.py", line 32, in abstractmethod
-    #   AttributeError: 'str' object has no attribute '__isabstractmethod__'
-    # 'sympy-bench'     : '20000',
-    # ImportError: No module named core
-}
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -143,8 +89,36 @@ MICRO_BENCHMARKS = {
     'special-len': ITER_10 + ['5'],
 }
 
+
 MESO_BENCHMARKS = {
+    # -------------------------------------------------------
+    # generator benchmarks
+    # -------------------------------------------------------
+    'euler31': ITER_10 + ['200'],
+    'euler11': ITER_10 + ['10000'],
+    'ai-nqueen': ITER_10 + ['10'],
+    'pads-eratosthenes': ITER_10 + ['100000'],
+    'pads-integerpartitions': ITER_10 + ['700'],
+    # 'pads-lyndon': ITER_10 + ['100000000'],  # very slow benchmark compared to the others in this group ~180s / iter
+    # -------------------------------------------------------
+    # object benchmarks
+    # -------------------------------------------------------
+    'richards3': ITER_10 + ['200'],
+    'bm-float': ITER_10 + ['1000'],
+    # -------------------------------------------------------
+    # normal benchmarks
+    # -------------------------------------------------------
+    'binarytrees3': ITER_25 + ['18'],
+    'fannkuchredux3': ITER_10 + ['11'],
+    'fasta3': ITER_10 + ['25000000'],
+    'mandelbrot3': ITER_10 + ['4000'],
+    'meteor3': ITER_15 + ['2098'],
+    'nbody3': ITER_10 + ['5000000'],
+    'spectralnorm3': ITER_10 + ['3000'],
+    'pidigits': ITER_10 + [],
+    'sieve': ITER_25 + ['100000'],
 }
+
 
 MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
@@ -164,10 +138,5 @@ BENCHMARKS = {
     "micro": [PATH_MICRO, MICRO_BENCHMARKS],
     "meso": [PATH_MESO, MESO_BENCHMARKS],
     "macro": [PATH_MACRO, MACRO_BENCHMARKS],
-
-
-    "normal": [PATH_BENCH, PYTHON_BENCHMARKS],
-    "generator": [PATH_BENCH, GENERATOR_BENCHMARKS],
-    "object": [PATH_BENCH, OBJECT_BENCHMARKS],
-    # "interop": [pathInterop, pythonInteropBenchmarks],
+    # "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
 }
