@@ -99,7 +99,8 @@ MESO_BENCHMARKS = {
     'ai-nqueen': ITER_10 + ['10'],
     'pads-eratosthenes': ITER_10 + ['100000'],
     'pads-integerpartitions': ITER_10 + ['700'],
-    # 'pads-lyndon': ITER_10 + ['100000000'],  # very slow benchmark compared to the others in this group ~180s / iter
+    'pads-bipartite': ITER_10 + ['10000'],
+    'pads-lyndon': ITER_10 + ['10000000'],
     # -------------------------------------------------------
     # object benchmarks
     # -------------------------------------------------------
@@ -117,6 +118,11 @@ MESO_BENCHMARKS = {
     'spectralnorm3': ITER_10 + ['3000'],
     'pidigits': ITER_10 + [],
     'sieve': ITER_25 + ['100000'],
+    'image-magix': ITER_10 + ['10000'],
+    'parrot-b2': ITER_10 + ['200'],
+    # 'threadring': ITER_10 + ['100'],  # TODO: provide itertools cycle implementation
+    # 'regexdna': ITER_10 + [],  #  TODO: provide proper input for this benchmark
+    # 'knucleotide': ITER_10 + [],  #  TODO: provide proper input for this benchmark
 }
 
 
