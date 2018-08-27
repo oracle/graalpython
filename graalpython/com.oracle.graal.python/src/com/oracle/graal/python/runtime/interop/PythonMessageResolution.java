@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.runtime.interop;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
@@ -47,15 +48,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -79,16 +83,11 @@ import com.oracle.graal.python.nodes.interop.PTypeUnboxNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolutionFactory.ArgumentsFromForeignNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.CanResolve;
@@ -272,26 +271,36 @@ public class PythonMessageResolution {
     public static final class ExecuteNode extends Node {
         @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
         @Child private CallNode callNode = CallNode.create();
+        @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create(__CALL__);
         @Child private ArgumentsFromForeignNode convertArgsNode = ArgumentsFromForeignNodeGen.create();
-        final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-        public Object execute(Object receiver, Object[] arguments) {
-            Object[] convertedArgs = convertArgsNode.execute(arguments);
-            try {
-                return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, new PKeyword[0]));
-            } catch (PException e) {
-                e.expect(PythonErrorType.TypeError, getCore(), errorProfile);
-                throw UnsupportedMessageException.raise(Message.EXECUTE);
-            }
+        public Object execute(PFunction receiver, Object[] arguments) {
+            return doCall(receiver, arguments);
         }
 
-        private PythonCore getCore() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = PythonLanguage.getContextRef();
+        public Object execute(PBuiltinFunction receiver, Object[] arguments) {
+            return doCall(receiver, arguments);
+        }
+
+        public Object execute(PMethod receiver, Object[] arguments) {
+            return doCall(receiver, arguments);
+        }
+
+        public Object execute(PBuiltinMethod receiver, Object[] arguments) {
+            return doCall(receiver, arguments);
+        }
+
+        public Object execute(Object receiver, Object[] arguments) {
+            Object isCallable = callAttrGetterNode.execute(receiver);
+            if (isCallable == PNone.NO_VALUE) {
+                throw UnsupportedMessageException.raise(Message.EXECUTE);
             }
-            return contextRef.get().getCore();
+            return doCall(receiver, arguments);
+        }
+
+        private Object doCall(Object receiver, Object[] arguments) {
+            Object[] convertedArgs = convertArgsNode.execute(arguments);
+            return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, new PKeyword[0]));
         }
     }
 
