@@ -78,7 +78,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -348,30 +347,16 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     // bytearray.append(x)
     @Builtin(name = "append", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ByteArrayAppendNode extends PythonBuiltinNode {
-
-        @Specialization(guards = "isEmptyStorage(byteArray)")
-        public PByteArray appendEmpty(PByteArray byteArray, Object arg) {
-            byteArray.append(arg);
+    public abstract static class ByteArrayAppendNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        public PByteArray append(PByteArray byteArray, Object arg,
+                        @Cached("createAppend()") SequenceStorageNodes.AppendNode appendNode) {
+            appendNode.execute(byteArray.getSequenceStorage(), arg);
             return byteArray;
         }
 
-        @Specialization(guards = "isByteStorage(byteArray)")
-        public PByteArray appendInt(PByteArray byteArray, int arg) {
-            ByteSequenceStorage store = (ByteSequenceStorage) byteArray.getSequenceStorage();
-            try {
-                store.appendInt(arg);
-            } catch (SequenceStoreException e) {
-                throw raise(ValueError, "byte must be in range(0, 256)");
-            }
-            return byteArray;
-        }
-
-        @Specialization(guards = "isByteStorage(byteArray)")
-        public PByteArray appendInt(PByteArray byteArray, byte arg) {
-            ByteSequenceStorage store = (ByteSequenceStorage) byteArray.getSequenceStorage();
-            store.appendByte(arg);
-            return byteArray;
+        protected static SequenceStorageNodes.AppendNode createAppend() {
+            return SequenceStorageNodes.AppendNode.create(() -> NoGeneralizationNode.create("byte must be in range(0, 256)"));
         }
     }
 

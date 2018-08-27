@@ -33,7 +33,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
@@ -108,13 +107,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
 
     public final void clear() {
         store.clear();
-    }
-
-    public final void append(Object value) {
-        if (store instanceof EmptySequenceStorage) {
-            store = new ByteSequenceStorage(1);
-        }
-        store.append(value);
     }
 
     public PByteArray copy() {
