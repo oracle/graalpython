@@ -221,7 +221,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTuple_SetItem", fixedNumOfArguments = 3)
+    @Builtin(name = "PyTuple_SetItem", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTuple_SetItem extends NativeBuiltin {
         @Specialization
@@ -1552,7 +1552,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Upcall", minNumOfArguments = 3, takesVariableArguments = true, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Upcall", minNumOfPositionalArgs = 3, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallNode extends PythonBuiltinNode {
         @Child CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
@@ -1575,7 +1575,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Upcall_l", minNumOfArguments = 2, takesVariableArguments = true)
+    @Builtin(name = "PyTruffle_Upcall_l", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UpcallLNode extends PythonBuiltinNode {
         @Child CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
@@ -1595,7 +1595,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Upcall_d", minNumOfArguments = 2, takesVariableArguments = true)
+    @Builtin(name = "PyTruffle_Upcall_d", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UpcallDNode extends PythonBuiltinNode {
         @Child CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
@@ -1615,7 +1615,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Upcall_ptr", minNumOfArguments = 2, takesVariableArguments = true)
+    @Builtin(name = "PyTruffle_Upcall_ptr", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UpcallPtrNode extends PythonBuiltinNode {
         @Child CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
@@ -1634,7 +1634,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Cext_Upcall", minNumOfArguments = 2, takesVariableArguments = true, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Cext_Upcall", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextNode extends PythonBuiltinNode {
         @Child CExtNodes.ToSulongNode toSulongNode = CExtNodes.ToSulongNode.create();
@@ -1646,7 +1646,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Cext_Upcall_d", minNumOfArguments = 2, takesVariableArguments = true, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Cext_Upcall_d", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextDNode extends PythonBuiltinNode {
         @Child CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
@@ -1658,7 +1658,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Cext_Upcall_l", minNumOfArguments = 2, takesVariableArguments = true, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Cext_Upcall_l", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextLNode extends PythonBuiltinNode {
         @Child CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
@@ -1670,7 +1670,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Cext_Upcall_ptr", minNumOfArguments = 2, takesVariableArguments = true, declaresExplicitSelf = true)
+    @Builtin(name = "PyTruffle_Cext_Upcall_ptr", minNumOfPositionalArgs = 2, takesVarArgs = true, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class UpcallCextPtrNode extends PythonBuiltinNode {
         @Child CExtNodes.CextUpcallNode upcallNode = CExtNodes.CextUpcallNode.create();
@@ -1681,7 +1681,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "make_may_raise_wrapper", fixedNumOfArguments = 2)
+    @Builtin(name = "make_may_raise_wrapper", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
         static class MayRaiseWrapper extends RootNode {
@@ -1727,7 +1727,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "to_long", fixedNumOfArguments = 1)
+    @Builtin(name = "to_long", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsLong extends PythonBuiltinNode {
         @Child CExtNodes.AsLong asLongNode = CExtNodes.AsLong.create();
@@ -1738,7 +1738,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "to_double", fixedNumOfArguments = 1)
+    @Builtin(name = "to_double", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AsDouble extends PythonBuiltinNode {
         @Child CExtNodes.AsDouble asDoubleNode = CExtNodes.AsDouble.create();
