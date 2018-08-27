@@ -36,40 +36,45 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import sys, time
+# The Computer Language Benchmarks Game
+# http://shootout.alioth.debian.org/
+# contributed by Dominique Wahli
+# modified by Justin Peel
 
-PIDIGITS_LEN = 15000
+from re import sub, finditer
 
-def pidigits(length):
-    i = k = ns = 0
-    k1 = 1
-    n,a,d,t,u = 1,0,1,0,0
-    while(True):
-        k += 1
-        t = n<<1
-        n *= k
-        a += t
-        k1 += 2
-        a *= k1
-        d *= k1
-        if a >= n:
-            t,u = divmod(n*3 + a,d)
-            u += n
-            if d > u:
-                ns = ns*10 + t
-                i += 1
-                if i % 10 == 0:
-                    ns = 0
-                if i >= length:
-                    break
-                a -= d*t
-                a *= 10
-                n *= 10
-                    
 
-if __name__ == '__main__':
-    print("Start timing...")
-    start = time.time()
-    pidigits(5000)
-    duration = "%.3f\n" % (time.time() - start)
-    print("pidigits: " + duration)    
+def main(seq):
+    ilen = len(seq)
+
+    seq = sub('>.*\n|\n', '', seq) 
+    clen = len(seq)
+
+    variants = (
+          'agggtaaa|tttaccct',
+          '[cgt]gggtaaa|tttaccc[acg]',
+          'a[act]ggtaaa|tttacc[agt]t',
+          'ag[act]gtaaa|tttac[agt]ct',
+          'agg[act]taaa|ttta[agt]cct',
+          'aggg[acg]aaa|ttt[cgt]ccct',
+          'agggt[cgt]aa|tt[acg]accct',
+          'agggta[cgt]a|t[acg]taccct',
+          'agggtaa[cgt]|[acg]ttaccct')
+    for f in variants:
+        print f, sum(1 for i in finditer(f, seq))
+
+    subst = {
+          'B' : '(c|g|t)', 'D' : '(a|g|t)',   'H' : '(a|c|t)', 'K' : '(g|t)',
+          'M' : '(a|c)',   'N' : '(a|c|g|t)', 'R' : '(a|g)',   'S' : '(c|g)',
+          'V' : '(a|c|g)', 'W' : '(a|t)',     'Y' : '(c|t)'}
+    for f, r in subst.items():
+        seq = sub(f, r, seq)
+
+    print(ilen)
+    print(clen)
+    print(len(seq))
+
+
+def __benchmark__(*args):
+  # main(seq) #  TODO provide proper input 
+  pass

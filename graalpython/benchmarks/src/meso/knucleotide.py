@@ -36,62 +36,65 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-"""Simple, brute-force N-Queens solver."""
+# The Computer Language Benchmarks Game
+# http://shootout.alioth.debian.org/
+#
+# submitted by Ian Osgood
+# modified by Sokolov Yura
+# modified by bearophile
+# modified by Justin Peel
 
-__author__ = "collinwinter@google.com (Collin Winter)"
+from collections import defaultdict
 
-import time
 
-# Pure-Python implementation of itertools.permutations().
-def permutations(iterable, r=None):
-    """permutations(range(3), 2) --> (0,1) (0,2) (1,0) (1,2) (2,0) (2,1)"""
-    pool = tuple(iterable)
-    n = len(pool)
-    if r is None:
-        r = n
-    indices = list(range(n))
-    cycles = list(range(n-r+1, n+1))[::-1]
-    yield tuple(pool[i] for i in indices[:r])
-    while n:
-        for i in reversed(range(r)):
-            cycles[i] -= 1
-            if cycles[i] == 0:
-                indices[i:] = indices[i+1:] + indices[i:i+1]
-                cycles[i] = n - i
-            else:
-                j = cycles[i]
-                indices[i], indices[-j] = indices[-j], indices[i]
-                yield tuple(pool[i] for i in indices[:r])
+def gen_freq(seq, frame, frequencies):
+    if frame != 1:
+        ns = len(seq) + 1 - frame
+        frequencies.clear()
+        for ii in xrange(ns):
+            frequencies[seq[ii:ii + frame]] += 1
+        return ns, frequencies
+    for nucleo in seq:
+        frequencies[nucleo] += 1
+    return len(seq), frequencies
+
+
+def sort_seq(seq, length, frequencies):
+    n, frequencies = gen_freq(seq, length, frequencies)
+
+    l = sorted(frequencies.items(), reverse=True, key=lambda (seq,freq): (freq,seq))
+
+    print '\n'.join("%s %.3f" % (st, 100.0*fr/n) for st,fr in l)
+    print
+
+
+def find_seq(seq, s, frequencies):
+    n,t = gen_freq(seq, len(s), frequencies)
+    print "%d\t%s" % (t.get(s, 0), s)
+
+
+def main(stdin):
+    frequencies = defaultdict(int)
+    for line in stdin:
+        if line[0] == ">":
+            if line[1:3] == "TH":
                 break
-        else:
-            return
+
+    seq = []
+    seq_append = seq.append
+    for line in stdin:
+        if line[0] in ">;":
+            break
+        seq_append(line)
+    sequence = "".join(seq).replace('\n','').upper()
+
+    for nl in 1,2:
+        sort_seq(sequence, nl, frequencies)
+
+    for se in "GGT GGTA GGTATT GGTATTTTAATT GGTATTTTAATTTATAGT".split():
+        find_seq(sequence, se, frequencies)
 
 
-# From http://code.activestate.com/recipes/576647/
-def n_queens(queen_count):
-    """N-Queens solver.
-
-    Args:
-        queen_count: the number of queens to solve for. This is also the
-            board size.
-
-    Yields:
-        Solutions to the problem. Each yielded value is looks like
-        (3, 8, 2, 1, 4, ..., 6) where each number is the column position for the
-        queen, and the index into the tuple indicates the row.
-    """
-    cols = range(queen_count)
-    for vec in permutations(cols):
-        if (queen_count == len(set(vec[i]+i for i in cols))
-                        == len(set(vec[i]-i for i in cols))):
-            yield vec
-
-def measure():
-    print("Start timing...")
-    start = time.time()
-    print(list(n_queens(8))[-1])
-    duration = "%.3f\n" % (time.time() - start)
-    print("bm-ai: " + duration)
-
-if __name__ == "__main__":
-    measure()
+def __benchmark__(*args):
+    # main()  # provide proper input 
+    pass 

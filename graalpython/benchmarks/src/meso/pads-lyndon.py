@@ -180,5 +180,5 @@ def measure(num):
     print(result)
     
 
-def __benchmark__(num=100000000):
+def __benchmark__(num=10000000):
     measure(num)

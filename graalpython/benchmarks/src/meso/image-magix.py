@@ -110,83 +110,15 @@ class BilinImage(Image):
             return Image.__getitem__(self, (x, y))
 
 
-if __name__ == '__main__':
-    import sys
-    if sys.implementation.name == "graalpython" or "test" in sys.argv:
-        img = Image(5, 5, data=(
-            [11, 12, 13, 14, 15] +
-            [21, 22, 23, 24, 25] +
-            [31, 32, 33, 34, 35] +
-            [41, 42, 43, 44, 45] +
-            [51, 52, 53, 54, 55]
-        ))
-        print(img.sobel().data)
-        print(img.fisheye().data)
-        print(img.fisheye(bilinear=True).data)
-    else:
-        import re, subprocess
-        from time import time
+SZ = 20
 
-        def mplayer(Image, fn='tv://', options=''):
-            f = subprocess.Popen(
-                'mplayer -really-quiet -noframedrop ' + options + ' ' '-vo yuv4mpeg:file=/dev/stdout 2>/dev/null </dev/null ' + fn,
-                universal_newlines=False,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            ).stdout
-            hdr = f.readline()
-            m = re.search('W(\d+) H(\d+)', str(hdr))
-            w, h = int(m.group(1)), int(m.group(2))
-            while True:
-                hdr = f.readline()
-                if hdr != b'FRAME\n':
-                    break
-                data = array('B')
-                data.fromfile(f, w * h)
-                yield Image(w, h, data=list(data))
-                f.read(w * h // 2) # Color data
 
-        class MplayerViewer(object):
-            def __init__(self):
-                self.width = self.height = None
+def measure(num):
+    img = Image(SZ, SZ, data=list(range(SZ * SZ)))
+    for i in range(num):
+        img = img.sobel(horizontal=True, vertical=True)
+        img = img.fisheye(bilinear=True, fraction=3)
 
-            def view(self, img):
-                from plain import Image
-                imgdata = array('B', [0]) * (img.width * img.height)
-                for idx, px in enumerate(img.data):
-                    imgdata[idx] = px
-                if not self.width:
-                    self.mplayer = subprocess.Popen(
-                        'mplayer -really-quiet -noframedrop - 2> /dev/null ',
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.DEVNULL,
-                        universal_newlines=False,
-                        shell=True,
-                    ).stdin
-                    self.mplayer.write(b'YUV4MPEG2 W%d H%d F100:1 Ip A1:1\n' %
-                                       (img.width, img.height))
-                    self.width = img.width
-                    self.height = img.height
-                    self.color_data = array('B', [127]) * (img.width * img.height // 2)
-                assert self.width == img.width
-                assert self.height == img.height
-                self.mplayer.write(b'FRAME\n')
-                imgdata.tofile(self.mplayer)
-                self.color_data.tofile(self.mplayer)
-
-        default_viewer = MplayerViewer()
-
-        def view(img):
-            default_viewer.view(img)
-
-        start = start0 = time()
-        for fcnt, img in enumerate(mplayer(Image, 'test.avi -vf scale=640:480 -benchmark')):
-            img = img.sobel(horizontal=('vertical' not in sys.argv), vertical=('horizontal' not in sys.argv))
-            if 'no-fisheye' not in sys.argv:
-                img = img.fisheye(bilinear=("bilinear" in sys.argv), fraction=3)
-            view(img)
-            print(1.0 / (time() - start), 'fps, ', (fcnt-2) / (time() - start0), 'average fps')
-            start = time()
-            if fcnt==2:
-                start0 = time()
+        
+def __benchmark__(num=10000):
+    measure(num)

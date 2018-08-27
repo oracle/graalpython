@@ -45,7 +45,6 @@
 #
 # 02/24/14 Modified by Wei Zhang
 
-import sys, time
 
 ##############################
 # DFS
@@ -55,6 +54,7 @@ import sys, time
 forward = 1     # traversing edge (v,w) from v to w
 reverse = -1    # returning backwards on (v,w) from w to v
 nontree = 0     # edge (v,w) is not part of the DFS tree
+
 
 def DFS_search(G):
     """
@@ -89,6 +89,7 @@ def DFS_search(G):
 
             yield v,v,reverse
 
+
 ##############################
 # Bipartite
 ##############################
@@ -106,6 +107,7 @@ def TwoColor(G):
             return None
     return color
 
+
 def isBipartite(G):
     """
     Return True if G is bipartite, False otherwise.
@@ -116,8 +118,10 @@ def isBipartite(G):
 
     return True
 
+
 def create_cycle_graph(n):
     return {i:[(i-1)%n,(i+1)%n] for i in range(n)}
+
 
 def main(n):
     graph = create_cycle_graph(n)
@@ -126,18 +130,11 @@ def main(n):
         result = isBipartite(graph)
     return result
 
-def measure():
-    input = int(sys.argv[1]) #100000
 
-    print("Start timing...")
-    start = time.time()
-    result = main(input)
+def measure(num):
+    result = main(num)
     print(result)
-    duration = "%.3f\n" % (time.time() - start)
-    print("pads-bipartite: " + duration)
+    
 
-# warm up
-for i in range(100):
-    main(2000)
-
-measure()
+def __benchmark__(num=10000):
+    measure(num)

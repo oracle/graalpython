@@ -39,38 +39,36 @@
 # The Computer Language Benchmarks Game
 # http://shootout.alioth.debian.org/
 #
-# contributed by Antoine Pitrou
-# modified by Dominique Wahli
-# modified by Heinrich Acker
+# contributed by Daniel Nanz 2008-03-11
+# --------------------------------------------
+# Coroutines via enhanced generators
+# (http://www.python.org/dev/peps/pep-0342/)
 
-import sys
+import itertools
 
-def make_tree(item, depth):
-    if not depth: return item, None, None
-    item2 = item + item
-    depth -= 1
-    return item, make_tree(item2 - 1, depth), make_tree(item2, depth)
 
-def check_tree((item, left, right)):
-    if not left: return item
-    return item + check_tree(left) - check_tree(right)
+def main(n, n_threads=503, cycle=itertools.cycle):
 
-min_depth = 4
-max_depth = max(min_depth + 2, int(sys.argv[1]))
-stretch_depth = max_depth + 1
+    def worker(worker_id):
+        n = 1
+        while True:
+            print(n)
+            if n > 0:
+                n = (yield (n - 1))
+            else:
+                print(worker_id)
+                raise StopIteration
 
-print "stretch tree of depth %d\t check:" % stretch_depth, check_tree(make_tree(0, stretch_depth))
 
-long_lived_tree = make_tree(0, max_depth)
+    threadRing = [worker(w) for w in range(1, n_threads + 1)]
+    for t in threadRing: foo = t.next()           # start exec. gen. funcs
+    sendFuncRing = [t.send for t in threadRing]   # speed...
+    for send in cycle(sendFuncRing):
+        try:
+            n = send(n)
+        except StopIteration:
+            break
 
-iterations = 2**max_depth
-for depth in xrange(min_depth, stretch_depth, 2):
 
-    check = 0
-    for i in xrange(1, iterations + 1):
-        check += check_tree(make_tree(i, depth)) + check_tree(make_tree(-i, depth))
-
-    print "%d\t trees of depth %d\t check:" % (iterations * 2, depth), check
-    iterations /= 4
-
-print "long lived tree of depth %d\t check:" % max_depth, check_tree(long_lived_tree)
+def __bnenchmark__(num=100):
+    main(num)
