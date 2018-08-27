@@ -39,19 +39,7 @@
 
 import _imp
 import sys
-
-
-class CErrorHandler(object):
-    def __enter__(self, *args):
-        pass
-
-    def __exit__(self, typ, val, tb):
-        if typ != None:
-            PyErr_Restore(typ, val, tb)
-            return True
-
-
-error_handler = CErrorHandler()
+import python_cext
 
 
 def may_raise(error_result=error_handler):
@@ -60,16 +48,7 @@ def may_raise(error_result=error_handler):
         return may_raise(error_handler)(error_result)
     else:
         def decorator(fun):
-            def wrapper(*args):
-                typ = val = tb = None
-                try:
-                    return fun(*args)
-                except BaseException as e:
-                    typ, val, tb = sys.exc_info()
-                PyErr_Restore(typ, val, tb)
-                return error_result
-            wrapper.__name__ = fun.__name__
-            return wrapper
+            return make_may_raise_wrapper(fun, error_result)
         return decorator
 
 
@@ -690,8 +669,8 @@ def PyModule_AddObject(m, k, v):
     return None
 
 
+from posix import stat_result
 def PyStructSequence_New(typ):
-    from posix import stat_result
     return stat_result([None] * stat_result.n_sequence_fields * 2)
 
 
@@ -810,7 +789,7 @@ def PyObject_Repr(o):
 
 
 def PyType_IsSubtype(a, b):
-    return 1 if b in a.mro() else 0
+    return 1 if issubclass(a, b) else 0
 
 
 def PyTuple_New(size):
@@ -1291,73 +1270,3 @@ def PySlice_GetIndicesEx(start, stop, step, length):
 @may_raise
 def PySlice_New(start, stop, step):
     return slice(start, stop, step)
-
-
-@may_raise(to_sulong(error_handler))
-def PyTruffle_Upcall(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_sulong(getattr(to_java(rcv), name)(*converted))
-
-
-@may_raise(to_long(-1))
-def PyTruffle_Upcall_l(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_long(getattr(rcv, name)(*converted))
-
-
-@may_raise(to_double(-1.0))
-def PyTruffle_Upcall_d(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_double(getattr(rcv, name)(*converted))
-
-
-@may_raise(0)
-def PyTruffle_Upcall_ptr(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    # returns a pointer, i.e., we do no conversion since this can be any pointer object
-    return getattr(rcv, name)(*converted)
-
-
-def PyTruffle_Cext_Upcall(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_sulong(globals()[name](*converted))
-
-
-def PyTruffle_Cext_Upcall_l(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_long(globals()[name](*converted))
-
-
-def PyTruffle_Cext_Upcall_d(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_double(globals()[name](*converted))
-
-
-def PyTruffle_Cext_Upcall_ptr(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    # returns a pointer, i.e., we do no conversion since this can be any pointer object
-    return globals()[name](*converted)

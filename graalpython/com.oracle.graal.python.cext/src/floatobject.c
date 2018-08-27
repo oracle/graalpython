@@ -16,6 +16,7 @@ typedef enum {
 static float_format_type double_format, float_format;
 static float_format_type detected_double_format, detected_float_format;
 
+UPCALL_ID(PyFloat_FromObject);
 double PyFloat_AsDouble(PyObject *op) {
     if (op == NULL) {
         PyErr_BadArgument();
@@ -26,7 +27,7 @@ double PyFloat_AsDouble(PyObject *op) {
         return PyFloat_AS_DOUBLE(op);
     }
 
-    op = UPCALL_CEXT_O("PyFloat_FromObject", native_to_java(op));
+    op = UPCALL_CEXT_O(_jls_PyFloat_FromObject, native_to_java(op));
     if (op == NULL) {
         return -1.0;
     } else {
@@ -34,8 +35,9 @@ double PyFloat_AsDouble(PyObject *op) {
     }
 }
 
+UPCALL_ID(PyFloat_FromDouble);
 PyObject* PyFloat_FromDouble(double fval) {
-    return UPCALL_CEXT_O("PyFloat_FromDouble", fval);
+    return UPCALL_CEXT_O(_jls_PyFloat_FromDouble, fval);
 }
 
 // not quite as in CPython, this assumes that x is already a double. The rest of

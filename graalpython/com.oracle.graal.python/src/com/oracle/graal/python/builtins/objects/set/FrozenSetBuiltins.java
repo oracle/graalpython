@@ -216,7 +216,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         private HashingStorageNodes.DiffNode getDiffNode() {
             if (diffNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                diffNode = HashingStorageNodes.DiffNode.create();
+                diffNode = insert(HashingStorageNodes.DiffNode.create());
             }
             return diffNode;
         }

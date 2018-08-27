@@ -40,9 +40,38 @@
  */
 #include "capi.h"
 
+void *PY_TRUFFLE_CEXT;
+void *PY_BUILTIN;
+void *Py_NoValue;
+
+PyObject*(*PY_TRUFFLE_LANDING)(void *rcv, void* name, ...);
+PyObject*(*PY_TRUFFLE_LANDING_L)(void *rcv, void* name, ...);
+PyObject*(*PY_TRUFFLE_LANDING_D)(void *rcv, void* name, ...);
+void*(*PY_TRUFFLE_LANDING_PTR)(void *rcv, void* name, ...);
+PyObject*(*PY_TRUFFLE_CEXT_LANDING)(void* name, ...);
+uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
+double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
+void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
+
+__attribute__((constructor (__COUNTER__)))
+static void initialize_upcall_functions() {
+    PY_TRUFFLE_CEXT = (void*)polyglot_import("python_cext");
+    PY_BUILTIN = (void*)polyglot_import("python_builtins");
+
+    PY_TRUFFLE_LANDING = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall", SRC_CS)));
+    PY_TRUFFLE_LANDING_L = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_l", SRC_CS)));
+    PY_TRUFFLE_LANDING_D = ((PyObject*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_d", SRC_CS)));
+    PY_TRUFFLE_LANDING_PTR = ((void*(*)(void *rcv, void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Upcall_ptr", SRC_CS)));
+    PY_TRUFFLE_CEXT_LANDING = ((PyObject*(*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall", SRC_CS)));
+    PY_TRUFFLE_CEXT_LANDING_L = ((uint64_t (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_l", SRC_CS)));
+    PY_TRUFFLE_CEXT_LANDING_D = ((double (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_d", SRC_CS)));
+    PY_TRUFFLE_CEXT_LANDING_PTR = ((void* (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)));
+
+    Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
+}
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {
-    PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(typname, SRC_CS));
+    PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O(polyglot_from_string("PyTruffle_Type", SRC_CS), polyglot_from_string(typname, SRC_CS));
 
     // Store the Sulong struct type id to be used for instances of this class
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, typeid);
@@ -119,25 +148,25 @@ POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
 static void initialize_globals() {
     // None
-    PyObject* jnone = UPCALL_CEXT_O("Py_None");
+    PyObject* jnone = UPCALL_CEXT_O(polyglot_from_string("Py_None", SRC_CS));
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented
-    void *jnotimpl = UPCALL_CEXT_O("Py_NotImplemented");
+    void *jnotimpl = UPCALL_CEXT_O(polyglot_from_string("Py_NotImplemented", SRC_CS));
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
     // Ellipsis
-    void *jellipsis = UPCALL_CEXT_O("Py_Ellipsis");
+    void *jellipsis = UPCALL_CEXT_O(polyglot_from_string("Py_Ellipsis", SRC_CS));
     truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
 
     // True, False
-    void *jtrue = UPCALL_CEXT_O("Py_True");
+    void *jtrue = UPCALL_CEXT_O(polyglot_from_string("Py_True", SRC_CS));
     truffle_assign_managed(&_Py_TrueStruct, jtrue);
-    void *jfalse = UPCALL_CEXT_O("Py_False");
+    void *jfalse = UPCALL_CEXT_O(polyglot_from_string("Py_False", SRC_CS));
     truffle_assign_managed(&_Py_FalseStruct, jfalse);
 
     // error marker
-    void *jerrormarker = UPCALL_CEXT_PTR("Py_ErrorHandler");
+    void *jerrormarker = UPCALL_CEXT_PTR(polyglot_from_string("Py_ErrorHandler", SRC_CS));
     truffle_assign_managed(&marker_struct, jerrormarker);
 }
 
@@ -432,8 +461,9 @@ PyObject* WriteULongMember(PyObject* object, PyObject* offset, PyObject* value) 
     return value;
 }
 
+UPCALL_ID(__bool__);
 PyObject* WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value) {
-    WriteMember(object, offset, UPCALL_O(native_to_java(value), "__bool__") == Py_True ? (char)1 : (char)0, char);
+    WriteMember(object, offset, UPCALL_O(native_to_java(value), _jls___bool__) == Py_True ? (char)1 : (char)0, char);
     return value;
 }
 

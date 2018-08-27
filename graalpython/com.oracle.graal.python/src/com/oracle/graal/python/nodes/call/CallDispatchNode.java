@@ -57,7 +57,11 @@ public abstract class CallDispatchNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        return PythonLanguage.singleContextAssumption;
+        PythonLanguage language = getRootNode().getLanguage(PythonLanguage.class);
+        if (language == null) {
+            language = PythonLanguage.getCurrent();
+        }
+        return language.singleContextAssumption;
     }
 
     public abstract Object executeCall(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);

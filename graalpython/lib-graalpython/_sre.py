@@ -135,6 +135,9 @@ class SRE_Match():
         return self.result.end[0]
 
 
+_cpython_sre = None
+
+
 class SRE_Pattern():
     def __init__(self, pattern, flags, code, groups=0, groupindex=None, indexgroup=None):
         self.__was_bytes = isinstance(pattern, bytes)
@@ -160,7 +163,9 @@ class SRE_Pattern():
 
     def __compile_cpython_sre(self):
         if not self.__compiled_sre_pattern:
-            import _cpython_sre
+            global _cpython_sre
+            if not _cpython_sre:
+                import _cpython_sre
             self.__compiled_sre_pattern = _cpython_sre.compile(self.pattern, self.flags, self.code, self.num_groups, self.groupindex, self.indexgroup)
         return self.__compiled_sre_pattern
 

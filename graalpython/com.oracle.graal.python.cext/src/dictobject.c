@@ -42,25 +42,30 @@
 
 PyTypeObject PyDict_Type = PY_TRUFFLE_TYPE("dict", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_DICT_SUBCLASS, sizeof(PyDictObject));
 
+UPCALL_ID(PyDict_New);
 PyObject* PyDict_New(void) {
-    return UPCALL_CEXT_O("PyDict_New");
+    return UPCALL_CEXT_O(_jls_PyDict_New);
 }
 
+UPCALL_ID(PyDict_SetItem);
 int PyDict_SetItem(PyObject* d, PyObject* k, PyObject* v) {
-    return UPCALL_CEXT_I("PyDict_SetItem", native_to_java(d), native_to_java(k), native_to_java(v));
+    return UPCALL_CEXT_I(_jls_PyDict_SetItem, native_to_java(d), native_to_java(k), native_to_java(v));
 }
 
+UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
-    return UPCALL_CEXT_O("PyDict_GetItem", native_to_java(d), native_to_java(k));
+    return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
 }
 
+UPCALL_ID(PyDict_DelItem);
 int PyDict_DelItem(PyObject *d, PyObject *k) {
-    return UPCALL_CEXT_I("PyDict_DelItem", native_to_java(d), native_to_java(k));
+    return UPCALL_CEXT_I(_jls_PyDict_DelItem, native_to_java(d), native_to_java(k));
 }
 
 
+UPCALL_ID(PyDict_Next);
 int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalue) {
-    PyObject *tresult = UPCALL_CEXT_O("PyDict_Next", native_to_java(d), *ppos);
+    PyObject *tresult = UPCALL_CEXT_O(_jls_PyDict_Next, native_to_java(d), *ppos);
     if (tresult == NULL) {
     	if(pkey != NULL) {
     		*pkey = NULL;
@@ -80,34 +85,38 @@ int PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pvalu
     return 1;
 }
 
+UPCALL_ID(PyDict_Size);
 Py_ssize_t PyDict_Size(PyObject *d) {
-    return UPCALL_CEXT_L("PyDict_Size", native_to_java(d));
+    return UPCALL_CEXT_L(_jls_PyDict_Size, native_to_java(d));
 }
 
+UPCALL_ID(PyDict_Copy);
 PyObject * PyDict_Copy(PyObject *d) {
-    return UPCALL_CEXT_O("PyDict_Copy", native_to_java(d));
+    return UPCALL_CEXT_O(_jls_PyDict_Copy, native_to_java(d));
 }
 
 /* Return 1 if `key` is in dict `op`, 0 if not, and -1 on error. */
+UPCALL_ID(PyDict_Contains);
 int PyDict_Contains(PyObject *d, PyObject *k) {
-    return UPCALL_CEXT_I("PyDict_Contains", native_to_java(d), native_to_java(k));
+    return UPCALL_CEXT_I(_jls_PyDict_Contains, native_to_java(d), native_to_java(k));
 }
 
 PyObject * PyDict_GetItemString(PyObject *d, const char *key) {
-    return UPCALL_CEXT_O("PyDict_GetItem", native_to_java(d), polyglot_from_string(key, SRC_CS));
+    return UPCALL_CEXT_O(_jls_PyDict_GetItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
 }
 
 int PyDict_SetItemString(PyObject *d, const char *key, PyObject *item) {
-    UPCALL_CEXT_I("PyDict_SetItem", native_to_java(d), polyglot_from_string(key, SRC_CS), native_to_java(item));
+    UPCALL_CEXT_I(_jls_PyDict_SetItem, native_to_java(d), polyglot_from_string(key, SRC_CS), native_to_java(item));
     return 0;
 }
 
 int PyDict_DelItemString(PyObject *d, const char *key) {
-    return UPCALL_CEXT_I("PyDict_DelItem", native_to_java(d), polyglot_from_string(key, SRC_CS));
+    return UPCALL_CEXT_I(_jls_PyDict_DelItem, native_to_java(d), polyglot_from_string(key, SRC_CS));
 }
 
+UPCALL_ID(update);
 int PyDict_Update(PyObject *a, PyObject *b) {
-    PyObject* result = UPCALL_O(native_to_java(a), "update", native_to_java(b));
+    PyObject* result = UPCALL_O(native_to_java(a), _jls_update, native_to_java(b));
     if (PyErr_Occurred()) {
         return -1;
     } else {

@@ -63,11 +63,13 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     return 0;
 }
 
+UPCALL_ID(PyModule_SetDocString);
 int PyModule_SetDocString(PyObject* m, const char* doc) {
-    UPCALL_CEXT_VOID("PyModule_SetDocString", native_to_java(m), polyglot_from_string(doc, SRC_CS));
+    UPCALL_CEXT_VOID(_jls_PyModule_SetDocString, native_to_java(m), polyglot_from_string(doc, SRC_CS));
     return 0;
 }
 
+UPCALL_ID(_PyModule_CreateInitialized_PyModule_New);
 PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
     if (moduledef->m_slots) {
         PyErr_Format(
@@ -76,7 +78,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         return NULL;
     }
 
-    PyModuleObject* mod = (PyModuleObject*)UPCALL_CEXT_O("_PyModule_CreateInitialized_PyModule_New", polyglot_from_string(moduledef->m_name, SRC_CS));
+    PyModuleObject* mod = (PyModuleObject*)UPCALL_CEXT_O(_jls__PyModule_CreateInitialized_PyModule_New, polyglot_from_string(moduledef->m_name, SRC_CS));
 
     if (moduledef->m_size > 0) {
         void* md_state = PyMem_MALLOC(moduledef->m_size);
@@ -104,13 +106,14 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
     return (PyObject*) mod;
 }
 
+UPCALL_ID(PyModule_AddObject);
 int PyModule_AddObject(PyObject* m, const char* k, PyObject* v) {
-    UPCALL_CEXT_VOID("PyModule_AddObject", native_to_java(m), polyglot_from_string(k, SRC_CS), native_to_java(v));
+    UPCALL_CEXT_VOID(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), native_to_java(v));
     return 0;
 }
 
 int PyModule_AddIntConstant(PyObject* m, const char* k, long constant) {
-    UPCALL_CEXT_VOID("PyModule_AddObject", native_to_java(m), polyglot_from_string(k, SRC_CS), PyLong_FromLong(constant));
+    UPCALL_CEXT_VOID(_jls_PyModule_AddObject, native_to_java(m), polyglot_from_string(k, SRC_CS), PyLong_FromLong(constant));
     return 0;
 }
 
@@ -126,6 +129,7 @@ PyObject* PyModule_GetDict(PyObject* o) {
     return ((PyModuleObject*)o)->md_dict;
 }
 
+UPCALL_ID(PyModule_NewObject);
 PyObject* PyModule_NewObject(PyObject* name) {
-    return UPCALL_CEXT_O("PyModule_NewObject", native_to_java(name));
+    return UPCALL_CEXT_O(_jls_PyModule_NewObject, native_to_java(name));
 }

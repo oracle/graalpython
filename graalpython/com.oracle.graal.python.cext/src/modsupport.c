@@ -48,10 +48,11 @@ typedef struct _positional_argstack {
     struct _positional_argstack* prev;
 } positional_argstack;
 
+UPCALL_ID(PyObject_LEN);
 PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnames, unsigned char keywords_only) {
     void* out = NULL;
     if (!keywords_only) {
-        int l = UPCALL_CEXT_I("PyObject_LEN", native_to_java(p->argv));
+        int l = UPCALL_CEXT_I(_jls_PyObject_LEN, native_to_java(p->argv));
         if (p->argnum < l) {
             out = PyTuple_GetItem(p->argv, p->argnum);
         }
@@ -105,6 +106,7 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
     }
 
 /* argparse */
+UPCALL_ID(__bool__);
 int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const char *format, char** kwdnames, int outc, void *v0, void *v1, void *v2, void *v3, void *v4, void *v5, void *v6, void *v7, void *v8, void *v9, void *v10, void *v11, void *v12, void *v13, void *v14, void *v15, void *v16, void *v17, void *v18, void *v19) {
     PyObject* arg;
     int format_idx = 0;
@@ -330,7 +332,7 @@ int PyTruffle_Arg_ParseTupleAndKeywords(PyObject *argv, PyObject *kwds, const ch
         case 'p':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);
             PyTruffle_SkipOptionalArg(output_idx, arg, rest_optional);
-            PyTruffle_WriteOut(output_idx, int, (UPCALL_I(native_to_java(arg), "__bool__")));
+            PyTruffle_WriteOut(output_idx, int, (UPCALL_I(native_to_java(arg), _jls___bool__)));
             break;
         case '(':
             arg = PyTruffle_GetArg(v, kwds, kwdnames, rest_keywords_only);

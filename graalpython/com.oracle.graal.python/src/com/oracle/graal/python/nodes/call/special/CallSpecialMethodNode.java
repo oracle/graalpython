@@ -58,7 +58,6 @@ import com.oracle.truffle.api.nodes.Node;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic(PythonOptions.class)
 abstract class CallSpecialMethodNode extends Node {
-
     /**
      * Returns a new instanceof the builtin if it's a subclass of the given class, and null
      * otherwise.
@@ -73,7 +72,11 @@ abstract class CallSpecialMethodNode extends Node {
     }
 
     protected Assumption singleContextAssumption() {
-        return PythonLanguage.singleContextAssumption;
+        PythonLanguage language = getRootNode().getLanguage(PythonLanguage.class);
+        if (language == null) {
+            language = PythonLanguage.getCurrent();
+        }
+        return language.singleContextAssumption;
     }
 
     protected static PythonUnaryBuiltinNode getUnary(PBuiltinFunction func) {

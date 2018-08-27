@@ -44,7 +44,7 @@
 
 PyTypeObject _PyExc_BaseException = PY_TRUFFLE_TYPE("BaseException", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_BASE_EXC_SUBCLASS, sizeof(PyBaseExceptionObject));
 
-#define PY_EXCEPTION(__EXC_NAME__) (UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(__EXC_NAME__, SRC_CS)))
+#define PY_EXCEPTION(__EXC_NAME__) (UPCALL_CEXT_O(polyglot_from_string("PyTruffle_Type", SRC_CS), polyglot_from_string(__EXC_NAME__, SRC_CS)))
 
 PyObject * PyExc_BaseException = NULL;
 PyObject * PyExc_Exception = NULL;
@@ -121,8 +121,9 @@ void initialize_exceptions() {
 }
 
 
+UPCALL_ID(with_traceback);
 int PyException_SetTraceback(PyObject *self, PyObject *tb) {
-    PyObject* result = UPCALL_O(native_to_java(self), "with_traceback", native_to_java(tb));
+    PyObject* result = UPCALL_O(native_to_java(self), _jls_with_traceback, native_to_java(tb));
     if (result == ERROR_MARKER) {
         return -1;
     } else {

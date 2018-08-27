@@ -40,8 +40,9 @@
  */
 #include "capi.h"
 
+UPCALL_ID(hash);
 Py_hash_t _Py_HashDouble(double value) {
-    return UPCALL_L(PY_BUILTIN, "hash", value);
+    return UPCALL_L(PY_BUILTIN, _jls_hash, value);
 }
 
 long _PyHASH_INF;
@@ -49,12 +50,11 @@ long _PyHASH_NAN;
 long _PyHASH_IMAG;
 
 void initialize_hashes() {
-    _PyHASH_INF = UPCALL_L(PY_BUILTIN, "hash", INFINITY);
-    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, "hash", NAN);
-    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, "PyHash_Imag");
+    _PyHASH_INF = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), INFINITY);
+    _PyHASH_NAN = UPCALL_L(PY_BUILTIN, polyglot_from_string("hash", SRC_CS), NAN);
+    _PyHASH_IMAG = UPCALL_L(PY_TRUFFLE_CEXT, polyglot_from_string("PyHash_Imag", SRC_CS));
 }
 
-
 Py_hash_t _Py_HashBytes(const void *src, Py_ssize_t len) {
-    return UPCALL_L(PY_BUILTIN, "hash", polyglot_from_string(src, "ascii"));
+    return UPCALL_L(PY_BUILTIN, _jls_hash, polyglot_from_string(src, "ascii"));
 }
