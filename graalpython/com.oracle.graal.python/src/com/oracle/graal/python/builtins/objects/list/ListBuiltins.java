@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -366,8 +367,9 @@ public class ListBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doObjectIndex(PList self, Object objectIdx, Object value,
                         @Cached("create()") IndexNode getIndexNode,
-                        @Cached("create()") SetItemNode getRecursiveNode) {
-            return getRecursiveNode.execute(self, getIndexNode.execute(objectIdx), value);
+                        @Cached("create()") SetItemNode getRecursiveNode,
+                        @Cached("create()") CastToIndexNode castToIndex) {
+            return getRecursiveNode.execute(self, castToIndex.execute(getIndexNode.execute(objectIdx)), value);
         }
 
         @SuppressWarnings("unused")
