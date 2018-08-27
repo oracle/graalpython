@@ -25,11 +25,13 @@
  */
 package com.oracle.graal.python.test.grammar;
 
-import static com.oracle.graal.python.test.PythonTests.*;
+import static com.oracle.graal.python.test.PythonTests.assertLastLineErrorContains;
+import static com.oracle.graal.python.test.PythonTests.assertPrints;
 
-import java.nio.file.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import org.junit.*;
+import org.junit.Test;
 
 public class ArgumentsTests {
 
@@ -150,5 +152,262 @@ public class ArgumentsTests {
                         "def update(E=None, **F):\n" +
                         "  print(F)\n" +
                         "update(42)");
+    }
+
+    private static String call(String source, String args) {
+        return String.format("%s\nf(%s)", source, args);
+    }
+
+    private static String mkEmptyFunc(String argsDef) {
+        return String.format("def f(%s): pass", argsDef);
+    }
+
+    @Test
+    public void f0() {
+        String source = mkEmptyFunc("");
+        assertPrints("", call(source, ""));
+        assertLastLineErrorContains("TypeError", call(source, "1, 2, 3"));
+        assertLastLineErrorContains("TypeError", call(source, "a=1, b=1"));
+        assertLastLineErrorContains("TypeError", call(source, "1,2,3,4, a=1, b=1"));
+    }
+
+    @Test
+    public void f1() {
+        String source = mkEmptyFunc("*args");
+        assertPrints("", call(source, ""));
+        assertPrints("", call(source, "1, 2, 3"));
+        assertLastLineErrorContains("TypeError", call(source, "a=1"));
+    }
+
+    @Test
+    public void f2() {
+        String source = mkEmptyFunc("*args, **kw");
+        assertPrints("", call(source, ""));
+        assertPrints("", call(source, "1, 2, 3"));
+        assertPrints("", call(source, "1, 2, 3, a=1, b=2"));
+        assertPrints("", call(source, "a=1, b=2"));
+    }
+
+    @Test
+    public void f3() {
+        String source = mkEmptyFunc("**kw");
+        assertPrints("", call(source, ""));
+        assertLastLineErrorContains("TypeError", call(source, "1, 2, 3"));
+        assertLastLineErrorContains("TypeError", call(source, "1, 2, 3, a=1, b=2"));
+        assertPrints("", call(source, "a=1, b=2"));
+    }
+
+    @Test
+    public void f4() {
+        String source = mkEmptyFunc("foo=10");
+        assertPrints("", call(source, ""));
+        assertPrints("", call(source, "20"));
+        assertPrints("", call(source, "foo=20"));
+        assertLastLineErrorContains("TypeError", call(source, "a=10"));
+    }
+
+    @Test
+    public void f5() {
+        String source = mkEmptyFunc("foo=10, *args");
+        assertLastLineErrorContains("SyntaxError", call(source, "foo=1, 2, 3"));
+        assertPrints("", call(source, "foo=20"));
+        assertLastLineErrorContains("TypeError", call(source, "a=10"));
+        assertPrints("", call(source, "1, 2, 3"));
+    }
+
+    @Test
+    public void f6() {
+        String source = mkEmptyFunc("foo=10, *args, **kw");
+        assertPrints("", call(source, "foo=20"));
+        assertPrints("", call(source, "foo=20, a=2"));
+        assertLastLineErrorContains("SyntaxError", call(source, "foo=1, 2, 3, a=2"));
+    }
+
+    @Test
+    public void f7() {
+        String source = mkEmptyFunc("foo=10, **kw");
+        assertLastLineErrorContains("TypeError", call(source, "1, 2"));
+        assertPrints("", call(source, ""));
+        assertPrints("", call(source, "1"));
+        assertPrints("", call(source, "1, a=2"));
+        assertPrints("", call(source, "foo=1, a=2"));
+    }
+
+    @Test
+    public void f8() {
+        String source = mkEmptyFunc("a, b");
+        assertLastLineErrorContains("TypeError", call(source, ""));
+        assertLastLineErrorContains("TypeError", call(source, "1"));
+        assertPrints("", call(source, "1, 2"));
+        assertLastLineErrorContains("TypeError", call(source, "1, 2, 3"));
+        assertLastLineErrorContains("TypeError", call(source, "c=1"));
+    }
+
+    @Test
+    public void f9() {
+        String source = mkEmptyFunc("a, b, *args");
+        assertLastLineErrorContains("TypeError", call(source, ""));
+        assertPrints("", call(source, "1, 2, 3"));
+    }
+
+    @Test
+    public void f10() {
+        String source = mkEmptyFunc("a, b, *args, **kw");
+        assertPrints("", call(source, "1,2,3,4,c=1"));
+        assertLastLineErrorContains("TypeError", call(source, "1,2,3,4,a=1"));
+    }
+
+    @Test
+    public void f11() {
+        String source = mkEmptyFunc("a, b, **kw");
+        assertPrints("", call(source, "a=1,b=2"));
+        assertPrints("", call(source, "a=1,b=2,c=3"));
+        // TODO
+        // assertLastLineError("SyntaxError: keyword argument repeated", call(source, "a=1, b=2,
+        // a=3"));
+        assertLastLineErrorContains("TypeError", call(source, "1, b=2, a=3"));
+    }
+
+    @Test
+    public void f12() {
+        String source = mkEmptyFunc("a, b, foo=10");
+        assertPrints("", call(source, "1,2"));
+        assertPrints("", call(source, "1,2,3"));
+        assertLastLineErrorContains("TypeError", call(source, "a=1"));
+        assertPrints("", call(source, "1,2,foo=3"));
+        assertPrints("", call(source, "a=1,b=2,foo=3"));
+        assertLastLineErrorContains("SyntaxError", call(source, "a=1, 2, foo=3"));
+    }
+
+    @Test
+    public void f13() {
+        String source = mkEmptyFunc("a, b, foo=10, *args");
+        assertPrints("", call(source, "1,2,3,4"));
+        assertLastLineErrorContains("TypeError", call(source, "1, 2, foo=3, c=4"));
+    }
+
+    @Test
+    public void f14() {
+        String source = mkEmptyFunc("a, b, foo=10, *args, **kw");
+        assertPrints("", call(source, "1, 2, foo=3, c=4"));
+        assertPrints("", call(source, "a=1, b=2, foo=3, c=4"));
+        assertPrints("", call(source, "a=1, b=2, foo=3"));
+        assertPrints("", call(source, "1, 2, 3, c=4"));
+        assertPrints("", call(source, "1, 2, 3, 4, 5, 6, 7, d=1"));
+        assertLastLineErrorContains("TypeError", call(source, "1, 2, 3, a=4"));
+    }
+
+    @Test
+    public void f15() {
+        String source = mkEmptyFunc("a, b, foo=10, **kw");
+        assertPrints("", call(source, "1, 2, foo=3, c=4"));
+        assertPrints("", call(source, "a=1, b=2, foo=3, c=4"));
+        assertPrints("", call(source, "a=1, b=2, foo=3"));
+        assertPrints("", call(source, "1, 2, 3, c=4"));
+        assertLastLineErrorContains("TypeError", call(source, "1, 2, 3, 4, 5, 6, 7, d=1"));
+    }
+
+    @Test
+    public void f16() {
+        String source = mkEmptyFunc("*, a");
+        assertLastLineErrorContains("TypeError", call(source, ""));
+        assertLastLineErrorContains("TypeError", call(source, "1"));
+        assertPrints("", call(source, "a=1"));
+        assertLastLineErrorContains("TypeError", call(source, "a=1, b=1"));
+    }
+
+    @Test
+    public void f17() {
+        String source = mkEmptyFunc("*, a=5");
+        assertPrints("", call(source, ""));
+        assertPrints("", call(source, "a=1"));
+        assertLastLineErrorContains("TypeError", call(source, "b=1"));
+        assertLastLineErrorContains("TypeError", call(source, "1"));
+    }
+
+    @Test
+    public void f18() {
+        String source = mkEmptyFunc("*, a=5, b");
+        assertLastLineErrorContains("TypeError", call(source, "1, 2"));
+        assertLastLineErrorContains("SyntaxError", call(source, "a=1, 2"));
+        assertPrints("", call(source, "a=1, b=2"));
+        assertLastLineErrorContains("TypeError", call(source, "a=1,c=2"));
+        assertLastLineErrorContains("TypeError", call(source, "1,b=2"));
+    }
+
+    @Test
+    public void f19() {
+        String source = mkEmptyFunc("*, a, b=5");
+        assertPrints("", call(source, "a=1"));
+        assertPrints("", call(source, "a=1, b=2"));
+        assertLastLineErrorContains("TypeError", call(source, "1,b=2"));
+        assertLastLineErrorContains("TypeError", call(source, "1"));
+    }
+
+    @Test
+    public void f20() {
+        String source = mkEmptyFunc("*, a, b=5, **kw");
+        assertPrints("", call(source, "a=1"));
+        assertPrints("", call(source, "a=1, b=2"));
+        assertPrints("", call(source, "a=1, b=2, c=3"));
+        // TODO
+        // assertLastLineError("SyntaxError: keyword argument repeated", call(source,
+        // "a=1,b=2,a=3"));
+        assertLastLineErrorContains("TypeError", call(source, "1, b=2"));
+        assertLastLineErrorContains("TypeError", call(source, "1"));
+    }
+
+    @Test
+    public void f21() {
+        String source = mkEmptyFunc("*args, a");
+        assertLastLineErrorContains("TypeError", call(source, "1,2,3"));
+        assertPrints("", call(source, "1,2,a=3"));
+        assertPrints("", call(source, "a=3"));
+    }
+
+    @Test
+    public void f22() {
+        String source = mkEmptyFunc("*args, a=5");
+        assertPrints("", call(source, ""));
+        assertPrints("", call(source, "a=3"));
+        assertPrints("", call(source, "1,2,a=3"));
+        assertLastLineErrorContains("TypeError", call(source, "a=2, b=3"));
+    }
+
+    @Test
+    public void f23() {
+        String source = mkEmptyFunc("*args, a=5, b");
+        assertLastLineErrorContains("TypeError", call(source, "1,2,3"));
+        assertPrints("", call(source, "1,2,3,b=4"));
+        assertPrints("", call(source, "1,2,a=3,b=4"));
+        assertPrints("", call(source, "1,2,b=4,a=3"));
+    }
+
+    @Test
+    public void f24() {
+        String source = mkEmptyFunc("*args, a, b=5");
+        assertLastLineErrorContains("TypeError", call(source, "1,2,3"));
+        assertPrints("", call(source, "1,2,a=3"));
+        assertPrints("", call(source, "1,2,a=3,b=4"));
+        assertLastLineErrorContains("TypeError", call(source, "1,2, a=3, b=4, c=5"));
+        assertPrints("", call(source, "a=1"));
+        assertLastLineErrorContains("TypeError", call(source, "1"));
+        assertPrints("", call(source, "a=1, b=2"));
+        assertLastLineErrorContains("SyntaxError", call(source, "a=1, 2"));
+    }
+
+    @Test
+    public void f25() {
+        String source = mkEmptyFunc("*args, a, b=5, **kw");
+        assertLastLineErrorContains("TypeError", call(source, ""));
+        assertLastLineErrorContains("TypeError", call(source, "1,2,3"));
+        assertPrints("", call(source, "1,2,3,a=4"));
+        assertPrints("", call(source, "1,2,3,a=4,b=5"));
+        assertLastLineErrorContains("SyntaxError", call(source, "1,2,3,a=4,5"));
+        assertPrints("", call(source, "1,2,3,a=4,b=5,c=6"));
+        assertPrints("", call(source, "1,2,3,a=4,c=6"));
+        assertLastLineErrorContains("TypeError", call(source, "1,2,3,c=6"));
+        assertPrints("", call(source, "a=4,c=6"));
+        assertPrints("", call(source, "a=4"));
     }
 }

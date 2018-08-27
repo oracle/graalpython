@@ -69,7 +69,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // ReferenceType constructor
-    @Builtin(name = "ReferenceType", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PythonBuiltinClassType.PReferenceType)
+    @Builtin(name = "ReferenceType", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PReferenceType)
     @GenerateNodeFactory
     public abstract static class ReferenceTypeNode extends PythonBuiltinNode {
         @Specialization
@@ -89,7 +89,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // getweakrefcount(obj)
-    @Builtin(name = "getweakrefcount", fixedNumOfArguments = 1)
+    @Builtin(name = "getweakrefcount", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetWeakRefCountNode extends PythonBuiltinNode {
         @Specialization
@@ -104,7 +104,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // getweakrefs()
-    @Builtin(name = "getweakrefs", fixedNumOfArguments = 1)
+    @Builtin(name = "getweakrefs", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetWeakRefsNode extends PythonBuiltinNode {
         @Specialization
@@ -114,7 +114,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     // _remove_dead_weakref()
-    @Builtin(name = "_remove_dead_weakref", fixedNumOfArguments = 2)
+    @Builtin(name = "_remove_dead_weakref", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RemoveDeadWeakRefsNode extends PythonBuiltinNode {
         @Specialization

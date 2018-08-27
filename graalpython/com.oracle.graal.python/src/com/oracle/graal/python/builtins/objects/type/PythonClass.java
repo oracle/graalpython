@@ -44,7 +44,6 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -396,8 +395,8 @@ public class PythonClass extends PythonObject {
         return sulongType;
     }
 
+    @TruffleBoundary
     public final void setSulongType(Object dynamicSulongType) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
         this.sulongType = dynamicSulongType;
     }
 }

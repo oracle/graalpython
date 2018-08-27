@@ -30,7 +30,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -148,21 +148,26 @@ public abstract class PythonBuiltins {
     }
 
     private static Arity createArity(Builtin builtin, boolean declaresExplicitSelf) {
-        int minNum = builtin.minNumOfArguments();
-        int maxNum = Math.max(minNum, builtin.maxNumOfArguments());
-        if (builtin.fixedNumOfArguments() > 0) {
-            minNum = maxNum = builtin.fixedNumOfArguments();
-        }
-        if (!builtin.takesVariableArguments()) {
-            maxNum += builtin.keywordArguments().length;
+        int minNumPosArgs = builtin.minNumOfPositionalArgs();
+        int maxNumPosArgs = Math.max(minNumPosArgs, builtin.maxNumOfPositionalArgs());
+        if (builtin.fixedNumOfPositionalArgs() > 0) {
+            minNumPosArgs = maxNumPosArgs = builtin.fixedNumOfPositionalArgs();
         }
         if (!declaresExplicitSelf) {
             // if we don't take the explicit self, we still need to accept it by arity
-            minNum++;
-            maxNum++;
+            minNumPosArgs++;
+            maxNumPosArgs++;
         }
-        return new Arity(builtin.name(), minNum, maxNum, builtin.keywordArguments().length > 0 || builtin.takesVariableKeywords(), builtin.takesVariableArguments(),
-                        Arrays.asList(new String[0]), Arrays.asList(builtin.keywordArguments()));
+
+        List<Arity.KeywordName> keywordNames = new ArrayList<>();
+        for (String keywordArgument : builtin.keywordArguments()) {
+            keywordNames.add(new Arity.KeywordName(keywordArgument));
+            // the assumption here is that out Builtins do not take required keyword args,
+            // all supplied keyword args are before *args, **kwargs
+            maxNumPosArgs++;
+        }
+
+        return new Arity(builtin.name(), minNumPosArgs, maxNumPosArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs(), keywordNames);
     }
 
     private void setBuiltinFunction(String name, BoundBuiltinCallable<?> function) {

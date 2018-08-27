@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # micro benchmark: method call polymorphic inspired by richards
-import time
 
 iteration = 50000
 
@@ -85,20 +84,11 @@ def no_object_do_stuff():
 
 
 def measure(num):
-    print("Start timing...")
-    start = time.time()
-
     for i in range(num):  # 50000
         result = do_stuff()
 
     print(result)
-    duration = "%.3f\n" % (time.time() - start)
-    print("boolean-logic: " + duration)
 
 
-# warm up
-print('warming up ...')
-for i in range(1000):
-    do_stuff()
-
-measure(1000)
+def __benchmark__(num=1000):
+    measure(num)

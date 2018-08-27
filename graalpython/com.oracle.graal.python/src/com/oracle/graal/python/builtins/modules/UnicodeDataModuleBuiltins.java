@@ -64,7 +64,7 @@ public class UnicodeDataModuleBuiltins extends PythonBuiltins {
     }
 
     // unicodedata.normalize(form, unistr)
-    @Builtin(name = "normalize", fixedNumOfArguments = 2)
+    @Builtin(name = "normalize", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NormalizeNode extends PythonBuiltinNode {
         @TruffleBoundary

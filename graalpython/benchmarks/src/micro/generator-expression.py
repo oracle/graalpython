@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # subscribe simple generator
-import time
 
 
 def call_generator(num, iteration):
@@ -47,21 +46,11 @@ def call_generator_localvar(num, iteration):
 
 
 def measure():
-    print("Start timing...")
-    start = time.time()
-
     num = 1000
     last_item = call_generator(num, 10000)  # 1000000
 
     print("Last item ", last_item)
 
-    duration = "%.3f\n" % (time.time() - start)
-    print("generator-expression: " + duration)
 
-
-# warm up
-print('warming up ...')
-for run in range(2000):
-    call_generator(10, 100)
-
-measure()
+def __benchmark__(*args):
+    measure()

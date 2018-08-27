@@ -102,7 +102,7 @@ public class TypeBuiltins extends PythonBuiltins {
         return TypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -113,7 +113,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MRO__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __MRO__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class MroAttrNode extends PythonBuiltinNode {
         @Specialization
@@ -122,7 +122,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "mro", fixedNumOfArguments = 1)
+    @Builtin(name = "mro", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class MroNode extends PythonBuiltinNode {
         @Specialization
@@ -137,7 +137,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CALL__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = __CALL__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
         @Child CallVarargsMethodNode dispatchNew = CallVarargsMethodNode.create();
@@ -219,7 +219,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETATTRIBUTE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
         public static GetattributeNode create() {
@@ -358,7 +358,7 @@ public class TypeBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = __PREPARE__, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = __PREPARE__, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public static abstract class PrepareNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -368,7 +368,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BASES__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __BASES__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     static abstract class BasesNode extends PythonBuiltinNode {
         @Specialization
@@ -377,7 +377,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     static abstract class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -395,7 +395,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __INSTANCECHECK__, fixedNumOfArguments = 2)
+    @Builtin(name = __INSTANCECHECK__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public static abstract class InstanceCheckNode extends PythonBinaryBuiltinNode {
         @Child private LookupAndCallBinaryNode getAttributeNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
@@ -440,7 +440,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUBCLASSCHECK__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUBCLASSCHECK__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     static abstract class SubclassCheckNode extends PythonBinaryBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
@@ -451,7 +451,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SUBCLASSES__, fixedNumOfArguments = 1)
+    @Builtin(name = __SUBCLASSES__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     static abstract class SubclassesNode extends PythonUnaryBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
@@ -464,7 +464,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __NAME__, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __NAME__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     static abstract class NameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(value)")

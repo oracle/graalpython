@@ -81,7 +81,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.gmtime([seconds])
-    @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfArguments = 1)
+    @Builtin(name = "__truffle_gmtime_tuple__", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonGMTimeNode extends PythonBuiltinNode {
@@ -92,7 +92,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.localtime([seconds])
-    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfArguments = 1)
+    @Builtin(name = "__truffle_localtime_tuple__", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class PythonLocalTimeNode extends PythonBuiltinNode {
@@ -103,7 +103,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.time()
-    @Builtin(name = "time", fixedNumOfArguments = 0)
+    @Builtin(name = "time", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonTimeNode extends PythonBuiltinNode {
 
@@ -121,7 +121,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.monotonic()
-    @Builtin(name = "monotonic", fixedNumOfArguments = 0)
+    @Builtin(name = "monotonic", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonMonotonicNode extends PythonBuiltinNode {
 
@@ -133,7 +133,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     // time.clock()
-    @Builtin(name = "clock", fixedNumOfArguments = 0)
+    @Builtin(name = "clock", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class PythonClockNode extends PythonBuiltinNode {
         /**
@@ -159,7 +159,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "sleep", fixedNumOfArguments = 1)
+    @Builtin(name = "sleep", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SleepNode extends PythonBuiltinNode {

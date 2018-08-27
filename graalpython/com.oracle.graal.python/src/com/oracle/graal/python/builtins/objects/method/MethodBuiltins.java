@@ -57,7 +57,7 @@ public class MethodBuiltins extends PythonBuiltins {
         return MethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __FUNC__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __FUNC__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FuncNode extends PythonBuiltinNode {
         @Specialization
@@ -71,7 +71,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CODE__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CODE__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
@@ -81,7 +81,7 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {

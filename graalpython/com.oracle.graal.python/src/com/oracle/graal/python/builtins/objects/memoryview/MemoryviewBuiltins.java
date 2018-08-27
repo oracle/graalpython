@@ -64,7 +64,7 @@ public class MemoryviewBuiltins extends PythonBuiltins {
         return MemoryviewBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = C_MEMORYVIEW, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = C_MEMORYVIEW, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     static abstract class SetCMemoryviewNode extends PythonBinaryBuiltinNode {
 

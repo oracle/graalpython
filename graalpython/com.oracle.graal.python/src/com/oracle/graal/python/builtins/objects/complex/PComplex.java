@@ -27,7 +27,7 @@ package com.oracle.graal.python.builtins.objects.complex;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PComplex extends PythonBuiltinObject {
     /* Prime multiplier used in string and various other hashes in CPython. */
@@ -89,8 +89,8 @@ public final class PComplex extends PythonBuiltinObject {
     }
 
     @Override
+    @TruffleBoundary
     public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
         if (Double.compare(real, 0.0) == 0) {
             return toString(imag) + "j";
         } else {

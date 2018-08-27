@@ -50,6 +50,7 @@ language
 Python3.g4.stamp
 *.orig
 /graalpython/com.oracle.graal.python.test/src/tests/cpyext/Py*.c
+/graalpython/com.oracle.graal.python.test/src/tests/cpyext/Test*.c
 /*.diff
 ## generated from: pyhocon -i ci.hocon -f json -o ci.json
 /ci.json

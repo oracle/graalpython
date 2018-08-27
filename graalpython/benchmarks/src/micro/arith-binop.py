@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # arithmetic ops (partially extracted from spectralnorm)
-import time
 
 
 def docompute(num):
@@ -37,20 +36,10 @@ def docompute(num):
 
 
 def measure(num):
-    print("Start timing...")
-    start = time.time()
-
     for run in range(num):
         sum_ = docompute(10000)  # 10000
-
     print("sum", sum_)
 
-    duration = "%.3f\n" % (time.time() - start)
-    print("arith-binop: " + duration)
 
-
-print('warming up ...')
-for run in range(2000):
-    docompute(10)  # 1000
-
-measure(5)
+def __benchmark__(num=5):
+    measure(num)

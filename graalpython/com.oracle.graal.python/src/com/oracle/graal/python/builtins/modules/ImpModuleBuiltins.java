@@ -138,7 +138,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__create_dynamic__", fixedNumOfArguments = 2)
+    @Builtin(name = "__create_dynamic__", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(Message.class)
     public abstract static class CreateDynamic extends PythonBuiltinNode {
@@ -284,7 +284,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "exec_dynamic", fixedNumOfArguments = 1)
+    @Builtin(name = "exec_dynamic", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
@@ -294,7 +294,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_builtin", fixedNumOfArguments = 1)
+    @Builtin(name = "is_builtin", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
@@ -316,7 +316,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "create_builtin", fixedNumOfArguments = 1)
+    @Builtin(name = "create_builtin", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -335,7 +335,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_truffle_bootstrap_file_into_module", fixedNumOfArguments = 2)
+    @Builtin(name = "_truffle_bootstrap_file_into_module", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class TruffleImportStar extends PythonBuiltinNode {
         @Specialization

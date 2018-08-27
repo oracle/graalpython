@@ -199,7 +199,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "__super__init__", minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = "__super__init__", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class SuperInitNode extends PythonVarargsBuiltinNode {
 
@@ -336,7 +336,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "exc_info", fixedNumOfArguments = 0)
+    @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
@@ -353,7 +353,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_getframe", minNumOfArguments = 0, maxNumOfArguments = 1)
+    @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public static abstract class GetFrameNode extends PythonBuiltinNode {
 
@@ -444,7 +444,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "getfilesystemencoding", fixedNumOfArguments = 0)
+    @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
@@ -453,7 +453,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfArguments = 0)
+    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
@@ -462,7 +462,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "intern", fixedNumOfArguments = 1)
+    @Builtin(name = "intern", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization

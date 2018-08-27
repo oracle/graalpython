@@ -35,6 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+QUIETLY$(MX_VERBOSE) = @
 TARGETS=${OUTPUT_PATH}/Python3BaseVisitor.java \
 	${OUTPUT_PATH}/Python3Listener.java \
 	${OUTPUT_PATH}/Python3BaseListener.java \
@@ -54,8 +55,8 @@ define postprocess_file
 endef
 
 ${STAMP}: ${SOURCE}
-	touch $@
-	${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${OUTPUT_PATH} ${SOURCE}
+	$(QUIETLY) touch $@
+	$(QUIETLY) ${JAVA_HOME}/bin/java -cp ${ANTLR_JAR} org.antlr.v4.Tool -visitor -package ${PARSER_PKG} -o ${OUTPUT_PATH} ${SOURCE}
 	$(foreach var,$(TARGETS),$(call postprocess_file,$(var));)
 
 clean:

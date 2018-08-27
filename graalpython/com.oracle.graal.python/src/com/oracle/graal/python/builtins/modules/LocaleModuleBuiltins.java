@@ -57,8 +57,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -206,7 +206,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
     }
 
     // _locale.setlocale(category, locale=None)
-    @Builtin(name = "setlocale", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "setlocale", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetLocaleNode extends PythonBuiltinNode {
 

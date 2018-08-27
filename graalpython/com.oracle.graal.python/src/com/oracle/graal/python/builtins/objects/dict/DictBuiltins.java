@@ -83,7 +83,7 @@ public final class DictBuiltins extends PythonBuiltins {
         return DictBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
 
@@ -116,7 +116,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // setdefault(key[, default])
-    @Builtin(name = "setdefault", minNumOfArguments = 2, keywordArguments = {"default"})
+    @Builtin(name = "setdefault", minNumOfPositionalArgs = 2, keywordArguments = {"default"})
     @GenerateNodeFactory
     public abstract static class SetDefaultNode extends PythonBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
@@ -149,7 +149,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // pop(key[, default])
-    @Builtin(name = "pop", minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = "pop", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class PopNode extends PythonBuiltinNode {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
@@ -190,7 +190,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // popitem()
-    @Builtin(name = "popitem", fixedNumOfArguments = 1)
+    @Builtin(name = "popitem", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class PopItemNode extends PythonBuiltinNode {
 
@@ -208,7 +208,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // keys()
-    @Builtin(name = KEYS, fixedNumOfArguments = 1)
+    @Builtin(name = KEYS, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class KeysNode extends PythonUnaryBuiltinNode {
 
@@ -219,7 +219,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // items()
-    @Builtin(name = ITEMS, fixedNumOfArguments = 1)
+    @Builtin(name = ITEMS, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ItemsNode extends PythonUnaryBuiltinNode {
 
@@ -230,7 +230,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // get(key[, default])
-    @Builtin(name = "get", minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = "get", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonBuiltinNode {
         @Child private HashingStorageNodes.GetItemNode getItemNode;
@@ -256,7 +256,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -271,7 +271,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __MISSING__, fixedNumOfArguments = 2)
+    @Builtin(name = __MISSING__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class MissingNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -298,7 +298,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __SETITEM__, fixedNumOfArguments = 3)
+    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
@@ -309,7 +309,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DELITEM__, fixedNumOfArguments = 2)
+    @Builtin(name = __DELITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBuiltinNode {
         @Specialization
@@ -322,7 +322,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -331,7 +331,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
@@ -347,7 +347,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode;
@@ -368,7 +368,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = __BOOL__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -377,7 +377,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -387,7 +387,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // copy()
-    @Builtin(name = "copy", fixedNumOfArguments = 1)
+    @Builtin(name = "copy", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonBuiltinNode {
 
@@ -399,7 +399,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // clear()
-    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ClearNode extends PythonBuiltinNode {
 
@@ -411,7 +411,7 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // values()
-    @Builtin(name = "values", fixedNumOfArguments = 1)
+    @Builtin(name = "values", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ValuesNode extends PythonUnaryBuiltinNode {
 
@@ -421,7 +421,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
@@ -430,7 +430,7 @@ public final class DictBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 

@@ -37,7 +37,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.NodeInfo;
 
+@NodeInfo(shortName = "**kwargs")
 public abstract class ReadVarKeywordsNode extends PNode {
     @CompilationFinal(dimensions = 1) private final String[] keywordNames;
     private final boolean doWrap;

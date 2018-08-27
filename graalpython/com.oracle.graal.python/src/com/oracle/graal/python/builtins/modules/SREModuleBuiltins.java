@@ -86,7 +86,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
         return SREModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "tregex_preprocess_for_verbose", fixedNumOfArguments = 1)
+    @Builtin(name = "tregex_preprocess_for_verbose", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TRegexPreprocessVerboseNode extends PythonUnaryBuiltinNode {
 
@@ -140,7 +140,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "tregex_preprocess_default", fixedNumOfArguments = 1)
+    @Builtin(name = "tregex_preprocess_default", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TRegexPreprocessDefaultNode extends PythonUnaryBuiltinNode {
         @CompilationFinal private Pattern namedCaptGroupPattern;
@@ -190,7 +190,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
      * Replaces any <it>quoted</it> escape sequence like {@code "\\n"} (two characters; backslash +
      * 'n') by its single character like {@code "\n"} (one character; newline).
      */
-    @Builtin(name = "_process_escape_sequences", fixedNumOfArguments = 1)
+    @Builtin(name = "_process_escape_sequences", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
 
@@ -257,7 +257,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "tregex_call_safe", fixedNumOfArguments = 3)
+    @Builtin(name = "tregex_call_safe", fixedNumOfPositionalArgs = 3)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class TRegexCallSafe extends PythonBuiltinNode {
@@ -290,6 +290,12 @@ public class SREModuleBuiltins extends PythonBuiltins {
                         @Cached("create()") BranchProfile typeError,
                         @Cached("createExecute()") Node invokeNode) {
             return doIt(callable, arg1, arg2, runtimeError, typeError, invokeNode);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object call(Object callable, Object arg1, Object arg2) {
+            throw raise(RuntimeError);
         }
 
         protected static Node createExecute() {

@@ -40,7 +40,12 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -53,6 +58,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
 public abstract class ArityCheckNode extends PBaseNode {
@@ -62,97 +68,240 @@ public abstract class ArityCheckNode extends PBaseNode {
 
     public abstract void execute(Object arityOrCallable, Object[] arguments, PKeyword[] keywords);
 
+    private final ConditionProfile nonNameKwParam = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile missingPositionalArgs = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile lessPositionalArgs = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile morePositionalArgs = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile missingKeywordArgs = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile noKeywordArgs = ConditionProfile.createBinaryProfile();
+    private final ConditionProfile unexpectedKeywordArg = ConditionProfile.createBinaryProfile();
+
     @ExplodeLoop
-    private static String[] extractKeywordNames(int length, PKeyword[] keywords) {
+    private String[] extractKeywordNames(int length, PKeyword[] keywords) {
         String[] kwNames = new String[length];
         for (int i = 0; i < length; i++) {
             kwNames[i] = keywords[i].getName();
+            if (nonNameKwParam.profile(kwNames[i].isEmpty())) {
+                throw raise(SystemError, "Empty keyword parameter name");
+            }
         }
         return kwNames;
     }
 
     @TruffleBoundary
-    private static String[] extractKeywordNames(PKeyword[] keywords) {
+    private String[] extractKeywordNames(PKeyword[] keywords) {
         return extractKeywordNames(keywords.length, keywords);
     }
 
-    @Specialization(guards = {"cachedLen == keywords.length", "cachedDeclLen == arity.getKeywordNames().length"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {
+                    "cachedLen == keywords.length",
+                    "cachedNumParamIds == arity.getNumParameterIds()",
+                    "cachedDeclLen == arity.getNumKeywordNames()"
+    }, limit = "getVariableArgumentInlineCacheLimit()")
     void arityCheck(Arity arity, Object[] arguments, PKeyword[] keywords,
-                    @Cached("arity.getKeywordNames().length") int cachedDeclLen,
+                    @Cached("arity.getNumParameterIds()") int cachedNumParamIds,
+                    @Cached("arity.getNumKeywordNames()") int cachedDeclLen,
                     @Cached("keywords.length") int cachedLen) {
         String[] kwNames = extractKeywordNames(cachedLen, keywords);
-        arityCheck(arity, arguments.length - PArguments.USER_ARGUMENTS_OFFSET, cachedDeclLen, cachedLen, kwNames);
+        arityCheck(arity, arguments, cachedNumParamIds, PArguments.getNumberOfUserArgs(arguments), cachedDeclLen, cachedLen, kwNames);
     }
 
-    @Specialization(guards = {"cachedLen == keywords.length", "cachedDeclLen == callee.getArity().getKeywordNames().length"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {
+                    "cachedLen == keywords.length",
+                    "cachedNumParamIds == callee.getArity().getNumParameterIds()",
+                    "cachedDeclLen == callee.getArity().getNumKeywordNames()"
+    }, limit = "getVariableArgumentInlineCacheLimit()")
     void arityCheckCallable(PythonCallable callee, Object[] arguments, PKeyword[] keywords,
-                    @Cached("callee.getArity().getKeywordNames().length") int cachedDeclLen,
+                    @Cached("callee.getArity().getNumParameterIds()") int cachedNumParamIds,
+                    @Cached("callee.getArity().getNumKeywordNames()") int cachedDeclLen,
                     @Cached("keywords.length") int cachedLen) {
         String[] kwNames = extractKeywordNames(cachedLen, keywords);
-        arityCheck(callee.getArity(), arguments.length - PArguments.USER_ARGUMENTS_OFFSET, cachedDeclLen, cachedLen, kwNames);
+        Arity arity = callee.getArity();
+        arityCheck(arity, arguments, cachedNumParamIds, PArguments.getNumberOfUserArgs(arguments), cachedDeclLen, cachedLen, kwNames);
     }
 
     @Specialization(replaces = "arityCheck")
     void uncachedCheck(Arity arity, Object[] arguments, PKeyword[] keywords) {
         String[] kwNames = extractKeywordNames(keywords);
-        arityCheck(arity, arguments.length - PArguments.USER_ARGUMENTS_OFFSET, kwNames);
+        arityCheck(arity, arguments, PArguments.getNumberOfUserArgs(arguments), kwNames);
     }
 
     @Specialization(replaces = "arityCheckCallable")
     void uncachedCheckCallable(PythonCallable callee, Object[] arguments, PKeyword[] keywords) {
         String[] kwNames = extractKeywordNames(keywords);
-        arityCheck(callee.getArity(), arguments.length - PArguments.USER_ARGUMENTS_OFFSET, kwNames);
+        arityCheck(callee.getArity(), arguments, PArguments.getNumberOfUserArgs(arguments), kwNames);
     }
 
     @TruffleBoundary
-    private void arityCheck(Arity arity, int numOfArgs, String[] keywords) {
-        arityCheck(arity, numOfArgs, arity.getKeywordNames().length, keywords.length, keywords);
+    private void arityCheck(Arity arity, Object[] arguments, int numOfArgs, String[] keywords) {
+        arityCheck(arity, arguments, arity.getParameterIds().length, numOfArgs, arity.getKeywordNames().length, keywords.length, keywords);
+    }
+
+    private void arityCheck(Arity arity, Object[] arguments, int numParameterIds, int numOfArgs, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
+        checkPositional(arity, arguments, numParameterIds, numOfArgs, keywords);
+        checkKeywords(arity, numOfKeywordsDeclared, numOfKeywordsGiven, keywords);
+    }
+
+    private void checkPositional(Arity arity, Object[] arguments, int numParameterIds, int numOfArgs, String[] keywords) {
+        // check missing paramIds
+        int cntMissingPositional = countMissingPositionalParamIds(numParameterIds, arguments);
+
+        if (missingPositionalArgs.profile(cntMissingPositional > 0)) {
+            throw raise(TypeError, getMissingPositionalArgsErrorMessage(arity, arguments, cntMissingPositional));
+        }
+
+        if (lessPositionalArgs.profile(numOfArgs < arity.getMinNumOfPositionalArgs())) {
+            throw raise(TypeError, "%s() takes %s %d positional argument%s (%d given)",
+                            arity.getFunctionName(),
+                            (arity.getMinNumOfPositionalArgs() == arity.getMinNumOfPositionalArgs()) ? "exactly" : "at least",
+                            arity.getMinNumOfPositionalArgs(),
+                            arity.getMinNumOfPositionalArgs() == 1 ? "" : "s",
+                            numOfArgs);
+        } else if (morePositionalArgs.profile(arity.getMaxNumOfPositionalArgs() != -1 && numOfArgs > arity.getMaxNumOfPositionalArgs())) {
+            throw raise(TypeError, getExtraPositionalArgsErrorMessage(arity, numOfArgs, keywords));
+        }
+    }
+
+    private void checkKeywords(Arity arity, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
+        int cntGivenRequiredKeywords = countGivenRequiredKeywords(arity, numOfKeywordsDeclared, numOfKeywordsGiven, keywords);
+
+        if (missingKeywordArgs.profile(arity.takesRequiredKeywordArgs() && cntGivenRequiredKeywords < arity.getNumOfRequiredKeywords())) {
+            throw raise(TypeError, getMissingRequiredKeywordsErrorMessage(arity, cntGivenRequiredKeywords, keywords));
+        } else if (noKeywordArgs.profile(!arity.takesKeywordArgs() && numOfKeywordsGiven > 0)) {
+            throw raise(TypeError, "%s() takes no keyword arguments",
+                            arity.getFunctionName());
+        }
     }
 
     @ExplodeLoop
-    private void arityCheck(Arity arity, int numOfArgs, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
-        if (numOfKeywordsGiven == 0) {
-            arityCheck(arity, numOfArgs);
-        } else if (!arity.takesKeywordArg() && numOfKeywordsGiven > 0) {
-            throw raise(TypeError, "%s() takes no keyword arguments", arity.getFunctionName());
-        } else {
-            for (int i = 0; i < numOfKeywordsGiven; i++) {
-                String keyword = keywords[i];
-                checkKeyword(arity, keyword, numOfKeywordsDeclared);
+    private static int countMissingPositionalParamIds(int numParameterIds, Object[] arguments) {
+        int cntMissingPositional = 0;
+        for (int i = 0; i < numParameterIds; i++) {
+            if (PArguments.getArgument(arguments, i) == null) {
+                cntMissingPositional += 1;
             }
         }
+        return cntMissingPositional;
     }
 
     @ExplodeLoop
-    private void checkKeyword(Arity arity, String keyword, int length) {
-        if (arity.takesVarArgs()) {
-            return;
+    private int countGivenRequiredKeywords(Arity arity, int numOfKeywordsDeclared, int numOfKeywordsGiven, String[] keywords) {
+        int cntGivenRequiredKeywords = 0;
+
+        for (int i = 0; i < numOfKeywordsGiven; i++) {
+            String keyword = keywords[i];
+            cntGivenRequiredKeywords += checkKeyword(arity, keyword, numOfKeywordsDeclared);
         }
-        String[] keywordNames = arity.getKeywordNames();
+
+        return cntGivenRequiredKeywords;
+    }
+
+    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)
+    private int checkKeyword(Arity arity, String keyword, int length) {
+        Arity.KeywordName[] keywordNames = arity.getKeywordNames();
         for (int i = 0; i < length; i++) {
-            String name = keywordNames[i];
-            if (name.equals(keyword)) {
-                return;
+            Arity.KeywordName kw = keywordNames[i];
+            if (kw.name.equals(keyword)) {
+                return (kw.required) ? 1 : 0;
             }
         }
-        throw raise(TypeError, "%s() got an unexpected keyword argument '%s'", arity.getFunctionName(), keyword);
+
+        if (unexpectedKeywordArg.profile(!arity.takesVarKeywordArgs())) {
+            throw raise(TypeError, "%s() got an unexpected keyword argument '%s'",
+                            arity.getFunctionName(),
+                            keyword);
+        }
+
+        return 0;
     }
 
-    private void arityCheck(Arity arity, int numOfArgs) {
-        if (!arity.takesVarArgs() && arity.getMinNumOfArgs() == arity.getMaxNumOfArgs()) {
-            if (numOfArgs != arity.getMinNumOfArgs()) {
-                if (arity.getMinNumOfArgs() == 0) {
-                    throw raise(TypeError, "%s() takes no arguments (%d given)", arity.getFunctionName(), numOfArgs);
-                } else if (arity.getMinNumOfArgs() == 1) {
-                    throw raise(TypeError, "%s() takes exactly one argument (%d given)", arity.getFunctionName(), numOfArgs);
-                } else {
-                    throw raise(TypeError, "%s() takes %d arguments (%d given)", arity.getFunctionName(), arity.getMinNumOfArgs(), numOfArgs);
+    @TruffleBoundary
+    private static String getMissingRequiredKeywordsErrorMessage(Arity arity, int cntGivenRequiredKeywords, String[] givenKeywords) {
+        int missingRequiredKeywords = arity.getNumOfRequiredKeywords() - cntGivenRequiredKeywords;
+        Set<String> givenKeywordsSet = new HashSet<>(Arrays.asList(givenKeywords));
+
+        StringBuilder builder = new StringBuilder();
+        String currentName = null;
+        Arity.KeywordName[] declaredKeywords = arity.getKeywordNames();
+        boolean first = true;
+        for (Arity.KeywordName kw : declaredKeywords) {
+            if (kw.required && !givenKeywordsSet.contains(kw.name)) {
+                if (currentName != null) {
+                    builder.append("'").append(currentName).append("'");
+                    if (!first) {
+                        builder.append(", ");
+                    }
+                    first = false;
                 }
+                currentName = kw.name;
             }
-        } else if (numOfArgs < arity.getMinNumOfArgs()) {
-            throw raise(TypeError, "%s() expected at least %d arguments (%d) given", arity.getFunctionName(), arity.getMinNumOfArgs(), numOfArgs);
-        } else if (!arity.takesVarArgs() && numOfArgs > arity.getMaxNumOfArgs()) {
-            throw raise(TypeError, "%s() takes at most %d arguments (%d given)", arity.getFunctionName(), arity.getMaxNumOfArgs(), numOfArgs);
         }
+        if (missingRequiredKeywords > 1) {
+            builder.append(" and ");
+        }
+        builder.append("'").append(currentName).append("'");
+
+        return String.format("%s() missing %d required keyword-only argument%s: %s",
+                        arity.getFunctionName(),
+                        missingRequiredKeywords,
+                        ((missingRequiredKeywords > 1) ? "s" : ""),
+                        builder.toString());
+    }
+
+    @TruffleBoundary
+    private static String getMissingPositionalArgsErrorMessage(Arity arity, Object[] arguments, int cntMissingPositional) {
+        StringBuilder builder = new StringBuilder();
+        String currentName = null;
+        String[] parameterIds = arity.getParameterIds();
+        boolean first = true;
+        for (int i = 0; i < parameterIds.length; i++) {
+            String paramId = parameterIds[i];
+            if (PArguments.getArgument(arguments, i) == null) {
+                if (currentName != null) {
+                    builder.append("'").append(currentName).append("'");
+                    if (!first) {
+                        builder.append(", ");
+                    }
+                    first = false;
+                }
+                currentName = paramId;
+            }
+        }
+        if (cntMissingPositional > 1) {
+            builder.append(" and ");
+        }
+        builder.append("'").append(currentName).append("'");
+
+        return String.format("%s() missing %d required positional argument%s: %s",
+                        arity.getFunctionName(),
+                        cntMissingPositional,
+                        (cntMissingPositional > 1) ? "s" : "",
+                        builder.toString());
+    }
+
+    @TruffleBoundary
+    private static String getExtraPositionalArgsErrorMessage(Arity arity, int numOfArgs, String[] givenKeywords) {
+        String givenCountMessage = (numOfArgs == 1) ? "was" : "were";
+        Set<String> keywordsOnly = arity.getKeywordsOnlyArgs();
+        int givenKeywordOnlyArgs = 0;
+        for (String givenKw : givenKeywords) {
+            if (keywordsOnly.contains(givenKw)) {
+                givenKeywordOnlyArgs += 1;
+            }
+        }
+
+        if (givenKeywordOnlyArgs > 0) {
+            givenCountMessage = String.format("positional argument%s (and %s keyword-only argument%s) were",
+                            (numOfArgs > 1) ? "s" : "",
+                            givenKeywordOnlyArgs,
+                            (givenKeywordOnlyArgs > 1) ? "s" : "");
+        }
+
+        return String.format("%s() takes %s%d positional arguments but %d %s given",
+                        arity.getFunctionName(),
+                        (arity.getMinNumOfArgs() == arity.getMaxNumOfArgs()) ? "" : "from " + arity.getMinNumOfArgs() + " to ",
+                        arity.getMaxNumOfArgs(),
+                        numOfArgs,
+                        givenCountMessage);
     }
 }

@@ -89,9 +89,11 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolution;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -115,6 +117,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -283,14 +286,33 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_AS_BUFFER, key)")
-        Object doTpAsBuffer(PythonClass object, @SuppressWarnings("unused") String key) {
-            if (object == getCore().lookupType(PythonBuiltinClassType.PBytes) ||
-                            object == getCore().lookupType(PythonBuiltinClassType.PByteArray) ||
-                            object == getCore().lookupType(PythonBuiltinClassType.PMemoryView) ||
-                            object == getCore().lookupType(PythonBuiltinClassType.PBuffer)) {
-                return new PyBufferProcsWrapper(object);
+        Object doTpAsBuffer(PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("create()") IsSubtypeNode isSubtype,
+                        @Cached("create()") BranchProfile notBytes,
+                        @Cached("create()") BranchProfile notBytearray,
+                        @Cached("create()") BranchProfile notMemoryview,
+                        @Cached("create()") BranchProfile notBuffer) {
+            PythonCore core = getCore();
+            PythonBuiltinClass pBytes = core.lookupType(PythonBuiltinClassType.PBytes);
+            if (isSubtype.execute(object, pBytes)) {
+                return new PyBufferProcsWrapper(pBytes);
             }
-
+            notBytes.enter();
+            PythonBuiltinClass pBytearray = core.lookupType(PythonBuiltinClassType.PByteArray);
+            if (isSubtype.execute(object, pBytearray)) {
+                return new PyBufferProcsWrapper(pBytearray);
+            }
+            notBytearray.enter();
+            PythonBuiltinClass pMemoryview = core.lookupType(PythonBuiltinClassType.PMemoryView);
+            if (isSubtype.execute(object, pMemoryview)) {
+                return new PyBufferProcsWrapper(pMemoryview);
+            }
+            notMemoryview.enter();
+            PythonBuiltinClass pBuffer = core.lookupType(PythonBuiltinClassType.PBuffer);
+            if (isSubtype.execute(object, pBuffer)) {
+                return new PyBufferProcsWrapper(pBuffer);
+            }
+            notBuffer.enter();
             // NULL pointer
             return getToSulongNode().execute(PNone.NO_VALUE);
         }

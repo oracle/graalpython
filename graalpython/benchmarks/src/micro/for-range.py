@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # micro benchmark: simple for range loop
-import time
 
 iteration = 50000  # 50000
 
@@ -40,20 +39,11 @@ def sumitup(iteration):
 
 
 def measure(num):
-    print("Start timing...")
-    start = time.time()
-
     for i in range(num):  # 50000
         sumitup(iteration)
 
     print(sumitup(iteration))
-    duration = "%.3f\n" % (time.time() - start)
-    print("for-range: " + duration)
+    
 
-
-print('warming up ...')
-for i in range(10000):  # 5000
-    sumitup(6000)  # 1000
-
-# add("a", "b")
-measure(50000)
+def __benchmark__(num=50000):
+    measure(num)
