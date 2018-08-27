@@ -62,7 +62,11 @@ class BenchRunner(object):
             bench_args = []
         self.bench_module = BenchRunner.get_bench_module(bench_file)
         self.bench_args = bench_args
-        self.iterations = _as_int(iterations)
+
+        _iterations = _as_int(iterations)
+        self._run_once = _iterations <= 1
+        self.iterations = 1 if self._run_once else _iterations
+
         assert isinstance(self.iterations, int)
         self.warmup = _as_int(warmup)
         assert isinstance(self.warmup, int)
@@ -102,8 +106,11 @@ class BenchRunner(object):
 
     def run(self):
         print(_HRULE)
-        print("### %s, %s warmup iterations, %s bench iterations " % (self.bench_module.__name__, self.warmup, self.iterations))
-        
+        if self._run_once:
+            print("### %s, exactly one iteration (no warmup curves)" % (self.bench_module.__name__))
+        else:
+            print("### %s, %s warmup iterations, %s bench iterations " % (self.bench_module.__name__, self.warmup, self.iterations))
+
         # process the args if the processor function is defined 
         args = self._call_attr(ATTR_PROCESS_ARGS, *self.bench_args)
         if args is None:
@@ -124,7 +131,10 @@ class BenchRunner(object):
                 start = time()
                 bench_func(*args)
                 duration = "%.3f" % (time() - start)
-                print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration))
+                if self._run_once:
+                    print("@@@ name=%s, duration=%s" % (self.bench_module.__name__, duration))
+                else:
+                    print("### iteration=%s, name=%s, duration=%s" % (iteration, self.bench_module.__name__, duration))
 
 
 def run_benchmark(prog, args):
