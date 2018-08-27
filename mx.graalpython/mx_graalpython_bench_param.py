@@ -143,14 +143,14 @@ MICRO_BENCHMARKS = {
     'special-len': ITER_10 + ['5'],
 }
 
+MESO_BENCHMARKS = {
+}
+
 MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
 }
 
-MESO_BENCHMARKS = {
-}
-
-# pythonInteropBenchmarks = {
+# INTEROP_BENCHMARKS = {
 #     'cext-modulo': [],
 #     'for-range-cext': [],
 # }
