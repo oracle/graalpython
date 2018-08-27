@@ -574,8 +574,8 @@ public class PythonMessageResolution {
     abstract static class PKeyInfoNode extends Node {
         @Child private LookupAndCallBinaryNode getCallNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
 
-        ReadNode readNode = new ReadNode();
-        IsImmutable isImmutable = new IsImmutable();
+        @Child ReadNode readNode = new ReadNode();
+        @Child IsImmutable isImmutable = new IsImmutable();
 
         public int access(Object object, Object fieldName) {
             Object attr = readNode.execute(object, fieldName);
