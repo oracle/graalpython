@@ -2033,7 +2033,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public boolean hasSetItem(Object object) {
             if (getSetItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSetItemNode = LookupInheritedAttributeNode.create(__SETITEM__);
+                getSetItemNode = insert(LookupInheritedAttributeNode.create(__SETITEM__));
             }
             return getSetItemNode.execute(object) != PNone.NO_VALUE;
         }
