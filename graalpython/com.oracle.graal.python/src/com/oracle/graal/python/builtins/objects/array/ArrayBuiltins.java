@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -56,9 +58,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -246,6 +251,45 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         Object getitem(PArray self) {
             return factory().createArrayIterator(self);
+        }
+    }
+
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class LenNode extends PythonUnaryBuiltinNode {
+
+        @Specialization(guards = "isEmptyStorage(array)")
+        public int lenEmpty(@SuppressWarnings("unused") PArray array) {
+            return 0;
+        }
+
+        @Specialization(guards = "isIntStorage(array)")
+        public int lenInt(PArray array) {
+            IntSequenceStorage store = (IntSequenceStorage) array.getSequenceStorage();
+            return store.length();
+        }
+
+        @Specialization(guards = "isLongStorage(array)")
+        public int lenLong(PArray array) {
+            LongSequenceStorage store = (LongSequenceStorage) array.getSequenceStorage();
+            return store.length();
+        }
+
+        @Specialization(guards = "isDoubleStorage(array)")
+        public int lenDouble(PArray array) {
+            DoubleSequenceStorage store = (DoubleSequenceStorage) array.getSequenceStorage();
+            return store.length();
+        }
+
+        @Specialization(guards = "isBasicStorage(array)")
+        public int lenBasicStorage(PArray array) {
+            BasicSequenceStorage store = (BasicSequenceStorage) array.getSequenceStorage();
+            return store.length();
+        }
+
+        @Specialization
+        public int len(PArray self) {
+            return self.len();
         }
     }
 }

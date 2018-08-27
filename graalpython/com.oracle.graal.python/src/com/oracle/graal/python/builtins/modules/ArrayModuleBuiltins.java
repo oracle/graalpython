@@ -141,7 +141,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
                     for (i = 0; i < doubleArray.length; i++) {
                         Object val = store.getItemNormalized(i);
-                        doubleArray[i] = (double) val;
+                        if (val instanceof Number) {
+                            doubleArray[i] = ((Number) val).doubleValue();
+                        } else {
+                            throw raise(ValueError, "double value expected");
+                        }
                     }
 
                     return factory().createArray(cls, doubleArray);
