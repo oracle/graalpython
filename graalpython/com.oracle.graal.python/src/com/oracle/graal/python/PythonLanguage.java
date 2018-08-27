@@ -118,7 +118,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected boolean patchContext(PythonContext context, Env newEnv) {
         nativeBuildTime = false; // now we're running
         ensureHomeInOptions(newEnv);
-        PythonCore.writeInfo(newEnv, "Using preinitialized context.");
+        PythonCore.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
         return true;
     }
@@ -136,7 +136,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
 
-        PythonCore.writeInfo(env, (MessageFormat.format("Initial locations:" +
+        PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tCoreHome: {2}" +
@@ -193,7 +193,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 env.getOptions().set(PythonOptions.StdLibHome, stdLibHome);
             }
 
-            PythonCore.writeInfo(env, (MessageFormat.format("Updated locations:" +
+            PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
                             "\n\tLanguage home: {0}" +
                             "\n\tSysPrefix: {1}" +
                             "\n\tCoreHome: {2}" +
