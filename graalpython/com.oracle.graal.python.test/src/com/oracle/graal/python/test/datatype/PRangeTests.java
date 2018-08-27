@@ -33,11 +33,14 @@ import org.junit.Test;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.nodes.control.GetIteratorNodeGen;
+import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -47,12 +50,31 @@ public class PRangeTests {
         PythonTests.enterContext();
     }
 
+    static class TestRoot extends RootNode {
+        protected TestRoot(PythonLanguage language) {
+            super(language);
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return null;
+        }
+
+        public void doInsert(Node child) {
+            insert(child);
+        }
+    }
+
     @Test
     public void loopWithOnlyStop() throws UnexpectedResultException {
         PRange range = PythonObjectFactory.create().createRange(10);
         int index = 0;
-        Object iter = GetIteratorNodeGen.create().executeWith(range);
+        TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
+        GetIteratorNode getIter = GetIteratorNode.create();
+        testRoot.doInsert(getIter);
+        Object iter = getIter.executeWith(range);
         GetNextNode next = GetNextNode.create();
+        testRoot.doInsert(next);
         ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
         while (true) {
@@ -71,8 +93,12 @@ public class PRangeTests {
     public void loopWithStep() throws UnexpectedResultException {
         PRange range = PythonObjectFactory.create().createRange(0, 10, 2);
         int index = 0;
-        Object iter = GetIteratorNodeGen.create().executeWith(range);
+        TestRoot testRoot = new TestRoot(PythonLanguage.getCurrent());
+        GetIteratorNode getIter = GetIteratorNode.create();
+        testRoot.doInsert(getIter);
+        Object iter = getIter.executeWith(range);
         GetNextNode next = GetNextNode.create();
+        testRoot.doInsert(next);
         ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
         while (true) {
