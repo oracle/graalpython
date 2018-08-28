@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -159,7 +160,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         false, // no_user_site
                         false, // optimize
                         false, // quiet
-                        false, // verbose
+                        PythonOptions.getOption(core.getContext(), PythonOptions.VerboseFlag).booleanValue(), // verbose
         }));
         // the default values taken from JPython
         builtinConstants.put("float_info", core.factory().createTuple(new Object[]{
