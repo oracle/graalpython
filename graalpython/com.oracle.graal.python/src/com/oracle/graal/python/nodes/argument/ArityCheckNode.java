@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -93,11 +94,33 @@ public abstract class ArityCheckNode extends PBaseNode {
         return extractKeywordNames(keywords.length, keywords);
     }
 
+    protected boolean arityCheckWithoutKeywords(Arity arity, Object[] arguments) {
+        try {
+            arityCheck(arity, arguments, arity.getNumParameterIds(), PArguments.getNumberOfUserArgs(arguments), 0, 0, new String[0]);
+        } catch (PException e) {
+            return false;
+        }
+        return true;
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(guards = {
+                    "arity == cachedArity",
+                    "keywords.length == 0",
+                    "arguments.length == cachedArgLen",
+                    "isValid",
+    }, limit = "1")
+    void constantArityCheck(Arity arity, Object[] arguments, PKeyword[] keywords,
+                    @Cached("arity") Arity cachedArity,
+                    @Cached("arguments.length") int cachedArgLen,
+                    @Cached("arityCheckWithoutKeywords(arity, arguments)") boolean isValid) {
+    }
+
     @Specialization(guards = {
                     "cachedLen == keywords.length",
                     "cachedNumParamIds == arity.getNumParameterIds()",
                     "cachedDeclLen == arity.getNumKeywordNames()"
-    }, limit = "getVariableArgumentInlineCacheLimit()")
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = "constantArityCheck")
     void arityCheck(Arity arity, Object[] arguments, PKeyword[] keywords,
                     @Cached("arity.getNumParameterIds()") int cachedNumParamIds,
                     @Cached("arity.getNumKeywordNames()") int cachedDeclLen,
@@ -110,7 +133,7 @@ public abstract class ArityCheckNode extends PBaseNode {
                     "cachedLen == keywords.length",
                     "cachedNumParamIds == callee.getArity().getNumParameterIds()",
                     "cachedDeclLen == callee.getArity().getNumKeywordNames()"
-    }, limit = "getVariableArgumentInlineCacheLimit()")
+    }, limit = "getVariableArgumentInlineCacheLimit()", replaces = "constantArityCheck")
     void arityCheckCallable(PythonCallable callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("callee.getArity().getNumParameterIds()") int cachedNumParamIds,
                     @Cached("callee.getArity().getNumKeywordNames()") int cachedDeclLen,
@@ -120,13 +143,13 @@ public abstract class ArityCheckNode extends PBaseNode {
         arityCheck(arity, arguments, cachedNumParamIds, PArguments.getNumberOfUserArgs(arguments), cachedDeclLen, cachedLen, kwNames);
     }
 
-    @Specialization(replaces = "arityCheck")
+    @Specialization(replaces = {"arityCheck", "constantArityCheck"})
     void uncachedCheck(Arity arity, Object[] arguments, PKeyword[] keywords) {
         String[] kwNames = extractKeywordNames(keywords);
         arityCheck(arity, arguments, PArguments.getNumberOfUserArgs(arguments), kwNames);
     }
 
-    @Specialization(replaces = "arityCheckCallable")
+    @Specialization(replaces = {"arityCheckCallable", "constantArityCheck"})
     void uncachedCheckCallable(PythonCallable callee, Object[] arguments, PKeyword[] keywords) {
         String[] kwNames = extractKeywordNames(keywords);
         arityCheck(callee.getArity(), arguments, PArguments.getNumberOfUserArgs(arguments), kwNames);
