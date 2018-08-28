@@ -287,15 +287,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        if (value instanceof Integer) {
-            appendInt((int) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void appendInt(int value) {
         ensureCapacity(length + 1);
         values[length] = value;

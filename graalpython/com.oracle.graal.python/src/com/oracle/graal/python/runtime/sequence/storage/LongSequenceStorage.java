@@ -295,18 +295,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @Override
-    public void append(Object val) throws SequenceStoreException {
-        Object value = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        value = (val instanceof BigInteger) ? ((BigInteger) val).longValue() : value;
-
-        if (value instanceof Long) {
-            appendLong((long) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void appendLong(long value) {
         ensureCapacity(length + 1);
         values[length] = value;

@@ -283,15 +283,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        if (value instanceof Double) {
-            appendDouble((double) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void appendDouble(double value) {
         ensureCapacity(length + 1);
         values[length] = value;

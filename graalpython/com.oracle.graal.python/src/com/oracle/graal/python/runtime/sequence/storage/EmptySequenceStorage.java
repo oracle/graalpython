@@ -157,11 +157,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void append(Object value) throws SequenceStoreException {
-        throw new SequenceStoreException(value);
-    }
-
-    @Override
     public void reverse() {
     }
 

@@ -104,11 +104,6 @@ public class RangeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void append(Object value) throws SequenceStoreException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void reverse() {
         throw new UnsupportedOperationException();
     }

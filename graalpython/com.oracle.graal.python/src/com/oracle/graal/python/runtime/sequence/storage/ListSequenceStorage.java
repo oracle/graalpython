@@ -313,21 +313,6 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        if (value instanceof PList) {
-            SequenceStorage list = ((PList) value).getSequenceStorage();
-            if (list instanceof ListSequenceStorage && ((ListSequenceStorage) list).getKind() == kind)
-                appendList((PList) value);
-            else if (list.getClass() == kind)
-                appendList((PList) value);
-            else
-                throw new SequenceStoreException(value);
-        } else
-            throw new SequenceStoreException(value);
-
-    }
-
     public void appendList(PList value) {
         ensureCapacity(length + 1);
         values[length] = value;

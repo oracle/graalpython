@@ -226,13 +226,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public void append(Object value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        length++;
-    }
-
-    @Override
     public Object popInBound(int idx) {
         Object pop = values[idx];
 

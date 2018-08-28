@@ -175,11 +175,6 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void append(Object value) throws SequenceStoreException {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
     public void reverse() {
         throw new AssertionError("should not reach");
     }

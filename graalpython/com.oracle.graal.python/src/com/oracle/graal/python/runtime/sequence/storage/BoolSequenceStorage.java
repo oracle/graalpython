@@ -280,15 +280,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        if (value instanceof Boolean) {
-            appendBool((boolean) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
-    }
-
     public void appendBool(boolean value) {
         ensureCapacity(length + 1);
         values[length] = value;

@@ -31,7 +31,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
@@ -376,25 +375,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        if (value instanceof Integer) {
-            appendInt((int) value);
-        } else if (value instanceof Long) {
-            appendLong((long) value);
-        } else if (value instanceof PInt) {
-            try {
-                appendInt(((PInt) value).intValueExact());
-            } catch (ArithmeticException e) {
-                throw new SequenceStoreException(value);
-            }
-        } else if (value instanceof Byte) {
-            appendByte((byte) value);
-        } else {
-            throw new SequenceStoreException(value);
-        }
     }
 
     public void appendLong(long value) {
