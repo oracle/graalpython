@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.list;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -85,24 +84,6 @@ public final class PList extends PSequence {
 
     public final void reverse() {
         store.reverse();
-    }
-
-    public final void append(Object value) {
-        if (store instanceof EmptySequenceStorage) {
-            store = store.generalizeFor(value, null);
-        }
-
-        try {
-            store.append(value);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value, null);
-
-            try {
-                store.append(value);
-            } catch (SequenceStoreException e1) {
-                throw new IllegalStateException();
-            }
-        }
     }
 
     public final void insert(int index, Object value) {

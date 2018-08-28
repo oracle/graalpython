@@ -68,6 +68,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetIt
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -80,6 +82,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -771,27 +774,51 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class RPartitionNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public PList doSplit(String self, String sep) {
+        public PList doSplit(String self, String sep,
+                        @Cached("create()") ListAppendNode appendNode) {
             int lastIndexOf = self.lastIndexOf(sep);
             PList list = factory().createList();
             if (lastIndexOf == -1) {
-                list.append("");
-                list.append("");
-                list.append(self);
+                appendNode.execute(list, "");
+                appendNode.execute(list, "");
+                appendNode.execute(list, self);
             } else {
-                list.append(self.substring(0, lastIndexOf));
-                list.append(sep);
-                list.append(self.substring(lastIndexOf + sep.length()));
+                appendNode.execute(list, self.substring(0, lastIndexOf));
+                appendNode.execute(list, sep);
+                appendNode.execute(list, self.substring(lastIndexOf + sep.length()));
             }
             return list;
         }
+    }
+
+    protected abstract static class SplitBaseNode extends PythonTernaryBuiltinNode {
+
+        @Child private ListAppendNode appendNode;
+        @Child private ListReverseNode reverseNode;
+
+        protected ListAppendNode getAppendNode() {
+            if (appendNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                appendNode = insert(ListAppendNode.create());
+            }
+            return appendNode;
+        }
+
+        protected ListReverseNode getReverseNode() {
+            if (reverseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                reverseNode = insert(ListReverseNode.create());
+            }
+            return reverseNode;
+        }
+
     }
 
     // str.split
     @Builtin(name = "split", maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class SplitNode extends PythonBuiltinNode {
+    public abstract static class SplitNode extends SplitBaseNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -806,7 +833,7 @@ public final class StringBuiltins extends PythonBuiltins {
             PList list = factory().createList();
             String[] strs = self.split(Pattern.quote(sep));
             for (String s : strs) {
-                list.append(s);
+                getAppendNode().execute(list, s);
             }
             return list;
         }
@@ -819,7 +846,7 @@ public final class StringBuiltins extends PythonBuiltins {
             // parts
             String[] strs = self.split(Pattern.quote(sep), maxsplit + 1);
             for (String s : strs) {
-                list.append(s);
+                getAppendNode().execute(list, s);
             }
             return list;
         }
@@ -883,7 +910,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
 
                 // Make a piece from start up to index
-                list.append(s.substring(start, index));
+                getAppendNode().execute(list, s.substring(start, index));
                 splits++;
 
                 // Start next segment search at that point
@@ -898,7 +925,7 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = "rsplit", maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class RSplitNode extends PythonBuiltinNode {
+    public abstract static class RSplitNode extends SplitBaseNode {
 
         @SuppressWarnings("unused")
         @Specialization
@@ -912,8 +939,9 @@ public final class StringBuiltins extends PythonBuiltins {
         public PList doSplit(String self, String sep, PNone maxsplit) {
             PList list = factory().createList();
             String[] strs = self.split(Pattern.quote(sep));
-            for (String s : strs)
-                list.append(s);
+            for (String s : strs) {
+                getAppendNode().execute(list, s);
+            }
             return list;
         }
 
@@ -930,17 +958,17 @@ public final class StringBuiltins extends PythonBuiltins {
                     break;
                 }
 
-                list.append(self.substring(idx + 1, end));
+                getAppendNode().execute(list, self.substring(idx + 1, end));
                 end = idx;
                 splits++;
                 remainder = remainder.substring(0, end);
             }
 
             if (!remainder.isEmpty()) {
-                list.append(remainder);
+                getAppendNode().execute(list, remainder);
             }
 
-            list.reverse();
+            getReverseNode().execute(list);
             return list;
         }
 
@@ -1003,14 +1031,14 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
 
                 // Make a piece from start up to index
-                list.append(s.substring(index + 1, end + 1));
+                getAppendNode().execute(list, s.substring(index + 1, end + 1));
                 splits++;
 
                 // Start next segment search at that point
                 end = index;
             }
 
-            list.reverse();
+            getReverseNode().execute(list);
             return list;
         }
     }

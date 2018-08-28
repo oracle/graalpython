@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -294,6 +295,8 @@ public abstract class ListNodes {
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
     public abstract static class ConstructListNode extends PBaseNode {
 
+        @Child private ListAppendNode appendNode;
+
         public final PList execute(Object value, PythonClass valueClass) {
             return execute(lookupClass(PythonBuiltinClassType.PList), value, valueClass);
         }
@@ -311,7 +314,7 @@ public abstract class ListNodes {
             PList list = factory().createList(cls);
 
             for (char c : chars) {
-                list.append(Character.toString(c));
+                getAppendNode().execute(list, Character.toString(c));
             }
 
             return list;
@@ -335,6 +338,14 @@ public abstract class ListNodes {
         public PList listObject(@SuppressWarnings("unused") Object cls, Object value, @SuppressWarnings("unused") PythonClass valueClass) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("list does not support iterable object " + value);
+        }
+
+        private ListAppendNode getAppendNode() {
+            if (appendNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                appendNode = insert(ListAppendNode.create());
+            }
+            return appendNode;
         }
 
         public static ConstructListNode create() {

@@ -66,6 +66,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListAppendNodeFactory;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -368,6 +370,10 @@ public class ListBuiltins extends PythonBuiltins {
 
         protected static SequenceStorageNodes.AppendNode createAppend() {
             return SequenceStorageNodes.AppendNode.create(() -> ListGeneralizationNode.create());
+        }
+
+        public static ListAppendNode create() {
+            return ListAppendNodeFactory.create();
         }
     }
 
@@ -872,12 +878,16 @@ public class ListBuiltins extends PythonBuiltins {
     // list.reverse()
     @Builtin(name = "reverse", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ListReverseNode extends PythonBuiltinNode {
+    public abstract static class ListReverseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PList reverse(PList list) {
+        PList reverse(PList list) {
             list.reverse();
             return list;
+        }
+
+        public static ListReverseNode create() {
+            return ListReverseNodeFactory.create();
         }
     }
 

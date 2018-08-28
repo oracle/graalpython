@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -366,6 +367,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
+        @Child private ListAppendNode appendNode;
+
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
         public Object dir(VirtualFrame frame, Object object) {
@@ -376,13 +379,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void addIdsFromDescriptor(PList locals, FrameDescriptor frameDescriptor) {
+        private void addIdsFromDescriptor(PList locals, FrameDescriptor frameDescriptor) {
             for (FrameSlot slot : frameDescriptor.getSlots()) {
                 // XXX: remove this special case
                 if (slot.getIdentifier().equals(RETURN_SLOT_ID)) {
                     continue;
                 }
-                locals.append(slot.getIdentifier());
+                getAppendNode().execute(locals, slot.getIdentifier());
             }
         }
 
@@ -390,6 +393,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object dir(Object object,
                         @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
             return dirNode.executeObject(object);
+        }
+
+        private ListAppendNode getAppendNode() {
+            if (appendNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                appendNode = insert(ListAppendNode.create());
+            }
+            return appendNode;
         }
     }
 
