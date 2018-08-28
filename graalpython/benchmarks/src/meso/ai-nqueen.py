@@ -99,3 +99,15 @@ def measure(queen_count):
 
 def __benchmark__(queen_count=10):
     measure(queen_count)
+
+
+if __name__ == '__main__':
+    import sys
+    import time
+    start = time.time()
+    if len(sys.argv) >= 2:
+        num = int(sys.argv[1])
+        __benchmark__(num)
+    else:
+        __benchmark__()
+    print("%s took %s s" % (__file__, time.time() - start))

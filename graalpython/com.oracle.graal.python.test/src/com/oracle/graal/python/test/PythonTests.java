@@ -220,12 +220,7 @@ public class PythonTests {
 
         Path fullPath = Paths.get(path.toString(), filename.toString());
         if (!Files.isReadable(fullPath)) {
-            fullPath = Paths.get(path.toString(), "benchmarks", filename.toString());
-            if (!Files.isReadable(fullPath)) {
-                fullPath = Paths.get(path.toString(), "micro", filename.toString());
-                if (!Files.isReadable(fullPath))
-                    throw new IllegalStateException("Unable to locate " + path + " (benchmarks or micro) " + filename.toString());
-            }
+            throw new IllegalStateException("Unable to locate " + path + " (benchmarks or micro) " + filename.toString());
         }
 
         File file = new File(fullPath.toString());

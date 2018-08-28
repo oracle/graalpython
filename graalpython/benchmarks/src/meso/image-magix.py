@@ -118,7 +118,23 @@ def measure(num):
     for i in range(num):
         img = img.sobel(horizontal=True, vertical=True)
         img = img.fisheye(bilinear=True, fraction=3)
+    return img
 
-        
+
 def __benchmark__(num=10000):
-    measure(num)
+    return measure(num)
+
+
+if __name__ == '__main__':
+    import sys
+    import time
+    global SZ
+    SZ = 5
+    start = time.time()
+    if len(sys.argv) >= 2:
+        num = int(sys.argv[1])
+        img = __benchmark__(num)
+    else:
+        img = __benchmark__(2)
+    print(img.data)
+    print("%s took %s s" % (__file__, time.time() - start))
