@@ -163,7 +163,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         // setting this to make sure our TopLevelExceptionHandler calls the excepthook
         // to print Python exceptions
         contextBuilder.option("python.AlwaysRunExcepthook", "true");
-        contextBuilder.option("log.level", "WARNING");
         if (inspectFlag) {
             contextBuilder.option("python.InspectFlag", "true");
         }

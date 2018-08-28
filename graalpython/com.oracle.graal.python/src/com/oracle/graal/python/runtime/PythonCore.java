@@ -119,8 +119,8 @@ public interface PythonCore {
         PythonLanguage.getLogger().warning(warning);
     }
 
-    static void writeInfo(String warning) {
-        PythonLanguage.getLogger().info(warning);
+    static void writeInfo(String message) {
+        PythonLanguage.getLogger().fine(message);
     }
 
     @TruffleBoundary
