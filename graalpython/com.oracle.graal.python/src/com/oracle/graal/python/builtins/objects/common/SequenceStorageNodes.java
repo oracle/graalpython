@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemSliceNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ListGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NoGeneralizationNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.NormalizeIndexNodeGen;
@@ -147,6 +148,8 @@ public abstract class SequenceStorageNodes {
     abstract static class SequenceStorageBaseNode extends PBaseNode {
 
         protected static final int DEFAULT_CAPACITY = 8;
+
+        protected static final int MAX_SEQUENCE_STORAGES = 12;
 
         protected static boolean isByteStorage(NativeSequenceStorage store) {
             return store.getElementType() == ListStorageType.Byte;
@@ -2079,6 +2082,8 @@ public abstract class SequenceStorageNodes {
     }
 
     public abstract static class RepeatNode extends SequenceStorageBaseNode {
+        private static final String ERROR_MSG = "can't multiply sequence by non-int of type '%p'";
+
         @Child private SetItemScalarNode setItemNode;
         @Child private GetItemScalarNode getItemNode;
         @Child private GetItemScalarNode getRightItemNode;
@@ -2090,14 +2095,19 @@ public abstract class SequenceStorageNodes {
 
         public abstract SequenceStorage execute(SequenceStorage left, int times);
 
+        @Specialization
+        SequenceStorage doEmpty(EmptySequenceStorage s, @SuppressWarnings("unused") int times) {
+            return s;
+        }
+
         @Specialization(guards = "times <= 0")
-        SequenceStorage doGeneric(SequenceStorage s, @SuppressWarnings("unused") int times,
+        SequenceStorage doZeroRepeat(SequenceStorage s, @SuppressWarnings("unused") int times,
                         @Cached("createClassProfile()") ValueProfile storageTypeProfile) {
             return storageTypeProfile.profile(s).createEmpty(0);
         }
 
-        @Specialization(limit = "2", guards = {"!isNative(s)", "s.getClass() == cachedClass"})
-        SequenceStorage doManaged(SequenceStorage s, int times,
+        @Specialization(limit = "2", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
+        SequenceStorage doManaged(BasicSequenceStorage s, int times,
                         @Cached("create()") BranchProfile outOfMemProfile,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             try {
@@ -2115,18 +2125,20 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(replaces = "doManaged")
+        @Specialization(replaces = "doManaged", limit = "2", guards = {"times > 0", "s.getClass() == cachedClass"})
         SequenceStorage doGeneric(SequenceStorage s, int times,
-                        @Cached("create()") BranchProfile outOfMemProfile) {
+                        @Cached("create()") BranchProfile outOfMemProfile,
+                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             try {
-                int len = s.length();
+                SequenceStorage profiled = cachedClass.cast(s);
+                int len = profiled.length();
 
                 ObjectSequenceStorage repeated = new ObjectSequenceStorage(Math.multiplyExact(len, times));
 
                 // TODO avoid temporary array
                 Object[] values = new Object[len];
                 for (int i = 0; i < len; i++) {
-                    values[i] = getGetItemNode().execute(s, i);
+                    values[i] = getGetItemNode().execute(profiled, i);
                 }
 
                 Object destArr = repeated.getInternalArrayObject();
@@ -2138,10 +2150,11 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Fallback
-        SequenceStorage doGeneric(SequenceStorage s, Object times) {
+        @Specialization(guards = "!isInt(times)")
+        SequenceStorage doNonInt(SequenceStorage s, Object times) {
             int i = toIndex(times);
             if (recursive == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursive = insert(RepeatNodeGen.create());
             }
             return recursive.execute(s, i);
@@ -2162,6 +2175,10 @@ public abstract class SequenceStorageNodes {
             }
         }
 
+        protected static boolean isInt(Object times) {
+            return times instanceof Integer;
+        }
+
         private int toIndex(Object times) {
             if (isIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2170,11 +2187,11 @@ public abstract class SequenceStorageNodes {
             if (isIndexNode.execute(times)) {
                 if (castToindexNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    castToindexNode = insert(CastToIndexNode.create());
+                    castToindexNode = insert(CastToIndexNode.createOverflow());
                 }
                 return castToindexNode.execute(times);
             }
-            throw raise(TypeError, "can't multiply sequence by non-int of type '%p'", times);
+            throw raise(TypeError, ERROR_MSG, times);
         }
 
         public static RepeatNode create() {
@@ -2590,7 +2607,7 @@ public abstract class SequenceStorageNodes {
             return s;
         }
 
-        @Specialization(limit = "9", guards = "s.getClass() == cachedClass")
+        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
         BasicSequenceStorage doManaged(BasicSequenceStorage s, int cap,
                         @Cached("create()") BranchProfile overflowErrorProfile,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
@@ -2615,5 +2632,20 @@ public abstract class SequenceStorageNodes {
             return EnsureCapacityNodeGen.create();
         }
 
+    }
+
+    public abstract static class LenNode extends SequenceStorageBaseNode {
+
+        public abstract int execute(SequenceStorage s);
+
+        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
+        int doSpecial(SequenceStorage s,
+                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            return cachedClass.cast(s).length();
+        }
+
+        public static LenNode create() {
+            return LenNodeGen.create();
+        }
     }
 }

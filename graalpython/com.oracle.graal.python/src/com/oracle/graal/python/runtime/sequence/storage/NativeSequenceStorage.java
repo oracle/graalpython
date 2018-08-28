@@ -180,11 +180,6 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException, ArithmeticException {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
     public void reverse() {
         throw new AssertionError("should not reach");
     }

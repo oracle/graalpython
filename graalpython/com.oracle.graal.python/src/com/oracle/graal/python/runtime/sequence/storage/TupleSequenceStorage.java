@@ -302,15 +302,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         length++;
     }
 
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        if (other instanceof TupleSequenceStorage) {
-            extendWithPTupleStorage((TupleSequenceStorage) other);
-        } else {
-            throw new SequenceStoreException(other);
-        }
-    }
-
     public void extendWithPTupleStorage(TupleSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);

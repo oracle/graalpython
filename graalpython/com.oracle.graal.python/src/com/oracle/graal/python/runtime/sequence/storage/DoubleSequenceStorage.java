@@ -298,15 +298,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         length++;
     }
 
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        if (other instanceof DoubleSequenceStorage) {
-            extendWithDoubleStorage((DoubleSequenceStorage) other);
-        } else {
-            throw new SequenceStoreException(other);
-        }
-    }
-
     public void extendWithDoubleStorage(DoubleSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);

@@ -302,15 +302,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         length++;
     }
 
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        if (other instanceof IntSequenceStorage) {
-            extendWithIntStorage((IntSequenceStorage) other);
-        } else {
-            throw new SequenceStoreException(other);
-        }
-    }
-
     public void extendWithIntStorage(IntSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);

@@ -162,14 +162,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        // allow an empty storage to be extended by an empty storage
-        if (!(other instanceof EmptySequenceStorage)) {
-            throw new SequenceStoreException(other);
-        }
-    }
-
-    @Override
     public void reverse() {
     }
 

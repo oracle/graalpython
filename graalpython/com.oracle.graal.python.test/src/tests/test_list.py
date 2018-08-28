@@ -299,27 +299,38 @@ class ListTest(list_tests.CommonTest):
         a = [1, 2]
         a[1:2] = [7, 6, 5, 4]
         self.assertEqual([1, 7, 6, 5, 4], a)
+
         a = [1, 2, 3, 4]
         a[1:8] = [33]
         self.assertEqual([1, 33], a)
+
         a = [1, 2, 3, 4]
         a[1:8] = [33, 34, 35, 36, 37, 38]
         self.assertEqual([1, 33, 34, 35, 36, 37, 38], a)
+
         a = list(range(20))
         a[1:19] = [55, 55]
         self.assertEqual([0, 55, 55, 19], a)
+
         a = [1, 2, 3, 4]
         a[1:3] = [11]
         self.assertEqual([1, 11, 4], a)
+
         a = [1, 2, 3, 4]
         a[1:3] = [11, 12, 13, 14, 15, 16]
         self.assertEqual([1, 11, 12, 13, 14, 15, 16, 4], a)
+
         a = [1, 2]
         a[:] = (1, 2, 4, 5)
         self.assertEqual([1, 2, 4, 5], a)
+
         a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         a[0:10:2] = [10, 30, 50, 70, 90]
         self.assertEqual([10, 2, 30, 4, 50, 6, 70, 8, 90, 10], a)
+
+        a = [1, 2, 3, 4, 5, 6]
+        a[1:4:1] = [42, 42, 42]
+        self.assertEqual([1, 42, 42, 42, 5, 6], a)
 
     def test_set_slice_class_iter(self):
 
@@ -395,6 +406,21 @@ class ListTest(list_tests.CommonTest):
         a = []
         a.extend('ahoj')
         self.assertEqual(['a', 'h', 'o', 'j'], a)
+
+    def test_extend(self):
+        a = [1, 2, 3, 4, 5, 6]
+        b = [1, 2, 3, 4, 5, 6]
+        a.extend(b)
+        self.assertEqual([1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], a)
+
+        a = ["a", "b", "c"]
+        b = ["a", "b", "c"]
+        a.extend(b)
+        self.assertEqual(["a", "b", "c", "a", "b", "c"], a)
+
+        a = []
+        a.extend([])
+        self.assertEqual([], a)
 
     def test_extend_bytes(self):
         l = []

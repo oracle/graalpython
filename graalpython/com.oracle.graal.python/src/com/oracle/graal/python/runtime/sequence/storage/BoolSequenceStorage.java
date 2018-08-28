@@ -295,15 +295,6 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
         length++;
     }
 
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException, ArithmeticException {
-        if (other instanceof BoolSequenceStorage) {
-            extendWithBoolStorage((BoolSequenceStorage) other);
-        } else {
-            throw new SequenceStoreException(other);
-        }
-    }
-
     public void extendWithBoolStorage(BoolSequenceStorage other) throws ArithmeticException {
         boolean[] otherValues = other.values;
         int extendedLength = Math.addExact(length, otherValues.length);

@@ -313,15 +313,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         length++;
     }
 
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        if (other instanceof LongSequenceStorage) {
-            extendWithLongStorage((LongSequenceStorage) other);
-        } else {
-            throw new SequenceStoreException(other);
-        }
-    }
-
     public void extendWithLongStorage(LongSequenceStorage other) {
         int extendedLength = length + other.length();
         ensureCapacity(extendedLength);

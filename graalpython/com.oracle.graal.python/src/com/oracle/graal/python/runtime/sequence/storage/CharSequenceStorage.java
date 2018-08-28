@@ -145,11 +145,6 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void reverse() {
         throw new UnsupportedOperationException();
     }

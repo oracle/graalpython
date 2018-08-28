@@ -233,19 +233,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public void extend(SequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        Object[] otherValues = other.getInternalArray();
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            values[i] = otherValues[j];
-        }
-
-        length = extendedLength;
-    }
-
-    @Override
     public Object popInBound(int idx) {
         Object pop = values[idx];
 

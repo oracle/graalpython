@@ -52,6 +52,7 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
     /**
      * The capacity we should allocate for a given length.
      */
+    @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
     private static int capacityFor(int length) throws ArithmeticException {
         return Math.max(16, Math.multiplyExact(length, 2));
     }
@@ -61,7 +62,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
      * designated size (not necessarily the requested one).
      */
     @Override
-    @TruffleBoundary(transferToInterpreterOnException = false)
     public void ensureCapacity(int newCapacity) throws ArithmeticException {
         if (newCapacity > capacity) {
             increaseCapacityExactWithCopy(capacityFor(newCapacity));

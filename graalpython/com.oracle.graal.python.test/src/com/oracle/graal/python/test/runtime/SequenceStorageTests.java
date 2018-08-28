@@ -109,19 +109,6 @@ public class SequenceStorageTests {
         assertEquals(7, store.length());
     }
 
-    @Test
-    public void objectExtend() {
-        ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        ObjectSequenceStorage other = new ObjectSequenceStorage(getObjectValues());
-        store.extend(other);
-
-        for (int i = 6; i < 12; i++) {
-            assertEquals(i - 5, store.getItemNormalized(i));
-        }
-
-        assertEquals(12, store.length());
-    }
-
     /**
      * IntSequenceStorage tests.
      */
@@ -144,18 +131,6 @@ public class SequenceStorageTests {
 
         for (int i = 0; i < 3; i++) {
             assertEquals(i + 2, slice.getItemNormalized(i));
-        }
-    }
-
-    @Test
-    public void intSetSlice() throws SequenceStoreException {
-        IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        IntSequenceStorage slice = new IntSequenceStorage(new int[]{42, 42, 42});
-
-        store.setSliceInBound(1, 4, 1, slice);
-
-        for (int i = 1; i < 4; i++) {
-            assertEquals(42, store.getItemNormalized(i));
         }
     }
 
@@ -199,19 +174,6 @@ public class SequenceStorageTests {
         store.append(42);
         assertEquals(42, store.getItemNormalized(6));
         assertEquals(7, store.length());
-    }
-
-    @Test
-    public void intExtend() throws SequenceStoreException {
-        IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        IntSequenceStorage other = new IntSequenceStorage(getIntValues());
-        store.extend(other);
-
-        for (int i = 6; i < 12; i++) {
-            assertEquals(i - 5, store.getItemNormalized(i));
-        }
-
-        assertEquals(12, store.length());
     }
 
 }

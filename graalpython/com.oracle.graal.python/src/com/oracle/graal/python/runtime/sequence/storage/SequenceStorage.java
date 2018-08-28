@@ -84,8 +84,6 @@ public abstract class SequenceStorage {
 
     public abstract void append(Object value) throws SequenceStoreException;
 
-    public abstract void extend(SequenceStorage other) throws SequenceStoreException, ArithmeticException;
-
     public abstract void reverse();
 
     public abstract boolean equals(SequenceStorage other);
