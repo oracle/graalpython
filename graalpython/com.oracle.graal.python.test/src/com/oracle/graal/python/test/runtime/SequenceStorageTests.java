@@ -56,43 +56,6 @@ public class SequenceStorageTests {
     }
 
     @Test
-    public void objectsSetSlice() {
-        ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        ObjectSequenceStorage slice = new ObjectSequenceStorage(new Object[]{42, 42, 42});
-
-        store.setSliceInBound(1, 4, 1, slice);
-
-        for (int i = 1; i < 4; i++) {
-            assertEquals(42, store.getItemNormalized(i));
-        }
-    }
-
-    @Test
-    public void objectsSetSliceOutOfBound() {
-        ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        ObjectSequenceStorage slice = new ObjectSequenceStorage(new Object[]{42, 42, 42});
-
-        store.setSliceInBound(5, 8, 1, slice);
-
-        for (int i = 5; i < 8; i++) {
-            assertEquals(42, store.getItemNormalized(i));
-        }
-    }
-
-    @Test
-    public void objectsDel() {
-        ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
-        store.delItemInBound(4);
-
-        for (int i = 0; i < 4; i++) {
-            assertEquals(i + 1, store.getItemNormalized(i));
-        }
-
-        assertEquals(6, store.getItemNormalized(4));
-        assertEquals(5, store.length());
-    }
-
-    @Test
     public void objectsInsert() {
         ObjectSequenceStorage store = new ObjectSequenceStorage(getObjectValues());
         store.insertItem(3, 42);
@@ -124,31 +87,6 @@ public class SequenceStorageTests {
         for (int i = 0; i < 3; i++) {
             assertEquals(i + 2, slice.getItemNormalized(i));
         }
-    }
-
-    @Test
-    public void intSetSliceOutOfBound() throws SequenceStoreException {
-        IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        IntSequenceStorage slice = new IntSequenceStorage(new int[]{42, 42, 42});
-
-        store.setSliceInBound(5, 8, 1, slice);
-
-        for (int i = 5; i < 8; i++) {
-            assertEquals(42, store.getItemNormalized(i));
-        }
-    }
-
-    @Test
-    public void intDel() {
-        IntSequenceStorage store = new IntSequenceStorage(getIntValues());
-        store.delItemInBound(4);
-
-        for (int i = 0; i < 4; i++) {
-            assertEquals(i + 1, store.getItemNormalized(i));
-        }
-
-        assertEquals(6, store.getItemNormalized(4));
-        assertEquals(5, store.length());
     }
 
     @Test

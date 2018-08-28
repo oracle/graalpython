@@ -72,10 +72,6 @@ public abstract class SequenceStorage {
 
     public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int length);
 
-    public abstract void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException;
-
-    public abstract void delSlice(int start, int stop, int step);
-
     public abstract void delItemInBound(int idx);
 
     public abstract Object popInBound(int idx);
@@ -93,8 +89,4 @@ public abstract class SequenceStorage {
     public abstract void ensureCapacity(int newCapacity);
 
     public abstract void copyItem(int idxTo, int idxFrom);
-
-    public void clear() {
-        this.delSlice(0, length(), 1);
-    }
 }

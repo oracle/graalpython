@@ -198,19 +198,26 @@ class ListTest(list_tests.CommonTest):
         self.assertEqual([2, 3], l)
         l.__delitem__(-1)
         self.assertEqual([2], l)
+
         l = [1, 2, 3]
         del(l[1])
         self.assertEqual([1, 3], l)
         del(l[False])
         self.assertEqual([3], l)
+
         l = [1.1, 2.1, 3.1]
         l.__delitem__(0)
         self.assertEqual([2.1, 3.1], l)
         l.__delitem__(-1)
         self.assertEqual([2.1], l)
+
         l = [1.1, 2.1, 3.1]
         del(l[1])
         self.assertEqual([1.1, 3.1], l)
+
+        l = ["1", "2", "3", "4", "5", "6"]
+        del l[4]
+        self.assertEqual(["1", "2", "3", "4", "6"], l)
 
     def test_del_border(self):
         l = [1, 2, 3]
@@ -331,6 +338,18 @@ class ListTest(list_tests.CommonTest):
         a = [1, 2, 3, 4, 5, 6]
         a[1:4:1] = [42, 42, 42]
         self.assertEqual([1, 42, 42, 42, 5, 6], a)
+
+        a = [1, 2, 3, 4, 5, 6]
+        a[5:8:1] = [42, 42, 42]
+        self.assertEqual([1, 2, 3, 4, 5, 42, 42, 42], a)
+
+        a = ["1", "2", "3", "4", "5", "6"]
+        a[1:4:1] = ["42", "42", "42"]
+        self.assertEqual(['1', '42', '42', '42', '5', '6'], a)
+
+        a = ["1", "2", "3", "4", "5", "6"]
+        a[5:8:1] = ["42", "42", "42"]
+        self.assertEqual(["1", "2", "3", "4", "5", '42', '42', '42'], a)
 
     def test_set_slice_class_iter(self):
 

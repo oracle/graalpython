@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.runtime.sequence.SequenceUtil.MISSING_INDEX;
 
 import java.util.List;
 
@@ -391,11 +392,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     // bytearray.clear()
     @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ByteArrayClearNode extends PythonBuiltinNode {
+    public abstract static class ByteArrayClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PNone clear(PByteArray byteArray) {
-            byteArray.clear();
+        public PNone clear(PByteArray byteArray,
+                        @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode) {
+            deleteNode.execute(byteArray.getSequenceStorage(), factory().createSlice(MISSING_INDEX, MISSING_INDEX, 1));
             return PNone.NONE;
         }
     }

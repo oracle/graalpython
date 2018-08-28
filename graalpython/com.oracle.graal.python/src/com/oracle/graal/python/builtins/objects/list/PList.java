@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -49,15 +48,6 @@ public final class PList extends PSequence {
     @Override
     public final void setSequenceStorage(SequenceStorage newStorage) {
         this.store = newStorage;
-    }
-
-    public final void delSlice(PSlice slice) {
-        PSlice.SliceInfo sliceInfo = slice.computeActualIndices(this.len());
-        store.delSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step);
-    }
-
-    public final void clear() {
-        store.delSlice(0, store.length(), 1);
     }
 
     @Override

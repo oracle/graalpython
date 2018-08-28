@@ -810,8 +810,18 @@ public abstract class SequenceStorageNodes {
         public abstract void execute(SequenceStorage s, int idx, Object value);
 
         @Specialization
+        protected void doBoolean(BoolSequenceStorage storage, int idx, boolean value) {
+            storage.setBoolItemNormalized(idx, value);
+        }
+
+        @Specialization
         protected void doByte(ByteSequenceStorage storage, int idx, Object value) {
             storage.setByteItemNormalized(idx, getCastToByteNode().execute(value));
+        }
+
+        @Specialization
+        protected void doChar(CharSequenceStorage storage, int idx, char value) {
+            storage.setCharItemNormalized(idx, value);
         }
 
         @Specialization

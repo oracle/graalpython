@@ -79,16 +79,6 @@ public class RangeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void delSlice(int start, int stop, int step) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void delItemInBound(int idx) {
         throw new UnsupportedOperationException();
     }

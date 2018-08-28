@@ -73,32 +73,6 @@ public class SequenceUtil {
         return step;
     }
 
-    /**
-     * Make step a long in case adding the start, stop and step together overflows an int.
-     */
-    public static final int sliceLength(int start, int stop, long step) {
-        int ret;
-        if (step > 0) {
-            ret = (int) ((stop - start + step - 1) / step);
-        } else {
-            ret = (int) ((stop - start + step + 1) / step);
-        }
-
-        if (ret < 0) {
-            return 0;
-        }
-
-        return ret;
-    }
-
-    public static int normalizeIndex(int index, int length, String outOfBoundsMessage) {
-        int normalized = normalizeIndexUnchecked(index, length);
-        if (normalized < 0 || normalized >= length) {
-            throw PythonLanguage.getCore().raise(PythonErrorType.IndexError, outOfBoundsMessage);
-        }
-        return normalized;
-    }
-
     private static int normalizeIndexUnchecked(int index, int length) {
         return index < 0 ? index + length : index;
     }

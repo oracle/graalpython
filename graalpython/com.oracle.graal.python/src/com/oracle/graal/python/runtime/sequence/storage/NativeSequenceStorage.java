@@ -155,16 +155,6 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void delSlice(int start, int stop, int step) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
     public void delItemInBound(int idx) {
         throw new AssertionError("should not reach");
     }

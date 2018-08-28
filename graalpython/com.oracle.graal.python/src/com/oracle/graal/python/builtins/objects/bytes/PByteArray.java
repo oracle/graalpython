@@ -27,11 +27,9 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -105,19 +103,8 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         store.reverse();
     }
 
-    public final void clear() {
-        store.clear();
-    }
-
     public PByteArray copy() {
         return new PByteArray(this.getPythonClass(), store.copy());
-    }
-
-    public final void delSlice(PSlice slice) {
-        int start = Math.max(0, SequenceUtil.normalizeSliceStart(slice, store.length()));
-        final int stop = Math.min(store.length(), SequenceUtil.normalizeSliceStop(slice, store.length()));
-        final int step = SequenceUtil.normalizeSliceStep(slice);
-        store.delSlice(start, stop, step);
     }
 
     @Override

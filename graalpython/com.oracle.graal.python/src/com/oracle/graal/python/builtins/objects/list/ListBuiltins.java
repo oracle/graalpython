@@ -479,110 +479,49 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListPopNode extends PythonBuiltinNode {
 
+        private static final String POP_INDEX_OUT_OF_RANGE = "pop index out of range";
+
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
         @CompilationFinal private ValueProfile storeProfile;
 
-        @Specialization(guards = "isIntStorage(list)")
-        public int popInt(PList list, @SuppressWarnings("unused") PNone none,
-                        @Cached("createBinaryProfile()") ConditionProfile isEmpty) {
-            raiseIndexError(isEmpty.profile(list.len() == 0));
-            IntSequenceStorage store = (IntSequenceStorage) list.getSequenceStorage();
-            return store.popInt();
-        }
-
-        @Specialization(guards = "isLongStorage(list)")
-        public long popLong(PList list, @SuppressWarnings("unused") PNone none,
-                        @Cached("createBinaryProfile()") ConditionProfile isEmpty) {
-            raiseIndexError(isEmpty.profile(list.len() == 0));
-            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
-            return store.popLong();
-        }
-
-        @Specialization(guards = "isDoubleStorage(list)")
-        public double popDouble(PList list, @SuppressWarnings("unused") PNone none,
-                        @Cached("createBinaryProfile()") ConditionProfile isEmpty) {
-            raiseIndexError(isEmpty.profile(list.len() == 0));
-            DoubleSequenceStorage store = (DoubleSequenceStorage) list.getSequenceStorage();
-            return store.popDouble();
-        }
-
-        @Specialization(guards = "isObjectStorage(list)")
-        public Object popObject(PList list, @SuppressWarnings("unused") PNone none,
-                        @Cached("createBinaryProfile()") ConditionProfile isEmpty) {
-            raiseIndexError(isEmpty.profile(list.len() == 0));
-            ObjectSequenceStorage store = (ObjectSequenceStorage) list.getSequenceStorage();
-            return store.popObject();
-        }
-
         @Specialization
-        public Object popLast(PList list, @SuppressWarnings("unused") PNone none) {
-            SequenceStorage store = getStoreProfile().profile(list.getSequenceStorage());
-            int len = store.length();
+        public Object popLast(PList list, @SuppressWarnings("unused") PNone none,
+                        @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
+            SequenceStorage store = list.getSequenceStorage();
             Object ret = getGetItemNode().execute(store, -1);
-            store.delItemInBound(len - 1);
+            deleteNode.execute(store, -1);
             return ret;
         }
 
-        @Specialization
-        public Object pop(PList list, boolean bindex,
-                        @Cached("createBinaryProfile()") ConditionProfile isOutOfRange) {
-            int index = bindex ? 1 : 0;
-            return popOnIndex(list.getSequenceStorage(), index, isOutOfRange);
-        }
-
-        @Specialization
-        public Object pop(PList list, int index,
-                        @Cached("createBinaryProfile()") ConditionProfile isOutOfRange) {
-            return popOnIndex(list.getSequenceStorage(), index, isOutOfRange);
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        public Object pop(PList list, long arg) {
-            raiseIndexError(true);
-            return null;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        public Object pop(PList list, Object arg) {
-            throw raise(TypeError, "integer argument expected, got %p", arg);
-        }
-
-        protected void raiseIndexError(boolean con) {
-            if (con) {
-                throw raise(PythonErrorType.IndexError, "pop index out of range");
-            }
-        }
-
-        private Object popOnIndex(SequenceStorage store, int index, ConditionProfile cp) {
-
-            SequenceStorage profiled = getStoreProfile().profile(store);
-            int len = profiled.length();
-            if (cp.profile((index < 0 && (index + len) < 0) || index >= len)) {
-                throw raise(PythonErrorType.IndexError, "pop index out of range");
-            }
-            Object ret = getGetItemNode().execute(profiled, index);
-            // this is safe because index is already verified by 'GetItemNode'
-            profiled.delItemInBound(index);
+        @Specialization(guards = {"!isNoValue(idx)", "!isPSlice(idx)"})
+        public Object doIndex(PList list, Object idx,
+                        @Cached("createDelete()") SequenceStorageNodes.DeleteNode deleteNode) {
+            SequenceStorage store = list.getSequenceStorage();
+            Object ret = getGetItemNode().execute(store, idx);
+            deleteNode.execute(store, idx);
             return ret;
         }
 
-        private ValueProfile getStoreProfile() {
-            if (storeProfile == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                storeProfile = ValueProfile.createClassProfile();
-            }
-            return storeProfile;
+        @Fallback
+        public Object doError(@SuppressWarnings("unused") Object list, Object arg) {
+            throw raise(TypeError, "'%p' object cannot be interpreted as an integer", arg);
         }
 
         private SequenceStorageNodes.GetItemNode getGetItemNode() {
             if (getItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.create("pop index out of range")));
+                getItemNode = insert(SequenceStorageNodes.GetItemNode.create(createNormalize()));
             }
             return getItemNode;
+        }
+
+        protected static SequenceStorageNodes.DeleteNode createDelete() {
+            return SequenceStorageNodes.DeleteNode.create(createNormalize());
+        }
+
+        private static NormalizeIndexNode createNormalize() {
+            return NormalizeIndexNode.create(POP_INDEX_OUT_OF_RANGE);
         }
     }
 

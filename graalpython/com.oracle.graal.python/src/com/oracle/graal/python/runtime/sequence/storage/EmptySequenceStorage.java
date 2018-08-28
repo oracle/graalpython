@@ -137,16 +137,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        throw new SequenceStoreException(sequence);
-    }
-
-    @Override
-    public void delSlice(int start, int stop, int step) {
-        // the slice is empty. Do nothing here
-    }
-
-    @Override
     public void delItemInBound(int idx) {
         throw new UnsupportedOperationException("Cannot delete from empty storage");
     }
