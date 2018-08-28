@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -43,6 +45,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -58,14 +61,14 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@CoreFunctions(extendClasses = PRandom.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public class RandomBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinNode>> getNodeFactories() {
         return RandomBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "seed", fixedNumOfArguments = 2)
+    @Builtin(name = "seed", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SeedNode extends PythonBuiltinNode {
 
@@ -117,7 +120,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "setstate", fixedNumOfArguments = 2)
+    @Builtin(name = "setstate", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStateNode extends PythonBuiltinNode {
 
@@ -137,7 +140,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getstate", fixedNumOfArguments = 1)
+    @Builtin(name = "getstate", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class GetStateNode extends PythonBuiltinNode {
 
@@ -148,7 +151,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "random", fixedNumOfArguments = 1)
+    @Builtin(name = "random", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RandomNode extends PythonBuiltinNode {
 
@@ -159,7 +162,7 @@ public class RandomBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getrandbits", fixedNumOfArguments = 2)
+    @Builtin(name = "getrandbits", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetRandBitsNode extends PythonBuiltinNode {
 

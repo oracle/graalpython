@@ -44,12 +44,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public class PRangeTests {
     @Before
     public void setup() {
-        PythonTests.ensureContext();
+        PythonTests.enterContext();
     }
 
     @Test
     public void loopWithOnlyStop() throws UnexpectedResultException {
-        PRange range = PythonObjectFactory.get().createRange(10);
+        PRange range = PythonObjectFactory.create().createRange(10);
         int index = 0;
         Object iter = GetIteratorNodeGen.create().executeWith(range);
         GetNextNode next = GetNextNode.create();
@@ -69,7 +69,7 @@ public class PRangeTests {
 
     @Test
     public void loopWithStep() throws UnexpectedResultException {
-        PRange range = PythonObjectFactory.get().createRange(0, 10, 2);
+        PRange range = PythonObjectFactory.create().createRange(0, 10, 2);
         int index = 0;
         Object iter = GetIteratorNodeGen.create().executeWith(range);
         GetNextNode next = GetNextNode.create();
@@ -89,14 +89,14 @@ public class PRangeTests {
 
     @Test
     public void getItem() {
-        PRange range = PythonObjectFactory.get().createRange(10);
-        assertEquals(3, range.getItem(3));
+        PRange range = PythonObjectFactory.create().createRange(10);
+        assertEquals(3, range.getItemNormalized(3));
     }
 
     @Test
     public void getItemNegative() {
-        PRange range = PythonObjectFactory.get().createRange(10);
-        assertEquals(7, range.getItem(-3));
+        String source = "print(range(10)[-3])\n";
+        assertPrints("7\n", source);
     }
 
     @Test

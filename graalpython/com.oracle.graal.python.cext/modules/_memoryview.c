@@ -6,7 +6,7 @@
 
 /* Memoryview object implementation */
 
-#include "Python.h"
+#include "../src/capi.h"
 #include <limits.h>
 /* #include "internal/mem.h" */
 /* #include "internal/pystate.h" */
@@ -57,6 +57,9 @@
      releasebufferprocs must NOT decrement view.obj.
 */
 
+POLYGLOT_DECLARE_TYPE(PyMemoryViewObject);
+
+PyTypeObject PyNativeMemoryView_Type;
 
 #define CHECK_MBUF_RELEASED(mbuf) \
     if (((_PyManagedBufferObject *)mbuf)->flags&_Py_MANAGED_BUFFER_RELEASED) { \
@@ -72,7 +75,7 @@ mbuf_alloc(void)
     _PyManagedBufferObject *mbuf;
 
     mbuf = (_PyManagedBufferObject *)
-        PyObject_GC_New(_PyManagedBufferObject, &_PyManagedBuffer_Type);
+        PyObject_New(_PyManagedBufferObject, &_PyManagedBuffer_Type);
     if (mbuf == NULL)
         return NULL;
     mbuf->flags = 0;
@@ -630,7 +633,7 @@ memory_alloc(int ndim)
     PyMemoryViewObject *mv;
 
     mv = (PyMemoryViewObject *)
-        PyObject_GC_NewVar(PyMemoryViewObject, &PyMemoryView_Type, 3*ndim);
+        PyObject_NewVar(PyMemoryViewObject, &PyNativeMemoryView_Type, 3*ndim);
     if (mv == NULL)
         return NULL;
 
@@ -645,7 +648,7 @@ memory_alloc(int ndim)
     mv->weakreflist = NULL;
 
     _PyObject_GC_TRACK(mv);
-    return mv;
+    return polyglot_from_PyMemoryViewObject(mv);
 }
 
 /*
@@ -802,13 +805,9 @@ PyMemoryView_FromObject(PyObject *v)
         return ret;
     }
 
-    // TODO: remove me once PyErr_XXX functions are supported
-    printf("memoryview: a bytes-like object is required, not '%.200s'", Py_TYPE(v)->tp_name);
-    PyErr_SetString(PyExc_TypeError, Py_TYPE(v)->tp_name);
-
-//    PyErr_Format(PyExc_TypeError,
-//        "memoryview: a bytes-like object is required, not '%.200s'",
-//        Py_TYPE(v)->tp_name);
+    PyErr_Format(PyExc_TypeError,
+        "memoryview: a bytes-like object is required, not '%.200s'",
+        Py_TYPE(v)->tp_name);
     return NULL;
 }
 
@@ -969,7 +968,7 @@ memory_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    return PyMemoryView_FromObject(obj);
+    return polyglot_from_PyMemoryViewObject((PyMemoryViewObject *)PyMemoryView_FromObject(obj));
 }
 
 
@@ -1416,11 +1415,18 @@ error:
 /*                               getbuffer                                */
 /**************************************************************************/
 
+static PyMemoryViewObject* PyTruffle_MemoryView_GetDelegate(PyObject* managed_self) {
+    return (PyMemoryViewObject*) PyObject_GetAttrString(managed_self, "__c_memoryview");
+}
+
 static int
 memory_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags)
 {
-    Py_buffer *base = &self->view;
-    int baseflags = self->flags;
+    Py_buffer *base = NULL;
+    int baseflags = 0;
+
+    base = &self->view;
+    baseflags = self->flags;
 
     CHECK_RELEASED_INT(self);
 
@@ -3087,9 +3093,9 @@ static PyMethodDef memory_methods[] = {
 };
 
 
-PyTypeObject PyMemoryView_Type = {
+PyTypeObject PyNativeMemoryView_Type = {
     PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    "memoryview",                             /* tp_name */
+    "nativememoryview",                       /* tp_name */
     offsetof(PyMemoryViewObject, ob_array),   /* tp_basicsize */
     sizeof(Py_ssize_t),                       /* tp_itemsize */
     (destructor)memory_dealloc,               /* tp_dealloc */
@@ -3128,6 +3134,28 @@ PyTypeObject PyMemoryView_Type = {
     memory_new,                               /* tp_new */
 };
 
+
+static PyMemoryViewObject* _get_managed_self(PyMemoryViewObject *original_self) {
+    PyMemoryViewObject *self = NULL;
+
+    // this code may be reached over different path; self may therefore be the managed wrapper or the native object
+    if (PyMemoryView_Check(original_self)) {
+        // we need to get the native delegate of the managed memoryview object
+        self = PyTruffle_MemoryView_GetDelegate((PyObject*) original_self);
+    }
+    assert(self != NULL);
+    assert(Py_TYPE(self) == &PyNativeMemoryView_Type);
+    return self;
+}
+
+static int memory_managed_getbuf(PyMemoryViewObject *self, Py_buffer *view, int flags) {
+    return memory_getbuf(_get_managed_self(self), view, flags);
+}
+
+static void memory_managed_releasebuf(PyMemoryViewObject *self, Py_buffer *view) {
+    memory_releasebuf(_get_managed_self(self), view);
+}
+
 static struct PyModuleDef _memoryviewmodule = {
     PyModuleDef_HEAD_INIT,
     "_memoryview",
@@ -3149,17 +3177,21 @@ PyInit__memoryview(void)
     if (m == NULL)
         return NULL;
 
-    if (PyType_Ready(&PyMemoryView_Type) < 0)
+    if (PyType_Ready(&PyNativeMemoryView_Type) < 0)
         return NULL;
 
     if (PyType_Ready(&_PyManagedBuffer_Type) < 0)
         return NULL;
 
-    Py_INCREF((PyObject*)&PyMemoryView_Type);
-    PyModule_AddObject(m, "memoryview", (PyObject*)&PyMemoryView_Type);
+    Py_INCREF((PyObject*)&PyNativeMemoryView_Type);
+    PyModule_AddObject(m, "nativememoryview",(PyObject*) &PyNativeMemoryView_Type);
 
     Py_INCREF((PyObject*)&_PyManagedBuffer_Type);
-    PyModule_AddObject(m, "managedbuffer", (PyObject*)&_PyManagedBuffer_Type);
+    PyModule_AddObject(m, "managedbuffer", (PyObject*) &_PyManagedBuffer_Type);
+
+
+    // register buffer procs
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyMemoryView_Type), (getbufferproc)memory_managed_getbuf, (releasebufferproc)memory_managed_releasebuf);
 
     return m;
 }

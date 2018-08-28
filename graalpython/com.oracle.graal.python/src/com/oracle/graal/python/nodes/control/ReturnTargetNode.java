@@ -30,19 +30,19 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
-public class ReturnTargetNode extends StatementNode {
+public final class ReturnTargetNode extends StatementNode {
 
-    @Child protected PNode body;
-    @Child protected PNode returnValue;
+    @Child private PNode body;
+    @Child private PNode returnValue;
+
+    private final BranchProfile returnProfile = BranchProfile.create();
+    private final BranchProfile fallthroughProfile = BranchProfile.create();
 
     public ReturnTargetNode(PNode body, PNode returnValue) {
         this.body = body;
         this.returnValue = returnValue;
-    }
-
-    protected ReturnTargetNode(ReturnTargetNode prev) {
-        this(prev.body, prev.returnValue);
     }
 
     public PNode getBody() {
@@ -56,10 +56,12 @@ public class ReturnTargetNode extends StatementNode {
     @Override
     public Object execute(VirtualFrame frame) {
         try {
-            body.execute(frame);
+            body.executeVoid(frame);
+            fallthroughProfile.enter();
+            return PNone.NONE;
         } catch (ReturnException ire) {
+            returnProfile.enter();
             return returnValue.execute(frame);
         }
-        return PNone.NONE;
     }
 }

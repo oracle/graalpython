@@ -57,13 +57,4 @@ public abstract class PythonBuiltinObject extends PythonObject {
             super.setAttribute(name, value);
         }
     }
-
-    @Override
-    public void deleteAttribute(String name) {
-        if (isBuiltin()) {
-            pythonClass.deleteAttribute(name);
-        } else {
-            super.deleteAttribute(name);
-        }
-    }
 }

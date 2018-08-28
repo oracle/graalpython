@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -49,6 +51,14 @@ public abstract class NativeCAPISymbols {
     public static final String FUN_WHCAR_SIZE = "PyTruffle_Wchar_Size";
     public static final String FUN_PY_TRUFFLE_CSTR_TO_STRING = "PyTruffle_CstrToString";
     public static final String FUN_PY_FLOAT_AS_DOUBLE = "PyFloat_AsDouble";
-    public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE = "PyTruffle_ByteArrayToNative";
     public static final String FUN_GET_OB_TYPE = "get_ob_type";
+    public static final String FUN_DEREF_HANDLE = "truffle_deref_handle_for_managed";
+    public static final String FUN_GET_BYTE_ARRAY_TYPE_ID = "get_byte_array_typeid";
+    public static final String FUN_GET_PTR_ARRAY_TYPE_ID = "get_ptr_array_typeid";
+    public static final String FUN_PTR_COMPARE = "truffle_ptr_compare";
+    public static final String FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE = "PyTruffle_ByteArrayToNative";
+    public static final String FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE = "PyTruffle_IntArrayToNative";
+    public static final String FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE = "PyTruffle_LongArrayToNative";
+    public static final String FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE = "PyTruffle_DoubleArrayToNative";
+    public static final String FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE = "PyTruffle_ObjectArrayToNative";
 }

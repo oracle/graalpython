@@ -33,8 +33,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS_PATCHES__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__PACKAGE__;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -71,15 +71,12 @@ import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictItemsIteratorBuiltins;
@@ -94,14 +91,12 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.TruffleObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
+import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.BuiltinFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
-import com.oracle.graal.python.builtins.objects.function.AbstractFunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
-import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -113,6 +108,9 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mappingproxy.MappingproxyBuiltins;
 import com.oracle.graal.python.builtins.objects.memoryview.BufferBuiltins;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryviewBuiltins;
+import com.oracle.graal.python.builtins.objects.method.AbstractMethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -126,15 +124,12 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -142,19 +137,14 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 
 /**
  * The core is intended to the immutable part of the interpreter, including most modules and most
  * types.
- *
- * TODO: It is a work-in-progress to separate out the things that cannot be shared. Until then, each
- * {@link PythonContext} has its own core.
  */
 public final class Python3Core implements PythonCore {
     // Order matters!
@@ -182,22 +172,18 @@ public final class Python3Core implements PythonCore {
                     "itertools",
                     "base_exception",
                     "python_cext",
-                    "_sre",
                     "_collections",
                     "memoryview",
                     "list",
                     "_codecs",
                     "bytes",
+                    "bytearray",
                     "float",
                     "time",
                     "unicodedata",
                     "_locale",
+                    "_sre",
     };
-
-    private static final Map<String, Object> BUILTIN_CONSTANTS = new HashMap<>();
-    static {
-        BUILTIN_CONSTANTS.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
-    }
 
     private final PythonBuiltins[] BUILTINS = new PythonBuiltins[]{
                     new BuiltinConstructors(),
@@ -236,7 +222,9 @@ public final class Python3Core implements PythonCore {
                     new AbstractFunctionBuiltins(),
                     new FunctionBuiltins(),
                     new BuiltinFunctionBuiltins(),
+                    new AbstractMethodBuiltins(),
                     new MethodBuiltins(),
+                    new BuiltinMethodBuiltins(),
                     new CodeBuiltins(),
                     new FrameBuiltins(),
                     new MappingproxyBuiltins(),
@@ -273,6 +261,7 @@ public final class Python3Core implements PythonCore {
                     new LocaleModuleBuiltins(),
                     new SysModuleBuiltins(),
                     new BufferBuiltins(),
+                    new MemoryviewBuiltins(),
     };
 
     // not using EnumMap, HashMap, etc. to allow this to fold away during partial evaluation
@@ -285,51 +274,29 @@ public final class Python3Core implements PythonCore {
     @CompilationFinal private PythonBuiltinClass objectClass;
     @CompilationFinal private PythonBuiltinClass moduleClass;
     @CompilationFinal private PythonBuiltinClass foreignClass;
+    @CompilationFinal private PInt pyTrue;
+    @CompilationFinal private PInt pyFalse;
 
     @CompilationFinal(dimensions = 1) private PythonClass[] errorClasses;
-
-    private final PythonLanguage language;
     private final PythonParser parser;
 
     @CompilationFinal private boolean initialized;
-    @CompilationFinal private boolean builtinsPatchesLoaded;
-
-    // used in case PythonOptions.SharedCore is false
     @CompilationFinal private PythonContext singletonContext;
-
-    // only applicable while running initialization code (stored in context afterwards)
-    private PException currentException;
 
     private final PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public Python3Core(PythonLanguage language, PythonParser parser) {
-        this.language = language;
+    public Python3Core(PythonParser parser) {
         this.parser = parser;
     }
 
     @Override
     public PythonLanguage getLanguage() {
-        return language;
-    }
-
-    @Override
-    public void setSingletonContext(PythonContext context) {
-        assert !PythonOptions.getOption(context, PythonOptions.SharedCore);
-        this.singletonContext = context;
-    }
-
-    @Override
-    public boolean hasSingletonContext() {
-        return singletonContext != null;
+        return singletonContext.getLanguage();
     }
 
     @Override
     public PythonContext getContext() {
-        if (singletonContext != null) {
-            return singletonContext;
-        } else {
-            return language.getContextReference().get();
-        }
+        return singletonContext;
     }
 
     @Override
@@ -338,21 +305,26 @@ public final class Python3Core implements PythonCore {
     }
 
     @Override
-    public void bootstrap() {
-        initializeTypes();
-        populateBuiltins();
-        publishBuiltinModules();
-
-        builtinsModule = builtinModules.get("builtins");
-        setBuiltinsConstants();
-    }
-
-    @Override
     public boolean isInitialized() {
         return initialized;
     }
 
-    public void initialize() {
+    public void initialize(PythonContext context) {
+        singletonContext = context;
+        initializeJavaCore();
+        initializeSysModule();
+        initializePythonCore();
+        initialized = true;
+    }
+
+    private void initializeJavaCore() {
+        initializeTypes();
+        populateBuiltins();
+        publishBuiltinModules();
+        builtinsModule = builtinModules.get("builtins");
+    }
+
+    private void initializePythonCore() {
         String coreHome = PythonCore.getCoreHomeOrFail();
         loadFile("builtins", coreHome);
         findKnownExceptionTypes();
@@ -360,108 +332,38 @@ public final class Python3Core implements PythonCore {
             loadFile(s, coreHome);
         }
         exportCInterface(getContext());
-        currentException = null;
         initialized = true;
     }
 
     @Override
-    public void loadBuiltinsPatches() {
-        if (initialized && !builtinsPatchesLoaded) {
-            builtinsPatchesLoaded = true;
-            String coreHome = PythonCore.getCoreHomeOrFail();
-            loadFile(__BUILTINS_PATCHES__, coreHome);
+    public void postInitialize() {
+        if (!getLanguage().isNativeBuildTime()) {
+            initialized = false;
+
+            loadFile(__BUILTINS_PATCHES__, PythonCore.getCoreHomeOrFail());
+
+            PythonModule os = lookupBuiltinModule("posix");
+            Object environAttr = os.getAttribute("environ");
+            ((PDict) environAttr).setDictStorage(createEnvironDict().getDictStorage());
+
+            initialized = true;
         }
     }
 
-    public Object duplicate(Map<Object, Object> replacements, Object value) {
-        Object replacement = replacements.get(value);
-        if (replacement != null) {
-            return replacement;
-        }
-        if (value instanceof String || value instanceof PNone || value instanceof PNotImplemented || value instanceof Boolean || value instanceof Integer || value instanceof PInt ||
-                        value instanceof Double) {
-            return value;
-        } else if (value instanceof PFunction) {
-            PFunction function = (PFunction) value;
-            PythonModule globals = (PythonModule) function.getGlobals();
-            PFunction newFunction = function.copyWithGlobals((PythonObject) duplicate(replacements, globals));
-            for (String attr : function.getAttributeNames()) {
-                newFunction.setAttribute(attr, duplicate(replacements, function.getAttribute(attr)));
-            }
-            return newFunction;
-        } else if (value instanceof PBuiltinFunction) {
-            assert ((PythonObject) value).getAttributeNames().isEmpty();
-            return value;
-        } else if (value instanceof PythonModule) {
-            PythonModule module = (PythonModule) value;
-            PythonModule newModule = factory().createPythonModule(module.getModuleName());
-            replacements.put(module, newModule);
-            for (String attr : module.getAttributeNames()) {
-                newModule.setAttribute(attr, duplicate(replacements, module.getAttribute(attr)));
-            }
-            return newModule;
-        } else if (value instanceof PythonClass) {
-            // TODO: all classes in core should be PythonBuiltinClass
-            return value;
-        } else if (value instanceof PythonBuiltinClass) {
-            return value;
-        } else if (value instanceof PDict) {
-            PDict dict = (PDict) value;
-            PDict newDict = factory().createDict();
-            replacements.put(dict, newDict);
-            for (DictEntry attr : dict.entries()) {
-                newDict.setItem(duplicate(replacements, attr.getKey()), duplicate(replacements, attr.getValue()));
-            }
-            return newDict;
-        } else if (value instanceof PTuple) {
-            PTuple tuple = (PTuple) value;
-            assert tuple.getAttributeNames().isEmpty();
-            Object[] contents = new Object[tuple.len()];
-            PTuple newTuple = factory.createTuple(contents);
-            replacements.put(tuple, newTuple);
-            for (int i = 0; i < tuple.len(); i++) {
-                contents[i] = duplicate(replacements, tuple.getItem(i));
-            }
-            return newTuple;
-        } else if (value instanceof PList) {
-            PList list = (PList) value;
-            assert list.getAttributeNames().isEmpty();
-            PList newList = factory().createList();
-            replacements.put(list, newList);
-            for (int i = 0; i < list.len(); i++) {
-                newList.append(duplicate(replacements, list.getItem(i)));
-            }
-            return newList;
-        }
-        assert value.getClass() == PythonObject.class;
-        // TODO: not sure what to do about these
-        return value;
-    }
-
-    public PythonModule createSysModule(PythonContext context) {
-        Map<Object, Object> replacements = new HashMap<>();
-        if (context.getOptions().get(PythonOptions.SharedCore)) {
-            for (PythonModule module : builtinModules.values()) {
-                duplicate(replacements, module);
-            }
-        } else {
-            for (PythonModule module : builtinModules.values()) {
-                replacements.put(module, module);
-            }
-        }
-        PythonModule sys = (PythonModule) replacements.get(builtinModules.get("sys"));
-        String[] args = context.getEnv().getApplicationArguments();
+    public PythonModule initializeSysModule() {
+        PythonModule sys = builtinModules.get("sys");
+        String[] args = getContext().getEnv().getApplicationArguments();
         sys.setAttribute("argv", factory().createList(Arrays.copyOf(args, args.length, Object[].class)));
-        String prefix = PythonCore.getSysPrefix(context.getEnv());
+        String prefix = PythonCore.getSysPrefix(getContext().getEnv());
         for (String name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
             sys.setAttribute(name, prefix);
         }
-        initializeSysPath(context, sys, args);
+        initializeSysPath(sys, args);
         return sys;
     }
 
-    private void initializeSysPath(PythonContext context, PythonModule sys, String[] args) {
-        Env env = context.getEnv();
+    private void initializeSysPath(PythonModule sys, String[] args) {
+        Env env = getContext().getEnv();
         Object[] path = new Object[]{
                         getScriptPath(env, args),
                         PythonCore.getStdlibHome(env),
@@ -510,33 +412,12 @@ public final class Python3Core implements PythonCore {
     }
 
     @TruffleBoundary
-    public PythonBuiltinClass lookupType(Class<? extends Object> clazz) {
-        return lookupType(PythonBuiltinClassType.fromClass(clazz));
-    }
-
-    @TruffleBoundary
     public String[] builtinModuleNames() {
         return builtinModules.keySet().toArray(new String[0]);
     }
 
     public PythonModule getBuiltins() {
         return builtinsModule;
-    }
-
-    public PythonBuiltinClass getTypeClass() {
-        return typeClass;
-    }
-
-    public PythonBuiltinClass getForeignClass() {
-        return foreignClass;
-    }
-
-    public PythonBuiltinClass getObjectClass() {
-        return objectClass;
-    }
-
-    public PythonBuiltinClass getModuleClass() {
-        return moduleClass;
     }
 
     public PythonClass getErrorClass(PythonErrorType type) {
@@ -581,27 +462,11 @@ public final class Python3Core implements PythonCore {
         throw raise(factory.createBaseException(getErrorClass(type)), node);
     }
 
-    public void setCurrentException(PException e) {
-        assert !initialized;
-        currentException = e;
-    }
-
-    public PException getCurrentException() {
-        assert !initialized;
-        return currentException;
-    }
-
     private void publishBuiltinModules() {
         PythonModule sysModule = builtinModules.get("sys");
         PDict sysModules = (PDict) sysModule.getAttribute("modules");
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
             sysModules.setItem(entry.getKey(), entry.getValue());
-        }
-    }
-
-    private void setBuiltinsConstants() {
-        for (Entry<String, Object> entry : BUILTIN_CONSTANTS.entrySet()) {
-            builtinsModule.setAttribute(entry.getKey(), entry.getValue());
         }
     }
 
@@ -612,7 +477,7 @@ public final class Python3Core implements PythonCore {
             env.exportSymbol("python_builtins", builtinsModule);
 
             // export all exception classes for the C API
-            for (PythonErrorType errorType : PythonErrorType.values()) {
+            for (PythonErrorType errorType : PythonErrorType.VALUES) {
                 PythonClass errorClass = getErrorClass(errorType);
                 env.exportSymbol("python_" + errorClass.getName(), errorClass);
             }
@@ -627,21 +492,30 @@ public final class Python3Core implements PythonCore {
         foreignClass = new PythonBuiltinClass(typeClass, FOREIGN, objectClass);
         typeClass.unsafeSetSuperClass(objectClass);
         // Prepare core classes that are required all for core setup
-        addType(PythonClass.class, getTypeClass());
-        addType(PythonObject.class, getObjectClass());
-        addType(PythonModule.class, getModuleClass());
-        addType(TruffleObject.class, getForeignClass());
-        // n.b.: the builtin classes and their constructors are initialized first here, so we set up
-        // the mapping from java classes to python classes.
+        addType(PythonBuiltinClassType.PythonClass, typeClass);
+        addType(PythonBuiltinClassType.PythonBuiltinClass, typeClass);
+        addType(PythonBuiltinClassType.PythonObject, objectClass);
+        addType(PythonBuiltinClassType.PythonModule, moduleClass);
+        addType(PythonBuiltinClassType.TruffleObject, foreignClass);
+        // n.b.: the builtin modules and classes and their constructors are initialized first here,
+        // so we have the mapping from java classes to python classes and builtin names to modules
+        // available.
         for (PythonBuiltins builtin : BUILTINS) {
+            CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+            if (annotation.defineModule().length() > 0) {
+                createModule(annotation.defineModule());
+            }
             builtin.initializeClasses(this);
-            for (Entry<PythonBuiltinClass, Entry<Class<?>[], Boolean>> entry : builtin.getBuiltinClasses().entrySet()) {
+            for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtin.getBuiltinClasses().entrySet()) {
                 PythonBuiltinClass pythonClass = entry.getKey();
-                for (Class<?> klass : entry.getValue().getKey()) {
+                for (PythonBuiltinClassType klass : entry.getValue().getKey()) {
                     addType(klass, pythonClass);
                 }
             }
         }
+        // now initialize well-known objects
+        pyTrue = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ONE);
+        pyFalse = new PInt(lookupType(PythonBuiltinClassType.Boolean), BigInteger.ZERO);
     }
 
     private void populateBuiltins() {
@@ -649,117 +523,69 @@ public final class Python3Core implements PythonCore {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                createModule(annotation.defineModule(), true, builtin);
-            } else if (annotation.extendModule().length() > 0) {
-                addBuiltinsToModule(builtinModules.get(annotation.extendModule()), builtin);
-            } else if (annotation.extendClasses().length > 0) {
-                for (Class<?> klass : annotation.extendClasses()) {
-                    addMethodsToType(klass, builtin);
-                }
+                addBuiltinsTo(builtinModules.get(annotation.defineModule()), builtin);
+            }
+            for (PythonBuiltinClassType klass : annotation.extendClasses()) {
+                addBuiltinsTo(lookupType(klass), builtin);
             }
         }
 
         // core machinery
-        createModule("_descriptor", true);
-        createModule("_warnings", true);
-        PythonModule bootstrapExternal = createModule("importlib._bootstrap_external", "importlib");
+        createModule("_descriptor");
+        createModule("_warnings");
+        PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
+        bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
         builtinModules.put("_frozen_importlib_external", bootstrapExternal);
-        PythonModule bootstrap = createModule("importlib._bootstrap", "importlib");
+        PythonModule bootstrap = createModule("importlib._bootstrap");
+        bootstrap.setAttribute(__PACKAGE__, "importlib");
         builtinModules.put("_frozen_importlib", bootstrap);
     }
 
-    private void addType(Class<? extends Object> clazz, PythonBuiltinClass typ) {
-        builtinTypes[PythonBuiltinClassType.fromClass(clazz).ordinal()] = typ;
+    private void addType(PythonBuiltinClassType klass, PythonBuiltinClass typ) {
+        builtinTypes[klass.ordinal()] = typ;
+        typ.setType(klass);
     }
 
-    private PythonModule createModule(String name, String pkg, PythonBuiltins... builtins) {
-        PythonModule mod = createModule(name, true, builtins);
-        mod.setAttribute(__PACKAGE__, pkg);
-        return mod;
-    }
-
-    public PythonModule createModule(String name, boolean add, PythonBuiltins... builtins) {
-        PythonModule mod = factory().createPythonModule(name);
-        for (PythonBuiltins builtin : builtins) {
-            addBuiltinsToModule(mod, builtin);
-        }
-        if (add) {
+    private PythonModule createModule(String name) {
+        PythonModule mod = builtinModules.get(name);
+        if (mod == null) {
+            mod = factory().createPythonModule(name);
             builtinModules.put(name, mod);
         }
         return mod;
     }
 
-    private PythonBuiltinClass addMethodsToType(Class<?> javaClass, PythonBuiltins... builtins) {
-        return addMethodsToType(lookupType(javaClass), builtins);
-    }
-
-    private PythonBuiltinClass addMethodsToType(PythonBuiltinClass clazz, PythonBuiltins... builtins) {
-        for (PythonBuiltins builtin : builtins) {
-            addBuiltinsToClass(clazz, builtin);
-        }
-        return clazz;
-    }
-
-    private void addBuiltinsToModule(PythonModule mod, PythonBuiltins builtins) {
+    private void addBuiltinsTo(PythonObject obj, PythonBuiltins builtins) {
         Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
         for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
             String constantName = entry.getKey();
-            Object obj = entry.getValue();
-            mod.setAttribute(constantName, obj);
+            obj.setAttribute(constantName, entry.getValue());
         }
 
-        Map<String, PBuiltinFunction> builtinFunctions = builtins.getBuiltinFunctions();
-        for (Map.Entry<String, PBuiltinFunction> entry : builtinFunctions.entrySet()) {
+        Map<String, BoundBuiltinCallable<?>> builtinFunctions = builtins.getBuiltinFunctions();
+        for (Entry<String, BoundBuiltinCallable<?>> entry : builtinFunctions.entrySet()) {
             String methodName = entry.getKey();
-            PBuiltinFunction function = entry.getValue();
-            mod.setAttribute(methodName, function);
-        }
-
-        Map<PythonBuiltinClass, Entry<Class<?>[], Boolean>> builtinClasses = builtins.getBuiltinClasses();
-        for (Entry<PythonBuiltinClass, Entry<Class<?>[], Boolean>> entry : builtinClasses.entrySet()) {
-            boolean isPublic = entry.getValue().getValue();
-            Class<?>[] javaClasses = entry.getValue().getKey();
-            PythonBuiltinClass pythonClass = entry.getKey();
-            if (isPublic) {
-                mod.setAttribute(pythonClass.getName(), pythonClass);
-            }
-            for (Class<?> klass : javaClasses) {
-                addType(klass, pythonClass);
-            }
-        }
-    }
-
-    private void addBuiltinsToClass(PythonBuiltinClass clazz, PythonBuiltins builtins) {
-        Map<String, Object> builtinConstants = builtins.getBuiltinConstants();
-        for (Map.Entry<String, Object> entry : builtinConstants.entrySet()) {
-            String className = entry.getKey();
-            Object obj = entry.getValue();
-            if (obj instanceof GetSetDescriptor && ((GetSetDescriptor) obj).getType() != clazz) {
-                // GetSetDescriptors need to be copied per class
-                clazz.setAttributeUnsafe(className, factory().createGetSetDescriptor(
-                                ((GetSetDescriptor) obj).getGet(),
-                                ((GetSetDescriptor) obj).getSet(),
-                                ((GetSetDescriptor) obj).getName(),
-                                clazz));
+            Object value;
+            if (obj instanceof PythonModule) {
+                value = factory.createBuiltinMethod(obj, (PBuiltinFunction) entry.getValue());
             } else {
-                clazz.setAttributeUnsafe(className, obj);
+                value = entry.getValue().boundToObject(obj, factory());
+            }
+            obj.setAttribute(methodName, value);
+        }
+
+        Map<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> builtinClasses = builtins.getBuiltinClasses();
+        for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtinClasses.entrySet()) {
+            boolean isPublic = entry.getValue().getValue();
+            if (isPublic) {
+                PythonBuiltinClass pythonClass = entry.getKey();
+                obj.setAttribute(pythonClass.getName(), pythonClass);
             }
         }
-
-        Map<String, PBuiltinFunction> builtinFunctions = builtins.getBuiltinFunctions();
-        for (Map.Entry<String, PBuiltinFunction> entry : builtinFunctions.entrySet()) {
-            String className = entry.getKey();
-            PBuiltinFunction function = entry.getValue();
-            clazz.setAttributeUnsafe(className, function);
-        }
-    }
-
-    public Source getCoreSource(String basename) {
-        return getSource(basename, PythonCore.getCoreHomeOrFail());
     }
 
     @TruffleBoundary
-    private static Source getSource(String basename, String prefix) {
+    private Source getSource(String basename, String prefix) {
         URL url = null;
         try {
             url = new URL(prefix);
@@ -767,44 +593,67 @@ public final class Python3Core implements PythonCore {
             // pass
         }
         String suffix = FILE_SEPARATOR + basename + ".py";
+        PythonContext ctxt = getContext();
         if (url != null) {
             // This path is hit when we load the core library e.g. from a Jar file
             try {
-                return Source.newBuilder(new URL(url + suffix)).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
+                return PythonLanguage.newSource(ctxt, new URL(url + suffix), basename);
             } catch (IOException e) {
                 throw new RuntimeException("Could not read core library from " + url);
             }
         } else {
-            Env env = PythonLanguage.getContext().getEnv();
+            Env env = ctxt.getEnv();
             TruffleFile file = env.getTruffleFile(prefix + suffix);
             try {
-                return env.newSourceBuilder(file).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
+                return PythonLanguage.newSource(ctxt, file, basename);
             } catch (SecurityException | IOException t) {
-                // TODO: XXX: This will only work if we already have cached parse trees
-                return Source.newBuilder("").uri(URI.create(file.getPath())).name(basename).mimeType(PythonLanguage.MIME_TYPE).build();
+                throw new RuntimeException("Could not read core library from " + file);
             }
         }
     }
 
     private void loadFile(String s, String prefix) {
-        PythonParseResult parsedModule = getParser().parse(this, getSource(s, prefix));
+        Source source = getSource(s, prefix);
+        CallTarget callTarget = getContext().getEnv().parse(source);
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
             mod = factory().createPythonModule("__anonymous__");
         }
-        CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule.getRootNode());
         callTarget.call(PArguments.withGlobals(mod));
     }
 
     private void findKnownExceptionTypes() {
-        errorClasses = new PythonClass[PythonErrorType.values().length];
-        for (PythonErrorType type : PythonErrorType.values()) {
+        errorClasses = new PythonClass[PythonErrorType.VALUES.length];
+        for (PythonErrorType type : PythonErrorType.VALUES) {
             errorClasses[type.ordinal()] = (PythonClass) builtinsModule.getAttribute(type.name());
         }
     }
 
+    @TruffleBoundary
+    private PDict createEnvironDict() {
+        Map<String, String> getenv = System.getenv();
+        PDict environ = factory.createDict();
+        for (Entry<String, String> entry : getenv.entrySet()) {
+            environ.setItem(factory.createBytes(entry.getKey().getBytes()), factory.createBytes(entry.getValue().getBytes()));
+        }
+        return environ;
+    }
+
     public PythonObjectFactory factory() {
         return factory;
+    }
+
+    public void setContext(PythonContext context) {
+        assert singletonContext == null;
+        singletonContext = context;
+    }
+
+    public PInt getTrue() {
+        return pyTrue;
+    }
+
+    public PInt getFalse() {
+        return pyFalse;
     }
 }

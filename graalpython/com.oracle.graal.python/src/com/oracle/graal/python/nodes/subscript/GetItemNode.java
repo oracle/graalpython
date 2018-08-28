@@ -26,25 +26,11 @@
 package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 
-import com.oracle.graal.python.builtins.objects.array.PArray;
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
-import com.oracle.graal.python.builtins.objects.array.PIntArray;
-import com.oracle.graal.python.builtins.objects.array.PLongArray;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil.NormalizeIndexNode;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -52,10 +38,6 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
-
-    @Child private NormalizeIndexNode normalize;
-
-    public abstract Object execute(Object primary, Object slice);
 
     public PNode getPrimary() {
         return getLeftNode();
@@ -67,6 +49,14 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
     public abstract Object execute(VirtualFrame frame, Object primary, Object slice);
 
+    public abstract Object execute(Object primary, Object slice);
+
+    @Specialization
+    public Object doSpecialObject(Object primary, Object index,
+                    @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetitemNode) {
+        return callGetitemNode.executeObject(primary, index);
+    }
+
     public static GetItemNode create() {
         return GetItemNodeGen.create(null, null);
     }
@@ -75,175 +65,9 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         return GetItemNodeGen.create(primary, slice);
     }
 
-    private NormalizeIndexNode ensureNormalize() {
-        if (normalize == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            normalize = insert(NormalizeIndexNode.create());
-        }
-        return normalize;
-    }
-
-    private int toInt(PInt index) {
-        try {
-            return index.intValueExact();
-        } catch (ArithmeticException e) {
-            // anything outside the int range is considered to be "out of range"
-            throw raise(IndexError, "index out of range");
-        }
-    }
-
     @Override
     public PNode makeWriteNode(PNode rhs) {
         return SetItemNode.create(getPrimary(), getSlice(), rhs);
     }
 
-    @Specialization
-    public String doString(String primary, PSlice slice) {
-        SliceInfo info = slice.computeActualIndices(primary.length());
-        final int start = info.start;
-        int stop = info.stop;
-        int step = info.step;
-
-        if (step > 0 && stop < start) {
-            stop = start;
-        }
-        if (step == 1) {
-            return getSubString(primary, start, stop);
-        } else {
-            char[] newChars = new char[info.length];
-            int j = 0;
-            for (int i = start; j < info.length; i += step) {
-                newChars[j++] = primary.charAt(i);
-            }
-
-            return new String(newChars);
-        }
-    }
-
-    @Specialization
-    public Object doPRange(PRange range, PSlice slice) {
-        return range.getSlice(factory(), slice);
-    }
-
-    @Specialization
-    public Object doPArray(PArray primary, PSlice slice) {
-        return primary.getSlice(factory(), slice);
-    }
-
-    @Specialization
-    public String doString(String primary, int idx) {
-        try {
-            int index = idx;
-
-            if (idx < 0) {
-                index += primary.length();
-            }
-
-            return charAtToString(primary, index);
-        } catch (StringIndexOutOfBoundsException | ArithmeticException e) {
-            throw raise(IndexError, "IndexError: string index out of range");
-        }
-    }
-
-    @Specialization
-    public String doString(String primary, PInt idx) {
-        return doString(primary, toInt(idx));
-    }
-
-    @Specialization
-    public Object doPBytes(PBytes primary, int idx) {
-        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPBytes(PBytes bytes, PInt idx) {
-        return doPBytes(bytes, toInt(idx));
-    }
-
-    @Specialization
-    public Object doPByteArray(PByteArray primary, int idx) {
-        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPByteArray(PByteArray bytearray, PInt idx) {
-        return doPByteArray(bytearray, toInt(idx));
-    }
-
-    @Specialization
-    public Object doPRange(PRange primary, int idx) {
-        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPRange(PRange primary, long idx) {
-        return primary.getItemNormalized(ensureNormalize().forRange(idx, primary.len()));
-    }
-
-    @Specialization
-    public int doPIntArray(PIntArray primary, int idx) {
-        return primary.getIntItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public int doPIntArray(PIntArray primary, long idx) {
-        return primary.getIntItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public long doPLongArray(PLongArray primary, int idx) {
-        return primary.getLongItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public long doPLongArray(PLongArray primary, long idx) {
-        return primary.getLongItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public double doPDoubleArray(PDoubleArray primary, int idx) {
-        return primary.getDoubleItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public double doPDoubleArray(PDoubleArray primary, long idx) {
-        return primary.getDoubleItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public char doPCharArray(PCharArray primary, int idx) {
-        return primary.getCharItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public char doPCharArray(PCharArray primary, long idx) {
-        return primary.getCharItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPArray(PArray primary, long idx) {
-        return primary.getItemNormalized(ensureNormalize().forArray(idx, primary.len()));
-    }
-
-    @Specialization
-    public Object doPArray(PArray primary, PInt idx) {
-        return primary.getItemNormalized(ensureNormalize().forArray(toInt(idx), primary.len()));
-    }
-
-    @Specialization
-    public Object doSpecialObject(Object primary, Object index,
-                    @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetitemNode) {
-        return callGetitemNode.executeObject(primary, index);
-    }
-
-    private static String getSubString(String origin, int start, int stop) {
-        char[] chars = new char[stop - start];
-        origin.getChars(start, stop, chars, 0);
-        return new String(chars);
-    }
-
-    private static String charAtToString(String primary, int index) {
-        char charactor = primary.charAt(index);
-        return new String(new char[]{charactor});
-    }
 }

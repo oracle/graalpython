@@ -51,10 +51,23 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
             this.kind = ((ListSequenceStorage) elements[0].getSequenceStorage()).getKind();
     }
 
+    public ListSequenceStorage(PList[] elements, int length) {
+        this(elements, elements[0].getSequenceStorage().getClass(), length);
+        if (kind == ListSequenceStorage.class)
+            this.kind = ((ListSequenceStorage) elements[0].getSequenceStorage()).getKind();
+    }
+
     public ListSequenceStorage(PList[] elements, Class<?> kind) {
         this.values = elements;
         capacity = values.length;
         length = elements.length;
+        this.kind = kind;
+    }
+
+    public ListSequenceStorage(PList[] elements, Class<?> kind, int length) {
+        this.values = elements;
+        capacity = values.length;
+        this.length = length;
         this.kind = kind;
     }
 
@@ -386,6 +399,11 @@ public final class ListSequenceStorage extends TypedSequenceStorage {
         }
 
         return true;
+    }
+
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
     }
 
 }

@@ -25,31 +25,27 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.__repr__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public final class PByteArray extends PArray implements PIBytesLike {
+public final class PByteArray extends PSequence implements PIBytesLike {
 
-    @CompilationFinal private SequenceStorage store;
+    private SequenceStorage store;
 
     public PByteArray(PythonClass cls, byte[] bytes) {
         super(cls);
@@ -61,21 +57,11 @@ public final class PByteArray extends PArray implements PIBytesLike {
         this.store = store;
     }
 
-    @Override
-    public Object getItem(int idx) {
-        return getItemNormalized(SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range"));
-    }
-
-    @Override
-    public Object getItemNormalized(int idx) {
-        return store.getItemNormalized(idx);
-    }
-
     public void setItemNormalized(int index, Object value) {
         try {
             store.setItemNormalized(index, value);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value);
+            store = store.generalizeFor(value, null);
 
             try {
                 store.setItemNormalized(index, value);
@@ -86,53 +72,26 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     @Override
-    public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        return factory.createByteArray(this.getPythonClass(), store.getSliceInBound(start, stop, step, length));
-    }
-
-    @Override
     public void setSlice(int start, int stop, int step, PSequence value) {
-        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length(), "array assignment index out of range");
-        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length(), "array assignment index out of range");
+        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length());
+        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length());
 
         if (normalizedStop < normalizedStart) {
             normalizedStop = normalizedStart;
         }
 
+        SequenceStorage other = value.getSequenceStorage();
         try {
-            store.setSliceInBound(normalizedStart, normalizedStop, step, value.getSequenceStorage());
+            store.setSliceInBound(normalizedStart, normalizedStop, step, other);
         } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value.getSequenceStorage().getIndicativeValue());
-
-            try {
-                store.setSliceInBound(start, stop, step, value.getSequenceStorage());
-            } catch (SequenceStoreException ex) {
-                throw new IllegalStateException();
-            }
+            throw PythonLanguage.getCore().raise(TypeError, "an integer is required");
         }
     }
 
     @Override
     public void setSlice(PSlice slice, PSequence value) {
-        setSlice(slice.getStart(), slice.getStop(), slice.getStep(), value);
-    }
-
-    @Override
-    public void delItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range");
-        store.delItemInBound(index);
-    }
-
-    @Override
-    public int index(Object value) {
-        int index = store.index(value);
-
-        if (index != -1) {
-            return index;
-        }
-
-        CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, "%s is not in bytes literal", value);
+        PSlice.SliceInfo sliceInfo = slice.computeActualIndices(len());
+        setSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step, value);
     }
 
     @Override
@@ -140,13 +99,10 @@ public final class PByteArray extends PArray implements PIBytesLike {
         return store;
     }
 
-    public final void setSequenceStorage(SequenceStorage newStorage) {
-        this.store = newStorage;
-    }
-
     @Override
-    public boolean lessThan(PSequence sequence) {
-        return false;
+    public final void setSequenceStorage(SequenceStorage store) {
+        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && ((NativeSequenceStorage) store).getElementType() == ElementType.BYTE;
+        this.store = store;
     }
 
     @Override
@@ -157,7 +113,12 @@ public final class PByteArray extends PArray implements PIBytesLike {
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return String.format("bytearray(%s)", __repr__(getInternalByteArray(), store.length()));
+        if (store instanceof ByteSequenceStorage) {
+            byte[] barr = ((ByteSequenceStorage) store).getInternalByteArray();
+            return String.format("bytearray(%s)", BytesUtils.bytesRepr(barr, barr.length));
+        } else {
+            return String.format("bytearray(%s)", store);
+        }
     }
 
     @Override
@@ -170,6 +131,9 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     public final boolean equals(PSequence other) {
+        if (len() == 0 && other.len() == 0) {
+            return true;
+        }
         SequenceStorage otherStore = other.getSequenceStorage();
         return store.equals(otherStore);
     }
@@ -199,28 +163,14 @@ public final class PByteArray extends PArray implements PIBytesLike {
     }
 
     public final void delSlice(PSlice slice) {
-        int start = SequenceUtil.normalizeSliceStart(slice, store.length(), "array index out of range");
-        final int stop = SequenceUtil.normalizeSliceStop(slice, store.length(), "array index out of range");
+        int start = Math.max(0, SequenceUtil.normalizeSliceStart(slice, store.length()));
+        final int stop = Math.min(store.length(), SequenceUtil.normalizeSliceStop(slice, store.length()));
         final int step = SequenceUtil.normalizeSliceStep(slice);
         store.delSlice(start, stop, step);
     }
 
     public int count(Object arg) {
         return this.store.count(arg);
-    }
-
-    @Override
-    public byte[] getInternalByteArray() {
-        if (store instanceof ByteSequenceStorage) {
-            return ((ByteSequenceStorage) store).getInternalByteArray();
-        } else {
-            throw new UnsupportedOperationException("this case is not yet supported!");
-        }
-    }
-
-    @TruffleBoundary
-    public byte[] join(PythonCore core, Object... values) {
-        return BytesUtils.join(core, getBytesExact(), values);
     }
 
     @Override

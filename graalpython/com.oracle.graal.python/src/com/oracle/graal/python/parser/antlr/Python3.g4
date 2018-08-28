@@ -1,8 +1,8 @@
 /*
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Oracle and/or its affiliates
+ * Copyright (c) 2017-2018, Oracle and/or its affiliates.
  * Copyright (c) 2014 by Bart Kiers
+ *
+ * The MIT License (MIT)
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,7 +24,8 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
- *
+ */
+/*
  * Project      : python3-parser; an ANTLR4 grammar for Python 3
  *                https://github.com/bkiers/python3-parser
  * Developed by : Bart Kiers, bart@big-o.nl
@@ -140,16 +141,16 @@ tokens { INDENT, DEDENT }
  * parser rules
  */
 
-single_input: NEWLINE | simple_stmt | compound_stmt NEWLINE;
-file_input: (NEWLINE | stmt)* EOF;
-eval_input: testlist NEWLINE* EOF;
+single_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: NEWLINE | simple_stmt | compound_stmt NEWLINE;
+file_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: (NEWLINE | stmt)* EOF;
+eval_input locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: testlist NEWLINE* EOF;
 
 decorator: '@' dotted_name ( '(' (arglist)? ')' )? NEWLINE;
 decorators: decorator+;
 decorated: decorators (classdef | funcdef | async_funcdef);
 
 async_funcdef: ASYNC funcdef;
-funcdef: 'def' NAME parameters ('->' test)? ':' suite;
+funcdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'def' NAME parameters ('->' test)? ':' suite;
 
 parameters: '(' (typedargslist)? ')';
 typedargslist: (defparameter (',' defparameter)* (',' (
@@ -178,11 +179,10 @@ small_stmt: (expr_stmt | del_stmt | pass_stmt | flow_stmt |
              import_stmt | global_stmt | nonlocal_stmt | assert_stmt);
 expr_stmt: testlist_star_expr (annassign | augassign (yield_expr|testlist) |
                      (normassign)*);
-normassign: '=' (yield_expr|testlist_star_expr);
+normassign: '=' (yield_expr | testlist_star_expr);
 annassign: ':' test ('=' test)?;
 testlist_star_expr: (test|star_expr) (',' (test|star_expr))* (',')?;
-augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' |
-            '<<=' | '>>=' | '**=' | '//=');
+augassign: ('+=' | '-=' | '*=' | '@=' | '/=' | '%=' | '&=' | '|=' | '^=' | '<<=' | '>>=' | '**=' | '//=');
 // For normal and annotated assignments, additional restrictions enforced by the interpreter
 del_stmt: 'del' exprlist;
 pass_stmt: 'pass';
@@ -224,9 +224,9 @@ suite: simple_stmt | NEWLINE INDENT stmt+ DEDENT;
 
 test: or_test ('if' or_test 'else' test)? | lambdef;
 test_nocond: or_test | lambdef_nocond;
-lambdef: 'lambda' (varargslist)? ':' lambdef_body;
+lambdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'lambda' (varargslist)? ':' lambdef_body;
 lambdef_body: test;
-lambdef_nocond: 'lambda' (varargslist)? ':' lambdef_nocond_body;
+lambdef_nocond locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'lambda' (varargslist)? ':' lambdef_nocond_body;
 lambdef_nocond_body: test_nocond;
 or_test: and_test ('or' and_test)*;
 and_test: not_test ('and' not_test)*;
@@ -262,7 +262,7 @@ dictmaker: ((test ':' test | '**' expr)
 setmaker: ((test | star_expr)
                    (comp_for | (',' (test | star_expr))* (',')?));
 
-classdef: 'class' NAME ('(' arglist? ')')? ':' suite;
+classdef locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: 'class' NAME ('(' arglist? ')')? ':' suite;
 
 arglist: argument (',' argument)*  (',')?;
 
@@ -281,7 +281,7 @@ argument: ( test (comp_for)? |
             '*' test );
 
 comp_iter: comp_for | comp_if;
-comp_for: (ASYNC)? 'for' exprlist 'in' or_test (comp_iter)?;
+comp_for locals [ com.oracle.graal.python.parser.ScopeInfo scope ]: (ASYNC)? 'for' exprlist 'in' or_test (comp_iter)?;
 comp_if: 'if' test_nocond (comp_iter)?;
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler

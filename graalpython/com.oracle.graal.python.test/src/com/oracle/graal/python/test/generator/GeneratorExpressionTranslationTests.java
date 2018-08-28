@@ -33,7 +33,6 @@ import org.junit.Test;
 
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
-import com.oracle.graal.python.runtime.PythonParseResult;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -57,8 +56,8 @@ public class GeneratorExpressionTranslationTests {
                         "    for i in (x for x in range(n)):\n" + //
                         "        item = i\n" +
                         "        print(item)";
-        PythonParseResult parsed = getParseResult(source);
-        RootNode root = getFunctionRoot(parsed.getRootNode(), "foo");
+        RootNode parsed = getParseResult(source);
+        RootNode root = getFunctionRoot(parsed, "foo");
         int genexp = NodeUtil.findAllNodeInstances(root, GeneratorExpressionNode.class).size();
         assertTrue(genexp == 1);
     }
@@ -70,8 +69,8 @@ public class GeneratorExpressionTranslationTests {
                         "    n = 5\n" + //
                         "    return list(x for x in range(n))\n";
 
-        PythonParseResult parsed = getParseResult(source);
-        RootNode root = getFunctionRoot(parsed.getRootNode(), "foo");
+        RootNode parsed = getParseResult(source);
+        RootNode root = getFunctionRoot(parsed, "foo");
         int genexp = NodeUtil.findAllNodeInstances(root, GeneratorExpressionNode.class).size();
         assertTrue(genexp != 0);
     }
@@ -84,8 +83,8 @@ public class GeneratorExpressionTranslationTests {
                         "    ll = (x for x in range(n))\n" + //
                         "    return list(ll)\n";
 
-        PythonParseResult parsed = getParseResult(source);
-        RootNode root = getFunctionRoot(parsed.getRootNode(), "foo");
+        RootNode parsed = getParseResult(source);
+        RootNode root = getFunctionRoot(parsed, "foo");
         int genexp = NodeUtil.findAllNodeInstances(root, GeneratorExpressionNode.class).size();
         assertTrue(genexp != 0);
     }
@@ -98,8 +97,8 @@ public class GeneratorExpressionTranslationTests {
                         "    ll = (x for x in range(n))\n" + //
                         "    return ll\n";
 
-        PythonParseResult parsed = getParseResult(source);
-        RootNode root = getFunctionRoot(parsed.getRootNode(), "foo");
+        RootNode parsed = getParseResult(source);
+        RootNode root = getFunctionRoot(parsed, "foo");
         int genexp = NodeUtil.findAllNodeInstances(root, GeneratorExpressionNode.class).size();
         assertTrue(genexp != 0);
     }
@@ -113,8 +112,8 @@ public class GeneratorExpressionTranslationTests {
                         "    ll = (x for x in range(n))\n" + //
                         "    LIST[0] = ll\n";
 
-        PythonParseResult parsed = getParseResult(source);
-        RootNode root = getFunctionRoot(parsed.getRootNode(), "foo");
+        RootNode parsed = getParseResult(source);
+        RootNode root = getFunctionRoot(parsed, "foo");
         int genexp = NodeUtil.findAllNodeInstances(root, GeneratorExpressionNode.class).size();
         assertTrue(genexp != 0);
     }
@@ -127,8 +126,8 @@ public class GeneratorExpressionTranslationTests {
                         "    ll = (x for x in range(n))\n" + //
                         "    LIST.append(ll)\n";
 
-        PythonParseResult parsed = getParseResult(source);
-        RootNode root = getFunctionRoot(parsed.getRootNode(), "foo");
+        RootNode parsed = getParseResult(source);
+        RootNode root = getFunctionRoot(parsed, "foo");
         int genexp = NodeUtil.findAllNodeInstances(root, GeneratorExpressionNode.class).size();
         assertTrue(genexp != 0);
     }

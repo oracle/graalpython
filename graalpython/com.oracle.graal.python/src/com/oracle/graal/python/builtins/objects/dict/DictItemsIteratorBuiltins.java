@@ -32,6 +32,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsIterator;
@@ -46,7 +47,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PDictItemsIterator.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PDictItemsIterator)
 public final class DictItemsIteratorBuiltins extends PythonBuiltins {
 
     @Override
@@ -54,7 +55,7 @@ public final class DictItemsIteratorBuiltins extends PythonBuiltins {
         return DictItemsIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfArguments = 1)
+    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -78,7 +79,7 @@ public final class DictItemsIteratorBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

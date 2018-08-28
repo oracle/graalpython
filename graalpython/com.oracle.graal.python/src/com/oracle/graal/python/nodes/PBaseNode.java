@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -47,13 +49,15 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PBaseNode extends Node {
-    @CompilationFinal private PythonCore core;
     @Child private PythonObjectFactory factory;
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     protected final PythonObjectFactory factory() {
         if (factory == null) {
@@ -64,15 +68,11 @@ public abstract class PBaseNode extends Node {
     }
 
     public final PythonCore getCore() {
-        if (core == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            core = PythonLanguage.getCore();
-        }
-        return core;
+        return getContext().getCore();
     }
 
     public final NodeFactory getNodeFactory() {
-        return getCore().getLanguage().getNodeFactory();
+        return getContext().getLanguage().getNodeFactory();
     }
 
     public final PException raise(PBaseException exc) {
@@ -91,11 +91,23 @@ public abstract class PBaseNode extends Node {
         throw getCore().raise(type, this, format, arguments);
     }
 
+    public final PException raiseIndexError() {
+        return raise(PythonErrorType.IndexError, "cannot fit 'int' into an index-sized integer");
+    }
+
     public PythonClass lookupClass(PythonBuiltinClassType type) {
         return getCore().lookupType(type);
     }
 
     public final PythonContext getContext() {
-        return getCore().getContext();
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = PythonLanguage.getContextRef();
+        }
+        return contextRef.get();
+    }
+
+    protected Assumption singleContextAssumption() {
+        return PythonLanguage.singleContextAssumption;
     }
 }

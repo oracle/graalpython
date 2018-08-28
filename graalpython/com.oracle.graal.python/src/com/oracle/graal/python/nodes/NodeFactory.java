@@ -27,7 +27,6 @@ package com.oracle.graal.python.nodes;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
@@ -75,9 +74,7 @@ import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.DictConcatNode;
-import com.oracle.graal.python.nodes.generator.ListAppendNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
-import com.oracle.graal.python.nodes.generator.YieldResumeNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
 import com.oracle.graal.python.nodes.literal.BytesLiteralNode;
@@ -178,7 +175,7 @@ public class NodeFactory {
     }
 
     public StatementNode createIf(CastToBooleanNode condition, PNode thenPart, PNode elsePart) {
-        return IfNode.create(condition, thenPart, elsePart);
+        return new IfNode(condition, thenPart, elsePart);
     }
 
     public GetIteratorNode createGetIterator(PNode collection) {
@@ -214,7 +211,7 @@ public class NodeFactory {
     }
 
     public PNode createYield(PNode right, FrameSlot returnSlot) {
-        return createBlock(new YieldNode(createWriteLocal(right, returnSlot)), new YieldResumeNode());
+        return new YieldNode(createWriteLocal(right, returnSlot));
     }
 
     public PNode createIntegerLiteral(int value) {
@@ -276,14 +273,9 @@ public class NodeFactory {
         return ListLiteralNode.create(values);
     }
 
-    public PNode createSetLiteral(Set<PNode> values) {
+    public PNode createSetLiteral(List<PNode> values) {
         PNode[] convertedValues = values.toArray(new PNode[values.size()]);
         return new SetLiteralNode(convertedValues);
-    }
-
-    public PNode createListAppend(FrameSlot frameSlot, PNode right) {
-        PNode readList = createReadLocal(frameSlot);
-        return ListAppendNode.create(readList, right);
     }
 
     public PNode createUnaryOperation(String string, PNode operand) {
@@ -400,7 +392,7 @@ public class NodeFactory {
     }
 
     public PNode createGetAttribute(PNode primary, String name) {
-        return GetAttributeNode.create(primary, createStringLiteral(name));
+        return GetAttributeNode.create(name, primary);
     }
 
     public PNode createGetItem(PNode primary, String name) {
@@ -523,19 +515,15 @@ public class NodeFactory {
         return DictConcatNode.create(dictNodes);
     }
 
-    public PNode createListAppend(PNode leftNode, PNode rightNode) {
-        return ListAppendNode.create(leftNode, rightNode);
-    }
-
     public PNode callBuiltin(String string, PNode argument) {
-        return PythonCallNode.create(getBuiltin(string), new PNode[]{argument}, new PNode[0], EmptyNode.create(), EmptyNode.create());
+        return PythonCallNode.create(getBuiltin(string), new PNode[]{argument}, new PNode[0], null, null);
     }
 
     public PNode createSetAttribute(PNode object, String key, PNode rhs) {
-        return SetAttributeNode.create(object, createStringLiteral(key), rhs);
+        return SetAttributeNode.create(key, object, rhs);
     }
 
-    public PNode createDestructuringAssignment(PNode rhs, List<ReadNode> slots, int starredIndex, PNode[] assignments) {
+    public PNode createDestructuringAssignment(PNode rhs, ReadNode[] slots, int starredIndex, PNode[] assignments) {
         return DestructuringAssignmentNode.create(rhs, slots, starredIndex, assignments);
     }
 

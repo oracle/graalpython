@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -46,6 +48,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final RootCallTarget callTarget;
@@ -55,13 +58,14 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     private final int numOfGeneratorForNode;
     private final PCell[] closure;
     private final ExecutionCellSlots cellSlots;
-
+    private final String name;
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
-    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
+    public GeneratorFunctionRootNode(PythonLanguage language, RootCallTarget callTarget, String name, FrameDescriptor frameDescriptor, PCell[] closure, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         super(language, frameDescriptor, executionCellSlots);
         this.callTarget = callTarget;
+        this.name = name;
         this.frameDescriptor = frameDescriptor;
         this.closure = closure;
         this.cellSlots = executionCellSlots;
@@ -73,5 +77,14 @@ public class GeneratorFunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         return factory.createGenerator(getName(), callTarget, frameDescriptor, frame.getArguments(), closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+    }
+
+    public RootNode getFunctionRootNode() {
+        return callTarget.getRootNode();
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 }

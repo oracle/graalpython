@@ -27,6 +27,7 @@ package com.oracle.graal.python.nodes.call;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
@@ -39,8 +40,8 @@ import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.interop.ArityException;
@@ -53,39 +54,64 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@NodeChildren({@NodeChild("calleeNode"), @NodeChild(value = "arguments", type = PositionalArgumentsNode.class), @NodeChild(value = "keywords", type = KeywordArgumentsNode.class)})
+@NodeChild("calleeNode")
 public abstract class PythonCallNode extends PNode {
+
     @Child private CallNode callNode = CallNode.create();
+
+    /*
+     * Either "argument" or "positionalArgument" needs to be non-null (but not both), and
+     * "keywordArguments" may be null.
+     */
+    @Children private final PNode[] argumentNodes;
+    @Child private PositionalArgumentsNode positionalArguments;
+    @Child private KeywordArgumentsNode keywordArguments;
 
     protected final String calleeName;
 
-    PythonCallNode(String calleeName) {
+    PythonCallNode(String calleeName, PNode[] argumentNodes, PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
         this.calleeName = calleeName;
+        this.argumentNodes = argumentNodes;
+        this.positionalArguments = positionalArguments;
+        this.keywordArguments = keywordArguments;
     }
 
-    public static PythonCallNode create(PNode calleeNode, PNode[] argumentNodes, PNode[] keywords, PNode starargs, PNode kwargs) {
+    public static PythonCallNode create(PNode calleeNode, PNode[] argumentNodes, PNode[] keywords, PNode starArgs, PNode kwArgs) {
+        assert !(starArgs instanceof EmptyNode) : "pass null instead";
+        assert !(kwArgs instanceof EmptyNode) : "pass null instead";
+
         String calleeName = "~unknown";
         PNode getCallableNode = calleeNode;
 
         if (calleeNode instanceof ReadGlobalOrBuiltinNode) {
             calleeName = ((ReadGlobalOrBuiltinNode) calleeNode).getAttributeId();
         } else if (calleeNode instanceof GetAttributeNode) {
-            getCallableNode = GetCallAttributeNodeGen.create(((GetAttributeNode) calleeNode).getObject(), ((GetAttributeNode) calleeNode).getKey());
+            getCallableNode = GetCallAttributeNodeGen.create(((GetAttributeNode) calleeNode).getKey(), ((GetAttributeNode) calleeNode).getObject());
         }
-
-        return PythonCallNodeGen.create(calleeName, getCallableNode, PositionalArgumentsNode.create(argumentNodes, starargs), KeywordArgumentsNode.create(keywords, kwargs));
+        KeywordArgumentsNode keywordArgumentsNode = kwArgs == null && keywords.length == 0 ? null : KeywordArgumentsNode.create(keywords, kwArgs);
+        if (starArgs == null) {
+            return PythonCallNodeGen.create(calleeName, argumentNodes, null, keywordArgumentsNode, getCallableNode);
+        } else {
+            return PythonCallNodeGen.create(calleeName, null, PositionalArgumentsNode.create(argumentNodes, starArgs), keywordArgumentsNode, getCallableNode);
+        }
     }
 
-    @NodeChildren({@NodeChild("object"), @NodeChild("key")})
+    @NodeChild("object")
     protected abstract static class GetCallAttributeNode extends PNode {
 
+        private final String key;
+
+        protected GetCallAttributeNode(String key) {
+            this.key = key;
+        }
+
         @Specialization(guards = "isForeignObject(object)")
-        Object getForeignInvoke(TruffleObject object, String key) {
+        Object getForeignInvoke(TruffleObject object) {
             return new ForeignInvoke(object, key);
         }
 
         @Specialization(guards = "!isForeignObject(object)")
-        Object getCallAttribute(Object object, Object key,
+        Object getCallAttribute(Object object,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode) {
             return getAttributeNode.executeObject(object, key);
         }
@@ -110,18 +136,28 @@ public abstract class PythonCallNode extends PNode {
         return true;
     }
 
+    private Object[] evaluateArguments(VirtualFrame frame) {
+        return argumentNodes != null ? PositionalArgumentsNode.evaluateArguments(frame, argumentNodes) : positionalArguments.execute(frame);
+    }
+
+    private PKeyword[] evaluateKeywords(VirtualFrame frame) {
+        return keywordArguments == null ? PKeyword.EMPTY_KEYWORDS : keywordArguments.execute(frame);
+    }
+
     protected static Node createInvoke() {
-        return Message.createInvoke(0).createNode();
+        return Message.INVOKE.createNode();
     }
 
     @Specialization
-    Object call(ForeignInvoke callable, Object[] arguments, PKeyword[] keywords,
+    Object call(VirtualFrame frame, ForeignInvoke callable,
                     @Cached("create()") BranchProfile keywordsError,
                     @Cached("create()") BranchProfile nameError,
                     @Cached("create()") BranchProfile typeError,
                     @Cached("create()") BranchProfile invokeError,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttrNode,
                     @Cached("createInvoke()") Node invokeNode) {
+        Object[] arguments = evaluateArguments(frame);
+        PKeyword[] keywords = evaluateKeywords(frame);
         if (keywords.length != 0) {
             keywordsError.enter();
             throw raise(PythonErrorType.TypeError, "foreign invocation does not support keyword arguments");
@@ -138,13 +174,15 @@ public abstract class PythonCallNode extends PNode {
             invokeError.enter();
             // the interop contract is to revert to READ and then EXECUTE
             Object member = getAttrNode.executeObject(callable.receiver, callable.identifier);
-            return callNode.execute(member, arguments, keywords);
+            return callNode.execute(frame, member, arguments, keywords);
         }
     }
 
     @Fallback
-    Object call(Object callable, Object[] arguments, PKeyword[] keywords) {
-        return callNode.execute(callable, arguments, keywords);
+    Object call(VirtualFrame frame, Object callable) {
+        Object[] arguments = evaluateArguments(frame);
+        PKeyword[] keywords = evaluateKeywords(frame);
+        return callNode.execute(frame, callable, arguments, keywords);
     }
 
     @Override

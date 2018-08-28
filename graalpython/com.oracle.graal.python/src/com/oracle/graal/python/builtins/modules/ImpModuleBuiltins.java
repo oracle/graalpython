@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -44,7 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportEr
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -55,24 +56,26 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
@@ -90,6 +93,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -134,11 +138,12 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__create_dynamic__", fixedNumOfArguments = 2)
+    @Builtin(name = "__create_dynamic__", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(Message.class)
     public abstract static class CreateDynamic extends PythonBuiltinNode {
         protected static final String INITIALIZE_CAPI = "initialize_capi";
+        protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         private static final String LLVM_LANGUAGE = "llvm";
         @Child private SetItemNode setItemNode;
         @Child private Node isNullNode = Message.IS_NULL.createNode();
@@ -146,7 +151,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public Object run(PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
-                        @Cached("createExecute(0).createNode()") Node executeNode,
+                        @Cached("EXECUTE.createNode()") Node executeNode,
                         @Cached("READ.createNode()") Node readNode) {
             String name = moduleSpec.getAttribute("name").toString();
             String path = moduleSpec.getAttribute("origin").toString();
@@ -173,7 +178,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String basename = name.substring(name.lastIndexOf('.') + 1);
             TruffleObject sulongLibrary;
             try {
-                CallTarget callTarget = env.parse(env.newSourceBuilder(env.getTruffleFile(path)).language(LLVM_LANGUAGE).build());
+                CallTarget callTarget = env.parse(Source.newBuilder(LLVM_LANGUAGE, env.getTruffleFile(path)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException | IOException e) {
                 throw raise(ImportError, "cannot load %s: %s", path, e.getMessage());
@@ -187,9 +192,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw raise(ImportError, "no function PyInit_%s found in %s", basename, path);
             }
             try {
+                // save current exception state
+                PException exceptionState = getContext().getCurrentException();
+                // clear current exception such that native code has clean environment
+                getContext().setCurrentException(null);
+
                 Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
                 TruffleCextBuiltins.checkFunctionResult(getContext(), isNullNode, "PyInit_" + basename, nativeResult);
-                Object result = AsPythonObjectNode.doSlowPath(nativeResult);
+
+                // restore previous exception state
+                getContext().setCurrentException(exceptionState);
+
+                Object result = AsPythonObjectNode.doSlowPath(getCore(), nativeResult);
                 if (!(result instanceof PythonModule)) {
                     // PyModuleDef_Init(pyModuleDef)
                     // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
@@ -198,7 +212,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     ((PythonObject) result).setAttribute(__FILE__, path);
                     // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
                     PDict sysModules = getContext().getSysModules();
-                    getSetItemNode().execute(sysModules, sysModules.getDictStorage(), name, result);
+                    sysModules.setDictStorage(getSetItemNode().execute(sysModules.getDictStorage(), name, result));
                     return result;
                 }
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -211,21 +225,30 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void ensureCapiWasLoaded() {
-            if (!getContext().capiWasLoaded()) {
-                Env env = getContext().getEnv();
+            PythonContext ctxt = getContext();
+            if (!ctxt.capiWasLoaded()) {
+                Env env = ctxt.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 TruffleFile capiFile = env.getTruffleFile(PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "capi.bc");
                 Object capi = null;
                 try {
-                    capi = getContext().getEnv().parse(env.newSourceBuilder(capiFile).language(LLVM_LANGUAGE).build()).call();
+                    SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
+                    if (!PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources)) {
+                        capiSrcBuilder.internal(true);
+                    }
+                    capi = ctxt.getEnv().parse(capiSrcBuilder.build()).call();
                 } catch (SecurityException | IOException e) {
                     throw raise(PythonErrorType.ImportError, "cannot load capi from " + capiFile.getAbsoluteFile().getPath());
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
                 CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
-                callNode.executeObject(readNode.execute(getContext().getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
-                getContext().setCapiWasLoaded();
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
+                ctxt.setCapiWasLoaded();
+
+                // initialization needs to be finished already but load memoryview implemenation
+                // immediately
+                callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), IMPORT_NATIVE_MEMORYVIEW), capi);
             }
         }
 
@@ -261,7 +284,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "exec_dynamic", fixedNumOfArguments = 1)
+    @Builtin(name = "exec_dynamic", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
@@ -271,15 +294,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_builtin", fixedNumOfArguments = 1)
+    @Builtin(name = "is_builtin", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IsBuiltin extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public int run(String name) {
+        public int run(String name,
+                        @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey) {
             if (getCore().lookupBuiltinModule(name) != null) {
                 return 1;
-            } else if (getContext() != null && getContext().isInitialized() && getContext().getImportedModules().hasKey(name)) {
+            } else if (getContext() != null && getContext().isInitialized() && hasKey.execute(getContext().getImportedModules().getDictStorage(), name)) {
                 return -1;
             } else {
                 return 0;
@@ -292,7 +316,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "create_builtin", fixedNumOfArguments = 1)
+    @Builtin(name = "create_builtin", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -311,7 +335,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_truffle_bootstrap_file_into_module", fixedNumOfArguments = 2)
+    @Builtin(name = "_truffle_bootstrap_file_into_module", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class TruffleImportStar extends PythonBuiltinNode {
         @Specialization
@@ -321,32 +345,31 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        public Object run(PString path, String modulename) {
+            return run(path.getValue(), getCore().lookupBuiltinModule(modulename));
+        }
+
+        @Specialization
         @TruffleBoundary
         public Object run(String path, PythonModule mod) {
-            Env env = getContext().getEnv();
+            PythonContext ctxt = getContext();
+            Env env = ctxt.getEnv();
             try {
-                PythonParseResult parsedModule;
                 String[] pathParts = path.split(Pattern.quote(PythonCore.FILE_SEPARATOR));
                 String fileName = pathParts[pathParts.length - 1];
-                TruffleFile file = env.getTruffleFile(path);
-                Source src = null;
-                try {
-                    if (file.exists()) {
-                        src = env.newSourceBuilder(file).mimeType(PythonLanguage.MIME_TYPE).build();
-                    }
-                } catch (SecurityException e) {
+                TruffleFile file;
+                if (fileName.equals(path)) {
+                    // relative filename
+                    file = env.getTruffleFile(PythonCore.getCoreHomeOrFail() + PythonCore.FILE_SEPARATOR + fileName);
+                } else {
+                    file = env.getTruffleFile(path);
                 }
-                if (src == null) {
-                    src = Source.newBuilder("").uri(URI.create(path)).mimeType(PythonLanguage.MIME_TYPE).name(fileName).build();
-                }
-                parsedModule = getCore().getParser().parse(getCore(), src);
-                if (parsedModule != null) {
-                    CallTarget callTarget = Truffle.getRuntime().createCallTarget(parsedModule.getRootNode());
-                    callTarget.call(PArguments.withGlobals(mod));
-                }
+                Source src = PythonLanguage.newSource(ctxt, file, fileName);
+                CallTarget callTarget = env.parse(src);
+                callTarget.call(PArguments.withGlobals(mod));
             } catch (PException e) {
                 throw e;
-            } catch (IOException e) {
+            } catch (IOException | SecurityException e) {
                 throw raise(ImportError, e.getMessage());
             }
             return PNone.NONE;

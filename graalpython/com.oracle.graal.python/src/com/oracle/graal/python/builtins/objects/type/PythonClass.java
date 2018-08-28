@@ -31,7 +31,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -41,10 +43,10 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.object.Layout;
 import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Shape;
@@ -60,7 +62,16 @@ public class PythonClass extends PythonObject {
 
     @CompilationFinal(dimensions = 1) private PythonClass[] baseClasses;
     @CompilationFinal(dimensions = 1) private PythonClass[] methodResolutionOrder;
-    private CyclicAssumption lookupStableAssumption;
+
+    /**
+     * This assumption will be invalidated whenever the mro changes.
+     */
+    private final CyclicAssumption lookupStableAssumption;
+    /**
+     * These assumptions will be invalidated whenever the value of the given slot changes. All
+     * assumptions will be invalidated if the mro changes.
+     */
+    private final Map<String, List<Assumption>> attributesInMROFinalAssumptions = new HashMap<>();
 
     private final Set<PythonClass> subClasses = Collections.newSetFromMap(new WeakHashMap<PythonClass, Boolean>());
     private final Shape instanceShape;
@@ -75,7 +86,6 @@ public class PythonClass extends PythonObject {
     public PythonClass(PythonClass typeClass, String name, PythonClass... baseClasses) {
         super(typeClass, freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
-        this.lookupStableAssumption = new CyclicAssumption(className);
 
         assert baseClasses.length > 0;
         if (baseClasses.length == 1 && baseClasses[0] == null) {
@@ -85,6 +95,7 @@ public class PythonClass extends PythonObject {
         }
 
         this.flags = new FlagsContainer(getSuperClass());
+        this.lookupStableAssumption = new CyclicAssumption(className);
 
         // Compute MRO
         computeMethodResolutionOrder();
@@ -108,8 +119,51 @@ public class PythonClass extends PythonObject {
         return lookupStableAssumption.getAssumption();
     }
 
+    public Assumption createAttributeInMROFinalAssumption(String name) {
+        CompilerAsserts.neverPartOfCompilation();
+        List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
+        if (attrAssumptions == null) {
+            attrAssumptions = new ArrayList<>();
+            attributesInMROFinalAssumptions.put(name, attrAssumptions);
+        }
+
+        Assumption assumption = Truffle.getRuntime().createAssumption(name.toString());
+        attrAssumptions.add(assumption);
+        return assumption;
+    }
+
+    public void addAttributeInMROFinalAssumption(String name, Assumption assumption) {
+        CompilerAsserts.neverPartOfCompilation();
+        List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
+        if (attrAssumptions == null) {
+            attrAssumptions = new ArrayList<>();
+            attributesInMROFinalAssumptions.put(name, attrAssumptions);
+        }
+
+        attrAssumptions.add(assumption);
+    }
+
     @TruffleBoundary
+    public void invalidateAttributeInMROFinalAssumptions(String name) {
+        List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, new ArrayList<>());
+        if (!assumptions.isEmpty()) {
+            String message = className + "." + name;
+            for (Assumption assumption : assumptions) {
+                assumption.invalidate(message);
+            }
+        }
+    }
+
+    /**
+     * This method needs to be called if the mro changes. (currently not used)
+     */
     public void lookupChanged() {
+        CompilerAsserts.neverPartOfCompilation();
+        for (List<Assumption> list : attributesInMROFinalAssumptions.values()) {
+            for (Assumption assumption : list) {
+                assumption.invalidate();
+            }
+        }
         lookupStableAssumption.invalidate();
         for (PythonClass subclass : getSubClasses()) {
             if (subclass != null) {
@@ -234,9 +288,18 @@ public class PythonClass extends PythonObject {
 
     @Override
     @TruffleBoundary
-    public void setAttribute(Object name, Object value) {
-        super.setAttribute(name, value);
-        lookupChanged();
+    public void setAttribute(Object key, Object value) {
+        if (key instanceof String) {
+            invalidateAttributeInMROFinalAssumptions((String) key);
+        }
+        super.setAttribute(key, value);
+    }
+
+    @Override
+    @TruffleBoundary
+    public void deleteAttribute(String key) {
+        invalidateAttributeInMROFinalAssumptions(key);
+        super.deleteAttribute(key);
     }
 
     @Override
@@ -255,6 +318,9 @@ public class PythonClass extends PythonObject {
      * used.
      */
     public void unsafeSetSuperClass(PythonClass... newBaseClasses) {
+        // TODO: if this is used outside bootstrapping, it needs to call
+        // computeMethodResolutionOrder for subclasses.
+
         assert getBaseClasses() == null || getBaseClasses().length == 0;
         this.baseClasses = newBaseClasses;
 
@@ -329,8 +395,8 @@ public class PythonClass extends PythonObject {
         return sulongType;
     }
 
+    @TruffleBoundary
     public final void setSulongType(Object dynamicSulongType) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
         this.sulongType = dynamicSulongType;
     }
 }

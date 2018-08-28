@@ -32,6 +32,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -42,7 +43,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PZip.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PZip)
 public class PZipBuiltins extends PythonBuiltins {
 
     @Override
@@ -50,7 +51,7 @@ public class PZipBuiltins extends PythonBuiltins {
         return PZipBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfArguments = 1)
+    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
@@ -71,7 +72,7 @@ public class PZipBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

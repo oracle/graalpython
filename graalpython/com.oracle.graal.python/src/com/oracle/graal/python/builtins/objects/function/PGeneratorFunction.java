@@ -25,23 +25,23 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 
 public final class PGeneratorFunction extends PFunction {
 
-    public static PGeneratorFunction create(PythonClass clazz, PythonCore core, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
+    public static PGeneratorFunction create(PythonClass clazz, PythonLanguage language, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
                     FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure, ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
 
-        GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(core.getLanguage(), callTarget,
+        GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(language, callTarget, name,
                         frameDescriptor, closure, executionCellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
 
         return new PGeneratorFunction(clazz, name, enclosingClassName, arity, Truffle.getRuntime().createCallTarget(generatorFunctionRootNode), frameDescriptor, globals, closure);

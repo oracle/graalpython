@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -98,10 +100,10 @@ class TestObject(object):
                              nb_index="test_index"
         )
         tester = TestIndex()
-        assert [0,1][tester] == 1
+        assert [0, 1][tester] == 1
 
     def test_getattro(self):
-        return # TODO: not working yet
+        return  # TODO: not working yet
         # XXX: Cludge to get type into C
         sys.modules["test_getattro_AttroClass"] = AttroClass
         try:
@@ -117,6 +119,31 @@ class TestObject(object):
             del sys.modules["test_getattro_AttroClass"]
         tester = TestInt()
         assert tester.foo == "foo"
+
+    def test_dict(self):
+        TestDict = CPyExtType("TestDict",
+                             """static PyObject* custom_dict = NULL;
+                             static PyObject* get_dict(PyObject* self, PyObject* kwargs) {
+                                 Py_INCREF(custom_dict);
+                                 return custom_dict;
+                             }
+                             """,
+                             ready_code="""
+                                 custom_dict = PyDict_New();
+                                 PyDict_SetItemString(custom_dict, "hello", PyUnicode_FromString("first custom property"));
+                                 TestDictType.tp_dict = custom_dict;
+                             """,
+                             post_ready_code="""
+                                 PyDict_SetItemString(TestDictType.tp_dict, "world", PyUnicode_FromString("second custom property"));
+                             """,
+                             tp_methods='{"get_dict", get_dict, METH_NOARGS, ""}'
+        )
+        tester = TestDict()
+        assert tester.hello == "first custom property"
+        assert tester.world == "second custom property"
+        assert "hello" in tester.get_dict().keys() and "world" in tester.get_dict().keys(), "was: %s" % tester.get_dict().keys()
+        tester.get_dict()["extra"] = "blah"
+        assert tester.extra == "blah"
 
 
 class TestObjectFunctions(CPyExtTestCase):

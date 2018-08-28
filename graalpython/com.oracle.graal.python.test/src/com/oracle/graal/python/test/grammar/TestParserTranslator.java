@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -99,28 +101,30 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 
 public class TestParserTranslator {
     PythonContext context;
 
     public TestParserTranslator() {
-        context = PythonTests.getContext();
+        PythonTests.enterContext();
+        context = PythonLanguage.getContextRef().get();
     }
 
-    PythonParseResult parse(String src) {
-        Source source = Source.newBuilder(src).mimeType(PythonLanguage.MIME_TYPE).name("foo").build();
-        return context.getCore().getParser().parse(context.getCore(), source);
+    RootNode parse(String src) {
+        Source source = Source.newBuilder(PythonLanguage.ID, src, "foo").build();
+        return (RootNode) context.getCore().getParser().parse(ParserMode.File, context.getCore(), source, null);
     }
 
     String parseToString(String src) {
-        PythonParseResult result = parse(src);
+        RootNode result = parse(src);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        NodeUtil.printCompactTree(out, result.getRootNode());
+        NodeUtil.printCompactTree(out, result);
         return out.toString();
     }
 
@@ -139,10 +143,6 @@ public class TestParserTranslator {
 
     <T> T getFirstChild(Node result, Class<? extends T> klass) {
         return getChild(result, 0, klass);
-    }
-
-    <T> T getFirstChild(PythonParseResult result, Class<? extends T> klass) {
-        return getFirstChild(result.getRootNode(), klass);
     }
 
     <T> T parseAs(String src, Class<? extends T> klass) {
@@ -182,11 +182,11 @@ public class TestParserTranslator {
     public void parseLiteralList() {
         PList list = literalAs("[1, 2]", ListLiteralNode.class, PList.class);
         assertEquals(2, list.len());
-        assertEquals(1, list.getItem(0));
-        assertEquals(2, list.getItem(1));
+        assertEquals(1, list.getSequenceStorage().getItemNormalized(0));
+        assertEquals(2, list.getSequenceStorage().getItemNormalized(1));
         list = literalAs("[1]", ListLiteralNode.class, PList.class);
         assertEquals(1, list.len());
-        assertEquals(1, list.getItem(0));
+        assertEquals(1, list.getSequenceStorage().getItemNormalized(0));
         list = literalAs("[]", ListLiteralNode.class, PList.class);
         assertEquals(0, list.len());
     }

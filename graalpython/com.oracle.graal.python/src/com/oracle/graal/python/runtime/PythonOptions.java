@@ -40,32 +40,20 @@ public final class PythonOptions {
         // no instances
     }
 
-    @Option(category = OptionCategory.DEBUG, help = "Defer loading the core lib until after language initialization, so it can be debugged.") //
-    public static final OptionKey<Boolean> LazyInit = new OptionKey<>(false);
+    @Option(category = OptionCategory.DEBUG, help = "Expose internal sources as normal sources, so they will show up in the debugger and stacks") //
+    public static final OptionKey<Boolean> ExposeInternalSources = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "Print the java stacktrace if enabled") //
     public static final OptionKey<Boolean> WithJavaStacktrace = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "Share the core library between all contexts of an engine.") //
-    public static final OptionKey<Boolean> SharedCore = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> TraceSequenceStorageGeneralization = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> UnboxSequenceStorage = new OptionKey<>(true);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> UnboxSequenceIteration = new OptionKey<>(true);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> IntrinsifyBuiltinCalls = new OptionKey<>(true);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(4);
+    public static final OptionKey<Integer> AttributeAccessInlineCacheMaxDepth = new OptionKey<>(3);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(4);
+    public static final OptionKey<Integer> CallSiteInlineCacheMaxDepth = new OptionKey<>(3);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Integer> VariableArgumentReadUnrollingLimit = new OptionKey<>(5);
@@ -74,13 +62,10 @@ public final class PythonOptions {
     public static final OptionKey<Integer> VariableArgumentInlineCacheLimit = new OptionKey<>(3);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> InlineGeneratorCalls = new OptionKey<>(true);
+    public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> CatchGraalPythonExceptionForUnitTesting = new OptionKey<>(false);
-
-    @Option(category = OptionCategory.DEBUG, help = "") //
-    public static final OptionKey<Boolean> ForceLongType = new OptionKey<>(false);
 
     @Option(category = OptionCategory.DEBUG, help = "") //
     public static final OptionKey<Boolean> CatchAllExceptions = new OptionKey<>(false);
@@ -106,6 +91,12 @@ public final class PythonOptions {
     @Option(category = OptionCategory.DEBUG, help = "Turn on verbose mode") //
     public static final OptionKey<Boolean> VerboseFlag = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "Switch on/off using lazy strings for performance reasons. Default true.") //
+    public static final OptionKey<Boolean> LazyStrings = new OptionKey<>(true);
+
+    @Option(category = OptionCategory.DEBUG, help = "Minimal size of string, when lazy strings are used. Default 20") //
+    public static final OptionKey<Integer> MinLazyStringLength = new OptionKey<>(20);
+
     public static OptionDescriptors createDescriptors() {
         return new PythonOptionsOptionDescriptors();
     }
@@ -127,10 +118,18 @@ public final class PythonOptions {
     }
 
     public static int getCallSiteInlineCacheMaxDepth() {
-        return getOption(PythonLanguage.getContext(), CallSiteInlineCacheMaxDepth);
+        return getOption(PythonLanguage.getContextRef().get(), CallSiteInlineCacheMaxDepth);
     }
 
     public static int getVariableArgumentInlineCacheLimit() {
-        return getOption(PythonLanguage.getContext(), VariableArgumentInlineCacheLimit);
+        return getOption(PythonLanguage.getContextRef().get(), VariableArgumentInlineCacheLimit);
+    }
+
+    public static boolean useLazyString() {
+        return getOption(PythonLanguage.getContextRef().get(), LazyStrings);
+    }
+
+    public static int getMinLazyStringLength() {
+        return getOption(PythonLanguage.getContextRef().get(), MinLazyStringLength);
     }
 }

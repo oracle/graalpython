@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -54,7 +56,11 @@ def _reference_set_item(args):
         d[args[1]] = args[2]
         return 0
     except:
-        raise SystemError
+
+        if sys.version_info.minor >= 6:
+            raise SystemError
+        else:
+            return -1
 
 
 def _reference_del_item(args):
@@ -103,6 +109,8 @@ class SubDict(dict):
 
 
 ExampleDict = {}
+
+
 def fresh_dict():
     global ExampleDict
     ExampleDict = {}
@@ -118,10 +126,16 @@ class TestPyDict(CPyExtTestCase):
     # PyDict_SetItem
     test_PyDict_SetItem = CPyExtFunction(
         _reference_set_item,
-        lambda: (({}, "a", "hello"), ({'a': "hello"}, "b", "world")),
+        lambda: (
+            ({}, "a", "hello")
+            , ({'a': "hello"}, "b", "world")
+            # mappingproxy
+            , (type(type.__dict__)({'a': "hello"}), "b", "world")
+            ),
         resultspec="i",
         argspec='OOO',
         arguments=("PyObject* dict", "PyObject* key", "PyObject* val"),
+        cmpfunc=unhandled_error_compare
     )
 
     # PyDict_GetItem
@@ -314,5 +328,5 @@ class TestPyDict(CPyExtTestCase):
             }
         }''',
         callfunction="wrap_PyDict_Update",
-        cmpfunc=lambda cr,pr: (cr == pr or (isinstance(cr, BaseException) and type(cr) == type(pr))) and (ExampleDict.get("a") == 1 or len(ExampleDict) == 0)
+        cmpfunc=lambda cr, pr: (cr == pr or (isinstance(cr, BaseException) and type(cr) == type(pr))) and (ExampleDict.get("a") == 1 or len(ExampleDict) == 0)
     )

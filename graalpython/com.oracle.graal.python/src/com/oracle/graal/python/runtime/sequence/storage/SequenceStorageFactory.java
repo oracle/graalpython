@@ -27,27 +27,17 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.runtime.PythonOptions;
 
 public class SequenceStorageFactory {
 
-    private final boolean unboxSequenceStorage;
-    private final boolean forceLongType;
-
     public SequenceStorageFactory() {
-        unboxSequenceStorage = PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.UnboxSequenceStorage);
-        forceLongType = PythonOptions.getOption(PythonLanguage.getContext(), PythonOptions.ForceLongType);
     }
 
     public SequenceStorage createStorage(Object[] values) {
         assert values != null;
         assert values.getClass() == Object[].class : "cannot use non-Object array for modifiable list";
-        if (!unboxSequenceStorage) {
-            return new ObjectSequenceStorage(values);
-        }
 
         /**
          * Try to use unboxed SequenceStorage.
@@ -57,10 +47,7 @@ public class SequenceStorageFactory {
         }
 
         if (canSpecializeToInt(values)) {
-            if (!forceLongType)
-                return new IntSequenceStorage(specializeToInt(values));
-            else
-                return new LongSequenceStorage(specializeToLong(values));
+            return new IntSequenceStorage(specializeToInt(values));
         } else if (canSpecializeToDouble(values)) {
             return new DoubleSequenceStorage(specializeToDouble(values));
         } else if (canSpecializeToLong(values)) {
@@ -77,10 +64,6 @@ public class SequenceStorageFactory {
     }
 
     public static boolean canSpecializeToInt(Object[] values) {
-        if (!(values[0] instanceof Integer)) {
-            return false;
-        }
-
         for (Object item : values) {
             if (!(item instanceof Integer)) {
                 return false;
@@ -101,14 +84,8 @@ public class SequenceStorageFactory {
     }
 
     public static boolean canSpecializeToLong(Object[] values) {
-        Object val = values[0];
-        val = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        if (!(values[0] instanceof Long)) {
-            return false;
-        }
-
         for (Object item : values) {
-            val = item;
+            Object val = item;
             val = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
             if (!(item instanceof Long)) {
                 return false;
@@ -129,10 +106,6 @@ public class SequenceStorageFactory {
     }
 
     public static boolean canSpecializeToDouble(Object[] values) {
-        if (!(values[0] instanceof Double)) {
-            return false;
-        }
-
         for (Object item : values) {
             if (!(item instanceof Double)) {
                 return false;
@@ -153,10 +126,6 @@ public class SequenceStorageFactory {
     }
 
     public static boolean canSpecializeToBool(Object[] values) {
-        if (!(values[0] instanceof Boolean)) {
-            return false;
-        }
-
         for (Object item : values) {
             if (!(item instanceof Boolean)) {
                 return false;
@@ -177,10 +146,6 @@ public class SequenceStorageFactory {
     }
 
     public static boolean canSpecializeToList(Object[] values) {
-        if (!(values[0] instanceof PList)) {
-            return false;
-        }
-
         for (Object item : values) {
             if (!(item instanceof PList)) {
                 return false;
@@ -201,10 +166,6 @@ public class SequenceStorageFactory {
     }
 
     public static boolean canSpecializeToTuple(Object[] values) {
-        if (!(values[0] instanceof PTuple)) {
-            return false;
-        }
-
         for (Object item : values) {
             if (!(item instanceof PTuple)) {
                 return false;

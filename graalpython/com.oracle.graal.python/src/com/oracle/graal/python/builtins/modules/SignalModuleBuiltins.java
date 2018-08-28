@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -45,9 +47,13 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -83,7 +89,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "alarm", fixedNumOfArguments = 1)
+    @Builtin(name = "alarm", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AlarmNode extends PythonUnaryBuiltinNode {
@@ -110,7 +116,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", fixedNumOfArguments = 1)
+    @Builtin(name = "getsignal", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -129,9 +135,11 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "signal", fixedNumOfArguments = 2)
+    @Builtin(name = "signal", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SignalNode extends PythonBinaryBuiltinNode {
+        @Child CreateArgumentsNode createArgs = CreateArgumentsNode.create();
+
         @Specialization
         @TruffleBoundary
         Object signal(int signum, int id) {
@@ -152,18 +160,7 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return retval;
         }
 
-        // TODO: This needs to be fixed, any object with a "__call__" should work
-        @Specialization
-        @TruffleBoundary
-        Object signal(int signum, PBuiltinFunction handler) {
-            RootCallTarget callTarget = handler.getCallTarget();
-            Object[] arguments = PArguments.create(2);
-            PArguments.setArgument(arguments, 0, signum);
-            // TODO: the second argument should be the interrupted, currently executing frame
-            // we'll get that when we switch to executing these handlers (just like finalizers)
-            // on the main thread
-            PArguments.setArgument(arguments, 1, PNone.NONE);
-
+        private Object installSignalHandler(int signum, PythonCallable handler, RootCallTarget callTarget, Object[] arguments) {
             Object retval;
             try {
                 retval = Signals.setSignalHandler(signum, () -> {
@@ -181,6 +178,34 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             }
             signalHandlers.put(signum, handler);
             return retval;
+        }
+        // TODO: This needs to be fixed, any object with a "__call__" should work
+
+        // TODO: the second argument should be the interrupted, currently executing frame
+        // we'll get that when we switch to executing these handlers (just like finalizers)
+        // on the main thread
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PBuiltinMethod handler) {
+            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.executeWithSelf(handler.getSelf(), new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PBuiltinFunction handler) {
+            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PMethod handler) {
+            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.executeWithSelf(handler.getSelf(), new Object[]{signum, PNone.NONE}));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        Object signal(int signum, PFunction handler) {
+            return installSignalHandler(signum, handler, handler.getCallTarget(), createArgs.execute(new Object[]{signum, PNone.NONE}));
         }
     }
 }

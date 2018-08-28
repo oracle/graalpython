@@ -25,76 +25,224 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import java.util.ArrayList;
+import static com.oracle.graal.python.nodes.BuiltinNames.SELF;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class Arity {
 
-    private final String functionName;
+    private final int minNumOfPositionalArgs;
+    private final int maxNumOfPositionalArgs;
+    @CompilationFinal private String functionName;
     private final int minNumOfArgs;
     private final int maxNumOfArgs;
+    private final int numRequiredKeywordArgs;
 
-    private final boolean takesKeywordArg;
     private final boolean takesVarArgs;
+    private final boolean varArgsMarker;
+    private final boolean takesVarKeywordArgs;
 
     @CompilationFinal(dimensions = 1) private final String[] parameterIds;
-    @CompilationFinal(dimensions = 1) private final String[] keywordNames;
+    @CompilationFinal(dimensions = 1) private final KeywordName[] keywordNames;
 
-    public Arity(String functionName, int minNumOfArgs, int maxNumOfArgs, List<String> parameterIds, List<String> keywordNames) {
-        this.functionName = functionName;
-        this.minNumOfArgs = minNumOfArgs;
-        this.maxNumOfArgs = maxNumOfArgs;
-        this.takesKeywordArg = true;
-        this.takesVarArgs = false;
-        this.parameterIds = parameterIds.toArray(new String[0]);
-        this.keywordNames = keywordNames.toArray(new String[0]);
+    public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
+                    boolean takesVarKeywordArgs, boolean takesVarArgs,
+                    List<KeywordName> keywordNames) {
+        this(functionName, minNumOfPositionalArgs, maxNumOfPositionalArgs,
+                        takesVarKeywordArgs, takesVarArgs, false,
+                        null, keywordNames);
     }
 
-    public Arity(String functionName, int minNumOfArgs, int maxNumOfArgs, boolean takesKeywordArg, boolean takesVarArgs, List<String> parameterIds, List<String> keywordNames) {
+    public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
+                    boolean takesVarKeywordArgs, boolean takesVarArgs, boolean varArgsMarker,
+                    List<String> parameterIds, List<KeywordName> keywordNames) {
+        this(functionName, minNumOfPositionalArgs, maxNumOfPositionalArgs, takesVarKeywordArgs, takesVarArgs, varArgsMarker,
+                        parameterIds != null ? parameterIds.toArray(new String[0]) : null,
+                        keywordNames != null ? keywordNames.toArray(new KeywordName[0]) : null);
+    }
+
+    public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
+                    boolean takesVarKeywordArgs, boolean takesVarArgs, boolean varArgsMarker,
+                    String[] parameterIds, KeywordName[] keywordNames) {
         this.functionName = functionName;
-        this.minNumOfArgs = minNumOfArgs;
-        this.maxNumOfArgs = maxNumOfArgs;
-        this.takesKeywordArg = takesKeywordArg;
+        this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.takesVarArgs = takesVarArgs;
-        this.parameterIds = parameterIds.toArray(new String[0]);
-        this.keywordNames = keywordNames.toArray(new String[0]);
+        this.varArgsMarker = varArgsMarker;
+        this.parameterIds = (parameterIds != null) ? parameterIds : new String[0];
+        this.keywordNames = (keywordNames != null) ? keywordNames : new KeywordName[0];
+
+        // computed
+        this.numRequiredKeywordArgs = computeNumRequiredKeywordArgs();
+        this.minNumOfPositionalArgs = computeMinNumPositionalArgs(minNumOfPositionalArgs);
+        this.maxNumOfPositionalArgs = computeMaxNumPositionalArgs(maxNumOfPositionalArgs);
+        this.minNumOfArgs = computeMinNumArgs();
+        this.maxNumOfArgs = computeMaxNumArgs();
     }
 
-    public boolean takesVarArgs() {
-        return takesVarArgs;
+    public static Arity createOneArgumentWithVarKwArgs(String functionName) {
+        return new Arity(functionName, 1, 1,
+                        true, false, null);
     }
 
-    public boolean takesKeywordArg() {
-        return takesKeywordArg;
+    public static Arity createVarArgsAndKwArgsOnly(String functionName) {
+        return new Arity(functionName, 0, 0,
+                        true, true, null);
     }
 
-    public static Arity createOneArgument(String functionName) {
-        return new Arity(functionName, 1, 1, new ArrayList<String>(), new ArrayList<String>());
+    @TruffleBoundary
+    public Arity createWithSelf(String name) {
+        String[] parameterIdsWithSelf = new String[getParameterIds().length + 1];
+        parameterIdsWithSelf[0] = SELF;
+        System.arraycopy(getParameterIds(), 0, parameterIdsWithSelf, 1, parameterIdsWithSelf.length - 1);
+
+        return new Arity(name,
+                        minNumOfPositionalArgs + 1,
+                        (maxNumOfPositionalArgs == -1) ? -1 : maxNumOfPositionalArgs + 1,
+                        takesVarKeywordArgs, takesVarArgs, varArgsMarker,
+                        parameterIdsWithSelf, keywordNames);
+    }
+
+    private int computeNumRequiredKeywordArgs() {
+        int num = 0;
+        if (takesVarArgs || varArgsMarker) {
+            for (KeywordName kwName : keywordNames) {
+                if (kwName.required) {
+                    num += 1;
+                }
+            }
+        }
+        return num;
+    }
+
+    private static int computeMinNumPositionalArgs(int value) {
+        return value < 0 ? 0 : value;
+    }
+
+    private int computeMaxNumPositionalArgs(int value) {
+        if (takesVarArgs) {
+            return -1;
+        }
+        return value < minNumOfPositionalArgs ? minNumOfPositionalArgs : value;
+    }
+
+    private int computeMinNumArgs() {
+        return minNumOfPositionalArgs + numRequiredKeywordArgs;
+    }
+
+    private int computeMaxNumArgs() {
+        if (takesVarArgs || takesVarKeywordArgs) {
+            return -1;
+        }
+        return maxNumOfPositionalArgs + numRequiredKeywordArgs;
+    }
+
+    public int getNumOfRequiredKeywords() {
+        return numRequiredKeywordArgs;
+    }
+
+    public int getMinNumOfPositionalArgs() {
+        return minNumOfPositionalArgs;
+    }
+
+    public int getMaxNumOfPositionalArgs() {
+        return maxNumOfPositionalArgs;
     }
 
     public int getMinNumOfArgs() {
-        return this.minNumOfArgs;
+        return minNumOfArgs;
     }
 
     public int getMaxNumOfArgs() {
         return this.maxNumOfArgs;
     }
 
+    public boolean takesVarArgs() {
+        return takesVarArgs;
+    }
+
+    public boolean isVarArgsMarker() {
+        return varArgsMarker;
+    }
+
+    public boolean takesVarKeywordArgs() {
+        return takesVarKeywordArgs;
+    }
+
     public String getFunctionName() {
         return this.functionName;
+    }
+
+    public String setFunctionName(String name) {
+        return this.functionName = name;
     }
 
     public String[] getParameterIds() {
         return parameterIds;
     }
 
-    public int parametersSize() {
+    public KeywordName[] getKeywordNames() {
+        return keywordNames;
+    }
+
+    public boolean takesKeywordArgs() {
+        return keywordNames.length > 0 || takesVarKeywordArgs;
+    }
+
+    public boolean takesRequiredKeywordArgs() {
+        return this.numRequiredKeywordArgs > 0;
+    }
+
+    public boolean takesPositionalOnly() {
+        return !takesVarArgs && !takesVarKeywordArgs && !varArgsMarker && keywordNames.length == 0;
+    }
+
+    public boolean takesFixedNumOfPositionalArgs() {
+        return takesPositionalOnly() && minNumOfArgs == maxNumOfArgs;
+    }
+
+    public boolean takesNoArguments() {
+        return takesFixedNumOfPositionalArgs() && minNumOfArgs == 0;
+    }
+
+    public boolean takesOneArgument() {
+        return takesFixedNumOfPositionalArgs() && minNumOfArgs == 1;
+    }
+
+    public int getNumParameterIds() {
         return parameterIds.length;
     }
 
-    public String[] getKeywordNames() {
-        return keywordNames;
+    public int getNumKeywordNames() {
+        return keywordNames.length;
+    }
+
+    public static class KeywordName {
+        public final String name;
+        public final boolean required;
+
+        public KeywordName(String name) {
+            this(name, false);
+        }
+
+        public KeywordName(String name, boolean required) {
+            this.name = name;
+            this.required = required;
+        }
+    }
+
+    @TruffleBoundary
+    public Set<String> getKeywordsOnlyArgs() {
+        Set<String> kwOnly = new HashSet<>();
+        for (KeywordName kw : keywordNames) {
+            if (kw.required || takesVarArgs || varArgsMarker) {
+                kwOnly.add(kw.name);
+            }
+        }
+        return kwOnly;
     }
 }

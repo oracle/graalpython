@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+
 public enum PythonErrorType {
     ArithmeticError,
     AssertionError,
@@ -66,4 +68,6 @@ public enum PythonErrorType {
     ZeroDivisionError,
     BufferError,
     FileNotFoundError;
+
+    @CompilationFinal(dimensions = 1) public static final PythonErrorType[] VALUES = values();
 }

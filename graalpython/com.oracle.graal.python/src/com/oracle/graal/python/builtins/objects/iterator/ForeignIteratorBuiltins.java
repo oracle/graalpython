@@ -31,9 +31,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIter
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -49,7 +49,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(extendClasses = PForeignArrayIterator.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PForeignArrayIterator)
 public class ForeignIteratorBuiltins extends PythonBuiltins {
 
     @Override
@@ -57,7 +57,7 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
         return ForeignIteratorBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __NEXT__, fixedNumOfArguments = 1)
+    @Builtin(name = __NEXT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
@@ -90,12 +90,12 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
                 Object element = ForeignAccess.sendRead(getReadNode(), foreignIter.getForeignArray(), foreignIter.advance());
                 return getFromForeignNode().executeConvert(element);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-                throw PythonLanguage.getCore().raise(PythonErrorType.StopIteration);
+                throw raise(PythonErrorType.StopIteration);
             }
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
 

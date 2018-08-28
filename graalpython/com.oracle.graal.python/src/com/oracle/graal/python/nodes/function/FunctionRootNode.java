@@ -40,6 +40,7 @@ import com.oracle.truffle.api.frame.FrameUtil;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
@@ -52,6 +53,8 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private final String functionName;
     private final SourceSection sourceSection;
     private final boolean isGenerator;
+    private final ValueProfile generatorFrameProfile;
+    private boolean isRewritten = false;
 
     @Child private PNode body;
     private PNode uninitializedBody;
@@ -68,6 +71,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         this.isGenerator = isGenerator;
         this.body = NodeUtil.cloneNode(body);
         this.uninitializedBody = NodeUtil.cloneNode(body);
+        this.generatorFrameProfile = isGenerator ? ValueProfile.createClassProfile() : null;
     }
 
     public String getFunctionName() {
@@ -125,7 +129,7 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private void initClosureAndCellVars(VirtualFrame frame) {
         Frame accessingFrame = frame;
         if (isGenerator) {
-            accessingFrame = PArguments.getGeneratorFrame(frame);
+            accessingFrame = generatorFrameProfile.profile(PArguments.getGeneratorFrame(frame));
         }
 
         addClosureCellsToLocals(accessingFrame);
@@ -147,5 +151,13 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     @Override
     public SourceSection getSourceSection() {
         return sourceSection;
+    }
+
+    public boolean isRewritten() {
+        return isRewritten;
+    }
+
+    public void setRewritten() {
+        this.isRewritten = true;
     }
 }

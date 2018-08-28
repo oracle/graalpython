@@ -29,6 +29,7 @@ returned item's reference count.
 #ifndef Py_LIMITED_API
 typedef struct {
     PyObject_VAR_HEAD
+    // Truffle change: PyObject *ob_item[1] doesn't work for us in Sulong
     PyObject **ob_item;
 
     /* ob_item contains space for 'ob_size' elements.

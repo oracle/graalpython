@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.floats;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PFloat extends PythonBuiltinObject {
 
@@ -64,5 +65,29 @@ public class PFloat extends PythonBuiltinObject {
 
     public static PFloat create(PythonClass cls, double value) {
         return new PFloat(cls, value);
+    }
+
+    @TruffleBoundary
+    public static String doubleToString(double item) {
+        String d = Double.toString(item);
+        int exp = d.indexOf("E");
+        if (exp != -1) {
+            int l = d.length() - 1;
+            if (exp == (l - 2)) {
+                if (d.charAt(exp + 1) == '-') {
+                    if (Integer.valueOf(d.charAt(l) + "") == 4)
+                        /*- Java convert double when 0.000###... while Python does it when 0.0000####... */
+                        d = Double.toString((item * 10)).replace(".", ".0");
+                    else
+                        d = d.substring(0, l) + "0" + d.substring(l);
+
+                    exp = d.indexOf("E");
+                }
+            }
+            if (exp != -1 && d.charAt(exp + 1) != '-')
+                d = d.substring(0, exp + 1) + "+" + d.substring(exp + 1, l + 1);
+            d = d.toLowerCase();
+        }
+        return d;
     }
 }

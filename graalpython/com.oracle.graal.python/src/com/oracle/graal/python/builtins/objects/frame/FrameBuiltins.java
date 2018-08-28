@@ -25,15 +25,13 @@
  */
 package com.oracle.graal.python.builtins.objects.frame;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
-
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -41,18 +39,14 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonParseResult;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
-@CoreFunctions(extendClasses = PFrame.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
 public final class FrameBuiltins extends PythonBuiltins {
 
     @Override
@@ -60,49 +54,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         return FrameBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "__truffle_getargument__", fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class GetArgumentNode extends PythonBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        public Object clear(PFrame self, int idx) {
-            Frame frame = self.getFrame();
-            if (frame == null) {
-                return PNone.NONE;
-            }
-            Object[] arguments = frame.getArguments();
-            if (arguments.length > idx + PArguments.USER_ARGUMENTS_OFFSET) {
-                return arguments[idx + PArguments.USER_ARGUMENTS_OFFSET];
-            } else {
-                return PNone.NONE;
-            }
-        }
-    }
-
-    @Builtin(name = "__truffle_get_class_scope__", fixedNumOfArguments = 1)
-    @GenerateNodeFactory
-    public abstract static class TruffleGetClassScopeNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public Object add(PFrame self) {
-            // TODO: remove me
-            // TODO: do it properly via the python API in super.__init__ :
-            // sys._getframe(1).f_code.co_closure?
-            FrameSlot classSlot = self.getFrame().getFrameDescriptor().findFrameSlot(__CLASS__);
-            try {
-                Object classLocal = self.getFrame().getObject(classSlot);
-                if (classLocal instanceof PCell) {
-                    return ((PCell) classLocal).getPythonRef();
-                }
-                return classLocal;
-            } catch (FrameSlotTypeException e) {
-                return PNone.NONE;
-            }
-        }
-    }
-
-    @Builtin(name = "f_globals", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "f_globals", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetGlobalsNode extends PythonBuiltinNode {
         @Specialization
@@ -120,7 +72,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_builtins", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "f_builtins", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetBuiltinsNode extends PythonBuiltinNode {
         @Specialization
@@ -129,7 +81,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_lineno", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "f_lineno", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLinenoNode extends PythonBuiltinNode {
         @Specialization
@@ -138,7 +90,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_lasti", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "f_lasti", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLastiNode extends PythonBuiltinNode {
         @Specialization
@@ -147,7 +99,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_trace", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "f_trace", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTraceNode extends PythonBuiltinNode {
         @Specialization
@@ -160,7 +112,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_code", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "f_code", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
@@ -173,12 +125,12 @@ public final class FrameBuiltins extends PythonBuiltins {
             if (rootNode == null) {
                 return PNone.NONE;
             } else {
-                return factory().createCode(new PythonParseResult(rootNode));
+                return factory().createCode(rootNode);
             }
         }
     }
 
-    @Builtin(name = "f_locals", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "f_locals", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetLocalsNode extends PythonBuiltinNode {
         @Specialization
@@ -187,7 +139,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "f_back", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "f_back", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetBackrefNode extends PythonBuiltinNode {
         @Specialization
@@ -200,7 +152,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class FrameClearNode extends PythonBuiltinNode {
         @Specialization

@@ -39,6 +39,12 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         this.length = elements.length;
     }
 
+    public ObjectSequenceStorage(Object[] elements, int length) {
+        this.values = elements;
+        this.capacity = elements.length;
+        this.length = length;
+    }
+
     public ObjectSequenceStorage(int capacity) {
         this.values = new Object[capacity];
         this.capacity = capacity;
@@ -74,7 +80,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
+    public ObjectSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         Object[] newArray = new Object[sliceLength];
 
         if (step == 1) {
@@ -260,7 +266,7 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public ObjectSequenceStorage generalizeFor(Object value) {
+    public ObjectSequenceStorage generalizeFor(Object value, SequenceStorage other) {
         return this;
     }
 
@@ -286,6 +292,11 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         }
 
         return true;
+    }
+
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
     }
 
 }

@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -59,8 +61,12 @@ def may_raise(error_result=error_handler):
     else:
         def decorator(fun):
             def wrapper(*args):
-                with error_handler:
+                typ = val = tb = None
+                try:
                     return fun(*args)
+                except BaseException as e:
+                    typ, val, tb = sys.exc_info()
+                PyErr_Restore(typ, val, tb)
                 return error_result
             wrapper.__name__ = fun.__name__
             return wrapper
@@ -68,7 +74,7 @@ def may_raise(error_result=error_handler):
 
 
 def Py_ErrorHandler():
-    return error_handler
+    return to_sulong(error_handler)
 
 
 def Py_NotImplemented():
@@ -97,7 +103,15 @@ def _PyModule_CreateInitialized_PyModule_New(name):
         if _imp._py_package_context.endswith(name):
             name = _imp._py_package_context
             _imp._py_package_context = None
-    return moduletype(name)
+    new_module = moduletype(name)
+    # TODO: (tfel) I don't think this is the right place to set it, but somehow
+    # at least in the import of sklearn.neighbors.dist_metrics through
+    # sklearn.neighbors.ball_tree the __package__ attribute seems to be already
+    # set in CPython. To not produce a warning, I'm setting it here, although I
+    # could not find what CPython really does
+    if "." in name:
+        new_module.__package__ = name.rpartition('.')[0]
+    return new_module
 
 
 def PyModule_SetDocString(module, string):
@@ -139,7 +153,7 @@ def PyDict_Size(dictObj):
 @may_raise(None)
 def PyDict_Copy(dictObj):
     if not isinstance(dictObj, dict):
-        _PyErr_BadInternalCall(None, None, dictObj)
+        __bad_internal_call(None, None, dictObj)
     return dictObj.copy()
 
 
@@ -169,7 +183,7 @@ def PyDict_DelItem(dictObj, key):
 @may_raise(-1)
 def PyDict_Contains(dictObj, key):
     if not isinstance(dictObj, dict):
-        _PyErr_BadInternalCall(None, None, dictObj)
+        __bad_internal_call(None, None, dictObj)
     return key in dictObj
 
 
@@ -223,10 +237,11 @@ def PyTruffle_Object_LEN(obj):
 
 ##################### BYTES
 
-def PyBytes_FromStringAndSize(string, encoding):
+def PyBytes_FromStringAndSize(string, size, encoding):
     if string is not None:
         return bytes(string, encoding)
-    return bytes()
+    assert size >= 0;
+    return PyTruffle_Bytes_EmptyWithCapacity(size, error_handler)
 
 
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
@@ -257,19 +272,24 @@ def PyBytes_FromFormat(fmt, args):
     return formatted.encode()
 
 
+@may_raise
+def PyBytes_Join(sep, iterable):
+    return sep.join(iterable)
+
+
 ##################### LIST
 
 @may_raise
 def PyList_New(size):
     if size < 0:
-        _PyErr_BadInternalCall(None, None, None)
+        __bad_internal_call(None, None, None)
     return [None] * size
 
 
 @may_raise
 def PyList_GetItem(listObj, pos):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     if pos < 0:
         raise IndexError("list index out of range")
     return listObj[pos]
@@ -278,7 +298,7 @@ def PyList_GetItem(listObj, pos):
 @may_raise(-1)
 def PyList_SetItem(listObj, pos, newitem):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     if pos < 0:
         raise IndexError("list assignment index out of range")
     listObj[pos] = newitem
@@ -288,7 +308,7 @@ def PyList_SetItem(listObj, pos, newitem):
 @may_raise(-1)
 def PyList_Append(listObj, newitem):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     listObj.append(newitem)
     return 0
 
@@ -303,14 +323,14 @@ def PyList_AsTuple(listObj):
 @may_raise
 def PyList_GetSlice(listObj, ilow, ihigh):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     return listObj[ilow:ihigh]
 
 
 @may_raise(-1)
 def PyList_Size(listObj):
     if not isinstance(listObj, list):
-        _PyErr_BadInternalCall(None, None, listObj)
+        __bad_internal_call(None, None, listObj)
     return len(listObj)
 
 
@@ -401,6 +421,38 @@ def PyNumber_BinOp(v, w, binop, name):
         return v % w
     else:
         raise SystemError("unknown binary operator %s" % name)
+
+
+@may_raise
+def PyNumber_InPlaceBinOp(v, w, binop, name):
+    control = v
+    if binop == 0:
+        v += w
+    elif binop == 1:
+        v -= w
+    elif binop == 2:
+        v *= w
+    elif binop == 3:
+        v /= w
+    elif binop == 4:
+        v <<= w
+    elif binop == 5:
+        v >>= w
+    elif binop == 6:
+        v |= w
+    elif binop == 7:
+        v &= w
+    elif binop == 8:
+        v ^= w
+    elif binop == 9:
+        v //= w
+    elif binop == 10:
+        v %= w
+    else:
+        raise SystemError("unknown binary operator %s" % name)
+    if control is not v:
+        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (name, type(v), type(w)))
+    return control
 
 
 @may_raise
@@ -503,6 +555,11 @@ def PySequence_SetItem(obj, key, value):
     return 0
 
 
+@may_raise(-1)
+def PySequence_Contains(haystack, needle):
+    return needle in haystack
+
+
 ##################### UNICODE
 
 
@@ -546,6 +603,30 @@ def PyUnicode_Format(format, args):
     if not isinstance(format, str):
         raise TypeError("Must be str, not %s" % type(format).__name__)
     return format % args
+
+
+@may_raise(-1)
+def PyUnicode_FindChar(string, char, start, end, direction):
+    if not isinstance(string, str):
+        raise TypeError("Must be str, not %s" % type(string).__name__)
+    if direction > 0:
+        return string.find(chr(char), start, end)
+    else:
+        return string.rfind(chr(char), start, end)
+
+
+@may_raise
+def PyUnicode_Substring(string, start, end):
+    if not isinstance(string, str):
+        raise TypeError("Must be str, not %s" % type(string).__name__)
+    return string[start:end]
+
+
+@may_raise
+def PyUnicode_Join(separator, seq):
+    if not isinstance(separator, str):
+        raise TypeError("Must be str, not %s" % type(separator).__name__)
+    return separator.join(seq)
 
 
 ##################### CAPSULE
@@ -614,44 +695,12 @@ def PyStructSequence_New(typ):
     return stat_result([None] * stat_result.n_sequence_fields * 2)
 
 
-def METH_KEYWORDS(fun):
-    def wrapped(self, *args, **kwds):
-        return fun(self, args, kwds)
-    return wrapped
-
-
-def METH_VARARGS(fun):
-    def wrapped(self, *args):
-        return fun(self, args)
-    return wrapped
-
-
-def METH_NOARGS(fun):
-    def wrapped(self):
-        return fun(self, None)
-    return wrapped
-
-
-def METH_O(fun):
-    def wrapped(self, arg):
-        return fun(self, (arg,));
-    return wrapped
-
-
-def METH_FASTCALL(fun):
-    def wrapped(self, *args, **kwargs):
-        return fun(self, args, len(args), kwargs)
-    return wrapped
-
-
 def METH_UNSUPPORTED(fun):
     raise NotImplementedError("unsupported message type")
 
 
 def METH_DIRECT(fun):
-    def wrapped(*args, **kwargs):
-        return fun(*args, **kwargs)
-    return wrapped
+    return fun
 
 
 methodtype = classmethod.method
@@ -674,34 +723,35 @@ class cstaticmethod():
 
 
 def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
-    mod_obj = to_java(primary)
-    func = wrapper(CreateFunction(name, cfunc, cwrapper))
-    if isclass:
-        func = classmethod(func)
-    elif isstatic:
-        func = cstaticmethod(func)
-    elif isinstance(mod_obj, moduletype):
-        func = modulemethod(mod_obj, func)
-    func.__name__ = name
-    func.__doc__ = doc
-    if name == "__init__":
-        def __init__(self, *args, **kwargs):
-            if func(self, *args, **kwargs) != 0:
-                raise TypeError("__init__ failed")
-        object.__setattr__(mod_obj, name, __init__)
+    owner = to_java(primary)
+    if isinstance(owner, moduletype):
+        # module case, we create the bound function-or-method
+        func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner, doc)
+        object.__setattr__(owner, name, func)
     else:
-        object.__setattr__(mod_obj, name, func)
+        func = wrapper(CreateFunction(name, cfunc, cwrapper, owner))
+        if isclass:
+            func = classmethod(func)
+        elif isstatic:
+            func = cstaticmethod(func)
+        PyTruffle_SetAttr(func, "__name__", name)
+        PyTruffle_SetAttr(func, "__doc__", doc)
+        if name == "__init__":
+            def __init__(self, *args, **kwargs):
+                if func(self, *args, **kwargs) != 0:
+                    raise TypeError("__init__ failed")
+            object.__setattr__(owner, name, __init__)
+        else:
+            object.__setattr__(owner, name, func)
 
 
-def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
     func = wrapper(CreateFunction(name, cfunc, cwrapper))
-    if isclass:
-        func = classmethod(func)
-    elif isstatic:
-        func = cstaticmethod(func)
-    func.__name__ = name
-    func.__doc__ = doc
-    return func
+    PyTruffle_SetAttr(func, "__name__", name)
+    PyTruffle_SetAttr(func, "__doc__", doc)
+    method = PyTruffle_BuiltinMethod(self, func)
+    PyTruffle_SetAttr(method, "__module__", module.__name__)
+    return method
 
 
 def AddMember(primary, name, memberType, offset, canSet, doc):
@@ -720,27 +770,31 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
     object.__setattr__(pclass, name, member)
 
 
+getset_descriptor = type(type(AddMember).__code__)
 def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
     pclass = to_java(primary)
-    getset = property()
+    fset = fget = None
     if getter:
-        getter_w = CreateFunction(name, getter, getter_wrapper)
+        getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
         def member_getter(self):
             return capi_to_java(getter_w(self, closure))
 
-        getset.getter(member_getter)
+        fget = member_getter
     if setter:
-        setter_w = CreateFunction(name, setter, setter_wrapper)
+        setter_w = CreateFunction(name, setter, setter_wrapper, pclass)
         def member_setter(self, value):
             result = setter_w(self, value, closure)
             if result != 0:
                 raise
             return None
-        getset.setter(member_setter)
+
+        fset = member_setter
     else:
-        getset.setter(lambda self, value: GetSet_SetNotWritable(self, value, name))
-    getset.__doc__ = doc
-    object.__setattr__(pclass, name, getset)
+        fset = lambda self, value: GetSet_SetNotWritable(self, value, name)
+
+    getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
+    PyTruffle_SetAttr(getset, "__doc__", doc)
+    PyTruffle_SetAttr(pclass, name, getset)
 
 
 def GetSet_SetNotWritable(self, value, attr):
@@ -766,21 +820,21 @@ def PyTuple_New(size):
 @may_raise
 def PyTuple_GetItem(t, n):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return t[n]
 
 
 @may_raise(-1)
 def PyTuple_Size(t):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return len(t)
 
 
 @may_raise
 def PyTuple_GetSlice(t, start, end):
     if not isinstance(t, tuple):
-        _PyErr_BadInternalCall(None, None, t)
+        __bad_internal_call(None, None, t)
     return t[start:end]
 
 
@@ -882,6 +936,11 @@ def PyErr_CreateAndSetException(exception_type, msg):
 
 @may_raise(None)
 def _PyErr_BadInternalCall(filename, lineno, obj):
+    __bad_internal_call(filename, lineno, obj)
+
+
+# IMPORTANT: only call from functions annotated with 'may_raise'
+def __bad_internal_call(filename, lineno, obj):
     if filename is not None and lineno is not None:
         msg = "{!s}:{!s}: bad argument to internal function".format(filename, lineno)
     else:
@@ -1023,7 +1082,8 @@ def PyErr_NormalizeException(exc, val, tb):
 @may_raise
 def _PyErr_Warn(message, category, stack_level, source):
     import warnings
-    warnings.warn(message, category, stack_level, source)
+    # TODO: pass source again once we update to newer lib-python
+    warnings.warn(message, category, stack_level)
     return None
 
 
@@ -1074,28 +1134,37 @@ def PyTruffle_GetBuiltin(name):
 
 
 def PyTruffle_Type(type_name):
+    import types
     if type_name == "mappingproxy":
-        return type(dict().keys())
+        return types.MappingProxyType
     elif type_name == "NotImplementedType":
         return type(NotImplemented)
     elif type_name == "module":
-        return type(sys)
+        return types.ModuleType
     elif type_name == "NoneType":
         return type(None)
     elif type_name == "PyCapsule":
         return PyCapsule
     elif type_name == "function":
-        return type(PyTruffle_Type)
+        return types.FunctionType
+    elif type_name == "method_descriptor" or type_name == "wrapper_descriptor":
+        return type(list.append)
+    elif type_name == "getset_descriptor":
+        return getset_descriptor
+    elif type_name == "member_descriptor":
+        return property
+    elif type_name == "builtin_function_or_method":
+        return types.BuiltinFunctionType
     elif type_name == "ellipsis":
-        return type(Py_Ellipsis())
+        return type(...)
     elif type_name == "method":
-        return type({}.update)
+        return types.MethodType
     elif type_name == "code":
-        return codetype
+        return types.CodeType
     elif type_name == "traceback":
-        return tbtype
+        return types.TracebackType
     elif type_name == "frame":
-        return type(sys._getframe(0))
+        return types.FrameType
     else:
         return getattr(sys.modules["builtins"], type_name)
 
@@ -1119,6 +1188,11 @@ def initialize_capi(capi_library):
 
     initialize_member_accessors()
     initialize_datetime_capi()
+
+
+def import_native_memoryview(capi_library):
+    import _memoryview
+    assert _memoryview is not None
 
 
 def initialize_datetime_capi():
@@ -1163,6 +1237,7 @@ def initialize_datetime_capi():
         def Time_FromTimeAndFold(h, m, s, us, tz, fold, typ):
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
+    import_c_func("set_PyDateTime_CAPI_typeid")(PyDateTime_CAPI)
     datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", PyDateTime_CAPI(), None)
 
 
@@ -1207,9 +1282,10 @@ def PyRun_String(source, typ, globals, locals):
     return exec(compile(source, typ, typ), globals, locals)
 
 
-@may_raise
+# called without landing; do conversion manually
+@may_raise(to_sulong(error_handler))
 def PySlice_GetIndicesEx(start, stop, step, length):
-    return PyTruffleSlice_GetIndicesEx(start, stop, step, length)
+    return to_sulong(PyTruffleSlice_GetIndicesEx(start, stop, step, length))
 
 
 @may_raise

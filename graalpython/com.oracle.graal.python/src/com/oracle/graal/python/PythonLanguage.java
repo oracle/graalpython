@@ -26,8 +26,10 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.graalvm.options.OptionDescriptors;
 
@@ -36,6 +38,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -43,22 +47,28 @@ import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.PythonParseResult;
+import com.oracle.graal.python.runtime.PythonParser.ParserMode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Scope;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -69,8 +79,9 @@ import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 
-@TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false)
+@TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.SHARED)
 @ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, DebuggerTags.AlwaysHalt.class})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String ID = "python";
@@ -83,8 +94,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
-    @CompilationFinal private PythonCore sharedCore;
+    public static Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
+
+    @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
     private final NodeFactory nodeFactory;
+    public final ConcurrentHashMap<Class<? extends PythonBuiltinBaseNode>, RootCallTarget> builtinCallTargetCache = new ConcurrentHashMap<>();
 
     public PythonLanguage() {
         this.nodeFactory = NodeFactory.create(this);
@@ -102,46 +116,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
-        ensureSysExecutable(context);
+        nativeBuildTime = false; // now we're running
         ensureHomeInOptions(newEnv);
-        if (!optionsAllowPreInitializedContext(context, newEnv)) {
-            // Incompatible options - cannot use pre-initialized context
-            return false;
-        }
-        context.setEnv(newEnv);
-        context.setOut(newEnv.out());
-        context.setErr(newEnv.err());
-        context.initialize();
+        PythonCore.writeInfo(newEnv, "Using preinitialized context.");
+        context.patch(newEnv);
         return true;
-    }
-
-    private static void ensureSysExecutable(PythonContext context) {
-        PythonModule sys = context.getCore().lookupBuiltinModule("sys");
-        sys.setAttribute("executable", Compiler.command(new Object[]{"com.oracle.svm.core.posix.GetExecutableName"}));
-    }
-
-    private static boolean optionsAllowPreInitializedContext(PythonContext context, Env newEnv) {
-        // Verify that the option for using a shared core is the same as
-        // at image building time
-        final boolean useSharedCore = newEnv.getOptions().get(PythonOptions.SharedCore);
-        boolean canUsePreinitializedContext = context.getCore().hasSingletonContext() == !useSharedCore;
-        if (canUsePreinitializedContext) {
-            PythonCore.writeInfo(newEnv, "Using preinitialized context.");
-        } else {
-            PythonCore.writeInfo(newEnv, "Not using preinitialized context.");
-        }
-        return canUsePreinitializedContext;
     }
 
     @Override
     protected PythonContext createContext(Env env) {
         ensureHomeInOptions(env);
-        if (env.getOptions().get(PythonOptions.SharedCore) && sharedCore != null) {
-            return new PythonContext(this, env, sharedCore);
-        } else {
-            Python3Core newCore = new Python3Core(this, new PythonParserImpl());
-            return new PythonContext(this, env, newCore);
-        }
+        Python3Core newCore = new Python3Core(new PythonParserImpl());
+        return new PythonContext(this, env, newCore);
     }
 
     private void ensureHomeInOptions(Env env) {
@@ -222,43 +208,37 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeContext(PythonContext context) throws Exception {
-        Python3Core core = (Python3Core) getCore();
-        boolean fullInit = !PythonOptions.getOption(context, PythonOptions.LazyInit);
-        if (context.getOptions().get(PythonOptions.SharedCore)) {
-            if (sharedCore == null) {
-                sharedCore = context.getCore();
-                core.bootstrap();
-            } else {
-                fullInit = false;
-            }
-        } else {
-            core.bootstrap();
-        }
         context.initialize();
-        if (fullInit) {
-            core.initialize();
-        }
     }
 
     @Override
     protected CallTarget parse(ParsingRequest request) throws Exception {
         PythonContext context = this.getContextReference().get();
         PythonCore pythonCore = context.getCore();
-        if (!pythonCore.isInitialized()) {
-            pythonCore.initialize();
-        }
-        context.initializeMainModule(request.getSource().getPath());
+        Source source = request.getSource();
+        if (pythonCore.isInitialized()) {
+            context.initializeMainModule(source.getPath());
 
-        // if we are running the interpreter, module 'site' is automatically imported
-        if (request.getSource().isInteractive()) {
-            CompilerAsserts.neverPartOfCompilation();
-            // no frame required
-            new ImportNode("site").execute(null);
+            // if we are running the interpreter, module 'site' is automatically imported
+            if (source.isInteractive()) {
+                CompilerAsserts.neverPartOfCompilation();
+                // no frame required
+                new ImportNode("site").execute(null);
+            }
         }
-        PythonParseResult parseResult = pythonCore.getParser().parse(pythonCore, request.getSource());
-        RootNode root = parseResult.getRootNode();
-        root = new TopLevelExceptionHandler(this, root);
-        return Truffle.getRuntime().createCallTarget(root);
+        RootNode root;
+        try {
+            root = (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
+        } catch (PException e) {
+            // handle PException during parsing (PIncompleteSourceException will propagate through)
+            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            throw e;
+        }
+        if (pythonCore.isInitialized()) {
+            return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
+        } else {
+            return Truffle.getRuntime().createCallTarget(root);
+        }
     }
 
     @Override
@@ -309,7 +289,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     protected static PNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
         PythonCore pythonCore = context.getCore();
-        return pythonCore.getParser().parseInline(pythonCore, code, lexicalContextFrame);
+        return (PNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame);
     }
 
     @Override
@@ -326,14 +306,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                             value instanceof Number ||
                             value instanceof String ||
                             value instanceof Boolean) {
-                return getCore().lookupType(value.getClass());
+                return GetClassNode.getItSlowPath(value);
             }
         }
         return null;
     }
 
-    public static PythonContext getContext() {
-        return getCurrentContext(PythonLanguage.class);
+    public static PythonLanguage getCurrent() {
+        return getCurrentLanguage(PythonLanguage.class);
+    }
+
+    public static ContextReference<PythonContext> getContextRef() {
+        return getCurrentLanguage(PythonLanguage.class).getContextReference();
+    }
+
+    public static PythonCore getCore() {
+        return getCurrentContext(PythonLanguage.class).getCore();
     }
 
     @Override
@@ -373,19 +361,51 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected String toString(PythonContext context, Object value) {
         final PythonModule builtins = context.getBuiltins();
-        PBuiltinFunction intClass = (PBuiltinFunction) builtins.getAttribute(BuiltinNames.REPR);
-        Object[] userArgs = PArguments.create(1);
-        PArguments.setArgument(userArgs, 0, value);
-        Object res = InvokeNode.create(intClass).invoke(userArgs);
+        PBuiltinFunction reprMethod = ((PBuiltinMethod) builtins.getAttribute(BuiltinNames.REPR)).getFunction();
+        Object[] userArgs = PArguments.create(2);
+        PArguments.setArgument(userArgs, 0, PNone.NONE);
+        PArguments.setArgument(userArgs, 1, value);
+        Object res = InvokeNode.create(reprMethod).execute(null, userArgs, PKeyword.EMPTY_KEYWORDS);
         return res.toString();
-    }
-
-    public static PythonCore getCore() {
-        PythonCore core = getCurrentLanguage(PythonLanguage.class).sharedCore;
-        return core != null ? core : getContext().getCore();
     }
 
     public static TruffleLogger getLogger() {
         return TruffleLogger.getLogger(ID, PythonLanguage.class);
+    }
+
+    public static Source newSource(PythonContext ctxt, String src, String name) {
+        try {
+            return newSource(ctxt, Source.newBuilder(ID, src, name), name);
+        } catch (IOException e) {
+            throw new AssertionError();
+        }
+    }
+
+    public static Source newSource(PythonContext ctxt, TruffleFile src, String name) throws IOException {
+        return newSource(ctxt, Source.newBuilder(ID, src), name);
+    }
+
+    public static Source newSource(PythonContext ctxt, URL url, String name) throws IOException {
+        return newSource(ctxt, Source.newBuilder(ID, url), name);
+    }
+
+    private static Source newSource(PythonContext ctxt, SourceBuilder srcBuilder, String name) throws IOException {
+        SourceBuilder newBuilder = srcBuilder.name(name).mimeType(MIME_TYPE);
+        boolean coreIsInitialized = ctxt.getCore().isInitialized();
+        boolean internal = !coreIsInitialized && !PythonOptions.getOption(ctxt, PythonOptions.ExposeInternalSources);
+        if (internal) {
+            srcBuilder.internal(true);
+        }
+        return newBuilder.build();
+    }
+
+    public boolean isNativeBuildTime() {
+        return nativeBuildTime;
+    }
+
+    @Override
+    protected void initializeMultipleContexts() {
+        super.initializeMultipleContexts();
+        singleContextAssumption.invalidate();
     }
 }

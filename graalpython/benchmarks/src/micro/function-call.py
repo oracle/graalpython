@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # function calls
-import time
 
 
 def empty_function(arg):
@@ -39,20 +38,10 @@ def call_functions(num):
 
 
 def measure():
-    print("Start timing...")
-    start = time.time()
-
     sum = call_functions(1000000000)  # 1000000
 
     print("Number of calls ", sum)
 
-    duration = "%.3f\n" % (time.time() - start)
-    print("function-call: " + duration)
 
-
-# warm up
-print('warming up ...')
-for run in range(10000):
-    call_functions(50000)
-
-measure()
+def __benchmark__(*args):
+    measure()

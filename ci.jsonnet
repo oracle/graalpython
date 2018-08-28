@@ -1,5 +1,5 @@
 {
-  overlay: "03b824f947adf9a67c80c3e8a27646d43a687bfb",
+  overlay: "2562524065c42e18d4a5ea57e8cbf6cac6b9bdda",
 
   // ======================================================================================================
   // 
@@ -53,6 +53,9 @@
         error "unknown field: "+field+" in "+object+", valid choices are: "+std.objectFields(object)
       else
         object[field],
+
+    graalOption: function(name, value)
+      ["--Ja", "@-Dgraal."+name+"="+value],
   },
   
   // ------------------------------------------------------------------------------------------------------
@@ -79,7 +82,7 @@
   linuxMixin: linuxMixin,
 
   local linuxBenchMixin = linuxMixin + {
-    capabilities +: ["no_frequency_scaling", "tmpfs25g", "x62"],
+    capabilities +: ["no_frequency_scaling", "tmpfs25g", "x52"],
   },
   linuxBenchMixin: linuxBenchMixin,
 
@@ -178,7 +181,7 @@
 
     setup +: [
       ["mx", "sforceimport"],
-      ["mx", "-v", "--dynamicimports", self.dynamicImports, "build"],
+      ["mx", "--dynamicimports", self.dynamicImports, "build"],
     ]
   },
   commonBuilder: commonBuilder,
@@ -191,9 +194,12 @@
   local baseGate = commonBuilder + {
     tags: "tags must be defined",
 
+//    local truffleDebugFlags = utils.graalOption("TraceTruffleCompilation", "true"),
+//    local truffleDebugFlags = utils.graalOption("TraceTruffleCompilationDetails", "true"),
+    local truffleDebugFlags = [],
     targets: TARGET.gate,
     run +: [
-      ["mx", "--strict-compliance", "--dynamicimports", super.dynamicImports, "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning-for-dependencies"],
+      ["mx"] + truffleDebugFlags + ["--strict-compliance", "--dynamicimports", super.dynamicImports, "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning-for-dependencies"],
     ]
   },
 

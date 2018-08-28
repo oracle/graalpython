@@ -35,6 +35,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+QUIETLY$(MX_VERBOSE) = @
 LIBDIR=${VPATH}/../lib-graalpython
 TARGET_LIB=${LIBDIR}/capi.bc
 
@@ -53,7 +54,7 @@ HEADER_TARGETS=$(INCLUDE_FILES:${VPATH}/include/%.h=${VPATH}/../include/%.h)
 default: ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 
-CFLAGS=${LLVM_TARGET_FLAGS} -ggdb -emit-llvm
+CFLAGS=${LLVM_TARGET_FLAGS} -O1 -ggdb -emit-llvm
 OPT_FLAGS=-mem2reg -globalopt -simplifycfg -constprop -always-inline -instcombine -dse -loop-simplify -reassociate -licm -gvn
 WARNINGS=-Wno-int-to-pointer-cast -Wno-int-conversion -Wno-incompatible-pointer-types-discards-qualifiers -Wno-pointer-type-mismatch
 INCLUDES=-I${POLYGLOT_INC} -I${VPATH}/include
@@ -64,25 +65,25 @@ rebuild:
 	$(MAKE) -C ${VPATH} ${TARGET_LIB} ${MODULE_TARGETS} ${HEADER_TARGETS}
 
 ${LIBDIR}/modules/%.bc: ${VPATH}/modules/%.o
-	@mkdir -p ${LIBDIR}/modules
-	llvm-link -o $@ $+
+	$(QUIETLY) mkdir -p ${LIBDIR}/modules
+	$(QUIETLY) llvm-link -o $@ $+
 
 ${TARGET_LIB}: ${OBJ_FILES}
-	llvm-link -o $@ $+
+	$(QUIETLY) llvm-link -o $@ $+
 
 ${VPATH}/src/%.o: ${VPATH}/src/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
-	clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-	opt -o $@ $@ ${OPT_FLAGS}
+	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
+	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
 
 ${VPATH}/modules/%.o: ${VPATH}/modules/%.c ${VPATH}/Makefile ${VPATH}/src/capi.h ${INCLUDE_FILES}
-	clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
-	opt -o $@ $@ ${OPT_FLAGS}
+	$(QUIETLY) clang ${CFLAGS} ${WARNINGS} ${INCLUDES} -o $@ -c $<
+	$(QUIETLY) opt -o $@ $@ ${OPT_FLAGS}
 
 ${VPATH}/../include/%.h: ${INCLUDE_FILES}
-	@mkdir -p ${VPATH}/../include/
-	@cp $(@:${VPATH}/../include/%.h=${VPATH}/include/%.h) $@
+	$(QUIETLY) mkdir -p ${VPATH}/../include/
+	$(QUIETLY) cp $(@:${VPATH}/../include/%.h=${VPATH}/include/%.h) $@
 
 clean:
-	@rm -f ${TARGET_LIB}
-	@rm -f ${TARGET_LIB}.bc
-	@rm -f ${OBJ_FILES}
+	$(QUIETLY) rm -f ${TARGET_LIB}
+	$(QUIETLY) rm -f ${TARGET_LIB}.bc
+	$(QUIETLY) rm -f ${OBJ_FILES}

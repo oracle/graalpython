@@ -36,7 +36,8 @@ functions should be applied to nil objects.
 typedef struct {
     PyObject_VAR_HEAD
     Py_hash_t ob_shash;
-    char *ob_sval;
+    // Truffle change: char ob_sval[1] doesn't work for us in Sulong
+    char* ob_sval;
 
     /* Invariants:
      *     ob_sval contains space for 'ob_size+1' elements.

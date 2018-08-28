@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -72,6 +74,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 public class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
+    private final PException exception;
     private final PythonContext context;
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
     @Child private LookupAndCallUnaryNode callStrNode = LookupAndCallUnaryNode.create(__STR__);
@@ -80,28 +83,42 @@ public class TopLevelExceptionHandler extends RootNode {
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
         super(language);
-        sourceSection = child.getSourceSection();
-        context = language.getContextReference().get();
-        innerCallTarget = Truffle.getRuntime().createCallTarget(child);
+        this.sourceSection = child.getSourceSection();
+        this.context = language.getContextReference().get();
+        this.innerCallTarget = Truffle.getRuntime().createCallTarget(child);
+        this.exception = null;
+    }
+
+    public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
+        super(language);
+        this.sourceSection = exception.getSourceLocation();
+        this.context = language.getContextReference().get();
+        this.innerCallTarget = null;
+        this.exception = exception;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
-        Object result = null;
-        try {
-            result = run(frame);
-        } catch (PException e) {
-            printExc(e);
-        } catch (Exception e) {
-            if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
-                boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
-                if (!exitException) {
-                    printStackTrace(e);
+        if (exception != null) {
+            printExc(exception);
+            return null;
+        } else {
+            assert context.getCurrentException() == null;
+            try {
+                return run(frame);
+            } catch (PException e) {
+                printExc(e);
+                return null;
+            } catch (Exception e) {
+                if (PythonOptions.getOption(context, PythonOptions.WithJavaStacktrace)) {
+                    boolean exitException = e instanceof TruffleException && ((TruffleException) e).isExit();
+                    if (!exitException) {
+                        printStackTrace(e);
+                    }
                 }
+                throw e;
             }
-            throw e;
         }
-        return result;
     }
 
     @Override
@@ -133,7 +150,7 @@ public class TopLevelExceptionHandler extends RootNode {
         if (PythonOptions.getOption(context, PythonOptions.AlwaysRunExcepthook)) {
             if (hook != PNone.NO_VALUE) {
                 try {
-                    callNode.execute(hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
+                    callNode.execute(null, hook, new Object[]{type, value, tb}, PKeyword.EMPTY_KEYWORDS);
                 } catch (PException internalError) {
                     // More complex handling of errors in exception printing is done in our
                     // Python code, if we get here, we just fall back to the launcher

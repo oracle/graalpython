@@ -26,21 +26,24 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SELF__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-@CoreFunctions(extendClasses = PBuiltinFunction.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PBuiltinFunction)
 public class BuiltinFunctionBuiltins extends PythonBuiltins {
 
     @Override
@@ -48,12 +51,21 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         return BuiltinFunctionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __SELF__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class SelfNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        protected Object doStatic(@SuppressWarnings("unused") Object self) {
-            return PNone.NONE;
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization(guards = "self.getEnclosingType() == null")
+        @TruffleBoundary
+        Object reprModuleFunction(PBuiltinFunction self) {
+            // (tfel): these really shouldn't be accessible, I think
+            return String.format("<built-in function %s>", self.getName());
+        }
+
+        @Specialization(guards = "self.getEnclosingType() != null")
+        @TruffleBoundary
+        Object reprClassFunction(PBuiltinFunction self) {
+            return String.format("<method '%s' of '%s' objects>", self.getName(), self.getEnclosingType().getName());
         }
     }
 }

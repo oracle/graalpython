@@ -33,7 +33,10 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -43,8 +46,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @NodeInfo(shortName = "read_global")
 public abstract class ReadGlobalOrBuiltinNode extends GlobalNode implements ReadNode {
     @Child private ReadAttributeFromObjectNode readFromModuleNode = ReadAttributeFromObjectNode.create();
-    @Child private GetItemNode readFromDictNode = GetItemNode.create();
-    @Child private ReadAttributeFromObjectNode readFromBuiltinsNode = ReadAttributeFromObjectNode.create();
+    @Child private ReadAttributeFromObjectNode readFromBuiltinsNode;
+
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
@@ -64,21 +67,23 @@ public abstract class ReadGlobalOrBuiltinNode extends GlobalNode implements Read
 
     @Specialization(guards = "isInModule(frame)")
     protected Object readGlobal(VirtualFrame frame) {
-        final Object result = readFromModuleNode.execute(PArguments.getGlobals(frame), attributeId);
+        Object result = readFromModuleNode.execute(PArguments.getGlobals(frame), attributeId);
         return returnGlobalOrBuiltin(result);
     }
 
     @Specialization(guards = "isInDict(frame)", rewriteOn = PException.class)
-    protected Object readGlobalDict(VirtualFrame frame) {
-        final Object result = readFromDictNode.execute(PArguments.getGlobals(frame), attributeId);
+    protected Object readGlobalDict(VirtualFrame frame,
+                    @Cached("create()") GetItemNode readFromDictNode) {
+        Object result = readFromDictNode.execute(PArguments.getGlobals(frame), attributeId);
         return returnGlobalOrBuiltin(result);
     }
 
     @Specialization(guards = "isInDict(frame)")
     protected Object readGlobalDictWithException(VirtualFrame frame,
+                    @Cached("create()") GetItemNode readFromDictNode,
                     @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
         try {
-            final Object result = readFromDictNode.execute(PArguments.getGlobals(frame), attributeId);
+            Object result = readFromDictNode.execute(PArguments.getGlobals(frame), attributeId);
             return returnGlobalOrBuiltin(result);
         } catch (PException e) {
             e.expect(KeyError, getCore(), errorProfile);
@@ -90,11 +95,23 @@ public abstract class ReadGlobalOrBuiltinNode extends GlobalNode implements Read
         return returnGlobalOrBuiltin(globals);
     }
 
-    private Object returnGlobalOrBuiltin(final Object result) {
+    private Object returnGlobalOrBuiltin(Object result) {
         if (isGlobalProfile.profile(result != PNone.NO_VALUE)) {
             return result;
         } else {
-            final Object builtin = readFromBuiltinsNode.execute(getCore().isInitialized() ? getContext().getBuiltins() : getCore().lookupBuiltinModule("builtins"), attributeId);
+            if (readFromBuiltinsNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readFromBuiltinsNode = insert(ReadAttributeFromObjectNode.create());
+            }
+            PythonContext context = getContext();
+            PythonCore core = context.getCore();
+            Object builtin;
+            if (core.isInitialized()) {
+                builtin = readFromBuiltinsNode.execute(context.getBuiltins(), attributeId);
+            } else {
+                CompilerDirectives.transferToInterpreter();
+                builtin = readFromBuiltinsNode.execute(core.lookupBuiltinModule("builtins"), attributeId);
+            }
             if (isBuiltinProfile.profile(builtin != PNone.NO_VALUE)) {
                 return builtin;
             } else {

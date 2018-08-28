@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -43,11 +45,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__IMPORT__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.instrumentation.StandardTags;
@@ -55,7 +56,7 @@ import com.oracle.truffle.api.instrumentation.Tag;
 
 public abstract class AbstractImportNode extends StatementNode {
 
-    @Child private InvokeNode invokeNode;
+    @Child private CallNode callNode;
     @Child private GetDictNode getDictNode;
 
     public AbstractImportNode() {
@@ -66,12 +67,12 @@ public abstract class AbstractImportNode extends StatementNode {
         return importModule(name, PNone.NONE, new String[0], 0);
     }
 
-    InvokeNode getInvokeNode(PythonCallable callable) {
-        if (invokeNode == null) {
+    CallNode getCallNode() {
+        if (callNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            invokeNode = insert(InvokeNode.create(callable));
+            callNode = insert(CallNode.create());
         }
-        return invokeNode;
+        return callNode;
     }
 
     private GetDictNode getGetDictNode() {
@@ -85,18 +86,19 @@ public abstract class AbstractImportNode extends StatementNode {
     protected Object importModule(String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         if (!getCore().isInitialized()) {
-            return getCore().lookupBuiltinModule(name);
+            PythonModule builtinModule = getCore().lookupBuiltinModule(name);
+            if (builtinModule != null) {
+                return builtinModule;
+            }
         }
         return __import__(name, globals, fromList, level);
     }
 
     Object __import__(String name, Object globals, String[] fromList, int level) {
-        PFunction builtinImport = (PFunction) getContext().getBuiltins().getAttribute(__IMPORT__);
-        Object[] importArguments = PArguments.create(1);
-        PArguments.setArgument(importArguments, 0, name);
+        PMethod builtinImport = (PMethod) getContext().getBuiltins().getAttribute(__IMPORT__);
         assert fromList != null;
         assert globals != null;
-        return getInvokeNode(builtinImport).invoke(importArguments, new PKeyword[]{
+        return getCallNode().execute(null, builtinImport, new Object[]{name}, new PKeyword[]{
                         new PKeyword(GLOBALS, getGetDictNode().execute(globals)),
                         new PKeyword(LOCALS, PNone.NONE), // the locals argument is ignored so it
                                                           // can always be None

@@ -26,10 +26,15 @@
 package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -37,6 +42,17 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __DELITEM__)
 public abstract class DeleteItemNode extends BinaryOpNode {
+
+    private final Supplier<NotImplementedHandler> notImplementedHandler;
+
+    public DeleteItemNode() {
+        this.notImplementedHandler = () -> new NotImplementedHandler() {
+            @Override
+            public Object execute(Object arg, Object arg2) {
+                throw raise(TypeError, "'%p' object doesn't support item deletion", arg);
+            }
+        };
+    }
 
     public PNode getPrimary() {
         return getLeftNode();
@@ -48,8 +64,13 @@ public abstract class DeleteItemNode extends BinaryOpNode {
 
     @Specialization
     public Object doObject(Object primary, Object slice,
-                    @Cached("create(__DELITEM__)") LookupAndCallBinaryNode callDelitemNode) {
+                    @Cached("createDelItemNode()") LookupAndCallBinaryNode callDelitemNode) {
         return callDelitemNode.executeObject(primary, slice);
+    }
+
+    protected LookupAndCallBinaryNode createDelItemNode() {
+        return LookupAndCallBinaryNode.create(SpecialMethodNames.__DELITEM__, null, notImplementedHandler);
+
     }
 
     public static DeleteItemNode create() {

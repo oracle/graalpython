@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -44,39 +46,46 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
+@NodeChild(value = "object", type = PNode.class)
 public abstract class GetAttributeNode extends PNode implements ReadNode {
+
+    private final String key;
 
     @Child LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
 
-    public PNode makeWriteNode(PNode rhs) {
-        return SetAttributeNode.create(getObject(), getKey(), rhs);
+    protected GetAttributeNode(String key) {
+        this.key = key;
     }
 
-    public static GetAttributeNode create(PNode object, PNode key) {
-        return GetAttributeNodeGen.create(object, key);
+    public final String getKey() {
+        return key;
+    }
+
+    public final PNode makeWriteNode(PNode rhs) {
+        return SetAttributeNode.create(key, getObject(), rhs);
+    }
+
+    public static GetAttributeNode create(String key, PNode object) {
+        return GetAttributeNodeGen.create(key, object);
     }
 
     public abstract PNode getObject();
 
-    public abstract PNode getKey();
-
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    protected int doItInt(Object object, Object key) throws UnexpectedResultException {
+    protected int doItInt(Object object) throws UnexpectedResultException {
         return dispatchNode.executeInt(object, key);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    protected boolean doItBoolean(Object object, Object key) throws UnexpectedResultException {
+    protected boolean doItBoolean(Object object) throws UnexpectedResultException {
         return dispatchNode.executeBool(object, key);
     }
 
     @Specialization(replaces = {"doItInt", "doItBoolean"})
-    protected Object doIt(Object object, Object key) {
+    protected Object doIt(Object object) {
         return dispatchNode.executeObject(object, key);
     }
 }

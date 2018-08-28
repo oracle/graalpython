@@ -33,6 +33,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -45,8 +46,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
-@CoreFunctions(extendClasses = PSet.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PSet)
 public final class SetBuiltins extends PythonBuiltins {
 
     @Override
@@ -54,31 +56,31 @@ public final class SetBuiltins extends PythonBuiltins {
         return SetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "clear", fixedNumOfArguments = 1)
+    @Builtin(name = "clear", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object clear(PSet self) {
-            self.clear();
+        public Object clear(PSet self,
+                        @Cached("createClassProfile()") ValueProfile storageProfile) {
+            storageProfile.profile(self.getDictStorage()).clear();
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "add", fixedNumOfArguments = 2)
+    @Builtin(name = "add", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
         @Specialization
         public Object add(PSet self, Object o,
                         @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-
-            setItemNode.execute(self, self.getDictStorage(), o, PNone.NO_VALUE);
+            self.setDictStorage(setItemNode.execute(self.getDictStorage(), o, PNone.NO_VALUE));
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = __HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = __HASH__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -87,7 +89,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __OR__, fixedNumOfArguments = 2)
+    @Builtin(name = __OR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -103,7 +105,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "remove", fixedNumOfArguments = 2)
+    @Builtin(name = "remove", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RemoveNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -117,7 +119,7 @@ public final class SetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "discard", fixedNumOfArguments = 2)
+    @Builtin(name = "discard", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DiscardNode extends PythonBinaryBuiltinNode {
         @Specialization

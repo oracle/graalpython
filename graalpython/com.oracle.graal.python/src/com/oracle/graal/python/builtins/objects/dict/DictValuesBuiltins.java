@@ -33,6 +33,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -47,7 +48,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PDictValuesView.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PDictValuesView)
 public final class DictValuesBuiltins extends PythonBuiltins {
 
     @Override
@@ -55,7 +56,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         return DictValuesBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonBuiltinNode {
         @Specialization
@@ -64,7 +65,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -76,7 +77,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
@@ -93,7 +94,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

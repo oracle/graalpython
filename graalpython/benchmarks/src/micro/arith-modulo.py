@@ -22,7 +22,6 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 # modulo ops
-import time
 
 
 def docompute(num):
@@ -42,20 +41,11 @@ def docompute(num):
 
 
 def measure(num):
-    print("Start timing...")
-    start = time.time()
-
     for run in range(num):
         sum = docompute(5000)  # 5000
 
     print("sum", sum)
 
-    duration = "%.3f\n" % (time.time() - start)
-    print("arith-modulo: " + duration)
 
-
-print('warming up ...')
-for run in range(2000):
-    docompute(10)  # 1000
-
-measure(50)
+def __benchmark__(num=50):
+    measure(50)

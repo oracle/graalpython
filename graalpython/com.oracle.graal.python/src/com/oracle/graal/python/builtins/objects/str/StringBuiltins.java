@@ -28,8 +28,10 @@ package com.oracle.graal.python.builtins.objects.str;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MOD__;
@@ -38,6 +40,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
@@ -57,26 +60,28 @@ import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.JoinInternalNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
@@ -85,11 +90,12 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PString.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {
 
     @Override
@@ -97,7 +103,7 @@ public final class StringBuiltins extends PythonBuiltins {
         return StringBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __STR__, fixedNumOfArguments = 1)
+    @Builtin(name = __STR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -111,7 +117,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
@@ -188,7 +194,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
@@ -197,9 +203,15 @@ public final class StringBuiltins extends PythonBuiltins {
         boolean contains(String self, String other) {
             return self.contains(other);
         }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -210,12 +222,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
@@ -226,12 +238,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
@@ -243,12 +255,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LeNode extends PythonBinaryBuiltinNode {
@@ -260,12 +272,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
@@ -277,12 +289,12 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GeNode extends PythonBinaryBuiltinNode {
@@ -294,18 +306,95 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        String doSS(String self, String other) {
-            return new StringBuilder(self.length() + other.length()).append(self).append(other).toString();
+
+        protected final ConditionProfile leftProfile1 = ConditionProfile.createBinaryProfile();
+        protected final ConditionProfile leftProfile2 = ConditionProfile.createBinaryProfile();
+        protected final ConditionProfile rightProfile1 = ConditionProfile.createBinaryProfile();
+        protected final ConditionProfile rightProfile2 = ConditionProfile.createBinaryProfile();
+
+        @Specialization(guards = "!concatGuard(self, other)")
+        String doSSSimple(String self, String other) {
+            if (LazyString.length(self, leftProfile1, leftProfile2) == 0) {
+                return other;
+            }
+            return self;
+        }
+
+        @Specialization(guards = "!concatGuard(self, other.getCharSequence())")
+        Object doSSSimple(String self, PString other) {
+            if (LazyString.length(self, leftProfile1, leftProfile2) == 0) {
+                return other;
+            }
+            return self;
+        }
+
+        @Specialization(guards = "!concatGuard(self.getCharSequence(), other)")
+        Object doSSSimple(PString self, String other) {
+            if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
+                return other;
+            }
+            return self;
+        }
+
+        @Specialization(guards = "!concatGuard(self.getCharSequence(), self.getCharSequence())")
+        PString doSSSimple(PString self, PString other) {
+            if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
+                return other;
+            }
+            return self;
+        }
+
+        @Specialization(guards = "concatGuard(self.getCharSequence(), other)")
+        Object doSS(PString self, String other,
+                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+            return doIt(self.getCharSequence(), other, shortStringAppend);
+        }
+
+        @Specialization(guards = "concatGuard(self, other)")
+        Object doSS(String self, String other,
+                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+            return doIt(self, other, shortStringAppend);
+        }
+
+        @Specialization(guards = "concatGuard(self, other.getCharSequence())")
+        Object doSS(String self, PString other,
+                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+            return doIt(self, other.getCharSequence(), shortStringAppend);
+        }
+
+        @Specialization(guards = "concatGuard(self.getCharSequence(), other.getCharSequence())")
+        Object doSS(PString self, PString other,
+                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+            return doIt(self.getCharSequence(), other.getCharSequence(), shortStringAppend);
+        }
+
+        private Object doIt(CharSequence left, CharSequence right, ConditionProfile shortStringAppend) {
+            if (LazyString.UseLazyStrings) {
+                int leftLength = LazyString.length(left, leftProfile1, leftProfile2);
+                int rightLength = LazyString.length(right, rightProfile1, rightProfile2);
+                int resultLength = leftLength + rightLength;
+                if (resultLength >= LazyString.MinLazyStringLength) {
+                    if (shortStringAppend.profile(leftLength == 1 || rightLength == 1)) {
+                        return factory().createString(LazyString.createCheckedShort(left, right, resultLength));
+                    } else {
+                        return factory().createString(LazyString.createChecked(left, right, resultLength));
+                    }
+                }
+            }
+            return stringConcat(left, right);
+        }
+
+        @TruffleBoundary
+        private static String stringConcat(CharSequence left, CharSequence right) {
+            return left.toString() + right.toString();
         }
 
         @Specialization(guards = "!isString(other)")
@@ -313,20 +402,31 @@ public final class StringBuiltins extends PythonBuiltins {
             throw raise(TypeError, "Can't convert '%p' object to str implicitly", other);
         }
 
+        @Specialization(guards = "!isString(other)")
+        String doSO(@SuppressWarnings("unused") PString self, Object other) {
+            throw raise(TypeError, "Can't convert '%p' object to str implicitly", other);
+        }
+
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        protected boolean concatGuard(CharSequence left, CharSequence right) {
+            int leftLength = LazyString.length(left, leftProfile1, leftProfile2);
+            int rightLength = LazyString.length(right, rightProfile1, rightProfile2);
+            return leftLength > 0 && rightLength > 0;
         }
     }
 
-    @Builtin(name = __RADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __RADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RAddNode extends AddNode {
     }
 
     // str.startswith(prefix[, start[, end]])
-    @Builtin(name = "startswith", minNumOfArguments = 2, maxNumOfArguments = 5)
+    @Builtin(name = "startswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 5)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class StartsWithNode extends PythonBuiltinNode {
@@ -378,7 +478,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.endswith(suffix[, start[, end]])
-    @Builtin(name = "endswith", fixedNumOfArguments = 2)
+    @Builtin(name = "endswith", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EndsWithNode extends PythonBuiltinNode {
@@ -414,75 +514,122 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    // str.rfind(str[, start[, end]])
-    @Builtin(name = "rfind", minNumOfArguments = 2, maxNumOfArguments = 4)
-    @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class RFindNode extends PythonBuiltinNode {
+    abstract static class FindBaseNode extends PythonBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        @SuppressWarnings("unused")
-        public Object rfind(String self, String str, PNone start, PNone end) {
-            return self.lastIndexOf(str);
+        Object find(String self, String str, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            return find(self, str);
         }
 
         @Specialization
-        @TruffleBoundary
-        public Object rfind(String self, String str, int start, @SuppressWarnings("unused") PNone end) {
-            return self.substring(start).lastIndexOf(str);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public Object rfind(String self, String str, @SuppressWarnings("unused") PNone start, int end) {
-            return self.substring(0, end).lastIndexOf(str);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        public Object rfind(String self, String str, int start, int end) {
-            return self.substring(start, end).lastIndexOf(str);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        public Object endsWith(Object self, Object str, Object start, Object end) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException("rfind is not supported for " + self + " " + self.getClass() + " prefix " + str);
-        }
-    }
-
-    // str.find(str[, start[, end]])
-    @Builtin(name = "find", minNumOfArguments = 2, maxNumOfArguments = 4)
-    @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class FindNode extends PythonBuiltinNode {
-
-        @Specialization
-        @TruffleBoundary
-        @SuppressWarnings("unused")
-        public Object find(String self, String str, PNone start, PNone end) {
-            return self.indexOf(str);
-        }
-
-        @Specialization
-        public Object find(String self, String str, int start, @SuppressWarnings("unused") PNone end) {
+        Object find(String self, String str, long start, @SuppressWarnings("unused") PNone end) {
             return findGeneric(self, str, start, -1);
         }
 
         @Specialization
-        public Object find(String self, String str, @SuppressWarnings("unused") PNone start, int end) {
+        Object find(String self, String str, @SuppressWarnings("unused") PNone start, long end) {
             return findGeneric(self, str, -1, end);
         }
 
         @Specialization
-        public Object find(String self, String str, int start, int end) {
+        Object find(String self, String str, long start, long end) {
             return findGeneric(self, str, start, end);
         }
 
+        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, rewriteOn = ArithmeticException.class)
+        Object findGeneric(String self, String str, Object start, Object end) throws ArithmeticException {
+            int startInt = getIntValue(start);
+            int endInt = getIntValue(end);
+            return findWithBounds(self, str, startInt, endInt);
+        }
+
+        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"}, replaces = "findGeneric")
+        Object findGenericOvf(String self, String str, Object start, Object end) {
+            try {
+                int startInt = getIntValue(start);
+                int endInt = getIntValue(end);
+                return findWithBounds(self, str, startInt, endInt);
+            } catch (ArithmeticException e) {
+                throw raise(ValueError, "cannot fit 'int' into an index-sized integer");
+            }
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object findFail(Object self, Object str, Object start, Object end) {
+            throw raise(TypeError, "must be str, not %p", str);
+        }
+
+        protected static boolean isNumberOrNone(Object o) {
+            return o instanceof PInt || o instanceof PNone;
+        }
+
+        private static int getIntValue(Object o) throws ArithmeticException {
+            if (o instanceof Integer) {
+                return (int) o;
+            } else if (o instanceof Long) {
+                return PInt.intValueExact((long) o);
+            } else if (o instanceof Boolean) {
+                return PInt.intValue((boolean) o);
+            } else if (o instanceof PInt) {
+                return ((PInt) o).intValueExact();
+            } else if (o instanceof PNone) {
+                return -1;
+            }
+            throw new IllegalArgumentException();
+        }
+
+        @SuppressWarnings("unused")
+        protected int find(String self, String findStr) {
+            throw new AssertionError("must not be reached");
+        }
+
+        @SuppressWarnings("unused")
+        protected int findWithBounds(String self, String str, int start, int end) {
+            throw new AssertionError("must not be reached");
+        }
+    }
+
+    // str.rfind(str[, start[, end]])
+    @Builtin(name = "rfind", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @GenerateNodeFactory
+    public abstract static class RFindNode extends FindBaseNode {
+
+        @Override
         @TruffleBoundary
-        private static Object findWithBounds(String self, String str, int start, int end) {
+        protected int find(String self, String findStr) {
+            return self.lastIndexOf(findStr);
+        }
+
+        @Override
+        @TruffleBoundary
+        protected int findWithBounds(String self, String str, int start, int end) {
+            if (start != -1 && end != -1) {
+                return self.substring(start, end).lastIndexOf(str);
+            } else if (start != -1) {
+                return self.substring(start).lastIndexOf(str);
+            } else {
+                assert end != -1;
+                return self.substring(0, end).lastIndexOf(str);
+            }
+        }
+    }
+
+    // str.find(str[, start[, end]])
+    @Builtin(name = "find", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @GenerateNodeFactory
+    public abstract static class FindNode extends FindBaseNode {
+
+        @Override
+        @TruffleBoundary
+        protected int find(String self, String findStr) {
+            return self.indexOf(findStr);
+        }
+
+        @Override
+        @TruffleBoundary
+        protected int findWithBounds(String self, String str, int start, int end) {
             if (start != -1 && end != -1) {
                 return self.substring(0, end).indexOf(str, start);
             } else if (start != -1) {
@@ -492,39 +639,10 @@ public final class StringBuiltins extends PythonBuiltins {
                 return self.substring(0, end).indexOf(str);
             }
         }
-
-        protected boolean isNumberOrNone(Object o) {
-            return o instanceof Integer || o instanceof PInt || o instanceof PNone;
-        }
-
-        private static int getIntValue(Object o) {
-            if (o instanceof Integer) {
-                return (int) o;
-            } else if (o instanceof PInt) {
-                return ((PInt) o).intValueExact();
-            } else if (o instanceof PNone) {
-                return -1;
-            }
-            throw new IllegalArgumentException();
-        }
-
-        @Specialization(guards = {"isNumberOrNone(start)", "isNumberOrNone(end)"})
-        public Object findGeneric(String self, String str, Object start, Object end) {
-            int startInt = getIntValue(start);
-            int endInt = getIntValue(end);
-            return findWithBounds(self, str, startInt, endInt);
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        public Object findFail(Object self, Object str, Object start, Object end) {
-            CompilerDirectives.transferToInterpreter();
-            throw new RuntimeException("find is not supported for \"" + self + "\", " + self.getClass() + ", prefix " + str);
-        }
     }
 
     // str.join(iterable)
-    @Builtin(name = "join", fixedNumOfArguments = 2)
+    @Builtin(name = "join", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class JoinNode extends PythonBuiltinNode {
 
@@ -543,7 +661,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.upper()
-    @Builtin(name = "upper", fixedNumOfArguments = 1)
+    @Builtin(name = "upper", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UpperNode extends PythonBuiltinNode {
@@ -556,7 +674,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // static str.maketrans()
-    @Builtin(name = "maketrans", fixedNumOfArguments = 2)
+    @Builtin(name = "maketrans", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MakeTransNode extends PythonBuiltinNode {
@@ -572,7 +690,7 @@ public final class StringBuiltins extends PythonBuiltins {
             for (int i = 0; i < from.length(); i++) {
                 int key = from.charAt(i);
                 int value = to.charAt(i);
-                setItemNode.execute(translation, translation.getDictStorage(), key, value);
+                translation.setDictStorage(setItemNode.execute(translation.getDictStorage(), key, value));
             }
 
             return translation;
@@ -580,9 +698,10 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.translate()
-    @Builtin(name = "translate", fixedNumOfArguments = 2)
+    @Builtin(name = "translate", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(SpecialMethodNames.class)
     public abstract static class TranslateNode extends PythonBuiltinNode {
         @Specialization
         public String translate(String self, String table) {
@@ -599,7 +718,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         public String translate(String self, PDict table,
-                        @Cached("create()") GetItemNode getItemNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             char[] translatedChars = new char[self.length()];
 
@@ -607,7 +726,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 char original = self.charAt(i);
                 Object translated = null;
                 try {
-                    translated = getItemNode.execute(table, (int) original);
+                    translated = getItemNode.executeObject(table, (int) original);
                 } catch (PException e) {
                     e.expect(KeyError, getCore(), errorProfile);
                 }
@@ -620,7 +739,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.lower()
-    @Builtin(name = "lower", fixedNumOfArguments = 1)
+    @Builtin(name = "lower", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LowerNode extends PythonBuiltinNode {
@@ -633,7 +752,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.capitalize()
-    @Builtin(name = "capitalize", fixedNumOfArguments = 1)
+    @Builtin(name = "capitalize", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CapitalizeNode extends PythonBuiltinNode {
@@ -646,7 +765,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.rpartition
-    @Builtin(name = "rpartition", fixedNumOfArguments = 2)
+    @Builtin(name = "rpartition", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RPartitionNode extends PythonBuiltinNode {
@@ -669,7 +788,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.split
-    @Builtin(name = "split", maxNumOfArguments = 3)
+    @Builtin(name = "split", maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SplitNode extends PythonBuiltinNode {
@@ -776,7 +895,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.split
-    @Builtin(name = "rsplit", maxNumOfArguments = 3)
+    @Builtin(name = "rsplit", maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RSplitNode extends PythonBuiltinNode {
@@ -897,7 +1016,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.splitlines([keepends])
-    @Builtin(name = "splitlines", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "splitlines", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SplitLinesNode extends PythonBuiltinNode {
@@ -911,7 +1030,7 @@ public final class StringBuiltins extends PythonBuiltins {
     }
 
     // str.replace
-    @Builtin(name = "replace", minNumOfArguments = 3, maxNumOfArguments = 4)
+    @Builtin(name = "replace", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReplaceNode extends PythonBuiltinNode {
@@ -934,7 +1053,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "strip", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "strip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StripNode extends PythonBuiltinNode {
@@ -951,7 +1070,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "rstrip", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "rstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RStripNode extends PythonBuiltinNode {
@@ -969,7 +1088,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "lstrip", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "lstrip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LStripNode extends PythonBuiltinNode {
@@ -987,17 +1106,21 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int len(String self) {
             return self.length();
         }
+
+        @Specialization
+        public int len(PString self) {
+            return self.len();
+        }
     }
 
-    @Builtin(name = "index", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @Builtin(name = "index", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IndexNode extends PythonBuiltinNode {
@@ -1036,7 +1159,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "encode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EncodeNode extends PythonBuiltinNode {
@@ -1091,7 +1214,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -1150,17 +1273,17 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __MOD__, fixedNumOfArguments = 2)
+    @Builtin(name = __MOD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ModNode extends PythonBinaryBuiltinNode {
@@ -1170,16 +1293,13 @@ public final class StringBuiltins extends PythonBuiltins {
         Object doGeneric(String left, Object right,
                         @Cached("create()") CallDispatchNode callNode,
                         @Cached("create()") GetClassNode getClassNode,
-                        @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode) {
-            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key));
-        }
-
-        protected BuiltinFunctions.ReprNode createReprNode() {
-            return BuiltinFunctionsFactory.ReprNodeFactory.create(null);
+                        @Cached("create()") LookupAttributeInMRONode.Dynamic lookupAttrNode,
+                        @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode) {
+            return new StringFormatter(getCore(), left).format(right, callNode, (object, key) -> lookupAttrNode.execute(getClassNode.execute(object), key), getItemNode);
         }
     }
 
-    @Builtin(name = "isalnum", fixedNumOfArguments = 1)
+    @Builtin(name = "isalnum", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsAlnumNode extends PythonUnaryBuiltinNode {
@@ -1198,7 +1318,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isalpha", fixedNumOfArguments = 1)
+    @Builtin(name = "isalpha", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsAlphaNode extends PythonUnaryBuiltinNode {
@@ -1217,7 +1337,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isdecimal", fixedNumOfArguments = 1)
+    @Builtin(name = "isdecimal", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsDecimalNode extends PythonUnaryBuiltinNode {
@@ -1236,12 +1356,12 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isdigit", fixedNumOfArguments = 1)
+    @Builtin(name = "isdigit", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsDigitNode extends IsDecimalNode {
     }
 
-    @Builtin(name = "isidentifier", fixedNumOfArguments = 1)
+    @Builtin(name = "isidentifier", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsIdentifierNode extends PythonUnaryBuiltinNode {
@@ -1251,7 +1371,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "islower", fixedNumOfArguments = 1)
+    @Builtin(name = "islower", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsLowerNode extends PythonUnaryBuiltinNode {
@@ -1276,13 +1396,13 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isnumeric", fixedNumOfArguments = 1)
+    @Builtin(name = "isnumeric", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsNumericNode extends IsDecimalNode {
     }
 
-    @Builtin(name = "isprintable", fixedNumOfArguments = 1)
+    @Builtin(name = "isprintable", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsPrintableNode extends PythonUnaryBuiltinNode {
@@ -1307,7 +1427,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isspace", fixedNumOfArguments = 1)
+    @Builtin(name = "isspace", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsSpaceNode extends PythonUnaryBuiltinNode {
@@ -1326,7 +1446,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "istitle", fixedNumOfArguments = 1)
+    @Builtin(name = "istitle", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsTitleNode extends PythonUnaryBuiltinNode {
@@ -1365,7 +1485,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isupper", fixedNumOfArguments = 1)
+    @Builtin(name = "isupper", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IsUpperNode extends PythonUnaryBuiltinNode {
@@ -1389,5 +1509,85 @@ public final class StringBuiltins extends PythonBuiltins {
             return spaces == 0 || self.length() > spaces;
 
         }
+    }
+
+    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class StrGetItemNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public String doString(String primary, PSlice slice) {
+            SliceInfo info = slice.computeActualIndices(primary.length());
+            final int start = info.start;
+            int stop = info.stop;
+            int step = info.step;
+
+            if (step > 0 && stop < start) {
+                stop = start;
+            }
+            if (step == 1) {
+                return getSubString(primary, start, stop);
+            } else {
+                char[] newChars = new char[info.length];
+                int j = 0;
+                for (int i = start; j < info.length; i += step) {
+                    newChars[j++] = primary.charAt(i);
+                }
+
+                return new String(newChars);
+            }
+        }
+
+        @Specialization
+        public String doString(String primary, int idx) {
+            try {
+                int index = idx;
+
+                if (idx < 0) {
+                    index += primary.length();
+                }
+
+                return charAtToString(primary, index);
+            } catch (StringIndexOutOfBoundsException | ArithmeticException e) {
+                throw raise(IndexError, "IndexError: string index out of range");
+            }
+        }
+
+        @Specialization
+        public String doString(String primary, PInt idx) {
+            return doString(primary, idx.intValue());
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+        @TruffleBoundary
+        private static String getSubString(String origin, int start, int stop) {
+            char[] chars = new char[stop - start];
+            origin.getChars(start, stop, chars, 0);
+            return new String(chars);
+        }
+
+        @TruffleBoundary
+        private static String charAtToString(String primary, int index) {
+            char charactor = primary.charAt(index);
+            return new String(new char[]{charactor});
+        }
+    }
+
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    public abstract static class IterNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PStringIterator doString(String self) {
+            return factory().createStringIterator(self);
+        }
+
     }
 }

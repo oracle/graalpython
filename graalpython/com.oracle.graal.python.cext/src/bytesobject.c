@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -50,13 +52,13 @@ PyObject* PyBytes_FromStringAndSize(const char* str, Py_ssize_t sz) {
     setlocale(LC_ALL, NULL);
     const char* encoding = nl_langinfo(CODESET);
     void *jstr = str != NULL ? polyglot_from_string_n(str, sz, SRC_CS) : to_java(NULL);
-	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", jstr, polyglot_from_string(encoding, SRC_CS));
+	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", jstr, sz, polyglot_from_string(encoding, SRC_CS));
 }
 
 PyObject * PyBytes_FromString(const char *str) {
 	setlocale(LC_ALL, NULL);
 	const char* encoding = nl_langinfo(CODESET);
-	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", polyglot_from_string(str, SRC_CS), polyglot_from_string(encoding, SRC_CS));
+	return UPCALL_CEXT_O("PyBytes_FromStringAndSize", polyglot_from_string(str, SRC_CS), 0, polyglot_from_string(encoding, SRC_CS));
 }
 
 char* PyBytes_AsString(PyObject *obj) {
@@ -264,4 +266,8 @@ int bytes_copy2mem(char* target, char* source, size_t nbytes) {
         target[i] = source[i];
     }
     return 0;
+}
+
+PyObject *_PyBytes_Join(PyObject *sep, PyObject *x) {
+    return UPCALL_CEXT_O("PyBytes_Join", native_to_java(sep), native_to_java(x));
 }

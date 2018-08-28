@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -38,22 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public abstract class PDictView extends PythonBuiltinObject {
-    private final PDict dict;
+    private final PHashingCollection dict;
     private final String name;
 
-    public PDictView(PythonClass clazz, String name, PDict dict) {
+    public PDictView(PythonClass clazz, String name, PHashingCollection dict) {
         super(clazz);
         this.name = name;
         this.dict = dict;
     }
 
     @Override
-    public final PDict getDict() {
+    public final PHashingCollection getDict() {
         return dict;
     }
 
@@ -67,14 +70,14 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public final static class PDictKeysIterator extends PJavaIteratorIterator<Object> {
-        public PDictKeysIterator(PythonClass clazz, PDict dict) {
+        public PDictKeysIterator(PythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.keys().iterator());
         }
     }
 
     public final static class PDictKeysView extends PDictView {
 
-        public PDictKeysView(PythonClass clazz, PDict dict) {
+        public PDictKeysView(PythonClass clazz, PHashingCollection dict) {
             super(clazz, "dict_keys", dict);
         }
     }
@@ -85,14 +88,14 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public final static class PDictValuesIterator extends PJavaIteratorIterator<Object> {
-        public PDictValuesIterator(PythonClass clazz, PDict dict) {
+        public PDictValuesIterator(PythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.items().iterator());
         }
     }
 
     public final static class PDictValuesView extends PDictView {
 
-        public PDictValuesView(PythonClass clazz, PDict dict) {
+        public PDictValuesView(PythonClass clazz, PHashingCollection dict) {
             super(clazz, "dict_values", dict);
         }
     }
@@ -103,14 +106,14 @@ public abstract class PDictView extends PythonBuiltinObject {
     //
     // -----------------------------------------------------------------------------------------------------------------
     public final static class PDictItemsIterator extends PJavaIteratorIterator<DictEntry> {
-        public PDictItemsIterator(PythonClass clazz, PDict dict) {
+        public PDictItemsIterator(PythonClass clazz, PHashingCollection dict) {
             super(clazz, dict.entries().iterator());
         }
     }
 
     public static final class PDictItemsView extends PDictView {
 
-        public PDictItemsView(PythonClass clazz, PDict dict) {
+        public PDictItemsView(PythonClass clazz, PHashingCollection dict) {
             super(clazz, "dict_items", dict);
         }
     }

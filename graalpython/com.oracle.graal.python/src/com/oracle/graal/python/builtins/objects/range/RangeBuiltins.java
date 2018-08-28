@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.range;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -35,15 +36,20 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -52,7 +58,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PRange.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PRange)
 public class RangeBuiltins extends PythonBuiltins {
 
     @Override
@@ -60,7 +66,7 @@ public class RangeBuiltins extends PythonBuiltins {
         return RangeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
@@ -70,7 +76,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -79,23 +85,39 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean doPRange(PRange left, PRange right) {
-            return left.equals(right);
+            if (left == right) {
+                return true;
+            }
+            if (left.len() != right.len()) {
+                return false;
+            }
+            if (left.len() == 0) {
+                return true;
+            }
+            if (left.getStart() != right.getStart()) {
+                return false;
+            }
+            // same start, just one element => step does not matter
+            if (left.len() == 1) {
+                return true;
+            }
+            return left.getStep() == right.getStep();
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
@@ -150,7 +172,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -158,4 +180,46 @@ public class RangeBuiltins extends PythonBuiltins {
             return factory().createRangeIterator(self.getStart(), self.getStop(), self.getStep());
         }
     }
+
+    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GetItemNode extends PythonBinaryBuiltinNode {
+        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forRange();
+
+        @Specialization
+        Object doPRange(PRange primary, boolean idx) {
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
+        }
+
+        @Specialization
+        Object doPRange(PRange primary, int idx) {
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
+        }
+
+        @Specialization
+        Object doPRange(PRange primary, long idx) {
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
+        }
+
+        @Specialization
+        Object doPRange(PRange primary, PInt idx) {
+            return primary.getItemNormalized(normalize.execute(idx, primary.len()));
+        }
+
+        @Specialization
+        Object doPRange(PRange range, PSlice slice) {
+            SliceInfo info = slice.computeActualIndices(range.len());
+            int newStep = range.getStep() * info.step;
+            int newStart = info.start == SequenceUtil.MISSING_INDEX ? range.getStart() : range.getStart() + info.start * range.getStep();
+            int newStop = info.stop == SequenceUtil.MISSING_INDEX ? range.getStop() : Math.min(range.getStop(), newStart + info.length * newStep);
+            return factory().createRange(newStart, newStop, newStep);
+        }
+
+        @Fallback
+        Object doGeneric(@SuppressWarnings("unused") Object range, @SuppressWarnings("unused") Object idx) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+
+    }
+
 }

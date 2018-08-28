@@ -670,7 +670,6 @@ class MSVCCompiler(CCompiler) :
         temp_manifest = os.path.join(
                 build_temp,
                 os.path.basename(output_filename) + ".manifest")
-        ld_args.append('/MANIFEST')
         ld_args.append('/MANIFESTFILE:' + temp_manifest)
 
     def manifest_get_embed_info(self, target_desc, ld_args):

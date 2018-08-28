@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -39,18 +41,8 @@
 #include "capi.h"
 
 
-MUST_INLINE static void force_to_native(void* obj) {
-    if (polyglot_is_value(obj)) {
-        polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Ptr", obj, truffle_deref_handle_for_managed(obj));
-    }
-}
-
 static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {
     PyTypeObject* ptype = (PyTypeObject*)UPCALL_CEXT_O("PyTruffle_Type", polyglot_from_string(typname, SRC_CS));
-
-    // We eagerly create a native pointer for all builtin types. This is necessary for pointer comparisons to work correctly.
-    // TODO Remove this as soon as this is properly supported.
-    force_to_native(ptype);
 
     // Store the Sulong struct type id to be used for instances of this class
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_SulongType", ptype, typeid);
@@ -63,9 +55,14 @@ static void initialize_type_structure(PyTypeObject* structure, const char* typna
     type_handle->tp_basicsize = basicsize;
 }
 
+#define ctor_hidden(a) __attribute__((constructor (10 ## a
+#define ctor(a) ctor_hidden(a))))
+#define init_hidden(a, b) initialize ## a ## _ ## b ## _gen
+#define init(a, b) init_hidden(a, b)
+
 #define initialize_type(typeobject, typename, struct)                   \
-    __attribute__((constructor))                                        \
-    static void initialize_ ## typeobject ## _gen(void) {               \
+    ctor(__COUNTER__)                                                   \
+    static void init(__COUNTER__, typeobject)(void) {                   \
         initialize_type_structure(&typeobject,                          \
                                   #typename,                            \
                                   polyglot_ ## struct ## _typeid());    \
@@ -95,9 +92,14 @@ declare_type(PySet_Type, set, PySetObject);
 declare_type(PyFloat_Type, float, PyFloatObject);
 declare_type(PySlice_Type, slice, PySliceObject);
 declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
-declare_type(PyCFunction_Type, function, PyCFunctionObject);
+declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
+declare_type(PyMethodDescr_Type, method_descriptor, PyMethodDescrObject);
+declare_type(PyGetSetDescr_Type, getset_descriptor, PyGetSetDescrObject);
+declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
+declare_type(PyMemberDescr_Type, member_descriptor, PyMemberDescrObject);
 declare_type(_PyExc_BaseException, BaseException, PyBaseExceptionObject);
 declare_type(PyBuffer_Type, buffer, PyBufferDecorator);
+declare_type(PyFunction_Type, function, PyFunctionObject);
 declare_type(PyMethod_Type, method, PyMethodObject);
 declare_type(PyCode_Type, code, PyCodeObject);
 declare_type(PyFrame_Type, frame, PyFrameObject);
@@ -112,43 +114,40 @@ initialize_type(_PyNotImplemented_Type, NotImplementedType, _object);
 initialize_type(PyDictProxy_Type, mappingproxy, _object);
 initialize_type(PyEllipsis_Type, ellipsis, _object);
 
+typedef PyObject* PyObjectPtr;
+POLYGLOT_DECLARE_TYPE(PyObjectPtr);
+
 static void initialize_globals() {
     // None
     PyObject* jnone = UPCALL_CEXT_O("Py_None");
-    force_to_native(jnone);
     truffle_assign_managed(&_Py_NoneStruct, jnone);
 
     // NotImplemented
     void *jnotimpl = UPCALL_CEXT_O("Py_NotImplemented");
-    force_to_native(jnotimpl);
     truffle_assign_managed(&_Py_NotImplementedStruct, jnotimpl);
 
     // Ellipsis
     void *jellipsis = UPCALL_CEXT_O("Py_Ellipsis");
-    force_to_native(jellipsis);
     truffle_assign_managed(&_Py_EllipsisObject, jellipsis);
 
     // True, False
     void *jtrue = UPCALL_CEXT_O("Py_True");
-    force_to_native(jtrue);
     truffle_assign_managed(&_Py_TrueStruct, jtrue);
     void *jfalse = UPCALL_CEXT_O("Py_False");
-    force_to_native(jfalse);
     truffle_assign_managed(&_Py_FalseStruct, jfalse);
 
     // error marker
-    void *jerrormarker = UPCALL_CEXT_O("Py_ErrorHandler");
-    force_to_native(jerrormarker);
+    void *jerrormarker = UPCALL_CEXT_PTR("Py_ErrorHandler");
     truffle_assign_managed(&marker_struct, jerrormarker);
 }
 
 static void initialize_bufferprocs() {
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBytes_Type), (getbufferproc)bytes_buffer_getbuffer, (releasebufferproc)NULL);
-    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)NULL, (releasebufferproc)NULL);
+    polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyByteArray_Type), (getbufferproc)bytearray_getbuffer, (releasebufferproc)NULL);
     polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_SetBufferProcs", native_to_java((PyObject*)&PyBuffer_Type), (getbufferproc)bufferdecorator_getbuffer, (releasebufferproc)NULL);
 }
 
-__attribute__((constructor))
+__attribute__((constructor (20000)))
 static void initialize_capi() {
     // initialize global variables like '_Py_NoneStruct', etc.
     initialize_globals();
@@ -162,6 +161,10 @@ inline void* handle_exception(void* val) {
     return val == ERROR_MARKER ? NULL : val;
 }
 
+// Heuristic to test if some value is a pointer object
+// TODO we need a reliable solution for that
+#define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
+
 void* native_to_java(PyObject* obj) {
     if (obj == Py_None) {
         return Py_None;
@@ -173,6 +176,8 @@ void* native_to_java(PyObject* obj) {
         return truffle_managed_from_handle(obj);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {
         return truffle_managed_from_handle(obj->ob_refcnt);
+    } else if (IS_POINTER(obj->ob_refcnt)) {
+        return obj->ob_refcnt;
     }
     return obj;
 }
@@ -193,6 +198,16 @@ PyObject* to_sulong(void *o) {
 /** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
     return native_to_java((PyObject*)(obj->ob_type));
+}
+
+/** to be used from Java code only; returns the type ID for a byte array */
+polyglot_typeid get_byte_array_typeid(uint64_t len) {
+    return polyglot_array_typeid(polyglot_i8_typeid(), len);
+}
+
+/** to be used from Java code only; returns the type ID for a 'PyObject*' array */
+polyglot_typeid get_ptr_array_typeid(uint64_t len) {
+    return polyglot_array_typeid(polyglot_PyObjectPtr_typeid(), len);
 }
 
 typedef struct PyObjectHandle {
@@ -220,7 +235,6 @@ void* PyObjectHandle_ForJavaType(void* ptype) {
 
 /** to be used from Java code only; creates the deref handle for a sequence wrapper */
 void* NativeHandle_ForArray(void* jobj, ssize_t element_size) {
-    // TODO do polyglot typecast depending on element_size
     return truffle_deref_handle_for_managed(jobj);
 }
 
@@ -242,16 +256,23 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
     return str;
 }
 
-const char* PyTruffle_ByteArrayToNative(const void* jbyteArray, int len) {
-    int i;
-    char* barr = (const char*) malloc(len * sizeof(char));
+#define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
+    void* PyTruffle_##__jtype__##ArrayToNative(const void* jarray, int64_t len) { \
+        int64_t i; \
+        int64_t size = len + 1; \
+        __ctype__* carr = (__ctype__*) malloc(size * sizeof(__ctype__)); \
+        carr[len] = (__ctype__)0; \
+        for (i=0; i < len; i++) { \
+            carr[i] = __element_cast__(polyglot_get_array_element(jarray, i)); \
+        } \
+        return polyglot_from_##__polyglot_type__##_array(carr, len); \
+    } \
 
-    for(i=0; i < len; i++) {
-        barr[i] = (char) polyglot_get_array_element(jbyteArray, i);
-    }
-
-    return (const char*) barr;
-}
+PRIMITIVE_ARRAY_TO_NATIVE(Byte, int8_t, i8, polyglot_as_i8);
+PRIMITIVE_ARRAY_TO_NATIVE(Int, int32_t, i32, polyglot_as_i32);
+PRIMITIVE_ARRAY_TO_NATIVE(Long, int64_t, i64, polyglot_as_i64);
+PRIMITIVE_ARRAY_TO_NATIVE(Double, double, double, polyglot_as_double);
+PRIMITIVE_ARRAY_TO_NATIVE(Object, PyObjectPtr, PyObjectPtr, (PyObjectPtr));
 
 #define ReadMember(object, offset, T) ((T*)(((char*)object) + PyLong_AsSsize_t(offset)))[0]
 
@@ -574,4 +595,8 @@ void* wrap_fastcall(_PyCFunctionFast fun, PyObject *self, PyObject **args, PyObj
 
 void* wrap_unsupported(void *fun, ...) {
     return NULL;
+}
+
+int truffle_ptr_compare(void* x, void* y) {
+    return x == y;
 }

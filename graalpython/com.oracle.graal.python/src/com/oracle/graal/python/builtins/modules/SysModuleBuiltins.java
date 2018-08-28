@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -38,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLASS__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.IOException;
@@ -51,11 +54,21 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -63,14 +76,20 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "sys")
 public class SysModuleBuiltins extends PythonBuiltins {
@@ -180,13 +199,150 @@ public class SysModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "exc_info", fixedNumOfArguments = 0)
+    @Builtin(name = "__super__init__", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    public abstract static class SuperInitNode extends PythonVarargsBuiltinNode {
+
+        @Child private SetAttributeNode setTypeAttribute = SetAttributeNode.create("__type__");
+        @Child private SetAttributeNode setObjAttribute = SetAttributeNode.create("__obj__");
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (keywords.length != 0) {
+                throw raise(PythonErrorType.RuntimeError, "super(): unexpected keyword arguments");
+            }
+            if (arguments.length == 1) {
+                return execute(frame, arguments[0], PNone.NO_VALUE, PNone.NO_VALUE);
+            } else if (arguments.length == 2) {
+                return execute(frame, arguments[0], arguments[1], PNone.NO_VALUE);
+            } else if (arguments.length == 3) {
+                return execute(frame, arguments[0], arguments[1], arguments[2]);
+            } else {
+                throw raise(PythonErrorType.RuntimeError, "super(): invalid number of arguments");
+            }
+        }
+
+        @Override
+        public final Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            if (keywords.length != 0) {
+                throw raise(PythonErrorType.RuntimeError, "super(): unexpected keyword arguments");
+            }
+            if (arguments.length == 0) {
+                return execute(frame, self, PNone.NO_VALUE, PNone.NO_VALUE);
+            } else if (arguments.length == 1) {
+                return execute(frame, self, arguments[0], PNone.NO_VALUE);
+            } else if (arguments.length == 2) {
+                return execute(frame, self, arguments[0], arguments[1]);
+            } else {
+                throw raise(PythonErrorType.RuntimeError, "super(): too many arguments");
+            }
+        }
+
+        protected abstract Object execute(VirtualFrame frame, Object self, Object cls, Object obj);
+
+        @Specialization(guards = {"!isNoValue(cls)", "!isNoValue(obj)"})
+        PNone init(Object self, Object cls, Object obj) {
+            if (!(cls instanceof PythonClass)) {
+                throw raise(PythonErrorType.RuntimeError, "super(): __class__ is not a type (%p)", cls);
+            }
+            setTypeAttribute.execute(self, cls);
+            setObjAttribute.execute(self, obj);
+            return PNone.NONE;
+        }
+
+        protected boolean isInBuiltinFunctionRoot() {
+            return getRootNode() instanceof BuiltinFunctionRootNode;
+        }
+
+        protected ReadLocalVariableNode createRead(VirtualFrame frame) {
+            FrameSlot slot = frame.getFrameDescriptor().findFrameSlot(__CLASS__);
+            if (slot == null) {
+                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+            }
+            return ReadLocalVariableNode.create(slot);
+        }
+
+        /**
+         * Executed with the frame of the calling method - direct access to the frame.
+         */
+        @Specialization(guards = {"!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
+        PNone initInPlace(VirtualFrame frame, Object self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
+                        @Cached("createRead(frame)") ReadLocalVariableNode readClass,
+                        @Cached("create(0)") ReadIndexedArgumentNode readArgument,
+                        @Cached("createBinaryProfile()") ConditionProfile isCellProfile) {
+            Object obj = readArgument.execute(frame);
+            if (obj == PNone.NONE) {
+                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+            }
+            Object cls = readClass.execute(frame);
+            if (isCellProfile.profile(cls instanceof PCell)) {
+                cls = ((PCell) cls).getPythonRef();
+            }
+            if (cls == PNone.NONE) {
+                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+            }
+            return init(self, cls, obj);
+        }
+
+        /**
+         * Executed within a {@link BuiltinFunctionRootNode} - indirect access to the frame.
+         */
+        @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
+        PNone init(VirtualFrame frame, Object self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
+                        @Cached("create(0)") ReadCallerFrameNode readCaller) {
+            Frame target = readCaller.executeWith(frame);
+            if (target == null) {
+                throw raise(PythonErrorType.RuntimeError, "super(): no current frame");
+            }
+            Object[] arguments = target.getArguments();
+            if (arguments.length <= PArguments.USER_ARGUMENTS_OFFSET) {
+                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+            }
+            Object obj = arguments[PArguments.USER_ARGUMENTS_OFFSET];
+            if (obj == PNone.NONE) {
+                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+            }
+
+            return initFromFrame(self, target, obj);
+        }
+
+        @TruffleBoundary
+        private PNone initFromFrame(Object self, Frame target, Object obj) {
+            // TODO: remove me
+            // TODO: do it properly via the python API in super.__init__ :
+            // sys._getframe(1).f_code.co_closure?
+            FrameSlot classSlot = target.getFrameDescriptor().findFrameSlot(__CLASS__);
+            Object cls = PNone.NONE;
+            if (classSlot != null) {
+                try {
+                    cls = target.getObject(classSlot);
+                    if (cls instanceof PCell) {
+                        cls = ((PCell) cls).getPythonRef();
+                    }
+                } catch (FrameSlotTypeException e) {
+                    // fallthrough
+                }
+            }
+            if (cls == PNone.NONE) {
+                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+            }
+            return init(self, cls, obj);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        PNone initFallback(Object self, Object cls, Object obj) {
+            throw raise(PythonErrorType.RuntimeError, "super(): invalid arguments");
+        }
+    }
+
+    @Builtin(name = "exc_info", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class ExcInfoNode extends PythonBuiltinNode {
         @Specialization
         public Object run() {
             PythonContext context = getContext();
-            PException currentException = context == null ? getCore().getCurrentException() : context.getCurrentException();
+            PException currentException = context.getCurrentException();
             if (currentException == null) {
                 return factory().createTuple(new PNone[]{PNone.NONE, PNone.NONE, PNone.NONE});
             } else {
@@ -197,7 +353,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_getframe", minNumOfArguments = 0, maxNumOfArguments = 1)
+    @Builtin(name = "_getframe", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public static abstract class GetFrameNode extends PythonBuiltinNode {
 
@@ -213,15 +369,17 @@ public class SysModuleBuiltins extends PythonBuiltins {
          * behavior. (it only captures the frames if a CallTarget boundary is crossed)
          */
         private static final class GetStackTraceRootNode extends RootNode {
+            private ContextReference<PythonContext> contextRef;
 
-            protected GetStackTraceRootNode(TruffleLanguage<?> language) {
+            protected GetStackTraceRootNode(PythonLanguage language) {
                 super(language);
+                this.contextRef = language.getContextReference();
             }
 
             @Override
             public Object execute(VirtualFrame frame) {
                 CompilerDirectives.transferToInterpreter();
-                throw PythonLanguage.getCore().raise(ValueError);
+                throw contextRef.get().getCore().raise(ValueError);
             }
 
             @Override
@@ -286,7 +444,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "getfilesystemencoding", fixedNumOfArguments = 0)
+    @Builtin(name = "getfilesystemencoding", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
@@ -295,7 +453,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfArguments = 0)
+    @Builtin(name = "getfilesystemencodeerrors", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public static abstract class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
@@ -304,7 +462,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "intern", fixedNumOfArguments = 1)
+    @Builtin(name = "intern", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InternNode extends PythonBuiltinNode {
         @Specialization

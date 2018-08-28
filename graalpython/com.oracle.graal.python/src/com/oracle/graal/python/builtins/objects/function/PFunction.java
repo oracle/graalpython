@@ -29,6 +29,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -49,6 +50,7 @@ public class PFunction extends PythonObject implements PythonCallable {
     private final PythonObject globals;
     private final PCell[] closure;
     private final boolean isStatic;
+    private PCode code;
 
     public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
         super(clazz);
@@ -61,10 +63,6 @@ public class PFunction extends PythonObject implements PythonCallable {
         this.globals = globals;
         this.closure = closure;
         addDefaultConstants(this.getStorage(), name, enclosingClassName);
-    }
-
-    public PFunction copyWithGlobals(PythonObject newGlobals) {
-        return new PFunction(getPythonClass(), name, enclosingClassName, arity, callTarget, frameDescriptor, newGlobals, closure);
     }
 
     @TruffleBoundary
@@ -115,9 +113,21 @@ public class PFunction extends PythonObject implements PythonCallable {
     public final String toString() {
         CompilerAsserts.neverPartOfCompilation();
         if (enclosingClassName == null) {
-            return String.format("<function %s at 0x%x>", name, hashCode());
+            return String.format("PFunction %s at 0x%x", name, hashCode());
         } else {
-            return String.format("<function %s.%s at 0x%x>", enclosingClassName, name, hashCode());
+            return String.format("PFunction %s.%s at 0x%x", enclosingClassName, name, hashCode());
         }
+    }
+
+    public PCode getCode() {
+        return code;
+    }
+
+    public void setCode(PCode code) {
+        this.code = code;
+    }
+
+    public String getEnclosingClassName() {
+        return enclosingClassName;
     }
 }

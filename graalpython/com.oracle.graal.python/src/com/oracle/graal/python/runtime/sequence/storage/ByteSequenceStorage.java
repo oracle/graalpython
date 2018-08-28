@@ -31,7 +31,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class ByteSequenceStorage extends TypedSequenceStorage {
 
@@ -85,13 +87,22 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return boxed;
     }
 
+    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
     public byte[] getInternalByteArray() {
+        if (length != values.length) {
+            assert length < values.length;
+            return Arrays.copyOf(values, length);
+        }
         return values;
     }
 
     @Override
     public Object getItemNormalized(int idx) {
         return getIntItemNormalized(idx);
+    }
+
+    public final byte getByteItemNormalized(int idx) {
+        return values[idx];
     }
 
     public int getIntItemNormalized(int idx) {
@@ -166,22 +177,54 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             setByteSliceInBound(start, stop, step, (ByteSequenceStorage) sequence);
         } else if (sequence instanceof IntSequenceStorage) {
             setByteSliceInBound(start, stop, step, (IntSequenceStorage) sequence);
+        } else if (sequence instanceof EmptySequenceStorage) {
+            setByteSliceInBound(start, stop, step, new IntSequenceStorage(0));
         } else {
             throw new SequenceStoreException();
         }
     }
 
+    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
     public void setByteSliceInBound(int start, int stop, int step, IntSequenceStorage sequence) {
-        ensureCapacity(stop);
-
+        int otherLength = sequence.length();
         int[] seqValues = sequence.getInternalIntArray();
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = ((Integer) seqValues[j]).byteValue();
+
+        // (stop - start) = bytes to be replaced; otherLength = bytes to be written
+        int newLength = length - (stop - start - otherLength);
+
+        ensureCapacity(newLength);
+
+        // if enlarging, we need to move the suffix first
+        if (stop - start < otherLength) {
+            assert length < newLength;
+            for (int j = length - 1, k = newLength - 1; j >= stop; j--, k--) {
+                values[k] = values[j];
+            }
         }
 
-        length = length > stop ? length : stop;
+        int i = start;
+        for (int j = 0; j < otherLength; i += step, j++) {
+            if (seqValues[j] < Byte.MIN_VALUE || seqValues[j] > Byte.MAX_VALUE) {
+                throw PythonLanguage.getCore().raise(ValueError, "byte must be in range(0, 256)");
+            }
+            values[i] = (byte) seqValues[j];
+        }
+
+        // if shrinking, move the suffix afterwards
+        if (stop - start > otherLength) {
+            assert stop >= 0;
+            for (int j = i, k = 0; stop + k < values.length; j++, k++) {
+                values[j] = values[stop + k];
+            }
+        }
+
+        // for security
+        Arrays.fill(values, newLength, values.length, (byte) 0);
+
+        length = newLength;
     }
 
+    @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
     public void setByteSliceInBound(int start, int stop, int step, ByteSequenceStorage sequence) {
         int otherLength = sequence.length();
 
@@ -193,13 +236,36 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             return;
         }
 
-        ensureCapacity(stop);
+        // (stop - start) = bytes to be replaced; otherLength = bytes to be written
+        int newLength = length - (stop - start - otherLength);
 
-        for (int i = start, j = 0; i < stop; i += step, j++) {
+        ensureCapacity(newLength);
+
+        // if enlarging, we need to move the suffix first
+        if (stop - start < otherLength) {
+            assert length < newLength;
+            for (int j = length - 1, k = newLength - 1; j >= stop; j--, k--) {
+                values[k] = values[j];
+            }
+        }
+
+        int i = start;
+        for (int j = 0; j < otherLength; i += step, j++) {
             values[i] = sequence.values[j];
         }
 
-        length = length > stop ? length : stop;
+        // if shrinking, move the suffix afterwards
+        if (stop - start > otherLength) {
+            assert stop >= 0;
+            for (int j = i, k = 0; stop + k < values.length; j++, k++) {
+                values[j] = values[stop + k];
+            }
+        }
+
+        // for security
+        Arrays.fill(values, newLength, values.length, (byte) 0);
+
+        length = newLength;
     }
 
     @Override
@@ -316,6 +382,14 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     public void append(Object value) throws SequenceStoreException {
         if (value instanceof Integer) {
             appendInt((int) value);
+        } else if (value instanceof Long) {
+            appendLong((long) value);
+        } else if (value instanceof PInt) {
+            try {
+                appendInt(((PInt) value).intValueExact());
+            } catch (ArithmeticException e) {
+                throw SequenceStoreException.INSTANCE;
+            }
         } else if (value instanceof Byte) {
             appendByte((byte) value);
         } else {
@@ -323,12 +397,21 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
     }
 
+    public void appendLong(long value) {
+        if (value < 0 || value >= 256) {
+            throw SequenceStoreException.INSTANCE;
+        }
+        ensureCapacity(length + 1);
+        values[length] = (byte) value;
+        length++;
+    }
+
     public void appendInt(int value) {
         if (value < 0 || value >= 256) {
             throw SequenceStoreException.INSTANCE;
         }
         ensureCapacity(length + 1);
-        values[length] = ((Integer) value).byteValue();
+        values[length] = (byte) value;
         length++;
     }
 
@@ -344,6 +427,8 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             extendWithByteStorage((ByteSequenceStorage) other);
         } else if (other instanceof IntSequenceStorage) {
             extendWithIntStorage((IntSequenceStorage) other);
+        } else if (other instanceof ObjectSequenceStorage) {
+            extendWithObjectStorage((ObjectSequenceStorage) other);
         } else {
             throw SequenceStoreException.INSTANCE;
         }
@@ -371,7 +456,35 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             if (otherValue < 0 || otherValue >= 256) {
                 throw SequenceStoreException.INSTANCE;
             }
-            values[i] = ((Integer) otherValue).byteValue();
+            values[i] = (byte) otherValue;
+        }
+
+        length = extendedLength;
+    }
+
+    private void extendWithObjectStorage(ObjectSequenceStorage other) {
+        int extendedLength = length + other.length();
+        ensureCapacity(extendedLength);
+        Object[] otherValues = other.getInternalArray();
+
+        for (int i = length, j = 0; i < extendedLength; i++, j++) {
+            Object otherValue = otherValues[j];
+            long value = 0;
+            if (otherValue instanceof Integer) {
+                value = (int) otherValue;
+            } else if (otherValue instanceof Long) {
+                value = (long) otherValue;
+            } else if (otherValue instanceof PInt) {
+                try {
+                    value = ((PInt) otherValue).intValueExact();
+                } catch (ArithmeticException e) {
+                    throw SequenceStoreException.INSTANCE;
+                }
+            }
+            if (value < 0 || value >= 256) {
+                throw SequenceStoreException.INSTANCE;
+            }
+            values[i] = (byte) value;
         }
 
         length = extendedLength;
@@ -419,5 +532,10 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
 
         return true;
+    }
+
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
     }
 }

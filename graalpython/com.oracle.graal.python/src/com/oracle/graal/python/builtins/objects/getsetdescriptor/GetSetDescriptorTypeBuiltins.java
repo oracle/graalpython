@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -48,8 +50,8 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -60,21 +62,20 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@CoreFunctions(extendClasses = GetSetDescriptor.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.GetSetDescriptor)
 public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return GetSetDescriptorTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetSetReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -84,17 +85,16 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GET__, fixedNumOfArguments = 3)
+    @Builtin(name = __GET__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetGetNode extends PythonTernaryBuiltinNode {
-        private PythonBuiltinClass noneClass;
         @Child CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
         private final BranchProfile branchProfile = BranchProfile.create();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L149
         @Specialization
         Object get(GetSetDescriptor descr, Object obj, PythonClass type) {
-            if (descr_check(getCore(), descr, obj, type, getNoneType())) {
+            if (descr_check(getCore(), descr, obj, type)) {
                 return descr;
             }
             if (descr.getGet() != null) {
@@ -104,17 +104,9 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
                 throw raise(AttributeError, "attribute '%s' of '%s' objects is not readable", descr.getName(), descr.getType().getName());
             }
         }
-
-        private PythonBuiltinClass getNoneType() {
-            if (noneClass == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                noneClass = getCore().lookupType(PNone.class);
-            }
-            return noneClass;
-        }
     }
 
-    @Builtin(name = __SET__, fixedNumOfArguments = 3)
+    @Builtin(name = __SET__, fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class GetSetSetNode extends PythonTernaryBuiltinNode {
         @Child GetClassNode getClassNode = GetClassNode.create();
@@ -124,7 +116,7 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object set(GetSetDescriptor descr, Object obj, Object value) {
             // the noneType is not important here - there are no setters on None
-            if (descr_check(getCore(), descr, obj, getClassNode.execute(obj), null)) {
+            if (descr_check(getCore(), descr, obj, getClassNode.execute(obj))) {
                 return descr;
             }
             if (descr.getSet() != null) {
@@ -137,9 +129,11 @@ public class GetSetDescriptorTypeBuiltins extends PythonBuiltins {
     }
 
     // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
-    private static boolean descr_check(PythonCore core, GetSetDescriptor descr, Object obj, PythonClass type, PythonBuiltinClass noneType) {
-        if (PGuards.isNone(obj) && type != noneType) {
-            return true;
+    private static boolean descr_check(PythonCore core, GetSetDescriptor descr, Object obj, PythonClass type) {
+        if (PGuards.isNone(obj)) {
+            if (!(type instanceof PythonBuiltinClass) || ((PythonBuiltinClass) type).getType() != PythonBuiltinClassType.PNone) {
+                return true;
+            }
         }
         for (Object o : type.getMethodResolutionOrder()) {
             if (o == descr.getType()) {

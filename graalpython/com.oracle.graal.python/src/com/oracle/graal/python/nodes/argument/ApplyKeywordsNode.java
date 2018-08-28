@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -38,51 +40,27 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class ApplyKeywordsNode extends Node {
+public abstract class ApplyKeywordsNode extends PBaseNode {
+    private final ConditionProfile expandArgs = ConditionProfile.createBinaryProfile();
+
     public abstract Object[] execute(Arity calleeArity, Object[] arguments, PKeyword[] keywords);
 
     public static ApplyKeywordsNode create() {
         return ApplyKeywordsNodeGen.create();
-    }
-
-    private static Object[] applyKeywordArgs(Arity calleeArity, Object[] arguments, PKeyword[] keywords) {
-        String[] parameters = calleeArity.getParameterIds();
-        Object[] combined = arguments;
-        if (parameters.length > PArguments.getUserArgumentLength(arguments)) {
-            combined = PArguments.create(parameters.length);
-            System.arraycopy(arguments, 0, combined, 0, arguments.length);
-        }
-        ArrayList<PKeyword> unusedKeywords = new ArrayList<>();
-        for (int i = 0; i < keywords.length; i++) {
-            PKeyword keyarg = keywords[i];
-            int keywordIdx = -1;
-            for (int j = 0; j < parameters.length; j++) {
-                if (parameters[j].equals(keyarg.getName())) {
-                    keywordIdx = j;
-                    break;
-                }
-            }
-
-            if (keywordIdx != -1) {
-                assert PArguments.getArgument(combined, keywordIdx) == null : calleeArity.getFunctionName() + " got multiple values for argument '" + keyarg.getName() + "'";
-                PArguments.setArgument(combined, keywordIdx, keyarg.getValue());
-            } else {
-                unusedKeywords.add(keyarg);
-            }
-        }
-        PArguments.setKeywordArguments(combined, unusedKeywords.toArray(new PKeyword[unusedKeywords.size()]));
-        return combined;
     }
 
     int getUserArgumentLength(Object[] arguments) {
@@ -104,30 +82,64 @@ public abstract class ApplyKeywordsNode extends Node {
                     @Cached("parameters.length") int paramLen,
                     @Cached("createSearchNamedParameterNode()") SearchNamedParameterNode searchParamNode) {
         Object[] combined = arguments;
-        if (paramLen > userArgLen) {
+        if (expandArgs.profile(paramLen > userArgLen)) {
             combined = PArguments.create(paramLen);
-            for (int i = 0; i < argLen; i++) {
-                combined[i] = arguments[i];
-            }
+            System.arraycopy(arguments, 0, combined, 0, argLen);
         }
-        ArrayList<PKeyword> unusedKeywords = new ArrayList<>();
+
+        PKeyword[] unusedKeywords = new PKeyword[kwLen];
+        int k = 0;
         for (int i = 0; i < kwLen; i++) {
-            PKeyword keyarg = keywords[i];
-            int keywordIdx = searchParamNode.execute(parameters, keyarg.getName());
-            if (keywordIdx != -1) {
-                assert PArguments.getArgument(combined, keywordIdx) == null : calleeArity.getFunctionName() + " got multiple values for argument '" + keyarg.getName() + "'";
-                PArguments.setArgument(combined, keywordIdx, keyarg.getValue());
+            PKeyword kwArg = keywords[i];
+            int kwIdx = searchParamNode.execute(parameters, kwArg.getName());
+
+            if (kwIdx != -1) {
+                if (PArguments.getArgument(combined, kwIdx) != null) {
+                    throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'",
+                                    calleeArity.getFunctionName(),
+                                    kwArg.getName());
+                }
+                PArguments.setArgument(combined, kwIdx, kwArg.getValue());
             } else {
-                unusedKeywords.add(keyarg);
+                unusedKeywords[k++] = kwArg;
             }
         }
-        PArguments.setKeywordArguments(combined, unusedKeywords.toArray(new PKeyword[unusedKeywords.size()]));
+        PArguments.setKeywordArguments(combined, Arrays.copyOf(unusedKeywords, k));
         return combined;
     }
 
-    @Specialization
+    @Specialization(replaces = "applyCached")
     Object[] applyUncached(Arity calleeArity, Object[] arguments, PKeyword[] keywords) {
-        return applyKeywordArgs(calleeArity, arguments, keywords);
+        String[] parameters = calleeArity.getParameterIds();
+        Object[] combined = arguments;
+        if (parameters.length > PArguments.getUserArgumentLength(arguments)) {
+            combined = PArguments.create(parameters.length);
+            System.arraycopy(arguments, 0, combined, 0, arguments.length);
+        }
+
+        PKeyword[] unusedKeywords = new PKeyword[keywords.length];
+        int k = 0;
+        for (int i = 0; i < keywords.length; i++) {
+            PKeyword kwArg = keywords[i];
+            int kwIdx = -1;
+            for (int j = 0; j < parameters.length; j++) {
+                if (parameters[j].equals(kwArg.getName())) {
+                    kwIdx = j;
+                    break;
+                }
+            }
+
+            if (kwIdx != -1) {
+                if (PArguments.getArgument(combined, kwIdx) != null) {
+                    throw raise(PythonErrorType.TypeError, "%s() got multiple values for argument '%s'", calleeArity.getFunctionName(), kwArg.getName());
+                }
+                PArguments.setArgument(combined, kwIdx, kwArg.getValue());
+            } else {
+                unusedKeywords[k++] = kwArg;
+            }
+        }
+        PArguments.setKeywordArguments(combined, Arrays.copyOf(unusedKeywords, k));
+        return combined;
     }
 
     protected abstract static class SearchNamedParameterNode extends Node {
@@ -146,7 +158,7 @@ public abstract class ApplyKeywordsNode extends Node {
             return idx;
         }
 
-        @Specialization
+        @Specialization(replaces = "cached")
         @ExplodeLoop
         int uncached(String[] parameters, String name) {
             for (int i = 0; i < parameters.length; i++) {

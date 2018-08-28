@@ -27,9 +27,7 @@ package com.oracle.graal.python.runtime.sequence;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -40,26 +38,18 @@ public abstract class PSequence extends PythonBuiltinObject implements PLenSuppl
         super(cls);
     }
 
-    public abstract Object getItem(int idx);
-
-    public final Object getSlice(PythonObjectFactory factory, PSlice slice) {
-        SliceInfo info = slice.computeActualIndices(len());
-        return getSlice(factory, info.start, info.stop, info.step, info.length);
-    }
-
-    protected abstract Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length);
-
     public abstract void setSlice(int start, int stop, int step, PSequence value);
 
     public abstract void setSlice(PSlice slice, PSequence value);
 
-    public abstract void delItem(int idx);
-
-    public abstract int index(Object value);
-
     public abstract SequenceStorage getSequenceStorage();
 
-    public abstract boolean lessThan(PSequence sequence);
+    /**
+     * Note: Sequences are never immutable for us because they can go <it>to native</it>, i.e., the
+     * storage will be exchanged and also, native code often allows to modify <it>immutable</it>
+     * objects (like {@code _PyTuple_Resize}).
+     */
+    public abstract void setSequenceStorage(SequenceStorage newStorage);
 
     public static PSequence require(Object value) {
         if (value instanceof PSequence) {

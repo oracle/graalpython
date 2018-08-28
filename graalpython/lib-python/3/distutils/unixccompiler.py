@@ -55,31 +55,15 @@ class UnixCCompiler(CCompiler):
     executables = {'preprocessor' : None,
                    'compiler'     : ["cc"],
                    'compiler_so'  : ["cc"],
-                   'compiler_cxx' : ["c++"],  # pypy: changed, 'cc' is bogus
+                   'compiler_cxx' : ["cc"],
                    'linker_so'    : ["cc", "-shared"],
                    'linker_exe'   : ["cc"],
                    'archiver'     : ["ar", "-cr"],
                    'ranlib'       : None,
                   }
 
-    if sys.platform[:6] == "darwin" \
-       and False: # TODO: Truffle remove-me
-        import platform
-        if platform.machine() == 'i386':
-            if platform.architecture()[0] == '32bit':
-                arch = 'i386'
-            else:
-                arch = 'x86_64'
-        else:
-            # just a guess
-            arch = platform.machine()
+    if sys.platform[:6] == "darwin":
         executables['ranlib'] = ["ranlib"]
-        executables['linker_so'] += ['-undefined', 'dynamic_lookup']
-
-        for k, v in executables.items():
-            if v and v[0] == 'cc':
-                v += ['-arch', arch]
-
 
     # Needed for the filename generation methods provided by the base
     # class, CCompiler.  NB. whoever instantiates/uses a particular
@@ -297,7 +281,7 @@ class UnixCCompiler(CCompiler):
             #       usr/lib/libedit.tbd
             # vs
             #   /usr/lib/libedit.dylib
-            cflags = sysconfig.get_config_var('CFLAGS') or ''
+            cflags = sysconfig.get_config_var('CFLAGS')
             m = re.search(r'-isysroot\s+(\S+)', cflags)
             if m is None:
                 sysroot = '/'

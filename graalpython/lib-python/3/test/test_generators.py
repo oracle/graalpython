@@ -10,6 +10,35 @@ import types
 
 from test import support
 
+_testcapi = support.import_module('_testcapi')
+
+
+# This tests to make sure that if a SIGINT arrives just before we send into a
+# yield from chain, the KeyboardInterrupt is raised in the innermost
+# generator (see bpo-30039).
+class SignalAndYieldFromTest(unittest.TestCase):
+
+    def generator1(self):
+        return (yield from self.generator2())
+
+    def generator2(self):
+        try:
+            yield
+        except KeyboardInterrupt:
+            return "PASSED"
+        else:
+            return "FAILED"
+
+    def test_raise_and_yield_from(self):
+        gen = self.generator1()
+        gen.send(None)
+        try:
+            _testcapi.raise_SIGINT_then_send_None(gen)
+        except BaseException as _exc:
+            exc = _exc
+        self.assertIs(type(exc), StopIteration)
+        self.assertEqual(exc.value, "PASSED")
+
 
 class FinalizationTest(unittest.TestCase):
 
@@ -47,8 +76,7 @@ class FinalizationTest(unittest.TestCase):
         g = gen()
         next(g)
         g.send(g)
-        if hasattr(sys, 'getrefcount'):
-            self.assertGreater(sys.getrefcount(g), 2)
+        self.assertGreater(sys.getrefcount(g), 2)
         self.assertFalse(finalized)
         del g
         support.gc_collect()
@@ -97,8 +125,8 @@ class GeneratorTest(unittest.TestCase):
         # generator names must be a string and cannot be deleted
         self.assertRaises(TypeError, setattr, gen, '__name__', 123)
         self.assertRaises(TypeError, setattr, gen, '__qualname__', 123)
-        self.assertRaises((TypeError, AttributeError), delattr, gen, '__name__')
-        self.assertRaises((TypeError, AttributeError), delattr, gen, '__qualname__')
+        self.assertRaises(TypeError, delattr, gen, '__name__')
+        self.assertRaises(TypeError, delattr, gen, '__qualname__')
 
         # modify names of the function creating the generator
         func.__qualname__ = "func_qualname"
@@ -1431,7 +1459,7 @@ class Knights:
             # If we create a square with one exit, we must visit it next;
             # else somebody else will have to visit it, and since there's
             # only one adjacent, there won't be a way to leave it again.
-            # Finelly, if we create more than one free square with a
+            # Finally, if we create more than one free square with a
             # single exit, we can only move to one of them next, leaving
             # the other one a dead end.
             ne0 = ne1 = 0
@@ -1489,7 +1517,7 @@ class Knights:
                 succs[final].remove(corner)
                 add_to_successors(this)
 
-        # Generate moves 3 thru m*n-1.
+        # Generate moves 3 through m*n-1.
         def advance(len=len):
             # If some successor has only one exit, must take it.
             # Else favor successors with fewer exits.
@@ -1511,7 +1539,7 @@ class Knights:
                         yield i
                     add_to_successors(i)
 
-        # Generate moves 3 thru m*n-1.  Alternative version using a
+        # Generate moves 3 through m*n-1.  Alternative version using a
         # stronger (but more expensive) heuristic to order successors.
         # Since the # of backtracking levels is m*n, a poor move early on
         # can take eons to undo.  Smallest square board for which this
@@ -1776,8 +1804,6 @@ True
 """
 
 coroutine_tests = """\
->>> from test.support import gc_collect
-
 Sending a value into a started generator:
 
 >>> def f():
@@ -1904,17 +1930,17 @@ TypeError: throw() third argument must be a traceback object
 >>> g.throw("abc")
 Traceback (most recent call last):
   ...
-TypeError: exceptions must derive from BaseException, not str
+TypeError: exceptions must be classes or instances deriving from BaseException, not str
 
 >>> g.throw(0)
 Traceback (most recent call last):
   ...
-TypeError: exceptions must derive from BaseException, not int
+TypeError: exceptions must be classes or instances deriving from BaseException, not int
 
 >>> g.throw(list)
 Traceback (most recent call last):
   ...
-TypeError: exceptions must derive from BaseException, not type
+TypeError: exceptions must be classes or instances deriving from BaseException, not type
 
 >>> def throw(g,exc):
 ...     try:
@@ -2006,7 +2032,7 @@ And finalization:
 
 >>> g = f()
 >>> next(g)
->>> del g; gc_collect()
+>>> del g
 exiting
 
 
@@ -2021,7 +2047,7 @@ GeneratorExit is not caught by except Exception:
 
 >>> g = f()
 >>> next(g)
->>> del g; gc_collect()
+>>> del g
 finally
 
 
@@ -2047,7 +2073,6 @@ Our ill-behaved code should be invoked during GC:
 >>> g = f()
 >>> next(g)
 >>> del g
->>> gc_collect()
 >>> "RuntimeError: generator ignored GeneratorExit" in sys.stderr.getvalue()
 True
 >>> sys.stderr = old
@@ -2111,8 +2136,6 @@ Prior to adding cycle-GC support to itertools.tee, this code would leak
 references. We add it to the standard suite so the routine refleak-tests
 would trigger if it starts being uncleanable again.
 
->>> from test.support import gc_collect
-
 >>> import itertools
 >>> def leak():
 ...     class gen:
@@ -2166,7 +2189,6 @@ to test.
 ...
 ...     l = Leaker()
 ...     del l
-...     gc_collect()
 ...     err = sys.stderr.getvalue().strip()
 ...     "Exception ignored in" in err
 ...     "RuntimeError: test" in err

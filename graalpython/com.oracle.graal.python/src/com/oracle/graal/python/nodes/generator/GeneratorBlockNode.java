@@ -27,13 +27,21 @@ package com.oracle.graal.python.nodes.generator;
 
 import java.util.List;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
+import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GeneratorBlockNode extends BaseBlockNode implements GeneratorControlNode {
 
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
+    private final ConditionProfile needsUpdateProfile = ConditionProfile.createBinaryProfile();
+    private final BranchProfile seenYield = BranchProfile.create();
     private final int indexSlot;
 
     public GeneratorBlockNode(PNode[] statements, int indexSlot) {
@@ -49,7 +57,6 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
         return indexSlot;
     }
 
-    @Override
     public GeneratorBlockNode insertNodesBefore(PNode insertBefore, List<PNode> insertees) {
         return new GeneratorBlockNode(insertStatementsBefore(insertBefore, insertees), getIndexSlot());
     }
@@ -57,24 +64,25 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
     @ExplodeLoop
     @Override
     public Object execute(VirtualFrame frame) {
-        Object result = null;
-
-        for (int i = 0; i < statements.length; i++) {
-            final int currentIndex = getIndex(frame, indexSlot);
-
-            if (i < currentIndex) {
-                continue;
+        int startIndex = gen.getIndex(frame, indexSlot);
+        int i = 0;
+        int nextIndex = 0;
+        try {
+            Object result = PNone.NONE;
+            for (i = 0; i < statements.length; i++) {
+                if (i >= startIndex) {
+                    result = statements[i].execute(frame);
+                }
             }
-
-            result = statements[i].execute(frame);
-            setIndex(frame, indexSlot, currentIndex + 1);
+            return result;
+        } catch (YieldException e) {
+            seenYield.enter();
+            nextIndex = i;
+            throw e;
+        } finally {
+            if (needsUpdateProfile.profile(nextIndex != startIndex)) {
+                gen.setIndex(frame, indexSlot, nextIndex);
+            }
         }
-
-        reset(frame);
-        return result;
-    }
-
-    public void reset(VirtualFrame frame) {
-        setIndex(frame, indexSlot, 0);
     }
 }

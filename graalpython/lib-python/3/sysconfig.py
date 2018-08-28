@@ -41,16 +41,6 @@ _INSTALL_SCHEMES = {
         'scripts': '{base}/bin',
         'data': '{base}',
         },
-    'pypy': {
-        'stdlib': '{installed_base}/lib-python',
-        'platstdlib': '{base}/lib-python',
-        'purelib': '{base}/site-packages',
-        'platlib': '{base}/site-packages',
-        'include': '{installed_base}/include',
-        'platinclude': '{installed_base}/include',
-        'scripts': '{base}/bin',
-        'data'   : '{base}',
-        },
     'nt': {
         'stdlib': '{installed_base}/Lib',
         'platstdlib': '{base}/Lib',
@@ -181,9 +171,7 @@ def _expand_vars(scheme, vars):
 
 
 def _get_default_scheme():
-    if '__pypy__' in sys.builtin_module_names:
-        return 'pypy'
-    elif os.name == 'posix':
+    if os.name == 'posix':
         # the default scheme for posix is posix_prefix
         return 'posix_prefix'
     return os.name
@@ -428,6 +416,7 @@ def _generate_posix_vars():
 
 def _init_posix(vars):
     """Initialize the module as appropriate for POSIX systems."""
+    # _sysconfigdata is generated at build time, see _generate_posix_vars()
     # TODO: Truffle reneable me once we know what goes on in here (GR-9137)
     # name = _get_sysconfigdata_name()
     # _temp = __import__(name, globals(), locals(), ['build_time_vars'], 0)
@@ -591,9 +580,6 @@ def get_config_vars(*args):
         if sys.platform == 'darwin':
             import _osx_support
             _osx_support.customize_config_vars(_CONFIG_VARS)
-
-        _CONFIG_VARS['INCLUDEPY'] = os.path.join(_CONFIG_VARS['prefix'],
-                                                 'include')
 
     if args:
         vals = []

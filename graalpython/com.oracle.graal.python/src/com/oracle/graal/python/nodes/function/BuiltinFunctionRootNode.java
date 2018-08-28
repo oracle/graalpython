@@ -29,6 +29,7 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PNode;
@@ -52,6 +53,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     private final Builtin builtin;
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
+    private final boolean declaresExplicitSelf;
 
     @Child private BuiltinCallNode body;
 
@@ -138,29 +140,38 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return node.execute(arg1.execute(frame), (Object[]) arg2.execute(frame), (PKeyword[]) arg3.execute(frame));
+            return node.execute(frame, arg1.execute(frame), (Object[]) arg2.execute(frame), (PKeyword[]) arg3.execute(frame));
         }
     }
 
-    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory) {
-        super(language, null);
+    public BuiltinFunctionRootNode(PythonLanguage language, Builtin builtin, NodeFactory<? extends PythonBuiltinBaseNode> factory, boolean declaresExplicitSelf) {
+        super(language);
         this.builtin = builtin;
         this.factory = factory;
+        this.declaresExplicitSelf = declaresExplicitSelf;
+        if (SysModuleBuiltins.SuperInitNode.class.isAssignableFrom(factory.getNodeClass())) {
+            setNeedsCallerFrame();
+        }
     }
 
-    private static PNode[] createArgumentsList(Builtin builtin) {
+    private static PNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
         ArrayList<PNode> args = new ArrayList<>();
-        int numOfPositionalArgs = Math.max(builtin.minNumOfArguments(), builtin.maxNumOfArguments());
+        int numOfPositionalArgs = Math.max(builtin.minNumOfPositionalArgs(), builtin.maxNumOfPositionalArgs());
 
-        if (builtin.keywordArguments().length > 0 && builtin.maxNumOfArguments() > builtin.minNumOfArguments()) {
+        if (builtin.keywordArguments().length > 0 && builtin.maxNumOfPositionalArgs() > builtin.minNumOfPositionalArgs()) {
             // (tfel): This is actually a specification error, if there are keyword
             // names, we cannot also have optional positional arguments, but we're
             // being defensive here.
-            numOfPositionalArgs = builtin.minNumOfArguments();
+            numOfPositionalArgs = builtin.minNumOfPositionalArgs();
         }
 
-        if (builtin.fixedNumOfArguments() > 0) {
-            numOfPositionalArgs = builtin.fixedNumOfArguments();
+        if (builtin.fixedNumOfPositionalArgs() > 0) {
+            numOfPositionalArgs = builtin.fixedNumOfPositionalArgs();
+        }
+
+        if (!needsExplicitSelf) {
+            // if we don't declare the explicit self, we just read (and ignore) it
+            numOfPositionalArgs++;
         }
 
         // read those arguments that only come positionally
@@ -169,7 +180,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
 
         // read splat args if any
-        if (builtin.takesVariableArguments()) {
+        if (builtin.takesVarArgs()) {
             args.add(ReadVarArgsNode.create(args.size(), true));
         }
 
@@ -178,7 +189,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             String name = builtin.keywordArguments()[i];
             ReadDefaultArgumentNode defaultNode = new ReadDefaultArgumentNode();
             defaultNode.setValue(PNone.NO_VALUE);
-            if (!builtin.takesVariableArguments()) {
+            if (!builtin.takesVarArgs()) {
                 // if there's no splat, we also accept the keywords positionally
                 args.add(ReadKeywordNode.create(name, i + numOfPositionalArgs, defaultNode));
             } else {
@@ -187,7 +198,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             }
         }
 
-        if (builtin.takesVariableKeywords()) {
+        if (builtin.takesVarKeywordArgs()) {
             args.add(ReadVarKeywordsNode.create(builtin.keywordArguments()));
         }
 
@@ -203,24 +214,51 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     public Object execute(VirtualFrame frame) {
         if (body == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            PNode[] argumentsList = createArgumentsList(builtin);
+            PNode[] argumentsList = createArgumentsList(builtin, declaresExplicitSelf);
             if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
-                body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList)));
+                if (!declaresExplicitSelf) {
+                    PNode[] argumentsListWithoutSelf = new PNode[argumentsList.length - 1];
+                    System.arraycopy(argumentsList, 1, argumentsListWithoutSelf, 0, argumentsListWithoutSelf.length);
+                    body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsListWithoutSelf)));
+                } else {
+                    body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsList)));
+                }
             } else {
                 PythonBuiltinBaseNode node = factory.createNode();
                 if (node instanceof PythonUnaryBuiltinNode) {
-                    assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
-                    body = insert(new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]));
+                    if (!declaresExplicitSelf) {
+                        assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[1]));
+                    } else {
+                        assert argumentsList.length == 1 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinUnaryCallNode((PythonUnaryBuiltinNode) node, argumentsList[0]));
+                    }
                 } else if (node instanceof PythonBinaryBuiltinNode) {
-                    assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
-                    body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]));
+                    if (!declaresExplicitSelf) {
+                        assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[1], argumentsList[2]));
+                    } else {
+                        assert argumentsList.length == 2 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinBinaryCallNode((PythonBinaryBuiltinNode) node, argumentsList[0], argumentsList[1]));
+                    }
                 } else if (node instanceof PythonTernaryBuiltinNode) {
-                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
-                    body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
+                    if (!declaresExplicitSelf) {
+                        assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[1], argumentsList[2], argumentsList[3]));
+                    } else {
+                        assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
+                        body = insert(new BuiltinTernaryCallNode((PythonTernaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
+                    }
                 } else if (node instanceof PythonVarargsBuiltinNode) {
-                    assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
-                    assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
-                    body = insert(new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
+                    if (!declaresExplicitSelf) {
+                        assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
+                        assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null && argumentsList[3] != null;
+                        body = insert(new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[1], argumentsList[2], argumentsList[3]));
+                    } else {
+                        assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
+                        assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;
+                        body = insert(new BuiltinVarArgsCallNode((PythonVarargsBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2]));
+                    }
                 } else {
                     throw new RuntimeException("unexpected builtin node type: " + node.getClass());
                 }
@@ -246,5 +284,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     @Override
     public String getName() {
         return builtin.name();
+    }
+
+    public boolean declaresExplicitSelf() {
+        return declaresExplicitSelf;
     }
 }

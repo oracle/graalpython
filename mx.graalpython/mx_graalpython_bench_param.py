@@ -22,9 +22,12 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
+
 import mx
 
 py = ".py"
+harnessPath = os.path.join('graalpython', 'benchmarks', 'src', 'harness.py')
+
 pathBench = "graalpython/benchmarks/src/benchmarks/"
 pathMicro = "graalpython/benchmarks/src/micro/"
 pathInterop = "graalpython/benchmarks/src/interop/"
@@ -101,31 +104,37 @@ pythonBenchmarks = {
 # the python micro benchmarks
 #
 # ----------------------------------------------------------------------------------------------------------------------
-# TODO: commented out benchmarks are probably too slow atm, revisit this at a later time once performance picks up
+# the argument list contains both the harness and benchmark args
+ITERATIONS_25 = ['-i', '25']
+ITERATIONS_15 = ['-i', '15']
+ITERATIONS_10 = ['-i', '10']
+
 pythonMicroBenchmarks = {
-    'arith-binop': [],
-    'attribute-access': [],
-    'attribute-access-polymorphic': [],
-    # 'attribute-bool': [],
-    # 'boolean-logic': [],
-    'builtin-len': [],
-    'builtin-len-tuple': [],
-    'call-method-polymorphic': [],
-    'for-range': [],
-    'function-call': [],
-    'generator': [],
-    'generator-notaligned': [],
-    'generator-expression': [],
-    'genexp-builtin-call': [],
-    'list-comp': [],
-    'list-indexing': [],
-    'list-iterating': [],
-    'math-sqrt': [],
-    # 'object-allocate': [],
-    # 'object-layout-change': [],
-    # 'special-add': [],
-    # 'special-add-int': [],
-    # 'special-len': [],
+    'arith-binop': ITERATIONS_25 + ['5'],
+    'arith-modulo': ITERATIONS_25 + ['50'],
+    'attribute-access-polymorphic': ITERATIONS_10 + ['1000'],
+    'attribute-access': ITERATIONS_25 + ['5000'],
+    'attribute-bool': ITERATIONS_25 + ['3000'],
+    'boolean-logic': ITERATIONS_15 + ['1000'],
+    'builtin-len-tuple': ITERATIONS_10 + [],
+    'builtin-len': ITERATIONS_25 + [],
+    'call-method-polymorphic': ITERATIONS_10 + ['1000'],
+    'for-range': ITERATIONS_25 + ['50000'],
+    'function-call': ITERATIONS_25 + [],
+    'generator-expression': ITERATIONS_25 + [],
+    'generator-notaligned': ITERATIONS_25 + [],
+    'generator': ITERATIONS_25 + [],
+    'genexp-builtin-call': ITERATIONS_25 + ['1000'],
+    'list-comp': ITERATIONS_15 + ['5000'],
+    'list-indexing': ITERATIONS_15 + ['1000000'],
+    'list-iterating-explicit': ITERATIONS_25 + ['1000000'],
+    'list-iterating': ITERATIONS_25 + ['1000000'],
+    'math-sqrt': ITERATIONS_15 + ['500000000'],
+    'object-allocate': ITERATIONS_10 + ['5000'],
+    'object-layout-change': ITERATIONS_15 + ['1000000'],
+    'special-add-int': ITERATIONS_15 + ['5'],
+    'special-add': ITERATIONS_15 + ['5'],
+    'special-len': ITERATIONS_10 + ['5'],
 }
 
 # XXX: testing

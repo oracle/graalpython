@@ -340,9 +340,7 @@ class EnumMeta(type):
         is a read-only view of the internal mapping.
 
         """
-        # return MappingProxyType(cls._member_map_)
-        # TODO: revertme back
-        return cls._member_map_
+        return MappingProxyType(cls._member_map_)
 
     def __repr__(cls):
         return "<enum %r>" % cls.__name__
@@ -383,7 +381,7 @@ class EnumMeta(type):
         # special processing needed for names?
         if isinstance(names, str):
             names = names.replace(',', ' ').split()
-        if isinstance(names, (tuple, list)) and isinstance(names[0], str):
+        if isinstance(names, (tuple, list)) and names and isinstance(names[0], str):
             original_names, names = names, []
             last_values = []
             for count, name in enumerate(original_names):

@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -35,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+@__builtin__
 def hasattr(obj, key):
     try:
         type(obj).__getattribute__(obj, key)
@@ -49,7 +52,7 @@ def hasattr(obj, key):
 def make_print():
     builtin_print = print
 
-    def func(*objects, sep=" ", end="\n", file=None, flush=False):
+    def print_f(*objects, sep=" ", end="\n", file=None, flush=False):
         if file is not None:
             sz = len(objects) - 1
             for i in range(sz):
@@ -59,8 +62,9 @@ def make_print():
             file.write(str(end))
         else:
             builtin_print(tuple(objects), sep, end, file, flush)
-    return func
-print = make_print()
+    print_f.__name__ = "print"
+    return print_f
+print = __builtin__(make_print())
 del make_print
 
 
@@ -68,23 +72,26 @@ del make_print
 def make_globals_function():
     import sys
 
-    def func():
+    def globals_f():
         return sys._getframe(1).f_globals
-    return func
-globals = make_globals_function()
+    globals_f.__name__ = "globals"
+    return globals_f
+globals = __builtin__(make_globals_function())
 del make_globals_function
 
 
 def make_locals_function():
     import sys
 
-    def func():
+    def locals_f():
         return sys._getframe(1).f_locals
-    return func
-locals = make_locals_function()
+    locals_f.__name__ = "locals"
+    return locals_f
+locals = __builtin__(make_locals_function())
 del make_locals_function
 
 
+@__builtin__
 def any(iterable):
     for i in iterable:
         if i:
@@ -92,6 +99,7 @@ def any(iterable):
     return False
 
 
+@__builtin__
 def all(iterable):
     for i in iterable:
         if not i:
@@ -99,14 +107,17 @@ def all(iterable):
     return True
 
 
+@__builtin__
 def filter(func, iterable):
     result = []
+    predicate = func if func is not None else lambda a: a
     for i in iterable:
-        if func(i):
+        if predicate(i):
             result.append(i)
     return tuple(result)
 
 
+@__builtin__
 def exec(source, globals=None, locals=None):
     # compile returns the source if already a code object
     return eval(compile(source, "<exec>", "exec"), globals, locals)
@@ -149,6 +160,7 @@ def _caller_locals():
     return sys._getframe(2).f_locals
 
 
+@__builtin__
 def vars(*obj):
     """Return a dictionary of all the attributes currently bound in obj.  If
     called with no argument, return the variables bound in local scope."""
@@ -164,6 +176,7 @@ def vars(*obj):
         raise TypeError("vars() argument must have __dict__ attribute")
 
 
+@__builtin__
 def format(value, format_spec=''):
     """Return value.__format__(format_spec)
 
@@ -173,6 +186,7 @@ def format(value, format_spec=''):
     return value.__format__(format_spec)
 
 
+@__builtin__
 def sorted(iterable, key=None, reverse=False):
     """Return a new list containing all items from the iterable in ascending order.
 

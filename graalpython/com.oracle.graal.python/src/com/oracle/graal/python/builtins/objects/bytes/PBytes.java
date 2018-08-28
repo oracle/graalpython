@@ -25,67 +25,30 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.__repr__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 
 public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
-    private final ByteSequenceStorage store;
+    private SequenceStorage store;
 
     public PBytes(PythonClass cls, byte[] bytes) {
         super(cls);
         store = new ByteSequenceStorage(bytes);
     }
 
-    public PBytes(PythonClass cls, ByteSequenceStorage storage) {
+    public PBytes(PythonClass cls, SequenceStorage storage) {
         super(cls);
-        store = storage;
-    }
-
-    @Override
-    public int len() {
-        return store.length();
-    }
-
-    @Override
-    public Object getItem(int idx) {
-        int index = SequenceUtil.normalizeIndex(idx, store.length(), "array index out of range");
-        return getItemNormalized(index);
-    }
-
-    public Object getItemNormalized(int index) {
-        return store.getItemNormalized(index);
-    }
-
-    @Override
-    public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        return factory.createBytes(getPythonClass(), store.getSliceInBound(start, stop, step, length));
-    }
-
-    @Override
-    public int index(Object value) {
-        int index = store.index(value);
-
-        if (index != -1) {
-            return index;
-        }
-
-        CompilerDirectives.transferToInterpreter();
-        throw PythonLanguage.getCore().raise(ValueError, "%s is not in bytes literal", value);
+        setSequenceStorage(storage);
     }
 
     @Override
@@ -94,18 +57,34 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
     }
 
     @Override
-    public boolean lessThan(PSequence sequence) {
-        return false;
+    public void setSequenceStorage(SequenceStorage store) {
+        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && ((NativeSequenceStorage) store).getElementType() == ElementType.BYTE;
+        this.store = store;
+    }
+
+    @Override
+    public int len() {
+        return store.length();
+    }
+
+    public Object getItemNormalized(int index) {
+        return store.getItemNormalized(index);
     }
 
     @Override
     public String toString() {
+        // TODO(fa) really required ?
         CompilerAsserts.neverPartOfCompilation();
-        return __repr__(store.getInternalByteArray());
+        if (store instanceof ByteSequenceStorage) {
+            return BytesUtils.bytesRepr(((ByteSequenceStorage) store).getInternalByteArray(), store.length());
+        } else {
+            return store.toString();
+        }
     }
 
     @Override
     public final boolean equals(Object other) {
+        // TODO(fa) really required ?
         if (!(other instanceof PSequence)) {
             return false;
         } else {
@@ -121,16 +100,11 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
 
     @Override
     public final int hashCode() {
-        return Arrays.hashCode(store.getInternalByteArray());
-    }
-
-    public byte[] join(PythonCore core, Object... values) {
-        return BytesUtils.join(core, store.getInternalByteArray(), values);
-    }
-
-    @Override
-    public byte[] getInternalByteArray() {
-        return store.getInternalByteArray();
+        // TODO(fa) really required ?
+        if (store instanceof ByteSequenceStorage) {
+            return Arrays.hashCode(((ByteSequenceStorage) store).getInternalByteArray());
+        }
+        return store.hashCode();
     }
 
     @Override

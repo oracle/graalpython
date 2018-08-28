@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -41,7 +43,6 @@
 typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
 
 PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
-PyTypeObject PyWrapperDescr_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyWrapperDescr_Type));;
 
 PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
     PyObject* func = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
@@ -50,6 +51,8 @@ PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
                                                ml->ml_meth,
                                                get_method_flags_cwrapper(ml->ml_flags),
                                                get_method_flags_wrapper(ml->ml_flags),
+                                               self,
+                                               module,
                                                polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS)));
     if (func == ERROR_MARKER) {
         return NULL;

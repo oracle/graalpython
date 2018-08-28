@@ -129,6 +129,11 @@ public final class PInt extends PythonBuiltinObject {
         return value.compareTo(BigInteger.ZERO) >= 0;
     }
 
+    @TruffleBoundary
+    public boolean isZeroOrNegative() {
+        return value.compareTo(BigInteger.ZERO) <= 0;
+    }
+
     public static int intValue(boolean bool) {
         return bool ? 1 : 0;
     }
@@ -142,6 +147,25 @@ public final class PInt extends PythonBuiltinObject {
             throw new ArithmeticException();
         }
         return (int) val;
+    }
+
+    public static byte byteValueExact(int val) {
+        if (val < 0 || val >= 256) {
+            throw new ArithmeticException();
+        }
+        return (byte) val;
+    }
+
+    public static byte byteValueExact(long val) {
+        if (val < 0 || val >= 256) {
+            throw new ArithmeticException();
+        }
+        return (byte) val;
+    }
+
+    @TruffleBoundary(transferToInterpreterOnException = false)
+    public byte byteValueExact() {
+        return value.byteValueExact();
     }
 
 }

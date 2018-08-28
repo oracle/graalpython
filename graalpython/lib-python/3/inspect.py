@@ -31,6 +31,7 @@ Here are some of the useful functions provided by this module:
 __author__ = ('Ka-Ping Yee <ping@lfw.org>',
               'Yury Selivanov <yselivanov@sprymix.com>')
 
+import abc
 import ast
 import dis
 import collections.abc
@@ -253,18 +254,24 @@ def iscode(object):
     """Return true if the object is a code object.
 
     Code objects provide these attributes:
-        co_argcount     number of arguments (not including * or ** args)
-        co_code         string of raw compiled bytecode
-        co_consts       tuple of constants used in the bytecode
-        co_filename     name of file in which this code object was created
-        co_firstlineno  number of first line in Python source code
-        co_flags        bitmap: 1=optimized | 2=newlocals | 4=*arg | 8=**arg
-        co_lnotab       encoded mapping of line numbers to bytecode indices
-        co_name         name with which this code object was defined
-        co_names        tuple of names of local variables
-        co_nlocals      number of local variables
-        co_stacksize    virtual machine stack space required
-        co_varnames     tuple of names of arguments and local variables"""
+        co_argcount         number of arguments (not including *, ** args
+                            or keyword only arguments)
+        co_code             string of raw compiled bytecode
+        co_cellvars         tuple of names of cell variables
+        co_consts           tuple of constants used in the bytecode
+        co_filename         name of file in which this code object was created
+        co_firstlineno      number of first line in Python source code
+        co_flags            bitmap: 1=optimized | 2=newlocals | 4=*arg | 8=**arg
+                            | 16=nested | 32=generator | 64=nofree | 128=coroutine
+                            | 256=iterable_coroutine | 512=async_generator
+        co_freevars         tuple of names of free variables
+        co_kwonlyargcount   number of keyword only arguments (not including ** arg)
+        co_lnotab           encoded mapping of line numbers to bytecode indices
+        co_name             name with which this code object was defined
+        co_names            tuple of names of local variables
+        co_nlocals          number of local variables
+        co_stacksize        virtual machine stack space required
+        co_varnames         tuple of names of arguments and local variables"""
     return isinstance(object, types.CodeType)
 
 def isbuiltin(object):
@@ -285,7 +292,27 @@ def isroutine(object):
 
 def isabstract(object):
     """Return true if the object is an abstract base class (ABC)."""
-    return bool(isinstance(object, type) and object.__flags__ & TPFLAGS_IS_ABSTRACT)
+    if not isinstance(object, type):
+        return False
+    if object.__flags__ & TPFLAGS_IS_ABSTRACT:
+        return True
+    if not issubclass(type(object), abc.ABCMeta):
+        return False
+    if hasattr(object, '__abstractmethods__'):
+        # It looks like ABCMeta.__new__ has finished running;
+        # TPFLAGS_IS_ABSTRACT should have been accurate.
+        return False
+    # It looks like ABCMeta.__new__ has not finished running yet; we're
+    # probably in __init_subclass__. We'll look for abstractmethods manually.
+    for name, value in object.__dict__.items():
+        if getattr(value, "__isabstractmethod__", False):
+            return True
+    for base in object.__bases__:
+        for name in getattr(base, "__abstractmethods__", ()):
+            value = getattr(object, name, None)
+            if getattr(value, "__isabstractmethod__", False):
+                return True
+    return False
 
 def getmembers(object, predicate=None):
     """Return all members of an object as (name, value) pairs sorted by name.
@@ -478,13 +505,16 @@ def unwrap(func, *, stop=None):
         def _is_wrapper(f):
             return hasattr(f, '__wrapped__') and not stop(f)
     f = func  # remember the original func for error reporting
-    memo = {id(f)} # Memoise by id to tolerate non-hashable objects
+    # Memoise by id to tolerate non-hashable objects, but store objects to
+    # ensure they aren't destroyed, which would allow their IDs to be reused.
+    memo = {id(f): f}
+    recursion_limit = sys.getrecursionlimit()
     while _is_wrapper(func):
         func = func.__wrapped__
         id_func = id(func)
-        if id_func in memo:
+        if (id_func in memo) or (len(memo) >= recursion_limit):
             raise ValueError('wrapper loop when unwrapping {!r}'.format(f))
-        memo.add(id_func)
+        memo[id_func] = func
     return func
 
 # -------------------------------------------------- source code extraction
@@ -792,7 +822,7 @@ def findsource(object):
     if iscode(object):
         if not hasattr(object, 'co_firstlineno'):
             raise OSError('could not find function definition')
-        lnum = min(object.co_firstlineno, len(lines)) - 1
+        lnum = object.co_firstlineno - 1
         pat = re.compile(r'^(\s*def\s)|(\s*async\s+def\s)|(.*(?<!\w)lambda(:|\s))|^(\s*@)')
         while lnum > 0:
             if pat.match(lines[lnum]): break
@@ -996,13 +1026,7 @@ def _getfullargs(co):
     and 'varkw' are the names of the * and ** arguments or None."""
 
     if not iscode(co):
-        if hasattr(len, '__code__') and type(co) is type(len.__code__):
-            # PyPy extension: built-in function objects have a __code__
-            # too.  There is no co_code on it, but co_argcount and
-            # co_varnames and co_flags are present.
-            pass
-        else:
-            raise TypeError('{!r} is not a code object'.format(co))
+        raise TypeError('{!r} is not a code object'.format(co))
 
     nargs = co.co_argcount
     names = co.co_varnames
@@ -1506,23 +1530,17 @@ def _is_type(obj):
         return False
     return True
 
-_dict_attr = type.__dict__["__dict__"]
-if hasattr(_dict_attr, "__objclass__"):
-    _objclass_check = lambda d, entry: d.__objclass__ is entry
-else:
-    # PyPy __dict__ descriptors are 'generic' and lack __objclass__
-    _objclass_check = lambda d, entry: not hasattr(d, "__objclass__")
-
 def _shadowed_dict(klass):
+    dict_attr = type.__dict__["__dict__"]
     for entry in _static_getmro(klass):
         try:
-            class_dict = _dict_attr.__get__(entry)["__dict__"]
+            class_dict = dict_attr.__get__(entry)["__dict__"]
         except KeyError:
             pass
         else:
             if not (type(class_dict) is types.GetSetDescriptorType and
                     class_dict.__name__ == "__dict__" and
-                    _objclass_check(class_dict, entry)):
+                    class_dict.__objclass__ is entry):
                 return class_dict
     return _sentinel
 
@@ -1665,6 +1683,7 @@ _NonUserDefinedCallables = (_WrapperDescriptor,
                             _MethodWrapper,
                             _ClassMethodWrapper,
                             types.BuiltinFunctionType)
+
 
 def _signature_get_user_defined_method(cls, method_name):
     """Private helper. Checks if ``cls`` has an attribute
@@ -2068,21 +2087,9 @@ def _signature_from_builtin(cls, func, skip_bound_arg=True):
 
     s = getattr(func, "__text_signature__", None)
     if not s:
-        if func is object:  # XXX PyPy hack until we support __text_signature__
-            return '()'     # in the same cases as CPython
         raise ValueError("no signature found for builtin {!r}".format(func))
 
     return _signature_fromstr(cls, func, s, skip_bound_arg)
-
-
-class _NoValue:
-    """Class of a marker object for PyPy only, used as the defaults for
-    built-in functions when there is really no Python object that could
-    be used."""
-    __slots__ = ()
-    def __repr__(self):
-        return '<no value>'
-_no_value = _NoValue()
 
 
 def _signature_from_function(cls, func):
@@ -2113,10 +2120,7 @@ def _signature_from_function(cls, func):
     if defaults:
         pos_default_count = len(defaults)
     else:
-        # PyPy extension, for built-in functions that take optional
-        # arguments but without any Python object to use as default.
-        pos_default_count = getattr(func, '__defaults_count__', 0)
-        defaults = [_no_value] * pos_default_count
+        pos_default_count = 0
 
     parameters = []
 
@@ -2240,11 +2244,17 @@ def _signature_from_callable(obj, *,
                 sigcls=sigcls)
 
             sig = _signature_get_partial(wrapped_sig, partialmethod, (None,))
-
             first_wrapped_param = tuple(wrapped_sig.parameters.values())[0]
-            new_params = (first_wrapped_param,) + tuple(sig.parameters.values())
-
-            return sig.replace(parameters=new_params)
+            if first_wrapped_param.kind is Parameter.VAR_POSITIONAL:
+                # First argument of the wrapped callable is `*args`, as in
+                # `partialmethod(lambda *args)`.
+                return sig
+            else:
+                sig_params = tuple(sig.parameters.values())
+                assert (not sig_params or
+                        first_wrapped_param is not sig_params[0])
+                new_params = (first_wrapped_param,) + sig_params
+                return sig.replace(parameters=new_params)
 
     if isfunction(obj) or _signature_is_functionlike(obj):
         # If it's a pure Python function, or an object that is duck type

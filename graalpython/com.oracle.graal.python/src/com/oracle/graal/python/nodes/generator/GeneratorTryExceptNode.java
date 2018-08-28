@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -45,9 +47,13 @@ import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorControlNode {
+
+    @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
+
     private final int exceptFlag;
     private final int elseFlag;
     private final int exceptIndex;
@@ -63,26 +69,28 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     public Object execute(VirtualFrame frame) {
         Object result = PNone.NONE;
 
-        if (isActive(frame, exceptFlag)) {
-            catchException(frame, getActiveException(frame));
+        PException exceptionState = getContext().getCurrentException();
+
+        if (gen.isActive(frame, exceptFlag)) {
+            catchException(frame, gen.getActiveException(frame), exceptionState);
             return doReturn(frame, result);
         }
 
-        if (isActive(frame, elseFlag)) {
+        if (gen.isActive(frame, elseFlag)) {
             result = getOrelse().execute(frame);
             return doReturn(frame, result);
         }
 
         try {
-            getBody().execute(frame);
+            getBody().executeVoid(frame);
         } catch (PException ex) {
-            setActive(frame, exceptFlag, true);
-            setActiveException(frame, ex);
-            catchException(frame, ex);
+            gen.setActive(frame, exceptFlag, true);
+            gen.setActiveException(frame, ex);
+            catchException(frame, ex, exceptionState);
             return doReturn(frame, result);
         }
 
-        setActive(frame, elseFlag, true);
+        gen.setActive(frame, elseFlag, true);
         result = getOrelse().execute(frame);
         return doReturn(frame, result);
     }
@@ -93,9 +101,9 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     }
 
     @ExplodeLoop
-    private void catchException(VirtualFrame frame, PException exception) {
+    private void catchException(VirtualFrame frame, PException exception, PException exceptionState) {
         ExceptNode[] exceptNodes = getExceptNodes();
-        final int matchingExceptNodeIndex = getIndex(frame, exceptIndex);
+        final int matchingExceptNodeIndex = gen.getIndex(frame, exceptIndex);
         boolean wasHandled = false;
         if (matchingExceptNodeIndex == 0) {
             // we haven't found the matching node, yet, start searching
@@ -104,9 +112,9 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
                 // so we always run through all except handlers
                 if (!wasHandled) {
                     ExceptNode exceptNode = exceptNodes[i];
-                    setIndex(frame, exceptIndex, i + 1);
+                    gen.setIndex(frame, exceptIndex, i + 1);
                     if (exceptNode.matchesException(frame, exception)) {
-                        runExceptionHandler(frame, exception, exceptNode);
+                        runExceptionHandler(frame, exception, exceptNode, exceptionState);
                         wasHandled = true;
                     }
                 }
@@ -115,7 +123,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             // we already found the right except handler, jump back into
             // it directly
             ExceptNode exceptNode = exceptNodes[matchingExceptNodeIndex - 1];
-            runExceptionHandler(frame, exception, exceptNode);
+            runExceptionHandler(frame, exception, exceptNode, exceptionState);
             wasHandled = true;
         }
         reset(frame);
@@ -123,21 +131,26 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             // we tried and haven't found a matching except node
             throw exception;
         }
+        getContext().setCurrentException(exceptionState);
     }
 
-    private static void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode) {
+    private void runExceptionHandler(VirtualFrame frame, PException exception, ExceptNode exceptNode, PException exceptionState) {
         try {
             exceptNode.executeExcept(frame, exception);
         } catch (ExceptionHandledException e) {
             return;
+        } catch (ControlFlowException e) {
+            // restore previous exception state, this won't happen if the except block raises an
+            // exception
+            getContext().setCurrentException(exceptionState);
+            throw e;
         }
     }
 
-    @Override
     public void reset(VirtualFrame frame) {
-        setActive(frame, elseFlag, false);
-        setActive(frame, exceptFlag, false);
-        setIndex(frame, exceptIndex, 0);
-        setActiveException(frame, null);
+        gen.setActive(frame, elseFlag, false);
+        gen.setActive(frame, exceptFlag, false);
+        gen.setIndex(frame, exceptIndex, 0);
+        gen.setActiveException(frame, null);
     }
 }

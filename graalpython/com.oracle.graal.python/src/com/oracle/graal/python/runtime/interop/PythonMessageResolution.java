@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -262,13 +264,13 @@ public class PythonMessageResolution {
 
             Object profiledCallable = classProfile.profile(callable);
             if (profiledCallable == PNone.NO_VALUE) {
-                throw UnsupportedMessageException.raise(Message.createExecute(convertedArgs.length));
+                throw UnsupportedMessageException.raise(Message.EXECUTE);
             }
 
             PKeyword[] emptyKeywords = new PKeyword[0];
             Object[] pArguments = createArgs.executeWithSelf(receiver, convertedArgs);
 
-            return toForeign.executeConvert(getDispatchNode().executeCall(profiledCallable, pArguments, emptyKeywords));
+            return toForeign.executeConvert(getDispatchNode().executeCall(null, profiledCallable, pArguments, emptyKeywords));
         }
     }
 
@@ -302,7 +304,7 @@ public class PythonMessageResolution {
     @Resolve(message = "WRITE")
     abstract static class WriteNode extends Node {
         @Child private SetItemNode setItemNode = SetItemNode.create();
-        @Child private SetAttributeNode writeNode = SetAttributeNode.create();
+        @Child private SetAttributeNode.Dynamic writeNode = new SetAttributeNode.Dynamic();
         @Child private IsMappingNode isMapping = IsMappingNode.create();
         @Child private HasSetItem hasSetItem = new HasSetItem();
         @Child private KeyForAttributeAccess getAttributeKey = new KeyForAttributeAccess();

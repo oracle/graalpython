@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -40,25 +42,30 @@ package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 
 /**
- * Subclasses must override {@link #varArgExecute(Object[], PKeyword[])} to call the e.g.
- * {@link #execute(Object, Object[], PKeyword[])} or whatever is right for them, otherwise they will
- * never be on the direct call path.
+ * Subclasses must override {@link #varArgExecute(VirtualFrame, Object[], PKeyword[])} to call the
+ * e.g. {@link #execute(VirtualFrame, Object, Object[], PKeyword[])} or whatever is right for them,
+ * otherwise they will never be on the direct call path.
  */
 public abstract class PythonVarargsBuiltinNode extends PythonBuiltinBaseNode {
     public static final class VarargsBuiltinDirectInvocationNotSupported extends ControlFlowException {
         private static final long serialVersionUID = 1L;
     }
 
-    // this function must not be called "execute"
-    public Object varArgExecute(@SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+    /**
+     * {@code frame} may be null. This function must not be called "execute"
+     */
+    public Object varArgExecute(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords)
+                    throws VarargsBuiltinDirectInvocationNotSupported {
         throw new VarargsBuiltinDirectInvocationNotSupported();
     }
 
-    /*
-     * Most varargs invocations will be (self, *args, *kwargs), so this execute method won't hurt.
+    /**
+     * {@code frame} may be null. Most varargs invocations will be (self, *args, *kwargs), so this
+     * execute method won't hurt.
      */
-    public abstract Object execute(Object self, Object[] arguments, PKeyword[] keywords);
+    public abstract Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords);
 }

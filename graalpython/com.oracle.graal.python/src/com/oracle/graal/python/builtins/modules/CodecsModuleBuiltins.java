@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -58,8 +60,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -222,7 +226,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_encode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends PythonBuiltinNode {
         @Specialization(guards = "isString(str)")
@@ -307,12 +311,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict')
-    @Builtin(name = "__truffle_decode", fixedNumOfArguments = 1, keywordArguments = {"encoding", "errors"})
+    @Builtin(name = "__truffle_decode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     abstract static class CodecsDecodeNode extends PythonBuiltinNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+
         @Specialization
         Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors) {
-            String string = decodeBytes(bytes.getBytesBuffer(), "utf-8", "strict");
+            String string = decodeBytes(getBytesBuffer(bytes), "utf-8", "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -320,7 +326,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object decode(PIBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("createClassProfile()") ValueProfile encodingTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
-            String string = decodeBytes(bytes.getBytesBuffer(), profiledEncoding.toString(), "strict");
+            String string = decodeBytes(getBytesBuffer(bytes), profiledEncoding.toString(), "strict");
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -328,7 +334,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         Object decode(PIBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors,
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            String string = decodeBytes(bytes.getBytesBuffer(), "utf-8", profiledErrors.toString());
+            String string = decodeBytes(getBytesBuffer(bytes), "utf-8", profiledErrors.toString());
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
@@ -338,13 +344,22 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached("createClassProfile()") ValueProfile errorsTypeProfile) {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             Object profiledErrors = errorsTypeProfile.profile(errors);
-            String string = decodeBytes(bytes.getBytesBuffer(), profiledEncoding.toString(), profiledErrors.toString());
+            String string = decodeBytes(getBytesBuffer(bytes), profiledEncoding.toString(), profiledErrors.toString());
             return factory().createTuple(new Object[]{string, string.length()});
         }
 
         @Fallback
         Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", bytes);
+        }
+
+        private ByteBuffer getBytesBuffer(PIBytesLike bytesLike) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create(false));
+            }
+            byte[] barr = toByteArrayNode.execute(bytesLike.getSequenceStorage());
+            return ByteBuffer.wrap(barr, 0, bytesLike.len());
         }
 
         @TruffleBoundary
@@ -381,7 +396,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     // _codecs.lookup(name)
-    @Builtin(name = "__truffle_lookup", fixedNumOfArguments = 1)
+    @Builtin(name = "__truffle_lookup", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CodecsLookupNode extends PythonBuiltinNode {
         // This is replaced in the core _codecs.py with the full functionality

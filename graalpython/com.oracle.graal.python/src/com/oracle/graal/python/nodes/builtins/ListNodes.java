@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -42,12 +44,16 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
@@ -55,7 +61,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
-import com.oracle.graal.python.nodes.builtins.ListNodesFactory.CreateListFromIteratorNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructListNodeGen;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -66,42 +71,222 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
+import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ListNodes {
 
-    @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class CreateListFromIteratorNode extends PBaseNode {
+    public final static class CreateListFromIteratorNode extends PBaseNode {
 
-        public abstract PList execute(PythonClass cls, Object iterable);
+        private static final int START_SIZE = 2;
 
-        @Specialization
-        public PList create(PythonClass cls, Object iterator,
-                        @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            PList list = factory().createList(cls);
-            while (true) {
-                Object value;
-                try {
-                    value = next.execute(iterator);
-                } catch (PException e) {
-                    e.expectStopIteration(getCore(), errorProfile);
-                    return list;
-                }
-                list.append(value);
-            }
-        }
+        @Child private GetNextNode next = GetNextNode.create();
+
+        private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
+
+        @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
         public static CreateListFromIteratorNode create() {
-            return CreateListFromIteratorNodeGen.create();
+            return new CreateListFromIteratorNode();
+        }
+
+        public PList execute(PythonClass cls, Object iterator) {
+            SequenceStorage storage;
+            if (type == ListStorageType.Uninitialized) {
+                try {
+                    Object[] elements = new Object[START_SIZE];
+                    int i = 0;
+                    while (true) {
+                        try {
+                            Object value = next.execute(iterator);
+                            if (i >= elements.length) {
+                                elements = Arrays.copyOf(elements, elements.length * 2);
+                            }
+                            elements[i++] = value;
+                        } catch (PException e) {
+                            e.expectStopIteration(getCore(), errorProfile);
+                            break;
+                        }
+                    }
+                    storage = new SequenceStorageFactory().createStorage(Arrays.copyOf(elements, i));
+                    if (storage instanceof IntSequenceStorage) {
+                        type = ListStorageType.Int;
+                    } else if (storage instanceof LongSequenceStorage) {
+                        type = ListStorageType.Long;
+                    } else if (storage instanceof DoubleSequenceStorage) {
+                        type = ListStorageType.Double;
+                    } else if (storage instanceof ListSequenceStorage) {
+                        type = ListStorageType.List;
+                    } else if (storage instanceof TupleSequenceStorage) {
+                        type = ListStorageType.Tuple;
+                    } else {
+                        type = ListStorageType.Generic;
+                    }
+                } catch (Throwable t) {
+                    type = ListStorageType.Generic;
+                    throw t;
+                }
+            } else {
+                int i = 0;
+                Object array = null;
+                try {
+                    switch (type) {
+                        case Int: {
+                            int[] elements = new int[START_SIZE];
+                            array = elements;
+                            while (true) {
+                                try {
+                                    int value = next.executeInt(iterator);
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i++] = value;
+                                } catch (PException e) {
+                                    e.expectStopIteration(getCore(), errorProfile);
+                                    break;
+                                }
+                            }
+                            storage = new IntSequenceStorage(elements, i);
+                            break;
+                        }
+                        case Long: {
+                            long[] elements = new long[START_SIZE];
+                            array = elements;
+                            while (true) {
+                                try {
+                                    long value = next.executeLong(iterator);
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i++] = value;
+                                } catch (PException e) {
+                                    e.expectStopIteration(getCore(), errorProfile);
+                                    break;
+                                }
+                            }
+                            storage = new LongSequenceStorage(elements, i);
+                            break;
+                        }
+                        case Double: {
+                            double[] elements = new double[START_SIZE];
+                            array = elements;
+                            while (true) {
+                                try {
+                                    double value = next.executeDouble(iterator);
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i++] = value;
+                                } catch (PException e) {
+                                    e.expectStopIteration(getCore(), errorProfile);
+                                    break;
+                                }
+                            }
+                            storage = new DoubleSequenceStorage(elements, i);
+                            break;
+                        }
+                        case List: {
+                            PList[] elements = new PList[START_SIZE];
+                            array = elements;
+                            while (true) {
+                                try {
+                                    PList value = PList.expect(next.execute(iterator));
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i++] = value;
+                                } catch (PException e) {
+                                    e.expectStopIteration(getCore(), errorProfile);
+                                    break;
+                                }
+                            }
+                            storage = new ListSequenceStorage(elements, i);
+                            break;
+                        }
+                        case Tuple: {
+                            PTuple[] elements = new PTuple[START_SIZE];
+                            array = elements;
+                            while (true) {
+                                try {
+                                    PTuple value = PTuple.expect(next.execute(iterator));
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i++] = value;
+                                } catch (PException e) {
+                                    e.expectStopIteration(getCore(), errorProfile);
+                                    break;
+                                }
+                            }
+                            storage = new TupleSequenceStorage(elements, i);
+                            break;
+                        }
+                        case Generic: {
+                            Object[] elements = new Object[START_SIZE];
+                            array = elements;
+                            while (true) {
+                                try {
+                                    Object value = next.execute(iterator);
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i++] = value;
+                                } catch (PException e) {
+                                    e.expectStopIteration(getCore(), errorProfile);
+                                    break;
+                                }
+                            }
+                            storage = new ObjectSequenceStorage(elements, i);
+                            break;
+                        }
+                        default:
+                            throw new RuntimeException("unexpected state");
+                    }
+                } catch (UnexpectedResultException e) {
+                    storage = genericFallback(iterator, array, i, e.getResult());
+                }
+            }
+            return factory().createList(cls, storage);
+        }
+
+        private SequenceStorage genericFallback(Object iterator, Object array, int count, Object result) {
+            type = ListStorageType.Generic;
+            Object[] elements = new Object[Array.getLength(array) * 2];
+            int i = 0;
+            for (; i < count; i++) {
+                elements[i] = Array.get(array, i);
+            }
+            elements[i++] = result;
+            while (true) {
+                try {
+                    Object value = next.execute(iterator);
+                    if (i >= elements.length) {
+                        elements = Arrays.copyOf(elements, elements.length * 2);
+                    }
+                    elements[i++] = value;
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+            }
+            return new ObjectSequenceStorage(elements, i);
         }
     }
 
@@ -113,6 +298,11 @@ public abstract class ListNodes {
         }
 
         public abstract PList execute(Object cls, Object value, PythonClass valueClass);
+
+        @Specialization
+        public PList listString(PythonClass cls, PString arg, PythonClass valueClass) {
+            return listString(cls, arg.getValue(), valueClass);
+        }
 
         @Specialization
         public PList listString(PythonClass cls, String arg, @SuppressWarnings("unused") PythonClass valueClass) {
@@ -131,7 +321,7 @@ public abstract class ListNodes {
             return factory().createList(cls);
         }
 
-        @Specialization(guards = "!isNoValue(iterable)")
+        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"})
         public PList listIterable(PythonClass cls, Object iterable, @SuppressWarnings("unused") PythonClass valueClass,
                         @Cached("create()") GetIteratorNode getIteratorNode,
                         @Cached("create()") CreateListFromIteratorNode createListFromIteratorNode) {
@@ -284,7 +474,7 @@ public abstract class ListNodes {
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
             if (value.len() > 0) {
                 PList pvalue = factory().createList(((PTuple) value).getArray());
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(pvalue.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(pvalue.getSequenceStorage().getIndicativeValue(), pvalue.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 setSlice(list, slice, pvalue, wrongLength);
             }
@@ -303,7 +493,7 @@ public abstract class ListNodes {
         public PNone doPListEmpty(PList list, PSlice slice, PSequence value,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
             if (value.len() > 0) {
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 setSlice(list, slice, value, wrongLength);
             }
@@ -321,7 +511,7 @@ public abstract class ListNodes {
         @Specialization(guards = {"!areTheSameType(list, value)"})
         public PNone doPList(PList list, PSlice slice, PSequence value,
                         @Cached("createBinaryProfile()") ConditionProfile wrongLength) {
-            SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+            SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
             list.setSequenceStorage(newStorage);
             setSlice(list, slice, value, wrongLength);
             return PNone.NONE;
@@ -352,7 +542,7 @@ public abstract class ListNodes {
             try {
                 setSlice(list, slice, value, wrongLength);
             } catch (SequenceStoreException e) {
-                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue());
+                SequenceStorage newStorage = list.getSequenceStorage().generalizeFor(value.getSequenceStorage().getIndicativeValue(), value.getSequenceStorage());
                 list.setSequenceStorage(newStorage);
                 try {
                     setSlice(list, slice, value, wrongLength);

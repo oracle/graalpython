@@ -33,8 +33,18 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
  */
 public abstract class PBuiltinIterator extends PythonBuiltinObject {
 
+    private boolean exhausted = false;
+
     public PBuiltinIterator(PythonClass clazz) {
         super(clazz);
+    }
+
+    public void setExhausted() {
+        exhausted = true;
+    }
+
+    public boolean isExhausted() {
+        return exhausted;
     }
 
     @Override

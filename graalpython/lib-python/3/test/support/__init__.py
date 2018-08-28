@@ -115,7 +115,7 @@ __all__ = [
     "check__all__", "requires_android_level", "requires_multiprocessing_queue",
     # sys
     "is_jython", "is_android", "check_impl_detail", "unix_shell",
-    "setswitchinterval", "android_not_root",
+    "setswitchinterval",
     # network
     "HOST", "IPV6_ENABLED", "find_unused_port", "bind_port", "open_urlresource",
     "bind_unix_socket",
@@ -303,7 +303,6 @@ max_memuse = 0           # Disable bigmem tests (they will still be run with
                          # small sizes, to make sure they work.)
 real_max_memuse = 0
 failfast = False
-match_tests = None
 
 # _original_stdout is meant to hold stdout at the time regrtest began.
 # This may be "the real" stdout, or IDLE's emulation of stdout, or whatever.
@@ -807,7 +806,6 @@ is_jython = sys.platform.startswith('java')
 # _ANDROID_API_LEVEL = sysconfig.get_config_var('ANDROID_API_LEVEL')
 # is_android = (_ANDROID_API_LEVEL is not None and _ANDROID_API_LEVEL > 0)
 is_android = False
-android_not_root = (is_android and os.geteuid() != 0)
 
 if sys.platform != 'win32':
     unix_shell = '/system/bin/sh' if is_android else '/bin/sh'
@@ -982,10 +980,14 @@ def temp_dir(path=None, quiet=False):
                 raise
             warnings.warn('tests may fail, unable to create temp dir: ' + path,
                           RuntimeWarning, stacklevel=3)
+    if dir_created:
+        pid = os.getpid()
     try:
         yield path
     finally:
-        if dir_created:
+        # In case the process forks, let only the parent remove the
+        # directory. The child has a diffent process id. (bpo-30028)
+        if dir_created and pid == os.getpid():
             rmtree(path)
 
 @contextlib.contextmanager
@@ -1102,9 +1104,7 @@ def check_syntax_error(testcase, statement, *, lineno=None, offset=None):
     if lineno is not None:
         testcase.assertEqual(err.lineno, lineno)
     testcase.assertIsNotNone(err.offset)
-    # Don't check the offset on PyPy, it can often be slightly different
-    # than on CPython
-    if offset is not None and check_impl_detail():
+    if offset is not None:
         testcase.assertEqual(err.offset, offset)
 
 def open_urlresource(url, *args, **kw):
@@ -1928,6 +1928,69 @@ def _run_suite(suite):
         raise TestFailed(err)
 
 
+# By default, don't filter tests
+_match_test_func = None
+_match_test_patterns = None
+
+
+def match_test(test):
+    # Function used by support.run_unittest() and regrtest --list-cases
+    if _match_test_func is None:
+        return True
+    else:
+        return _match_test_func(test.id())
+
+
+def _is_full_match_test(pattern):
+    # If a pattern contains at least one dot, it's considered
+    # as a full test identifier.
+    # Example: 'test.test_os.FileTests.test_access'.
+    #
+    # Reject patterns which contain fnmatch patterns: '*', '?', '[...]'
+    # or '[!...]'. For example, reject 'test_access*'.
+    return ('.' in pattern) and (not re.search(r'[?*\[\]]', pattern))
+
+
+def set_match_tests(patterns):
+    global _match_test_func, _match_test_patterns
+
+    if patterns == _match_test_patterns:
+        # No change: no need to recompile patterns.
+        return
+
+    if not patterns:
+        func = None
+        # set_match_tests(None) behaves as set_match_tests(())
+        patterns = ()
+    elif all(map(_is_full_match_test, patterns)):
+        # Simple case: all patterns are full test identifier.
+        # The test.bisect utility only uses such full test identifiers.
+        func = set(patterns).__contains__
+    else:
+        regex = '|'.join(map(fnmatch.translate, patterns))
+        # The search *is* case sensitive on purpose:
+        # don't use flags=re.IGNORECASE
+        regex_match = re.compile(regex).match
+
+        def match_test_regex(test_id):
+            if regex_match(test_id):
+                # The regex matchs the whole identifier like
+                # 'test.test_os.FileTests.test_access'
+                return True
+            else:
+                # Try to match parts of the test identifier.
+                # For example, split 'test.test_os.FileTests.test_access'
+                # into: 'test', 'test_os', 'FileTests' and 'test_access'.
+                return any(map(regex_match, test_id.split(".")))
+
+        func = match_test_regex
+
+    # Create a copy since patterns can be mutable and so modified later
+    _match_test_patterns = tuple(patterns)
+    _match_test_func = func
+
+
+
 def run_unittest(*classes):
     """Run tests from unittest.TestCase-derived classes."""
     valid_types = (unittest.TestSuite, unittest.TestCase)
@@ -1942,14 +2005,7 @@ def run_unittest(*classes):
             suite.addTest(cls)
         else:
             suite.addTest(unittest.makeSuite(cls))
-    def case_pred(test):
-        if match_tests is None:
-            return True
-        for name in test.id().split("."):
-            if fnmatch.fnmatchcase(name, match_tests):
-                return True
-        return False
-    _filter_suite(suite, case_pred)
+    _filter_suite(suite, match_test)
     _run_suite(suite)
 
 #=======================================================================
@@ -2076,7 +2132,6 @@ def reap_children():
     stick around to hog resources and create problems when looking
     for refleaks.
     """
-
     # Reap all our dead child processes so we don't leave zombies around.
     # These hog resources and might be causing some of the buildbots to die.
     if hasattr(os, 'waitpid'):
@@ -2087,6 +2142,8 @@ def reap_children():
                 pid, status = os.waitpid(any_process, os.WNOHANG)
                 if pid == 0:
                     break
+                print("Warning -- reap_children() reaped child process %s"
+                      % pid, file=sys.stderr)
             except:
                 break
 
@@ -2138,12 +2195,15 @@ def swap_attr(obj, attr, new_val):
         restoring the old value at the end of the block. If `attr` doesn't
         exist on `obj`, it will be created and then deleted at the end of the
         block.
+
+        The old value (or None if it doesn't exist) will be assigned to the
+        target of the "as" clause, if there is one.
     """
     if hasattr(obj, attr):
         real_val = getattr(obj, attr)
         setattr(obj, attr, new_val)
         try:
-            yield
+            yield real_val
         finally:
             setattr(obj, attr, real_val)
     else:
@@ -2151,7 +2211,8 @@ def swap_attr(obj, attr, new_val):
         try:
             yield
         finally:
-            delattr(obj, attr)
+            if hasattr(obj, attr):
+                delattr(obj, attr)
 
 @contextlib.contextmanager
 def swap_item(obj, item, new_val):
@@ -2165,12 +2226,15 @@ def swap_item(obj, item, new_val):
         restoring the old value at the end of the block. If `item` doesn't
         exist on `obj`, it will be created and then deleted at the end of the
         block.
+
+        The old value (or None if it doesn't exist) will be assigned to the
+        target of the "as" clause, if there is one.
     """
     if item in obj:
         real_val = obj[item]
         obj[item] = new_val
         try:
-            yield
+            yield real_val
         finally:
             obj[item] = real_val
     else:
@@ -2178,7 +2242,8 @@ def swap_item(obj, item, new_val):
         try:
             yield
         finally:
-            del obj[item]
+            if item in obj:
+                del obj[item]
 
 def strip_python_stderr(stderr):
     """Strip the stderr of a Python process from potential debug output
@@ -2189,9 +2254,6 @@ def strip_python_stderr(stderr):
     """
     stderr = re.sub(br"\[\d+ refs, \d+ blocks\]\r?\n?", b"", stderr).strip()
     return stderr
-
-requires_type_collecting = unittest.skipIf(hasattr(sys, 'getcounts'),
-                        'types are immortal if COUNT_ALLOCS is defined')
 
 requires_type_collecting = unittest.skipIf(hasattr(sys, 'getcounts'),
                         'types are immortal if COUNT_ALLOCS is defined')
@@ -2469,6 +2531,7 @@ class SuppressCrashReport:
                                        (0, self.old_value[1]))
                 except (ValueError, OSError):
                     pass
+
             if sys.platform == 'darwin':
                 # Check if the 'Crash Reporter' on OSX was configured
                 # in 'Developer' mode and warn that it will get triggered
@@ -2476,10 +2539,14 @@ class SuppressCrashReport:
                 #
                 # This assumes that this context manager is used in tests
                 # that might trigger the next manager.
-                value = subprocess.Popen(['/usr/bin/defaults', 'read',
-                        'com.apple.CrashReporter', 'DialogType'],
-                        stdout=subprocess.PIPE).communicate()[0]
-                if value.strip() == b'developer':
+                cmd = ['/usr/bin/defaults', 'read',
+                       'com.apple.CrashReporter', 'DialogType']
+                proc = subprocess.Popen(cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+                with proc:
+                    stdout = proc.communicate()[0]
+                if stdout.strip() == b'developer':
                     print("this test triggers the Crash Reporter, "
                           "that is intentional", end='', flush=True)
 
@@ -2617,3 +2684,76 @@ def setswitchinterval(interval):
         if _is_android_emulator:
             interval = minimum_interval
     return sys.setswitchinterval(interval)
+
+
+@contextlib.contextmanager
+def disable_faulthandler():
+    # use sys.__stderr__ instead of sys.stderr, since regrtest replaces
+    # sys.stderr with a StringIO which has no file descriptor when a test
+    # is run with -W/--verbose3.
+    fd = sys.__stderr__.fileno()
+
+    is_enabled = faulthandler.is_enabled()
+    try:
+        faulthandler.disable()
+        yield
+    finally:
+        if is_enabled:
+            faulthandler.enable(file=fd, all_threads=True)
+
+
+class SaveSignals:
+    """
+    Save an restore signal handlers.
+
+    This class is only able to save/restore signal handlers registered
+    by the Python signal module: see bpo-13285 for "external" signal
+    handlers.
+    """
+
+    def __init__(self):
+        import signal
+        self.signal = signal
+        self.signals = list(range(1, signal.NSIG))
+        # SIGKILL and SIGSTOP signals cannot be ignored nor catched
+        for signame in ('SIGKILL', 'SIGSTOP'):
+            try:
+                signum = getattr(signal, signame)
+            except AttributeError:
+                continue
+            self.signals.remove(signum)
+        self.handlers = {}
+
+    def save(self):
+        for signum in self.signals:
+            handler = self.signal.getsignal(signum)
+            if handler is None:
+                # getsignal() returns None if a signal handler was not
+                # registered by the Python signal module,
+                # and the handler is not SIG_DFL nor SIG_IGN.
+                #
+                # Ignore the signal: we cannot restore the handler.
+                continue
+            self.handlers[signum] = handler
+
+    def restore(self):
+        for signum, handler in self.handlers.items():
+            self.signal.signal(signum, handler)
+
+
+class FakePath:
+    """Simple implementing of the path protocol.
+    """
+    def __init__(self, path):
+        self.path = path
+
+    def __repr__(self):
+        return f'<FakePath {self.path!r}>'
+
+    def __fspath__(self):
+        if (isinstance(self.path, BaseException) or
+            isinstance(self.path, type) and
+                issubclass(self.path, BaseException)):
+            raise self.path
+        else:
+            return self.path

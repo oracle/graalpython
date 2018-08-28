@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -40,25 +42,24 @@ package com.oracle.graal.python.nodes.builtins;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PGuards.class)
+@TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class JoinInternalNode extends PBaseNode {
 
     public abstract String execute(Object self, Object iterable, PythonClass iterableClass);
@@ -79,66 +80,6 @@ public abstract class JoinInternalNode extends PBaseNode {
         }
 
         sb.append(Character.toString(joinString[joinString.length - 1]));
-        return sb.toString();
-    }
-
-    @Specialization(guards = {"cannotBeOverridden(iterableClass)", "isObjectStorage(list)"})
-    @TruffleBoundary
-    protected String join(String string, PList list, @SuppressWarnings("unused") PythonClass iterableClass) {
-        if (list.len() == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        ObjectSequenceStorage store = (ObjectSequenceStorage) list.getSequenceStorage();
-
-        int lastIdx = list.len() - 1;
-        for (int i = 0; i < lastIdx; i++) {
-            sb.append(checkItem(store.getItemNormalized(i), i));
-            sb.append(string);
-        }
-
-        sb.append(checkItem(list.getItem(lastIdx), lastIdx));
-        return sb.toString();
-    }
-
-    @Specialization(guards = "cannotBeOverridden(iterableClass)")
-    @TruffleBoundary
-    protected String join(String string, PCharArray array, @SuppressWarnings("unused") PythonClass iterableClass) {
-        if (array.len() == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        char[] stringList = array.getSequence();
-
-        for (int i = 0; i < stringList.length - 1; i++) {
-            sb.append(Character.toString(stringList[i]));
-            sb.append(string);
-        }
-
-        sb.append(Character.toString(stringList[stringList.length - 1]));
-        return sb.toString();
-    }
-
-    @Specialization(guards = "cannotBeOverridden(iterableClass)")
-    @TruffleBoundary
-    protected String join(String string, PSequence seq, @SuppressWarnings("unused") PythonClass iterableClass) {
-        if (seq.len() == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        int l = seq.len();
-        if (l == 0) {
-            return "";
-        }
-        for (int i = 0; i < l - 1; i++) {
-            sb.append(checkItem(seq.getItem(i), i));
-            sb.append(string);
-        }
-
-        sb.append(seq.getItem(seq.len() - 1));
         return sb.toString();
     }
 

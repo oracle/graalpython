@@ -56,8 +56,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +68,10 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltinsFactory.StatN
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -250,16 +251,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public void initialize(PythonCore core) {
         super.initialize(core);
         builtinConstants.put("_have_functions", core.factory().createList());
-
-        Map<String, String> getenv = System.getenv();
-        PDict environ = core.factory().createDict();
-        for (Entry<String, String> entry : getenv.entrySet()) {
-            environ.setItem(core.factory().createBytes(entry.getKey().getBytes()), core.factory().createBytes(entry.getValue().getBytes()));
-        }
-        builtinConstants.put("environ", environ);
+        builtinConstants.put("environ", core.factory().createDict());
     }
 
-    @Builtin(name = "getcwd", fixedNumOfArguments = 0)
+    @Builtin(name = "getcwd", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class CwdNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -271,7 +266,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "chdir", fixedNumOfArguments = 1)
+    @Builtin(name = "chdir", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ChdirNode extends PythonBuiltinNode {
         @TruffleBoundary
@@ -290,7 +285,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getpid", fixedNumOfArguments = 0)
+    @Builtin(name = "getpid", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class GetPidNode extends PythonBuiltinNode {
         @Specialization
@@ -301,7 +296,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fstat", fixedNumOfArguments = 1)
+    @Builtin(name = "fstat", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class FstatNode extends PythonFileNode {
 
@@ -351,7 +346,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "set_inheritable", fixedNumOfArguments = 2)
+    @Builtin(name = "set_inheritable", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetInheritableNode extends PythonFileNode {
         @Specialization(guards = {"fd >= 0", "fd <= 2"})
@@ -373,7 +368,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "stat", minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = "stat", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class StatNode extends PythonBinaryBuiltinNode {
@@ -508,7 +503,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "listdir", fixedNumOfArguments = 1)
+    @Builtin(name = "listdir", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ListdirNode extends PythonBuiltinNode {
@@ -535,7 +530,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dup", fixedNumOfArguments = 1)
+    @Builtin(name = "dup", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class DupNode extends PythonFileNode {
@@ -552,7 +547,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "open", minNumOfArguments = 2, maxNumOfArguments = 4, keywordArguments = {"mode", "dir_fd"})
+    @Builtin(name = "open", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4, keywordArguments = {"mode", "dir_fd"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class OpenNode extends PythonFileNode {
@@ -611,7 +606,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "lseek", fixedNumOfArguments = 3)
+    @Builtin(name = "lseek", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LseekNode extends PythonFileNode {
@@ -641,7 +636,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "close", fixedNumOfArguments = 1)
+    @Builtin(name = "close", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonFileNode {
         @Specialization
@@ -658,7 +653,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "unlink", fixedNumOfArguments = 1)
+    @Builtin(name = "unlink", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class UnlinkNode extends PythonFileNode {
@@ -674,17 +669,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "remove", fixedNumOfArguments = 1)
+    @Builtin(name = "remove", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RemoveNode extends UnlinkNode {
     }
 
-    @Builtin(name = "rmdir", fixedNumOfArguments = 1)
+    @Builtin(name = "rmdir", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class RmdirNode extends UnlinkNode {
     }
 
-    @Builtin(name = "mkdir", fixedNumOfArguments = 1, keywordArguments = {"mode", "dir_fd"})
+    @Builtin(name = "mkdir", fixedNumOfPositionalArgs = 1, keywordArguments = {"mode", "dir_fd"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class MkdirNode extends PythonFileNode {
@@ -705,10 +700,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "write", fixedNumOfArguments = 2)
+    @Builtin(name = "write", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class WriteNode extends PythonFileNode {
+        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         public abstract Object executeWith(Object fd, Object data);
 
@@ -755,25 +751,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "fd == 0 || fd > 2")
         @TruffleBoundary
         Object write(int fd, PBytes data) {
-            return write(fd, data.getBytesExact());
+            return write(fd, getByteArray(data));
         }
 
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, PBytes data) {
-            return writeStd(fd, data.getBytesExact());
+            return writeStd(fd, getByteArray(data));
         }
 
         @Specialization(guards = "fd == 0 || fd > 2")
         @TruffleBoundary
         Object write(int fd, PByteArray data) {
-            return write(fd, data.getBytesExact());
+            return write(fd, getByteArray(data));
         }
 
         @Specialization(guards = {"fd <= 2", "fd > 0"})
         @TruffleBoundary
         Object writeStd(int fd, PByteArray data) {
-            return writeStd(fd, data.getBytesExact());
+            return writeStd(fd, getByteArray(data));
         }
 
         @Specialization
@@ -782,12 +778,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return recursive.executeWith(fd.intValue(), data);
         }
 
+        private byte[] getByteArray(PIBytesLike pByteArray) {
+            if (toByteArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toByteArrayNode = insert(ToByteArrayNode.create());
+            }
+            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+        }
+
         protected WriteNode create() {
             return PosixModuleBuiltinsFactory.WriteNodeFactory.create(null);
         }
     }
 
-    @Builtin(name = "read", fixedNumOfArguments = 2)
+    @Builtin(name = "read", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ReadNode extends PythonFileNode {
@@ -809,7 +813,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "isatty", fixedNumOfArguments = 1)
+    @Builtin(name = "isatty", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class IsATTYNode extends PythonBuiltinNode {
@@ -817,6 +821,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         boolean isATTY(int fd) {
             // TODO: XXX: actually check
             switch (fd) {
+                case 0:
+                    return getContext().getStandardIn() == System.in;
                 case 1:
                     return getContext().getStandardOut() == System.out;
                 case 2:
@@ -827,7 +833,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_exit", fixedNumOfArguments = 1)
+    @Builtin(name = "_exit", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class ExitNode extends PythonBuiltinNode {
@@ -838,7 +844,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "chmod", minNumOfArguments = 2, keywordArguments = {"dir_fd", "follow_symlinks"})
+    @Builtin(name = "chmod", minNumOfPositionalArgs = 2, keywordArguments = {"dir_fd", "follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class ChmodNode extends PythonBuiltinNode {
@@ -864,10 +870,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "utime", minNumOfArguments = 1, keywordArguments = {"times", "ns", "dir_fd", "follow_symlinks"})
+    @Builtin(name = "utime", minNumOfPositionalArgs = 1, keywordArguments = {"times", "ns", "dir_fd", "follow_symlinks"})
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class UtimeNode extends PythonBuiltinNode {
+        @Child private GetItemNode getItemNode;
+
         @SuppressWarnings("unused")
         @Specialization
         Object utime(String path, PNone times, PNone ns, PNone dir_fd, PNone follow_symlinks) {
@@ -925,7 +933,11 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             if (times.len() <= index) {
                 throw tupleError(argname);
             }
-            Object mtimeObj = times.getItem(index);
+            if (getItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getItemNode = insert(GetItemNode.createNotNormalized());
+            }
+            Object mtimeObj = getItemNode.execute(times.getSequenceStorage(), index);
             long mtime;
             if (mtimeObj instanceof Integer) {
                 mtime = ((Integer) mtimeObj).longValue();
@@ -968,7 +980,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     // FIXME: this is not nearly ready, just good enough for now
-    @Builtin(name = "system", fixedNumOfArguments = 1)
+    @Builtin(name = "system", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SystemNode extends PythonBuiltinNode {
@@ -1061,7 +1073,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "rename", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = "rename", minNumOfPositionalArgs = 2, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class RenameNode extends PythonFileNode {
         @Specialization
@@ -1111,12 +1123,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "replace", minNumOfArguments = 2, takesVariableArguments = true, takesVariableKeywords = true)
+    @Builtin(name = "replace", minNumOfPositionalArgs = 2, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ReplaceNode extends RenameNode {
     }
 
-    @Builtin(name = "urandom", fixedNumOfArguments = 1)
+    @Builtin(name = "urandom", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class URandomNode extends PythonBuiltinNode {

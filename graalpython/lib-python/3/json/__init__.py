@@ -76,7 +76,7 @@ Specializing JSON object encoding::
     >>> def encode_complex(obj):
     ...     if isinstance(obj, complex):
     ...         return [obj.real, obj.imag]
-    ...     raise TypeError(repr(o) + " is not JSON serializable")
+    ...     raise TypeError(repr(obj) + " is not JSON serializable")
     ...
     >>> json.dumps(2 + 1j, default=encode_complex)
     '[2.0, 1.0]'
@@ -102,12 +102,6 @@ __all__ = [
 ]
 
 __author__ = 'Bob Ippolito <bob@redivi.com>'
-
-try:
-    # PyPy speedup, the interface is different than CPython's _json
-    import _pypyjson
-except ImportError:
-    _pypyjson = None
 
 from .decoder import JSONDecoder, JSONDecodeError
 from .encoder import JSONEncoder
@@ -357,8 +351,7 @@ def loads(s, *, encoding=None, cls=None, object_hook=None, parse_float=None,
     if (cls is None and object_hook is None and
             parse_int is None and parse_float is None and
             parse_constant is None and object_pairs_hook is None and not kw):
-        return (_pypyjson.loads(s, JSONDecodeError)
-                if _pypyjson else _default_decoder.decode(s))
+        return _default_decoder.decode(s)
     if cls is None:
         cls = JSONDecoder
     if object_hook is not None:

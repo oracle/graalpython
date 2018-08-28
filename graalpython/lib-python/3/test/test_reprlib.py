@@ -154,12 +154,8 @@ class ReprTests(unittest.TestCase):
         # Functions
         eq(repr(hash), '<built-in function hash>')
         # Methods
-        self.assertTrue(any((
-            # cpython
-            repr(''.split).startswith('<built-in method split of str object at 0x'),
-            # pypy
-            repr(''.split) == "<bound method str.split of ''>",
-        )))
+        self.assertTrue(repr(''.split).startswith(
+            '<built-in method split of str object at 0x'))
 
     def test_range(self):
         eq = self.assertEqual
@@ -196,13 +192,9 @@ class ReprTests(unittest.TestCase):
         self.assertRegex(r(x), r'<cell at 0x.*\.\.\..*>')
 
     def test_descriptors(self):
+        eq = self.assertEqual
         # method descriptors
-        self.assertTrue(any((
-            # cpython
-            repr(dict.items) == "<method 'items' of 'dict' objects>",
-            # pypy
-            repr(dict.items).startswith("<function dict.items at 0x"),
-        )))
+        eq(repr(dict.items), "<method 'items' of 'dict' objects>")
         # XXX member descriptors
         # XXX attribute descriptors
         # XXX slot descriptors
@@ -407,8 +399,7 @@ class TestRecursiveRepr(unittest.TestCase):
         wrapped = MyContainer3.wrapped
         wrapper = MyContainer3.wrapper
         for name in assigned:
-            # pypy fix: can't use assertIs() to compare two strings
-            self.assertEqual(getattr(wrapper, name), getattr(wrapped, name))
+            self.assertIs(getattr(wrapper, name), getattr(wrapped, name))
 
 if __name__ == "__main__":
     unittest.main()

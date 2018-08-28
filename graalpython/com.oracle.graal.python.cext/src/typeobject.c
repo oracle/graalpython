@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -55,24 +57,19 @@ int PyType_IsSubtype(PyTypeObject* a, PyTypeObject* b) {
 }
 
 static int add_subclass(PyTypeObject *base, PyTypeObject *type) {
-    void* key = PyLong_FromVoidPtr((void *) type);
+    void* key = (void *) type;
     if (key == NULL) {
         return -1;
     }
-    if (polyglot_is_value(base)) {
-        return polyglot_as_i32(polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Add_Subclass", native_to_java((PyObject*)base), native_to_java(key), native_to_java((PyObject*)type)));
-    } else {
-        PyObject *dict = base->tp_subclasses;
+    PyObject *dict = base->tp_subclasses;
+    if (dict == NULL) {
+        base->tp_subclasses = dict = PyDict_New();
         if (dict == NULL) {
-            base->tp_subclasses = dict = PyDict_New();
-            if (dict == NULL) {
-                return -1;
-            }
+            return -1;
         }
-        // TODO value should be a weak reference !
-        return PyDict_SetItem(base->tp_subclasses, key, (PyObject*)type);
     }
-	return -1;
+    // TODO value should be a weak reference !
+    return PyDict_SetItem(base->tp_subclasses, key, (PyObject*)type);
 }
 
 /* Special C landing functions that convert some arguments to primitives. */
@@ -101,6 +98,21 @@ static PyObject* wrap_richcmpfunc(richcmpfunc f, PyObject* a, PyObject* b, PyObj
 	return f(a, b, (int)PyLong_AsLong(n));
 }
 
+#undef RICHCMP_WRAPPER
+#define RICHCMP_WRAPPER(NAME, OP)                                       \
+    static PyObject* wrap_richcmpfunc_##NAME(richcmpfunc f,             \
+                                             PyObject* a,               \
+                                             PyObject* b) {             \
+        return f(a, b, OP);                                             \
+    }
+
+RICHCMP_WRAPPER(lt, Py_LT)
+RICHCMP_WRAPPER(le, Py_LE)
+RICHCMP_WRAPPER(eq, Py_EQ)
+RICHCMP_WRAPPER(ne, Py_NE)
+RICHCMP_WRAPPER(gt, Py_GT)
+RICHCMP_WRAPPER(ge, Py_GE)
+
 static PyObject* wrap_ssizeobjargproc(ssizeobjargproc f, PyObject* a, PyObject* size, PyObject* b) {
 	return PyLong_FromLong(f(a, PyLong_AsSsize_t(size), b));
 }
@@ -123,6 +135,10 @@ static PyObject* wrap_objobjproc(objobjproc f, PyObject* a, PyObject* b) {
 
 static PyObject* wrap_inquiry(inquiry f, PyObject* a) {
 	return PyLong_FromLong(f(a));
+}
+
+static PyObject* wrap_nb_bool(inquiry f, PyObject* a) {
+    return f(a) ? Py_True : Py_False;
 }
 
 /* very special case: operator '**' has an optional third arg */
@@ -229,12 +245,12 @@ int PyType_Ready(PyTypeObject* cls) {
                                             native_to_java(native_members));
 
     // remember the managed wrapper
-    ((PyObject*)cls)->ob_refcnt = truffle_handle_for_managed(javacls);
+    ((PyObject*)cls)->ob_refcnt = javacls;
     if (cls->tp_dict != NULL) {
-        // TODO: (tfel) is this always safe?
-        PyDict_Update(javacls->tp_dict, cls->tp_dict);
+        javacls->tp_dict = native_to_java(cls->tp_dict);
+    } else {
+        cls->tp_dict = javacls->tp_dict;
     }
-    cls->tp_dict = javacls->tp_dict;
 
     PyMethodDef* methods = cls->tp_methods;
     if (methods) {
@@ -313,7 +329,15 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT("__getattr__", cls->tp_getattro, -2);
     ADD_SLOT_CONV("__setattr__", wrap_setattrofunc, cls->tp_setattro, -3);
     ADD_SLOT("__clear__", cls->tp_clear, -1);
-    ADD_SLOT_CONV("__compare__", wrap_richcmpfunc, cls->tp_richcompare, -3);
+    if (cls->tp_richcompare) {
+        ADD_SLOT_CONV("__compare__", wrap_richcmpfunc, cls->tp_richcompare, -3);
+        ADD_SLOT_CONV("__lt__", wrap_richcmpfunc_lt, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__le__", wrap_richcmpfunc_le, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__eq__", wrap_richcmpfunc_eq, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__ne__", wrap_richcmpfunc_ne, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__gt__", wrap_richcmpfunc_gt, cls->tp_richcompare, -2);
+        ADD_SLOT_CONV("__ge__", wrap_richcmpfunc_ge, cls->tp_richcompare, -2);
+    }
     ADD_SLOT("__iter__", cls->tp_iter, -1);
     ADD_SLOT("__next__", cls->tp_iternext, -1);
     ADD_SLOT("__get__", cls->tp_descr_get, -3);
@@ -338,7 +362,7 @@ int PyType_Ready(PyTypeObject* cls) {
         ADD_SLOT("__neg__", numbers->nb_negative, -1);
         ADD_SLOT("__pos__", numbers->nb_positive, -1);
         ADD_SLOT("__abs__", numbers->nb_absolute, -1);
-        ADD_SLOT_CONV("__bool__", wrap_inquiry, numbers->nb_bool, -1);
+        ADD_SLOT_CONV("__bool__", wrap_nb_bool, numbers->nb_bool, -1);
         ADD_SLOT("__invert__", numbers->nb_invert, -1);
         ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
         ADD_SLOT("__rshift__", numbers->nb_rshift, -2);

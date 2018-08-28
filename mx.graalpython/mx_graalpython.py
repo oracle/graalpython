@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from argparse import ArgumentParser
 
 import mx
 import mx_benchmark
@@ -35,7 +36,6 @@ import mx_gate
 import mx_sdk
 import mx_subst
 import mx_urlrewrites
-from mx_downstream import testdownstream
 from mx_gate import Task
 from mx_graalpython_benchmark import PythonBenchmarkSuite
 from mx_unittest import unittest
@@ -43,6 +43,23 @@ from mx_unittest import unittest
 _suite = mx.suite('graalpython')
 _mx_graal = mx.suite("compiler", fatalIfMissing=False)
 _sulong = mx.suite("sulong")
+
+
+def _get_core_home():
+    return os.path.join(_suite.dir, "graalpython", "lib-graalpython")
+
+
+def _get_stdlib_home():
+    return os.path.join(_suite.dir, "graalpython", "lib-python", "3")
+
+
+def _get_svm_binary():
+    return os.path.join(_suite.dir, "graalpython-svm")
+
+
+def __get_svm_binary_from_graalvm():
+    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
+    return os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
 
 
 def _extract_graalpython_internal_options(args):
@@ -131,6 +148,10 @@ def _extract_graalpython_internal_options(args):
             # internal += ['-Dgraal.InliningDepthError=10']
             # internal += ['-Dgraal.MaximumLoopExplosionCount=1000']
             # internal += ['-Dgraal.TruffleCompilationThreshold=100000']
+
+        elif arg == '-compile-truffle-immediately' and _mx_graal:
+            internal += ['-Dgraal.TruffleCompileImmediately=true']
+            internal += ['-Dgraal.TruffleCompilationExceptionsAreThrown=true']
 
         else:
             non_internal += [arg]
@@ -232,7 +253,7 @@ def punittest(args):
     # IMPORTANT! This must not be --suite graalpython, because a
     # --dynamicimports sulong will otherwise not put sulong.jar on the
     # classpath, which means we cannot run our C extension tests!
-    unittest(args + ['--regex', '(graal\.python)|(com\.oracle\.truffle\.tck\.tests)'])
+    unittest(args + ['--regex', '(graal\.python)|(com\.oracle\.truffle\.tck\.tests)', "-Dgraal.TraceTruffleCompilation=true"])
 
 
 def nativebuild(args):
@@ -260,7 +281,6 @@ class GraalPythonTags(object):
     benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
-    R = 'python-R'
     apptests = 'python-apptests'
     license = 'python-license'
 
@@ -320,16 +340,19 @@ def find_eclipse():
                 return
 
 
-def python_svm(args):
+def python_build_svm(args):
     mx.run_mx(
         ["--dynamicimports", "/substratevm,/vm", "build",
          "--force-deprecation-as-warning", "--dependencies",
          "GRAAL_MANAGEMENT,graalpython.image"],
         nonZeroIsFatal=True
     )
-    vmdir = os.path.join(mx.suite("truffle").dir, "..", "vm")
-    svm_image = os.path.join(vmdir, "mxbuild", "-".join([mx.get_os(), mx.get_arch()]), "graalpython.image", "graalpython")
-    shutil.copy(svm_image, os.path.join(_suite.dir, "graalpython-svm"))
+    shutil.copy(__get_svm_binary_from_graalvm(), _get_svm_binary())
+
+
+def python_svm(args):
+    python_build_svm(args)
+    svm_image = __get_svm_binary_from_graalvm()
     mx.run([svm_image] + args)
     return svm_image
 
@@ -395,35 +418,12 @@ def graalpython_gate_runner(args, tasks):
                 test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v"] + testfiles
                 mx.run(["./graalpython-svm", "--python.CoreHome=graalpython/lib-graalpython", "--python.StdLibHome=graalpython/lib-python/3", langhome] + test_args, nonZeroIsFatal=True)
 
-    with Task('GraalPython downstream R tests', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.R]) as task:
-        script_r2p = os.path.join(_suite.dir, "graalpython", "benchmarks", "src", "benchmarks", "interop", "r_python_image_demo.r")
-        script_p2r = os.path.join(_suite.dir, "graalpython", "benchmarks", "src", "benchmarks", "interop", "python_r_image_demo.py")
-        pythonjars = os.pathsep.join([
-            os.path.join(_suite.dir, "mxbuild", "dists", "graalpython.jar"),
-            os.path.join(_suite.dir, "mxbuild", "dists", "graalpython-env.jar")
-        ])
-        if task:
-            rrepo = os.environ["FASTR_REPO_URL"]
-            testdownstream(
-                _suite,
-                [rrepo, mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
-                ".",
-                [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
-                 ["--cp-sfx", pythonjars, "r", "--polyglot", "--file=%s" % script_r2p]
-                 ])
-            testdownstream(
-                _suite,
-                [rrepo, mx.suite("truffle").vc._remote_url(mx.suite("truffle").dir, "origin")],
-                ".",
-                [["--dynamicimports", "graalpython", "--version-conflict-resolution", "latest_all", "build", "--force-deprecation-as-warning"],
-                 ["-v", "--cp-sfx", pythonjars, "r", "--jvm", "--polyglot", "-e", "eval.polyglot('python', path='%s')" % str(script_p2r)]
-                 ])
-
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
             apprepo = os.environ["GRAALPYTHON_APPTESTS_REPO_URL"]
             _apptest_suite = _suite.import_suite(
                 "graalpython-apptests",
+                version="f40fcf3af008d30a67e0dbc325a0d90f1e68f0c0",
                 urlinfos=[mx.SuiteImportURLInfo(mx_urlrewrites.rewriteurl(apprepo), "git", mx.vc_system("git"))]
             )
             mx.run_mx(["-p", _apptest_suite.dir, "graalpython-apptests"])
@@ -516,7 +516,11 @@ def run_shared_lib_test(args=None):
             }
             status = poly_context_builder_option(isolate_thread, builder, "python.VerboseFlag", "true");
             if (status != poly_ok) {
-                return status;
+            return status;
+            }
+            status = poly_context_builder_allow_io(isolate_thread, builder, true);
+            if (status != poly_ok) {
+            return status;
             }
             status = poly_context_builder_build(isolate_thread, builder, &context);
             if (status != poly_ok) {
@@ -595,7 +599,9 @@ def run_shared_lib_test(args=None):
         mx.log("Running " + progname + " with LD_LIBRARY_PATH " + svm_lib_path)
         mx.run(["ls", "-l", progname])
         mx.run(["ls", "-l", svm_lib_path])
-        mx.run([progname], env={"LD_LIBRARY_PATH": svm_lib_path})
+        run_env = {"LD_LIBRARY_PATH": svm_lib_path, "GRAAL_PYTHONHOME": os.environ["GRAAL_PYTHONHOME"]}
+        print(run_env)
+        mx.run([progname], env=run_env)
     finally:
         try:
             os.unlink(progname)
@@ -748,6 +754,115 @@ def python_checkcopyrights(args):
         os.unlink(listfilename)
 
 
+def import_python_sources(args):
+    # mappings for files that are renamed
+    mapping = {
+        "_memoryview.c": "memoryobject.c",
+        "_cpython_sre.c": "_sre.c",
+    }
+    parser = ArgumentParser(prog='mx python-src-import')
+    parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
+    parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
+    parser.add_argument('--msg', action='store', help='Message for import update commit', required=True)
+    args = parser.parse_args(args)
+
+    python_sources = args.cpython
+    pypy_sources = args.pypy
+    import_version = args.msg
+
+    print """
+    So you think you want to update the inlined sources? Here is how it will go:
+
+    1. We'll first check the copyrights check overrides file to identify the
+       files taken from CPython and we'll remember that list. There's a mapping
+       for files that were renamed, currently this includes:
+       \t{0!r}\n
+
+    2. We'll check out the "python-import" branch. This branch has only files
+       that were inlined from CPython or PyPy. We'll use the sources given on
+       the commandline for that. I hope those are in a state where that makes
+       sense.
+
+    3. We'll stop and wait to give you some time to check if the python-import
+       branch looks as you expect. Then we'll commit the updated files to the
+       python-import branch, push it, and move back to whatever your HEAD is
+       now.
+
+    4. We'll merge the python-import branch back into HEAD. Because these share
+       a common ancestroy, git will try to preserve our patches to files, that
+       is, copyright headers and any other source patches.
+
+    5. !IMPORTANT! If files were inlined from CPython during normal development
+       that were not first added to the python-import branch, you will get merge
+       conflicts and git will tell you that the files was added on both
+       branches. You probably should resolve these using:
+
+           git checkout python-import -- path/to/file
+
+        Then check the diff and make sure that any patches that we did to those
+        files are re-applied.
+
+    6. After the merge is completed and any direct merge conflicts are resolved,
+       run this:
+
+           mx python-checkcopyrights --fix
+
+       This will apply copyrights to files that we're newly added from
+       python-import.
+
+    7. Run the tests and fix any remaining issues.
+    """.format(mapping)
+    raw_input("Got it?")
+
+    files = []
+    with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
+        files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
+
+    # move to orphaned branch with sources
+    if _suite.vc.isDirty(_suite.dir):
+        mx.abort("Working dir must be clean")
+    tip = _suite.vc.tip(_suite.dir).strip()
+    _suite.vc.git_command(_suite.dir, ["checkout", "python-import"])
+    _suite.vc.git_command(_suite.dir, ["clean", "-fdx"])
+    shutil.rmtree("graalpython")
+
+    for inlined_file in files:
+        # C files are mostly just copied
+        original_file = None
+        name = os.path.basename(inlined_file)
+        name = mapping.get(name, name)
+        if inlined_file.endswith(".h") or inlined_file.endswith(".c"):
+            for root, dirs, files in os.walk(python_sources):
+                if os.path.basename(name) in files:
+                    original_file = os.path.join(root, name)
+                    try:
+                        os.makedirs(os.path.dirname(inlined_file))
+                    except:
+                        pass
+                    shutil.copy(original_file, inlined_file)
+                    break
+        elif inlined_file.endswith(".py"):
+            # these files don't need to be updated, they inline some unittest code only
+            if name.startswith("test_") or name.endswith("_tests.py"):
+                original_file = inlined_file
+        if original_file is None:
+            mx.warn("Could not update %s - original file not found" % inlined_file)
+
+    # re-copy lib-python
+    libdir = os.path.join(_suite.dir, "graalpython/lib-python/3")
+    shutil.copytree(os.path.join(pypy_sources, "lib-python", "3"), libdir)
+
+    # commit and check back
+    _suite.vc.git_command(_suite.dir, ["add", "."])
+    raw_input("Check that the updated files look as intended, then press RETURN...")
+    _suite.vc.commit(_suite.dir, "Update Python inlined files: %s" % import_version)
+    answer = raw_input("Should we push python-import (y/N)? ")
+    if answer and answer in "Yy":
+        _suite.vc.git_command(_suite.dir, ["push", "origin", "python-import:python-import"])
+    _suite.vc.update(_suite.dir, rev=tip)
+    _suite.vc.git_command(_suite.dir, ["merge", "python-import"])
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # add the defined python benchmark suites
@@ -815,6 +930,7 @@ mx.update_commands(_suite, {
     'python-update-import': [update_import_cmd, 'import name'],
     'delete-graalpython-if-testdownstream': [delete_self_if_testdownstream, ''],
     'python-checkcopyrights': [python_checkcopyrights, 'Make sure code files have copyright notices'],
+    'python-build-svm': [python_build_svm, 'build svm image if it is outdated'],
     'python-svm': [python_svm, 'run python svm image (building it if it is outdated'],
     'punittest': [punittest, ''],
     'python3-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
@@ -822,4 +938,5 @@ mx.update_commands(_suite, {
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],
+    'python-src-import': [import_python_sources, ''],
 })

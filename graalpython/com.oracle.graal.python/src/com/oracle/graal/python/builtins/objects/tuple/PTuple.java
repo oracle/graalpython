@@ -25,142 +25,95 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PImmutableSequence;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-public final class PTuple extends PImmutableSequence implements Comparable<Object> {
+public final class PTuple extends PImmutableSequence {
 
-    private final Object[] array;
+    private SequenceStorage store;
 
     public PTuple(PythonClass cls, Object[] elements) {
         super(cls);
-        array = elements;
+        this.store = new ObjectSequenceStorage(elements);
+    }
+
+    public PTuple(PythonClass cls, SequenceStorage store) {
+        super(cls);
+        this.store = store;
     }
 
     public Object[] getArray() {
-        return array;
+        // TODO disallow direct array access
+        if (store instanceof ObjectSequenceStorage) {
+            return store.getInternalArray();
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int len() {
-        return array.length;
+        return store.length();
     }
 
     public boolean isEmpty() {
-        return array.length == 0;
-    }
-
-    @Override
-    public Object getItem(int idx) {
-        final int index = SequenceUtil.normalizeIndex(idx, len(), "tuple index out of range");
-        return getItemNormalized(index);
-    }
-
-    public Object getItemNormalized(int index) {
-        return array[index];
-    }
-
-    @Override
-    public Object getSlice(PythonObjectFactory factory, int start, int stop, int step, int length) {
-        Object[] newArray = new Object[length];
-        if (step == 1) {
-            System.arraycopy(array, start, newArray, 0, length);
-            return factory.createTuple(newArray);
-        }
-        for (int i = start, j = 0; j < length; i += step, j++) {
-            newArray[j] = array[i];
-        }
-        return factory.createTuple(newArray);
-    }
-
-    @Override
-    public boolean lessThan(PSequence sequence) {
-        int i = SequenceUtil.cmp(this, sequence);
-        if (i < 0) {
-            return i == -1 ? true : false;
-        }
-
-        Object element1 = this.getItem(i);
-        Object element2 = sequence.getItem(i);
-
-        /**
-         * TODO: Can use a better approach instead of instanceof checks
-         */
-        if (element1 instanceof Integer && element2 instanceof Integer) {
-            return (int) element1 < (int) element2;
-        }
-
-        throw new UnsupportedOperationException();
+        return len() == 0;
     }
 
     @Override
     public String toString() {
-        StringBuilder buf = new StringBuilder("(");
-        for (int i = 0; i < array.length - 1; i++) {
-            buf.append(array[i]);
-            buf.append(", ");
+        CompilerAsserts.neverPartOfCompilation();
+        if (store instanceof ObjectSequenceStorage) {
+            StringBuilder buf = new StringBuilder("(");
+            Object[] array = store.getInternalArray();
+            for (int i = 0; i < array.length - 1; i++) {
+                buf.append(array[i]);
+                buf.append(", ");
+            }
+
+            if (array.length > 0) {
+                buf.append(array[array.length - 1]);
+            }
+
+            if (array.length == 1) {
+                buf.append(",");
+            }
+
+            buf.append(")");
+            return buf.toString();
+        } else {
+            return String.format("tuple(%s)", store);
         }
-
-        if (array.length > 0) {
-            buf.append(array[array.length - 1]);
-        }
-
-        if (array.length == 1) {
-            buf.append(",");
-        }
-
-        buf.append(")");
-        return buf.toString();
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    public PTuple __mul__(int value) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
     public SequenceStorage getSequenceStorage() {
-        throw new UnsupportedOperationException();
+        return store;
     }
 
     @Override
-    public int index(Object value) {
-        for (int i = 0; i < array.length; i++) {
-            Object val = array[i];
-
-            if (val.equals(value)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    @Override
-    public int compareTo(Object o) {
-        return SequenceUtil.cmp(this, (PSequence) o);
+    public void setSequenceStorage(SequenceStorage store) {
+        this.store = store;
     }
 
     @Override
     public boolean equals(Object other) {
+        CompilerAsserts.neverPartOfCompilation();
         if (!(other instanceof PTuple)) {
             return false;
         }
 
         PTuple otherTuple = (PTuple) other;
-        return Arrays.equals(array, otherTuple.array);
+        return store.equals(otherTuple.store);
     }
 
     @Override
     public int hashCode() {
+        CompilerAsserts.neverPartOfCompilation();
         return super.hashCode();
     }
 

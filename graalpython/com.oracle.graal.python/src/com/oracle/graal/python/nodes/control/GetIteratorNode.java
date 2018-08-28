@@ -28,29 +28,18 @@ package com.oracle.graal.python.nodes.control;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PCharArray;
-import com.oracle.graal.python.builtins.objects.array.PDoubleArray;
-import com.oracle.graal.python.builtins.objects.array.PIntArray;
-import com.oracle.graal.python.builtins.objects.array.PLongArray;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNodeGen.IsIteratorObjectNodeGen;
 import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -90,57 +79,6 @@ public abstract class GetIteratorNode extends UnaryOpNode {
     public abstract Object executeWith(Object value);
 
     @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doPRange(PRange value) {
-        return factory().createRangeIterator(value.getStart(), value.getStop(), value.getStep());
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doPIntArray(PIntArray value) {
-        if (PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceIteration)) {
-            return factory().createIntArrayIterator(value);
-        } else {
-            return factory().createSequenceIterator(value);
-        }
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doPLongArray(PLongArray value) {
-        if (PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceIteration)) {
-            return factory().createLongArrayIterator(value);
-        } else {
-            return factory().createSequenceIterator(value);
-        }
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doPDoubleArray(PDoubleArray value) {
-        if (PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceIteration)) {
-            return factory().createDoubleArrayIterator(value);
-        } else {
-            return factory().createSequenceIterator(value);
-        }
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PythonObject doCharArray(PCharArray value) {
-        if (PythonOptions.getOption(getContext(), PythonOptions.UnboxSequenceIteration)) {
-            return factory().createCharArrayIterator(value);
-        } else {
-            return factory().createSequenceIterator(value);
-        }
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PSequenceIterator doPSequence(PSequence value) {
-        return factory().createSequenceIterator(value);
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
-    public PStringIterator doString(String value) {
-        return factory().createStringIterator(value);
-    }
-
-    @Specialization(guards = "iterCannotBeOverridden(value)")
     public PythonObject doPZip(PZip value) {
         return value;
     }
@@ -150,13 +88,12 @@ public abstract class GetIteratorNode extends UnaryOpNode {
                     @Cached("createIdentityProfile()") ValueProfile getattributeProfile,
                     @Cached("create(__ITER__)") LookupAttributeInMRONode lookupAttrMroNode,
                     @Cached("create(__GETITEM__)") LookupAttributeInMRONode lookupGetitemAttrMroNode,
-                    @Cached("create()") CallDispatchNode dispatchGetattribute,
-                    @Cached("create()") CreateArgumentsNode createArgs,
+                    @Cached("create()") CallUnaryMethodNode dispatchGetattribute,
                     @Cached("create()") IsIteratorObjectNode isIteratorObjectNode) {
         PythonClass clazz = getClass(value);
         Object attrObj = getattributeProfile.profile(lookupAttrMroNode.execute(clazz));
         if (attrObj != PNone.NO_VALUE && attrObj != PNone.NONE) {
-            Object iterObj = dispatchGetattribute.executeCall(attrObj, createArgs.execute(value), PKeyword.EMPTY_KEYWORDS);
+            Object iterObj = dispatchGetattribute.executeObject(attrObj, value);
             if (isIteratorObjectNode.execute(iterObj)) {
                 return iterObj;
             } else {

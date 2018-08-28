@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes.argument;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
@@ -33,14 +34,16 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public abstract class ReadVarArgsNode extends ReadIndexedArgumentNode {
+public abstract class ReadVarArgsNode extends PNode {
+    private final int index;
+
     /**
      * Controls if the varargs are wrapped in a tuple
      */
     private final boolean builtin;
 
     ReadVarArgsNode(int paramIndex, boolean isBuiltin) {
-        super(paramIndex);
+        index = paramIndex;
         builtin = isBuiltin;
     }
 
@@ -51,6 +54,8 @@ public abstract class ReadVarArgsNode extends ReadIndexedArgumentNode {
     public static ReadVarArgsNode create(int paramIndex, boolean isBuiltin) {
         return ReadVarArgsNodeGen.create(paramIndex, isBuiltin);
     }
+
+    public abstract Object[] executeObjectArray(VirtualFrame frame);
 
     protected int getAndCheckUserArgsLen(VirtualFrame frame) {
         int length = getUserArgsLen(frame);
@@ -108,5 +113,13 @@ public abstract class ReadVarArgsNode extends ReadIndexedArgumentNode {
         } else {
             return factory().createTuple(varArgs);
         }
+    }
+
+    public boolean isBuiltin() {
+        return builtin;
+    }
+
+    public int getIndex() {
+        return index;
     }
 }

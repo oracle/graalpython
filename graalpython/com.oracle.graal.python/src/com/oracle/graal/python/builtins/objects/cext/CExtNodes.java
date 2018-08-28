@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -38,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -46,18 +47,20 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPoin
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -67,6 +70,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -83,7 +87,7 @@ public abstract class CExtNodes {
      */
     public static class SubtypeNew extends PBaseNode {
         private final TruffleObject subtypeFunc;
-        @Child private Node executeNode = Message.createExecute(2).createNode();
+        @Child private Node executeNode = Message.EXECUTE.createNode();
         @Child private ToSulongNode toSulongNode = ToSulongNode.create();
         @Child private ToJavaNode toJavaNode = ToJavaNode.create();
 
@@ -104,10 +108,9 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class FromNativeSubclassNode extends PBaseNode {
+    public static class FromNativeSubclassNode<T> extends PBaseNode {
         private final PythonBuiltinClassType expectedType;
         private final String conversionFuncName;
-        @CompilationFinal private PythonBuiltinClass expectedClass;
         @CompilationFinal private TruffleObject conversionFunc;
         @Child private Node executeNode;
         @Child private GetClassNode getClass = GetClassNode.create();
@@ -120,17 +123,13 @@ public abstract class CExtNodes {
         }
 
         private PythonBuiltinClass getExpectedClass() {
-            if (expectedClass == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                expectedClass = getCore().lookupType(expectedType);
-            }
-            return expectedClass;
+            return getCore().lookupType(expectedType);
         }
 
         private Node getExecNode() {
             if (executeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(1).createNode());
+                executeNode = insert(Message.EXECUTE.createNode());
             }
             return executeNode;
         }
@@ -151,10 +150,11 @@ public abstract class CExtNodes {
             return toSulongNode;
         }
 
-        public Object execute(PythonNativeObject object) {
-            if (isSubtype.execute(getClass.execute(object), getExpectedClass())) {
+        @SuppressWarnings("unchecked")
+        public T execute(PythonNativeObject object) {
+            if (isSubtype(object)) {
                 try {
-                    return ForeignAccess.sendExecute(getExecNode(), getConversionFunc(), getToSulongNode().execute(object));
+                    return (T) ForeignAccess.sendExecute(getExecNode(), getConversionFunc(), getToSulongNode().execute(object));
                 } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                     throw new IllegalStateException("C object conversion function failed", e);
                 }
@@ -162,8 +162,12 @@ public abstract class CExtNodes {
             return null;
         }
 
-        public static FromNativeSubclassNode create(PythonBuiltinClassType expectedType, String conversionFuncName) {
-            return new FromNativeSubclassNode(expectedType, conversionFuncName);
+        public boolean isSubtype(PythonNativeObject object) {
+            return isSubtype.execute(getClass.execute(object), getExpectedClass());
+        }
+
+        public static <T> FromNativeSubclassNode<T> create(PythonBuiltinClassType expectedType, String conversionFuncName) {
+            return new FromNativeSubclassNode<>(expectedType, conversionFuncName);
         }
     }
 
@@ -289,6 +293,11 @@ public abstract class CExtNodes {
         }
 
         @Specialization
+        byte doLong(byte b) {
+            return b;
+        }
+
+        @Specialization
         int doLong(int i) {
             return i;
         }
@@ -314,14 +323,14 @@ public abstract class CExtNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getClassNode = insert(GetClassNode.create());
             }
-            return getClassNode.execute(obj) == getCore().getForeignClass();
+            return getClassNode.execute(obj) == getCore().lookupType(PythonBuiltinClassType.TruffleObject);
         }
 
         @TruffleBoundary
-        public static Object doSlowPath(Object object) {
+        public static Object doSlowPath(PythonCore core, Object object) {
             if (object instanceof PythonNativeWrapper) {
                 return ((PythonNativeWrapper) object).getDelegate();
-            } else if (GetClassNode.getItSlowPath(object) == PythonLanguage.getCore().getForeignClass()) {
+            } else if (GetClassNode.getItSlowPath(object) == core.lookupType(PythonBuiltinClassType.TruffleObject)) {
                 throw new AssertionError("Unsupported slow path operation: converting 'to_java(" + object + ")");
             }
             return object;
@@ -358,7 +367,7 @@ public abstract class CExtNodes {
         Object doForeign(Object value) {
             if (callNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNativeNode = insert(PCallNativeNode.create(1));
+                callNativeNode = insert(PCallNativeNode.create());
             }
             if (callNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -384,13 +393,13 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doPString(PString str,
-                        @Cached("createExecute(1)") Node executeNode) {
+                        @Cached("createExecute()") Node executeNode) {
             return doString(str.getValue(), executeNode);
         }
 
         @Specialization
         Object doString(String str,
-                        @Cached("createExecute(1)") Node executeNode) {
+                        @Cached("createExecute()") Node executeNode) {
             try {
                 return ForeignAccess.sendExecute(executeNode, getTruffleStringToCstr(), str, str.length());
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -400,7 +409,7 @@ public abstract class CExtNodes {
 
         @Specialization
         Object doByteArray(byte[] arr,
-                        @Cached("createExecute(2)") Node executeNode) {
+                        @Cached("createExecute()") Node executeNode) {
             try {
                 return ForeignAccess.sendExecute(executeNode, getTruffleByteArrayToNative(), getContext().getEnv().asGuestValue(arr), arr.length);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -424,8 +433,8 @@ public abstract class CExtNodes {
             return truffle_byte_array_to_native;
         }
 
-        protected Node createExecute(int arity) {
-            return Message.createExecute(arity).createNode();
+        protected Node createExecute() {
+            return Message.EXECUTE.createNode();
         }
 
         public static AsCharPointer create() {
@@ -449,7 +458,7 @@ public abstract class CExtNodes {
         private Node getExecuteNode() {
             if (executeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.createExecute(1).createNode());
+                executeNode = insert(Message.EXECUTE.createNode());
             }
             return executeNode;
         }
@@ -491,7 +500,7 @@ public abstract class CExtNodes {
         private PCallNativeNode getCallGetObTypeNode() {
             if (callGetObTypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callGetObTypeNode = insert(PCallNativeNode.create(1));
+                callGetObTypeNode = insert(PCallNativeNode.create());
             }
             return callGetObTypeNode;
         }
@@ -507,5 +516,55 @@ public abstract class CExtNodes {
         public static GetNativeClassNode create() {
             return new GetNativeClassNode();
         }
+    }
+
+    public static class SizeofWCharNode extends CExtBaseNode {
+
+        @CompilationFinal long wcharSize = -1;
+
+        public long execute() {
+            if (wcharSize < 0) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                try {
+                    wcharSize = (long) ForeignAccess.sendExecute(Message.EXECUTE.createNode(), getNativeFunction());
+                    assert wcharSize >= 0L;
+                } catch (InteropException e) {
+                    throw e.raise();
+                }
+            }
+            return wcharSize;
+        }
+
+        TruffleObject getNativeFunction() {
+            CompilerAsserts.neverPartOfCompilation();
+            return (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_WHCAR_SIZE);
+        }
+
+        public static SizeofWCharNode create() {
+            return new SizeofWCharNode();
+        }
+    }
+
+    public static class IsNode extends CExtBaseNode {
+        @CompilationFinal private TruffleObject isFunc = null;
+        @Child Node executeNode = Message.EXECUTE.createNode();
+
+        public boolean execute(PythonNativeObject a, PythonNativeObject b) {
+            try {
+                return (int) ForeignAccess.sendExecute(executeNode, getNativeFunction(), a.object, b.object) != 0;
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException(NativeCAPISymbols.FUN_PTR_COMPARE + " didn't work!");
+            }
+        }
+
+        TruffleObject getNativeFunction() {
+            if (isFunc == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isFunc = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PTR_COMPARE);
+            }
+            return isFunc;
+        }
+
     }
 }

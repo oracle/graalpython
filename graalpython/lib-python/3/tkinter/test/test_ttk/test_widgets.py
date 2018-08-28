@@ -1,7 +1,7 @@
 import unittest
 import tkinter
 from tkinter import ttk, TclError
-from test.support import requires, gc_collect
+from test.support import requires
 import sys
 
 from tkinter.test.test_ttk.test_functions import MockTclObj
@@ -837,7 +837,6 @@ class ScaleTest(AbstractWidgetTest, unittest.TestCase):
         self.assertEqual(conv(self.scale.get()), var.get())
         self.assertEqual(conv(self.scale.get()), max + 5)
         del var
-        gc_collect()
 
         # the same happens with the value option
         self.scale['value'] = max + 10
@@ -1557,7 +1556,7 @@ class TreeviewTest(AbstractWidgetTest, unittest.TestCase):
         self.tv.selection_toggle((c1, c3))
         self.assertEqual(self.tv.selection(), (c3, item2))
 
-        if sys.version_info >= (3, 7):
+        if sys.version_info >= (3, 8):
             import warnings
             warnings.warn(
                 'Deprecated API of Treeview.selection() should be removed')

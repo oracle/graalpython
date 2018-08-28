@@ -29,8 +29,10 @@ import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.graalvm.options.OptionValues;
@@ -48,6 +50,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleOptions;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 
 public class PythonContext {
 
@@ -55,6 +59,7 @@ public class PythonContext {
     private PythonModule mainModule;
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
+    private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -68,6 +73,7 @@ public class PythonContext {
 
     private OutputStream out;
     private OutputStream err;
+    private InputStream in;
     @CompilationFinal private boolean capiWasLoaded = false;
     private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
@@ -81,12 +87,19 @@ public class PythonContext {
         this.core = core;
         this.env = env;
         if (env == null) {
+            this.in = System.in;
             this.out = System.out;
             this.err = System.err;
         } else {
+            this.in = env.in();
             this.out = env.out();
             this.err = env.err();
         }
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public long getNextGlobalId() {
+        return globalId.incrementAndGet();
     }
 
     public OptionValues getOptions() {
@@ -130,6 +143,10 @@ public class PythonContext {
         return core;
     }
 
+    public InputStream getStandardIn() {
+        return in;
+    }
+
     public OutputStream getStandardErr() {
         return err;
     }
@@ -159,17 +176,30 @@ public class PythonContext {
     }
 
     public void initialize() {
-        if (!PythonOptions.getOption(this, PythonOptions.SharedCore)) {
-            core.setSingletonContext(this);
-        }
+        core.initialize(this);
+        setupRuntimeInformation();
+        core.postInitialize();
+    }
 
-        PythonModule sysModule = core.createSysModule(this);
+    public void patch(Env newEnv) {
+        setEnv(newEnv);
+        setOut(newEnv.out());
+        setErr(newEnv.err());
+        setupRuntimeInformation();
+        core.postInitialize();
+    }
+
+    private void setupRuntimeInformation() {
+        PythonModule sysModule = core.initializeSysModule();
+        if (TruffleOptions.AOT) {
+            sysModule.setAttribute("executable", Compiler.command(new Object[]{"com.oracle.svm.core.posix.GetExecutableName"}));
+        }
         sysModules = (PDict) sysModule.getAttribute("modules");
         builtinsModule = (PythonModule) sysModules.getItem("builtins");
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, builtinsModule);
         sysModules.setItem(__MAIN__, mainModule);
-
+        currentException = null;
         isInitialized = true;
     }
 

@@ -2,7 +2,6 @@
 A number of functions that enhance IDLE on Mac OSX.
 """
 from sys import platform  # Used in _init_tk_type, changed by test.
-import warnings
 
 import tkinter
 
@@ -166,7 +165,7 @@ def overrideRootMenu(root, flist):
         "Handle Help 'About IDLE' event."
         # Synchronize with editor.EditorWindow.about_dialog.
         from idlelib import help_about
-        help_about.AboutDialog(root, 'About IDLE')
+        help_about.AboutDialog(root)
 
     def config_dialog(event=None):
         "Handle Options 'Configure IDLE' event."

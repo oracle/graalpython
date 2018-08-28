@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.call;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -32,9 +33,12 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
@@ -44,43 +48,79 @@ public abstract class CallDispatchNode extends Node {
         return InvokeNode.create(callee);
     }
 
+    protected static CallTargetInvokeNode createCtInvokeNode(PythonCallable callee) {
+        return CallTargetInvokeNode.create(callee);
+    }
+
     public static CallDispatchNode create() {
         return CallDispatchNodeGen.create();
     }
 
-    public abstract Object executeCall(Object callee, Object[] arguments, PKeyword[] keywords);
+    protected Assumption singleContextAssumption() {
+        return PythonLanguage.singleContextAssumption;
+    }
 
-    /**
-     * We have to treat PMethods specially, because we want the PIC to be on the function, not on
-     * the (transient) bound method.
-     */
+    public abstract Object executeCall(VirtualFrame frame, Object callee, Object[] arguments, PKeyword[] keywords);
+
     @SuppressWarnings("unused")
-    @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
-    protected Object callMethod(PMethod method, Object[] arguments, PKeyword[] keywords,
+    @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    protected Object callMethod(VirtualFrame frame, PMethod method, Object[] arguments, PKeyword[] keywords,
                     @Cached("method.getFunction()") PFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
-        return invoke.invoke(arguments, keywords);
+        return invoke.execute(frame, arguments, keywords);
     }
 
     @SuppressWarnings("unused")
-    @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
-    protected Object callBuiltinMethod(PBuiltinMethod method, Object[] arguments, PKeyword[] keywords,
+    @Specialization(guards = "method.getFunction().getCallTarget() == ct", limit = "getCallSiteInlineCacheMaxDepth()")
+    protected Object callMethod(VirtualFrame frame, PMethod method, Object[] arguments, PKeyword[] keywords,
+                    @Cached("method.getFunction().getCallTarget()") RootCallTarget ct,
+                    @Cached("createCtInvokeNode(method)") CallTargetInvokeNode invoke) {
+        return invoke.execute(frame, method.getGlobals(), method.getClosure(), method.getArity(), arguments, keywords);
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(guards = "method.getFunction() == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    protected Object callBuiltinMethod(VirtualFrame frame, PBuiltinMethod method, Object[] arguments, PKeyword[] keywords,
                     @Cached("method.getFunction()") PBuiltinFunction cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
-        return invoke.invoke(arguments, keywords);
+        return invoke.execute(frame, arguments, keywords);
     }
 
     @SuppressWarnings("unused")
-    @Specialization(guards = "callee == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()")
-    protected Object callFunction(PythonCallable callee, Object[] arguments, PKeyword[] keywords,
+    @Specialization(guards = "method.getFunction().getCallTarget() == ct", limit = "getCallSiteInlineCacheMaxDepth()")
+    protected Object callBuiltinMethod(VirtualFrame frame, PBuiltinMethod method, Object[] arguments, PKeyword[] keywords,
+                    @Cached("method.getFunction().getCallTarget()") RootCallTarget ct,
+                    @Cached("createCtInvokeNode(method)") CallTargetInvokeNode invoke) {
+        return invoke.execute(frame, method.getGlobals(), method.getClosure(), method.getArity(), arguments, keywords);
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(guards = "callee == cachedCallee", limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
+    protected Object callFunction(VirtualFrame frame, PythonCallable callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("callee") PythonCallable cachedCallee,
                     @Cached("createInvokeNode(cachedCallee)") InvokeNode invoke) {
-        return invoke.invoke(arguments, keywords);
+        return invoke.execute(frame, arguments, keywords);
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(guards = "callee.getCallTarget() == ct", limit = "getCallSiteInlineCacheMaxDepth()")
+    protected Object callFunction(VirtualFrame frame, PFunction callee, Object[] arguments, PKeyword[] keywords,
+                    @Cached("callee.getCallTarget()") RootCallTarget ct,
+                    @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
+        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), callee.getArity(), arguments, keywords);
+    }
+
+    @SuppressWarnings("unused")
+    @Specialization(guards = "callee.getCallTarget() == ct", limit = "getCallSiteInlineCacheMaxDepth()")
+    protected Object callFunction(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
+                    @Cached("callee.getCallTarget()") RootCallTarget ct,
+                    @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
+        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), callee.getArity(), arguments, keywords);
     }
 
     @Specialization(replaces = {"callMethod", "callBuiltinMethod", "callFunction"})
-    protected Object callGeneric(PythonCallable callee, Object[] arguments, PKeyword[] keywords,
+    protected Object callGeneric(VirtualFrame frame, PythonCallable callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("create()") GenericInvokeNode invoke) {
-        return invoke.execute(callee, arguments, keywords);
+        return invoke.execute(frame, callee, arguments, keywords);
     }
 }

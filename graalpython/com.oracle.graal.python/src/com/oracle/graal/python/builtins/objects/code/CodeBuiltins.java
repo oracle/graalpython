@@ -30,21 +30,18 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.function.FunctionRootNode;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.SourceSection;
 
-@CoreFunctions(extendClasses = PCode.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
 public class CodeBuiltins extends PythonBuiltins {
 
     @Override
@@ -52,98 +49,159 @@ public class CodeBuiltins extends PythonBuiltins {
         return CodeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "co_freevars", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "co_freevars", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class FreeVarsNode extends PythonBuiltinNode {
+    public abstract static class GetFreeVarsNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PCode self) {
-            RootNode rootNode = self.getRootNode();
-            if (rootNode instanceof FunctionRootNode) {
-                return factory().createTuple(((FunctionRootNode) rootNode).getFreeVars());
-            } else if (rootNode instanceof GeneratorFunctionRootNode) {
-                return factory().createTuple(((GeneratorFunctionRootNode) rootNode).getFreeVars());
-            } else {
-                return PNone.NONE;
+        protected Object get(PCode self) {
+            Object[] freeVars = self.getFreeVars();
+            if (freeVars != null) {
+                return factory().createTuple(freeVars);
             }
+            return PNone.NONE;
         }
     }
 
-    @Builtin(name = "co_cellvars", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "co_cellvars", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class CellVarsNode extends PythonBuiltinNode {
+    public abstract static class GetCellVarsNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PCode self) {
-            RootNode rootNode = self.getRootNode();
-            if (rootNode instanceof FunctionRootNode) {
-                return factory().createTuple(((FunctionRootNode) rootNode).getCellVars());
-            } else if (rootNode instanceof GeneratorFunctionRootNode) {
-                return factory().createTuple(((GeneratorFunctionRootNode) rootNode).getCellVars());
-            } else {
-                return PNone.NONE;
+        protected Object get(PCode self) {
+            Object[] cellVars = self.getCellVars();
+            if (cellVars != null) {
+                return factory().createTuple(cellVars);
             }
+            return PNone.NONE;
         }
     }
 
-    @Builtin(name = "co_filename", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "co_filename", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class FilenameNode extends PythonBuiltinNode {
+    public abstract static class GetFilenameNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PCode self) {
-            RootNode rootNode = self.getRootNode();
-            if (rootNode == null) {
-                return self.getFilename();
+        protected Object get(PCode self) {
+            String filename = self.getFilename();
+            if (filename != null) {
+                return filename;
             }
-            SourceSection src = rootNode.getSourceSection();
-            if (src != null) {
-                return src.getSource().getName();
-            } else if (rootNode instanceof ModuleRootNode) {
-                return ((ModuleRootNode) rootNode).getName();
-            } else {
-                return PNone.NONE;
-            }
+            return PNone.NONE;
         }
     }
 
-    @Builtin(name = "co_firstlineno", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "co_firstlineno", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    public abstract static class LinenoNode extends PythonBuiltinNode {
+    public abstract static class GetLinenoNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(PCode self) {
+            return self.getFirstLineNo();
+        }
+    }
+
+    @Builtin(name = "co_name", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetNameNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected Object doIt(PCode self) {
-            RootNode rootNode = self.getRootNode();
-            if (rootNode == null) {
-                return self.getFirstLineNo();
-            }
-            SourceSection sourceSection = rootNode.getSourceSection();
-            if (sourceSection == null) {
-                return 1;
-            } else {
-                return sourceSection.getStartLine();
-            }
-        }
-    }
-
-    @Builtin(name = "co_name", fixedNumOfArguments = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class NameNode extends PythonBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        protected Object doIt(PCode self) {
-            RootNode rootNode = self.getRootNode();
-            String name;
-            if (rootNode instanceof ModuleRootNode) {
-                name = "<module>";
-            } else if (rootNode instanceof FunctionRootNode) {
-                name = ((FunctionRootNode) rootNode).getFunctionName();
-            } else if (rootNode == null) {
-                name = self.getName();
-            } else {
-                name = rootNode.getName();
-            }
+        protected Object get(PCode self) {
+            String name = self.getName();
             if (name != null) {
                 return name;
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "co_argcount", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetArgCountNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(PCode self) {
+            return self.getArgcount();
+        }
+    }
+
+    @Builtin(name = "co_kwonlyargcount", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetKnownlyArgCountNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(PCode self) {
+            return self.getKwonlyargcount();
+        }
+    }
+
+    @Builtin(name = "co_nlocals", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetNLocalsNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(PCode self) {
+            return self.getNlocals();
+        }
+    }
+
+    @Builtin(name = "co_stacksize", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetStackSizeNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(PCode self) {
+            return self.getStacksize();
+        }
+    }
+
+    @Builtin(name = "co_flags", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetFlagsNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(PCode self) {
+            return self.getFlags();
+        }
+    }
+
+    @Builtin(name = "co_code", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetCodeNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(@SuppressWarnings("unused") PCode self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = "co_consts", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetConstsNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(@SuppressWarnings("unused") PCode self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = "co_names", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetNamesNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(@SuppressWarnings("unused") PCode self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = "co_varnames", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetVarNamesNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(PCode self) {
+            Object[] varNames = self.getVarnames();
+            if (varNames != null) {
+                return factory().createTuple(varNames);
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "co_lnotab", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetLNoTabNode extends PythonBuiltinNode {
+        @Specialization
+        protected Object get(@SuppressWarnings("unused") PCode self) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 }

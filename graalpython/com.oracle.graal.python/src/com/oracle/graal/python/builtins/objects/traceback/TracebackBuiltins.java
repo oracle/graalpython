@@ -36,6 +36,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -44,14 +45,14 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PTraceback.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PTraceback)
 public final class TracebackBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TracebackBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __DIR__, fixedNumOfArguments = 1)
+    @Builtin(name = __DIR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
         @Specialization
@@ -60,7 +61,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_FRAME, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = TB_FRAME, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackFrameNode extends PythonBuiltinNode {
         @Specialization
@@ -69,7 +70,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_NEXT, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = TB_NEXT, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackNextNode extends PythonBuiltinNode {
         @Specialization
@@ -79,7 +80,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_LASTI, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = TB_LASTI, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLastINode extends PythonBuiltinNode {
         @Specialization
@@ -88,7 +89,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = TB_LINENO, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = TB_LINENO, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetTracebackLinenoNode extends PythonBuiltinNode {
         @Specialization

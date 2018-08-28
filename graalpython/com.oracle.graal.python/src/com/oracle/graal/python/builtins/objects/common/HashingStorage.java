@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -113,7 +115,7 @@ public abstract class HashingStorage {
         @Child private LookupAndCallUnaryNode callHashNode = LookupAndCallUnaryNode.create(__HASH__);
 
         protected HashRootNode() {
-            super(PythonLanguage.getContext().getLanguage());
+            super(PythonLanguage.getCurrent());
             Truffle.getRuntime().createCallTarget(this);
         }
 
@@ -127,13 +129,18 @@ public abstract class HashingStorage {
         public SourceSection getSourceSection() {
             return null;
         }
+
+        @Override
+        public boolean isCloningAllowed() {
+            return true;
+        }
     }
 
     private static class EqualsRootNode extends RootNode {
         @Child private BinaryComparisonNode callEqNode = BinaryComparisonNode.create(__EQ__, __EQ__, "==");
 
         protected EqualsRootNode() {
-            super(PythonLanguage.getContext().getLanguage());
+            super(PythonLanguage.getCurrent());
             Truffle.getRuntime().createCallTarget(this);
         }
 
@@ -146,6 +153,11 @@ public abstract class HashingStorage {
         @Override
         public SourceSection getSourceSection() {
             return null;
+        }
+
+        @Override
+        public boolean isCloningAllowed() {
+            return true;
         }
     }
 
@@ -207,7 +219,7 @@ public abstract class HashingStorage {
         if (key instanceof String) {
             return DEFAULT_EQIVALENCE;
         }
-        return PythonLanguage.getContext().getSlowPathEquivalence();
+        return PythonLanguage.getContextRef().get().getSlowPathEquivalence();
     }
 
     public abstract int length();
@@ -232,7 +244,24 @@ public abstract class HashingStorage {
 
     public abstract Iterable<Object> keys();
 
+    private Object[] iteratorAsArray(Iterable<Object> iterable) {
+        Object[] items = new Object[this.length()];
+        int i = 0;
+        for (Object item : iterable) {
+            items[i++] = item;
+        }
+        return items;
+    }
+
+    public Object[] keysAsArray() {
+        return iteratorAsArray(keys());
+    }
+
     public abstract Iterable<Object> values();
+
+    public Object[] valuesAsArray() {
+        return iteratorAsArray(values());
+    }
 
     public abstract Iterable<DictEntry> entries();
 

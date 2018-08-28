@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -49,7 +51,6 @@ import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
-import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -84,7 +85,7 @@ public abstract class CastToListNode extends PNode {
     public Object[] getArray(VirtualFrame frame) {
         Object result = execute(frame);
         if (result instanceof PTuple) {
-            return ((PTuple) result).getArray();
+            return ((PTuple) result).getSequenceStorage().getInternalArray();
         } else if (result instanceof PList) {
             return ((PList) result).getSequenceStorage().getInternalArray();
         } else {
@@ -115,7 +116,7 @@ public abstract class CastToListNode extends PNode {
     }
 
     protected GetAttributeNode getList() {
-        return GetAttributeNode.create(new BuiltinsLiteralNode(), new StringLiteralNode("list"));
+        return GetAttributeNode.create("list", new BuiltinsLiteralNode());
     }
 
     @Specialization(rewriteOn = PException.class)

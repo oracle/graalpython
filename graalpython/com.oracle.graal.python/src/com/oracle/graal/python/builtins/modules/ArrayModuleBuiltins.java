@@ -32,7 +32,9 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -60,12 +62,12 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
     }
 
     // array.array(typecode[, initializer])
-    @Builtin(name = "array", minNumOfArguments = 2, maxNumOfArguments = 3, constructsClass = PArray.class)
+    @Builtin(name = "array", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PArray)
     @GenerateNodeFactory
     abstract static class PythonArrayNode extends PythonBuiltinNode {
 
-        @Specialization(guards = "noInitializer(typeCode,initializer)")
-        PArray array(PythonClass cls, String typeCode, @SuppressWarnings("unused") Object initializer) {
+        @Specialization(guards = "isNoValue(initializer)")
+        PArray array(PythonClass cls, String typeCode, @SuppressWarnings("unused") PNone initializer) {
             /**
              * TODO @param typeCode should be a char, not a string
              */
@@ -89,7 +91,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 intArray[index++] = i;
             }
 
-            return factory().createIntArray(cls, intArray);
+            return factory().createArray(cls, intArray);
         }
 
         @Specialization
@@ -98,7 +100,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 typeError(typeCode, str);
             }
 
-            return factory().createCharArray(cls, str.toCharArray());
+            return factory().createArray(cls, str.toCharArray());
         }
 
         /**
@@ -132,7 +134,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         }
                     }
 
-                    return factory().createIntArray(cls, intArray);
+                    return factory().createArray(cls, intArray);
                 case 'd':
                     store = initializer.getSequenceStorage();
                     double[] doubleArray = new double[store.length()];
@@ -142,7 +144,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         doubleArray[i] = (double) val;
                     }
 
-                    return factory().createDoubleArray(cls, doubleArray);
+                    return factory().createArray(cls, doubleArray);
                 case 'b':
                     store = initializer.getSequenceStorage();
                     byte[] byteArray = new byte[store.length()];
@@ -156,13 +158,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         }
                     }
 
-                    return factory().createByteArray(cls, byteArray);
+                    return factory().createArray(cls, byteArray);
                 default:
                     return null;
             }
         }
 
         @Specialization
+        @TruffleBoundary
         PArray arrayWithObjectInitializer(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
             throw new RuntimeException("Unsupported initializer " + initializer);
         }
@@ -172,11 +175,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 case 'c':
                 case 'b':
                 case 'B':
-                    return factory().createCharArray(cls, new char[0]);
+                    return factory().createArray(cls, new char[0]);
                 case 'i':
-                    return factory().createIntArray(cls, new int[0]);
+                    return factory().createArray(cls, new int[0]);
                 case 'd':
-                    return factory().createDoubleArray(cls, new double[0]);
+                    return factory().createArray(cls, new double[0]);
                 default:
                     return null;
             }

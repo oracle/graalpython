@@ -32,7 +32,6 @@ public final class PDoubleSequenceIterator extends PDoubleIterator {
 
     final DoubleSequenceStorage sequence;
     int index;
-    protected boolean stopIterationReached = false;
 
     public PDoubleSequenceIterator(PythonClass clazz, DoubleSequenceStorage sequence) {
         super(clazz);

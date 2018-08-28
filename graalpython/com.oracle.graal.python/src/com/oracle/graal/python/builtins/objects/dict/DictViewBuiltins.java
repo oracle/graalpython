@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -56,11 +58,13 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
@@ -78,7 +82,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = {PDictKeysView.class, PDictItemsView.class})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictItemsView})
 public final class DictViewBuiltins extends PythonBuiltins {
 
     @Override
@@ -86,7 +90,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         return DictViewBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -95,7 +99,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -115,7 +119,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
@@ -134,17 +138,18 @@ public final class DictViewBuiltins extends PythonBuiltins {
         boolean contains(PDictItemsView self, PTuple key,
                         @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
                         @Cached("create()") HashingStorageNodes.PythonEquivalence equivalenceNode,
-                        @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getSeqItemNode) {
             if (tupleLenProfile.profile(key.len() != 2)) {
                 return false;
             }
             HashingStorage dictStorage = self.getDict().getDictStorage();
-            Object value = getItemNode.execute(dictStorage, key.getItem(0));
-            return value != null && equivalenceNode.equals(value, key.getItem(1));
+            Object value = getItemNode.execute(dictStorage, getSeqItemNode.execute(key.getSequenceStorage(), 0));
+            return value != null && equivalenceNode.equals(value, getSeqItemNode.execute(key.getSequenceStorage(), 1));
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
@@ -178,12 +183,12 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __NE__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Child EqNode eqNode;
@@ -208,12 +213,12 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUB__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -250,7 +255,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __AND__, fixedNumOfArguments = 2)
+    @Builtin(name = __AND__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -287,7 +292,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __OR__, fixedNumOfArguments = 2)
+    @Builtin(name = __OR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -320,7 +325,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __XOR__, fixedNumOfArguments = 2)
+    @Builtin(name = __XOR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -353,7 +358,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -386,7 +391,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterEqualNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -419,7 +424,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessThanNode extends PythonBinaryBuiltinNode {
         @Child LessEqualNode lessEqualNode;
@@ -451,7 +456,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterThanNode extends PythonBinaryBuiltinNode {
         @Child GreaterEqualNode greaterEqualNode;

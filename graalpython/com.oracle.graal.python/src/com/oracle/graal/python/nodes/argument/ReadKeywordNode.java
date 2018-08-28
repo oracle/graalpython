@@ -79,6 +79,10 @@ public abstract class ReadKeywordNode extends PNode {
         return indexedRead != null;
     }
 
+    public boolean isRequired() {
+        return defaultNode == null;
+    }
+
     private static PKeyword getKeyword(VirtualFrame frame, String name) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
         for (PKeyword keyword : keywordArguments) {
@@ -122,19 +126,23 @@ public abstract class ReadKeywordNode extends PNode {
             Object value = indexedRead.execute(frame);
             if (value != PNone.NO_VALUE) {
                 if (keyword != null) {
-                    throw raise(TypeError, "got multiple values for argument: %s", name);
+                    throw raise(TypeError, "got multiple values for argument: '%s'", name);
                 }
                 return profile.profile(value);
             }
         }
         if (keyword == null) {
             if (defaultNode == null) {
-                throw raise(TypeError, "missing required keyword-only argument: %s", name);
+                throw raise(TypeError, "missing required keyword-only argument: '%s'", name);
             } else {
                 return profile.profile(defaultNode.execute(frame));
             }
         } else {
             return profile.profile(keyword.getValue());
         }
+    }
+
+    public String getName() {
+        return name;
     }
 }

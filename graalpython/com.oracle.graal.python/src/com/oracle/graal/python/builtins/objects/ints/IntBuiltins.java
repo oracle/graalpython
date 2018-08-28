@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -38,14 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -58,7 +64,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.ArithmeticUtil;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -70,7 +75,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@CoreFunctions(extendClasses = PInt.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PInt)
 public class IntBuiltins extends PythonBuiltins {
 
     @Override
@@ -89,7 +94,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROUND__, minNumOfArguments = 1, maxNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__ROUND__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
@@ -112,7 +117,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__ADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
@@ -133,12 +138,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object add(PInt left, long right) {
+        PInt add(PInt left, long right) {
             return add(left, factory().createInt(right));
         }
 
         @Specialization
-        Object add(long left, PInt right) {
+        PInt add(long left, PInt right) {
             return add(factory().createInt(left), right);
         }
 
@@ -154,17 +159,17 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RADD__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RADD__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RAddNode extends AddNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__SUB__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -190,12 +195,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPIntLong(PInt left, long right) {
+        PInt doPIntLong(PInt left, long right) {
             return doPIntPInt(left, factory().createInt(right));
         }
 
         @Specialization
-        Object doLongPInt(long left, PInt right) {
+        PInt doLongPInt(long left, PInt right) {
             return doPIntPInt(factory().createInt(left), right);
         }
 
@@ -211,12 +216,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RSUB__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RSUB__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RSubNode extends PythonBinaryBuiltinNode {
@@ -242,12 +247,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPIntLong(PInt right, long left) {
+        PInt doPIntLong(PInt right, long left) {
             return doPIntPInt(factory().createInt(left), right);
         }
 
         @Specialization
-        Object doLongPInt(long right, PInt left) {
+        PInt doLongPInt(long right, PInt left) {
             return doPIntPInt(factory().createInt(right), left);
         }
 
@@ -263,12 +268,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__TRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__TRUEDIV__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class TrueDivNode extends PythonBinaryBuiltinNode {
@@ -291,12 +296,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPI(long left, PInt right) {
+        double doPI(long left, PInt right) {
             return doPP(factory().createInt(left), right);
         }
 
         @Specialization
-        Object doPL(PInt left, long right) {
+        double doPL(PInt left, long right) {
             if (right == 0) {
                 throw raise(PythonErrorType.ZeroDivisionError, "division by zero");
             }
@@ -327,12 +332,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RTRUEDIV__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class RTrueDivNode extends PythonBinaryBuiltinNode {
@@ -383,7 +388,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             // TODO: raise error if left is an integer
             // raise(PythonErrorType.TypeError, "descriptor '__rtruediv__' requires a 'int' object
             // but received a '%p'", right);
@@ -391,7 +396,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOORDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__FLOORDIV__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class FloorDivNode extends IntBinaryBuiltinNode {
@@ -438,13 +443,13 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
     }
 
-    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RFLOORDIV__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RFloorDivNode extends IntBinaryBuiltinNode {
@@ -485,12 +490,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object right, Object left) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MOD__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__MOD__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class ModNode extends IntBinaryBuiltinNode {
@@ -507,30 +512,30 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doLPi(long left, PInt right) {
+        PInt doLPi(long left, PInt right) {
             raiseDivisionByZero(right.isZero());
             return factory().createInt(op(BigInteger.valueOf(left), right.getValue()));
         }
 
         @Specialization(guards = "right >= 0")
-        Object doPiL(PInt left, long right) {
+        PInt doPiL(PInt left, long right) {
             raiseDivisionByZero(right == 0);
             return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
         }
 
         @Specialization(guards = "right.isZeroOrPositive()")
-        Object doPiPi(PInt left, PInt right) {
+        PInt doPiPi(PInt left, PInt right) {
             raiseDivisionByZero(right.isZero());
             return factory().createInt(op(left.getValue(), right.getValue()));
         }
 
         @Specialization(guards = "right < 0")
-        Object doPiLNeg(PInt left, long right) {
+        PInt doPiLNeg(PInt left, long right) {
             return factory().createInt(opNeg(left.getValue(), BigInteger.valueOf(right)));
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()")
-        Object doPiPiNeg(PInt left, PInt right) {
+        PInt doPiPiNeg(PInt left, PInt right) {
             return factory().createInt(opNeg(left.getValue(), right.getValue()));
         }
 
@@ -549,12 +554,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__MUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class MulNode extends PythonBinaryBuiltinNode {
@@ -564,22 +569,32 @@ public class IntBuiltins extends PythonBuiltins {
             return Math.multiplyExact(x, y);
         }
 
+        @Specialization(replaces = "doII")
+        long doIIL(int x, int y) {
+            return x * (long) y;
+        }
+
         @Specialization(rewriteOn = ArithmeticException.class)
         long doLL(long x, long y) {
             return Math.multiplyExact(x, y);
         }
 
         @Specialization
-        Object doLLOvf(long x, long y) {
-            try {
-                return Math.multiplyExact(x, y);
-            } catch (ArithmeticException e) {
-                return factory().createInt(op(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+        PInt doLLOvf(long x, long y) {
+            long r = x * y;
+            long ax = Math.abs(x);
+            long ay = Math.abs(y);
+            if (((ax | ay) >>> 31 != 0)) {
+                int leadingZeros = Long.numberOfLeadingZeros(ax) + Long.numberOfLeadingZeros(ay);
+                if (leadingZeros < 66) {
+                    return factory().createInt(op(BigInteger.valueOf(x), BigInteger.valueOf(y)));
+                }
             }
+            return factory().createInt(r);
         }
 
         @Specialization
-        Object doPIntLong(PInt left, long right) {
+        PInt doPIntLong(PInt left, long right) {
             return factory().createInt(op(left.getValue(), BigInteger.valueOf(right)));
         }
 
@@ -595,17 +610,17 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object left, Object right) {
+        PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RMUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__POW__, minNumOfArguments = 2, maxNumOfArguments = 3)
+    @Builtin(name = SpecialMethodNames.__POW__, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PowNode extends PythonTernaryBuiltinNode {
@@ -719,7 +734,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doFallback(Object x, Object y, Object z) {
+        PNotImplemented doFallback(Object x, Object y, Object z) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -746,7 +761,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__ABS__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
@@ -778,13 +793,13 @@ public class IntBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization
-        Object posOvf(long arg) {
+        @Specialization(rewriteOn = IllegalArgumentException.class)
+        PInt posOvf(long arg) throws IllegalArgumentException {
             long result = Math.abs(arg);
             if (result < 0) {
                 return factory().createInt(op(BigInteger.valueOf(arg)));
             } else {
-                return result;
+                return factory().createInt(BigInteger.valueOf(arg));
             }
         }
 
@@ -799,7 +814,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__CEIL__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__CEIL__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CeilNode extends PythonUnaryBuiltinNode {
@@ -819,7 +834,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOOR__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__FLOOR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloorNode extends PythonUnaryBuiltinNode {
@@ -839,7 +854,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__POS__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__POS__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
@@ -859,7 +874,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NEG__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__NEG__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
@@ -879,12 +894,9 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object negOvf(long arg) {
-            try {
-                return Math.negateExact(arg);
-            } catch (ArithmeticException e) {
-                return factory().createInt(negate(BigInteger.valueOf(arg)));
-            }
+        PInt negOvf(long arg) {
+            BigInteger value = arg == Long.MIN_VALUE ? negate(BigInteger.valueOf(arg)) : BigInteger.valueOf(-arg);
+            return factory().createInt(value);
         }
 
         @Specialization
@@ -898,7 +910,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INVERT__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__INVERT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
@@ -928,21 +940,58 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LSHIFT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__LSHIFT__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class LShiftNode extends PythonBinaryBuiltinNode {
+
+        private long leftShiftExact(long left, long right) {
+            if (right >= Long.SIZE || right < 0) {
+                shiftError(right);
+            }
+
+            long result = left << right;
+
+            if (left != result >> right) {
+                throw new ArithmeticException("integer overflow");
+            }
+
+            return result;
+        }
+
+        private int leftShiftExact(int left, int right) {
+            if (right >= Integer.SIZE || right < 0) {
+                shiftError(right);
+            }
+
+            int result = left << right;
+
+            if (left != result >> right) {
+                throw new ArithmeticException("integer overflow");
+            }
+
+            return result;
+        }
+
+        private void shiftError(long shiftCount) {
+            if (shiftCount >= Integer.SIZE) {
+                throw new ArithmeticException("integer overflow");
+            } else if (shiftCount < 0) {
+                throw getCore().raise(ValueError, "negative shift count");
+            }
+        }
+
         @Specialization(rewriteOn = ArithmeticException.class)
         int doII(int left, int right) {
             raiseNegativeShiftCount(right < 0);
-            return ArithmeticUtil.leftShiftExact(left, right);
+            return leftShiftExact(left, right);
         }
 
         @Specialization
         Object doIIOvf(int left, int right) {
             raiseNegativeShiftCount(right < 0);
             try {
-                return ArithmeticUtil.leftShiftExact(left, right);
+                return leftShiftExact(left, right);
             } catch (ArithmeticException e) {
                 return doGuardedBiI(BigInteger.valueOf(left), right);
             }
@@ -951,14 +1000,14 @@ public class IntBuiltins extends PythonBuiltins {
         @Specialization(rewriteOn = ArithmeticException.class)
         long doLL(long left, long right) {
             raiseNegativeShiftCount(right < 0);
-            return ArithmeticUtil.leftShiftExact(left, right);
+            return leftShiftExact(left, right);
         }
 
         @Specialization
         Object doLLOvf(long left, long right) {
             raiseNegativeShiftCount(right < 0);
             try {
-                return ArithmeticUtil.leftShiftExact(left, right);
+                return leftShiftExact(left, right);
             } catch (ArithmeticException e) {
                 int rightI = (int) right;
                 if (rightI == right) {
@@ -1015,7 +1064,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -1032,7 +1081,7 @@ public class IntBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__RSHIFT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RSHIFT__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class RShiftNode extends PythonBinaryBuiltinNode {
@@ -1080,7 +1129,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -1135,12 +1184,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__AND__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__AND__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class AndNode extends BinaryBitwiseNode {
@@ -1162,13 +1211,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RAND__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RAND__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class RAndNode extends AndNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__OR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__OR__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class OrNode extends BinaryBitwiseNode {
@@ -1190,12 +1239,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__ROR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__ROR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ROrNode extends OrNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__XOR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__XOR__, fixedNumOfPositionalArgs = 2)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     abstract static class XorNode extends BinaryBitwiseNode {
@@ -1216,12 +1265,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__RXOR__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__RXOR__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RXorNode extends XorNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
@@ -1275,12 +1324,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object eq(Object a, Object b) {
+        PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
@@ -1324,12 +1373,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object eq(Object a, Object b) {
+        PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LtNode extends PythonBinaryBuiltinNode {
@@ -1369,12 +1418,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
@@ -1414,12 +1463,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__GT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GtNode extends PythonBinaryBuiltinNode {
@@ -1460,12 +1509,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfArguments = 2)
+    @Builtin(name = SpecialMethodNames.__GE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class GeNode extends PythonBinaryBuiltinNode {
@@ -1506,12 +1555,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        Object doGeneric(Object a, Object b) {
+        PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = "from_bytes", fixedNumOfArguments = 2, takesVariableArguments = true, keywordArguments = {"signed"})
+    @Builtin(name = "from_bytes", fixedNumOfPositionalArgs = 2, takesVarArgs = true, keywordArguments = {"signed"})
     @GenerateNodeFactory
     @SuppressWarnings("unused")
     @TypeSystemReference(PythonArithmeticTypes.class)
@@ -1531,7 +1580,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object frombytesSignedOrNot(String str, String byteorder, Object[] args, boolean keywordArg) {
+        public PInt frombytesSignedOrNot(String str, String byteorder, Object[] args, boolean keywordArg) {
             byte[] bytes = littleToBig(str.getBytes(), byteorder);
             BigInteger integer = new BigInteger(bytes);
             if (keywordArg) {
@@ -1543,20 +1592,21 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object frombytes(String str, String byteorder, Object[] args, PNone keywordArg) {
+        public PInt frombytes(String str, String byteorder, Object[] args, PNone keywordArg) {
             byte[] bytes = littleToBig(str.getBytes(), byteorder);
             return factory().createInt(new BigInteger(bytes));
         }
 
         @Specialization
         @TruffleBoundary
-        public Object fromPBytes(PBytes str, String byteorder, Object[] args, PNone keywordArg) {
-            byte[] bytes = littleToBig(str.getInternalByteArray(), byteorder);
+        public PInt fromPBytes(PBytes str, String byteorder, Object[] args, PNone keywordArg,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            byte[] bytes = littleToBig(toBytesNode.execute(str), byteorder);
             return factory().createInt(new BigInteger(bytes));
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__BOOL__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization
@@ -1580,7 +1630,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__STR__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__STR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class StrNode extends PythonBuiltinNode {
@@ -1598,17 +1648,17 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public Object doPInt(PInt self) {
+        public String doPInt(PInt self) {
             return self.toString();
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__HASH__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
@@ -1630,7 +1680,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "bit_length", fixedNumOfArguments = 1)
+    @Builtin(name = "bit_length", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class BitLengthNode extends PythonBuiltinNode {
@@ -1652,13 +1702,13 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "real", fixedNumOfArguments = 1, isGetter = true, doc = "the real part of a complex number")
+    @Builtin(name = "real", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     static abstract class RealNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "imag", fixedNumOfArguments = 1, isGetter = true, doc = "the imaginary part of a complex number")
+    @Builtin(name = "imag", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     static abstract class ImagNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
@@ -1667,19 +1717,19 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "numerator", fixedNumOfArguments = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
+    @Builtin(name = "numerator", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the numerator of a rational number in lowest terms")
     static abstract class NumeratorNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "conjugate", fixedNumOfArguments = 1, doc = "Returns self, the complex conjugate of any int.")
+    @Builtin(name = "conjugate", fixedNumOfPositionalArgs = 1, doc = "Returns self, the complex conjugate of any int.")
     static abstract class ConjugateNode extends IntNode {
 
     }
 
     @GenerateNodeFactory
-    @Builtin(name = "denominator", fixedNumOfArguments = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
+    @Builtin(name = "denominator", fixedNumOfPositionalArgs = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
     static abstract class DenominatorNode extends PythonBuiltinNode {
         @Specialization
         int get(@SuppressWarnings("unused") Object self) {
@@ -1688,12 +1738,12 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @GenerateNodeFactory
-    @Builtin(name = SpecialMethodNames.__TRUNC__, fixedNumOfArguments = 1, doc = "Truncating an Integral returns itself.")
+    @Builtin(name = SpecialMethodNames.__TRUNC__, fixedNumOfPositionalArgs = 1, doc = "Truncating an Integral returns itself.")
     static abstract class TruncNode extends IntNode {
 
     }
 
-    @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__INT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class IntNode extends PythonBuiltinNode {
@@ -1733,12 +1783,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__INDEX__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__INDEX__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends IntNode {
     }
 
-    @Builtin(name = SpecialMethodNames.__FLOAT__, fixedNumOfArguments = 1)
+    @Builtin(name = SpecialMethodNames.__FLOAT__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloatNode extends PythonBuiltinNode {
@@ -1763,7 +1813,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        Object doGeneric(@SuppressWarnings("unused") Object self) {
+        PNotImplemented doGeneric(@SuppressWarnings("unused") Object self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

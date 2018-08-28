@@ -174,7 +174,7 @@ class BuiltinLevelsTest(BaseTest):
     """Test builtin levels and their inheritance."""
 
     def test_flat(self):
-        #Logging levels in a flat logger namespace.
+        # Logging levels in a flat logger namespace.
         m = self.next_message
 
         ERR = logging.getLogger("ERR")
@@ -244,7 +244,7 @@ class BuiltinLevelsTest(BaseTest):
         ])
 
     def test_nested_inherited(self):
-        #Logging levels in a nested namespace, inherited from parent loggers.
+        # Logging levels in a nested namespace, inherited from parent loggers.
         m = self.next_message
 
         INF = logging.getLogger("INF")
@@ -308,24 +308,6 @@ class BuiltinLevelsTest(BaseTest):
         """See issue #22386 for more information."""
         self.assertEqual(logging.getLevelName('INFO'), logging.INFO)
         self.assertEqual(logging.getLevelName(logging.INFO), 'INFO')
-
-    def test_get_level_name(self):
-        """Test getLevelName returns level constant."""
-        # NOTE(flaper87): Bug #1517
-        self.assertEqual(logging.getLevelName('NOTSET'), 0)
-        self.assertEqual(logging.getLevelName('DEBUG'), 10)
-        self.assertEqual(logging.getLevelName('INFO'), 20)
-        self.assertEqual(logging.getLevelName('WARN'), 30)
-        self.assertEqual(logging.getLevelName('WARNING'), 30)
-        self.assertEqual(logging.getLevelName('ERROR'), 40)
-        self.assertEqual(logging.getLevelName('CRITICAL'), 50)
-
-        self.assertEqual(logging.getLevelName(0), 'NOTSET')
-        self.assertEqual(logging.getLevelName(10), 'DEBUG')
-        self.assertEqual(logging.getLevelName(20), 'INFO')
-        self.assertEqual(logging.getLevelName(30), 'WARNING')
-        self.assertEqual(logging.getLevelName(40), 'ERROR')
-        self.assertEqual(logging.getLevelName(50), 'CRITICAL')
 
     def test_issue27935(self):
         fatal = logging.getLevelName('FATAL')
@@ -788,6 +770,7 @@ if threading:
             """
             self.close()
             self._thread.join(timeout)
+            asyncore.close_all(map=self._map, ignore_all=True)
             self._thread = None
 
     class ControlMixin(object):
@@ -1681,7 +1664,7 @@ class SysLogHandlerTest(BaseTest):
         server.ready.wait()
         hcls = logging.handlers.SysLogHandler
         if isinstance(server.server_address, tuple):
-            self.sl_hdlr = hcls(('localhost', server.port))
+            self.sl_hdlr = hcls((server.server_address[0], server.port))
         else:
             self.sl_hdlr = hcls(server.server_address)
         self.log_output = ''
@@ -1740,6 +1723,24 @@ class UnixSysLogHandlerTest(SysLogHandlerTest):
     def tearDown(self):
         SysLogHandlerTest.tearDown(self)
         support.unlink(self.address)
+
+@unittest.skipUnless(support.IPV6_ENABLED,
+                     'IPv6 support required for this test.')
+@unittest.skipUnless(threading, 'Threading required for this test.')
+class IPv6SysLogHandlerTest(SysLogHandlerTest):
+
+    """Test for SysLogHandler with IPv6 host."""
+
+    server_class = TestUDPServer
+    address = ('::1', 0)
+
+    def setUp(self):
+        self.server_class.address_family = socket.AF_INET6
+        super(IPv6SysLogHandlerTest, self).setUp()
+
+    def tearDown(self):
+        self.server_class.address_family = socket.AF_INET
+        super(IPv6SysLogHandlerTest, self).tearDown()
 
 @unittest.skipUnless(threading, 'Threading required for this test.')
 class HTTPHandlerTest(BaseTest):
@@ -1900,9 +1901,9 @@ class EncodingTest(BaseTest):
 
     def test_encoding_cyrillic_unicode(self):
         log = logging.getLogger("test")
-        #Get a message in Unicode: Do svidanya in Cyrillic (meaning goodbye)
+        # Get a message in Unicode: Do svidanya in Cyrillic (meaning goodbye)
         message = '\u0434\u043e \u0441\u0432\u0438\u0434\u0430\u043d\u0438\u044f'
-        #Ensure it's written in a Cyrillic encoding
+        # Ensure it's written in a Cyrillic encoding
         writer_class = codecs.getwriter('cp1251')
         writer_class.encoding = 'cp1251'
         stream = io.BytesIO()
@@ -1916,7 +1917,7 @@ class EncodingTest(BaseTest):
             handler.close()
         # check we wrote exactly those bytes, ignoring trailing \n etc
         s = stream.getvalue()
-        #Compare against what the data should be when encoded in CP-1251
+        # Compare against what the data should be when encoded in CP-1251
         self.assertEqual(s, b'\xe4\xee \xf1\xe2\xe8\xe4\xe0\xed\xe8\xff\n')
 
 
@@ -1937,7 +1938,7 @@ class WarningsTest(BaseTest):
             h.close()
             self.assertGreater(s.find("UserWarning: I'm warning you...\n"), 0)
 
-            #See if an explicit file uses the original implementation
+            # See if an explicit file uses the original implementation
             a_file = io.StringIO()
             warnings.showwarning("Explicit", UserWarning, "dummy.py", 42,
                                  a_file, "Dummy line")
@@ -2078,7 +2079,7 @@ class ConfigDictTest(BaseTest):
         },
     }
 
-    #As config1 but with a misspelt level on a handler
+    # As config1 but with a misspelt level on a handler
     config2a = {
         'version': 1,
         'formatters': {
@@ -2106,7 +2107,7 @@ class ConfigDictTest(BaseTest):
     }
 
 
-    #As config1 but with a misspelt level on a logger
+    # As config1 but with a misspelt level on a logger
     config2b = {
         'version': 1,
         'formatters': {
@@ -2273,8 +2274,8 @@ class ConfigDictTest(BaseTest):
         },
     }
 
-    #config 7 does not define compiler.parser but defines compiler.lexer
-    #so compiler.parser should be disabled after applying it
+    # config 7 does not define compiler.parser but defines compiler.lexer
+    # so compiler.parser should be disabled after applying it
     config7 = {
         'version': 1,
         'formatters': {
@@ -2419,7 +2420,7 @@ class ConfigDictTest(BaseTest):
         },
     }
 
-    #As config1 but with a filter added
+    # As config1 but with a filter added
     config10 = {
         'version': 1,
         'formatters': {
@@ -2453,7 +2454,7 @@ class ConfigDictTest(BaseTest):
         },
     }
 
-    #As config1 but using cfg:// references
+    # As config1 but using cfg:// references
     config11 = {
         'version': 1,
         'true_formatters': {
@@ -2484,7 +2485,7 @@ class ConfigDictTest(BaseTest):
         },
     }
 
-    #As config11 but missing the version key
+    # As config11 but missing the version key
     config12 = {
         'true_formatters': {
             'form1' : {
@@ -2514,7 +2515,7 @@ class ConfigDictTest(BaseTest):
         },
     }
 
-    #As config11 but using an unsupported version
+    # As config11 but using an unsupported version
     config13 = {
         'version': 2,
         'true_formatters': {
@@ -2715,7 +2716,7 @@ class ConfigDictTest(BaseTest):
             # Original logger output is empty.
             self.assert_log_lines([])
 
-    #Same as test_config_7_ok but don't disable old loggers.
+    # Same as test_config_7_ok but don't disable old loggers.
     def test_config_8_ok(self):
         with support.captured_stdout() as output:
             self.apply_config(self.config1)
@@ -2796,15 +2797,15 @@ class ConfigDictTest(BaseTest):
         with support.captured_stdout() as output:
             self.apply_config(self.config9)
             logger = logging.getLogger("compiler.parser")
-            #Nothing will be output since both handler and logger are set to WARNING
+            # Nothing will be output since both handler and logger are set to WARNING
             logger.info(self.next_message())
             self.assert_log_lines([], stream=output)
             self.apply_config(self.config9a)
-            #Nothing will be output since both handler is still set to WARNING
+            # Nothing will be output since handler is still set to WARNING
             logger.info(self.next_message())
             self.assert_log_lines([], stream=output)
             self.apply_config(self.config9b)
-            #Message should now be output
+            # Message should now be output
             logger.info(self.next_message())
             self.assert_log_lines([
                 ('INFO', '3'),
@@ -2816,13 +2817,13 @@ class ConfigDictTest(BaseTest):
             logger = logging.getLogger("compiler.parser")
             logger.warning(self.next_message())
             logger = logging.getLogger('compiler')
-            #Not output, because filtered
+            # Not output, because filtered
             logger.warning(self.next_message())
             logger = logging.getLogger('compiler.lexer')
-            #Not output, because filtered
+            # Not output, because filtered
             logger.warning(self.next_message())
             logger = logging.getLogger("compiler.parser.codegen")
-            #Output, as not filtered
+            # Output, as not filtered
             logger.error(self.next_message())
             self.assert_log_lines([
                 ('WARNING', '1'),
@@ -2883,13 +2884,13 @@ class ConfigDictTest(BaseTest):
             logger = logging.getLogger("compiler.parser")
             logger.warning(self.next_message())
             logger = logging.getLogger('compiler')
-            #Not output, because filtered
+            # Not output, because filtered
             logger.warning(self.next_message())
             logger = logging.getLogger('compiler.lexer')
-            #Not output, because filtered
+            # Not output, because filtered
             logger.warning(self.next_message())
             logger = logging.getLogger("compiler.parser.codegen")
-            #Output, as not filtered
+            # Output, as not filtered
             logger.error(self.next_message())
             self.assert_log_lines([
                 ('WARNING', '1'),
@@ -3181,6 +3182,7 @@ if hasattr(logging.handlers, 'QueueListener'):
             handler.close()
 
         @patch.object(logging.handlers.QueueListener, 'handle')
+        @support.reap_threads
         def test_handle_called_with_queue_queue(self, mock_handle):
             for i in range(self.repeat):
                 log_queue = queue.Queue()
@@ -3190,10 +3192,13 @@ if hasattr(logging.handlers, 'QueueListener'):
 
         @support.requires_multiprocessing_queue
         @patch.object(logging.handlers.QueueListener, 'handle')
+        @support.reap_threads
         def test_handle_called_with_mp_queue(self, mock_handle):
             for i in range(self.repeat):
                 log_queue = multiprocessing.Queue()
                 self.setup_and_log(log_queue, '%s_%s' % (self.id(), i))
+                log_queue.close()
+                log_queue.join_thread()
             self.assertEqual(mock_handle.call_count, 5 * self.repeat,
                              'correct number of handled log messages')
 
@@ -3206,6 +3211,7 @@ if hasattr(logging.handlers, 'QueueListener'):
                 return []
 
         @support.requires_multiprocessing_queue
+        @support.reap_threads
         def test_no_messages_in_queue_after_stop(self):
             """
             Five messages are logged then the QueueListener is stopped. This
@@ -3218,6 +3224,9 @@ if hasattr(logging.handlers, 'QueueListener'):
                 self.setup_and_log(queue, '%s_%s' %(self.id(), i))
                 # time.sleep(1)
                 items = list(self.get_all_from_queue(queue))
+                queue.close()
+                queue.join_thread()
+
                 expected = [[], [logging.handlers.QueueListener._sentinel]]
                 self.assertIn(items, expected,
                               'Found unexpected messages in queue: %s' % (
@@ -3591,7 +3600,6 @@ class ModuleLevelMiscTest(BaseTest):
         logging.setLoggerClass(logging.Logger)
         self.assertEqual(logging.getLoggerClass(), logging.Logger)
 
-    @support.cpython_only    # PyPy doesn't call __del__() at shutdown
     @support.requires_type_collecting
     def test_logging_at_shutdown(self):
         # Issue #20037
@@ -3873,7 +3881,6 @@ class BasicConfigTest(unittest.TestCase):
 
 
 class LoggerAdapterTest(unittest.TestCase):
-
     def setUp(self):
         super(LoggerAdapterTest, self).setUp()
         old_handler_list = logging._handlerList[:]
@@ -3946,6 +3953,39 @@ class LoggerAdapterTest(unittest.TestCase):
 
         self.assertFalse(self.logger.hasHandlers())
         self.assertFalse(self.adapter.hasHandlers())
+
+    def test_nested(self):
+        class Adapter(logging.LoggerAdapter):
+            prefix = 'Adapter'
+
+            def process(self, msg, kwargs):
+                return f"{self.prefix} {msg}", kwargs
+
+        msg = 'Adapters can be nested, yo.'
+        adapter = Adapter(logger=self.logger, extra=None)
+        adapter_adapter = Adapter(logger=adapter, extra=None)
+        adapter_adapter.prefix = 'AdapterAdapter'
+        self.assertEqual(repr(adapter), repr(adapter_adapter))
+        adapter_adapter.log(logging.CRITICAL, msg, self.recording)
+        self.assertEqual(len(self.recording.records), 1)
+        record = self.recording.records[0]
+        self.assertEqual(record.levelno, logging.CRITICAL)
+        self.assertEqual(record.msg, f"Adapter AdapterAdapter {msg}")
+        self.assertEqual(record.args, (self.recording,))
+        orig_manager = adapter_adapter.manager
+        self.assertIs(adapter.manager, orig_manager)
+        self.assertIs(self.logger.manager, orig_manager)
+        temp_manager = object()
+        try:
+            adapter_adapter.manager = temp_manager
+            self.assertIs(adapter_adapter.manager, temp_manager)
+            self.assertIs(adapter.manager, temp_manager)
+            self.assertIs(self.logger.manager, temp_manager)
+        finally:
+            adapter_adapter.manager = orig_manager
+        self.assertIs(adapter_adapter.manager, orig_manager)
+        self.assertIs(adapter.manager, orig_manager)
+        self.assertIs(self.logger.manager, orig_manager)
 
 
 class LoggerTest(BaseTest):
@@ -4204,7 +4244,7 @@ class TimedRotatingFileHandlerTest(BaseFileTest):
                 break
         msg = 'No rotated files found, went back %d seconds' % GO_BACK
         if not found:
-            #print additional diagnostics
+            # print additional diagnostics
             dn, fn = os.path.split(self.fn)
             files = [f for f in os.listdir(dn) if f.startswith(fn)]
             print('Test time: %s' % now.strftime("%Y-%m-%d %H-%M-%S"), file=sys.stderr)
@@ -4389,7 +4429,7 @@ def test_main():
         QueueHandlerTest, ShutdownTest, ModuleLevelMiscTest, BasicConfigTest,
         LoggerAdapterTest, LoggerTest, SMTPHandlerTest, FileHandlerTest,
         RotatingFileHandlerTest,  LastResortTest, LogRecordTest,
-        ExceptionTest, SysLogHandlerTest, HTTPHandlerTest,
+        ExceptionTest, SysLogHandlerTest, IPv6SysLogHandlerTest, HTTPHandlerTest,
         NTEventLogHandlerTest, TimedRotatingFileHandlerTest,
         UnixSocketHandlerTest, UnixDatagramHandlerTest, UnixSysLogHandlerTest,
         MiscTestCase

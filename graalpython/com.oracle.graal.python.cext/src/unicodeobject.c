@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates.
+ * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
  *
  * Subject to the condition set forth below, permission is hereby granted to any
- * person obtaining a copy of this software, associated documentation and/or data
- * (collectively the "Software"), free of charge and under any and all copyright
- * rights in the Software, and any and all patent rights owned or freely
- * licensable by each licensor hereunder covering either (i) the unmodified
- * Software as contributed to or provided by such licensor, or (ii) the Larger
- * Works (as defined below), to deal in both
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
  *
  * (a) the Software, and
+ *
  * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
- *     one is included with the Software (each a "Larger Work" to which the
- *     Software is contributed by such licensors),
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
  *
  * without restriction, including without limitation the rights to copy, create
  * derivative works of, display, perform, and distribute the Software and make,
@@ -40,7 +42,38 @@
 
 PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS, sizeof(PyUnicodeObject));
 
-// partially taken vom CPython "Objects/unicodeobject.c"
+// partially taken from CPython "Objects/unicodeobject.c"
+const unsigned char _Py_ascii_whitespace[] = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+/*     case 0x0009: * CHARACTER TABULATION */
+/*     case 0x000A: * LINE FEED */
+/*     case 0x000B: * LINE TABULATION */
+/*     case 0x000C: * FORM FEED */
+/*     case 0x000D: * CARRIAGE RETURN */
+    0, 1, 1, 1, 1, 1, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+/*     case 0x001C: * FILE SEPARATOR */
+/*     case 0x001D: * GROUP SEPARATOR */
+/*     case 0x001E: * RECORD SEPARATOR */
+/*     case 0x001F: * UNIT SEPARATOR */
+    0, 0, 0, 0, 1, 1, 1, 1,
+/*     case 0x0020: * SPACE */
+    1, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0
+};
+
+// partially taken from CPython "Objects/unicodeobject.c"
 static Py_ssize_t unicode_aswidechar(PyObject *unicode, wchar_t *w, Py_ssize_t size) {
     Py_ssize_t res;
     const wchar_t *wstr;
@@ -160,6 +193,10 @@ PyObject* PyTruffle_Unicode_FromFormat(const char* fmt, int s, void* v0, void* v
 
 
 PyObject * PyUnicode_FromUnicode(const Py_UNICODE *u, Py_ssize_t size) {
+    if (u == NULL) {
+        return to_sulong(polyglot_from_string_n("", 0, "utf-16le"));
+    }
+
     switch(Py_UNICODE_SIZE) {
     case 2:
         return to_sulong(polyglot_from_string_n((const char*)u, size*2, "utf-16le"));
@@ -288,33 +325,23 @@ Py_UNICODE* PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size) {
     return NULL;
 }
 
-/* Fast detection of the most frequent whitespace characters */
-const unsigned char _Py_ascii_whitespace[] = {
-    0, 0, 0, 0, 0, 0, 0, 0,
-/*     case 0x0009: * CHARACTER TABULATION */
-/*     case 0x000A: * LINE FEED */
-/*     case 0x000B: * LINE TABULATION */
-/*     case 0x000C: * FORM FEED */
-/*     case 0x000D: * CARRIAGE RETURN */
-    0, 1, 1, 1, 1, 1, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-/*     case 0x001C: * FILE SEPARATOR */
-/*     case 0x001D: * GROUP SEPARATOR */
-/*     case 0x001E: * RECORD SEPARATOR */
-/*     case 0x001F: * UNIT SEPARATOR */
-    0, 0, 0, 0, 1, 1, 1, 1,
-/*     case 0x0020: * SPACE */
-    1, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
+int _PyUnicode_Ready(PyObject *unicode) {
+    // TODO(fa) anything we need to initialize here?
+    return 0;
+}
 
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
-};
+Py_ssize_t PyUnicode_FindChar(PyObject *str, Py_UCS4 ch, Py_ssize_t start, Py_ssize_t end, int direction) {
+    return UPCALL_CEXT_L("PyUnicode_FindChar", native_to_java(str), ch, start, end, direction);
+}
+
+PyObject* PyUnicode_Substring(PyObject *self, Py_ssize_t start, Py_ssize_t end) {
+    return UPCALL_CEXT_O("PyUnicode_Substring", native_to_java(self), start, end);
+}
+
+PyObject* PyUnicode_Join(PyObject *separator, PyObject *seq) {
+    return UPCALL_CEXT_O("PyUnicode_Join", native_to_java(separator), native_to_java(seq));
+}
+
+PyObject* PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar) {
+    return to_sulong(polyglot_from_string("", "ascii"));
+}

@@ -33,9 +33,12 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -47,7 +50,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         return GcModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "collect", fixedNumOfArguments = 0)
+    @Builtin(name = "collect", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
@@ -58,7 +61,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "get_count", fixedNumOfArguments = 0)
+    @Builtin(name = "get_count", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     abstract static class GcCountNode extends PythonBuiltinNode {
         @Specialization
@@ -73,6 +76,26 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                 }
             }
             return factory().createTuple(new Object[]{count, 0, 0});
+        }
+    }
+
+    @Builtin(name = "is_tracked", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GcIsTrackedNode extends PythonBuiltinNode {
+        @Specialization
+        public boolean isTracked(@SuppressWarnings("unused") PythonNativeObject object) {
+            return false;
+        }
+
+        @Specialization
+        public boolean isTracked(@SuppressWarnings("unused") PythonNativeClass object) {
+            // TODO: this is not correct
+            return true;
+        }
+
+        @Fallback
+        public boolean isTracked(@SuppressWarnings("unused") Object object) {
+            return true;
         }
     }
 }

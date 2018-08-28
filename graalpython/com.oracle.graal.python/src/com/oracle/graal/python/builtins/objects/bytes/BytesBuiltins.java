@@ -30,14 +30,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.nio.charset.CodingErrorAction;
@@ -45,26 +49,30 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(extendClasses = PBytes.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
 public class BytesBuiltins extends PythonBuiltins {
 
     public static CodingErrorAction toCodingErrorAction(String errors, PBaseNode n) {
@@ -84,7 +92,7 @@ public class BytesBuiltins extends PythonBuiltins {
         return BytesBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, takesVariableArguments = true, minNumOfArguments = 1, takesVariableKeywords = true)
+    @Builtin(name = __INIT__, takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
@@ -96,17 +104,19 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class EqNode extends PythonBuiltinNode {
+    public abstract static class EqNode extends PythonBinaryBuiltinNode {
+        @Child SequenceStorageNodes.CmpNode eqNode;
+
         @Specialization
         public boolean eq(PBytes self, PByteArray other) {
-            return self.equals(other);
+            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @Specialization
         public boolean eq(PBytes self, PBytes other) {
-            return self.equals(other);
+            return getEqNode().execute(self.getSequenceStorage(), other.getSequenceStorage());
         }
 
         @SuppressWarnings("unused")
@@ -117,23 +127,121 @@ public class BytesBuiltins extends PythonBuiltins {
             }
             throw raise(TypeError, "descriptor '__eq__' requires a 'bytes' object but received a '%p'", self);
         }
-    }
 
-    @Builtin(name = __LT__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    abstract static class LtNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        boolean contains(PSequence self, PSequence other) {
-            return self.lessThan(other);
+        private SequenceStorageNodes.CmpNode getEqNode() {
+            if (eqNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                eqNode = insert(SequenceStorageNodes.CmpNode.createEq());
+            }
+            return eqNode;
         }
     }
 
-    @Builtin(name = __ADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __NE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class AddNode extends PythonBuiltinNode {
+    public abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object add(PBytes self, PIBytesLike other) {
-            return self.concat(factory(), other);
+        public boolean eq(PBytes self, PByteArray other) {
+            return !self.equals(other);
+        }
+
+        @Specialization
+        public boolean eq(PBytes self, PBytes other) {
+            return !self.equals(other);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        public Object eq(Object self, Object other) {
+            if (self instanceof PBytes) {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+            throw raise(TypeError, "descriptor '__ne__' requires a 'bytes' object but received a '%p'", self);
+        }
+    }
+
+    public abstract static class CmpNode extends PythonBinaryBuiltinNode {
+        @Child private BytesNodes.CmpNode cmpNode;
+
+        int cmp(PBytes self, PBytes other) {
+            if (cmpNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                cmpNode = insert(BytesNodes.CmpNode.create());
+            }
+            return cmpNode.execute(self, other);
+        }
+
+    }
+
+    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class LtNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) < 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class LeNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) <= 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GtNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) > 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GeNode extends CmpNode {
+        @Specialization
+        boolean doBytes(PBytes self, PBytes other) {
+            return cmp(self, other) >= 0;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object other) {
+            return PNotImplemented.NOT_IMPLEMENTED;
+        }
+    }
+
+    @Builtin(name = __ADD__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class AddNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        public Object add(PBytes left, PIBytesLike right,
+                        @Cached("create()") SequenceStorageNodes.ConcatNode concatNode) {
+            SequenceStorage res = concatNode.execute(left.getSequenceStorage(), right.getSequenceStorage());
+            return factory().createBytes(res);
         }
 
         @SuppressWarnings("unused")
@@ -143,27 +251,14 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RADD__, fixedNumOfArguments = 2)
+    @Builtin(name = __MUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class RAddNode extends PythonBuiltinNode {
+    public abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public Object add(PBytes self, PIBytesLike other) {
-            return self.concat(factory(), other);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        public Object add(Object self, Object other) {
-            throw raise(TypeError, "can't concat bytes to %p", other);
-        }
-    }
-
-    @Builtin(name = __MUL__, fixedNumOfArguments = 2)
-    @GenerateNodeFactory
-    public abstract static class MulNode extends PythonBuiltinNode {
-        @Specialization
-        public Object mul(PBytes self, int times) {
-            return self.__mul__(factory(), times);
+        public Object mul(PBytes self, int times,
+                        @Cached("create()") SequenceStorageNodes.RepeatNode repeatNode) {
+            SequenceStorage res = repeatNode.execute(self.getSequenceStorage(), times);
+            return factory().createBytes(res);
         }
 
         @SuppressWarnings("unused")
@@ -173,47 +268,48 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __RMUL__, fixedNumOfArguments = 2)
+    @Builtin(name = __RMUL__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class RMulNode extends MulNode {
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public Object repr(PBytes self) {
-            return self.toString();
+        public Object repr(PBytes self,
+                        @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
+            SequenceStorage store = self.getSequenceStorage();
+            int len = store.length();
+            StringBuilder sb = new StringBuilder("b'");
+            for (int i = 0; i < len; i++) {
+                BytesUtils.byteRepr(sb, (byte) getItemNode.executeInt(store, i));
+            }
+            sb.append("'");
+            return sb.toString();
         }
     }
 
     // bytes.join(iterable)
-    @Builtin(name = "join", fixedNumOfArguments = 2)
+    @Builtin(name = "join", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class JoinNode extends PythonBuiltinNode {
+    public abstract static class JoinNode extends PythonBinaryBuiltinNode {
         @Specialization
-        public PBytes join(PBytes bytes, PSequence seq) {
-            return factory().createBytes(BytesUtils.join(getCore(), bytes.getInternalByteArray(), seq.getSequenceStorage().getInternalArray()));
-        }
-
-        @Specialization
-        public PBytes join(PBytes bytes, PSet set) {
-            Object[] values = new Object[set.size()];
-            int i = 0;
-            for (Object value : set.getDictStorage().keys()) {
-                values[i++] = value;
-            }
-            return factory().createBytes(BytesUtils.join(getCore(), bytes.getInternalByteArray(), values));
+        public PBytes join(PBytes bytes, Object iterable,
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
+                        @Cached("create()") BytesNodes.BytesJoinNode bytesJoinNode) {
+            return factory().createBytes(bytesJoinNode.execute(toByteArrayNode.execute(bytes.getSequenceStorage()), iterable));
         }
 
         @Fallback
-        public PBytes join(Object self, Object arg) {
-            throw new RuntimeException("invalid arguments type for join(): self " + self + ", arg " + arg);
+        @SuppressWarnings("unused")
+        public Object doGeneric(Object self, Object arg) {
+            throw raise(TypeError, "can only join an iterable");
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -222,19 +318,21 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        boolean contains(PBytes self, PBytes other) {
-            return new String(self.getInternalByteArray()).contains(new String(other.getInternalByteArray()));
+        boolean contains(PBytes self, PBytes other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, self.len()) != -1;
         }
 
         @Specialization
         @TruffleBoundary
-        boolean contains(PBytes self, PByteArray other) {
-            return new String(self.getInternalByteArray()).contains(new String(other.getInternalByteArray()));
+        boolean contains(PBytes self, PByteArray other,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, other, 0, self.len()) != -1;
         }
 
         @Specialization(guards = "!isBytes(other)")
@@ -243,7 +341,7 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -252,102 +350,100 @@ public class BytesBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "startswith", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @Builtin(name = "startswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class StartsWithNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        boolean startswith(PBytes self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return new String(self.getInternalByteArray()).startsWith(prefix);
+        boolean startswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, 0, self.len()) == 0;
         }
 
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.startsWith(self, prefix);
+        boolean startswith(PBytes self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, start, self.len()) == start;
         }
 
         @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.startsWith(self, prefix, start, -1);
-        }
-
-        @Specialization
-        boolean startswith(PBytes self, PIBytesLike prefix, int start, int end) {
-            return BytesUtils.startsWith(self, prefix, start, end);
+        boolean startswith(PBytes self, PIBytesLike prefix, int start, int end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, prefix, start, end) == start;
         }
     }
 
-    @Builtin(name = "endswith", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @Builtin(name = "endswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class EndsWithNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        boolean endswith(PBytes self, String prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return new String(self.getInternalByteArray()).endsWith(prefix);
-        }
-
-        @Specialization
-        boolean endswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return BytesUtils.endsWith(self, prefix);
+        boolean endswith(PBytes self, PIBytesLike suffix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
+                        @Cached("create()") BytesNodes.FindNode findNode) {
+            return findNode.execute(self, suffix, self.len() - suffix.len(), self.len()) != -1;
         }
     }
 
-    @Builtin(name = "strip", minNumOfArguments = 1, maxNumOfArguments = 2, keywordArguments = {"bytes"})
+    @Builtin(name = "strip", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, keywordArguments = {"bytes"})
     @GenerateNodeFactory
     abstract static class StripNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        PBytes strip(PBytes self, @SuppressWarnings("unused") PNone bytes) {
-            return factory().createBytes(new String(self.getInternalByteArray()).trim().getBytes());
+        PBytes strip(PBytes self, @SuppressWarnings("unused") PNone bytes,
+                        @Cached("create()") BytesNodes.ToBytesNode toBytesNode) {
+            return factory().createBytes(new String(toBytesNode.execute(self)).trim().getBytes());
         }
     }
 
     // bytes.find(bytes[, start[, end]])
-    @Builtin(name = "find", minNumOfArguments = 2, maxNumOfArguments = 4)
+    @Builtin(name = "find", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class FindNode extends PythonBuiltinNode {
+        @Child private BytesNodes.FindNode findNode;
+
         @Specialization
-        int find(PBytes self, int sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+        int find(PBytes self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
             return find(self, sub, 0, self.len());
         }
 
         @Specialization
-        int find(PBytes self, int sub, int start, @SuppressWarnings("unused") PNone end) {
+        int find(PBytes self, Object sub, int start, @SuppressWarnings("unused") PNone end) {
             return find(self, sub, start, self.len());
         }
 
         @Specialization
-        int find(PBytes self, int sub, int start, int ending) {
-            return BytesUtils.find(self, sub, start, ending);
+        int find(PBytes self, Object sub, int start, int ending) {
+            return getFindNode().execute(self, sub, start, ending);
         }
 
-        @Specialization
-        int find(PBytes self, PIBytesLike sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, 0, self.len());
-        }
-
-        @Specialization
-        int find(PBytes self, PIBytesLike sub, int start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, start, self.len());
-        }
-
-        @Specialization
-        int find(PBytes self, PIBytesLike sub, int start, int ending) {
-            return BytesUtils.find(self, sub, start, ending);
+        private BytesNodes.FindNode getFindNode() {
+            if (findNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                findNode = insert(BytesNodes.FindNode.create());
+            }
+            return findNode;
         }
     }
 
-    @Builtin(name = __GETITEM__, fixedNumOfArguments = 2)
+    @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object getitem(PBytes self, int idx) {
-            return self.getItem(idx);
+        Object doSlice(PBytes self, Object key,
+                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
+            return getSequenceItemNode.execute(self.getSequenceStorage(), key);
         }
 
+        protected static SequenceStorageNodes.GetItemNode createGetItem() {
+            return SequenceStorageNodes.GetItemNode.create(NormalizeIndexNode.create(), (s, f) -> f.createByteArray(s));
+        }
+    }
+
+    @Builtin(name = __SETITEM__, fixedNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class SetitemNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object getitem(PBytes self, PSlice slice) {
-            return self.getSlice(factory(), slice);
+        @SuppressWarnings("unused")
+        Object getitem(PBytes self, Object idx, Object value) {
+            throw raise(TypeError, "'bytes' object does not support item assignment");
         }
     }
 }

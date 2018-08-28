@@ -34,12 +34,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -51,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Pytho
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -58,8 +61,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -68,7 +73,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@CoreFunctions(extendClasses = {PFrozenSet.class, PSet.class})
+@CoreFunctions(extendClasses = {PythonBuiltinClassType.PFrozenSet, PythonBuiltinClassType.PSet})
 public final class FrozenSetBuiltins extends PythonBuiltins {
 
     @Override
@@ -76,7 +81,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         return FrozenSetBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __ITER__, fixedNumOfArguments = 1)
+    @Builtin(name = __ITER__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IterNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -85,7 +90,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LEN__, fixedNumOfArguments = 1)
+    @Builtin(name = __LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -94,7 +99,19 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        public Object iter(PBaseSet self) {
+            Object[] reduceTuple = new Object[]{PNone.NONE, PNone.NONE, PNone.NONE};
+            reduceTuple[0] = self.getPythonClass();
+            reduceTuple[1] = factory().createTuple(new Object[]{factory().createList(self.getDictStorage().keysAsArray())});
+            return factory().createTuple(reduceTuple);
+        }
+    }
+
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -105,12 +122,12 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        Object doGeneric(Object self, Object other) {
+        PNotImplemented doGeneric(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.ContainsKeyNode containsKeyNode = HashingStorageNodes.ContainsKeyNode.create();
@@ -131,10 +148,39 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __AND__, fixedNumOfArguments = 2)
+    @Builtin(name = __AND__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.IntersectNode intersectNode;
+        @Child private HashingStorageNodes.SetItemNode setItemNode;
+
+        private HashingStorageNodes.SetItemNode getSetItemNode() {
+            if (setItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
+            }
+            return setItemNode;
+        }
+
+        @TruffleBoundary
+        private HashingStorage getStringAsHashingStorage(String str) {
+            HashingStorage storage = EconomicMapStorage.create(str.length(), true);
+            for (int i = 0; i < str.length(); i++) {
+                String key = String.valueOf(str.charAt(i));
+                getSetItemNode().execute(storage, key, PNone.NO_VALUE);
+            }
+            return storage;
+        }
+
+        @Specialization
+        PBaseSet doPBaseSet(PSet left, String right) {
+            return factory().createSet(getIntersectNode().execute(left.getDictStorage(), getStringAsHashingStorage(right)));
+        }
+
+        @Specialization
+        PBaseSet doPBaseSet(PFrozenSet left, String right) {
+            return factory().createFrozenSet(getIntersectNode().execute(left.getDictStorage(), getStringAsHashingStorage(right)));
+        }
 
         private HashingStorageNodes.IntersectNode getIntersectNode() {
             if (intersectNode == null) {
@@ -155,9 +201,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             HashingStorage intersectedStorage = getIntersectNode().execute(left.getDictStorage(), right.getDictStorage());
             return factory().createFrozenSet(intersectedStorage);
         }
+
+        @Fallback
+        Object doAnd(Object self, Object other) {
+            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for &=: '%p' and '%p'", self, other);
+        }
     }
 
-    @Builtin(name = __SUB__, fixedNumOfArguments = 2)
+    @Builtin(name = __SUB__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Child private HashingStorageNodes.DiffNode diffNode;
@@ -181,9 +232,14 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             HashingStorage storage = getDiffNode().execute(left.getDictStorage(), right.getDictStorage());
             return factory().createSet(storage);
         }
+
+        @Fallback
+        Object doSub(Object self, Object other) {
+            throw raise(PythonErrorType.TypeError, "unsupported operand type(s) for -: %p and %p", self, other);
+        }
     }
 
-    @Builtin(name = __CONTAINS__, fixedNumOfArguments = 2)
+    @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -193,7 +249,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "union", minNumOfArguments = 1, takesVariableArguments = true)
+    @Builtin(name = "union", minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class UnionNode extends PythonBuiltinNode {
 
@@ -274,6 +330,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile,
                         @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
 
+            HashingStorage curStorage = dictStorage;
             Object iterator = getIteratorNode.executeWith(iterable);
             while (true) {
                 Object value;
@@ -281,9 +338,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                     value = next.execute(iterator);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
+                    container.setDictStorage(curStorage);
                     return container;
                 }
-                setItemNode.execute(container, dictStorage, value, PNone.NO_VALUE);
+                curStorage = setItemNode.execute(curStorage, value, PNone.NO_VALUE);
             }
         }
 
@@ -292,7 +350,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "issubset", fixedNumOfArguments = 2)
+    @Builtin(name = "issubset", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IsSubsetNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -310,7 +368,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "issuperset", fixedNumOfArguments = 2)
+    @Builtin(name = "issuperset", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class IsSupersetNode extends PythonBinaryBuiltinNode {
         @Specialization
@@ -328,17 +386,35 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __LE__, fixedNumOfArguments = 2)
+    @Builtin(name = __LE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessEqualNode extends IsSubsetNode {
+        @Specialization
+        Object isLessEqual(PBaseSet self, Object other,
+                        @Cached("create(__GE__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
+            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            throw raise(PythonErrorType.TypeError, "unorderable types: %p <= %p", self, other);
+        }
     }
 
-    @Builtin(name = __GE__, fixedNumOfArguments = 2)
+    @Builtin(name = __GE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterEqualNode extends IsSupersetNode {
+        @Specialization
+        Object isGreaterEqual(PBaseSet self, Object other,
+                        @Cached("create(__LE__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
+            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            throw raise(PythonErrorType.TypeError, "unorderable types: %p >= %p", self, other);
+        }
     }
 
-    @Builtin(name = __LT__, fixedNumOfArguments = 2)
+    @Builtin(name = __LT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class LessThanNode extends PythonBinaryBuiltinNode {
         @Child LessEqualNode lessEqualNode;
@@ -368,9 +444,19 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             }
             return (Boolean) getLessEqualNode().execute(self, other);
         }
+
+        @Specialization
+        Object isLessThan(PBaseSet self, Object other,
+                        @Cached("create(__GT__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
+            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            throw raise(PythonErrorType.TypeError, "unorderable types: %p < %p", self, other);
+        }
     }
 
-    @Builtin(name = __GT__, fixedNumOfArguments = 2)
+    @Builtin(name = __GT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GreaterThanNode extends PythonBinaryBuiltinNode {
         @Child GreaterEqualNode greaterEqualNode;
@@ -399,6 +485,16 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
                 return false;
             }
             return (Boolean) getGreaterEqualNode().execute(self, other);
+        }
+
+        @Specialization
+        Object isLessThan(PBaseSet self, Object other,
+                        @Cached("create(__LT__)") LookupAndCallBinaryNode lookupAndCallBinaryNode) {
+            Object result = lookupAndCallBinaryNode.executeObject(other, self);
+            if (result != PNone.NO_VALUE) {
+                return result;
+            }
+            throw raise(PythonErrorType.TypeError, "unorderable types: %p > %p", self, other);
         }
     }
 }

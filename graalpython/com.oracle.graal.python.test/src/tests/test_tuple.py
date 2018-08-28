@@ -3,7 +3,6 @@
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import seq_tests
-import unittest
 #import pickle
 from compare import CompareTest
 
@@ -374,3 +373,8 @@ class TupleCompareTest(CompareTest):
         t1 = tuple(range (1, 22, 2))
         s = slice(2, 6)
         self.assertEqual(t1[s], (5, 7, 9, 11))
+
+
+def test_same_id():
+    empty_ids = set([id(tuple()) for i in range(100)])
+    assert len(empty_ids) == 1

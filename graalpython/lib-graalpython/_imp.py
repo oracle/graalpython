@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -39,14 +41,17 @@
 _py_package_context = None
 
 
+@__builtin__
 def extension_suffixes():
     return [".bc", ".so", ".dylib", ".su"]
 
 
+@__builtin__
 def get_magic():
     return '\x0c\xaf\xaf\xe1'
 
 
+@__builtin__
 def create_dynamic(module_spec, filename=None):
     global _py_package_context
     old_package_context = _py_package_context
@@ -57,18 +62,22 @@ def create_dynamic(module_spec, filename=None):
         _py_package_context = old_package_context
 
 
+@__builtin__
 def exec_builtin(mod):
     return None
 
 
+@__builtin__
 def init_frozen(name):
     return None
 
 
+@__builtin__
 def is_frozen(name):
     return False
 
 
+@__builtin__
 def get_frozen_object(name):
     raise ImportError("No such frozen object named %s" % name)
 

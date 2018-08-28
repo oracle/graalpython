@@ -36,6 +36,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -57,7 +58,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PBaseException.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PBaseException)
 public class BaseExceptionBuiltins extends PythonBuiltins {
 
     @Override
@@ -65,7 +66,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         return BaseExceptionBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfArguments = 1, takesVariableArguments = true)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonBuiltinNode {
         @Specialization
@@ -75,7 +76,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __REPR__, fixedNumOfArguments = 1)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
@@ -85,7 +86,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "args", minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = "args", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class ArgsNode extends PythonBuiltinNode {
 
@@ -135,7 +136,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CAUSE__, minNumOfArguments = 1, maxNumOfArguments = 2, isGetter = true, isSetter = true)
+    @Builtin(name = __CAUSE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class CauseNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(value)")
@@ -157,7 +158,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __CONTEXT__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CONTEXT__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ContextNode extends PythonBuiltinNode {
 
@@ -167,7 +168,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__suppress_context__", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = "__suppress_context__", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SuppressContextNode extends PythonBuiltinNode {
 
@@ -177,7 +178,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __TRACEBACK__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __TRACEBACK__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class TracebackNode extends PythonBuiltinNode {
 
@@ -187,7 +188,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "with_traceback", fixedNumOfArguments = 2)
+    @Builtin(name = "with_traceback", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class WithTracebackNode extends PythonBuiltinNode {
 

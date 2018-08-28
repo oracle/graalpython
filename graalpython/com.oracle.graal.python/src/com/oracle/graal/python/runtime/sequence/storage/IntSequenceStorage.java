@@ -43,6 +43,12 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         this.length = elements.length;
     }
 
+    public IntSequenceStorage(int[] elements, int length) {
+        this.values = elements;
+        this.capacity = values.length;
+        this.length = length;
+    }
+
     public IntSequenceStorage(int capacity) {
         this.values = new int[capacity];
         this.capacity = capacity;
@@ -138,7 +144,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
+    public IntSequenceStorage getSliceInBound(int start, int stop, int step, int sliceLength) {
         int[] newArray = new int[sliceLength];
 
         if (step == 1) {
@@ -358,6 +364,11 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         }
 
         return true;
+    }
+
+    @Override
+    public Object getInternalArrayObject() {
+        return values;
     }
 
 }

@@ -1,19 +1,21 @@
-# Copyright (c) 2018, Oracle and/or its affiliates.
+# Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
 #
 # Subject to the condition set forth below, permission is hereby granted to any
-# person obtaining a copy of this software, associated documentation and/or data
-# (collectively the "Software"), free of charge and under any and all copyright
-# rights in the Software, and any and all patent rights owned or freely
-# licensable by each licensor hereunder covering either (i) the unmodified
-# Software as contributed to or provided by such licensor, or (ii) the Larger
-# Works (as defined below), to deal in both
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
 #
 # (a) the Software, and
+#
 # (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
-#     one is included with the Software (each a "Larger Work" to which the
-#     Software is contributed by such licensors),
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
 #
 # without restriction, including without limitation the rights to copy, create
 # derivative works of, display, perform, and distribute the Software and make,
@@ -36,6 +38,7 @@
 # SOFTWARE.
 
 import sys
+from importlib import invalidate_caches
 from string import Formatter
 os = sys.modules.get("posix", sys.modules.get("nt", None))
 if os is None:
@@ -85,6 +88,11 @@ def ccompile(self, name):
     binary_file_llvm = '%s/%s.bc' % (__dir__, name)
     if GRAALPYTHON:
         file_not_empty(binary_file_llvm)
+    # IMPORTANT:
+    # Invalidate caches after creating the native module.
+    # FileFinder caches directory contents, and the check for directory
+    # changes has whole-second precision, so it can miss quick updates.
+    invalidate_caches()
 
 
 def file_not_empty(path):
@@ -329,9 +337,9 @@ class CPyExtFunction():
                 presult = e
 
             if not self.cmpfunc:
-                assert cresult == presult, ("%r == %r in %s" % (cresult, presult, self.name))
+                assert cresult == presult, ("%r == %r in %s(%s)" % (cresult, presult, self.name, pargs[i]))
             else:
-                assert self.cmpfunc(cresult, presult), ("%r == %r in %s" % (cresult, presult, self.name))
+                assert self.cmpfunc(cresult, presult), ("%r == %r in %s(%s)" % (cresult, presult, self.name, pargs[i]))
 
     def __get__(self, instance, typ=None):
         if typ is None:
@@ -446,8 +454,15 @@ def CPyExtType(name, code, **kwargs):
         {nb_inplace_floor_divide},
         {nb_inplace_true_divide},
         {nb_index},
+    """ + ("""
         {nb_matrix_multiply},
         {nb_inplace_matrix_multiply},
+    """ if sys.version_info.minor >= 6 else "") + """
+    }};
+    
+    static struct PyMethodDef {name}_methods[] = {{
+        {tp_methods},
+        {{NULL, NULL, 0, NULL}}
     }};
 
     typedef struct {{
@@ -457,13 +472,13 @@ def CPyExtType(name, code, **kwargs):
     static PyTypeObject {name}Type = {{
         PyVarObject_HEAD_INIT(NULL, 0)
         "{name}.{name}",
-        sizeof({name}Object),      /* tp_basicsize */
-        0,                         /* tp_itemsize */
-        0,                         /* tp_dealloc */
+        sizeof({name}Object),       /* tp_basicsize */
+        0,                          /* tp_itemsize */
+        0,                          /* tp_dealloc */
         {tp_print},
         {tp_getattr},
         {tp_setattr},
-        0,                         /* tp_reserved */
+        0,                          /* tp_reserved */
         {tp_repr},
         &{name}_number_methods,
         {tp_as_sequence},
@@ -476,6 +491,24 @@ def CPyExtType(name, code, **kwargs):
         {tp_as_buffer},
         Py_TPFLAGS_DEFAULT,
         "",
+        {tp_traverse},              /* tp_traverse */
+        {tp_clear},                 /* tp_clear */
+        {tp_richcompare},           /* tp_richcompare */
+        0,                          /* tp_weaklistoffset */
+        {tp_iter},                  /* tp_iter */
+        {tp_iternext},              /* tp_iternext */
+        {name}_methods,             /* tp_methods */
+        NULL,                       /* tp_members */
+        0,                          /* tp_getset */
+        0,                          /* tp_base */
+        {tp_dict},                  /* tp_dict */
+        0,                          /* tp_descr_get */
+        0,                          /* tp_descr_set */
+        0,                          /* tp_dictoffset */
+        {tp_init},                  /* tp_init */
+        PyType_GenericAlloc,        /* tp_alloc */
+        PyType_GenericNew,          /* tp_new */
+        PyObject_Del,               /* tp_free */
     }};
 
     static PyModuleDef {name}module = {{
@@ -491,10 +524,10 @@ def CPyExtType(name, code, **kwargs):
     {{
         PyObject* m;
 
-        {name}Type.tp_new = PyType_GenericNew;
         {ready_code}
         if (PyType_Ready(&{name}Type) < 0)
             return NULL;
+        {post_ready_code}
 
         m = PyModule_Create(&{name}module);
         if (m == NULL)
@@ -509,6 +542,8 @@ def CPyExtType(name, code, **kwargs):
     kwargs["name"] = name
     kwargs["code"] = code
     kwargs.setdefault("ready_code", "")
+    kwargs.setdefault("post_ready_code", "")
+    kwargs.setdefault("tp_methods", "{NULL, NULL, 0, NULL}")
     c_source = UnseenFormatter().format(template, **kwargs)
 
     source_file = "%s/%s.c" % (__dir__, name)

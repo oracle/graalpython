@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins;
 
-import java.util.HashMap;
-
 import com.oracle.truffle.api.CompilerAsserts;
 
 public enum PythonBuiltinClassType {
@@ -35,15 +33,14 @@ public enum PythonBuiltinClassType {
     Boolean(java.lang.Boolean.class, "bool"),
     GetSetDescriptor(com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor.class, "get_set_desc"),
     PArray(com.oracle.graal.python.builtins.objects.array.PArray.class, "array"),
+    PArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PArrayIterator.class, "arrayiterator"),
     PBaseException(com.oracle.graal.python.builtins.objects.exception.PBaseException.class, "BaseException"),
     PBaseSetIterator(com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator.class, "iterator"),
-    PBuiltinFunction(com.oracle.graal.python.builtins.objects.function.PBuiltinFunction.class, "builtin-function"),
-    PBuiltinMethod(com.oracle.graal.python.builtins.objects.method.PBuiltinMethod.class, "method"),
+    PBuiltinFunction(com.oracle.graal.python.builtins.objects.function.PBuiltinFunction.class, "method_descriptor"),
+    PBuiltinMethod(com.oracle.graal.python.builtins.objects.method.PBuiltinMethod.class, "builtin_function_or_method"),
     PByteArray(com.oracle.graal.python.builtins.objects.bytes.PByteArray.class, "bytearray"),
     PBytes(com.oracle.graal.python.builtins.objects.bytes.PBytes.class, "bytes"),
     PCell(com.oracle.graal.python.builtins.objects.cell.PCell.class, "cell"),
-    PCharArray(com.oracle.graal.python.builtins.objects.array.PCharArray.class, "chars"),
-    PCharArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PCharArrayIterator.class, "iterator"),
     PComplex(com.oracle.graal.python.builtins.objects.complex.PComplex.class, "complex"),
     PDict(com.oracle.graal.python.builtins.objects.dict.PDict.class, "dict"),
     PDictKeysView(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView.class, "dict_keys"),
@@ -52,8 +49,6 @@ public enum PythonBuiltinClassType {
     PDictKeysIterator(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysIterator.class, "dict_keysiterator"),
     PDictValuesIterator(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesIterator.class, "dict_valuesiterator"),
     PDictValuesView(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView.class, "dict_values"),
-    PDoubleArray(com.oracle.graal.python.builtins.objects.array.PDoubleArray.class, "doubles"),
-    PDoubleArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PDoubleArrayIterator.class, "iterator"),
     PDoubleSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator.class, "iterator"),
     PEllipsis(com.oracle.graal.python.builtins.objects.PEllipsis.class, "ellipsis"),
     PEnumerate(com.oracle.graal.python.builtins.objects.enumerate.PEnumerate.class, "enumerate"),
@@ -64,14 +59,11 @@ public enum PythonBuiltinClassType {
     PGenerator(com.oracle.graal.python.builtins.objects.generator.PGenerator.class, "generator"),
     PGeneratorFunction(com.oracle.graal.python.builtins.objects.function.PGeneratorFunction.class, "function"),
     PInt(com.oracle.graal.python.builtins.objects.ints.PInt.class, "int"),
-    PIntArray(com.oracle.graal.python.builtins.objects.array.PIntArray.class, "ints"),
-    PIntArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PIntArrayIterator.class, "iterator"),
     PIntegerSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator.class, "iterator"),
     PList(com.oracle.graal.python.builtins.objects.list.PList.class, "list"),
-    PLongArray(com.oracle.graal.python.builtins.objects.array.PLongArray.class, "longs"),
-    PLongArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PLongArrayIterator.class, "iterator"),
     PLongSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator.class, "iterator"),
-    PMappingproxy(com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy.class, "mapping_proxy"),
+    PMappingproxy(com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy.class, "mappingproxy"),
+    PMemoryView(com.oracle.graal.python.builtins.objects.memoryview.PMemoryView.class, "memoryview"),
     PMethod(com.oracle.graal.python.builtins.objects.method.PMethod.class, "method"),
     PNone(com.oracle.graal.python.builtins.objects.PNone.class, "NoneType"),
     PNotImplemented(com.oracle.graal.python.builtins.objects.PNotImplemented.class, "NotImplementedType"),
@@ -101,11 +93,9 @@ public enum PythonBuiltinClassType {
     PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip"),
     PBuffer(com.oracle.graal.python.builtins.objects.memoryview.PBuffer.class, "buffer");
 
-    private final Class<?> clazz;
     private final String shortName;
 
-    PythonBuiltinClassType(Class<?> clazz, String shortName) {
-        this.clazz = clazz;
+    PythonBuiltinClassType(@SuppressWarnings("unused") Class<?> clazz, String shortName) {
         this.shortName = shortName;
     }
 
@@ -113,22 +103,5 @@ public enum PythonBuiltinClassType {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return shortName;
-    }
-
-    private static final HashMap<Class<?>, PythonBuiltinClassType> fromJavaClass = new HashMap<>();
-
-    static {
-        for (PythonBuiltinClassType builtinClass : values()) {
-            fromJavaClass.put(builtinClass.clazz, builtinClass);
-        }
-        fromJavaClass.put(String.class, PString);
-        fromJavaClass.put(Integer.class, PInt);
-        fromJavaClass.put(Long.class, PInt);
-        fromJavaClass.put(Double.class, PFloat);
-    }
-
-    public static PythonBuiltinClassType fromClass(Class<?> clazz) {
-        assert fromJavaClass.containsKey(clazz) : clazz + " is not in list of known classes";
-        return fromJavaClass.get(clazz);
     }
 }

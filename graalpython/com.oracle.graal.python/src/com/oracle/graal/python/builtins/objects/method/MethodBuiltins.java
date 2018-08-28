@@ -26,29 +26,30 @@
 
 package com.oracle.graal.python.builtins.objects.method;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-@CoreFunctions(extendClasses = PMethod.class)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PMethod)
 public class MethodBuiltins extends PythonBuiltins {
 
     @Override
@@ -56,38 +57,7 @@ public class MethodBuiltins extends PythonBuiltins {
         return MethodBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __CALL__, minNumOfArguments = 1, takesVariableArguments = true, takesVariableKeywords = true)
-    @GenerateNodeFactory
-    public abstract static class CallNode extends PythonBuiltinNode {
-        @Child private CallDispatchNode dispatch = CallDispatchNode.create();
-        @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-
-        @Specialization
-        protected Object doIt(PMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
-        }
-
-        @Specialization
-        protected Object doIt(PBuiltinMethod self, Object[] arguments, PKeyword[] keywords) {
-            return dispatch.executeCall(self.getFunction(), createArgs.executeWithSelf(self.getSelf(), arguments), keywords);
-        }
-    }
-
-    @Builtin(name = "__self__", fixedNumOfArguments = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class SelfNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(PMethod self) {
-            return self.getSelf();
-        }
-
-        @Specialization
-        protected Object doIt(PBuiltinMethod self) {
-            return self.getSelf();
-        }
-    }
-
-    @Builtin(name = "__func__", fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __FUNC__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class FuncNode extends PythonBuiltinNode {
         @Specialization
@@ -101,42 +71,25 @@ public class MethodBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialAttributeNames.__NAME__, fixedNumOfArguments = 1, isGetter = true)
-    @GenerateNodeFactory
-    public abstract static class NameNode extends PythonBuiltinNode {
-        @Specialization
-        protected Object doIt(PMethod self,
-                        @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__NAME__);
-        }
-    }
-
-    @Builtin(name = SpecialAttributeNames.__CODE__, fixedNumOfArguments = 1, isGetter = true)
+    @Builtin(name = __CODE__, fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class CodeNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(PMethod self,
                         @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getCode) {
-            return getCode.executeObject(self.getFunction(), SpecialAttributeNames.__CODE__);
+            return getCode.executeObject(self.getFunction(), __CODE__);
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__EQ__, fixedNumOfArguments = 2)
+    @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    abstract static class EqNode extends PythonBinaryBuiltinNode {
+    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean eq(PMethod self, PMethod other) {
-            return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
-        }
-
-        @Specialization
-        boolean eq(PBuiltinMethod self, PBuiltinMethod other) {
-            return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
-        }
-
-        @Fallback
-        boolean eq(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
-            return false;
+        @TruffleBoundary
+        Object reprMethod(PMethod self,
+                        @Cached("create()") GetClassNode getClassNode) {
+            return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
         }
     }
 }

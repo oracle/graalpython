@@ -217,8 +217,7 @@ public final class PArguments {
         generatorFrame.getArguments()[INDEX_GENERATOR_FRAME] = generatorArguments;
     }
 
-    public static GeneratorControlData getControlData(Frame frame) {
-        Frame generatorFrame = getGeneratorFrame(frame);
+    public static GeneratorControlData getControlDataFromGeneratorFrame(Frame generatorFrame) {
         return (GeneratorControlData) generatorFrame.getArguments()[INDEX_GENERATOR_FRAME];
     }
 
@@ -232,5 +231,9 @@ public final class PArguments {
         }
 
         return results;
+    }
+
+    public static int getNumberOfUserArgs(Object[] arguments) {
+        return arguments.length - PArguments.USER_ARGUMENTS_OFFSET;
     }
 }

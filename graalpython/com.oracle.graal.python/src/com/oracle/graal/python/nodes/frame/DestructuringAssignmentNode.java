@@ -30,9 +30,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.Arrays;
-import java.util.List;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
@@ -68,18 +68,18 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
     private final ConditionProfile errorProfile2 = ConditionProfile.createBinaryProfile();
     private final int starredIndex;
 
-    public DestructuringAssignmentNode(PNode rhs, List<ReadNode> slots, int starredIndex, PNode[] assignments) {
+    public DestructuringAssignmentNode(PNode rhs, ReadNode[] slots, int starredIndex, PNode[] assignments) {
         this.rhs = rhs;
         this.starredIndex = starredIndex;
         this.assignments = assignments;
-        this.slots = new WriteNode[slots.size()];
-        for (int i = 0; i < slots.size(); i++) {
-            this.slots[i] = (WriteNode) slots.get(i).makeWriteNode(null);
+        this.slots = new WriteNode[slots.length];
+        for (int i = 0; i < slots.length; i++) {
+            this.slots[i] = (WriteNode) slots[i].makeWriteNode(null);
         }
         this.lenNode = starredIndex == -1 ? null : BuiltinFunctionsFactory.LenNodeFactory.create();
     }
 
-    public static PNode create(PNode rhs, List<ReadNode> slots, int starredIndex, PNode[] assignments) {
+    public static PNode create(PNode rhs, ReadNode[] slots, int starredIndex, PNode[] assignments) {
         return new DestructuringAssignmentNode(rhs, slots, starredIndex, assignments);
     }
 
@@ -176,7 +176,7 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
         } catch (PException e) {
             notEnoughValuesProfile.enter();
             if (e.getType() == getCore().getErrorClass(IndexError)) {
-                throw raise(SyntaxError, "not enough values to unpack");
+                throw raise(ValueError, "not enough values to unpack");
             } else {
                 otherErrorsProfile.enter();
                 throw e;
