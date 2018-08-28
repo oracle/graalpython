@@ -49,7 +49,6 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -118,7 +117,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected boolean patchContext(PythonContext context, Env newEnv) {
         nativeBuildTime = false; // now we're running
         ensureHomeInOptions(newEnv);
-        PythonCore.writeInfo(newEnv, "Using preinitialized context.");
+        PythonCore.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
         return true;
     }
@@ -136,7 +135,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
 
-        PythonCore.writeInfo(env, (MessageFormat.format("Initial locations:" +
+        PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tCoreHome: {2}" +
@@ -193,7 +192,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 env.getOptions().set(PythonOptions.StdLibHome, stdLibHome);
             }
 
-            PythonCore.writeInfo(env, (MessageFormat.format("Updated locations:" +
+            PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
                             "\n\tLanguage home: {0}" +
                             "\n\tSysPrefix: {1}" +
                             "\n\tCoreHome: {2}" +
@@ -216,28 +215,30 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         PythonContext context = this.getContextReference().get();
         PythonCore pythonCore = context.getCore();
         Source source = request.getSource();
+        CompilerDirectives.transferToInterpreter();
         if (pythonCore.isInitialized()) {
             context.initializeMainModule(source.getPath());
 
             // if we are running the interpreter, module 'site' is automatically imported
             if (source.isInteractive()) {
-                CompilerAsserts.neverPartOfCompilation();
-                // no frame required
-                new ImportNode("site").execute(null);
+                Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, doParse(pythonCore, Source.newBuilder(ID, "import site", "<site import>").build()))).call();
             }
         }
-        RootNode root;
-        try {
-            root = (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
-        } catch (PException e) {
-            // handle PException during parsing (PIncompleteSourceException will propagate through)
-            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
-            throw e;
-        }
+        RootNode root = doParse(pythonCore, source);
         if (pythonCore.isInitialized()) {
             return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
         } else {
             return Truffle.getRuntime().createCallTarget(root);
+        }
+    }
+
+    private RootNode doParse(PythonCore pythonCore, Source source) {
+        try {
+            return (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
+        } catch (PException e) {
+            // handle PException during parsing (PIncompleteSourceException will propagate through)
+            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            throw e;
         }
     }
 
@@ -370,7 +371,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public static TruffleLogger getLogger() {
-        return TruffleLogger.getLogger(ID, PythonLanguage.class);
+        return TruffleLogger.getLogger(ID);
     }
 
     public static Source newSource(PythonContext ctxt, String src, String name) {

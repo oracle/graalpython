@@ -168,6 +168,12 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         }
         if (verboseFlag) {
             contextBuilder.option("python.VerboseFlag", "true");
+            contextBuilder.option("log.python.level", "FINE");
+        }
+
+        String pythonpath = System.getenv("PYTHONPATH");
+        if (pythonpath != null) {
+            contextBuilder.option("python.PythonPath", pythonpath);
         }
 
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);

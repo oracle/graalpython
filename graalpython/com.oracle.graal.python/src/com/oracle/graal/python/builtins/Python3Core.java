@@ -130,6 +130,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -162,12 +163,12 @@ public final class Python3Core implements PythonCore {
                     "method",
                     "code",
                     "_warnings",
+                    "posix",
+                    "_io",
                     "_frozen_importlib_external",
                     "_frozen_importlib",
-                    "posix",
                     "classes",
                     "_weakref",
-                    "_io",
                     "set",
                     "itertools",
                     "base_exception",
@@ -364,19 +365,23 @@ public final class Python3Core implements PythonCore {
 
     private void initializeSysPath(PythonModule sys, String[] args) {
         Env env = getContext().getEnv();
-        Object[] path = new Object[]{
-                        getScriptPath(env, args),
-                        PythonCore.getStdlibHome(env),
-                        PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules"};
+        String option = PythonOptions.getOption(getContext(), PythonOptions.PythonPath);
+        Object[] path;
+        int pathIdx = 0;
+        if (option.length() > 0) {
+            String[] split = option.split(PythonCore.PATH_SEPARATOR);
+            path = new Object[split.length + 3];
+            System.arraycopy(split, 0, path, 0, split.length);
+            pathIdx = split.length;
+        } else {
+            path = new Object[3];
+        }
+        path[pathIdx] = getScriptPath(env, args);
+        path[pathIdx + 1] = PythonCore.getStdlibHome(env);
+        path[pathIdx + 2] = PythonCore.getCoreHome(env) + PythonCore.FILE_SEPARATOR + "modules";
         PList sysPaths = factory().createList(path);
         sys.setAttribute("path", sysPaths);
         // sysPaths.append(getPythonLibraryExtrasPath());
-        String pythonPath = System.getenv("PYTHONPATH");
-        if (pythonPath != null) {
-            for (String s : pythonPath.split(PythonCore.PATH_SEPARATOR)) {
-                sysPaths.append(s);
-            }
-        }
     }
 
     private static String getScriptPath(Env env, String[] args) {

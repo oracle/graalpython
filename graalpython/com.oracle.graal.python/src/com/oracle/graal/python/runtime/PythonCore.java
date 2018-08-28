@@ -26,7 +26,6 @@
 package com.oracle.graal.python.runtime;
 
 import java.io.File;
-import java.io.IOException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,7 +54,6 @@ public interface PythonCore {
     static final String NO_PREFIX_WARNING = "could not determine Graal.Python's sys prefix path - you may need to pass --python.SysPrefix.";
     static final String NO_CORE_WARNING = "could not determine Graal.Python's core path - you may need to pass --python.CoreHome.";
     static final String NO_STDLIB = "could not determine Graal.Python's standard library path. You need to pass --python.StdLibHome if you want to use the standard library.";
-    static final boolean LIBPOLYGLOT = Boolean.getBoolean("graalvm.libpolyglot");
 
     /**
      * Load the core library and prepare all builtin classes and modules.
@@ -117,25 +115,12 @@ public interface PythonCore {
 
     public PInt getFalse();
 
-    static void writeWarning(TruffleLanguage.Env env, String warning) {
-        if (!LIBPOLYGLOT || env.getOptions().get(PythonOptions.VerboseFlag)) {
-            write(env, "WARNING: " + warning);
-        }
+    static void writeWarning(String warning) {
+        PythonLanguage.getLogger().warning(warning);
     }
 
-    static void writeInfo(TruffleLanguage.Env env, String warning) {
-        if (env.getOptions().get(PythonOptions.VerboseFlag)) {
-            write(env, warning);
-        }
-    }
-
-    static void write(TruffleLanguage.Env env, String warning) {
-        try {
-            env.err().write("[python] ".getBytes());
-            env.err().write(warning.getBytes());
-            env.err().write('\n');
-        } catch (IOException e) {
-        }
+    static void writeInfo(String message) {
+        PythonLanguage.getLogger().fine(message);
     }
 
     @TruffleBoundary
@@ -152,7 +137,7 @@ public interface PythonCore {
     public static String getSysPrefix(TruffleLanguage.Env env) {
         String sysPrefix = env.getOptions().get(PythonOptions.SysPrefix);
         if (sysPrefix.isEmpty()) {
-            writeWarning(env, NO_PREFIX_WARNING);
+            writeWarning(NO_PREFIX_WARNING);
             env.getOptions().set(PythonOptions.SysPrefix, PREFIX);
             return LIB_GRAALPYTHON;
         }
@@ -163,7 +148,7 @@ public interface PythonCore {
     public static String getCoreHome(TruffleLanguage.Env env) {
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         if (coreHome.isEmpty()) {
-            writeWarning(env, NO_CORE_WARNING);
+            writeWarning(NO_CORE_WARNING);
             env.getOptions().set(PythonOptions.CoreHome, LIB_GRAALPYTHON);
             return LIB_GRAALPYTHON;
         }
@@ -174,7 +159,7 @@ public interface PythonCore {
     public static String getStdlibHome(TruffleLanguage.Env env) {
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
         if (stdLibHome.isEmpty()) {
-            writeWarning(env, NO_STDLIB);
+            writeWarning(NO_STDLIB);
             env.getOptions().set(PythonOptions.StdLibHome, LIB_PYTHON_3);
             return LIB_PYTHON_3;
         }
