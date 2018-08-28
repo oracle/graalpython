@@ -172,6 +172,11 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("log.python.level", "FINE");
         }
 
+        String pythonpath = System.getenv("PYTHONPATH");
+        if (pythonpath != null) {
+            contextBuilder.option("python.PythonPath", pythonpath);
+        }
+
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[0])).in(consoleHandler.createInputStream());
 
