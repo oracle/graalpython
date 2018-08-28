@@ -114,6 +114,3 @@ def measure(num):
 
 def __benchmark__(num=3000):
     measure(num)
-
-
-__benchmark__()
