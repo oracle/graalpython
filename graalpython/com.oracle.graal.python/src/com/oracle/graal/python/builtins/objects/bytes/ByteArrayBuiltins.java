@@ -59,12 +59,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
@@ -115,67 +113,17 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
-        @Child private SequenceStorageNodes.NormalizeIndexNode normalize = SequenceStorageNodes.NormalizeIndexNode.forArray();
-
-        @Specialization(guards = "isByteStorage(primary)")
-        protected PNone doBytes(PByteArray primary, long idx) {
-            ByteSequenceStorage storage = (ByteSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isByteStorage(primary)")
-        protected PNone doBytes(PByteArray primary, PInt idx) {
-            ByteSequenceStorage storage = (ByteSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isIntStorage(primary)")
-        protected PNone doInt(PByteArray primary, long idx) {
-            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isIntStorage(primary)")
-        protected PNone doInt(PByteArray primary, PInt idx) {
-            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
         @Specialization
-        protected PNone doArray(PByteArray byteArray, long idx) {
-            SequenceStorage storage = byteArray.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization
-        protected PNone doArray(PByteArray byteArray, PInt idx) {
-            SequenceStorage storage = byteArray.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization
-        protected PNone doSlice(PByteArray self, PSlice slice) {
-            self.delSlice(slice);
+        protected PNone doGeneric(PByteArray self, Object key,
+                        @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode) {
+            deleteNode.execute(self.getSequenceStorage(), key);
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
         @Fallback
         protected Object doGeneric(Object self, Object idx) {
-            if (!isValidIndexType(idx)) {
-                throw raise(TypeError, "bytearray indices must be integers or slices, not %p", idx);
-            }
             throw raise(TypeError, "descriptor '__delitem__' requires a 'bytearray' object but received a '%p'", idx);
-        }
-
-        protected boolean isValidIndexType(Object idx) {
-            return PGuards.isInteger(idx) || idx instanceof PSlice;
         }
     }
 

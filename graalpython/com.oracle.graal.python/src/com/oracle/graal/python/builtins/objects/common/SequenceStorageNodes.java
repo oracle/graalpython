@@ -76,6 +76,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ConcatNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ContainsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CreateEmptyNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.DeleteSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.EnsureCapacityNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ExtendNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetItemNodeGen;
@@ -89,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemScalarNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetItemSliceNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetLenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.SetStorageSliceNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.StorageToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
@@ -100,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.datamodel.IsIndexNode;
@@ -286,10 +291,15 @@ public abstract class SequenceStorageNodes {
         protected static boolean isList(SequenceStorage s) {
             return s.getElementType() == ListStorageType.List;
         }
+
+        protected static boolean hasStorage(Object source) {
+            return source instanceof PSequence && !(source instanceof PString);
+        }
     }
 
     abstract static class NormalizingNode extends PBaseNode {
 
+        protected static final String KEY_TYPE_ERROR_MESSAGE = "indices must be integers or slices, not %p";
         @Child private NormalizeIndexNode normalizeIndexNode;
         @Child private CastToIndexNode castToIndexNode;
         @CompilationFinal private ValueProfile storeProfile;
@@ -344,8 +354,6 @@ public abstract class SequenceStorageNodes {
     }
 
     public abstract static class GetItemNode extends NormalizingNode {
-
-        private static final String KEY_TYPE_ERROR_MESSAGE = "indices must be integers or slices, not %p";
 
         @Child private GetItemScalarNode getItemScalarNode;
         @Child private GetItemSliceNode getItemSliceNode;
@@ -916,39 +924,22 @@ public abstract class SequenceStorageNodes {
     }
 
     @ImportStatic(ListStorageType.class)
-    public abstract static class SetItemSliceNode extends PBaseNode {
+    public abstract static class SetItemSliceNode extends SequenceStorageBaseNode {
 
-        @Child private Node readNode;
-        @Child private Node executeNode;
+        public abstract void execute(SequenceStorage s, SliceInfo info, Object iterable);
 
-        public abstract Object execute(SequenceStorage s, SliceInfo info, Object iterable);
-
-        @Specialization(rewriteOn = SequenceStoreException.class)
-        void doCompatibleStore(SequenceStorage s, SliceInfo info, PSequence seq,
+        @Specialization(guards = "hasStorage(seq)")
+        void doStorage(SequenceStorage s, SliceInfo info, PSequence seq,
                         @Cached("create()") SetStorageSliceNode setStorageSliceNode) {
             setStorageSliceNode.execute(s, info, seq.getSequenceStorage());
         }
 
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") SequenceStorage s, @SuppressWarnings("unused") SliceInfo info, @SuppressWarnings("unused") Object iterable,
-                        @Cached("create()") GetIteratorNode getIteratorNode,
-                        @Cached("create()") GetNextNode getNextNode,
-                        @Cached("createBinaryProfile()") ConditionProfile exceptionProfile,
-                        @Cached("create()") SetStorageSliceNode setStorageSliceNode) {
-            Object itObj = getIteratorNode.executeWith(iterable);
-            Object[] items = new Object[16];
-            int i = 0;
-            while (true) {
-                try {
-                    if (i >= items.length) {
-                        items = Arrays.copyOf(items, items.length * 2);
-                    }
-                    items[i++] = getNextNode.execute(itObj);
-                } catch (PException e) {
-                    e.expectStopIteration(getCore(), exceptionProfile);
-                    setStorageSliceNode.execute(s, info, new ObjectSequenceStorage(items));
-                }
-            }
+        void doGeneric(SequenceStorage s, SliceInfo info, Object iterable,
+                        @Cached("create()") SetStorageSliceNode setStorageSliceNode,
+                        @Cached("create()") ListNodes.ConstructListNode constructListNode) {
+            PList list = constructListNode.execute(iterable, null);
+            setStorageSliceNode.execute(s, info, list.getSequenceStorage());
         }
 
         public static SetItemSliceNode create() {
@@ -957,9 +948,6 @@ public abstract class SequenceStorageNodes {
     }
 
     abstract static class SetStorageSliceNode extends SequenceStorageBaseNode {
-
-        @Child private Node readNode;
-        @Child private Node executeNode;
 
         public abstract void execute(SequenceStorage s, SliceInfo info, SequenceStorage iterable);
 
@@ -973,59 +961,95 @@ public abstract class SequenceStorageNodes {
             selfProfiled.minimizeCapacity();
         }
 
-        @Specialization(limit = "9", guards = {"self.getClass() == cachedClass", "sequence.getClass() == cachedRhsClass", "compatibleDataType(self, sequence)"})
-        void doGeneric(SequenceStorage self, SliceInfo info, SequenceStorage sequence,
-                        @Cached("self.getClass()") Class<? extends SequenceStorage> cachedClass,
-                        @Cached("sequence.getClass()") Class<? extends SequenceStorage> cachedRhsClass,
-                        @Cached("create()") SetItemScalarNode setItemNode,
-                        @Cached("create()") GetItemScalarNode getSelfItemNode,
-                        @Cached("create()") GetItemScalarNode getItemNode,
-                        @Cached("create()") BranchProfile outOfMemProfile) {
-            SequenceStorage selfProfiled = cachedClass.cast(self);
-            SequenceStorage otherProfiled = cachedRhsClass.cast(sequence);
-
-            try {
-                int length = selfProfiled.length();
-                int otherLength = otherProfiled.length();
-
-                // info.length = items to be replaced; otherLength = items to be written
-                int newLength = length - (info.length - otherLength);
-
-                selfProfiled.ensureCapacity(newLength);
-
-                // if enlarging, we need to move the suffix first
-                if (info.length < otherLength) {
-                    assert length < newLength;
-                    for (int j = length - 1, k = newLength - 1; j >= info.stop; j--, k--) {
-                        setItemNode.execute(selfProfiled, k, getSelfItemNode.execute(selfProfiled, j));
-                    }
-                }
-
-                int i = info.start;
-                for (int j = 0; j < otherLength; i += info.step, j++) {
-                    setItemNode.execute(selfProfiled, i, getItemNode.execute(otherProfiled, j));
-                }
-
-                // if shrinking, move the suffix afterwards
-                if (info.length > otherLength) {
-                    assert info.stop >= 0;
-                    for (int j = i, k = 0; info.stop + k < length; j++, k++) {
-                        setItemNode.execute(selfProfiled, j, getSelfItemNode.execute(selfProfiled, info.stop + k));
-                    }
-                }
-
-                // TODO for security, reset dead items in range [newLength, values.length]
-
-                selfProfiled.setNewLength(newLength);
-            } catch (ArithmeticException e) {
-                outOfMemProfile.enter();
-                throw raise(PythonErrorType.MemoryError, "out of memory");
+        @Specialization(guards = {"compatibleDataType(store, sequence)"})
+        void setSlice(SequenceStorage store, SliceInfo sinfo, SequenceStorage sequence,
+                        @Cached("createBinaryProfile()") ConditionProfile wrongLength,
+                        @Cached("createBinaryProfile()") ConditionProfile clearProfile,
+                        @Cached("create()") LenNode selfLenNode,
+                        @Cached("create()") LenNode otherLenNode,
+                        @Cached("create()") SetLenNode setLenNode,
+                        @Cached("create()") SetItemScalarNode setLeftItemNode,
+                        @Cached("create()") GetItemScalarNode getRightItemNode) {
+            int length = selfLenNode.execute(store);
+            int valueLen = otherLenNode.execute(sequence);
+            if (wrongLength.profile(sinfo.step != 1 && sinfo.length != valueLen)) {
+                throw raise(ValueError, "attempt to assign sequence of size %d to extended slice of size %d", valueLen, length);
             }
+            int start = sinfo.start;
+            int stop = sinfo.stop;
+            int step = sinfo.step;
+            boolean negativeStep = step < 0;
+
+            if (negativeStep) {
+                // For the simplicity of algorithm, then start and stop are swapped.
+                // The start index has to recalculated according the step, because
+                // the algorithm bellow removes the start item and then start + step ....
+                step = Math.abs(step);
+                stop++;
+                int tmpStart = stop + ((start - stop) % step);
+                stop = start + 1;
+                start = tmpStart;
+            }
+            if (start < 0) {
+                start = 0;
+            } else if (start > length) {
+                start = length;
+            }
+            if (stop < start) {
+                stop = start;
+            } else if (stop > length) {
+                stop = length;
+            }
+
+            int norig = sinfo.length;
+            int delta = valueLen - norig;
+            int index;
+
+            if (clearProfile.profile(length + delta == 0)) {
+                setLenNode.execute(store, 0);
+                return;
+            }
+            store.ensureCapacity(length + delta);
+            // we need to work with the copy in the case if a[i:j] = a
+            SequenceStorage workingValue = store == sequence ? store.copy() : sequence;
+
+            if (step == 1) {
+                if (delta < 0) {
+                    // delete items
+                    for (index = stop + delta; index < length + delta; index++) {
+                        store.copyItem(index, index - delta);
+                    }
+                    length += delta;
+                    stop += delta;
+                } else if (delta > 0) {
+                    // insert items
+                    for (index = length - 1; index >= stop; index--) {
+                        store.copyItem(index + delta, index);
+                    }
+                    length += delta;
+                    stop += delta;
+                }
+            }
+
+            if (!negativeStep) {
+                for (int i = start, j = 0; i < stop; i += step, j++) {
+                    setLeftItemNode.execute(store, i, getRightItemNode.execute(workingValue, j));
+                }
+            } else {
+                for (int i = start, j = valueLen - 1; i < stop; i += step, j--) {
+                    setLeftItemNode.execute(store, i, getRightItemNode.execute(workingValue, j));
+                }
+            }
+            setLenNode.execute(store, length);
         }
 
         @Specialization(guards = "!compatibleAssign(self, sequence)")
         void doError(@SuppressWarnings("unused") SequenceStorage self, @SuppressWarnings("unused") SliceInfo info, SequenceStorage sequence) {
             throw new SequenceStoreException(sequence);
+        }
+
+        protected static boolean isValidReplacement(Class<? extends SequenceStorage> cachedClass, SequenceStorage s, SliceInfo info) {
+            return info.step == 1 || info.length == cachedClass.cast(s).length();
         }
 
         protected static boolean replacesWholeSequence(Class<? extends BasicSequenceStorage> cachedClass, BasicSequenceStorage s, SliceInfo info) {
@@ -1802,6 +1826,7 @@ public abstract class SequenceStorageNodes {
         @Child private SetItemScalarNode setItemNode;
         @Child private GetItemScalarNode getItemNode;
         @Child private GetItemScalarNode getRightItemNode;
+        @Child private SetLenNode setLenNode;
 
         public abstract SequenceStorage execute(SequenceStorage dest, SequenceStorage left, SequenceStorage right);
 
@@ -1832,11 +1857,6 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = {"dest.getClass() == left.getClass()", "left.getClass() == right.getClass()", "!isNative(dest)", "cachedClass == dest.getClass()"})
         SequenceStorage doManagedManagedSameType(SequenceStorage dest, SequenceStorage left, SequenceStorage right,
                         @Cached("left.getClass()") Class<? extends SequenceStorage> cachedClass) {
-            // TODO, there should be better specialization, which will check,
-            // whether there is enough free memory. If not, then fire OOM.
-            // The reason is that GC is trying to find out enough space for arrays
-            // that can fit to the free memory, but at the end there is no conti-
-            // nual space for such big array and this can takes looong time (a few mimutes).
             SequenceStorage leftProfiled = cachedClass.cast(left);
             SequenceStorage rightProfiled = cachedClass.cast(right);
             Object arr1 = leftProfiled.getInternalArrayObject();
@@ -1844,7 +1864,7 @@ public abstract class SequenceStorageNodes {
             Object arr2 = rightProfiled.getInternalArrayObject();
             int len2 = rightProfiled.length();
             concat(dest.getInternalArrayObject(), arr1, len1, arr2, len2);
-            dest.setNewLength(len1 + len2);
+            getSetLenNode().execute(dest, len1 + len2);
             return dest;
         }
 
@@ -1855,7 +1875,7 @@ public abstract class SequenceStorageNodes {
             Object arr2 = rightProfiled.getInternalArrayObject();
             int len2 = rightProfiled.length();
             System.arraycopy(arr2, 0, dest.getInternalArrayObject(), 0, len2);
-            dest.setNewLength(len2);
+            getSetLenNode().execute(dest, len2);
             return dest;
         }
 
@@ -1866,7 +1886,7 @@ public abstract class SequenceStorageNodes {
             Object arr1 = leftProfiled.getInternalArrayObject();
             int len1 = leftProfiled.length();
             System.arraycopy(arr1, 0, dest.getInternalArrayObject(), 0, len1);
-            dest.setNewLength(len1);
+            getSetLenNode().execute(dest, len1);
             return dest;
         }
 
@@ -1884,7 +1904,7 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < len2; i++) {
                 getSetItemNode().execute(dest, i + len1, getGetRightItemNode().execute(rightProfiled, i));
             }
-            dest.setNewLength(len1 + len2);
+            getSetLenNode().execute(dest, len1 + len2);
             return dest;
         }
 
@@ -1910,6 +1930,14 @@ public abstract class SequenceStorageNodes {
                 getRightItemNode = insert(GetItemScalarNode.create());
             }
             return getRightItemNode;
+        }
+
+        private SetLenNode getSetLenNode() {
+            if (setLenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setLenNode = insert(SetLenNode.create());
+            }
+            return setLenNode;
         }
 
         private static void concat(Object dest, Object arr1, int len1, Object arr2, int len2) {
@@ -2062,10 +2090,6 @@ public abstract class SequenceStorageNodes {
                 genNode = insert(genNodeProvider.get());
             }
             return genNode.execute(storage, value);
-        }
-
-        protected static boolean hasStorage(Object source) {
-            return source instanceof PSequence && !(source instanceof PString);
         }
 
         protected AppendNode createAppend() {
@@ -2646,6 +2670,209 @@ public abstract class SequenceStorageNodes {
 
         public static LenNode create() {
             return LenNodeGen.create();
+        }
+    }
+
+    public abstract static class SetLenNode extends SequenceStorageBaseNode {
+
+        public abstract void execute(SequenceStorage s, int len);
+
+        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
+        void doSpecial(SequenceStorage s, int len,
+                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            cachedClass.cast(s).setNewLength(len);
+        }
+
+        public static SetLenNode create() {
+            return SetLenNodeGen.create();
+        }
+    }
+
+    public abstract static class DeleteNode extends NormalizingNode {
+        @Child private DeleteItemNode deleteItemNode;
+        @Child private DeleteSliceNode deleteSliceNode;
+        private final String keyTypeErrorMessage;
+
+        public DeleteNode(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
+            super(normalizeIndexNode);
+            this.keyTypeErrorMessage = keyTypeErrorMessage;
+        }
+
+        public abstract void execute(SequenceStorage s, Object key);
+
+        public abstract void execute(SequenceStorage s, int key);
+
+        public abstract void execute(SequenceStorage s, long key);
+
+        @Specialization
+        protected void doScalarInt(SequenceStorage storage, int idx) {
+            getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        }
+
+        @Specialization
+        protected void doScalarLong(SequenceStorage storage, long idx) {
+            getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        }
+
+        @Specialization
+        protected void doScalarPInt(SequenceStorage storage, PInt idx) {
+            getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        }
+
+        @Specialization(guards = "!isPSlice(idx)")
+        protected void doScalarGeneric(SequenceStorage storage, Object idx) {
+            getGetItemScalarNode().execute(storage, normalizeIndex(idx, storage));
+        }
+
+        @Specialization
+        protected void doSlice(SequenceStorage storage, PSlice slice) {
+            SliceInfo info = slice.computeActualIndices(storage.length());
+            try {
+                getGetItemSliceNode().execute(storage, info);
+            } catch (SequenceStoreException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw new IllegalStateException();
+            }
+        }
+
+        @Fallback
+        protected void doInvalidKey(@SuppressWarnings("unused") SequenceStorage storage, Object key) {
+            throw raise(TypeError, keyTypeErrorMessage, key);
+        }
+
+        private DeleteItemNode getGetItemScalarNode() {
+            if (deleteItemNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                deleteItemNode = insert(DeleteItemNode.create());
+            }
+            return deleteItemNode;
+        }
+
+        private DeleteSliceNode getGetItemSliceNode() {
+            if (deleteSliceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                deleteSliceNode = insert(DeleteSliceNode.create());
+            }
+            return deleteSliceNode;
+        }
+
+        public static DeleteNode createNotNormalized() {
+            return DeleteNodeGen.create(null, KEY_TYPE_ERROR_MESSAGE);
+        }
+
+        public static DeleteNode create(NormalizeIndexNode normalizeIndexNode) {
+            return DeleteNodeGen.create(normalizeIndexNode, KEY_TYPE_ERROR_MESSAGE);
+        }
+
+        public static DeleteNode create() {
+            return DeleteNodeGen.create(NormalizeIndexNode.create(), KEY_TYPE_ERROR_MESSAGE);
+        }
+
+        public static DeleteNode createNotNormalized(String keyTypeErrorMessage) {
+            return DeleteNodeGen.create(null, keyTypeErrorMessage);
+        }
+
+        public static DeleteNode create(NormalizeIndexNode normalizeIndexNode, String keyTypeErrorMessage) {
+            return DeleteNodeGen.create(normalizeIndexNode, keyTypeErrorMessage);
+        }
+
+        public static DeleteNode create(String keyTypeErrorMessage) {
+            return DeleteNodeGen.create(NormalizeIndexNode.create(), keyTypeErrorMessage);
+        }
+    }
+
+    abstract static class DeleteItemNode extends SequenceStorageBaseNode {
+
+        public abstract void execute(SequenceStorage s, int idx);
+
+        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = {"s.getClass() == cachedClass", "isLastItem(s, cachedClass, idx)"})
+        void doLastItem(SequenceStorage s, @SuppressWarnings("unused") int idx,
+                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            SequenceStorage profiled = cachedClass.cast(s);
+            profiled.setNewLength(profiled.length() - 1);
+        }
+
+        @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
+        void doGeneric(SequenceStorage s, @SuppressWarnings("unused") int idx,
+                        @Cached("create()") GetItemScalarNode getItemNode,
+                        @Cached("create()") SetItemScalarNode setItemNode,
+                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
+            SequenceStorage profiled = cachedClass.cast(s);
+            int len = profiled.length();
+
+            for (int i = idx; i < len - 1; i++) {
+                setItemNode.execute(profiled, i, getItemNode.execute(profiled, i + 1));
+            }
+            profiled.setNewLength(len - 1);
+        }
+
+        protected static boolean isLastItem(SequenceStorage s, Class<? extends SequenceStorage> cachedClass, int idx) {
+            return idx == cachedClass.cast(s).length() - 1;
+        }
+
+        protected static DeleteItemNode create() {
+            return DeleteItemNodeGen.create();
+        }
+    }
+
+    abstract static class DeleteSliceNode extends SequenceStorageBaseNode {
+
+        public abstract void execute(SequenceStorage s, SliceInfo info);
+
+        @Specialization
+        void delSlice(SequenceStorage s, SliceInfo info,
+                        @Cached("create()") LenNode lenNode,
+                        @Cached("create()") SetLenNode setLenNode,
+                        @Cached("create()") GetItemScalarNode getItemNode,
+                        @Cached("create()") SetItemScalarNode setItemNode) {
+            int length = lenNode.execute(s);
+            int start = info.start;
+            int stop = info.stop;
+            int step = info.step;
+
+            int decraseLen; // how much will be the result array shorter
+            int index;  // index of the "old" array
+            if (step < 0) {
+                // For the simplicity of algorithm, then start and stop are swapped.
+                // The start index has to recalculated according the step, because
+                // the algorithm bellow removes the start itema and then start + step ....
+                step = Math.abs(step);
+                stop++;
+                int tmpStart = stop + ((start - stop) % step);
+                stop = start + 1;
+                start = tmpStart;
+            }
+            int arrayIndex = start; // pointer to the "new" form of array
+            if (step == 1) {
+                // this is easy, just remove the part of array
+                decraseLen = stop - start;
+                index = start + decraseLen;
+            } else {
+                int nextStep = index = start; // nextStep is a pointer to the next removed item
+                decraseLen = (stop - start - 1) / step + 1;
+                for (; index < stop && nextStep < stop; index++) {
+                    if (nextStep == index) {
+                        nextStep += step;
+                    } else {
+                        setItemNode.execute(s, arrayIndex, getItemNode.execute(s, index));
+                        arrayIndex++;
+                    }
+                }
+            }
+            if (decraseLen > 0) {
+                // shift all other items in array behind the last change
+                for (; index < length; arrayIndex++, index++) {
+                    setItemNode.execute(s, arrayIndex, getItemNode.execute(s, index));
+                }
+                // change the result length
+                // TODO reallocate array if the change is big?
+                // Then unnecessary big array is kept in the memory.
+                setLenNode.execute(s, length - decraseLen);
+            }
+        }
+
+        protected static DeleteSliceNode create() {
+            return DeleteSliceNodeGen.create();
         }
     }
 }

@@ -225,9 +225,8 @@ def test_setslice():
     # assert b == bytearray([5, 6, 7, 8, 9])
     b = bytearray([5, 6, 7, 8, 9])
 
-    # TODO: seq setSlice is broken ...
-    # b[0:0] = bytearray([0, 1, 2, 3, 4])
-    # assert b == bytearray(range(10))
+    b[0:0] = bytearray([0, 1, 2, 3, 4])
+    assert b == bytearray(range(10))
     b = bytearray(range(10))
 
     b[-7:-3] = bytearray([100, 101])

@@ -68,12 +68,10 @@ import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListAppendNodeFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListReverseNodeFactory;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -166,98 +164,15 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DelItemNode extends PythonBinaryBuiltinNode {
 
-        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forList();
-
-        @Specialization(guards = "isIntStorage(primary)")
-        protected PNone doPListInt(PList primary, long idx) {
-            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isLongStorage(primary)")
-        protected PNone doPListLong(PList primary, long idx) {
-            LongSequenceStorage storage = (LongSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isDoubleStorage(primary)")
-        protected PNone doPListDouble(PList primary, long idx) {
-            DoubleSequenceStorage storage = (DoubleSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isObjectStorage(primary)")
-        protected PNone doPListObject(PList primary, long idx) {
-            ObjectSequenceStorage storage = (ObjectSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
         @Specialization
-        protected PNone doPList(PList list, long idx) {
-            SequenceStorage storage = list.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
+        protected Object doGeneric(PList self, Object key,
+                        @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode) {
+            deleteNode.execute(self.getSequenceStorage(), key);
             return PNone.NONE;
         }
 
-        @Specialization(guards = "isIntStorage(primary)")
-        protected PNone doPListInt(PList primary, PInt idx) {
-            IntSequenceStorage storage = (IntSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isLongStorage(primary)")
-        protected PNone doPListLong(PList primary, PInt idx) {
-            LongSequenceStorage storage = (LongSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isDoubleStorage(primary)")
-        protected PNone doPListDouble(PList primary, PInt idx) {
-            DoubleSequenceStorage storage = (DoubleSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "isObjectStorage(primary)")
-        protected PNone doPListObject(PList primary, PInt idx) {
-            ObjectSequenceStorage storage = (ObjectSequenceStorage) primary.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization
-        protected PNone doPList(PList list, PInt idx) {
-            SequenceStorage storage = list.getSequenceStorage();
-            storage.delItemInBound(normalize.execute(idx, storage.length()));
-            return PNone.NONE;
-        }
-
-        @Specialization
-        protected PNone doPListSlice(PList self, PSlice slice) {
-            self.delSlice(slice);
-            return PNone.NONE;
-        }
-
-        protected static DelItemNode create() {
-            return ListBuiltinsFactory.DelItemNodeFactory.create();
-        }
-
-        @Specialization
-        protected Object doObjectIndex(PList self, Object objectIdx,
-                        @Cached("create()") IndexNode getIndexNode,
-                        @Cached("create()") DelItemNode getRecursiveNode) {
-            return getRecursiveNode.execute(self, getIndexNode.execute(objectIdx));
-        }
-
-        @SuppressWarnings("unused")
         @Fallback
-        protected Object doGeneric(Object self, Object objectIdx) {
+        protected Object doGeneric(Object self, @SuppressWarnings("unused") Object objectIdx) {
             throw raise(TypeError, "descriptor '__delitem__' requires a 'list' object but received a '%p'", self);
         }
     }
@@ -292,34 +207,19 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
-        @Child private NormalizeIndexNode normalize = NormalizeIndexNode.forListAssign();
         private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public PNone doPList(PList primary, PSlice slice, Object value,
-                        @Cached("create()") ListNodes.SetSliceNode sliceNode) {
-            return sliceNode.execute(primary, slice, value);
-        }
-
-        @Specialization
-        public Object doPListInt(PList primary, int idx, Object value,
+        public Object doGeneric(PList primary, Object key, Object value,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            updateStorage(primary, setItemNode.execute(primary.getSequenceStorage(), idx, value));
+            updateStorage(primary, setItemNode.execute(primary.getSequenceStorage(), key, value));
             return PNone.NONE;
         }
 
-        @Specialization
-        public Object doPListLong(PList primary, long idx, Object value,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            updateStorage(primary, setItemNode.execute(primary.getSequenceStorage(), idx, value));
-            return PNone.NONE;
-        }
-
-        @Specialization
-        public Object doPListPInt(PList primary, PInt idx, Object value,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
-            updateStorage(primary, setItemNode.execute(primary.getSequenceStorage(), idx, value));
-            return PNone.NONE;
+        @SuppressWarnings("unused")
+        @Fallback
+        protected Object doGeneric(Object self, Object objectIdx, Object value) {
+            throw raise(TypeError, "descriptor '__setitem__' requires a 'list' object but received a '%p'", self);
         }
 
         private void updateStorage(PList primary, SequenceStorage newStorage) {
@@ -328,26 +228,12 @@ public class ListBuiltins extends PythonBuiltins {
             }
         }
 
-        protected static SetItemNode create() {
-            return ListBuiltinsFactory.SetItemNodeFactory.create();
-        }
-
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
             return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forListAssign(), () -> ListGeneralizationNode.create());
         }
 
-        @Specialization
-        protected Object doObjectIndex(PList self, Object objectIdx, Object value,
-                        @Cached("create()") IndexNode getIndexNode,
-                        @Cached("create()") SetItemNode getRecursiveNode,
-                        @Cached("create()") CastToIndexNode castToIndex) {
-            return getRecursiveNode.execute(self, castToIndex.execute(getIndexNode.execute(objectIdx)), value);
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        protected Object doGeneric(Object self, Object objectIdx, Object value) {
-            throw raise(TypeError, "descriptor '__setitem__' requires a 'list' object but received a '%p'", self);
+        protected static SetItemNode create() {
+            return ListBuiltinsFactory.SetItemNodeFactory.create();
         }
     }
 

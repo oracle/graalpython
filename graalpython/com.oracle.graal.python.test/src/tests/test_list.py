@@ -615,6 +615,10 @@ class ListTest(list_tests.CommonTest):
         l.append("hello")
         self.assertEqual(l, [1, 0x1FF, 0x1FFFFFFFF, "hello"])
 
+        l = ["a", "b", "c"]
+        l.append("d")
+        self.assertEqual(l, ["a", "b", "c", "d"])
+
 
 class ListCompareTest(CompareTest):
 
