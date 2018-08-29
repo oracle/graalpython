@@ -72,10 +72,6 @@ public abstract class SequenceStorage {
 
     public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int length);
 
-    public abstract void delItemInBound(int idx);
-
-    public abstract Object popInBound(int idx);
-
     public abstract int index(Object value);
 
     public abstract void reverse();

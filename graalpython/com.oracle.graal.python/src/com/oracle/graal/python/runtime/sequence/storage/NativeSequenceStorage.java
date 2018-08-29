@@ -155,16 +155,6 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void delItemInBound(int idx) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
     public void reverse() {
         throw new AssertionError("should not reach");
     }

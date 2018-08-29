@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -400,77 +401,27 @@ public class ListBuiltins extends PythonBuiltins {
     // list.remove(x)
     @Builtin(name = "remove", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ListRemoveNode extends PythonBuiltinNode {
+    public abstract static class ListRemoveNode extends PythonBinaryBuiltinNode {
 
-        private static String NOT_IN_LIST_MESSAGE = "list.index(x): x not in list";
+        private static final String NOT_IN_LIST_MESSAGE = "list.index(x): x not in list";
 
-        @Specialization(guards = "isIntStorage(list)")
-        public PNone removeInt(PList list, int value) {
-            IntSequenceStorage store = (IntSequenceStorage) list.getSequenceStorage();
-            for (int index = 0; index < store.length(); index++) {
-                if (value == store.getIntItemNormalized(index)) {
-                    store.delItemInBound(index);
-                    return PNone.NONE;
-                }
-            }
-            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
-        }
-
-        @Specialization(guards = "isLongStorage(list)")
-        public PNone removeLong(PList list, int value) {
-            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
-            for (int index = 0; index < store.length(); index++) {
-                if (value == store.getLongItemNormalized(index)) {
-                    store.delItemInBound(index);
-                    return PNone.NONE;
-                }
-            }
-            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
-        }
-
-        @Specialization(guards = "isLongStorage(list)")
-        public PNone removeLong(PList list, long value) {
-            LongSequenceStorage store = (LongSequenceStorage) list.getSequenceStorage();
-            for (int index = 0; index < store.length(); index++) {
-                if (value == store.getLongItemNormalized(index)) {
-                    store.delItemInBound(index);
-                    return PNone.NONE;
-                }
-            }
-            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
-        }
-
-        @Specialization(guards = "isDoubleStorage(list)")
-        public PNone removeDouble(PList list, double value) {
-            DoubleSequenceStorage store = (DoubleSequenceStorage) list.getSequenceStorage();
-            for (int index = 0; index < store.length(); index++) {
-                if (value == store.getDoubleItemNormalized(index)) {
-                    store.delItemInBound(index);
-                    return PNone.NONE;
-                }
-            }
-            throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
-        }
-
-        @Specialization(guards = "isNotSpecialCase(list, value)")
+        @Specialization
         public PNone remove(PList list, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached("create()") SequenceStorageNodes.DeleteNode deleteNode,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            int len = list.len();
             SequenceStorage listStore = list.getSequenceStorage();
+            int len = lenNode.execute(listStore);
             for (int i = 0; i < len; i++) {
                 Object object = getItemNode.execute(listStore, i);
-                if (eqNode.executeBool(object, value)) {
-                    listStore.delItemInBound(i);
+                if (castToBooleanNode.executeWith(eqNode.executeWith(object, value))) {
+                    deleteNode.execute(listStore, i);
                     return PNone.NONE;
                 }
             }
             throw raise(PythonErrorType.ValueError, NOT_IN_LIST_MESSAGE);
-        }
-
-        protected boolean isNotSpecialCase(PList list, Object value) {
-            return !((PGuards.isIntStorage(list) && value instanceof Integer) || (PGuards.isLongStorage(list) && (value instanceof Integer || value instanceof Long)) ||
-                            PGuards.isDoubleStorage(list) && value instanceof Double);
         }
     }
 

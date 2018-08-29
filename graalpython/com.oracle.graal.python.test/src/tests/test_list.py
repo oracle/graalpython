@@ -470,6 +470,14 @@ class ListTest(list_tests.CommonTest):
         a.remove(MyInt(2))
         self.assertEqual([1, 3], a)
 
+        a = ["1", "2"]
+        a.remove("2");
+        self.assertEqual(["1"], a)
+
+        a = [1.1, 2.2, 3.3]
+        a.remove(2.2);
+        self.assertEqual([1.1, 3.3], a)
+
     def test_insert_spec(self):
         a = [1, 2]
         self.assertRaises(TypeError, a.insert, [1, 2, 3], 1)

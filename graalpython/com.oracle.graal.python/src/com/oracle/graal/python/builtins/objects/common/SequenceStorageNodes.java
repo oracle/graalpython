@@ -2708,11 +2708,11 @@ public abstract class SequenceStorageNodes {
             this.keyTypeErrorMessage = keyTypeErrorMessage;
         }
 
-        public abstract void execute(SequenceStorage s, Object key);
+        public abstract void execute(SequenceStorage s, Object indexOrSlice);
 
-        public abstract void execute(SequenceStorage s, int key);
+        public abstract void execute(SequenceStorage s, int index);
 
-        public abstract void execute(SequenceStorage s, long key);
+        public abstract void execute(SequenceStorage s, long index);
 
         @Specialization
         protected void doScalarInt(SequenceStorage storage, int idx) {

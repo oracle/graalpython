@@ -116,11 +116,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     }
 
     @Override
-    public void delItemInBound(int idx) {
-        popInBound(idx);
-    }
-
-    @Override
     public SequenceStorage copy() {
         return new ObjectSequenceStorage(getCopyOfInternalArray());
     }
@@ -150,18 +145,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     public void increaseCapacityExact(int newCapacity) {
         values = new Object[newCapacity];
         capacity = values.length;
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        Object pop = values[idx];
-
-        for (int i = idx; i < values.length - 1; i++) {
-            values[i] = values[i + 1];
-        }
-
-        length--;
-        return pop;
     }
 
     public Object popObject() {

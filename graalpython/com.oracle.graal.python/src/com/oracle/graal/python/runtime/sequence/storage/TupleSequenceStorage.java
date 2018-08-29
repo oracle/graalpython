@@ -179,27 +179,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         length = length > stop ? length : stop;
     }
 
-    @Override
-    public void delItemInBound(int idx) {
-        if (values.length - 1 == idx) {
-            popPTuple();
-        } else {
-            popInBound(idx);
-        }
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        PTuple pop = values[idx];
-
-        for (int i = idx; i < values.length - 1; i++) {
-            values[i] = values[i + 1];
-        }
-
-        length--;
-        return pop;
-    }
-
     public PTuple popPTuple() {
         PTuple pop = values[capacity - 1];
         length--;

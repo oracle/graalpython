@@ -179,27 +179,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         length = length > stop ? length : stop;
     }
 
-    @Override
-    public void delItemInBound(int idx) {
-        if (values.length - 1 == idx) {
-            popInt();
-        } else {
-            popInBound(idx);
-        }
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        int pop = values[idx];
-
-        for (int i = idx; i < values.length - 1; i++) {
-            values[i] = values[i + 1];
-        }
-
-        length--;
-        return pop;
-    }
-
     public int popInt() {
         int pop = values[length - 1];
         length--;

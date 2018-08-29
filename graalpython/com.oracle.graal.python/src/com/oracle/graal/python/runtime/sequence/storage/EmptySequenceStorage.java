@@ -137,16 +137,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void delItemInBound(int idx) {
-        throw new UnsupportedOperationException("Cannot delete from empty storage");
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        return new UnsupportedOperationException();
-    }
-
-    @Override
     public void reverse() {
     }
 

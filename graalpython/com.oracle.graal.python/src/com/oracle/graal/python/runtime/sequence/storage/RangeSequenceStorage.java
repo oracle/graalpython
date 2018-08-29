@@ -79,16 +79,6 @@ public class RangeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void delItemInBound(int idx) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int index(Object value) {
         throw new UnsupportedOperationException();
     }
