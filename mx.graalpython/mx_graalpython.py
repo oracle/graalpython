@@ -25,7 +25,6 @@ import os
 import platform
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 from argparse import ArgumentParser
@@ -37,6 +36,7 @@ import mx_sdk
 import mx_subst
 import mx_urlrewrites
 from mx_gate import Task
+from mx_graalpython_bench_param import PATH_MESO
 from mx_graalpython_benchmark import PythonBenchmarkSuite
 from mx_unittest import unittest
 
@@ -284,36 +284,10 @@ class GraalPythonTags(object):
     cpyext_managed = 'python-cpyext-managed'
     cpyext_sandboxed = 'python-cpyext-sandboxed'
     svmunit = 'python-svm-unittest'
-    benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
     apptests = 'python-apptests'
     license = 'python-license'
-
-
-python_test_benchmarks = {
-    'binarytrees3': '12',
-    'fannkuchredux3': '9',
-    'fasta3': '250000',
-    'mandelbrot3': '600',
-    'meteor3': '2098',
-    'nbody3': '100000',
-    'spectralnorm3': '500',
-    'richards3': '3',
-    'bm-ai': '0',
-    'pidigits': '0',
-    'pypy-go': '1',
-}
-
-
-def _gate_python_benchmarks_tests(name, iterations):
-    run_java = mx.run_java
-    vmargs += ['-cp', mx.classpath(["com.oracle.graal.python"]), "com.oracle.graal.python.shell.GraalPythonMain", name, str(iterations)]
-    success_pattern = re.compile(r"^(?P<benchmark>[a-zA-Z0-9.\-]+): (?P<score>[0-9]+(\.[0-9]+)?$)")
-    out = mx.OutputCapture()
-    run_java(vmargs, out=mx.TeeOutputCapture(out), err=subprocess.STDOUT)
-    if not re.search(success_pattern, out.data, re.MULTILINE):
-        mx.abort('Benchmark "' + name + '" doesn\'t match success pattern: ' + str(success_pattern))
 
 
 def python_gate(args):
@@ -463,7 +437,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
         if task:
             svm_image = python_svm(["--version"])
-            benchmark = os.path.join("graalpython", "benchmarks", "src", "benchmarks", "image_magix.py")
+            benchmark = os.path.join(PATH_MESO, "image-magix.py")
             out = mx.OutputCapture()
             mx.run(
                 [svm_image, benchmark],
@@ -471,16 +445,10 @@ def graalpython_gate_runner(args, tasks):
                 out=mx.TeeOutputCapture(out)
             )
             success = "\n".join([
-                "[0, 0, 0, 0, 0, 0, 20, 20, 20, 0, 0, 20, 20, 20, 0, 0, 20, 20, 20, 0, 0, 0, 0, 0, 0]",
-                "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 33, 34, 35, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55]",
-                "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 36, 36, 35, 41, 41, 40, 40, 45, 51, 52, 53, 54, 55]"])
+                "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
+            ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-
-    for name, iterations in sorted(python_test_benchmarks.iteritems()):
-        with Task('PythonBenchmarksTest:' + name, tasks, tags=[GraalPythonTags.benchmarks]) as task:
-            if task:
-                _gate_python_benchmarks_tests("graalpython/benchmarks/src/benchmarks/" + name + ".py", iterations)
 
 
 mx_gate.add_gate_runner(_suite, graalpython_gate_runner)

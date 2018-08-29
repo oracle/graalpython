@@ -30,55 +30,27 @@ import static com.oracle.graal.python.test.PythonTests.assertBenchNoError;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class BenchmarkTests {
+    private static final String BENCH_SUITE_MESO = "meso";
 
     @Test
     public void richards3() {
-        Path script = Paths.get("richards3.py");
-        assertBenchNoError(script, new String[]{script.toString(), "3"});
+        Path script = Paths.get(BENCH_SUITE_MESO, "richards3.py");
+        assertBenchNoError(script, new String[]{script.toString(), "20"});
     }
 
     @Test
     public void bm_ai() {
-        Path script = Paths.get("bm-ai.py");
-        assertBenchNoError(script, new String[]{script.toString(), "0"});
+        Path script = Paths.get(BENCH_SUITE_MESO, "ai-nqueen.py");
+        assertBenchNoError(script, new String[]{script.toString(), "5"});
     }
 
     @Test
     public void mandelbrot3_300() {
-        Path script = Paths.get("mandelbrot3_noprint.py");
-        assertBenchNoError(script, new String[]{script.toString(), "300"});
-    }
-
-    @Ignore
-    @Test
-    public void simplejson_bench_test() {
-        Path script = Paths.get("simplejson-bench.py");
-        assertBenchNoError(script, new String[]{"simplejson-bench.py", "100"});
-    }
-
-    @Ignore
-    @Test
-    public void whoosh_bench_test() {
-        Path script = Paths.get("whoosh-bench.py");
-        assertBenchNoError(script, new String[]{"whoosh-bench.py", "50"});
-    }
-
-    @Ignore
-    @Test
-    public void pymaging_bench_test() {
-        Path script = Paths.get("pymaging-bench.py");
-        assertBenchNoError(script, new String[]{"pymaging-bench.py", "50"});
-    }
-
-    @Ignore
-    @Test
-    public void sympy_bench_test() {
-        Path script = Paths.get("sympy-bench.py");
-        assertBenchNoError(script, new String[]{"sympy-bench.py", "200"});
+        Path script = Paths.get(BENCH_SUITE_MESO, "mandelbrot3.py");
+        assertBenchNoError(script, new String[]{script.toString(), "200"});
     }
 
 }

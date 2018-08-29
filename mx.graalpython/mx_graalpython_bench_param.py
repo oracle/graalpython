@@ -25,79 +25,32 @@ import os
 
 import mx
 
+_graalpython_suite = mx.suite('graalpython')
+
 py = ".py"
-harnessPath = os.path.join('graalpython', 'benchmarks', 'src', 'harness.py')
+_BASE_PATH = os.path.join('graalpython', 'benchmarks', 'src')
+HARNESS_PATH = os.path.join(_BASE_PATH, 'harness.py')
 
-pathBench = "graalpython/benchmarks/src/benchmarks/"
-pathMicro = "graalpython/benchmarks/src/micro/"
-pathInterop = "graalpython/benchmarks/src/interop/"
+PATH_BENCH = os.path.join(_BASE_PATH, 'benchmarks')
+PATH_MICRO = os.path.join(_BASE_PATH, 'micro')
+PATH_MESO = os.path.join(_BASE_PATH, 'meso')
+PATH_MACRO = os.path.join(_BASE_PATH, 'macro')
 
-
-def _compile_interop():
-    cc = os.path.join(mx.suite('graalpython').dir, 'graalpython', 'bin', 'sulongcc')
-    fp = os.path.join(mx.suite('graalpython').dir, pathInterop)
-    src = "%s/cextmodule.c" % fp
-    bc = "%s/cextmodule.bc" % fp
-    if os.path.exists(cc):
-        if not os.path.exists(bc) or os.stat(src).st_atime > os.stat(bc).st_atime:
-            os.system("%s %s 2>/dev/null >/dev/null" % (cc, src))
-
-
-_compile_interop()
-
-pythonGeneratorBenchmarks = {
-    'euler31-timed': ['200'],
-    'euler11-timed': ['10000'],
-    'ai-nqueen-timed': ['10'],
-    'pads-eratosthenes-timed': ['100000'],
-    'pads-integerpartitions': ['700'],
-    'pads-lyndon': ['100000000'],
-    'python-graph-bench': ['200'],
-    'simplejson-bench': ['10000'],
-    # 'whoosh-bench'    : '5000',
-    # 'pymaging-bench'  : '5000',
-    # 'sympy-bench'     : '20000',
-}
-
-pythonObjectBenchmarks = {
-    'richards3-timed': ['200'],
-    'bm-float-timed': ['1000'],
-    'pypy-chaos-timed': ['1000'],
-    'pypy-go-timed': ['50'],
-    'pypy-deltablue': ['2000'],
-}
-
-pythonBenchmarks = {
-    'binarytrees3t': ['18'],
-    'fannkuchredux3t': ['11'],
-    'fasta3t': ['25000000'],
-    'mandelbrot3t': ['4000'],
-    'meteor3t': ['2098'],
-    'nbody3t': ['5000000'],
-    'spectralnorm3t': ['3000'],
-    'pidigits-timed': ['0'],
-    'euler31-timed': ['200'],
-    'euler11-timed': ['10000'],
-    'ai-nqueen-timed': ['10'],
-    'pads-eratosthenes-timed': ['100000'],
-    'pads-integerpartitions': ['700'],
-    'pads-lyndon': ['100000000'],
-    'richards3-timed': ['200'],
-    'bm-float-timed': ['1000'],
-    'pypy-chaos-timed': ['1000'],
-    'pypy-go-timed': ['50'],
-    'pypy-deltablue': ['2000'],
-    'python-graph-bench': ['200'],
-    'simplejson-bench': ['10000'],
-    'sieve': ['100000'],
-    # 'whoosh-bench'    : '5000',
-    # type not supported to adopt to Jython! <scoring.WeightScorer...
-    # 'pymaging-bench'  : '5000',
-    # Multiple super class is not supported yet! + File "JYTHON.jar/Lib/abc.py", line 32, in abstractmethod
-    #   AttributeError: 'str' object has no attribute '__isabstractmethod__'
-    # 'sympy-bench'     : '20000',
-    # ImportError: No module named core
-}
+# TODO: add/enable interop benchmarks
+# PATH_INTEROP = os.path.join(_BASE_PATH, 'interop')
+#
+#
+# def _compile_interop():
+#     cc = os.path.join(_graalpython_suite.dir, 'graalpython', 'bin', 'sulongcc')
+#     fp = os.path.join(_graalpython_suite.dir, PATH_INTEROP)
+#     src = "%s/cextmodule.c" % fp
+#     bc = "%s/cextmodule.bc" % fp
+#     if os.path.exists(cc):
+#         if not os.path.exists(bc) or os.stat(src).st_atime > os.stat(bc).st_atime:
+#             os.system("%s %s 2>/dev/null >/dev/null" % (cc, src))
+#
+#
+# _compile_interop()
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -105,60 +58,92 @@ pythonBenchmarks = {
 #
 # ----------------------------------------------------------------------------------------------------------------------
 # the argument list contains both the harness and benchmark args
-ITERATIONS_25 = ['-i', '25']
-ITERATIONS_15 = ['-i', '15']
-ITERATIONS_10 = ['-i', '10']
+ITER_25 = ['-i', '25']
+ITER_15 = ['-i', '15']
+ITER_10 = ['-i', '10']
 
-pythonMicroBenchmarks = {
-    'arith-binop': ITERATIONS_25 + ['5'],
-    'arith-modulo': ITERATIONS_25 + ['50'],
-    'attribute-access-polymorphic': ITERATIONS_10 + ['1000'],
-    'attribute-access': ITERATIONS_25 + ['5000'],
-    'attribute-bool': ITERATIONS_25 + ['3000'],
-    'boolean-logic': ITERATIONS_15 + ['1000'],
-    'builtin-len-tuple': ITERATIONS_10 + [],
-    'builtin-len': ITERATIONS_25 + [],
-    'call-method-polymorphic': ITERATIONS_10 + ['1000'],
-    'for-range': ITERATIONS_25 + ['50000'],
-    'function-call': ITERATIONS_25 + [],
-    'generator-expression': ITERATIONS_25 + [],
-    'generator-notaligned': ITERATIONS_25 + [],
-    'generator': ITERATIONS_25 + [],
-    'genexp-builtin-call': ITERATIONS_25 + ['1000'],
-    'list-comp': ITERATIONS_15 + ['5000'],
-    'list-indexing': ITERATIONS_15 + ['1000000'],
-    'list-iterating-explicit': ITERATIONS_25 + ['1000000'],
-    'list-iterating': ITERATIONS_25 + ['1000000'],
-    'math-sqrt': ITERATIONS_15 + ['500000000'],
-    'object-allocate': ITERATIONS_10 + ['5000'],
-    'object-layout-change': ITERATIONS_15 + ['1000000'],
-    'special-add-int': ITERATIONS_15 + ['5'],
-    'special-add': ITERATIONS_15 + ['5'],
-    'special-len': ITERATIONS_10 + ['5'],
+MICRO_BENCHMARKS = {
+    'arith-binop': ITER_25 + ['5'],
+    'arith-modulo': ITER_25 + ['50'],
+    'attribute-access-polymorphic': ITER_10 + ['1000'],
+    'attribute-access': ITER_25 + ['5000'],
+    'attribute-bool': ITER_25 + ['3000'],
+    'boolean-logic': ITER_15 + ['1000'],
+    'builtin-len-tuple': ITER_10 + [],
+    'builtin-len': ITER_25 + [],
+    'call-method-polymorphic': ITER_10 + ['1000'],
+    'for-range': ITER_25 + ['50000'],
+    'function-call': ITER_25 + [],
+    'generator-expression': ITER_25 + [],
+    'generator-notaligned': ITER_25 + [],
+    'generator': ITER_25 + [],
+    'genexp-builtin-call': ITER_25 + ['1000'],
+    'list-comp': ITER_15 + ['5000'],
+    'list-indexing': ITER_15 + ['1000000'],
+    'list-iterating-explicit': ITER_25 + ['1000000'],
+    'list-iterating': ITER_25 + ['1000000'],
+    'math-sqrt': ITER_15 + ['500000000'],
+    'object-allocate': ITER_10 + ['5000'],
+    'object-layout-change': ITER_15 + ['1000000'],
+    'special-add-int': ITER_15 + ['5'],
+    'special-add': ITER_15 + ['5'],
+    'special-len': ITER_10 + ['5'],
 }
 
-# XXX: testing
-# pythonBenchmarks = {
-#     'binarytrees3t'                 : ['8'],
-#     'mandelbrot3t'                  : ['300'],
-#     'ai-nqueen-timed'               : ['5'],
-# }
-# pythonMicroBenchmarks = {
-#     'arith-binop'                   : [],
-#     'for-range'                     : [],
-# }
 
-pythonInteropBenchmarks = {
-    'cext-modulo': [],
-    'for-range-cext': [],
+MESO_BENCHMARKS = {
+    # -------------------------------------------------------
+    # generator benchmarks
+    # -------------------------------------------------------
+    'euler31': ITER_10 + ['200'],
+    'euler11': ITER_10 + ['10000'],
+    'ai-nqueen': ITER_10 + ['10'],
+    'pads-eratosthenes': ITER_10 + ['100000'],
+    'pads-integerpartitions': ITER_10 + ['700'],
+    'pads-bipartite': ITER_10 + ['10000'],
+    'pads-lyndon': ITER_10 + ['10000000'],
+    # -------------------------------------------------------
+    # object benchmarks
+    # -------------------------------------------------------
+    'richards3': ITER_10 + ['200'],
+    'bm-float': ITER_10 + ['1000'],
+    # -------------------------------------------------------
+    # normal benchmarks
+    # -------------------------------------------------------
+    'binarytrees3': ITER_25 + ['18'],
+    'fannkuchredux3': ITER_10 + ['11'],
+    'fasta3': ITER_10 + ['25000000'],
+    'mandelbrot3': ITER_10 + ['4000'],
+    'meteor3': ITER_15 + ['2098'],
+    'nbody3': ITER_10 + ['5000000'],
+    'spectralnorm3': ITER_10 + ['3000'],
+    'pidigits': ITER_10 + [],
+    'sieve': ITER_25 + ['100000'],
+    'image-magix': ITER_10 + ['10000'],
+    'parrot-b2': ITER_10 + ['200'],
+    # 'threadring': ITER_10 + ['100'],  # TODO: provide itertools cycle implementation
+    # 'regexdna': ITER_10 + [],  #  TODO: provide proper input for this benchmark
+    # 'knucleotide': ITER_10 + [],  #  TODO: provide proper input for this benchmark
 }
 
-# helper list
 
-benchmarks_list = {
-    "normal": [pathBench, pythonBenchmarks],
-    "micro": [pathMicro, pythonMicroBenchmarks],
-    "generator": [pathBench, pythonGeneratorBenchmarks],
-    "object": [pathBench, pythonObjectBenchmarks],
-    "interop": [pathInterop, pythonInteropBenchmarks],
+MACRO_BENCHMARKS = {
+    'gcbench': ITER_10 + ['10'],
+}
+
+# INTEROP_BENCHMARKS = {
+#     'cext-modulo': [],
+#     'for-range-cext': [],
+# }
+
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# the benchmarks
+#
+# ----------------------------------------------------------------------------------------------------------------------
+BENCHMARKS = {
+    "micro": [PATH_MICRO, MICRO_BENCHMARKS],
+    "meso": [PATH_MESO, MESO_BENCHMARKS],
+    "macro": [PATH_MACRO, MACRO_BENCHMARKS],
+    # "interop": [PATH_INTEROP, INTEROP_BENCHMARKS],
 }

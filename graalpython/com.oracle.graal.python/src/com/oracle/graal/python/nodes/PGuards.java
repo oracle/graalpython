@@ -122,24 +122,20 @@ public abstract class PGuards {
         return value instanceof PythonClass;
     }
 
-    public static boolean isEmptyStorage(PSequence seq) {
-        return seq.getSequenceStorage() instanceof EmptySequenceStorage;
+    public static boolean isEmptyStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
-    public static boolean isEmptyStorage(PArray byteArray) {
-        return byteArray.getSequenceStorage() instanceof EmptySequenceStorage;
+    public static boolean isEmptyStorage(PArray array) {
+        return array.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
-    public static boolean isBasicStorage(PList list) {
-        return list.getSequenceStorage() instanceof BasicSequenceStorage;
+    public static boolean isBasicStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof BasicSequenceStorage;
     }
 
-    public static boolean isIntStorage(PList list) {
-        return list.getSequenceStorage() instanceof IntSequenceStorage;
-    }
-
-    public static boolean isIntStorage(PSequence array) {
-        return array.getSequenceStorage() instanceof IntSequenceStorage;
+    public static boolean isIntStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
     public static boolean isByteStorage(PSequence array) {
@@ -154,16 +150,16 @@ public abstract class PGuards {
         return first.getSequenceStorage() instanceof ByteSequenceStorage && second.getSequenceStorage() instanceof ByteSequenceStorage;
     }
 
-    public static boolean isLongStorage(PList list) {
-        return list.getSequenceStorage() instanceof LongSequenceStorage;
+    public static boolean isLongStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof LongSequenceStorage;
     }
 
     public static boolean areBothLongStorage(PList first, PList second) {
         return first.getSequenceStorage() instanceof LongSequenceStorage && second.getSequenceStorage() instanceof LongSequenceStorage;
     }
 
-    public static boolean isDoubleStorage(PList list) {
-        return list.getSequenceStorage() instanceof DoubleSequenceStorage;
+    public static boolean isDoubleStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof DoubleSequenceStorage;
     }
 
     public static boolean areBothDoubleStorage(PList first, PList second) {
