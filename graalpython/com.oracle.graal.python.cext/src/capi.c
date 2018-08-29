@@ -226,7 +226,19 @@ PyObject* to_sulong(void *o) {
 
 /** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
-    return native_to_java((PyObject*)(obj->ob_type));
+    PyTypeObject*  type = obj->ob_type;
+    if (truffle_is_handle_to_managed(type)) {
+        return truffle_managed_from_handle(type);
+    } else {
+        // we have stored a handle to the Java class in ob_refcnt
+        void* handle = (void*)type->ob_refcnt;
+        if (truffle_is_handle_to_managed(handle)) {
+            return truffle_managed_from_handle(handle);
+        } else {
+            // assume handle is a TruffleObject
+            return handle;
+        }
+    }
 }
 
 /** to be used from Java code only; returns the type ID for a byte array */
