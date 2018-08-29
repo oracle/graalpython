@@ -90,8 +90,9 @@ PyObject * PyLong_FromDouble(double n) {
     return UPCALL_CEXT_O(_jls_PyLong_FromLongLong, n, 1);
 }
 
+UPCALL_ID(ssize_t);
 Py_ssize_t PyLong_AsSsize_t(PyObject *obj) {
-    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(Py_ssize_t), polyglot_from_string("ssize_t", SRC_CS));
+    return UPCALL_CEXT_L(_jls_PyLong_AsPrimitive, native_to_java(obj), 1, sizeof(Py_ssize_t), _jls_ssize_t);
 }
 
 PyObject * PyLong_FromVoidPtr(void *p) {
