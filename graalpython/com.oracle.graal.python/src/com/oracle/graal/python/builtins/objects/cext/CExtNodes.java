@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNo
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
@@ -535,14 +536,28 @@ public abstract class CExtNodes {
         }
     }
 
-    public static class GetNativeClassNode extends CExtBaseNode {
+    public abstract static class GetNativeClassNode extends CExtBaseNode {
 
         @Child PCallNativeNode callGetObTypeNode;
         @Child ToJavaNode toJavaNode;
 
         @CompilationFinal private TruffleObject func;
 
-        public PythonClass execute(PythonNativeObject object) {
+        public abstract PythonClass execute(PythonNativeObject object);
+
+        @Specialization(guards = "object == cachedObject", limit = "1")
+        PythonClass getNativeClassCached(@SuppressWarnings("unused") PythonNativeObject object,
+                        @SuppressWarnings("unused") @Cached("object") PythonNativeObject cachedObject,
+                        @Cached("getNativeClass(cachedObject)") PythonClass cachedClass) {
+            // TODO: (tfel) is this really something we can do? It's so rare for this class to
+            // change that it shouldn't be worth the effort, but in native code, anything can
+            // happen. OTOH, CPython also has caches that can become invalid when someone just goes
+            // and changes the ob_type of an object.
+            return cachedClass;
+        }
+
+        @Specialization
+        PythonClass getNativeClass(PythonNativeObject object) {
             // do not convert wrap 'object.object' since that is really the native pointer object
             Object[] args = new Object[]{object.object};
             return (PythonClass) getToJavaNode().execute(getCallGetObTypeNode().execute(getObTypeFunction(), args));
@@ -573,7 +588,7 @@ public abstract class CExtNodes {
         }
 
         public static GetNativeClassNode create() {
-            return new GetNativeClassNode();
+            return GetNativeClassNodeGen.create();
         }
     }
 
