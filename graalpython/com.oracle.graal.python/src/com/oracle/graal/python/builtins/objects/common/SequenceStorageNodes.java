@@ -54,6 +54,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 import java.util.function.BiFunction;
 
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.PCallBinaryCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.NativeCAPISymbols;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CastToByteNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.CmpNodeGen;
@@ -104,13 +105,10 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -743,78 +741,39 @@ public abstract class SequenceStorageNodes {
         @Specialization
         NativeSequenceStorage doByte(byte[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.BYTE);
+            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ElementType.BYTE);
         }
 
         @Specialization
         NativeSequenceStorage doInt(int[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.INT);
+            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ElementType.INT);
         }
 
         @Specialization
         NativeSequenceStorage doLong(long[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.LONG);
+            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ElementType.LONG);
         }
 
         @Specialization
         NativeSequenceStorage doDouble(double[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.DOUBLE);
+            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ElementType.DOUBLE);
         }
 
         @Specialization
         NativeSequenceStorage doObject(Object[] arr,
                         @Cached("create(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE)") PCallBinaryCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.execute(getContext().getEnv().asGuestValue(arr), arr.length), arr.length, arr.length, ElementType.OBJECT);
+            return new NativeSequenceStorage(callNode.execute(wrap(arr), arr.length), arr.length, arr.length, ElementType.OBJECT);
+        }
+
+        private Object wrap(Object arr) {
+            return getContext().getEnv().asGuestValue(arr);
         }
 
         public static StorageToNativeNode create() {
             return StorageToNativeNodeGen.create();
-        }
-    }
-
-    public static class PCallBinaryCapiFunction extends PBaseNode {
-
-        @Child private Node callNode;
-
-        private final String name;
-        private final BranchProfile profile = BranchProfile.create();
-
-        @CompilationFinal TruffleObject receiver;
-
-        public PCallBinaryCapiFunction(String name) {
-            this.name = name;
-        }
-
-        public Object execute(Object arg0, Object arg1) {
-            try {
-                return ForeignAccess.sendExecute(getCallNode(), getFunction(), arg0, arg1);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                profile.enter();
-                throw e.raise();
-            }
-        }
-
-        private Node getCallNode() {
-            if (callNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callNode = insert(Message.EXECUTE.createNode());
-            }
-            return callNode;
-        }
-
-        private TruffleObject getFunction() {
-            if (receiver == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                receiver = (TruffleObject) getContext().getEnv().importSymbol(name);
-            }
-            return receiver;
-        }
-
-        public static PCallBinaryCapiFunction create(String name) {
-            return new PCallBinaryCapiFunction(name);
         }
     }
 

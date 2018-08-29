@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeData;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeState;
@@ -52,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR
 import com.oracle.graal.python.builtins.objects.cext.PythonObjectNativeWrapperMR.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -180,7 +180,7 @@ public class PyUnicodeWrapperMR {
         }
     }
 
-    abstract static class PyUnicodeToNativeNode extends PBaseNode {
+    abstract static class PyUnicodeToNativeNode extends CExtBaseNode {
         @CompilationFinal private TruffleObject derefHandleIntrinsic;
         @Child private PCallNativeNode callNativeUnary;
         @Child private PCallNativeNode callNativeBinary;
@@ -196,7 +196,7 @@ public class PyUnicodeWrapperMR {
         private TruffleObject getPyObjectHandle_ForJavaType() {
             if (derefHandleIntrinsic == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                derefHandleIntrinsic = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_DEREF_HANDLE);
+                derefHandleIntrinsic = importCAPISymbol(NativeCAPISymbols.FUN_DEREF_HANDLE);
             }
             return derefHandleIntrinsic;
         }

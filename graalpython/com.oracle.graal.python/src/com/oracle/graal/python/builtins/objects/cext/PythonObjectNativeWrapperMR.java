@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
@@ -892,7 +893,7 @@ public class PythonObjectNativeWrapperMR {
 
     }
 
-    abstract static class ToPyObjectNode extends PBaseNode {
+    abstract static class ToPyObjectNode extends CExtBaseNode {
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaType;
         @CompilationFinal private TruffleObject PyNoneHandle;
@@ -931,7 +932,7 @@ public class PythonObjectNativeWrapperMR {
         private TruffleObject getPyObjectHandle_ForJavaType() {
             if (PyObjectHandle_FromJavaType == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaType = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE);
+                PyObjectHandle_FromJavaType = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_TYPE);
             }
             return PyObjectHandle_FromJavaType;
         }
@@ -939,7 +940,7 @@ public class PythonObjectNativeWrapperMR {
         private TruffleObject getPyObjectHandle_ForJavaObject() {
             if (PyObjectHandle_FromJavaObject == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
+                PyObjectHandle_FromJavaObject = importCAPISymbol(NativeCAPISymbols.FUN_PY_OBJECT_HANDLE_FOR_JAVA_OBJECT);
             }
             return PyObjectHandle_FromJavaObject;
         }
