@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
@@ -1983,17 +1984,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CreateSliceNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(second)")
         Object sliceStop(PythonClass cls, int first, PNone second, PNone third) {
-            return factory().createSlice(PSlice.MISSING_INDEX, first, PSlice.MISSING_INDEX);
+            return factory().createSlice(MISSING_INDEX, first, MISSING_INDEX);
         }
 
         @Specialization(guards = "isNone(second)")
         Object sliceStart(PythonClass cls, int first, PNone second, PNone third) {
-            return factory().createSlice(first, PSlice.MISSING_INDEX, PSlice.MISSING_INDEX);
+            return factory().createSlice(first, MISSING_INDEX, MISSING_INDEX);
         }
 
         @Specialization(guards = "isNoValue(third)")
         Object slice(PythonClass cls, int first, int second, PNone third) {
-            return factory().createSlice(first, second, PSlice.MISSING_INDEX);
+            return factory().createSlice(first, second, MISSING_INDEX);
         }
 
         @Specialization
