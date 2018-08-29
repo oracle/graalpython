@@ -231,7 +231,7 @@ void* get_ob_type(PyObject* obj) {
         return truffle_managed_from_handle(type);
     } else {
         // we have stored a handle to the Java class in ob_refcnt
-        void* handle = (void*)type->ob_refcnt;
+        void* handle = (void*)((PyObject*)type)->ob_refcnt;
         if (truffle_is_handle_to_managed(handle)) {
             return truffle_managed_from_handle(handle);
         } else {
