@@ -86,13 +86,14 @@ public class TupleBuiltins extends PythonBuiltins {
         private final static String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Child private SequenceStorageNodes.LenNode lenNode;
 
         public abstract int execute(Object arg1, Object arg2, Object arg3, Object arg4);
 
-        private static int correctIndex(PTuple tuple, long index) {
+        private int correctIndex(PTuple tuple, long index) {
             long resultIndex = index;
             if (resultIndex < 0) {
-                resultIndex += tuple.len();
+                resultIndex += getLength(tuple);
                 if (resultIndex < 0) {
                     return 0;
                 }
@@ -101,10 +102,10 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static int correctIndex(PTuple tuple, PInt index) {
+        private int correctIndex(PTuple tuple, PInt index) {
             BigInteger value = index.getValue();
             if (value.compareTo(BigInteger.ZERO) < 0) {
-                BigInteger resultAdd = value.add(BigInteger.valueOf(tuple.len()));
+                BigInteger resultAdd = value.add(BigInteger.valueOf(getLength(tuple)));
                 if (resultAdd.compareTo(BigInteger.ZERO) < 0) {
                     return 0;
                 }
@@ -136,13 +137,13 @@ public class TupleBuiltins extends PythonBuiltins {
         @Specialization
         int index(PTuple self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, 0, self.len(), eqNode);
+            return findIndex(self, value, 0, getLength(self), eqNode);
         }
 
         @Specialization
         int index(PTuple self, Object value, long start, @SuppressWarnings("unused") PNone end,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, correctIndex(self, start), self.len(), eqNode);
+            return findIndex(self, value, correctIndex(self, start), getLength(self), eqNode);
         }
 
         @Specialization
@@ -154,7 +155,7 @@ public class TupleBuiltins extends PythonBuiltins {
         @Specialization
         int indexPI(PTuple self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, correctIndex(self, start), self.len(), eqNode);
+            return findIndex(self, value, correctIndex(self, start), getLength(self), eqNode);
         }
 
         @Specialization
@@ -228,6 +229,14 @@ public class TupleBuiltins extends PythonBuiltins {
             return indexNode.execute(self, value, startValue, endValue);
         }
 
+        protected int getLength(PTuple t) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(t.getSequenceStorage());
+        }
+
         protected IndexNode createIndexNode() {
             return IndexNodeFactory.create(new PNode[0]);
         }
@@ -257,15 +266,10 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__LEN__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization(guards = "cachedClass == self.getSequenceStorage().getClass()", limit = "2")
+        @Specialization
         public int len(PTuple self,
-                        @Cached("self.getSequenceStorage().getClass()") Class<? extends SequenceStorage> cachedClass) {
-            return CompilerDirectives.castExact(self.getSequenceStorage(), cachedClass).length();
-        }
-
-        @Specialization(replaces = "len")
-        public int lenGeneric(PTuple self) {
-            return self.len();
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+            return lenNode.execute(self.getSequenceStorage());
         }
     }
 
@@ -506,8 +510,9 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean doPTuple(PTuple self) {
-            return self.len() != 0;
+        boolean doPTuple(PTuple self,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+            return lenNode.execute(self.getSequenceStorage()) != 0;
         }
 
         @Fallback

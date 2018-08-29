@@ -67,11 +67,6 @@ public final class PList extends PSequence {
         return buf.toString();
     }
 
-    @Override
-    public final int len() {
-        return store.length();
-    }
-
     public final void reverse() {
         store.reverse();
     }

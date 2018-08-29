@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFac
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.ToNativeStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.WriteArrayItemNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -162,8 +163,9 @@ public class PySequenceArrayWrapperMR {
          */
         @Specialization
         long doBytesI64(PBytes bytes, long byteIdx,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-            int len = bytes.len();
+            int len = lenNode.execute(bytes.getSequenceStorage());
             // simulate sentinel value
             if (byteIdx == len) {
                 return 0L;
@@ -376,6 +378,7 @@ public class PySequenceArrayWrapperMR {
     abstract static class GetTypeIDNode extends CExtBaseNode {
 
         @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create();
+        @Child private SequenceNodes.LenNode lenNode;
 
         @CompilationFinal TruffleObject funGetByteArrayTypeID;
         @CompilationFinal TruffleObject funGetPtrArrayTypeID;
@@ -400,22 +403,22 @@ public class PySequenceArrayWrapperMR {
 
         @Specialization
         Object doTuple(PTuple tuple) {
-            return callGetPtrArrayTypeID(tuple.len());
+            return callGetPtrArrayTypeID(getLength(tuple));
         }
 
         @Specialization
         Object doList(PList list) {
-            return callGetPtrArrayTypeID(list.len());
+            return callGetPtrArrayTypeID(getLength(list));
         }
 
         @Specialization
         Object doBytes(PBytes bytes) {
-            return callGetByteArrayTypeID(bytes.len());
+            return callGetByteArrayTypeID(getLength(bytes));
         }
 
         @Specialization
         Object doByteArray(PByteArray bytes) {
-            return callGetByteArrayTypeID(bytes.len());
+            return callGetByteArrayTypeID(getLength(bytes));
         }
 
         @Specialization(guards = {"!isTuple(object)", "!isList(object)"})
@@ -443,6 +446,14 @@ public class PySequenceArrayWrapperMR {
 
         protected boolean isList(Object object) {
             return object instanceof PList;
+        }
+
+        private int getLength(PSequence s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
         }
 
         public static GetTypeIDNode create() {

@@ -62,11 +62,6 @@ public final class PBytes extends PImmutableSequence implements PIBytesLike {
         this.store = store;
     }
 
-    @Override
-    public int len() {
-        return store.length();
-    }
-
     public Object getItemNormalized(int index) {
         return store.getItemNormalized(index);
     }

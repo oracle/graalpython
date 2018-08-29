@@ -31,7 +31,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-public abstract class PSequence extends PythonBuiltinObject implements PLenSupplier {
+public abstract class PSequence extends PythonBuiltinObject {
 
     public PSequence(PythonClass cls) {
         super(cls);

@@ -62,11 +62,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     }
 
     @Override
-    public int len() {
-        return store.length();
-    }
-
-    @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         if (store instanceof ByteSequenceStorage) {
@@ -75,23 +70,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         } else {
             return String.format("bytearray(%s)", store);
         }
-    }
-
-    @Override
-    public final boolean equals(Object other) {
-        if (!(other instanceof PSequence)) {
-            return false;
-        } else {
-            return equals((PSequence) other);
-        }
-    }
-
-    public final boolean equals(PSequence other) {
-        if (len() == 0 && other.len() == 0) {
-            return true;
-        }
-        SequenceStorage otherStore = other.getSequenceStorage();
-        return store.equals(otherStore);
     }
 
     @Override

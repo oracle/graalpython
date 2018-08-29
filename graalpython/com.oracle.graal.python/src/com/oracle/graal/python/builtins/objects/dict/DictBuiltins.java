@@ -381,8 +381,9 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(PDict self) {
-            return self.size();
+        public int len(PDict self,
+                        @Cached("create()") HashingStorageNodes.LenNode lenNode) {
+            return lenNode.execute(self.getDictStorage());
         }
     }
 

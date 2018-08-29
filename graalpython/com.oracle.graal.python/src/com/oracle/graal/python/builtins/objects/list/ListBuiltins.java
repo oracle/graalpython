@@ -295,39 +295,41 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class ListInsertNode extends PythonBuiltinNode {
         protected static final String ERROR_MSG = "'%p' object cannot be interpreted as an integer";
 
+        @Child private SequenceStorageNodes.LenNode lenNode;
+
         public abstract PNone execute(PList list, Object index, Object value);
 
         @Specialization(guards = "isIntStorage(list)")
         public PNone insertIntInt(PList list, int index, int value) {
             IntSequenceStorage target = (IntSequenceStorage) list.getSequenceStorage();
-            target.insertIntItem(normalizeIndex(index, list.len()), value);
+            target.insertIntItem(normalizeIndex(index, target.length()), value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isLongStorage(list)")
         public PNone insertLongLong(PList list, int index, int value) {
             LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
-            target.insertLongItem(normalizeIndex(index, list.len()), value);
+            target.insertLongItem(normalizeIndex(index, target.length()), value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isLongStorage(list)")
         public PNone insertLongLong(PList list, int index, long value) {
             LongSequenceStorage target = (LongSequenceStorage) list.getSequenceStorage();
-            target.insertLongItem(normalizeIndex(index, list.len()), value);
+            target.insertLongItem(normalizeIndex(index, target.length()), value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isDoubleStorage(list)")
         public PNone insertDoubleDouble(PList list, int index, double value) {
             DoubleSequenceStorage target = (DoubleSequenceStorage) list.getSequenceStorage();
-            target.insertDoubleItem(normalizeIndex(index, list.len()), value);
+            target.insertDoubleItem(normalizeIndex(index, target.length()), value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNotSpecialCase(list, value)")
         public PNone insert(PList list, int index, Object value) {
-            list.insert(normalizeIndex(index, list.len()), value);
+            list.insert(normalizeIndex(index, getLength(list.getSequenceStorage())), value);
             return PNone.NONE;
         }
 
@@ -335,7 +337,7 @@ public class ListBuiltins extends PythonBuiltins {
         public PNone insertLongIndex(PList list, long index, Object value,
                         @Cached("createListInsertNode()") ListInsertNode insertNode) {
             int where = index < Integer.MIN_VALUE ? 0 : index > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) index;
-            where = normalizeIndex(where, list.len());
+            where = normalizeIndex(where, getLength(list.getSequenceStorage()));
             return insertNode.execute(list, where, value);
         }
 
@@ -343,7 +345,7 @@ public class ListBuiltins extends PythonBuiltins {
         public PNone insertPIntIndex(PList list, PInt index, Object value,
                         @Cached("createListInsertNode()") ListInsertNode insertNode) {
             int where = normalizePIntForIndex(index);
-            where = normalizeIndex(where, list.len());
+            where = normalizeIndex(where, getLength(list.getSequenceStorage()));
             return insertNode.execute(list, where, value);
         }
 
@@ -394,6 +396,14 @@ public class ListBuiltins extends PythonBuiltins {
 
         protected ListInsertNode createListInsertNode() {
             return ListBuiltinsFactory.ListInsertNodeFactory.create(new PNode[0]);
+        }
+
+        private int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
         }
 
     }
@@ -631,10 +641,12 @@ public class ListBuiltins extends PythonBuiltins {
         @Specialization
         long count(PList self, Object value,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
             long count = 0;
-            for (int i = 0; i < self.len(); i++) {
-                Object object = getItemNode.execute(self.getSequenceStorage(), i);
+            SequenceStorage s = self.getSequenceStorage();
+            for (int i = 0; i < lenNode.execute(s); i++) {
+                Object object = getItemNode.execute(s, i);
                 if (eqNode.executeBool(object, value)) {
                     count++;
                 }
@@ -651,9 +663,7 @@ public class ListBuiltins extends PythonBuiltins {
 
         @Specialization
         public PNone clear(PList list) {
-            if (list.len() > 0) {
-                list.setSequenceStorage(new EmptySequenceStorage());
-            }
+            list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
             return PNone.NONE;
         }
 
@@ -916,8 +926,9 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doPList(PList operand) {
-            return operand.len() != 0;
+        boolean doPList(PList operand,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+            return lenNode.execute(operand.getSequenceStorage()) != 0;
         }
 
         @Fallback

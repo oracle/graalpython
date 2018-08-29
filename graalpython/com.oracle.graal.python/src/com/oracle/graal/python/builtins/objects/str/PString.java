@@ -46,7 +46,6 @@ public final class PString extends PImmutableSequence {
         return value;
     }
 
-    @Override
     public int len() {
         return value.length();
     }

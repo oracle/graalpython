@@ -105,7 +105,6 @@ public final class PRange extends PImmutableSequence {
         return index * step + start;
     }
 
-    @Override
     public int len() {
         return length;
     }

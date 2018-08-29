@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
@@ -52,6 +54,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeChildren({@NodeChild(value = "derived", type = PNode.class), @NodeChild(value = "cls", type = PNode.class)})
 public abstract class AbstractObjectIsSubclassNode extends PNode {
     @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
+    @Child private SequenceStorageNodes.LenNode lenNode;
 
     public static AbstractObjectIsSubclassNode create() {
         return AbstractObjectIsSubclassNodeGen.create(null, null);
@@ -75,7 +78,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNode {
                     @Cached("create()") AbstractObjectIsSubclassNode isSubclassNode) {
         // TODO: Investigate adding @ExplodeLoop when the bases is constant in length (guard)
         PTuple bases = getBasesNode.execute(cachedDerived);
-        if (bases == null || bases.isEmpty()) {
+        if (bases == null || isEmpty(bases)) {
             return false;
         }
 
@@ -95,7 +98,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNode {
         }
 
         PTuple bases = getBasesNode.execute(derived);
-        if (bases == null || bases.isEmpty()) {
+        if (bases == null || isEmpty(bases)) {
             return false;
         }
 
@@ -105,5 +108,13 @@ public abstract class AbstractObjectIsSubclassNode extends PNode {
             }
         }
         return false;
+    }
+
+    private boolean isEmpty(PTuple bases) {
+        if (lenNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lenNode = insert(SequenceStorageNodes.LenNode.create());
+        }
+        return lenNode.execute(bases.getSequenceStorage()) == 0;
     }
 }

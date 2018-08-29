@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -402,10 +403,11 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(UNICODE_WSTR_LENGTH, key)")
         long doWstrLength(PString object, @SuppressWarnings("unused") String key,
-                        @Cached("create(0)") UnicodeAsWideCharNode asWideCharNode) {
+                        @Cached("create(0)") UnicodeAsWideCharNode asWideCharNode,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
             long sizeofWchar = sizeofWchar();
             PBytes result = asWideCharNode.execute(object, sizeofWchar, object.len());
-            return result.len() / sizeofWchar;
+            return lenNode.execute(result.getSequenceStorage()) / sizeofWchar;
         }
 
         @Specialization(guards = "eq(UNICODE_LENGTH, key)")

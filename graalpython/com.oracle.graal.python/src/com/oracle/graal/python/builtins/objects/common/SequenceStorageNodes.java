@@ -63,7 +63,6 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.L
 
 import java.util.Arrays;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
