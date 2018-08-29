@@ -125,7 +125,6 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -1984,17 +1983,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CreateSliceNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(second)")
         Object sliceStop(PythonClass cls, int first, PNone second, PNone third) {
-            return factory().createSlice(SequenceUtil.MISSING_INDEX, first, SequenceUtil.MISSING_INDEX);
+            return factory().createSlice(PSlice.MISSING_INDEX, first, PSlice.MISSING_INDEX);
         }
 
         @Specialization(guards = "isNone(second)")
         Object sliceStart(PythonClass cls, int first, PNone second, PNone third) {
-            return factory().createSlice(first, SequenceUtil.MISSING_INDEX, SequenceUtil.MISSING_INDEX);
+            return factory().createSlice(first, PSlice.MISSING_INDEX, PSlice.MISSING_INDEX);
         }
 
         @Specialization(guards = "isNoValue(third)")
         Object slice(PythonClass cls, int first, int second, PNone third) {
-            return factory().createSlice(first, second, SequenceUtil.MISSING_INDEX);
+            return factory().createSlice(first, second, PSlice.MISSING_INDEX);
         }
 
         @Specialization

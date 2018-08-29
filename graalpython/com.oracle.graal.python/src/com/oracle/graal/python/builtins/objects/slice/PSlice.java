@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.slice;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.runtime.sequence.SequenceUtil.MISSING_INDEX;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -36,6 +35,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
 public class PSlice extends PythonBuiltinObject {
+
+    public static final int MISSING_INDEX = Integer.MIN_VALUE;
 
     protected int start;
     protected int stop;
