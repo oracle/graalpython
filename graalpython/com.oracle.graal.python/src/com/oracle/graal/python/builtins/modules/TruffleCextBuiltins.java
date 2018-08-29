@@ -790,6 +790,11 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "targetTypeSize == 8")
+        long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") int targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
+            return obj;
+        }
+
+        @Specialization(guards = "targetTypeSize == 8")
         long doLong8(long obj, @SuppressWarnings("unused") int signed, @SuppressWarnings("unused") long targetTypeSize, @SuppressWarnings("unused") String targetTypeName) {
             return obj;
         }
