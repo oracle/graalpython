@@ -110,11 +110,6 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public int index(Object value) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
     public SequenceStorage copy() {
         throw new AssertionError("should not reach");
     }

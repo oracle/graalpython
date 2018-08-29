@@ -75,15 +75,4 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
     public void minimizeCapacity() {
         capacity = length;
     }
-
-    @Override
-    public int index(Object value) {
-        for (int i = 0; i < length; i++) {
-            if (getItemNormalized(i).equals(value)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
 }

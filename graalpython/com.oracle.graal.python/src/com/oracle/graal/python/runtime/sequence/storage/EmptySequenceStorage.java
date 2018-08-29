@@ -84,11 +84,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public int index(Object value) {
-        return -1;
-    }
-
-    @Override
     public SequenceStorage copy() {
         return this;
     }

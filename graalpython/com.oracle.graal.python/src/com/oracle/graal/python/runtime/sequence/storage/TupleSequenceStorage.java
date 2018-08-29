@@ -185,16 +185,6 @@ public final class TupleSequenceStorage extends TypedSequenceStorage {
         return pop;
     }
 
-    @Override
-    public int index(Object value) {
-        if (value instanceof PTuple) {
-            return indexOfPTuple((PTuple) value);
-        } else {
-            return super.index(value);
-        }
-
-    }
-
     public int indexOfPTuple(PTuple value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {

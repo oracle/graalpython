@@ -190,19 +190,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return pop;
     }
 
-    @Override
-    public int index(Object val) {
-        Object value = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        value = (val instanceof BigInteger) ? ((BigInteger) val).longValue() : value;
-
-        if (value instanceof Long) {
-            return indexOfLong((long) value);
-        } else {
-            return super.index(value);
-        }
-
-    }
-
     public int indexOfLong(long value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {

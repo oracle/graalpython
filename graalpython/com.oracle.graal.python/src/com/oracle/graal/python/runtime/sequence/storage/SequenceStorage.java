@@ -72,8 +72,6 @@ public abstract class SequenceStorage {
 
     public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int length);
 
-    public abstract int index(Object value);
-
     public abstract void reverse();
 
     public abstract boolean equals(SequenceStorage other);

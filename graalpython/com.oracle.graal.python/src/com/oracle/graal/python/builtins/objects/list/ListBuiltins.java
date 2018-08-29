@@ -484,14 +484,15 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class ListIndexNode extends PythonBuiltinNode {
         protected final static String ERROR_TYPE_MESSAGE = "slice indices must be integers or have an __index__ method";
 
-        @Child private SequenceStorageNodes.GetItemNode getItemNode;
+        @Child private SequenceStorageNodes.ItemIndexNode itemIndexNode;
+        @Child private SequenceStorageNodes.LenNode lenNode;
 
         public abstract int execute(Object arg1, Object arg2, Object arg3, Object arg4);
 
-        private static int correctIndex(PList list, long index) {
+        private int correctIndex(SequenceStorage s, long index) {
             long resultIndex = index;
             if (resultIndex < 0) {
-                resultIndex += list.len();
+                resultIndex += getLength(s);
                 if (resultIndex < 0) {
                     return 0;
                 }
@@ -499,11 +500,11 @@ public class ListBuiltins extends PythonBuiltins {
             return (int) Math.min(resultIndex, Integer.MAX_VALUE);
         }
 
-        @TruffleBoundary
-        private static int correctIndex(PList list, PInt index) {
+        @TruffleBoundary(transferToInterpreterOnException = false)
+        private int correctIndex(SequenceStorage s, PInt index) {
             BigInteger value = index.getValue();
             if (value.compareTo(BigInteger.ZERO) < 0) {
-                BigInteger resultAdd = value.add(BigInteger.valueOf(list.len()));
+                BigInteger resultAdd = value.add(BigInteger.valueOf(getLength(s)));
                 if (resultAdd.compareTo(BigInteger.ZERO) < 0) {
                     return 0;
                 }
@@ -512,56 +513,54 @@ public class ListBuiltins extends PythonBuiltins {
             return value.min(BigInteger.valueOf(Integer.MAX_VALUE)).intValue();
         }
 
-        private int findIndex(PList list, Object value, int start, int end, BinaryComparisonNode eqNode) {
-            for (int i = start; i < end && i < list.len(); i++) {
-                Object object = getGetItemNode().execute(list.getSequenceStorage(), i);
-                if (eqNode.executeBool(object, value)) {
-                    return i;
-                }
+        private int findIndex(SequenceStorage s, Object value, int start, int end) {
+            int idx = getItemIndexNode().execute(s, value, start, end);
+            if (idx != -1) {
+                return idx;
             }
             throw raise(PythonErrorType.ValueError, "x not in list");
         }
 
         @Specialization
-        int index(PList self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, 0, self.len(), eqNode);
+        int index(PList self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
+            SequenceStorage s = self.getSequenceStorage();
+            return findIndex(s, value, 0, getLength(s));
         }
 
         @Specialization
-        int index(PList self, Object value, long start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, correctIndex(self, start), self.len(), eqNode);
+        int index(PList self, Object value, long start, @SuppressWarnings("unused") PNone end) {
+            SequenceStorage s = self.getSequenceStorage();
+            return findIndex(s, value, correctIndex(s, start), getLength(s));
         }
 
         @Specialization
-        int index(PList self, Object value, long start, long end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        int index(PList self, Object value, long start, long end) {
+            SequenceStorage s = self.getSequenceStorage();
+            return findIndex(s, value, correctIndex(s, start), correctIndex(s, end));
         }
 
         @Specialization
-        int indexPI(PList self, Object value, PInt start, @SuppressWarnings("unused") PNone end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, correctIndex(self, start), self.len(), eqNode);
+        int indexPI(PList self, Object value, PInt start, @SuppressWarnings("unused") PNone end) {
+            SequenceStorage s = self.getSequenceStorage();
+            return findIndex(s, value, correctIndex(s, start), getLength(s));
         }
 
         @Specialization
-        int indexPIPI(PList self, Object value, PInt start, PInt end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        int indexPIPI(PList self, Object value, PInt start, PInt end) {
+            SequenceStorage s = self.getSequenceStorage();
+            return findIndex(s, value, correctIndex(s, start), correctIndex(s, end));
         }
 
         @Specialization
-        int indexLPI(PList self, Object value, long start, PInt end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        int indexLPI(PList self, Object value, long start, PInt end) {
+            SequenceStorage s = self.getSequenceStorage();
+            return findIndex(s, value, correctIndex(s, start), correctIndex(s, end));
         }
 
         @Specialization
-        int indexPIL(PList self, Object value, PInt start, Long end,
-                        @Cached("create(__EQ__, __EQ__, __EQ__)") BinaryComparisonNode eqNode) {
-            return findIndex(self, value, correctIndex(self, start), correctIndex(self, end), eqNode);
+        int indexPIL(PList self, Object value, PInt start, Long end) {
+            SequenceStorage s = self.getSequenceStorage();
+            return findIndex(s, value, correctIndex(s, start), correctIndex(s, end));
         }
 
         @Specialization
@@ -606,13 +605,22 @@ public class ListBuiltins extends PythonBuiltins {
             return ListBuiltinsFactory.ListIndexNodeFactory.create(new PNode[0]);
         }
 
-        private SequenceStorageNodes.GetItemNode getGetItemNode() {
-            if (getItemNode == null) {
+        private SequenceStorageNodes.ItemIndexNode getItemIndexNode() {
+            if (itemIndexNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getItemNode = insert(SequenceStorageNodes.GetItemNode.create());
+                itemIndexNode = insert(SequenceStorageNodes.ItemIndexNode.create());
             }
-            return getItemNode;
+            return itemIndexNode;
         }
+
+        private int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
+        }
+
     }
 
     // list.count(x)

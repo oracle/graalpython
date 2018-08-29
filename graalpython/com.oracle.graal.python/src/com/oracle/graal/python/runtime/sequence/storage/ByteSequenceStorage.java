@@ -259,18 +259,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return pop;
     }
 
-    @Override
-    public int index(Object value) {
-        if (value instanceof Byte) {
-            return indexOfByte((byte) value);
-        } else if (value instanceof Integer) {
-            return indexOfInt((int) value);
-        } else {
-            return super.index(value);
-        }
-
-    }
-
     public int indexOfByte(byte value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {

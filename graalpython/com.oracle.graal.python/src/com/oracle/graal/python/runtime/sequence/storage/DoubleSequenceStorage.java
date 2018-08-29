@@ -185,16 +185,6 @@ public final class DoubleSequenceStorage extends TypedSequenceStorage {
         return pop;
     }
 
-    @Override
-    public int index(Object value) {
-        if (value instanceof Double) {
-            return indexOfDouble((double) value);
-        } else {
-            return super.index(value);
-        }
-
-    }
-
     public int indexOfDouble(double value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {

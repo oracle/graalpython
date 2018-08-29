@@ -185,16 +185,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return pop;
     }
 
-    @Override
-    public int index(Object value) {
-        if (value instanceof Integer) {
-            return indexOfInt((int) value);
-        } else {
-            return super.index(value);
-        }
-
-    }
-
     public int indexOfInt(int value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
