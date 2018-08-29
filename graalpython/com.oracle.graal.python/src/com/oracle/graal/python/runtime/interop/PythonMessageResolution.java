@@ -247,7 +247,7 @@ public class PythonMessageResolution {
 
         public abstract Object[] execute(Object[] arguments);
 
-        @Specialization(guards = "arguments.length == cachedLen", limit = "1")
+        @Specialization(guards = {"arguments.length == cachedLen", "cachedLen < 6"}, limit = "3")
         @ExplodeLoop
         Object[] cached(Object[] arguments,
                         @Cached("arguments.length") int cachedLen) {
