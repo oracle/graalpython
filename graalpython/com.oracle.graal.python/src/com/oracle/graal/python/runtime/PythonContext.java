@@ -50,8 +50,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleOptions;
 
 public class PythonContext {
 
@@ -74,7 +74,7 @@ public class PythonContext {
     private OutputStream out;
     private OutputStream err;
     private InputStream in;
-    @CompilationFinal private boolean capiWasLoaded = false;
+    @CompilationFinal private Object capiLibrary = null;
     private final static Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
     @CompilationFinal private HashingStorage.Equivalence slowPathEquivalence;
@@ -204,11 +204,15 @@ public class PythonContext {
     }
 
     public boolean capiWasLoaded() {
-        return this.capiWasLoaded;
+        return this.capiLibrary != null;
     }
 
-    public void setCapiWasLoaded() {
-        this.capiWasLoaded = true;
+    public Object getCapiLibrary() {
+        return this.capiLibrary;
+    }
+
+    public void setCapiWasLoaded(Object capiLibrary) {
+        this.capiLibrary = capiLibrary;
     }
 
     public HashingStorage.Equivalence getSlowPathEquivalence() {

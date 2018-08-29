@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PySequenceArrayWrapperMRFactory.GetTypeIDNodeGen;
@@ -284,7 +285,7 @@ public class PySequenceArrayWrapperMR {
         }
     }
 
-    abstract static class ToNativeArrayNode extends PBaseNode {
+    abstract static class ToNativeArrayNode extends CExtBaseNode {
         @CompilationFinal private TruffleObject PyObjectHandle_FromJavaObject;
         @Child private PCallNativeNode callNativeBinary;
         @Child private ToNativeStorageNode toNativeStorageNode;
@@ -312,7 +313,7 @@ public class PySequenceArrayWrapperMR {
         private TruffleObject getNativeHandleForArray() {
             if (PyObjectHandle_FromJavaObject == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                PyObjectHandle_FromJavaObject = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY);
+                PyObjectHandle_FromJavaObject = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_HANDLE_FOR_ARRAY);
             }
             return PyObjectHandle_FromJavaObject;
         }
@@ -372,7 +373,7 @@ public class PySequenceArrayWrapperMR {
     }
 
     @ImportStatic(SpecialMethodNames.class)
-    abstract static class GetTypeIDNode extends PBaseNode {
+    abstract static class GetTypeIDNode extends CExtBaseNode {
 
         @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create();
 
@@ -384,7 +385,7 @@ public class PySequenceArrayWrapperMR {
         private Object callGetByteArrayTypeID(long len) {
             if (funGetByteArrayTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                funGetByteArrayTypeID = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID);
+                funGetByteArrayTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID);
             }
             return callUnaryNode.execute(funGetByteArrayTypeID, new Object[]{len});
         }
@@ -392,7 +393,7 @@ public class PySequenceArrayWrapperMR {
         private Object callGetPtrArrayTypeID(long len) {
             if (funGetPtrArrayTypeID == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                funGetPtrArrayTypeID = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID);
+                funGetPtrArrayTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_PTR_ARRAY_TYPE_ID);
             }
             return callUnaryNode.execute(funGetPtrArrayTypeID, new Object[]{len});
         }

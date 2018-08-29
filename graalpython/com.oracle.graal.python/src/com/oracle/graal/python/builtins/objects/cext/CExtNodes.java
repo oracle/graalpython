@@ -78,7 +78,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -92,10 +91,12 @@ import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class CExtNodes {
 
@@ -105,30 +106,40 @@ public abstract class CExtNodes {
      * will call that subtype C function with two arguments, the C type object and an object
      * argument to fill in from.
      */
-    public static class SubtypeNew extends PBaseNode {
-        private final TruffleObject subtypeFunc;
+    public static class SubtypeNew extends CExtBaseNode {
         @Child private Node executeNode = Message.EXECUTE.createNode();
         @Child private ToSulongNode toSulongNode = ToSulongNode.create();
         @Child private ToJavaNode toJavaNode = ToJavaNode.create();
+
+        private final String functionName;
+
+        @CompilationFinal private TruffleObject subtypeFunc;
 
         /**
          * @param typenamePrefix the <code>typename</code> in <code>typename_subtype_new</code>
          */
         public SubtypeNew(String typenamePrefix) {
-            subtypeFunc = (TruffleObject) getContext().getEnv().importSymbol(typenamePrefix + "_subtype_new");
-            assert subtypeFunc != null;
+            functionName = typenamePrefix + "_subtype_new";
         }
 
         public Object execute(PythonNativeClass object, Object arg) {
             try {
-                return toJavaNode.execute(ForeignAccess.sendExecute(executeNode, subtypeFunc, toSulongNode.execute(object), arg));
+                return toJavaNode.execute(ForeignAccess.sendExecute(executeNode, getFunction(), toSulongNode.execute(object), arg));
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
                 throw new IllegalStateException("C subtype_new function failed", e);
             }
         }
+
+        private TruffleObject getFunction() {
+            if (subtypeFunc == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                subtypeFunc = importCAPISymbol(functionName);
+            }
+            return subtypeFunc;
+        }
     }
 
-    public static class FromNativeSubclassNode<T> extends PBaseNode {
+    public static class FromNativeSubclassNode<T> extends CExtBaseNode {
         private final PythonBuiltinClassType expectedType;
         private final String conversionFuncName;
         @CompilationFinal private TruffleObject conversionFunc;
@@ -157,7 +168,7 @@ public abstract class CExtNodes {
         private TruffleObject getConversionFunc() {
             if (conversionFunc == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                conversionFunc = (TruffleObject) getContext().getEnv().importSymbol(conversionFuncName);
+                conversionFunc = importCAPISymbol(conversionFuncName);
             }
             return conversionFunc;
         }
@@ -193,9 +204,24 @@ public abstract class CExtNodes {
 
     @ImportStatic(PGuards.class)
     abstract static class CExtBaseNode extends PBaseNode {
+        @Child private Node readSymbolNode;
 
         protected static boolean isNativeWrapper(Object obj) {
             return obj instanceof PythonNativeWrapper;
+        }
+
+        protected TruffleObject importCAPISymbol(String name) {
+            TruffleObject capiLibrary = (TruffleObject) getContext().getCapiLibrary();
+            if (readSymbolNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readSymbolNode = insert(Message.READ.createNode());
+            }
+            try {
+                return (TruffleObject) ForeignAccess.sendRead(readSymbolNode, capiLibrary, name);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw e.raise();
+            }
         }
 
     }
@@ -407,7 +433,7 @@ public abstract class CExtNodes {
             }
             if (nativeToJavaFunction == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeToJavaFunction = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_NATIVE_TO_JAVA);
+                nativeToJavaFunction = importCAPISymbol(NativeCAPISymbols.FUN_NATIVE_TO_JAVA);
             }
             return toJavaNode.execute(callNativeNode.execute(nativeToJavaFunction, new Object[]{value}));
         }
@@ -453,7 +479,7 @@ public abstract class CExtNodes {
         TruffleObject getTruffleStringToCstr() {
             if (truffle_string_to_cstr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                truffle_string_to_cstr = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR);
+                truffle_string_to_cstr = importCAPISymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_STRING_TO_CSTR);
             }
             return truffle_string_to_cstr;
         }
@@ -461,7 +487,7 @@ public abstract class CExtNodes {
         TruffleObject getTruffleByteArrayToNative() {
             if (truffle_byte_array_to_native == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                truffle_byte_array_to_native = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE);
+                truffle_byte_array_to_native = importCAPISymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE);
             }
             return truffle_byte_array_to_native;
         }
@@ -483,7 +509,7 @@ public abstract class CExtNodes {
         TruffleObject getTruffleStringToCstr() {
             if (truffle_cstr_to_string == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                truffle_cstr_to_string = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING);
+                truffle_cstr_to_string = importCAPISymbol(NativeCAPISymbols.FUN_PY_TRUFFLE_CSTR_TO_STRING);
             }
             return truffle_cstr_to_string;
         }
@@ -541,7 +567,7 @@ public abstract class CExtNodes {
         TruffleObject getObTypeFunction() {
             if (func == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                func = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_GET_OB_TYPE);
+                func = importCAPISymbol(NativeCAPISymbols.FUN_GET_OB_TYPE);
             }
             return func;
         }
@@ -559,18 +585,13 @@ public abstract class CExtNodes {
             if (wcharSize < 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 try {
-                    wcharSize = (long) ForeignAccess.sendExecute(Message.EXECUTE.createNode(), getNativeFunction());
+                    wcharSize = (long) ForeignAccess.sendExecute(Message.EXECUTE.createNode(), importCAPISymbol(NativeCAPISymbols.FUN_WHCAR_SIZE));
                     assert wcharSize >= 0L;
                 } catch (InteropException e) {
                     throw e.raise();
                 }
             }
             return wcharSize;
-        }
-
-        TruffleObject getNativeFunction() {
-            CompilerAsserts.neverPartOfCompilation();
-            return (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_WHCAR_SIZE);
         }
 
         public static SizeofWCharNode create() {
@@ -591,10 +612,10 @@ public abstract class CExtNodes {
             }
         }
 
-        TruffleObject getNativeFunction() {
+        private TruffleObject getNativeFunction() {
             if (isFunc == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isFunc = (TruffleObject) getContext().getEnv().importSymbol(NativeCAPISymbols.FUN_PTR_COMPARE);
+                isFunc = importCAPISymbol(NativeCAPISymbols.FUN_PTR_COMPARE);
             }
             return isFunc;
         }
@@ -911,6 +932,49 @@ public abstract class CExtNodes {
 
         public static AsLong create() {
             return AsLongNodeGen.create();
+        }
+    }
+
+    public static class PCallBinaryCapiFunction extends CExtBaseNode {
+
+        @Child private Node callNode;
+
+        private final String name;
+        private final BranchProfile profile = BranchProfile.create();
+
+        @CompilationFinal TruffleObject receiver;
+
+        public PCallBinaryCapiFunction(String name) {
+            this.name = name;
+        }
+
+        public Object execute(Object arg0, Object arg1) {
+            try {
+                return ForeignAccess.sendExecute(getCallNode(), getFunction(), arg0, arg1);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                profile.enter();
+                throw e.raise();
+            }
+        }
+
+        private Node getCallNode() {
+            if (callNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callNode = insert(Message.EXECUTE.createNode());
+            }
+            return callNode;
+        }
+
+        private TruffleObject getFunction() {
+            if (receiver == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                receiver = importCAPISymbol(name);
+            }
+            return receiver;
+        }
+
+        public static PCallBinaryCapiFunction create(String name) {
+            return new PCallBinaryCapiFunction(name);
         }
     }
 

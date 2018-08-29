@@ -244,7 +244,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
                 CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
                 callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
-                ctxt.setCapiWasLoaded();
+                ctxt.setCapiWasLoaded(capi);
 
                 // initialization needs to be finished already but load memoryview implemenation
                 // immediately
