@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
@@ -932,7 +933,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         private long getTime(PTuple times, int index, String argname) {
-            if (lenNode.execute(times) <= index) {
+            if (getLength(times) <= index) {
                 throw tupleError(argname);
             }
             if (getItemNode == null) {
@@ -978,6 +979,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 getContext().getEnv().getTruffleFile(path).setLastAccessTime(FileTime.fromMillis(mtime));
             } catch (IOException e) {
             }
+        }
+
+        private int getLength(PTuple times) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceNodes.LenNode.create());
+            }
+            return lenNode.execute(times);
         }
     }
 
