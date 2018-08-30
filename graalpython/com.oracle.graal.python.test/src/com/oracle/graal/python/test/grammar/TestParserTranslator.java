@@ -181,14 +181,14 @@ public class TestParserTranslator {
     @Test
     public void parseLiteralList() {
         PList list = literalAs("[1, 2]", ListLiteralNode.class, PList.class);
-        assertEquals(2, list.len());
+        assertEquals(2, list.getSequenceStorage().length());
         assertEquals(1, list.getSequenceStorage().getItemNormalized(0));
         assertEquals(2, list.getSequenceStorage().getItemNormalized(1));
         list = literalAs("[1]", ListLiteralNode.class, PList.class);
-        assertEquals(1, list.len());
+        assertEquals(1, list.getSequenceStorage().length());
         assertEquals(1, list.getSequenceStorage().getItemNormalized(0));
         list = literalAs("[]", ListLiteralNode.class, PList.class);
-        assertEquals(0, list.len());
+        assertEquals(0, list.getSequenceStorage().length());
     }
 
     @Test
