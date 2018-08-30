@@ -740,7 +740,7 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
-        return getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8, ""))
+        return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8, "")))
     member.getter(member_getter)
     if to_java(canSet):
         setter = WriteMemberFunctions[memberType]

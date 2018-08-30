@@ -358,16 +358,16 @@ int ReadByteMember(PyObject* object, Py_ssize_t offset) {
     return ReadMember(object, offset, char);
 }
 
-PyObject* ReadUByteMember(PyObject* object, Py_ssize_t offset) {
-    return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned char));
+int ReadUByteMember(PyObject* object, Py_ssize_t offset) {
+    return ReadMember(object, offset, unsigned char);
 }
 
-PyObject* ReadUShortMember(PyObject* object, Py_ssize_t offset) {
-    return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned short));
+int ReadUShortMember(PyObject* object, Py_ssize_t offset) {
+    return ReadMember(object, offset, unsigned short);
 }
 
-PyObject* ReadUIntMember(PyObject* object, Py_ssize_t offset) {
-    return PyLong_FromUnsignedLong(ReadMember(object, offset, unsigned int));
+long ReadUIntMember(PyObject* object, Py_ssize_t offset) {
+    return ReadMember(object, offset, unsigned int);
 }
 
 PyObject* ReadULongMember(PyObject* object, Py_ssize_t offset) {
