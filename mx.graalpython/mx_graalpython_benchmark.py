@@ -30,6 +30,7 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
+import mx_subst
 from mx_benchmark import StdOutRule, VmRegistry, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
 from mx_graalpython_bench_param import BENCHMARKS, HARNESS_PATH
 
@@ -155,10 +156,14 @@ class GraalPythonVm(GuestVm):
             # '-Dgraal.TruffleCompilationExceptionsAreFatal=true'
         ]
 
-        vm_args = [
+        dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
+        if mx.suite("sulong", fatalIfMissing=False):
+            dists.append('SULONG')
+            if mx.suite("sulong-managed", fatalIfMissing=False):
+                dists.append('SULONG_MANAGED')
+
+        vm_args = mx.get_runtime_jvm_args(dists) + [
             "-Dpython.home=%s" % join(_graalpython_suite.dir, "graalpython"),
-            '-cp',
-            mx.classpath(["com.oracle.graal.python", "com.oracle.graal.python.shell"]),
             "com.oracle.graal.python.shell.GraalPythonMain"
         ]
 
@@ -265,8 +270,8 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     def successPatterns(self):
         return [
-            re.compile(r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
-            re.compile(r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
+            re.compile(r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
+            re.compile(r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
         ]
 
     def failurePatterns(self):
