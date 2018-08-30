@@ -2217,7 +2217,6 @@ public abstract class SequenceStorageNodes {
             return getItemNode;
         }
 
-        @TruffleBoundary(transferToInterpreterOnException = false)
         private static void repeat(Object dest, Object src, int len, int times) {
             for (int i = 0; i < times; i++) {
                 System.arraycopy(src, 0, dest, i * len, len);
