@@ -44,8 +44,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -103,69 +101,110 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return factory().createArray(cls, str.toCharArray());
         }
 
-        /**
-         * @param cls
-         */
-        @Specialization
-        PArray arrayWithSequenceInitializer(PythonClass cls, String typeCode, PSequence initializer,
+        protected boolean isIntArray(String typeCode) {
+            return typeCode.charAt(0) == 'i';
+        }
+
+        protected boolean isByteArray(String typeCode) {
+            return typeCode.charAt(0) == 'b';
+        }
+
+        protected boolean isDoubleArray(String typeCode) {
+            return typeCode.charAt(0) == 'd';
+        }
+
+        @Specialization(guards = "isByteArray(typeCode)")
+        PArray arrayByteInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            SequenceStorage store;
-            switch (typeCode.charAt(0)) {
-                case 'i':
-                    Object iter = getIterator.executeWith(initializer);
-                    int[] intArray = new int[initializer.len()];
-                    int i = 0;
+            Object iter = getIterator.executeWith(initializer);
+            int i = 0;
+            byte[] byteArray = new byte[initializer.len()];
 
-                    while (true) {
-                        Object nextValue;
-                        try {
-                            nextValue = next.execute(iter);
-                        } catch (PException e) {
-                            e.expectStopIteration(getCore(), errorProfile);
-                            break;
-                        }
-                        if (nextValue instanceof Integer) {
-                            intArray[i++] = (int) nextValue;
-                        } else {
-                            CompilerDirectives.transferToInterpreter();
-                            operandTypeError();
-                        }
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(iter);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+
+                if (nextValue instanceof Byte) {
+                    byteArray[i++] = (byte) nextValue;
+                }
+                if (nextValue instanceof Integer) {
+                    int intValue = (int) nextValue;
+                    if (0 <= intValue && intValue <= 255) {
+                        byteArray[i++] = (byte) intValue;
+                    } else {
+                        throw raise(ValueError, "signed char is greater than maximum");
                     }
-
-                    return factory().createArray(cls, intArray);
-                case 'd':
-                    store = initializer.getSequenceStorage();
-                    double[] doubleArray = new double[store.length()];
-
-                    for (i = 0; i < doubleArray.length; i++) {
-                        Object val = store.getItemNormalized(i);
-                        if (val instanceof Number) {
-                            doubleArray[i] = ((Number) val).doubleValue();
-                        } else {
-                            throw raise(ValueError, "double value expected");
-                        }
-                    }
-
-                    return factory().createArray(cls, doubleArray);
-                case 'b':
-                    store = initializer.getSequenceStorage();
-                    byte[] byteArray = new byte[store.length()];
-
-                    for (i = 0; i < byteArray.length; i++) {
-                        Object val = store.getItemNormalized(i);
-                        if (val instanceof Number) {
-                            byteArray[i] = ((Number) val).byteValue();
-                        } else {
-                            throw raise(ValueError, "byte value expected");
-                        }
-                    }
-
-                    return factory().createArray(cls, byteArray);
-                default:
-                    return null;
+                } else {
+                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
+                }
             }
+
+            return factory().createArray(cls, byteArray);
+        }
+
+        @Specialization(guards = "isIntArray(typeCode)")
+        PArray arrayIntInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+            Object iter = getIterator.executeWith(initializer);
+            int i = 0;
+
+            int[] intArray = new int[initializer.len()];
+
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(iter);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+                if (nextValue instanceof Integer) {
+                    intArray[i++] = (int) nextValue;
+                } else {
+                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
+                }
+            }
+
+            return factory().createArray(cls, intArray);
+        }
+
+        @Specialization(guards = "isDoubleArray(typeCode)")
+        PArray arrayDoubleInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+            Object iter = getIterator.executeWith(initializer);
+            int i = 0;
+
+            double[] doubleArray = new double[initializer.len()];
+
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(iter);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+                if (nextValue instanceof Integer) {
+                    doubleArray[i++] = ((Integer) nextValue).doubleValue();
+                } else if (nextValue instanceof Double) {
+                    doubleArray[i++] = (double) nextValue;
+                } else {
+                    throw raise(ValueError, "double value expected");
+                }
+            }
+
+            return factory().createArray(cls, doubleArray);
         }
 
         @Specialization
@@ -191,12 +230,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void typeError(String typeCode, Object initializer) {
-            throw raise(TypeError, "unsupported operand type: %s %s and 'array.array'", typeCode, initializer);
-        }
-
-        @TruffleBoundary
-        private static void operandTypeError() {
-            throw new RuntimeException("Unexpected argument type for array() ");
+            throw raise(TypeError, "cannot use a %p to initialize an array with typecode '%s'", initializer, typeCode);
         }
     }
 }
