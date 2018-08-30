@@ -81,7 +81,11 @@ public abstract class ReadLocalCellNode extends PNode implements ReadLocalNode {
         Object readFinal(@SuppressWarnings("unused") PCell cell,
                         @SuppressWarnings("unused") @Cached("cell") PCell cachedCell,
                         @Cached("cell.getRef()") Object ref) {
-            return ref;
+            if (ref != null) {
+                return ref;
+            } else {
+                throw raiseUnbound();
+            }
         }
 
         @Specialization(replaces = "readFinal")
