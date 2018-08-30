@@ -403,7 +403,7 @@ PyObject* ReadPySSizeT(PyObject* object, Py_ssize_t offset) {
 
 #undef ReadMember
 
-#define WriteMember(object, offset, value, T) *(T*)(((char*)object) + PyLong_AsSsize_t(offset)) = (T)(value)
+#define WriteMember(object, offset, value, T) *(T*)(((char*)object) + offset) = (T)(value)
 
 PyObject* WriteShortMember(PyObject* object, Py_ssize_t offset, PyObject* value) {
     WriteMember(object, offset, PyLong_AsLong(value), short);
