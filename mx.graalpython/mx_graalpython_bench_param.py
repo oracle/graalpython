@@ -88,6 +88,8 @@ MICRO_BENCHMARKS = {
     'special-add-int': ITER_15 + ['5'],
     'special-add': ITER_15 + ['5'],
     'special-len': ITER_10 + ['5'],
+    'member_access': ITER_10 + ['5'],
+    'c_member_access': ITER_25 + ['5'],
 }
 
 

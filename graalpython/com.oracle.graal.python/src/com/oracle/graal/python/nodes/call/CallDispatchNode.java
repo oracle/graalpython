@@ -79,7 +79,7 @@ public abstract class CallDispatchNode extends Node {
     protected Object callMethod(VirtualFrame frame, PMethod method, Object[] arguments, PKeyword[] keywords,
                     @Cached("method.getFunction().getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(method)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, method.getGlobals(), method.getClosure(), method.getArity(), arguments, keywords);
+        return invoke.execute(frame, method.getGlobals(), method.getClosure(), arguments, keywords);
     }
 
     @SuppressWarnings("unused")
@@ -95,7 +95,7 @@ public abstract class CallDispatchNode extends Node {
     protected Object callBuiltinMethod(VirtualFrame frame, PBuiltinMethod method, Object[] arguments, PKeyword[] keywords,
                     @Cached("method.getFunction().getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(method)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, method.getGlobals(), method.getClosure(), method.getArity(), arguments, keywords);
+        return invoke.execute(frame, method.getGlobals(), method.getClosure(), arguments, keywords);
     }
 
     @SuppressWarnings("unused")
@@ -111,7 +111,7 @@ public abstract class CallDispatchNode extends Node {
     protected Object callFunction(VirtualFrame frame, PFunction callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("callee.getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), callee.getArity(), arguments, keywords);
+        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments, keywords);
     }
 
     @SuppressWarnings("unused")
@@ -119,7 +119,7 @@ public abstract class CallDispatchNode extends Node {
     protected Object callFunction(VirtualFrame frame, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
                     @Cached("callee.getCallTarget()") RootCallTarget ct,
                     @Cached("createCtInvokeNode(callee)") CallTargetInvokeNode invoke) {
-        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), callee.getArity(), arguments, keywords);
+        return invoke.execute(frame, callee.getGlobals(), callee.getClosure(), arguments, keywords);
     }
 
     @Specialization(replaces = {"callMethod", "callBuiltinMethod", "callFunction"})

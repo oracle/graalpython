@@ -248,44 +248,6 @@ void* wrap_unsupported(void *fun, ...);
 int PyTruffle_Debug(void *arg);
 void* PyObjectHandle_ForJavaType(void* jobj);
 
-extern PyObject* ReadShortMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadIntMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadLongMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadFloatMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadDoubleMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadStringMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadObjectMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadCharMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadByteMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadUByteMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadUShortMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadUIntMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadULongMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadBoolMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadObjectExMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadLongLongMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadULongLongMember(PyObject* object, PyObject* offset);
-extern PyObject* ReadPySSizeT(PyObject* object, PyObject* offset);
-
-extern PyObject* WriteShortMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteIntMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteLongMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteFloatMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteDoubleMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteStringMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteObjectMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteCharMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteByteMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteUByteMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteUShortMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteUIntMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteULongMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteBoolMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteObjectExMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteLongLongMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WriteULongLongMember(PyObject* object, PyObject* offset, PyObject* value);
-extern PyObject* WritePySSizeT(PyObject* object, PyObject* offset, PyObject* value);
-
 extern PyObject marker_struct;
 #define ERROR_MARKER &marker_struct
 

@@ -734,16 +734,18 @@ def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
 
 
 def AddMember(primary, name, memberType, offset, canSet, doc):
+    # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
+    # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
     pclass = to_java(primary)
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
-        return getter(self, offset)
+        return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8, "")))
     member.getter(member_getter)
     if to_java(canSet):
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
-            setter(self, offset, value)
+            setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8, ""), to_sulong(value))
         member.setter(member_setter)
     member.__doc__ = doc
     object.__setattr__(pclass, name, member)
@@ -788,6 +790,7 @@ def PyObject_Repr(o):
     return repr(o)
 
 
+@may_raise(-1)
 def PyType_IsSubtype(a, b):
     return 1 if issubclass(a, b) else 0
 
@@ -1232,7 +1235,7 @@ def initialize_member_accessors():
                        "ReadBoolMember", "ReadObjectExMember",
                        "ReadObjectExMember", "ReadLongLongMember",
                        "ReadULongLongMember", "ReadPySSizeT"]:
-        ReadMemberFunctions.append(import_c_func(memberFunc))
+        ReadMemberFunctions.append(capi[memberFunc])
     ReadMemberFunctions.append(lambda x: None)
     for memberFunc in ["WriteShortMember", "WriteIntMember", "WriteLongMember",
                        "WriteFloatMember", "WriteDoubleMember",
@@ -1243,7 +1246,7 @@ def initialize_member_accessors():
                        "WriteBoolMember", "WriteObjectExMember",
                        "WriteObjectExMember", "WriteLongLongMember",
                        "WriteULongLongMember", "WritePySSizeT"]:
-        WriteMemberFunctions.append(import_c_func(memberFunc))
+        WriteMemberFunctions.append(capi[memberFunc])
     WriteMemberFunctions.append(lambda x,v: None)
 
 

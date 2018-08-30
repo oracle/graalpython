@@ -42,9 +42,34 @@ import os
 import sys
 from time import time
 
+
 _HRULE = '-'.join(['' for i in range(80)])
 ATTR_BENCHMARK = '__benchmark__'
 ATTR_PROCESS_ARGS = '__process_args__'
+
+
+def ccompile(name, code):
+    from importlib import invalidate_caches
+    from distutils.core import setup, Extension
+    __dir__ = __file__.rpartition("/")[0]
+    source_file = '%s/%s.c' % (__dir__, name)
+    with open(source_file, "w") as f:
+        f.write(code)
+    module = Extension(name, sources=[source_file])
+    args = ['--quiet', 'build', 'install_lib', '-f', '--install-dir=%s' % __dir__]
+    setup(
+        script_name='setup',
+        script_args=args,
+        name=name,
+        version='1.0',
+        description='',
+        ext_modules=[module]
+    )
+    # IMPORTANT:
+    # Invalidate caches after creating the native module.
+    # FileFinder caches directory contents, and the check for directory
+    # changes has whole-second precision, so it can miss quick updates.
+    invalidate_caches()
 
 
 def _as_int(value):
@@ -92,6 +117,7 @@ class BenchRunner(object):
             bench_module = type(sys)(name, bench_file)
             with _io.FileIO(bench_file, "r") as f:
                 bench_module.__file__ = bench_file
+                bench_module.ccompile = ccompile
                 exec(compile(f.readall(), bench_file, "exec"), bench_module.__dict__)
                 return bench_module
 
@@ -111,7 +137,7 @@ class BenchRunner(object):
         else:
             print("### %s, %s warmup iterations, %s bench iterations " % (self.bench_module.__name__, self.warmup, self.iterations))
 
-        # process the args if the processor function is defined 
+        # process the args if the processor function is defined
         args = self._call_attr(ATTR_PROCESS_ARGS, *self.bench_args)
         if args is None:
             # default args processor considers all args as ints
@@ -154,7 +180,7 @@ def run_benchmark(prog, args):
         elif arg == '-w':
             i += 1
             warmup = _as_int(args[i])
-        elif arg.startswith("--warmup"):    
+        elif arg.startswith("--warmup"):
             warmup = _as_int(arg.split("=")[1])
         elif bench_file is None:
             bench_file = arg
