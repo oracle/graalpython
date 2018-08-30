@@ -45,7 +45,9 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -80,6 +82,36 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             } else {
                 return hostValue;
             }
+        }
+    }
+
+    @Builtin(name = "is_function", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsFunctionNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object check(Object object) {
+            Env env = getContext().getEnv();
+            return env.isHostFunction(object);
+        }
+    }
+
+    @Builtin(name = "is_object", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object check(Object object) {
+            Env env = getContext().getEnv();
+            return env.isHostObject(object);
+        }
+    }
+
+    @Builtin(name = "is_symbol", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsSymbolNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object check(Object object) {
+            Env env = getContext().getEnv();
+            return env.isHostSymbol(object);
         }
     }
 }
