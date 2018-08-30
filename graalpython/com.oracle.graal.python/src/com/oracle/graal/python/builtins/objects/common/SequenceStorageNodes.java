@@ -159,6 +159,7 @@ public abstract class SequenceStorageNodes {
         protected static final int DEFAULT_CAPACITY = 8;
 
         protected static final int MAX_SEQUENCE_STORAGES = 12;
+        protected static final int MAX_ARRAY_STORAGES = 9;
 
         protected static boolean isByteStorage(NativeSequenceStorage store) {
             return store.getElementType() == ListStorageType.Byte;
@@ -590,7 +591,7 @@ public abstract class SequenceStorageNodes {
     }
 
     @ImportStatic(ListStorageType.class)
-    abstract static class GetItemSliceNode extends PBaseNode {
+    abstract static class GetItemSliceNode extends SequenceStorageBaseNode {
 
         @Child private Node readNode;
         @Child private Node executeNode;
@@ -603,7 +604,7 @@ public abstract class SequenceStorageNodes {
             return EmptySequenceStorage.INSTANCE;
         }
 
-        @Specialization(limit = "5", guards = {"storage.getClass() == cachedClass"})
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"storage.getClass() == cachedClass"})
         protected SequenceStorage doManagedStorage(BasicSequenceStorage storage, int start, int stop, int step, int length,
                         @Cached("storage.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             return cachedClass.cast(storage).getSliceInBound(start, stop, step, length);
@@ -975,7 +976,7 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(SequenceStorage s, SliceInfo info, SequenceStorage iterable);
 
-        @Specialization(limit = "9", guards = {"self.getClass() == cachedClass", "self.getClass() == sequence.getClass()", "replacesWholeSequence(cachedClass, self, info)"})
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"self.getClass() == cachedClass", "self.getClass() == sequence.getClass()", "replacesWholeSequence(cachedClass, self, info)"})
         void doWholeSequence(BasicSequenceStorage self, @SuppressWarnings("unused") SliceInfo info, BasicSequenceStorage sequence,
                         @Cached("self.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             BasicSequenceStorage selfProfiled = cachedClass.cast(self);
@@ -2154,7 +2155,7 @@ public abstract class SequenceStorageNodes {
             return storageTypeProfile.profile(s).createEmpty(0);
         }
 
-        @Specialization(limit = "2", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
         SequenceStorage doManaged(BasicSequenceStorage s, int times,
                         @Cached("create()") BranchProfile outOfMemProfile,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
@@ -2162,10 +2163,11 @@ public abstract class SequenceStorageNodes {
                 SequenceStorage profiled = cachedClass.cast(s);
                 Object arr1 = profiled.getInternalArrayObject();
                 int len = profiled.length();
-                SequenceStorage repeated = profiled.createEmpty(Math.multiplyExact(len, times));
+                int newLength = Math.multiplyExact(len, times);
+                SequenceStorage repeated = profiled.createEmpty(newLength);
                 Object destArr = repeated.getInternalArrayObject();
                 repeat(destArr, arr1, len, times);
-                repeated.setNewLength(len * times);
+                repeated.setNewLength(newLength);
                 return repeated;
             } catch (OutOfMemoryError | ArithmeticException e) {
                 outOfMemProfile.enter();
@@ -2173,20 +2175,19 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(replaces = "doManaged", limit = "2", guards = {"times > 0", "s.getClass() == cachedClass"})
+        @Specialization(replaces = "doManaged", guards = "times > 0")
         SequenceStorage doGeneric(SequenceStorage s, int times,
                         @Cached("create()") BranchProfile outOfMemProfile,
-                        @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
+                        @Cached("create()") LenNode lenNode) {
             try {
-                SequenceStorage profiled = cachedClass.cast(s);
-                int len = profiled.length();
+                int len = lenNode.execute(s);
 
                 ObjectSequenceStorage repeated = new ObjectSequenceStorage(Math.multiplyExact(len, times));
 
                 // TODO avoid temporary array
                 Object[] values = new Object[len];
                 for (int i = 0; i < len; i++) {
-                    values[i] = getGetItemNode().execute(profiled, i);
+                    values[i] = getGetItemNode().execute(s, i);
                 }
 
                 Object destArr = repeated.getInternalArrayObject();
@@ -2538,7 +2539,7 @@ public abstract class SequenceStorageNodes {
             return recursive.execute(newStorage, val);
         }
 
-        @Specialization(limit = "9", guards = "s.getClass() == cachedClass")
+        @Specialization(limit = "MAX_ARRAY_STORAGES", guards = "s.getClass() == cachedClass")
         SequenceStorage doManaged(BasicSequenceStorage s, Object val,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass,
                         @Cached("create()") SetItemScalarNode setItemNode) {
