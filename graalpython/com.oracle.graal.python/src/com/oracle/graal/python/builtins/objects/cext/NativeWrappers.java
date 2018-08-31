@@ -77,7 +77,7 @@ public abstract class NativeWrappers {
         }
 
         static boolean isInstance(TruffleObject o) {
-            return o instanceof PythonObjectNativeWrapper || o instanceof TruffleObjectNativeWrapper;
+            return o instanceof DynamicObjectNativeWrapper || o instanceof TruffleObjectNativeWrapper;
         }
 
         @Override
@@ -120,10 +120,6 @@ public abstract class NativeWrappers {
             return pythonObject;
         }
 
-        public static boolean isInstance(TruffleObject o) {
-            return o instanceof PythonObjectNativeWrapper;
-        }
-
         public static PythonObjectNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
             // important: native wrappers are cached
             PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
@@ -146,7 +142,7 @@ public abstract class NativeWrappers {
         }
     }
 
-    abstract static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
+    public abstract static class PrimitiveNativeWrapper extends DynamicObjectNativeWrapper {
 
         private PythonObject materializedObject;
 
