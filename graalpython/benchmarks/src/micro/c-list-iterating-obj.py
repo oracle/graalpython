@@ -1,5 +1,3 @@
-from . import ccompile
-
 code = """
 #include "Python.h"
 
@@ -144,7 +142,7 @@ PyInit_c_list_iterating_obj_module(void)
 
 
 ccompile("c_list_iterating_obj_module", code)
-from . import c_list_iterating_obj_module
+import c_list_iterating_obj_module
 
 def iterate_list(ll, num):
     idxObj = c_list_iterating_obj_module.NativeMagicMethods()
