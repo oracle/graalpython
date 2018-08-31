@@ -82,6 +82,7 @@ MICRO_BENCHMARKS = {
     'list-indexing': ITER_15 + ['1000000'],
     'list-iterating-explicit': ITER_25 + ['1000000'],
     'list-iterating': ITER_25 + ['1000000'],
+    'list-iterating-obj': ITER_15 + ['10000000'],
     'math-sqrt': ITER_15 + ['500000000'],
     'object-allocate': ITER_10 + ['5000'],
     'object-layout-change': ITER_15 + ['1000000'],
