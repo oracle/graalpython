@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.CheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.GetByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -150,6 +151,7 @@ import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "python_cext")
 public class TruffleCextBuiltins extends PythonBuiltins {
@@ -502,21 +504,76 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
-    public static Object checkFunctionResult(PythonContext context, Node isNullNode, String name, Object result) {
-        PException currentException = context.getCurrentException();
-        // consume exception
-        context.setCurrentException(null);
-        boolean errOccurred = currentException != null;
-        if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
-            if (!errOccurred) {
-                throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned NULL without setting an error", name);
-            } else {
-                throw currentException;
-            }
-        } else if (errOccurred) {
-            throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned a result with an error set", name);
+    @ImportStatic(PGuards.class)
+    abstract static class CheckFunctionResultNode extends PBaseNode {
+
+        @Child private Node isNullNode;
+
+        public abstract Object execute(String name, Object result);
+
+        @Specialization
+        Object doNativeWrapper(String name, PythonObjectNativeWrapper result,
+                        @Cached("create()") CheckFunctionResultNode recursive) {
+            return recursive.execute(name, result.getDelegate());
         }
-        return result;
+
+        @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
+        Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result) {
+            checkFunctionResult(name, false);
+            return result;
+        }
+
+        @Specialization(guards = "isNoValue(result)")
+        Object doNoValue(String name, @SuppressWarnings("unused") PNone result) {
+            checkFunctionResult(name, true);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "!isNoValue(result)")
+        Object doNativeWrapper(String name, @SuppressWarnings("unused") PythonAbstractObject result) {
+            checkFunctionResult(name, false);
+            return result;
+        }
+
+        @Specialization(guards = "isForeignObject(result)")
+        Object doForeign(String name, TruffleObject result,
+                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+            checkFunctionResult(name, isNullProfile.profile(isNull(result)));
+            return result;
+        }
+
+        private void checkFunctionResult(String name, boolean isNull) {
+            PythonContext context = getContext();
+            PException currentException = context.getCurrentException();
+            // consume exception
+            context.setCurrentException(null);
+            boolean errOccurred = currentException != null;
+            if (isNull) {
+                if (!errOccurred) {
+                    throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned NULL without setting an error", name);
+                } else {
+                    throw currentException;
+                }
+            } else if (errOccurred) {
+                throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned a result with an error set", name);
+            }
+        }
+
+        private boolean isNull(TruffleObject result) {
+            if (isNullNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isNullNode = Message.IS_NULL.createNode();
+            }
+            return ForeignAccess.sendIsNull(isNullNode, result);
+        }
+
+        protected static boolean isPythonObjectNativeWrapper(PythonNativeWrapper object) {
+            return object instanceof PythonObjectNativeWrapper;
+        }
+
+        public static CheckFunctionResultNode create() {
+            return CheckFunctionResultNodeGen.create();
+        }
     }
 
     static class ExternalFunctionNode extends RootNode {
@@ -527,7 +584,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private Node executeNode;
         @Child CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
         @Child CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
-        @Child private Node isNullNode = Message.IS_NULL.createNode();
+        @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
         public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
@@ -564,7 +621,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 // clear current exception such that native code has clean environment
                 getContext().setCurrentException(null);
 
-                Object result = fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                Object result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
 
                 // restore previous exception state
                 getContext().setCurrentException(exceptionState);

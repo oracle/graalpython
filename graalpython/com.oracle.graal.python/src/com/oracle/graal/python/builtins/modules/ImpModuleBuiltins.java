@@ -54,6 +54,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -146,7 +147,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         private static final String LLVM_LANGUAGE = "llvm";
         @Child private SetItemNode setItemNode;
-        @Child private Node isNullNode = Message.IS_NULL.createNode();
+        @Child private CheckFunctionResultNode checkResultNode;
 
         @Specialization
         @TruffleBoundary
@@ -198,7 +199,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 getContext().setCurrentException(null);
 
                 Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
-                TruffleCextBuiltins.checkFunctionResult(getContext(), isNullNode, "PyInit_" + basename, nativeResult);
+                getCheckResultNode().execute("PyInit_" + basename, nativeResult);
 
                 // restore previous exception state
                 getContext().setCurrentException(exceptionState);
@@ -258,6 +259,14 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 setItemNode = insert(SetItemNode.create());
             }
             return setItemNode;
+        }
+
+        private CheckFunctionResultNode getCheckResultNode() {
+            if (checkResultNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                checkResultNode = insert(CheckFunctionResultNode.create());
+            }
+            return checkResultNode;
         }
 
         private PException reportImportError(RuntimeException e, String path) {
