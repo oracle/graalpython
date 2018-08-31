@@ -90,6 +90,7 @@ MICRO_BENCHMARKS = {
     'special-len': ITER_10 + ['5'],
     'member_access': ITER_10 + ['5'],
     'c_member_access': ITER_25 + ['5'],
+    'cpyext/c-list-iterating-obj': ITER_15 + ['10000000']
 }
 
 

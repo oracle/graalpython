@@ -41,8 +41,9 @@ import _imp
 import sys
 import python_cext
 
+native_null = None
 
-def may_raise(error_result=error_handler):
+def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
         # direct annotation
         return may_raise(error_handler)(error_result)
@@ -50,6 +51,11 @@ def may_raise(error_result=error_handler):
         def decorator(fun):
             return make_may_raise_wrapper(fun, error_result)
         return decorator
+
+
+def PyTruffle_Register_NULL(object):
+    global native_null
+    native_null = object
 
 
 def Py_ErrorHandler():

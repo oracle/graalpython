@@ -168,6 +168,9 @@ static void initialize_globals() {
     // error marker
     void *jerrormarker = UPCALL_CEXT_PTR(polyglot_from_string("Py_ErrorHandler", SRC_CS));
     truffle_assign_managed(&marker_struct, jerrormarker);
+
+    // register native NULL
+    polyglot_invoke(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Register_NULL", SRC_CS), NULL);
 }
 
 static void initialize_bufferprocs() {
@@ -187,7 +190,7 @@ static void initialize_capi() {
 
 __attribute__((always_inline))
 inline void* handle_exception(void* val) {
-    return val == ERROR_MARKER ? NULL : val;
+    return val;
 }
 
 // Heuristic to test if some value is a pointer object
