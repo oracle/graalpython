@@ -45,9 +45,8 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -65,8 +64,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "type", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object type(String name) {
+        private Object get(String name) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, "host lookup is not allowed");
@@ -83,13 +81,23 @@ public class JavaModuleBuiltins extends PythonBuiltins {
                 return hostValue;
             }
         }
+
+        @Specialization
+        Object type(String name) {
+            return get(name);
+        }
+
+        @Specialization
+        Object type(PString name) {
+            return get(name.getValue());
+        }
     }
 
     @Builtin(name = "is_function", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsFunctionNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object check(Object object) {
+        boolean check(Object object) {
             Env env = getContext().getEnv();
             return env.isHostFunction(object);
         }
@@ -99,7 +107,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IsObjectNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object check(Object object) {
+        boolean check(Object object) {
             Env env = getContext().getEnv();
             return env.isHostObject(object);
         }
@@ -109,7 +117,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IsSymbolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object check(Object object) {
+        boolean check(Object object) {
             Env env = getContext().getEnv();
             return env.isHostSymbol(object);
         }
