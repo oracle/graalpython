@@ -97,8 +97,9 @@ MICRO_BENCHMARKS = {
     'magic-iter': ITER_10 + ['10000000'],
     'c-magic-iter': ITER_10 + ['10000000'],
     'instantiation': ITER_10 + ['50000000'],
-    'c-instantiation': ITER_10 + ['50000000']
-
+    'c-instantiation': ITER_10 + ['50000000'],
+    'c-magic-bool': ITER_10 + ['100000000'],
+    'c_arith-binop': ITER_25 + ['5'],
 }
 
 
