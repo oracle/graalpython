@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.GetByteArrayNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.PNativeToPTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -529,7 +528,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
         @Child CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
         @Child private Node isNullNode = Message.IS_NULL.createNode();
-        @Child private PNativeToPTypeNode fromForeign = PNativeToPTypeNode.create();
+        @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
         public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
             super(lang);
@@ -605,18 +604,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public boolean isCloningAllowed() {
             return true;
-        }
-    }
-
-    abstract static class PNativeToPTypeNode extends PForeignToPTypeNode {
-
-        @Specialization
-        protected static Object fromNativeNone(PythonNativeWrapper nativeWrapper) {
-            return nativeWrapper.getDelegate();
-        }
-
-        public static PNativeToPTypeNode create() {
-            return PNativeToPTypeNodeGen.create();
         }
     }
 

@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
@@ -354,9 +355,10 @@ public class PythonObjectNativeWrapperMR {
         }
 
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
-        Object doTpSubclasses(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key) {
+        Object doTpSubclasses(@SuppressWarnings("unused") PythonClass object, @SuppressWarnings("unused") String key,
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             // TODO create dict view on subclasses set
-            return PythonObjectNativeWrapper.wrap(factory().createDict());
+            return PythonObjectNativeWrapper.wrap(factory().createDict(), noWrapperProfile);
         }
 
         @Specialization(guards = "eq(TP_GETATTR, key)")
@@ -609,9 +611,10 @@ public class PythonObjectNativeWrapperMR {
         abstract Object execute(Object receiver, String key, Object value);
 
         @Specialization(guards = "eq(OB_TYPE, key)")
-        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonClass value) {
+        Object doObType(PythonObject object, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PythonClass value,
+                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
             // At this point, we do not support changing the type of an object.
-            return PythonObjectNativeWrapper.wrap(object);
+            return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
         @Specialization(guards = "eq(TP_FLAGS, key)")
@@ -819,10 +822,11 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "TO_NATIVE")
     abstract static class ToNativeNode extends Node {
         @Child private ToPyObjectNode toPyObjectNode = ToPyObjectNode.create();
+        @Child private MaterializeDelegateNode materializeNode = MaterializeDelegateNode.create();
 
         Object access(PythonClassInitNativeWrapper obj) {
             if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.getHandleForObject(obj.getDelegate(), 0));
+                obj.setNativePointer(toPyObjectNode.getHandleForObject(materializeNode.execute(obj), 0));
             }
             return obj;
         }
@@ -830,7 +834,7 @@ public class PythonObjectNativeWrapperMR {
         Object access(PythonNativeWrapper obj) {
             assert !(obj instanceof PythonClassInitNativeWrapper);
             if (!obj.isNative()) {
-                obj.setNativePointer(toPyObjectNode.execute(obj.getDelegate()));
+                obj.setNativePointer(toPyObjectNode.execute(materializeNode.execute(obj)));
             }
             return obj;
         }
