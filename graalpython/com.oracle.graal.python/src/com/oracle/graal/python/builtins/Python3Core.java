@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
@@ -253,6 +254,7 @@ public final class Python3Core implements PythonCore {
                     new JavaModuleBuiltins(),
                     new SREModuleBuiltins(),
                     new AstModuleBuiltins(),
+                    new SelectModuleBuiltins(),
                     new SignalModuleBuiltins(),
                     new TracebackBuiltins(),
                     new GcModuleBuiltins(),
