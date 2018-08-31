@@ -194,6 +194,7 @@ inline void* handle_exception(void* val) {
 // TODO we need a reliable solution for that
 #define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
 
+MUST_INLINE
 void* native_to_java(PyObject* obj) {
     if (obj == Py_None) {
         return Py_None;
@@ -209,6 +210,10 @@ void* native_to_java(PyObject* obj) {
         return obj->ob_refcnt;
     }
     return obj;
+}
+
+void* native_to_java_exported(PyObject* obj) {
+    return native_to_java(obj);
 }
 
 __attribute__((always_inline))
