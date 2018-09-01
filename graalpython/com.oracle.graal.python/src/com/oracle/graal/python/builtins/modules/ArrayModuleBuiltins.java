@@ -193,8 +193,8 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(getCore(), errorProfile);
                     break;
                 }
-                if (nextValue instanceof Long) {
-                    longArray[i++] = (long) nextValue;
+                if (nextValue instanceof Number) {
+                    longArray[i++] = longValue((Number) nextValue);
                 } else {
                     throw raise(ValueError, "integer argument expected, got %p", nextValue);
                 }
@@ -242,6 +242,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 throw raise(ValueError, "bad typecode (must be i, d, b, or l)");
             }
             throw new RuntimeException("Unsupported initializer " + initializer);
+        }
+
+        @TruffleBoundary
+        private static long longValue(Number n) {
+            return n.longValue();
         }
 
         private PArray makeEmptyArray(PythonClass cls, char type) {
