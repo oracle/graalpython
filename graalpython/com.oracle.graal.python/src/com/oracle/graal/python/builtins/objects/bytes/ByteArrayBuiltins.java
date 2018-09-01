@@ -628,32 +628,33 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(SpecialMethodNames.class)
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
-        @Child private SequenceStorageNodes.SetItemNode setItemNode;
-
-        @Specialization(guards = "!isMemoryView(value)")
-        PNone doBasic(PByteArray self, Object idx, Object value) {
-            getSetItemNode().execute(self.getSequenceStorage(), idx, value);
+        @Specialization(guards = {"!isPSlice(idx)", "!isMemoryView(value)"})
+        PNone doItem(PByteArray self, Object idx, Object value,
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
+            setItemNode.execute(self.getSequenceStorage(), idx, value);
             return PNone.NONE;
         }
 
         @Specialization
         PNone doSliceMemoryview(PByteArray self, PSlice slice, PMemoryView value,
                         @Cached("create(TOBYTES)") LookupAndCallUnaryNode callToBytesNode,
-                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile isBytesProfile,
+                        @Cached("createSetSlice()") SequenceStorageNodes.SetItemNode setItemNode) {
             Object bytesObj = callToBytesNode.executeObject(value);
             if (isBytesProfile.profile(bytesObj instanceof PBytes)) {
-                doBasic(self, slice, bytesObj);
+                doSlice(self, slice, bytesObj, setItemNode);
                 return PNone.NONE;
             }
             throw raise(SystemError, "could not get bytes of memoryview");
         }
 
-        // TODO error message
-// @Specialization(guards = "isScalar(value)")
-// @SuppressWarnings("unused")
-// PNone doSliceScalar(PByteArray self, PSlice slice, Object value) {
-// throw raise(TypeError, "can assign only bytes, buffers, or iterables of ints in range(0, 256)");
-// }
+        @Specialization(guards = "!isMemoryView(value)")
+        PNone doSlice(PByteArray self, PSlice idx, Object value,
+                        @Cached("createSetSlice()") SequenceStorageNodes.SetItemNode setItemNode) {
+            // this is really just a separate specialization due to the different error message
+            setItemNode.execute(self.getSequenceStorage(), idx, value);
+            return PNone.NONE;
+        }
 
         @Fallback
         @SuppressWarnings("unused")
@@ -661,12 +662,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        private SequenceStorageNodes.SetItemNode getSetItemNode() {
-            if (setItemNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), "an integer is required"));
-            }
-            return setItemNode;
+        protected SequenceStorageNodes.SetItemNode createSetItem() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), "an integer is required");
+        }
+
+        protected SequenceStorageNodes.SetItemNode createSetSlice() {
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forBytearray(), "can assign only bytes, buffers, or iterables of ints in range(0, 256)");
         }
 
         protected static boolean isMemoryView(Object value) {
