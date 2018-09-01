@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.runtime.sequence;
 
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
@@ -46,16 +45,6 @@ public abstract class PImmutableSequence extends PSequence {
      */
     @SuppressWarnings({"static-method", "unused"})
     public final void setItem(int idx, Object value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public final void setSlice(PSlice slice, PSequence value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public final void setSlice(int start, int stop, int step, PSequence value) {
         throw new UnsupportedOperationException();
     }
 }

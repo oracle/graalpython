@@ -85,6 +85,9 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.Arity;
@@ -93,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListAppendNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -143,6 +147,7 @@ import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -366,6 +371,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = DIR, minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DirNode extends PythonBuiltinNode {
+        @Child private ListAppendNode appendNode;
+
         @Specialization(guards = "isNoValue(object)")
         @SuppressWarnings("unused")
         public Object dir(VirtualFrame frame, Object object) {
@@ -376,13 +383,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static void addIdsFromDescriptor(PList locals, FrameDescriptor frameDescriptor) {
+        private void addIdsFromDescriptor(PList locals, FrameDescriptor frameDescriptor) {
             for (FrameSlot slot : frameDescriptor.getSlots()) {
                 // XXX: remove this special case
                 if (slot.getIdentifier().equals(RETURN_SLOT_ID)) {
                     continue;
                 }
-                locals.append(slot.getIdentifier());
+                getAppendNode().execute(locals, slot.getIdentifier());
             }
         }
 
@@ -390,6 +397,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public Object dir(Object object,
                         @Cached("create(__DIR__)") LookupAndCallUnaryNode dirNode) {
             return dirNode.executeObject(object);
+        }
+
+        private ListAppendNode getAppendNode() {
+            if (appendNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                appendNode = insert(ListAppendNode.create());
+            }
+            return appendNode;
         }
     }
 
@@ -687,6 +702,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Child private ReadAttributeFromObjectNode readId = null;
         @Child private WriteAttributeToObjectNode writeId = null;
+        @Child private SequenceNodes.LenNode lenNode = null;
+        @Child private HashingCollectionNodes.LenNode setLenNode = null;
 
         @SuppressWarnings("unused")
         @Specialization
@@ -750,11 +767,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected boolean isEmptyImmutableBuiltin(Object object) {
-            return (object instanceof PTuple && PGuards.isEmpty((PTuple) object)) ||
+            return (object instanceof PTuple && isEmpty((PTuple) object)) ||
                             (object instanceof String && PGuards.isEmpty((String) object)) ||
-                            (object instanceof PString && PGuards.isEmpty((PString) object)) ||
-                            (object instanceof PBytes && PGuards.isEmpty((PBytes) object)) ||
-                            (object instanceof PFrozenSet && PGuards.isEmpty((PFrozenSet) object));
+                            (object instanceof PString && isEmpty((PString) object)) ||
+                            (object instanceof PBytes && isEmpty((PBytes) object)) ||
+                            (object instanceof PFrozenSet && isEmpty((PFrozenSet) object));
         }
 
         /**
@@ -776,6 +793,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Fallback
         Object doId(Object obj) {
             return obj.hashCode();
+        }
+
+        protected boolean isEmpty(PSequence s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceNodes.LenNode.create());
+            }
+            return lenNode.execute(s) == 0;
+        }
+
+        protected boolean isEmpty(PHashingCollection s) {
+            if (setLenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                setLenNode = insert(HashingCollectionNodes.LenNode.create());
+            }
+            return setLenNode.execute(s) == 0;
         }
 
         private Object getId(PythonObject obj) {
@@ -804,6 +837,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private LookupAndCallBinaryNode instanceCheckNode = LookupAndCallBinaryNode.create(__INSTANCECHECK__);
         @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
         @Child private TypeBuiltins.InstanceCheckNode typeInstanceCheckNode = TypeBuiltins.InstanceCheckNode.create();
+        @Child private SequenceStorageNodes.LenNode lenNode;
 
         public static IsInstanceNode create() {
             return BuiltinFunctionsFactory.IsInstanceNodeFactory.create(null);
@@ -823,10 +857,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return instanceClass == cls || isSubtypeNode.execute(instanceClass, cls) || isInstanceCheckInternal(instance, cls);
         }
 
-        @Specialization(guards = "clsTuple.len() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
+        @Specialization(guards = "getLength(clsTuple) == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop
         public boolean isInstanceTupleConstantLen(Object instance, PTuple clsTuple,
-                        @Cached("clsTuple.len()") int cachedLen,
+                        @Cached("getLength(clsTuple)") int cachedLen,
                         @Cached("create()") IsInstanceNode isInstanceNode) {
             Object[] array = clsTuple.getArray();
             for (int i = 0; i < cachedLen; i++) {
@@ -853,6 +887,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         public boolean isInstance(Object instance, Object cls) {
             return isInstanceCheckInternal(instance, cls) || typeInstanceCheckNode.executeWith(cls, instance);
         }
+
+        protected int getLength(PTuple t) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(t.getSequenceStorage());
+        }
     }
 
     // issubclass(class, classinfo)
@@ -862,6 +904,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private LookupAndCallBinaryNode subclassCheckNode = LookupAndCallBinaryNode.create(__SUBCLASSCHECK__);
         @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
+        @Child private SequenceStorageNodes.LenNode lenNode;
 
         public static IsSubClassNode create() {
             return BuiltinFunctionsFactory.IsSubClassNodeFactory.create(null);
@@ -874,10 +917,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract boolean executeWith(Object derived, Object cls);
 
-        @Specialization(guards = "clsTuple.len() == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
+        @Specialization(guards = "getLength(clsTuple) == cachedLen", limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop
         public boolean isSubclassTupleConstantLen(Object derived, PTuple clsTuple,
-                        @Cached("clsTuple.len()") int cachedLen,
+                        @Cached("getLength(clsTuple)") int cachedLen,
                         @Cached("create()") IsSubClassNode isSubclassNode) {
             Object[] array = clsTuple.getArray();
             for (int i = 0; i < cachedLen; i++) {
@@ -903,6 +946,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Fallback
         public boolean isSubclass(Object derived, Object cls) {
             return isInstanceCheckInternal(derived, cls) || isSubtypeNode.execute(derived, cls);
+        }
+
+        protected int getLength(PTuple t) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(t.getSequenceStorage());
         }
     }
 
@@ -1087,17 +1138,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         public int ord(String chr) {
             if (chr.length() != 1) {
-                raise(TypeError, "ord() expected a character, but string of length %d found", chr.length());
+                throw raise(TypeError, "ord() expected a character, but string of length %d found", chr.length());
             }
-
             return chr.charAt(0);
         }
 
         @Specialization
         public int ord(PBytes chr,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-            if (chr.len() != 1) {
-                raise(TypeError, "ord() expected a character, but string of length %d found", chr.len());
+            int len = lenNode.execute(chr.getSequenceStorage());
+            if (len != 1) {
+                throw raise(TypeError, "ord() expected a character, but string of length %d found", len);
             }
 
             return (byte) getItemNode.execute(chr.getSequenceStorage(), 0);
@@ -1111,11 +1163,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization
         public Object print(PTuple values, String sep, String end, Object file, boolean flush,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached("create(__STR__)") LookupAndCallUnaryNode callStr) {
             try {
                 PythonContext context = getContext();
-                if (values.len() == 0) {
+                if (lenNode.execute(values.getSequenceStorage()) == 0) {
                     write(context, end);
                 } else {
                     SequenceStorage store = values.getSequenceStorage();

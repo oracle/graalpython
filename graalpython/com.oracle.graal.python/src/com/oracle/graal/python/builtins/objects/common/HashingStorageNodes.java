@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactor
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.InitNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.KeysEqualsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.KeysIsSubsetNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.SetItemNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodesFactory.UnionNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -356,6 +357,7 @@ public abstract class HashingStorageNodes {
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") FastConstructListNode createListNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
+                        @Cached("create()") SequenceNodes.LenNode seqLenNode,
                         @Cached("createBinaryProfile()") ConditionProfile lengthTwoProfile,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
 
@@ -373,7 +375,7 @@ public abstract class HashingStorageNodes {
                     assert element != null;
                     // This constructs a new list using the builtin type. So, the object cannot
                     // be subclassed and we can directly call 'len()'.
-                    len = element.len();
+                    len = seqLenNode.execute(element);
 
                     if (lengthTwoProfile.profile(len != 2)) {
                         throw raise(ValueError, "dictionary update sequence element #%d has length %d; 2 is required", elements.size(), len);
@@ -1509,4 +1511,20 @@ public abstract class HashingStorageNodes {
         }
     }
 
+    public abstract static class LenNode extends PBaseNode {
+
+        protected static final int MAX_STORAGES = 8;
+
+        public abstract int execute(HashingStorage s);
+
+        @Specialization(limit = "MAX_STORAGES", guards = "s.getClass() == cachedClass")
+        int doCached(HashingStorage s,
+                        @Cached("s.getClass()") Class<? extends HashingStorage> cachedClass) {
+            return cachedClass.cast(s).length();
+        }
+
+        public static LenNode create() {
+            return LenNodeGen.create();
+        }
+    }
 }

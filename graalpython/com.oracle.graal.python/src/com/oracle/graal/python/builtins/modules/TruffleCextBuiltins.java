@@ -226,13 +226,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyTuple_SetItem extends NativeBuiltin {
         @Specialization
         int doI(PTuple tuple, Object position, Object element,
-                        @Cached("create()") SequenceStorageNodes.SetItemNode setItemNode) {
+                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             setItemNode.execute(tuple.getSequenceStorage(), position, element);
             return 0;
         }
 
         protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign());
+            return SequenceStorageNodes.SetItemNode.create(NormalizeIndexNode.forTupleAssign(), "invalid item for assignment");
         }
     }
 

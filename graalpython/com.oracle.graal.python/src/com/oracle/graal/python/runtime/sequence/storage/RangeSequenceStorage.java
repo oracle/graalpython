@@ -40,143 +40,115 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.graal.python.builtins.objects.range.PRange;
 
-public class NativeSequenceStorage extends SequenceStorage {
+public class RangeSequenceStorage extends SequenceStorage {
 
-    /* native pointer object */
-    private Object ptr;
+    private final PRange range;
 
-    /* length of contents */
-    protected int length;
-
-    /* allocated capacity */
-    protected int capacity;
-
-    protected final ListStorageType elementType;
-
-    public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
-        this.ptr = ptr;
-        this.capacity = capacity;
-        this.length = length;
-        this.elementType = elementType;
+    public RangeSequenceStorage(PRange range) {
+        this.range = range;
     }
 
-    public Object getPtr() {
-        return ptr;
-    }
-
-    public void setPtr(Object ptr) {
-        this.ptr = ptr;
-    }
-
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
+    public PRange getRange() {
+        return range;
     }
 
     @Override
-    public ListStorageType getElementType() {
-        return elementType;
-    }
-
-    @Override
-    public final int length() {
-        return length;
+    public int length() {
+        return range.len();
     }
 
     @Override
     public void setNewLength(int length) {
-        assert length <= capacity;
-        this.length = length;
-    }
-
-    @Override
-    public String toString() {
-        CompilerAsserts.neverPartOfCompilation();
-        return String.format("<NativeSequenceStorage(type=%s, len=%d, cap=%d) at %s>", elementType, length, capacity, ptr);
-    }
-
-    /**
-     * Ensure that the current capacity is big enough. If not, we increase capacity to the next
-     * designated size (not necessarily the requested one).
-     */
-    @Override
-    public void ensureCapacity(int newCapacity) {
-        throw new AssertionError("should not reach");
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SequenceStorage copy() {
-        throw new AssertionError("should not reach");
+        return this;
     }
 
     @Override
     public SequenceStorage createEmpty(int newCapacity) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public Object[] getInternalArray() {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public Object[] getCopyOfInternalArray() {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public Object getItemNormalized(int idx) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void insertItem(int idx, Object value) throws SequenceStoreException {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public SequenceStorage getSliceInBound(int start, int stop, int step, int len) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void reverse() {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public boolean equals(SequenceStorage other) {
-        CompilerAsserts.neverPartOfCompilation();
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public SequenceStorage generalizeFor(Object value, SequenceStorage other) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public Object getIndicativeValue() {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void copyItem(int idxTo, int idxFrom) {
-        throw new AssertionError("should not reach");
+        return new IntSequenceStorage(newCapacity);
     }
 
     @Override
     public Object getInternalArrayObject() {
-        return ptr;
+        throw new UnsupportedOperationException();
     }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Int;
+    }
+
+    @Override
+    public Object[] getInternalArray() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object[] getCopyOfInternalArray() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object getItemNormalized(int idx) {
+        return range.getItemNormalized(idx);
+    }
+
+    public int getIntItemNormalized(int idx) {
+        return range.getItemNormalized(idx);
+    }
+
+    @Override
+    public void setItemNormalized(int idx, Object value) throws SequenceStoreException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void insertItem(int idx, Object value) throws SequenceStoreException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SequenceStorage getSliceInBound(int start, int stop, int step, int length) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void reverse() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean equals(SequenceStorage other) {
+        if (other instanceof RangeSequenceStorage) {
+            return range.equals(((RangeSequenceStorage) other).range);
+        }
+        return false;
+    }
+
+    @Override
+    public SequenceStorage generalizeFor(Object value, SequenceStorage other) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object getIndicativeValue() {
+        return range.getStart();
+    }
+
+    @Override
+    public void ensureCapacity(int newCapacity) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void copyItem(int idxTo, int idxFrom) {
+        throw new UnsupportedOperationException();
+    }
+
 }

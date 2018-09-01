@@ -27,7 +27,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class IntSequenceStorage extends TypedSequenceStorage {
 
@@ -109,7 +109,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Integer) {
             setIntItemNormalized(idx, (int) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -122,7 +122,7 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Integer) {
             insertIntItem(idx, (int) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -159,20 +159,11 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return new IntSequenceStorage(newArray);
     }
 
-    @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        if (sequence instanceof IntSequenceStorage) {
-            setIntSliceInBound(start, stop, step, (IntSequenceStorage) sequence);
-        } else {
-            throw new SequenceStoreException();
-        }
-    }
-
-    public void setIntSliceInBound(int start, int stop, int step, IntSequenceStorage sequence) {
+    public void setIntSliceInBound(int start, int stop, int step, IntSequenceStorage sequence, ConditionProfile sameLengthProfile) {
         int otherLength = sequence.length();
 
         // range is the whole sequence?
-        if (start == 0 && stop == length) {
+        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
             values = Arrays.copyOf(sequence.values, otherLength);
             length = otherLength;
             minimizeCapacity();
@@ -188,92 +179,10 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         length = length > stop ? length : stop;
     }
 
-    @Override
-    public void delSlice(int startParam, int stopParam, int stepParam) {
-        int start = startParam;
-        int stop = stopParam;
-        int step = stepParam;
-        if ((stop == SequenceUtil.MISSING_INDEX || stop >= length) && step == 1) {
-            length = start;
-        } else if ((start == 0 && stop >= length) && step == 1) {
-            length = 0;
-        } else {
-            int decraseLen; // how much will be the result array shorter
-            int index;  // index of the "old" array
-            if (step < 0) {
-                // For the simplicity of algorithm, then start and stop are swapped.
-                // The start index has to recalculated according the step, because
-                // the algorithm bellow removes the start itema and then start + step ....
-                step = Math.abs(step);
-                stop++;
-                int tmpStart = stop + ((start - stop) % step);
-                stop = start + 1;
-                start = tmpStart;
-            }
-            int arrayIndex = start; // pointer to the "new" form of array
-            if (step == 1) {
-                // this is easy, just remove the part of array
-                decraseLen = stop - start;
-                index = start + decraseLen;
-            } else {
-                int nextStep = index = start; // nextStep is a pointer to the next removed item
-                decraseLen = (stop - start - 1) / step + 1;
-                for (; index < stop && nextStep < stop; index++) {
-                    if (nextStep == index) {
-                        nextStep += step;
-                    } else {
-                        values[arrayIndex++] = values[index];
-                    }
-                }
-            }
-            if (decraseLen > 0) {
-                // shift all other items in array behind the last change
-                for (; index < length; arrayIndex++, index++) {
-                    values[arrayIndex] = values[index];
-                }
-                // change the result length
-                // TODO Shouldn't we realocate the array, if the chane is big?
-                // Then unnecessary big array is kept in the memory.
-                length = length - decraseLen;
-            }
-        }
-    }
-
-    @Override
-    public void delItemInBound(int idx) {
-        if (values.length - 1 == idx) {
-            popInt();
-        } else {
-            popInBound(idx);
-        }
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        int pop = values[idx];
-
-        for (int i = idx; i < values.length - 1; i++) {
-            values[i] = values[i + 1];
-        }
-
-        length--;
-        return pop;
-    }
-
     public int popInt() {
         int pop = values[length - 1];
         length--;
         return pop;
-    }
-
-    @Override
-    public int index(Object value) {
-        if (value instanceof Integer) {
-            return indexOfInt((int) value);
-        } else {
-            return super.index(value);
-        }
-
     }
 
     public int indexOfInt(int value) {
@@ -286,28 +195,10 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        if (value instanceof Integer) {
-            appendInt((int) value);
-        } else {
-            throw SequenceStoreException.INSTANCE;
-        }
-    }
-
     public void appendInt(int value) {
         ensureCapacity(length + 1);
         values[length] = value;
         length++;
-    }
-
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        if (other instanceof IntSequenceStorage) {
-            extendWithIntStorage((IntSequenceStorage) other);
-        } else {
-            throw SequenceStoreException.INSTANCE;
-        }
     }
 
     public void extendWithIntStorage(IntSequenceStorage other) {
@@ -338,14 +229,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void sort() {
-        int[] copy = Arrays.copyOf(values, length);
-        Arrays.sort(copy);
-        values = copy;
-        minimizeCapacity();
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return 0;
     }
@@ -371,4 +254,18 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return values;
     }
 
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (int[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Int;
+    }
 }

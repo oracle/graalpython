@@ -38,7 +38,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -74,7 +73,7 @@ public class SliceBuiltins extends PythonBuiltins {
 
     @Builtin(name = "start", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    @ImportStatic(SequenceUtil.class)
+    @ImportStatic(PSlice.class)
     abstract static class StartNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.getStart() != MISSING_INDEX")
@@ -90,7 +89,7 @@ public class SliceBuiltins extends PythonBuiltins {
 
     @Builtin(name = "stop", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    @ImportStatic(SequenceUtil.class)
+    @ImportStatic(PSlice.class)
     abstract static class StopNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.getStop() != MISSING_INDEX")
@@ -106,7 +105,7 @@ public class SliceBuiltins extends PythonBuiltins {
 
     @Builtin(name = "step", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
-    @ImportStatic(SequenceUtil.class)
+    @ImportStatic(PSlice.class)
     abstract static class StepNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.getStep() != MISSING_INDEX")

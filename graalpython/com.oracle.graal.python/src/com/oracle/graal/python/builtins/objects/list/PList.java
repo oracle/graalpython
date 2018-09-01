@@ -25,15 +25,12 @@
  */
 package com.oracle.graal.python.builtins.objects.list;
 
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public final class PList extends PSequence {
     private SequenceStorage store;
@@ -54,28 +51,6 @@ public final class PList extends PSequence {
     }
 
     @Override
-    public final void setSlice(PSlice slice, PSequence value) {
-        // Should not be used. Replaces with ListNodes.SetSliceNode.
-        // When it will be replaced in other PSequence implementations,
-        // then the setSlice from PSequence can be removed.
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public final void setSlice(int start, int stop, int step, PSequence value) {
-        throw new UnsupportedOperationException();
-    }
-
-    public final void delSlice(PSlice slice) {
-        PSlice.SliceInfo sliceInfo = slice.computeActualIndices(this.len());
-        store.delSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step);
-    }
-
-    public final void clear() {
-        store.delSlice(0, store.length(), 1);
-    }
-
-    @Override
     public final String toString() {
         StringBuilder buf = new StringBuilder("[");
 
@@ -92,87 +67,8 @@ public final class PList extends PSequence {
         return buf.toString();
     }
 
-    public final void sort() {
-        store.sort();
-    }
-
-    @Override
-    public final int len() {
-        return store.length();
-    }
-
-    public final PList __mul__(ValueProfile storeProfile, int value) {
-        assert value > 0;
-
-        SequenceStorage profiledStore = storeProfile.profile(store);
-        SequenceStorage newStore = profiledStore.createEmpty(Math.multiplyExact(value, profiledStore.length()));
-
-        try {
-            for (int i = 0; i < value; i++) {
-                newStore.extend(profiledStore);
-            }
-        } catch (SequenceStoreException e) {
-            throw new IllegalStateException();
-        }
-
-        return new PList(getPythonClass(), newStore);
-    }
-
     public final void reverse() {
         store.reverse();
-    }
-
-    public final void append(Object value) {
-        if (store instanceof EmptySequenceStorage) {
-            store = store.generalizeFor(value, null);
-        }
-
-        try {
-            store.append(value);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value, null);
-
-            try {
-                store.append(value);
-            } catch (SequenceStoreException e1) {
-                throw new IllegalStateException();
-            }
-        }
-    }
-
-    public final void extend(PList appendee) {
-        SequenceStorage other = appendee.getSequenceStorage();
-
-        try {
-            store.extend(other);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(other.getIndicativeValue(), other);
-
-            try {
-                store.extend(other);
-            } catch (SequenceStoreException e1) {
-                throw new IllegalStateException();
-            }
-        }
-    }
-
-    public final PList __add__(PList other) throws ArithmeticException {
-        SequenceStorage otherStore = other.getSequenceStorage();
-        SequenceStorage newStore = store.copy();
-
-        try {
-            newStore.extend(otherStore);
-        } catch (SequenceStoreException e) {
-            newStore = newStore.generalizeFor(otherStore.getIndicativeValue(), otherStore);
-
-            try {
-                newStore.extend(otherStore);
-            } catch (SequenceStoreException e1) {
-                throw new IllegalStateException();
-            }
-        }
-
-        return new PList(getPythonClass(), newStore);
     }
 
     public final void insert(int index, Object value) {
@@ -205,10 +101,6 @@ public final class PList extends PSequence {
     @Override
     public final int hashCode() {
         return super.hashCode();
-    }
-
-    public int count(Object arg) {
-        return store.count(arg);
     }
 
     public static PList require(Object value) {

@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.runtime.sequence.SequenceUtil.MISSING_INDEX;
+import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;

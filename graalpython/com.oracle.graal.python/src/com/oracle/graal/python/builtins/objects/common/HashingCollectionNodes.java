@@ -38,20 +38,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.bytes;
+package com.oracle.graal.python.builtins.objects.common;
 
-import java.nio.ByteBuffer;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
+import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+public abstract class HashingCollectionNodes {
 
-public interface PIBytesLike {
+    @ImportStatic(PGuards.class)
+    public abstract static class LenNode extends PBaseNode {
 
-    SequenceStorage getSequenceStorage();
+        public abstract int execute(PHashingCollection c);
 
-    default PIBytesLike createFromBytes(PythonObjectFactory factory, ByteBuffer bytes) {
-        return createFromBytes(factory, bytes.array());
+        @Specialization(limit = "4", guards = {"c.getClass() == cachedClass"})
+        int doWithStorage(PHashingCollection c,
+                        @Cached("c.getClass()") Class<? extends PHashingCollection> cachedClass,
+                        @Cached("create()") HashingStorageNodes.LenNode lenNode) {
+            return lenNode.execute(cachedClass.cast(c).getDictStorage());
+        }
+
+        public static LenNode create() {
+            return LenNodeGen.create();
+        }
     }
-
-    PIBytesLike createFromBytes(PythonObjectFactory factory, byte[] bytes);
 }

@@ -25,22 +25,15 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage.ElementType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.truffle.api.CompilerAsserts;
 
 public final class PByteArray extends PSequence implements PIBytesLike {
@@ -57,43 +50,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         this.store = store;
     }
 
-    public void setItemNormalized(int index, Object value) {
-        try {
-            store.setItemNormalized(index, value);
-        } catch (SequenceStoreException e) {
-            store = store.generalizeFor(value, null);
-
-            try {
-                store.setItemNormalized(index, value);
-            } catch (SequenceStoreException ex) {
-                throw new IllegalStateException();
-            }
-        }
-    }
-
-    @Override
-    public void setSlice(int start, int stop, int step, PSequence value) {
-        final int normalizedStart = SequenceUtil.normalizeSliceStart(start, step, store.length());
-        int normalizedStop = SequenceUtil.normalizeSliceStop(stop, step, store.length());
-
-        if (normalizedStop < normalizedStart) {
-            normalizedStop = normalizedStart;
-        }
-
-        SequenceStorage other = value.getSequenceStorage();
-        try {
-            store.setSliceInBound(normalizedStart, normalizedStop, step, other);
-        } catch (SequenceStoreException e) {
-            throw PythonLanguage.getCore().raise(TypeError, "an integer is required");
-        }
-    }
-
-    @Override
-    public void setSlice(PSlice slice, PSequence value) {
-        PSlice.SliceInfo sliceInfo = slice.computeActualIndices(len());
-        setSlice(sliceInfo.start, sliceInfo.stop, sliceInfo.step, value);
-    }
-
     @Override
     public SequenceStorage getSequenceStorage() {
         return store;
@@ -101,13 +57,8 @@ public final class PByteArray extends PSequence implements PIBytesLike {
 
     @Override
     public final void setSequenceStorage(SequenceStorage store) {
-        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && ((NativeSequenceStorage) store).getElementType() == ElementType.BYTE;
+        assert store instanceof ByteSequenceStorage || store instanceof NativeSequenceStorage && ((NativeSequenceStorage) store).getElementType() == ListStorageType.Byte;
         this.store = store;
-    }
-
-    @Override
-    public int len() {
-        return store.length();
     }
 
     @Override
@@ -122,23 +73,6 @@ public final class PByteArray extends PSequence implements PIBytesLike {
     }
 
     @Override
-    public final boolean equals(Object other) {
-        if (!(other instanceof PSequence)) {
-            return false;
-        } else {
-            return equals((PSequence) other);
-        }
-    }
-
-    public final boolean equals(PSequence other) {
-        if (len() == 0 && other.len() == 0) {
-            return true;
-        }
-        SequenceStorage otherStore = other.getSequenceStorage();
-        return store.equals(otherStore);
-    }
-
-    @Override
     public final int hashCode() {
         return Arrays.hashCode(store.getInternalArray());
     }
@@ -147,30 +81,8 @@ public final class PByteArray extends PSequence implements PIBytesLike {
         store.reverse();
     }
 
-    public final void clear() {
-        store.clear();
-    }
-
-    public final void append(Object value) {
-        if (store instanceof EmptySequenceStorage) {
-            store = new ByteSequenceStorage(1);
-        }
-        store.append(value);
-    }
-
     public PByteArray copy() {
         return new PByteArray(this.getPythonClass(), store.copy());
-    }
-
-    public final void delSlice(PSlice slice) {
-        int start = Math.max(0, SequenceUtil.normalizeSliceStart(slice, store.length()));
-        final int stop = Math.min(store.length(), SequenceUtil.normalizeSliceStop(slice, store.length()));
-        final int step = SequenceUtil.normalizeSliceStep(slice);
-        store.delSlice(start, stop, step);
-    }
-
-    public int count(Object arg) {
-        return this.store.count(arg);
     }
 
     @Override

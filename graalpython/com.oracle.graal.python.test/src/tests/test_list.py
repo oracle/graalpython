@@ -50,6 +50,10 @@ class ListTest(list_tests.CommonTest):
         x.extend(-y for y in x)
         self.assertEqual(x, [])
 
+        l = [0x1FFFFFFFF, 1, 2, 3, 4]
+        l[0] = "hello"
+        self.assertEqual(l, ["hello", 1, 2, 3, 4])
+
     def test_truth(self):
         super().test_truth()
         self.assertTrue(not [])
@@ -194,19 +198,26 @@ class ListTest(list_tests.CommonTest):
         self.assertEqual([2, 3], l)
         l.__delitem__(-1)
         self.assertEqual([2], l)
+
         l = [1, 2, 3]
         del(l[1])
         self.assertEqual([1, 3], l)
         del(l[False])
         self.assertEqual([3], l)
+
         l = [1.1, 2.1, 3.1]
         l.__delitem__(0)
         self.assertEqual([2.1, 3.1], l)
         l.__delitem__(-1)
         self.assertEqual([2.1], l)
+
         l = [1.1, 2.1, 3.1]
         del(l[1])
         self.assertEqual([1.1, 3.1], l)
+
+        l = ["1", "2", "3", "4", "5", "6"]
+        del l[4]
+        self.assertEqual(["1", "2", "3", "4", "6"], l)
 
     def test_del_border(self):
         l = [1, 2, 3]
@@ -295,24 +306,50 @@ class ListTest(list_tests.CommonTest):
         a = [1, 2]
         a[1:2] = [7, 6, 5, 4]
         self.assertEqual([1, 7, 6, 5, 4], a)
+
         a = [1, 2, 3, 4]
         a[1:8] = [33]
         self.assertEqual([1, 33], a)
+
         a = [1, 2, 3, 4]
         a[1:8] = [33, 34, 35, 36, 37, 38]
         self.assertEqual([1, 33, 34, 35, 36, 37, 38], a)
+
         a = list(range(20))
         a[1:19] = [55, 55]
         self.assertEqual([0, 55, 55, 19], a)
+
         a = [1, 2, 3, 4]
         a[1:3] = [11]
         self.assertEqual([1, 11, 4], a)
+
         a = [1, 2, 3, 4]
         a[1:3] = [11, 12, 13, 14, 15, 16]
         self.assertEqual([1, 11, 12, 13, 14, 15, 16, 4], a)
+
         a = [1, 2]
         a[:] = (1, 2, 4, 5)
         self.assertEqual([1, 2, 4, 5], a)
+
+        a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        a[0:10:2] = [10, 30, 50, 70, 90]
+        self.assertEqual([10, 2, 30, 4, 50, 6, 70, 8, 90, 10], a)
+
+        a = [1, 2, 3, 4, 5, 6]
+        a[1:4:1] = [42, 42, 42]
+        self.assertEqual([1, 42, 42, 42, 5, 6], a)
+
+        a = [1, 2, 3, 4, 5, 6]
+        a[5:8:1] = [42, 42, 42]
+        self.assertEqual([1, 2, 3, 4, 5, 42, 42, 42], a)
+
+        a = ["1", "2", "3", "4", "5", "6"]
+        a[1:4:1] = ["42", "42", "42"]
+        self.assertEqual(['1', '42', '42', '42', '5', '6'], a)
+
+        a = ["1", "2", "3", "4", "5", "6"]
+        a[5:8:1] = ["42", "42", "42"]
+        self.assertEqual(["1", "2", "3", "4", "5", '42', '42', '42'], a)
 
     def test_set_slice_class_iter(self):
 
@@ -389,6 +426,21 @@ class ListTest(list_tests.CommonTest):
         a.extend('ahoj')
         self.assertEqual(['a', 'h', 'o', 'j'], a)
 
+    def test_extend(self):
+        a = [1, 2, 3, 4, 5, 6]
+        b = [1, 2, 3, 4, 5, 6]
+        a.extend(b)
+        self.assertEqual([1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], a)
+
+        a = ["a", "b", "c"]
+        b = ["a", "b", "c"]
+        a.extend(b)
+        self.assertEqual(["a", "b", "c", "a", "b", "c"], a)
+
+        a = []
+        a.extend([])
+        self.assertEqual([], a)
+
     def test_extend_bytes(self):
         l = []
         l.extend(b"asdf")
@@ -417,6 +469,14 @@ class ListTest(list_tests.CommonTest):
         a = [1, 2, 3]
         a.remove(MyInt(2))
         self.assertEqual([1, 3], a)
+
+        a = ["1", "2"]
+        a.remove("2");
+        self.assertEqual(["1"], a)
+
+        a = [1.1, 2.2, 3.3]
+        a.remove(2.2);
+        self.assertEqual([1.1, 3.3], a)
 
     def test_insert_spec(self):
         a = [1, 2]
@@ -477,6 +537,11 @@ class ListTest(list_tests.CommonTest):
         self.assertRaises(StopIteration, i.__next__)
         l.append(3)
         self.assertRaises(StopIteration, i.__next__)
+
+    def test_add(self):
+        l1 = [1, 2, 3]
+        l2 = ["a", "b", "c"]
+        self.assertEqual(l1 + l2, [1, 2, 3, "a", "b", "c"])
 
     def test_iadd_special(self):
         a = [1]
@@ -568,6 +633,18 @@ class ListTest(list_tests.CommonTest):
         l = [1]
         ob = My(10)
         self.assertRaises(TypeError, l.__imul__, ob)
+
+    def test_append(self):
+        l = []
+        l.append(1)
+        l.append(0x1FF)
+        l.append(0x1FFFFFFFF)
+        l.append("hello")
+        self.assertEqual(l, [1, 0x1FF, 0x1FFFFFFFF, "hello"])
+
+        l = ["a", "b", "c"]
+        l.append("d")
+        self.assertEqual(l, ["a", "b", "c", "d"])
 
 
 class ListCompareTest(CompareTest):

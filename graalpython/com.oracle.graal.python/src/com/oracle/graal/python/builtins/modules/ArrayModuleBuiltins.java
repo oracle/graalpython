@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -36,6 +37,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -105,6 +108,10 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return typeCode.charAt(0) == 'i';
         }
 
+        protected boolean isLongArray(String typeCode) {
+            return typeCode.charAt(0) == 'l';
+        }
+
         protected boolean isByteArray(String typeCode) {
             return typeCode.charAt(0) == 'b';
         }
@@ -115,12 +122,14 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isByteArray(typeCode)")
         PArray arrayByteInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("createCast()") CastToByteNode castToByteNode,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
             Object iter = getIterator.executeWith(initializer);
             int i = 0;
-            byte[] byteArray = new byte[initializer.len()];
+            byte[] byteArray = new byte[lenNode.execute(initializer)];
 
             while (true) {
                 Object nextValue;
@@ -130,20 +139,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(getCore(), errorProfile);
                     break;
                 }
-
-                if (nextValue instanceof Byte) {
-                    byteArray[i++] = (byte) nextValue;
-                }
-                if (nextValue instanceof Integer) {
-                    int intValue = (int) nextValue;
-                    if (0 <= intValue && intValue <= 255) {
-                        byteArray[i++] = (byte) intValue;
-                    } else {
-                        throw raise(ValueError, "signed char is greater than maximum");
-                    }
-                } else {
-                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
-                }
+                byteArray[i++] = castToByteNode.execute(nextValue);
             }
 
             return factory().createArray(cls, byteArray);
@@ -153,11 +149,12 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         PArray arrayIntInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
             Object iter = getIterator.executeWith(initializer);
             int i = 0;
 
-            int[] intArray = new int[initializer.len()];
+            int[] intArray = new int[lenNode.execute(initializer)];
 
             while (true) {
                 Object nextValue;
@@ -177,15 +174,45 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return factory().createArray(cls, intArray);
         }
 
+        @Specialization(guards = "isLongArray(typeCode)")
+        PArray arrayLongInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+            Object iter = getIterator.executeWith(initializer);
+            int i = 0;
+
+            long[] longArray = new long[lenNode.execute(initializer)];
+
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(iter);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+                if (nextValue instanceof Number) {
+                    longArray[i++] = longValue((Number) nextValue);
+                } else {
+                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
+                }
+            }
+
+            return factory().createArray(cls, longArray);
+        }
+
         @Specialization(guards = "isDoubleArray(typeCode)")
         PArray arrayDoubleInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
             Object iter = getIterator.executeWith(initializer);
             int i = 0;
 
-            double[] doubleArray = new double[initializer.len()];
+            double[] doubleArray = new double[lenNode.execute(initializer)];
 
             while (true) {
                 Object nextValue;
@@ -210,7 +237,16 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         PArray arrayWithObjectInitializer(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
+            if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode))) {
+                // TODO implement support for typecodes: b, B, u, h, H, i, I, l, L, q, Q, f or d
+                throw raise(ValueError, "bad typecode (must be i, d, b, or l)");
+            }
             throw new RuntimeException("Unsupported initializer " + initializer);
+        }
+
+        @TruffleBoundary
+        private static long longValue(Number n) {
+            return n.longValue();
         }
 
         private PArray makeEmptyArray(PythonClass cls, char type) {
@@ -226,6 +262,13 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                 default:
                     return null;
             }
+        }
+
+        protected CastToByteNode createCast() {
+            return CastToByteNode.create(val -> {
+                throw raise(OverflowError, "signed char is greater than maximum");
+            }, null);
+
         }
 
         @TruffleBoundary

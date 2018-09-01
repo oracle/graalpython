@@ -266,6 +266,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/bytes/PByteArray.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/bytes/PBytes.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/code/CodeBuiltins.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/common/SequenceStorageNodes.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/complex/PComplex.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/dict/DictBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/dict/DictItemsIteratorBuiltins.java,zippy.copyright
@@ -483,9 +484,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatti
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/formatting/TextFormatter.java,jython.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/object/PythonObjectFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/PImmutableSequence.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/PLenSupplier.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/PSequence.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/SequenceUtil.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/BasicSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/BoolSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/ByteSequenceStorage.java,zippy.copyright
@@ -498,7 +497,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStorageFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStoreException.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SetSequenceStorageItem.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TupleSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TypedSequenceStorage.java,zippy.copyright
 graalpython/lib-graalpython/_collections.py,pypy.copyright

@@ -27,7 +27,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
@@ -95,13 +95,12 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         return new ObjectSequenceStorage(newArray);
     }
 
-    @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) {
+    public void setObjectSliceInBound(int start, int stop, int step, ObjectSequenceStorage sequence, ConditionProfile sameLengthProfile) {
         int otherLength = sequence.length();
 
         // range is the whole sequence?
-        if (start == 0 && stop == length) {
-            values = sequence.getCopyOfInternalArray();
+        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
+            values = Arrays.copyOf(sequence.values, otherLength);
             length = otherLength;
             minimizeCapacity();
             return;
@@ -110,66 +109,10 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         ensureCapacity(stop);
 
         for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.getInternalArray()[j];
+            values[i] = sequence.values[j];
         }
 
         length = length > stop ? length : stop;
-    }
-
-    @Override
-    public void delSlice(int startParam, int stopParam, int stepParam) {
-        int start = startParam;
-        int stop = stopParam;
-        int step = stepParam;
-        if ((stop == SequenceUtil.MISSING_INDEX || stop >= length) && step == 1) {
-            length = start;
-        } else if ((start == 0 && stop >= length) && step == 1) {
-            length = 0;
-        } else {
-            int decraseLen; // how much will be the result array shorter
-            int index;  // index of the "old" array
-            if (step < 0) {
-                // For the simplicity of algorithm, then start and stop are swapped.
-                // The start index has to recalculated according the step, because
-                // the algorithm bellow removes the start itema and then start + step ....
-                step = Math.abs(step);
-                stop++;
-                int tmpStart = stop + ((start - stop) % step);
-                stop = start + 1;
-                start = tmpStart;
-            }
-            int arrayIndex = start; // pointer to the "new" form of array
-            if (step == 1) {
-                // this is easy, just remove the part of array
-                decraseLen = stop - start;
-                index = start + decraseLen;
-            } else {
-                int nextStep = index = start; // nextStep is a pointer to the next removed item
-                decraseLen = (stop - start - 1) / step + 1;
-                for (; index < stop && nextStep < stop; index++) {
-                    if (nextStep == index) {
-                        nextStep += step;
-                    } else {
-                        values[arrayIndex++] = values[index];
-                    }
-                }
-            }
-            if (decraseLen > 0) {
-                // shift all other items in array behind the last change
-                for (; index < length; arrayIndex++, index++) {
-                    values[arrayIndex] = values[index];
-                }
-                // change the result length
-                // TODO Shouldn't we realocate the array, if the chane is big?
-                // Then unnecessary big array is kept in the memory.
-                length = length - decraseLen;
-            }
-        }
-    }
-
-    @Override
-    public void delItemInBound(int idx) {
-        popInBound(idx);
     }
 
     @Override
@@ -204,38 +147,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         capacity = values.length;
     }
 
-    @Override
-    public void append(Object value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        length++;
-    }
-
-    @Override
-    public void extend(SequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        Object[] otherValues = other.getInternalArray();
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            values[i] = otherValues[j];
-        }
-
-        length = extendedLength;
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        Object pop = values[idx];
-
-        for (int i = idx; i < values.length - 1; i++) {
-            values[i] = values[i + 1];
-        }
-
-        length--;
-        return pop;
-    }
-
     public Object popObject() {
         Object pop = values[length - 1];
         length--;
@@ -255,14 +166,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
                 values[tail] = temp;
             }
         }
-    }
-
-    @Override
-    public void sort() {
-        Object[] copy = getCopyOfInternalArray();
-        Arrays.sort(copy);
-        values = copy;
-        minimizeCapacity();
     }
 
     @Override
@@ -299,4 +202,18 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         return values;
     }
 
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (Object[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Generic;
+    }
 }

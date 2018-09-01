@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -136,16 +137,18 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @Specialization
         boolean contains(PDictItemsView self, PTuple key,
-                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode,
+                        @Cached("create()") HashingStorageNodes.GetItemNode getDictItemNode,
                         @Cached("create()") HashingStorageNodes.PythonEquivalence equivalenceNode,
                         @Cached("createBinaryProfile()") ConditionProfile tupleLenProfile,
-                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getSeqItemNode) {
-            if (tupleLenProfile.profile(key.len() != 2)) {
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
+            SequenceStorage tupleStorage = key.getSequenceStorage();
+            if (tupleLenProfile.profile(lenNode.execute(tupleStorage) != 2)) {
                 return false;
             }
             HashingStorage dictStorage = self.getDict().getDictStorage();
-            Object value = getItemNode.execute(dictStorage, getSeqItemNode.execute(key.getSequenceStorage(), 0));
-            return value != null && equivalenceNode.equals(value, getSeqItemNode.execute(key.getSequenceStorage(), 1));
+            Object value = getDictItemNode.execute(dictStorage, getTupleItemNode.execute(tupleStorage, 0));
+            return value != null && equivalenceNode.equals(value, getTupleItemNode.execute(tupleStorage, 1));
         }
     }
 

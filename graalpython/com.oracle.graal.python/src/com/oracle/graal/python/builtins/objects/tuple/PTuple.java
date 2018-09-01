@@ -56,15 +56,6 @@ public final class PTuple extends PImmutableSequence {
     }
 
     @Override
-    public int len() {
-        return store.length();
-    }
-
-    public boolean isEmpty() {
-        return len() == 0;
-    }
-
-    @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         if (store instanceof ObjectSequenceStorage) {

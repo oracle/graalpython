@@ -26,15 +26,17 @@
 package com.oracle.graal.python.builtins.objects.slice;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.runtime.sequence.SequenceUtil.MISSING_INDEX;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
 public class PSlice extends PythonBuiltinObject {
+
+    public static final int MISSING_INDEX = Integer.MIN_VALUE;
 
     protected int start;
     protected int stop;
@@ -84,6 +86,7 @@ public class PSlice extends PythonBuiltinObject {
         return step;
     }
 
+    @ValueType
     public static final class SliceInfo {
         public final int start;
         public final int stop;
@@ -150,23 +153,5 @@ public class PSlice extends PythonBuiltinObject {
             newLen = (newStop - newStart - 1) / newStep + 1;
         }
         return new SliceInfo(newStart, newStop, newStep, newLen);
-    }
-
-    /**
-     * Make step a long in case adding the start, stop and step together overflows an int.
-     */
-    public static final int sliceLength(int start, int stop, long step) {
-        int ret;
-        if (step > 0) {
-            ret = (int) ((stop - start + step - 1) / step);
-        } else {
-            ret = (int) ((stop - start + step + 1) / step);
-        }
-
-        if (ret < 0) {
-            return 0;
-        }
-
-        return ret;
     }
 }

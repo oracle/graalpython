@@ -84,7 +84,7 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     private abstract static class IntBinaryBuiltinNode extends PythonBinaryBuiltinNode {
-        BranchProfile divisionByZeroProfile = BranchProfile.create();
+        private final BranchProfile divisionByZeroProfile = BranchProfile.create();
 
         protected void raiseDivisionByZero(boolean cond) {
             if (cond) {

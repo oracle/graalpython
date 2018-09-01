@@ -115,47 +115,7 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void delSlice(int startParam, int stopParam, int stepParam) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void delItemInBound(int idx) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int index(Object value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void reverse() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void sort() {
         throw new UnsupportedOperationException();
     }
 
@@ -183,5 +143,24 @@ public final class CharSequenceStorage extends TypedSequenceStorage {
     @Override
     public Object getInternalArrayObject() {
         return values;
+    }
+
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (char[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Char;
+    }
+
+    public void setCharItemNormalized(int idx, char value) {
+        values[idx] = value;
     }
 }

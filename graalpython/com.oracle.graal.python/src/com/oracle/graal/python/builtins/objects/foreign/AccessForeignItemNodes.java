@@ -62,7 +62,6 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -100,7 +99,7 @@ abstract class AccessForeignItemNodes {
             // determine start
             boolean isStartMissing = false;
             int start = idxSlice.getStart();
-            if (start == SequenceUtil.MISSING_INDEX) {
+            if (start == PSlice.MISSING_INDEX) {
                 start = 0;
                 isStartMissing = true;
             }
@@ -108,7 +107,7 @@ abstract class AccessForeignItemNodes {
             // determine stop
             int end = idxSlice.getStop();
             int foreignSize = -1;
-            if (end == SequenceUtil.MISSING_INDEX) {
+            if (end == PSlice.MISSING_INDEX) {
                 foreignSize = getForeignSize(object, getSizeNode, foreign2PTypeNode);
                 end = foreignSize;
             } else if (isStartMissing) {
