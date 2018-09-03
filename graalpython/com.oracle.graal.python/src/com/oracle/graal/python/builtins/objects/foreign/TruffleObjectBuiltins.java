@@ -769,7 +769,7 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
 
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object o) {
-            return PNone.NO_VALUE;
+            return PNone.NONE;
         }
 
     }

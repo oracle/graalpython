@@ -47,12 +47,15 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 @CoreFunctions(defineModule = "java")
 public class JavaModuleBuiltins extends PythonBuiltins {
@@ -120,6 +123,36 @@ public class JavaModuleBuiltins extends PythonBuiltins {
         boolean check(Object object) {
             Env env = getContext().getEnv();
             return env.isHostSymbol(object);
+        }
+    }
+
+    @Builtin(name = "instanceof", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"!isForeignObject(object)", "isForeignObject(klass)"})
+        boolean check(Object object, TruffleObject klass) {
+            Env env = getContext().getEnv();
+            Object hostKlass = env.asHostObject(klass);
+            if (hostKlass instanceof Class<?>) {
+                return ((Class<?>) hostKlass).isInstance(object);
+            }
+            return false;
+        }
+
+        @Specialization(guards = {"isForeignObject(object)", "isForeignObject(klass)"})
+        boolean checkForeign(Object object, TruffleObject klass) {
+            Env env = getContext().getEnv();
+            Object hostObject = env.asHostObject(object);
+            Object hostKlass = env.asHostObject(klass);
+            if (hostKlass instanceof Class<?>) {
+                return ((Class<?>) hostKlass).isInstance(hostObject);
+            }
+            return false;
+        }
+
+        @Fallback
+        boolean fallback(Object object, Object klass) {
+            throw raise(PythonErrorType.TypeError, "unsupported instanceof(%p, %p)", object, klass);
         }
     }
 }
