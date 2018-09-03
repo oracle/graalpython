@@ -40,8 +40,7 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryFinallyNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -52,13 +51,13 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
 
     private final int finallyFlag;
 
-    public GeneratorTryFinallyNode(PNode body, PNode finalbody, int finallyFlag) {
+    public GeneratorTryFinallyNode(StatementNode body, StatementNode finalbody, int finallyFlag) {
         super(body, finalbody);
         this.finallyFlag = finallyFlag;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         PException exceptionState = getContext().getCurrentException();
         PException exception = null;
         if (gen.isActive(frame, finallyFlag)) {
@@ -77,7 +76,6 @@ public class GeneratorTryFinallyNode extends TryFinallyNode implements Generator
             throw exception;
         }
         getContext().setCurrentException(exceptionState);
-        return PNone.NONE;
     }
 
     public void reset(VirtualFrame frame) {

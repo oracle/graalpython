@@ -28,9 +28,10 @@ package com.oracle.graal.python.nodes.cell;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
@@ -40,9 +41,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "write_cell")
-@NodeChildren({@NodeChild(value = "rhs", type = PNode.class)})
-public abstract class WriteLocalCellNode extends PNode implements WriteIdentifierNode {
-    @Child private PNode readLocal;
+@NodeChildren({@NodeChild(value = "rhs", type = ExpressionNode.class)})
+public abstract class WriteLocalCellNode extends StatementNode implements WriteIdentifierNode {
+    @Child private ExpressionNode readLocal;
 
     private final FrameSlot frameSlot;
 
@@ -51,19 +52,19 @@ public abstract class WriteLocalCellNode extends PNode implements WriteIdentifie
         this.readLocal = ReadLocalVariableNode.create(this.frameSlot);
     }
 
-    public static PNode create(FrameSlot frameSlot, PNode right) {
+    public static WriteLocalCellNode create(FrameSlot frameSlot, ExpressionNode right) {
         return WriteLocalCellNodeGen.create(frameSlot, right);
     }
 
     @Override
-    public Object doWrite(VirtualFrame frame, Object value) {
-        return executeWithValue(frame, value);
+    public void doWrite(VirtualFrame frame, Object value) {
+        executeWithValue(frame, value);
     }
 
-    public abstract Object executeWithValue(VirtualFrame frame, Object value);
+    public abstract void executeWithValue(VirtualFrame frame, Object value);
 
     @Specialization
-    Object writeObject(VirtualFrame frame, Object value) {
+    void writeObject(VirtualFrame frame, Object value) {
         Object localValue = readLocal.execute(frame);
         if (localValue instanceof PCell) {
             PCell cell = (PCell) localValue;
@@ -72,7 +73,7 @@ public abstract class WriteLocalCellNode extends PNode implements WriteIdentifie
             } else {
                 cell.setRef(value);
             }
-            return value;
+            return;
         }
         CompilerDirectives.transferToInterpreter();
         throw new IllegalStateException("Expected a cell, got: " + localValue.toString() + " instead.");

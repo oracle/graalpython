@@ -25,11 +25,11 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.control.LoopNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -39,9 +39,9 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class GeneratorForNode extends LoopNode implements GeneratorControlNode {
 
-    @Child protected PNode body;
+    @Child protected StatementNode body;
     @Child protected WriteNode target;
-    @Child protected PNode getIterator;
+    @Child protected ExpressionNode getIterator;
     @Child protected GetNextNode getNext = GetNextNode.create();
     @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
 
@@ -52,19 +52,19 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
 
     private final int iteratorSlot;
 
-    public GeneratorForNode(WriteNode target, PNode getIterator, PNode body, int iteratorSlot) {
+    public GeneratorForNode(WriteNode target, ExpressionNode getIterator, StatementNode body, int iteratorSlot) {
         this.body = body;
         this.target = target;
         this.getIterator = getIterator;
         this.iteratorSlot = iteratorSlot;
     }
 
-    public static GeneratorForNode create(WriteNode target, PNode getIterator, PNode body, int iteratorSlot) {
+    public static GeneratorForNode create(WriteNode target, ExpressionNode getIterator, StatementNode body, int iteratorSlot) {
         return new GeneratorForNode(target, getIterator, body, iteratorSlot);
     }
 
     @Override
-    public PNode getBody() {
+    public StatementNode getBody() {
         return body;
     }
 
@@ -73,7 +73,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         Object startIterator = gen.getIterator(frame, iteratorSlot);
 
         Object iterator;
@@ -84,7 +84,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                 value = getNext.execute(iterator);
             } catch (PException e) {
                 e.expectStopIteration(getCore(), errorProfile);
-                return true;
+                return;
             }
             target.doWrite(frame, value);
         } else {
@@ -108,7 +108,7 @@ public final class GeneratorForNode extends LoopNode implements GeneratorControl
                     count++;
                 }
             }
-            return PNone.NONE;
+            return;
         } catch (YieldException e) {
             seenYield.enter();
             nextIterator = iterator;

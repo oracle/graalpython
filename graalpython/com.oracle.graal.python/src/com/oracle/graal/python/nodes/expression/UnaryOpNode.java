@@ -25,10 +25,9 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.dsl.NodeChild;
 
-@NodeChild(value = "operand", type = PNode.class)
-public abstract class UnaryOpNode extends PNode {
-    public abstract PNode getOperand();
+@NodeChild(value = "operand", type = ExpressionNode.class)
+public abstract class UnaryOpNode extends ExpressionNode {
+    public abstract ExpressionNode getOperand();
 }

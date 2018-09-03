@@ -38,24 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.call.special;
+package com.oracle.graal.python.nodes.expression;
+
+import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
-import java.util.function.Supplier;
 
 @NodeChildren({@NodeChild("arg"), @NodeChild("arg2")})
-public abstract class LookupAndCallInplaceNode extends PNode {
+public abstract class LookupAndCallInplaceNode extends ExpressionNode {
 
-    public abstract static class NotImplementedHandler extends PBaseNode {
+    public abstract static class NotImplementedHandler extends PNodeWithContext {
         public abstract Object execute(Object arg, Object arg2);
     }
 
@@ -78,7 +80,7 @@ public abstract class LookupAndCallInplaceNode extends PNode {
         return LookupAndCallInplaceNodeGen.create(inplaceOpName, null, null, null, null, null);
     }
 
-    public static LookupAndCallInplaceNode createWithBinary(String inplaceOpName, PNode left, PNode right, Supplier<LookupAndCallInplaceNode.NotImplementedHandler> handlerFactory) {
+    public static LookupAndCallInplaceNode createWithBinary(String inplaceOpName, ExpressionNode left, ExpressionNode right, Supplier<LookupAndCallInplaceNode.NotImplementedHandler> handlerFactory) {
         return LookupAndCallInplaceNodeGen.create(inplaceOpName, inplaceOpName.replaceFirst("__i", "__"), inplaceOpName.replaceFirst("__i", "__r"), handlerFactory, left, right);
     }
 

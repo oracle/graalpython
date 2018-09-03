@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -75,7 +75,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
 public class BytesBuiltins extends PythonBuiltins {
 
-    public static CodingErrorAction toCodingErrorAction(String errors, PBaseNode n) {
+    public static CodingErrorAction toCodingErrorAction(String errors, PNodeWithContext n) {
         switch (errors) {
             case "strict":
                 return CodingErrorAction.REPORT;

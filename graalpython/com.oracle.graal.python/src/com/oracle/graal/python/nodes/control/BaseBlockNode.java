@@ -27,22 +27,20 @@ package com.oracle.graal.python.nodes.control;
 
 import java.util.List;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 
 public abstract class BaseBlockNode extends StatementNode {
 
-    @Children protected final PNode[] statements;
+    @Children protected final StatementNode[] statements;
 
-    protected BaseBlockNode(PNode[] statements) {
+    protected BaseBlockNode(StatementNode[] statements) {
         this.statements = statements;
-        assert statements.length > 0;
     }
 
-    protected PNode[] insertStatementsBefore(PNode insertBefore, List<PNode> insertees) {
+    protected StatementNode[] insertStatementsBefore(StatementNode insertBefore, List<StatementNode> insertees) {
         int insertAt = -1;
         for (int i = 0; i < statements.length; i++) {
-            PNode stmt = statements[i];
+            StatementNode stmt = statements[i];
 
             if (stmt.equals(insertBefore)) {
                 insertAt = i;
@@ -50,7 +48,7 @@ public abstract class BaseBlockNode extends StatementNode {
         }
 
         assert insertAt != -1;
-        PNode[] extendedStatements = new PNode[statements.length + insertees.size()];
+        StatementNode[] extendedStatements = new StatementNode[statements.length + insertees.size()];
         System.arraycopy(statements, 0, extendedStatements, 0, insertAt);
 
         for (int i = 0; i < insertees.size(); i++) {
@@ -64,7 +62,7 @@ public abstract class BaseBlockNode extends StatementNode {
         return extendedStatements;
     }
 
-    public final PNode[] getStatements() {
+    public final StatementNode[] getStatements() {
         return statements;
     }
 }

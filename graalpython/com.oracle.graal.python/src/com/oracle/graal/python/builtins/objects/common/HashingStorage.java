@@ -47,7 +47,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.Iterator;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -86,7 +86,7 @@ public abstract class HashingStorage {
 
     }
 
-    public abstract static class Equivalence extends PBaseNode {
+    public abstract static class Equivalence extends PNodeWithContext {
         public abstract int hashCode(Object o);
 
         public abstract boolean equals(Object left, Object right);

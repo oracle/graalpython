@@ -46,13 +46,13 @@ import java.nio.charset.Charset;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 
 public abstract class UnicodeObjectNodes {
 
-    abstract static class UnicodeBaseNode extends PBaseNode {
+    abstract static class UnicodeBaseNode extends PNodeWithContext {
         private static final int NATIVE_ORDER = 0;
         private static Charset UTF32;
         private static Charset UTF32LE;

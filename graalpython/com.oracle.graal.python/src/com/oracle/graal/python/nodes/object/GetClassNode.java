@@ -52,26 +52,24 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@NodeChildren({@NodeChild(value = "object", type = PNode.class)})
-public abstract class GetClassNode extends PNode {
-    public static GetClassNode create(PNode object) {
-        return GetClassNodeGen.create(object);
-    }
-
+@TypeSystemReference(PythonTypes.class)
+@ImportStatic({PGuards.class})
+public abstract class GetClassNode extends PNodeWithContext {
     public static GetClassNode create() {
-        return GetClassNodeGen.create(null);
+        return GetClassNodeGen.create();
     }
 
     public abstract PythonClass execute(Object object);

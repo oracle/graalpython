@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.YesNodeGen;
@@ -55,7 +54,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         return YesNodeGen.create(null);
     }
 
-    public static CastToBooleanNode createIfTrueNode(PNode operand) {
+    public static CastToBooleanNode createIfTrueNode(ExpressionNode operand) {
         return YesNodeGen.create(operand);
     }
 
@@ -63,7 +62,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         return NotNodeGen.create(null);
     }
 
-    public static CastToBooleanNode createIfFalseNode(PNode operand) {
+    public static CastToBooleanNode createIfFalseNode(ExpressionNode operand) {
         return NotNodeGen.create(operand);
     }
 

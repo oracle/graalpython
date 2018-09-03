@@ -29,16 +29,15 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameUtil;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class FrameSlotNode extends PNode {
+public abstract class FrameSlotNode extends ExpressionNode {
     private final ConditionProfile isPrimitiveProfile = ConditionProfile.createBinaryProfile();
 
     protected boolean isPrimitiveInt(PInt cls) {
@@ -128,9 +127,4 @@ public abstract class FrameSlotNode extends PNode {
         }
         return false;
     }
-
-    /**
-     * To be Overridden by {@link WriteNode}s. {@link ReadNode}s should throw Unsupported Error.
-     */
-    public abstract Object doWrite(VirtualFrame frame, Object value);
 }

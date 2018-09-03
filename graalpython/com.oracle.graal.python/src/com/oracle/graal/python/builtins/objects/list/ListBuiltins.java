@@ -71,7 +71,7 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListRev
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -394,7 +394,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected ListInsertNode createListInsertNode() {
-            return ListBuiltinsFactory.ListInsertNodeFactory.create(new PNode[0]);
+            return ListBuiltinsFactory.ListInsertNodeFactory.create(new ReadArgumentNode[0]);
         }
 
         private int getLength(SequenceStorage s) {
@@ -611,7 +611,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected ListIndexNode createIndexNode() {
-            return ListBuiltinsFactory.ListIndexNodeFactory.create(new PNode[0]);
+            return ListBuiltinsFactory.ListIndexNodeFactory.create(new ReadArgumentNode[0]);
         }
 
         private SequenceStorageNodes.ItemIndexNode getItemIndexNode() {
@@ -778,7 +778,7 @@ public class ListBuiltins extends PythonBuiltins {
         }
 
         protected IMulNode createIMulNode() {
-            return ListBuiltinsFactory.IMulNodeFactory.create(new PNode[0]);
+            return ListBuiltinsFactory.IMulNodeFactory.create(new ReadArgumentNode[0]);
         }
     }
 

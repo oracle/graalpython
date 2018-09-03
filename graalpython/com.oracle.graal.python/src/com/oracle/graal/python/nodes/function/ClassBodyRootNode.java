@@ -41,13 +41,13 @@
 package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class ClassBodyRootNode extends FunctionRootNode {
-    public ClassBodyRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, PNode body, ExecutionCellSlots executionCellSlots) {
+    public ClassBodyRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots executionCellSlots) {
         super(language, sourceSection, functionName, false, frameDescriptor, body, executionCellSlots);
     }
 }

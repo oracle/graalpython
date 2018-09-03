@@ -41,11 +41,11 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.nodes.NodeCost;
 
-public final class LookupInheritedAttributeNode extends PBaseNode {
+public final class LookupInheritedAttributeNode extends PNodeWithContext {
 
     @Child private GetClassNode getClassNode = GetClassNode.create();
     @Child private LookupAttributeInMRONode lookupInMRONode;

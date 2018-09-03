@@ -54,11 +54,6 @@ public abstract class FrameTransferNode extends FrameSlotNode {
         super(prev.frameSlot);
     }
 
-    @Override
-    public Object doWrite(VirtualFrame frame, Object value) {
-        return execute(frame, value);
-    }
-
     protected abstract Object execute(VirtualFrame frame, Object value);
 
     private Frame getCargoFrame(VirtualFrame frame) {

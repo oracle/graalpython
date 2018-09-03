@@ -29,11 +29,12 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundLocalError;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNodeGen.ReadFromCellNodeGen;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -46,8 +47,8 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeInfo(shortName = "read_cell")
-public abstract class ReadLocalCellNode extends PNode implements ReadLocalNode {
-    @Child private PNode readLocal;
+public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLocalNode {
+    @Child private ExpressionNode readLocal;
     @Child private ReadFromCellNode readCell;
     private final FrameSlot frameSlot;
 
@@ -57,16 +58,16 @@ public abstract class ReadLocalCellNode extends PNode implements ReadLocalNode {
         this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
     }
 
-    public static PNode create(FrameSlot frameSlot, boolean isFreeVar) {
+    public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar);
     }
 
     @Override
-    public PNode makeWriteNode(PNode rhs) {
+    public StatementNode makeWriteNode(ExpressionNode rhs) {
         return WriteLocalCellNode.create(frameSlot, rhs);
     }
 
-    static abstract class ReadFromCellNode extends PBaseNode {
+    static abstract class ReadFromCellNode extends PNodeWithContext {
         private final boolean isFreeVar;
         private final Object identifier;
 

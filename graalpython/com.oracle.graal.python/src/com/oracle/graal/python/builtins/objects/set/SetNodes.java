@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -65,7 +65,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class SetNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ConstructSetNode extends PBaseNode {
+    public abstract static class ConstructSetNode extends PNodeWithContext {
         @Child private SetItemNode setItemNode;
 
         public abstract PSet execute(Object cls, Object value);

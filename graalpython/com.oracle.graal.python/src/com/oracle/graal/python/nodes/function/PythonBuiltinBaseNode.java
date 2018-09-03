@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.NativeConversions;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -52,5 +52,5 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 
 @ReportPolymorphism
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class, NativeConversions.class})
-public abstract class PythonBuiltinBaseNode extends PBaseNode {
+public abstract class PythonBuiltinBaseNode extends PNodeWithContext {
 }

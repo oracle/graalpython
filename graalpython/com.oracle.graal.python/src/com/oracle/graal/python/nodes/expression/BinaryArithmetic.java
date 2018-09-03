@@ -44,10 +44,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.function.Supplier;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public enum BinaryArithmetic {
     Add(SpecialMethodNames.__ADD__, "+"),
@@ -86,11 +87,33 @@ public enum BinaryArithmetic {
         return operator;
     }
 
-    public LookupAndCallBinaryNode create(PNode left, PNode right) {
-        return LookupAndCallBinaryNode.createReversible(methodName, left, right, notImplementedHandler);
+    public static final class BinaryArithmeticExpression extends ExpressionNode {
+        @Child private LookupAndCallBinaryNode callNode;
+        @Child private ExpressionNode left;
+        @Child private ExpressionNode right;
+
+        private BinaryArithmeticExpression(LookupAndCallBinaryNode callNode, ExpressionNode left, ExpressionNode right) {
+            this.callNode = callNode;
+            this.left = left;
+            this.right = right;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return callNode.executeObject(left.execute(frame), right.execute(frame));
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.NONE;
+        }
+    }
+
+    public ExpressionNode create(ExpressionNode left, ExpressionNode right) {
+        return new BinaryArithmeticExpression(LookupAndCallBinaryNode.createReversible(methodName, notImplementedHandler), left, right);
     }
 
     public LookupAndCallBinaryNode create() {
-        return LookupAndCallBinaryNode.createReversible(methodName, null, null, notImplementedHandler);
+        return LookupAndCallBinaryNode.createReversible(methodName, notImplementedHandler);
     }
 }

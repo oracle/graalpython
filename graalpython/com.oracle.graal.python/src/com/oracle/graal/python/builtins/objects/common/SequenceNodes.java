@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.objects.common;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -54,7 +54,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 public abstract class SequenceNodes {
 
     @ImportStatic(PGuards.class)
-    public abstract static class LenNode extends PBaseNode {
+    public abstract static class LenNode extends PNodeWithContext {
 
         public abstract int execute(PSequence seq);
 

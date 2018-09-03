@@ -30,20 +30,21 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class TupleLiteralNode extends LiteralNode {
 
-    @Children private final PNode[] values;
+    @Children private final ExpressionNode[] values;
     protected final boolean hasStarredExpressions;
 
-    public PNode[] getValues() {
+    public ExpressionNode[] getValues() {
         return values;
     }
 
-    public TupleLiteralNode(PNode[] values) {
+    public TupleLiteralNode(ExpressionNode[] values) {
         this.values = values;
         for (PNode v : values) {
             if (v instanceof StarredExpressionNode) {

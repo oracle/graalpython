@@ -27,16 +27,17 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class KeywordLiteralNode extends LiteralNode {
 
-    @Child private PNode value;
+    @Child private ExpressionNode value;
 
     private final String name;
 
-    public KeywordLiteralNode(PNode value, String name) {
+    public KeywordLiteralNode(ExpressionNode value, String name) {
         this.name = name;
         this.value = value;
     }

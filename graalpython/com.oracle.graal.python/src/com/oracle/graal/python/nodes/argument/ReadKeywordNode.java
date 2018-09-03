@@ -30,20 +30,19 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-public abstract class ReadKeywordNode extends PNode {
+public abstract class ReadKeywordNode extends ReadArgumentNode {
 
     private final String name;
     private final ValueProfile profile = ValueProfile.createClassProfile();
 
     @Child private ReadIndexedArgumentNode indexedRead;
-    @Child private PNode defaultNode;
+    @Child private ReadDefaultArgumentNode defaultNode;
 
     public static ReadKeywordNode create(String name) {
         return ReadKeywordNodeGen.create(name);
@@ -53,7 +52,7 @@ public abstract class ReadKeywordNode extends PNode {
         return ReadKeywordNodeGen.create(name, idx, defaultNode);
     }
 
-    public static ReadKeywordNode create(String name, PNode defaultNode) {
+    public static ReadKeywordNode create(String name, ReadDefaultArgumentNode defaultNode) {
         return ReadKeywordNodeGen.create(name, defaultNode);
     }
 
@@ -69,7 +68,7 @@ public abstract class ReadKeywordNode extends PNode {
         this.defaultNode = defaultNode;
     }
 
-    ReadKeywordNode(String name, PNode defaultNode) {
+    ReadKeywordNode(String name, ReadDefaultArgumentNode defaultNode) {
         this.name = name;
         this.indexedRead = null;
         this.defaultNode = defaultNode;
@@ -135,7 +134,7 @@ public abstract class ReadKeywordNode extends PNode {
             if (defaultNode == null) {
                 throw raise(TypeError, "missing required keyword-only argument: '%s'", name);
             } else {
-                return profile.profile(defaultNode.execute(frame));
+                return profile.profile(defaultNode.execute());
             }
         } else {
             return profile.profile(keyword.getValue());

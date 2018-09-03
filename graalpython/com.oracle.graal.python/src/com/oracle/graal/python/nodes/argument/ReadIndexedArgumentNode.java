@@ -27,13 +27,12 @@ package com.oracle.graal.python.nodes.argument;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-public abstract class ReadIndexedArgumentNode extends PNode {
+public abstract class ReadIndexedArgumentNode extends ReadArgumentNode {
     private final int index;
     private final ValueProfile profile = ValueProfile.createClassProfile();
 

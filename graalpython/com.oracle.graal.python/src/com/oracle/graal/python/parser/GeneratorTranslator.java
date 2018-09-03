@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.PNodeUtil.replace;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PNodeUtil;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -40,6 +39,7 @@ import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
@@ -128,7 +128,7 @@ public class GeneratorTranslator {
 
         if (yield.getParent() instanceof GeneratorReturnTargetNode) {
             // if this yield is the only thing in the body, we introduce a block
-            replace(yield, BlockNode.create(yield));
+            replace(yield, BlockNode.create(yield.asStatement()));
         }
 
         while (current.getParent() != root) {
@@ -150,12 +150,12 @@ public class GeneratorTranslator {
 
     public void handleComplicatedYieldExpression(YieldNode yield) {
         // Find the dominating StatementNode.
-        PNode targetingStatement = (PNode) PNodeUtil.getParentFor(yield, WriteNode.class);
+        StatementNode targetingStatement = (StatementNode) PNodeUtil.getParentFor(yield, WriteNode.class);
 
-        List<PNode> subExpressions = PNodeUtil.getListOfSubExpressionsInOrder(targetingStatement);
+        List<ExpressionNode> subExpressions = PNodeUtil.getListOfSubExpressionsInOrder(targetingStatement);
         List<PNode> extractedExpressions = new ArrayList<>();
-        List<PNode> extractedWrites = new ArrayList<>();
-        for (PNode expr : subExpressions) {
+        List<StatementNode> extractedWrites = new ArrayList<>();
+        for (ExpressionNode expr : subExpressions) {
             if (expr.equals(yield)) {
                 break;
             }
@@ -211,24 +211,24 @@ public class GeneratorTranslator {
         if (returnTarget.getBody() instanceof BlockNode) {
             BlockNode body = (BlockNode) returnTarget.getBody();
             assert body.getStatements().length == 2;
-            PNode argumentLoads = body.getStatements()[0];
+            StatementNode argumentLoads = body.getStatements()[0];
             replace(returnTarget, new GeneratorReturnTargetNode(argumentLoads, body.getStatements()[1], returnTarget.getReturn(), nextActiveFlagSlot()));
         } else {
-            replace(returnTarget, new GeneratorReturnTargetNode(EmptyNode.create(), returnTarget.getBody(), returnTarget.getReturn(), nextActiveFlagSlot()));
+            replace(returnTarget, new GeneratorReturnTargetNode(BlockNode.create(), returnTarget.getBody(), returnTarget.getReturn(), nextActiveFlagSlot()));
         }
     }
 
     private void replaceForNode(ForNode forNode) {
         WriteNode target = (WriteNode) forNode.getTarget();
-        PNode getIter = forNode.getIterator();
+        ExpressionNode getIter = forNode.getIterator();
         replace(forNode, GeneratorForNode.create(target, getIter, forNode.getBody(), nextGeneratorForNodeSlot()));
     }
 
     private void replaceOuterMostForNode(ForNode forNode) {
         WriteNode target = (WriteNode) forNode.getTarget();
-        PNode getIter = forNode.getIterator();
+        ExpressionNode getIter = forNode.getIterator();
         getOuterMostLoopIterator = getIter;
-        getIter = ReadIndexedArgumentNode.create(0);
+        getIter = ReadIndexedArgumentNode.create(0).asExpression();
         replace(forNode, GeneratorForNode.create(target, getIter, forNode.getBody(), nextGeneratorForNodeSlot()));
     }
 

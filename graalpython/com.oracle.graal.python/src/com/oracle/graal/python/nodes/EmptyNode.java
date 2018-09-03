@@ -26,10 +26,11 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeCost;
 
-public final class EmptyNode extends PNode {
+public final class EmptyNode extends ExpressionNode {
 
     private EmptyNode() {
     }

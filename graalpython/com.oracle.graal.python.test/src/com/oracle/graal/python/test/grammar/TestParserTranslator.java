@@ -66,16 +66,17 @@ import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode.NotNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.IsNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
@@ -133,6 +134,9 @@ public class TestParserTranslator {
         for (Node n : result.getChildren()) {
             if (++i <= num) {
                 continue;
+            }
+            if (n instanceof ExpressionNode.ExpressionStatementNode) {
+                n = n.getChildren().iterator().next();
             }
             assertTrue("Expected an instance of " + klass + ", got " + n.getClass(), klass.isInstance(n));
             return klass.cast(n);
@@ -326,11 +330,11 @@ public class TestParserTranslator {
     public void parseImport() {
         WriteGlobalNode importSet = parseAs("import foo", WriteGlobalNode.class);
         assertEquals("foo", importSet.getAttributeId());
-        assert importSet.getRhs() instanceof ImportNode;
+        assert importSet.getRhs() instanceof ImportNode.ImportExpression;
 
         importSet = parseAs("import foo as bar", WriteGlobalNode.class);
         assertEquals("bar", importSet.getAttributeId());
-        assert importSet.getRhs() instanceof ImportNode;
+        assert importSet.getRhs() instanceof ImportNode.ImportExpression;
 
         parseAs("from os import *", ImportStarNode.class);
     }
@@ -353,7 +357,7 @@ public class TestParserTranslator {
 
         AndNode parseAs = parseAs("x < y() <= z", AndNode.class);
         PNode leftNode = parseAs.getLeftNode();
-        assert leftNode instanceof BlockNode;
+        assert leftNode instanceof ExpressionNode.ExpressionWithSideEffects;
         WriteNode tmpWrite = getChild(leftNode, 0, WriteNode.class);
         assert tmpWrite.getRhs() instanceof PythonCallNode;
         PythonCallNode rhs = (PythonCallNode) tmpWrite.getRhs();
@@ -363,9 +367,9 @@ public class TestParserTranslator {
 
     @Test
     public void parseUnaryOps() {
-        parseAs("-1", LookupAndCallUnaryNode.class);
-        parseAs("+1", LookupAndCallUnaryNode.class);
-        parseAs("~1", LookupAndCallUnaryNode.class);
+        parseAs("-1", UnaryArithmetic.UnaryArithmeticExpression.class);
+        parseAs("+1", UnaryArithmetic.UnaryArithmeticExpression.class);
+        parseAs("~1", UnaryArithmetic.UnaryArithmeticExpression.class);
         parseAs("not 1", NotNode.class);
     }
 
@@ -379,20 +383,20 @@ public class TestParserTranslator {
 
     @Test
     public void parseBinaryOp() {
-        parseAs("1 | 1", LookupAndCallBinaryNode.class);
-        parseAs("1 ^ 1", LookupAndCallBinaryNode.class);
-        parseAs("1 & 1", LookupAndCallBinaryNode.class);
-        parseAs("1 << 2", LookupAndCallBinaryNode.class);
-        parseAs("1 >> 2", LookupAndCallBinaryNode.class);
-        parseAs("1 >> 2 << 2", LookupAndCallBinaryNode.class);
-        parseAs("1 | 1 & 2", LookupAndCallBinaryNode.class);
-        parseAs("1 + 2", LookupAndCallBinaryNode.class);
-        parseAs("1 - 2", LookupAndCallBinaryNode.class);
-        parseAs("1 * 2", LookupAndCallBinaryNode.class);
-        parseAs("1 / 2", LookupAndCallBinaryNode.class);
-        parseAs("1 % 2", LookupAndCallBinaryNode.class);
-        parseAs("1 // 2", LookupAndCallBinaryNode.class);
-        parseAs("1 ** 2", LookupAndCallTernaryNode.class);
+        parseAs("1 | 1", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 ^ 1", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 & 1", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 << 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 >> 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 >> 2 << 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 | 1 & 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 + 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 - 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 * 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 / 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 % 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 // 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 ** 2", TernaryArithmetic.TernaryArithmeticExpression.class);
     }
 
     @Test

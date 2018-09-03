@@ -54,7 +54,7 @@ public abstract class RaiseNode extends StatementNode {
     private final BranchProfile baseCheckFailedProfile = BranchProfile.create();
 
     @Specialization
-    public Object reraise(PNone type, Object cause,
+    public void reraise(PNone type, Object cause,
                     @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
         PythonContext context = getContext();
         PException currentException = context.getCurrentException();
@@ -65,12 +65,12 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     @Specialization
-    public Object raise(PBaseException exception, PNone cause) {
+    public void raise(PBaseException exception, PNone cause) {
         throw getCore().raise(exception, this);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public Object raise(PBaseException exception, Object cause,
+    public void raise(PBaseException exception, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         writeCause.execute(exception, SpecialAttributeNames.__CAUSE__, cause);
         throw getCore().raise(exception, this);
@@ -91,13 +91,13 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     @Specialization
-    public Object raise(PythonClass pythonClass, PNone cause) {
+    public void raise(PythonClass pythonClass, PNone cause) {
         checkBaseClass(pythonClass);
         throw getCore().raise(factory().createBaseException(pythonClass), this);
     }
 
     @Specialization(guards = "!isPNone(cause)")
-    public Object raise(PythonClass pythonClass, Object cause,
+    public void raise(PythonClass pythonClass, Object cause,
                     @Cached("create()") WriteAttributeToObjectNode writeCause) {
         checkBaseClass(pythonClass);
         PBaseException pythonException = factory().createBaseException(pythonClass);
@@ -106,7 +106,7 @@ public abstract class RaiseNode extends StatementNode {
     }
 
     @Fallback
-    public Object raise(Object exception, Object cause) {
+    public void raise(Object exception, Object cause) {
         throw raise(TypeError, "exceptions must derive from BaseException");
     }
 

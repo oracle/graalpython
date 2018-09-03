@@ -43,11 +43,11 @@ package com.oracle.graal.python.nodes.argument.keywords;
 import java.util.Iterator;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -59,7 +59,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PythonOptions.class)
-@NodeChildren({@NodeChild(value = "starargs", type = PNode.class)})
+@NodeChildren({@NodeChild(value = "starargs", type = ExpressionNode.class)})
 public abstract class ExecuteKeywordStarargsNode extends Node {
     public abstract PKeyword[] execute(VirtualFrame frame);
 

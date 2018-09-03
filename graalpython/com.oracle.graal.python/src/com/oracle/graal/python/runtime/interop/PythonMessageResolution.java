@@ -349,7 +349,8 @@ public class PythonMessageResolution {
 
             String itemKey = getItemKey.execute(field);
             if (itemKey != null) {
-                return setItemNode.executeWith(object, itemKey, value);
+                setItemNode.executeWith(object, itemKey, value);
+                return value;
             }
 
             if (object instanceof PythonObject) {

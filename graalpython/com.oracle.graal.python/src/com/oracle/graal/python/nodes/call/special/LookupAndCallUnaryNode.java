@@ -44,22 +44,19 @@ import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@NodeChildren({@NodeChild("operand")})
-public abstract class LookupAndCallUnaryNode extends PNode {
+public abstract class LookupAndCallUnaryNode extends Node {
 
-    public abstract static class NoAttributeHandler extends PBaseNode {
+    public abstract static class NoAttributeHandler extends PNodeWithContext {
         public abstract Object execute(Object receiver);
     }
 
@@ -92,15 +89,11 @@ public abstract class LookupAndCallUnaryNode extends PNode {
     public abstract Object executeObject(Object receiver);
 
     public static LookupAndCallUnaryNode create(String name) {
-        return LookupAndCallUnaryNodeGen.create(name, null, null);
+        return LookupAndCallUnaryNodeGen.create(name, null);
     }
 
     public static LookupAndCallUnaryNode create(String name, Supplier<NoAttributeHandler> handlerFactory) {
-        return LookupAndCallUnaryNodeGen.create(name, handlerFactory, null);
-    }
-
-    public static LookupAndCallUnaryNode create(String name, Supplier<NoAttributeHandler> handlerFactory, PNode receiver) {
-        return LookupAndCallUnaryNodeGen.create(name, handlerFactory, receiver);
+        return LookupAndCallUnaryNodeGen.create(name, handlerFactory);
     }
 
     LookupAndCallUnaryNode(String name, Supplier<NoAttributeHandler> handlerFactory) {

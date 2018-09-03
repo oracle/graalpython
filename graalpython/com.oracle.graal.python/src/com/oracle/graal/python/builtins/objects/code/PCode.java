@@ -48,7 +48,6 @@ import java.util.Set;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -200,9 +199,9 @@ public class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static Set<String> extractArgumentNames(List<? extends PNode> readIndexedArgumentNodes) {
+    private static Set<String> extractArgumentNames(List<? extends ReadIndexedArgumentNode> readIndexedArgumentNodes) {
         Set<String> argNames = new HashSet<>();
-        for (PNode node : readIndexedArgumentNodes) {
+        for (ReadIndexedArgumentNode node : readIndexedArgumentNodes) {
             Node parent = node.getParent();
             if (parent instanceof WriteIdentifierNode) {
                 Object identifier = ((WriteIdentifierNode) parent).getIdentifier();

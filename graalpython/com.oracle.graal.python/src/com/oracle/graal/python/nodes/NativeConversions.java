@@ -48,4 +48,8 @@ public final class NativeConversions {
     public static FromNativeSubclassNode<Double> nativeFloat() {
         return FromNativeSubclassNode.create(PythonBuiltinClassType.PFloat, NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE);
     }
+
+    public static FromNativeSubclassNode<Long> nativeLong() {
+        return FromNativeSubclassNode.create(PythonBuiltinClassType.PFloat, NativeCAPISymbols.FUN_PY_FLOAT_AS_DOUBLE);
+    }
 }

@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes.statement;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -60,7 +59,7 @@ public class ImportFromNode extends AbstractImportNode {
 
     @Override
     @ExplodeLoop
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
         Object importedModule = importModule(importee, globals, fromlist, level);
         for (int i = 0; i < fromlist.length; i++) {
@@ -72,6 +71,5 @@ public class ImportFromNode extends AbstractImportNode {
                 throw raise(ImportError, "cannot import name '%s'", attr);
             }
         }
-        return PNone.NONE;
     }
 }

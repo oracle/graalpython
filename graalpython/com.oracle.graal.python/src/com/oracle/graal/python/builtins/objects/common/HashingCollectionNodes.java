@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.common;
 
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
-import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -50,7 +50,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 public abstract class HashingCollectionNodes {
 
     @ImportStatic(PGuards.class)
-    public abstract static class LenNode extends PBaseNode {
+    public abstract static class LenNode extends PNodeWithContext {
 
         public abstract int execute(PHashingCollection c);
 

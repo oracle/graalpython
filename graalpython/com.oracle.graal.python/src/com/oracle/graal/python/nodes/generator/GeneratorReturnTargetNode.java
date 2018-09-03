@@ -27,18 +27,18 @@ package com.oracle.graal.python.nodes.generator;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-public final class GeneratorReturnTargetNode extends StatementNode implements GeneratorControlNode {
+public final class GeneratorReturnTargetNode extends ExpressionNode implements GeneratorControlNode {
 
-    @Child private PNode body;
-    @Child private PNode returnValue;
-    @Child private PNode parameters;
+    @Child private StatementNode body;
+    @Child private ExpressionNode returnValue;
+    @Child private StatementNode parameters;
     @Child private GeneratorAccessNode gen = GeneratorAccessNode.create();
 
     private final BranchProfile returnProfile = BranchProfile.create();
@@ -47,14 +47,14 @@ public final class GeneratorReturnTargetNode extends StatementNode implements Ge
 
     private final int flagSlot;
 
-    public GeneratorReturnTargetNode(PNode parameters, PNode body, PNode returnValue, int activeFlagIndex) {
+    public GeneratorReturnTargetNode(StatementNode parameters, StatementNode body, ExpressionNode returnValue, int activeFlagIndex) {
         this.body = body;
         this.returnValue = returnValue;
         this.parameters = parameters;
         this.flagSlot = activeFlagIndex;
     }
 
-    public PNode getParameters() {
+    public StatementNode getParameters() {
         return parameters;
     }
 

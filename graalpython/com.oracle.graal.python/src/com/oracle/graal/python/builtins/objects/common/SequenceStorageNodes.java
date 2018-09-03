@@ -89,7 +89,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -137,7 +137,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SequenceStorageNodes {
 
-    abstract static class SequenceStorageBaseNode extends PBaseNode {
+    abstract static class SequenceStorageBaseNode extends PNodeWithContext {
 
         @Child private GetElementType getElementTypeNode;
 
@@ -295,7 +295,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    abstract static class NormalizingNode extends PBaseNode {
+    abstract static class NormalizingNode extends PNodeWithContext {
 
         protected static final String KEY_TYPE_ERROR_MESSAGE = "indices must be integers or slices, not %p";
         @Child private NormalizeIndexNode normalizeIndexNode;
@@ -1071,7 +1071,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    abstract static class VerifyNativeItemNode extends PBaseNode {
+    abstract static class VerifyNativeItemNode extends PNodeWithContext {
 
         public abstract boolean execute(ListStorageType expectedType, Object item);
 
@@ -1105,7 +1105,7 @@ public abstract class SequenceStorageNodes {
     }
 
     @ImportStatic(NativeCAPISymbols.class)
-    public abstract static class StorageToNativeNode extends PBaseNode {
+    public abstract static class StorageToNativeNode extends PNodeWithContext {
         @Child private Node executeNode;
 
         public abstract NativeSequenceStorage execute(Object obj);
@@ -1149,7 +1149,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    public abstract static class CastToByteNode extends PBaseNode {
+    public abstract static class CastToByteNode extends PNodeWithContext {
 
         private final Function<Object, Byte> rangeErrorHandler;
         private final Function<Object, Byte> typeErrorHandler;
@@ -1639,7 +1639,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    public abstract static class NormalizeIndexNode extends PBaseNode {
+    public abstract static class NormalizeIndexNode extends PNodeWithContext {
         public static final String INDEX_OUT_OF_BOUNDS = "index out of range";
         public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
         public static final String TUPLE_OUT_OF_BOUNDS = "tuple index out of range";
@@ -2877,7 +2877,7 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    abstract static class GetElementType extends PBaseNode {
+    abstract static class GetElementType extends PNodeWithContext {
 
         public abstract ListStorageType execute(SequenceStorage s);
 

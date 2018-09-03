@@ -30,8 +30,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameErro
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -44,7 +45,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "read_global")
-public abstract class ReadGlobalOrBuiltinNode extends GlobalNode implements ReadNode {
+public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements ReadNode, GlobalNode {
     @Child private ReadAttributeFromObjectNode readFromModuleNode = ReadAttributeFromObjectNode.create();
     @Child private ReadAttributeFromObjectNode readFromBuiltinsNode;
 
@@ -61,7 +62,7 @@ public abstract class ReadGlobalOrBuiltinNode extends GlobalNode implements Read
     }
 
     @Override
-    public PNode makeWriteNode(PNode rhs) {
+    public StatementNode makeWriteNode(ExpressionNode rhs) {
         return WriteGlobalNode.create(attributeId, rhs);
     }
 

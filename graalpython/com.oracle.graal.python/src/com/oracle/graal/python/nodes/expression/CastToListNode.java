@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
@@ -57,14 +56,11 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-@NodeChildren({@NodeChild(value = "value", type = PNode.class)})
-public abstract class CastToListNode extends PNode {
+public abstract class CastToListNode extends UnaryOpNode {
 
     public static CastToListNode create() {
         return CastToListNodeGen.create(null);
@@ -75,8 +71,6 @@ public abstract class CastToListNode extends PNode {
     @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
     public abstract PList executeWith(Object list);
-
-    public abstract PNode getValue();
 
     protected PythonClass getClass(Object value) {
         if (getClassNode == null) {

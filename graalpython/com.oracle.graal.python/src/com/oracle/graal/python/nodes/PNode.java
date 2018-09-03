@@ -44,7 +44,7 @@ import com.oracle.truffle.api.source.SourceSection;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, PythonOptions.class, SpecialMethodNames.class, SpecialAttributeNames.class, BuiltinNames.class})
 @GenerateWrapper
-public abstract class PNode extends PBaseNode implements InstrumentableNode {
+public abstract class PNode extends PNodeWithContext implements InstrumentableNode {
 
     public static final PNode[] EMPTY_ARRAY = new PNode[0];
 
@@ -100,10 +100,6 @@ public abstract class PNode extends PBaseNode implements InstrumentableNode {
             return (boolean) o;
         }
         throw new UnexpectedResultException(o);
-    }
-
-    public void executeVoid(VirtualFrame frame) {
-        execute(frame);
     }
 
     public boolean hasSideEffectAsAnExpression() {

@@ -246,8 +246,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
             if (!(cls instanceof PythonClass)) {
                 throw raise(PythonErrorType.RuntimeError, "super(): __class__ is not a type (%p)", cls);
             }
-            setTypeAttribute.execute(self, cls);
-            setObjAttribute.execute(self, obj);
+            setTypeAttribute.executeVoid(self, cls);
+            setObjAttribute.executeVoid(self, obj);
             return PNone.NONE;
         }
 

@@ -30,16 +30,17 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class SetLiteralNode extends LiteralNode {
 
-    @Children private final PNode[] values;
+    @Children private final ExpressionNode[] values;
     @Child HashingStorageNodes.SetItemNode setItemNode;
 
-    public SetLiteralNode(PNode[] values) {
+    public SetLiteralNode(ExpressionNode[] values) {
         this.values = values;
     }
 

@@ -40,9 +40,8 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.statement.TryExceptNode;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -58,7 +57,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     private final int elseFlag;
     private final int exceptIndex;
 
-    public GeneratorTryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse, int exceptFlag, int elseFlag, int exceptIndex) {
+    public GeneratorTryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse, int exceptFlag, int elseFlag, int exceptIndex) {
         super(body, exceptNodes, orelse);
         this.exceptFlag = exceptFlag;
         this.elseFlag = elseFlag;
@@ -66,19 +65,19 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
-        Object result = PNone.NONE;
-
+    public void executeVoid(VirtualFrame frame) {
         PException exceptionState = getContext().getCurrentException();
 
         if (gen.isActive(frame, exceptFlag)) {
             catchException(frame, gen.getActiveException(frame), exceptionState);
-            return doReturn(frame, result);
+            reset(frame);
+            return;
         }
 
         if (gen.isActive(frame, elseFlag)) {
-            result = getOrelse().execute(frame);
-            return doReturn(frame, result);
+            getOrelse().execute(frame);
+            reset(frame);
+            return;
         }
 
         try {
@@ -87,17 +86,14 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
             gen.setActive(frame, exceptFlag, true);
             gen.setActiveException(frame, ex);
             catchException(frame, ex, exceptionState);
-            return doReturn(frame, result);
+            reset(frame);
+            return;
         }
 
         gen.setActive(frame, elseFlag, true);
-        result = getOrelse().execute(frame);
-        return doReturn(frame, result);
-    }
-
-    private Object doReturn(VirtualFrame frame, Object result) {
+        getOrelse().execute(frame);
         reset(frame);
-        return result;
+        return;
     }
 
     @ExplodeLoop

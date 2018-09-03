@@ -36,12 +36,15 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -214,41 +217,41 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return factory.createReadLocal(slot);
     }
 
-    private PNode getWriteNode(String name, FrameSlot slot, PNode right) {
+    private StatementNode getWriteNode(String name, FrameSlot slot, ExpressionNode right) {
         if (isCellInCurrentScope(name)) {
             return factory.createWriteLocalCell(right, slot);
         }
         return factory.createWriteLocal(right, slot);
     }
 
-    private PNode getWriteNode(String name, Function<FrameSlot, PNode> getReadNode) {
+    private StatementNode getWriteNode(String name, Function<FrameSlot, ReadArgumentNode> getReadNode) {
         FrameSlot slot = currentScope.findFrameSlot(name);
-        PNode right = getReadNode.apply(slot);
+        ExpressionNode right = getReadNode.apply(slot).asExpression();
 
         return getWriteNode(name, slot, right);
     }
 
-    public PNode getWriteArgumentToLocal(String name) {
+    public StatementNode getWriteArgumentToLocal(String name) {
         return getWriteNode(name, slot -> ReadIndexedArgumentNode.create(slot.getIndex()));
     }
 
-    public PNode getWriteKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
+    public StatementNode getWriteKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
         return getWriteNode(name, slot -> ReadKeywordNode.create(name, slot.getIndex(), readDefaultArgumentNode));
     }
 
-    public PNode getWriteRequiredKeywordArgumentToLocal(String name) {
+    public StatementNode getWriteRequiredKeywordArgumentToLocal(String name) {
         return getWriteNode(name, slot -> ReadKeywordNode.create(name));
     }
 
-    public PNode getWriteRequiredKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
+    public StatementNode getWriteRequiredKeywordArgumentToLocal(String name, ReadDefaultArgumentNode readDefaultArgumentNode) {
         return getWriteNode(name, slot -> ReadKeywordNode.create(name, readDefaultArgumentNode));
     }
 
-    public PNode getWriteVarArgsToLocal(String name) {
+    public StatementNode getWriteVarArgsToLocal(String name) {
         return getWriteNode(name, slot -> ReadVarArgsNode.create(slot.getIndex()));
     }
 
-    public PNode getWriteKwArgsToLocal(String name, String[] names) {
+    public StatementNode getWriteKwArgsToLocal(String name, String[] names) {
         return getWriteNode(name, slot -> ReadVarKeywordsNode.createForUserFunction(names));
     }
 
@@ -376,12 +379,12 @@ public final class TranslationEnvironment implements CellFrameSlotSupplier {
         return currentScope.getFrameDescriptor().getSize();
     }
 
-    protected void setDefaultArgumentNodes(List<PNode> defaultArgs) {
+    protected void setDefaultArgumentNodes(List<ExpressionNode> defaultArgs) {
         currentScope.setDefaultArgumentNodes(defaultArgs);
     }
 
-    protected List<PNode> getDefaultArgumentNodes() {
-        List<PNode> defaultArgs = currentScope.getDefaultArgumentNodes();
+    protected List<ExpressionNode> getDefaultArgumentNodes() {
+        List<ExpressionNode> defaultArgs = currentScope.getDefaultArgumentNodes();
         return defaultArgs;
     }
 

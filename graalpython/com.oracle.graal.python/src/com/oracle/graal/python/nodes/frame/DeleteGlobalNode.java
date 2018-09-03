@@ -43,12 +43,13 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public abstract class DeleteGlobalNode extends GlobalNode {
+public abstract class DeleteGlobalNode extends StatementNode implements GlobalNode {
     private final String attributeId;
 
     DeleteGlobalNode(String attributeId) {

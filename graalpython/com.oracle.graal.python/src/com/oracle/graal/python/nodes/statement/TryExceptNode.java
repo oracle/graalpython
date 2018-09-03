@@ -28,9 +28,7 @@ package com.oracle.graal.python.nodes.statement;
 import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -47,9 +45,9 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public class TryExceptNode extends StatementNode implements TruffleObject {
-    @Child private PNode body;
+    @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
-    @Child private PNode orelse;
+    @Child private StatementNode orelse;
     @CompilationFinal private TryExceptNodeMessageResolution.CatchesFunction catchesFunction;
     @CompilationFinal private ValueProfile exceptionStateProfile;
 
@@ -57,7 +55,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     private final boolean shouldCatchAll;
     private final Assumption singleContextAssumption;
 
-    public TryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse) {
+    public TryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse) {
         this.body = body;
         body.markAsTryBlock();
         this.exceptNodes = exceptNodes;
@@ -67,14 +65,14 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         // store current exception state for later restore
         PException exceptionState = getContext().getCurrentException();
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
             catchException(frame, ex, exceptionState);
-            return PNone.NONE;
+            return;
         } catch (Exception e) {
             if (!seenException) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -99,7 +97,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                 throw e;
             }
         }
-        return orelse.execute(frame);
+        orelse.executeVoid(frame);
     }
 
     private boolean shouldCatchAll() {
@@ -144,7 +142,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         getContext().setCurrentException(exceptionState);
     }
 
-    public PNode getBody() {
+    public StatementNode getBody() {
         return body;
     }
 
@@ -152,7 +150,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         return exceptNodes;
     }
 
-    public PNode getOrelse() {
+    public StatementNode getOrelse() {
         return orelse;
     }
 

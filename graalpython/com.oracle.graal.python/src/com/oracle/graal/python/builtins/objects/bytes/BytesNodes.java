@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -70,7 +70,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class BytesNodes {
 
-    public abstract static class BytesJoinNode extends PBaseNode {
+    public abstract static class BytesJoinNode extends PNodeWithContext {
 
         public abstract byte[] execute(byte[] sep, Object iterable);
 
@@ -124,7 +124,7 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ToBytesNode extends PBaseNode {
+    public abstract static class ToBytesNode extends PNodeWithContext {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         protected final boolean allowRecursive;
@@ -184,7 +184,7 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class FindNode extends PBaseNode {
+    public abstract static class FindNode extends PNodeWithContext {
 
         @Child private NormalizeIndexNode normalizeIndexNode;
         @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
@@ -276,7 +276,7 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class FromListNode extends PBaseNode {
+    public abstract static class FromListNode extends PNodeWithContext {
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.CastToByteNode castToByteNode;
@@ -318,7 +318,7 @@ public abstract class BytesNodes {
         }
     }
 
-    public static class CmpNode extends PBaseNode {
+    public static class CmpNode extends PNodeWithContext {
         @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
         @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
         @Child private SequenceStorageNodes.LenNode leftLenNode;

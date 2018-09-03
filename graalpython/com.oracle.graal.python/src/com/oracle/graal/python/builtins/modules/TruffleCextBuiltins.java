@@ -102,7 +102,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -1081,7 +1081,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class GetByteArrayNode extends PBaseNode {
+    abstract static class GetByteArrayNode extends PNodeWithContext {
 
         @Child private Node readNode;
 

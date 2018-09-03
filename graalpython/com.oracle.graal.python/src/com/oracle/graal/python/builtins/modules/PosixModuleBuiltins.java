@@ -79,7 +79,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -1043,7 +1043,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class ConvertPathlikeObjectNode extends PBaseNode {
+    abstract static class ConvertPathlikeObjectNode extends PNodeWithContext {
         @Child private LookupAndCallUnaryNode callFspathNode;
         @CompilationFinal private ValueProfile resultTypeProfile;
 

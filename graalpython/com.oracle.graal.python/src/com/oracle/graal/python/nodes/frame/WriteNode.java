@@ -25,30 +25,29 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInterface;
 
 public interface WriteNode extends NodeInterface {
 
-    PNode getRhs();
+    ExpressionNode getRhs();
 
-    default Object doWrite(VirtualFrame frame, boolean value) {
-        return doWrite(frame, (Object) value);
+    default void doWrite(VirtualFrame frame, boolean value) {
+        doWrite(frame, (Object) value);
     }
 
-    default Object doWrite(VirtualFrame frame, int value) {
-        return doWrite(frame, (Object) value);
+    default void doWrite(VirtualFrame frame, int value) {
+        doWrite(frame, (Object) value);
     }
 
-    default Object doWrite(VirtualFrame frame, long value) {
-        return doWrite(frame, (Object) value);
+    default void doWrite(VirtualFrame frame, long value) {
+        doWrite(frame, (Object) value);
     }
 
-    default Object doWrite(VirtualFrame frame, double value) {
-        return doWrite(frame, (Object) value);
+    default void doWrite(VirtualFrame frame, double value) {
+        doWrite(frame, (Object) value);
     }
 
-    Object doWrite(VirtualFrame frame, Object value);
-
+    void doWrite(VirtualFrame frame, Object value);
 }

@@ -26,10 +26,36 @@
 package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Base class for most statements, except for FrameSlotNodes.
  *
  */
 public abstract class StatementNode extends PNode {
+    @Override
+    public final Object execute(VirtualFrame frame) {
+        // TODO REMOVE ME
+        throw new IllegalStateException();
+    }
+
+    public abstract void executeVoid(VirtualFrame frame);
+
+    private static final class ExprStatementNode extends StatementNode {
+        @Child private ExpressionNode expressionNode;
+
+        private ExprStatementNode(ExpressionNode expressionNode) {
+            this.expressionNode = expressionNode;
+        }
+
+        @Override
+        public void executeVoid(VirtualFrame frame) {
+            expressionNode.execute(frame);
+        }
+    }
+
+    public StatementNode createStatementFromExpression(ExpressionNode node) {
+        return new ExprStatementNode(node);
+    }
 }

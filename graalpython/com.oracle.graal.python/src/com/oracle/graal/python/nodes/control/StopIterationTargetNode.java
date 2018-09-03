@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -33,31 +32,31 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class StopIterationTargetNode extends StatementNode {
 
-    @Child private PNode tryPart;
-    @Child private PNode catchPart;
+    @Child private StatementNode tryPart;
+    @Child private StatementNode catchPart;
 
     private final ConditionProfile errorProfile = ConditionProfile.createBinaryProfile();
 
-    public StopIterationTargetNode(PNode tryPart, PNode catchPart) {
+    public StopIterationTargetNode(StatementNode tryPart, StatementNode catchPart) {
         this.tryPart = tryPart;
         this.catchPart = catchPart;
     }
 
-    public PNode getTryPart() {
+    public StatementNode getTryPart() {
         return tryPart;
     }
 
-    public PNode getCatchPart() {
+    public StatementNode getCatchPart() {
         return catchPart;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         try {
-            return tryPart.execute(frame);
+            tryPart.execute(frame);
         } catch (PException ex) {
             ex.expectStopIteration(getCore(), errorProfile);
-            return catchPart.execute(frame);
+            catchPart.execute(frame);
         }
     }
 }

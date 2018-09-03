@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
@@ -68,7 +67,7 @@ public class ImportStarNode extends AbstractImportNode {
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         Object importedModule = importModule(moduleName, PArguments.getGlobals(frame), new String[]{"*"}, level);
         PythonObject globals = PArguments.getGlobals(frame);
         assert importedModule instanceof PythonModule;
@@ -79,7 +78,6 @@ public class ImportStarNode extends AbstractImportNode {
             Object attr = ((PythonModule) importedModule).getAttribute(name);
             writeAttribute(globals, name, attr);
         }
-        return PNone.NONE;
     }
 
     @TruffleBoundary
