@@ -40,14 +40,21 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.ForeignAccess;
+import com.oracle.truffle.api.interop.Message;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.nodes.Node;
 
+@ImportStatic(Message.class)
 public abstract class IsNode extends BinaryOpNode {
     public static IsNode create(PNode left, PNode right) {
         return IsNodeGen.create(left, right);
@@ -169,6 +176,12 @@ public abstract class IsNode extends BinaryOpNode {
     boolean doNative(PythonNativeObject left, PythonNativeObject right,
                     @Cached("getNativeIsNode()") CExtNodes.IsNode isNode) {
         return isNode.execute(left, right);
+    }
+
+    @Specialization(guards = "isForeignObject(left)")
+    boolean doForeignObject(TruffleObject left, @SuppressWarnings("unused") PNone none,
+                    @Cached("IS_NULL.createNode()") Node isNullNode) {
+        return ForeignAccess.sendIsNull(isNullNode, left);
     }
 
     @Fallback
