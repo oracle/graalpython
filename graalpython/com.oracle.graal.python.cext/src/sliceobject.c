@@ -53,7 +53,7 @@ int PySlice_GetIndicesEx(PyObject *_r, Py_ssize_t length,
                          Py_ssize_t *slicelength) {
     PySliceObject *r = (PySliceObject*)_r;
     void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", r->start, r->stop, r->step, length));
-    if (result == ERROR_MARKER) {
+    if (result == NULL) {
         return -1;
     }
     *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
@@ -66,7 +66,7 @@ int PySlice_GetIndicesEx(PyObject *_r, Py_ssize_t length,
 int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t *step) {
     PySliceObject *r = (PySliceObject*)_r;
     void *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", r->start, r->stop, r->step, PY_SSIZE_T_MAX));
-    if (result == ERROR_MARKER) {
+    if (result == NULL) {
         return -1;
     }
     *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));
@@ -77,7 +77,7 @@ int PySlice_Unpack(PyObject *_r, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t
 
 Py_ssize_t PySlice_AdjustIndices(Py_ssize_t length, Py_ssize_t *start, Py_ssize_t *stop, Py_ssize_t step) {
     PyObject *result = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT, "PySlice_GetIndicesEx", *start, *stop, step, length));
-    if (result == ERROR_MARKER) {
+    if (result == NULL) {
         return -1;
     }
     *start = PyLong_AsSsize_t(PyTuple_GetItem(result, 0));

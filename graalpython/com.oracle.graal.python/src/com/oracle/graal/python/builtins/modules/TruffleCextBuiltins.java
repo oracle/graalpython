@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassN
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -157,6 +158,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public class TruffleCextBuiltins extends PythonBuiltins {
 
     private static final String ERROR_HANDLER = "error_handler";
+    private static final String NATIVE_NULL = "native_null";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -170,6 +172,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         new PythonClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
         builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
+        builtinConstants.put(NATIVE_NULL, new PythonNativeNull());
     }
 
     /**
@@ -535,6 +538,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return result;
         }
 
+        @Specialization
+        Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result) {
+            checkFunctionResult(name, true);
+            return result;
+        }
+
         @Specialization(guards = "isForeignObject(result)")
         Object doForeign(String name, TruffleObject result,
                         @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
@@ -550,12 +559,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             boolean errOccurred = currentException != null;
             if (isNull) {
                 if (!errOccurred) {
-                    throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned NULL without setting an error", name);
+                    throw raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
                     throw currentException;
                 }
             } else if (errOccurred) {
-                throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned a result with an error set", name);
+                throw raise(PythonErrorType.SystemError, "%s returned a result with an error set", name);
             }
         }
 
@@ -1032,7 +1041,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private CExtNodes.ToSulongNode toSulongNode;
 
         @Specialization(guards = "isByteArray(o)")
-        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker) {
+        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PythonNativeNull errors, int byteorder, Object errorMarker) {
             return doUnicode(o, size, "strict", byteorder, errorMarker);
         }
 
@@ -1627,7 +1636,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     readErrorHandlerNode = ReadAttributeFromObjectNode.create();
                 }
                 getContext().setCurrentException(e);
-                return toSulongNode.execute(readErrorHandlerNode.execute(cextModule, ERROR_HANDLER));
+                return toSulongNode.execute(readErrorHandlerNode.execute(cextModule, NATIVE_NULL));
             }
         }
     }
@@ -1738,7 +1747,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "make_may_raise_wrapper", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
         static class MayRaiseWrapper extends RootNode {
@@ -1804,6 +1813,21 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         double doIt(Object object) {
             return asDoubleNode.execute(object);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Register_NULL", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Register_NULL extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doIt(Object object,
+                        @Cached("create()") ReadAttributeFromObjectNode writeAttrNode) {
+            Object wrapper = writeAttrNode.execute(getCore().lookupBuiltinModule("python_cext"), NATIVE_NULL);
+            if (wrapper instanceof PythonNativeNull) {
+                ((PythonNativeNull) wrapper).setPtr(object);
+            }
+
+            return wrapper;
         }
     }
 }

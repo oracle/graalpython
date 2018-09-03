@@ -281,6 +281,11 @@ public abstract class CExtNodes {
             return nativeObject.object;
         }
 
+        @Specialization
+        Object doNativeNull(PythonNativeNull object) {
+            return object.getPtr();
+        }
+
         @Specialization(guards = "!isNativeClass(object)")
         Object doPythonClass(PythonClass object) {
             return PythonClassNativeWrapper.wrap(object);
@@ -369,9 +374,14 @@ public abstract class CExtNodes {
             return object.getDelegate();
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)"})
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
         PythonAbstractObject doNativeObject(TruffleObject object) {
             return factory().createNativeObjectWrapper(object);
+        }
+
+        @Specialization
+        PNone doNativeNull(@SuppressWarnings("unused") PythonNativeNull object) {
+            return PNone.NO_VALUE;
         }
 
         @Specialization
@@ -411,6 +421,10 @@ public abstract class CExtNodes {
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
             return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object);
+        }
+
+        protected static boolean isNativeNull(Object object) {
+            return object instanceof PythonNativeNull;
         }
 
         protected boolean isForeignObject(TruffleObject obj) {

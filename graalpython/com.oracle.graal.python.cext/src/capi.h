@@ -97,7 +97,7 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
     }
 
 /* Call function with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_O(__recv__, __name__, ...) handle_exception(PY_TRUFFLE_LANDING((__recv__), __name__, ##__VA_ARGS__))
+#define UPCALL_O(__recv__, __name__, ...) PY_TRUFFLE_LANDING((__recv__), __name__, ##__VA_ARGS__)
 
 /* Call function with a primitive return; no polyglot cast but error handling */
 #define UPCALL_P(__recv__, __name__, ...) (PY_TRUFFLE_LANDING_L((__recv__), __name__, ##__VA_ARGS__))
@@ -109,19 +109,19 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define UPCALL_L(__recv__, __name__, ...) UPCALL_P(__recv__, __name__, ##__VA_ARGS__)
 
 /* Call function with return type 'double'; no polyglot cast but error handling */
-#define UPCALL_D(__recv__, __name__, ...) handle_exception(PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__))
+#define UPCALL_D(__recv__, __name__, ...) PY_TRUFFLE_LANDING_D((__recv__), __name__, ##__VA_ARGS__)
 
 /* Call function with return type 'void*'; no polyglot cast and no error handling */
 #define UPCALL_PTR(__name__, ...) (PY_TRUFFLE_LANDING_PTR(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'PyObject *'; does polyglot cast and error handling */
-#define UPCALL_CEXT_O(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_O(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
 
 /* Call void function of 'python_cext' module; no polyglot cast and no error handling */
 #define UPCALL_CEXT_VOID(__name__, ...) (PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__))
 
 /* Call function of 'python_cext' module with return type 'PyObject*'; no polyglot cast but error handling */
-#define UPCALL_CEXT_NOCAST(__name__, ...) handle_exception(PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__))
+#define UPCALL_CEXT_NOCAST(__name__, ...) PY_TRUFFLE_CEXT_LANDING(__name__, ##__VA_ARGS__)
 
 /* Call function of 'python_cext' module with return type 'void*'; no polyglot cast and no error handling */
 #define UPCALL_CEXT_PTR(__name__, ...) (PY_TRUFFLE_CEXT_LANDING_PTR(__name__, ##__VA_ARGS__))
@@ -150,7 +150,6 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define as_float(obj) ((float)as_double(obj))
 
 
-void* handle_exception(void* val);
 void* native_to_java(PyObject* obj);
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
@@ -249,7 +248,12 @@ int PyTruffle_Debug(void *arg);
 void* PyObjectHandle_ForJavaType(void* jobj);
 
 extern PyObject marker_struct;
-#define ERROR_MARKER &marker_struct
+extern PyObject* wrapped_null;
+
+/* An error marker object.
+ * The object should not be converted to_java and is intended to be returned in the error case.
+ * That's mainly useful for direct calls (without landing functions) of 'python_cext' functions. */
+#define ERROR_MARKER wrapped_null
 
 /* internal functions to avoid unnecessary managed <-> native conversions */
 

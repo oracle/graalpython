@@ -124,7 +124,7 @@ void initialize_exceptions() {
 UPCALL_ID(with_traceback);
 int PyException_SetTraceback(PyObject *self, PyObject *tb) {
     PyObject* result = UPCALL_O(native_to_java(self), _jls_with_traceback, native_to_java(tb));
-    if (result == ERROR_MARKER) {
+    if (result == NULL) {
         return -1;
     } else {
         return 0;
