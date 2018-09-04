@@ -82,7 +82,7 @@ MICRO_BENCHMARKS = {
     'list-indexing': ITER_15 + ['1000000'],
     'list-iterating-explicit': ITER_25 + ['1000000'],
     'list-iterating': ITER_25 + ['1000000'],
-    'list-iterating-obj': ITER_15 + ['10000000'],
+    'list-iterating-obj': ITER_15 + ['50000000'],
     'math-sqrt': ITER_15 + ['500000000'],
     'object-allocate': ITER_10 + ['5000'],
     'object-layout-change': ITER_15 + ['1000000'],
@@ -91,7 +91,9 @@ MICRO_BENCHMARKS = {
     'special-len': ITER_10 + ['5'],
     'member_access': ITER_10 + ['5'],
     'c_member_access': ITER_25 + ['5'],
-    'c-list-iterating-obj': ITER_15 + ['10000000']
+    'c-list-iterating-obj': ITER_15 + ['50000000'],
+    'magic-bool': ITER_10 + ['100000000'],
+    'c-magic-bool': ITER_10 + ['100000000']
 }
 
 
