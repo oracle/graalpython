@@ -207,7 +207,7 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doPRange(PRange range, PSlice slice) {
-            SliceInfo info = slice.computeActualIndices(range.len());
+            SliceInfo info = slice.computeIndices(range.len());
             int newStep = range.getStep() * info.step;
             int newStart = info.start == PSlice.MISSING_INDEX ? range.getStart() : range.getStart() + info.start * range.getStep();
             int newStop = info.stop == PSlice.MISSING_INDEX ? range.getStop() : Math.min(range.getStop(), newStart + info.length * newStep);

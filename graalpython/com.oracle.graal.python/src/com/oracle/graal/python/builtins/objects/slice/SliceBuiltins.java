@@ -34,9 +34,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.slice.SliceBuiltinsFactory.StartNodeFactory;
-import com.oracle.graal.python.builtins.objects.slice.SliceBuiltinsFactory.StepNodeFactory;
-import com.oracle.graal.python.builtins.objects.slice.SliceBuiltinsFactory.StopNodeFactory;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -44,7 +41,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -91,10 +87,6 @@ public class SliceBuiltins extends PythonBuiltins {
         protected Object getNone(@SuppressWarnings("unused") PSlice self) {
             return PNone.NONE;
         }
-
-        public static StartNode create() {
-            return StartNodeFactory.create();
-        }
     }
 
     @Builtin(name = "stop", fixedNumOfPositionalArgs = 1, isGetter = true)
@@ -110,10 +102,6 @@ public class SliceBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getStop() == MISSING_INDEX")
         protected Object getNone(@SuppressWarnings("unused") PSlice self) {
             return PNone.NONE;
-        }
-
-        public static StopNode create() {
-            return StopNodeFactory.create();
         }
     }
 
@@ -131,10 +119,6 @@ public class SliceBuiltins extends PythonBuiltins {
         protected Object getNone(@SuppressWarnings("unused") PSlice self) {
             return PNone.NONE;
         }
-
-        public static StepNode create() {
-            return StepNodeFactory.create();
-        }
     }
 
     @Builtin(name = "indices", fixedNumOfPositionalArgs = 2)
@@ -142,82 +126,11 @@ public class SliceBuiltins extends PythonBuiltins {
     @ImportStatic(PSlice.class)
     abstract static class IndicesNode extends PythonBinaryBuiltinNode {
 
-        private static Object[] adjustIndices(int length, int start, int stop, int step) {
-            int _start = start;
-            int _stop = stop;
-
-            if (start < 0) {
-                _start += length;
-
-                if (_start < 0) {
-                    _start = (step < 0) ? -1 : 0;
-                }
-            } else if (start >= length) {
-                _start = (step < 0) ? length - 1 : length;
-            }
-
-            if (stop < 0) {
-                _stop += length;
-
-                if (_stop < 0) {
-                    _stop = (step < 0) ? -1 : 0;
-                }
-            } else if (_stop >= length) {
-                _stop = (step < 0) ? length - 1 : length;
-            }
-
-            // if (step < 0) {
-            // if (_stop < _start) {
-            // return (_start - _stop - 1) / (-step) + 1;
-            // }
-            // }
-            // else {
-            // if (_start < _stop) {
-            // return (_stop - _start - 1) / step + 1;
-            // }
-            // }
-
-            return new Object[]{_start, _stop, step};
-        }
-
         @Specialization()
-        protected PTuple get(PSlice self, int length,
-                        @Cached("create()") StartNode startNode,
-                        @Cached("create()") StopNode stopNode,
-                        @Cached("create()") StepNode stepNode) {
-            Object start = startNode.execute(self);
-            Object stop = stopNode.execute(self);
-            Object step = stepNode.execute(self);
+        protected PTuple get(PSlice self, int length) {
+            PSlice.SliceInfo sliceInfo = self.computeIndices(length);
 
-            int _start = -1;
-            int _stop = -1;
-            int _step = -1;
-
-            if (step == PNone.NONE) {
-                _step = 1;
-            } else if (step instanceof Integer) {
-                _step = (int) step;
-            }
-
-            if (start == PNone.NONE) {
-                _start = _step < 0 ? length - 1 : 0;
-            } else if (start instanceof Integer) {
-                _start = (int) start;
-                if (_start < 0) {
-                    _start += length;
-                }
-            }
-
-            if (stop == PNone.NONE) {
-                _stop = _step < 0 ? -1 : length;
-            } else if (stop instanceof Integer) {
-                _stop = (int) stop;
-                if (_stop < 0) {
-                    _stop += length;
-                }
-            }
-
-            return factory().createTuple(adjustIndices(length, _start, _stop, _step));
+            return factory().createTuple(new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
         }
     }
 }

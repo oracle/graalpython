@@ -1248,14 +1248,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         Object doUnpack(int start, int stop, int step, int length) {
             PSlice tmpSlice = factory().createSlice(start, stop, step);
-            SliceInfo actualIndices = tmpSlice.computeActualIndices(length);
+            SliceInfo actualIndices = tmpSlice.computeIndices(length);
             return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
         Object doUnpackLong(long start, long stop, long step, long length) {
             PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
-            SliceInfo actualIndices = tmpSlice.computeActualIndices(PInt.intValueExact(length));
+            SliceInfo actualIndices = tmpSlice.computeIndices(PInt.intValueExact(length));
             return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
         }
 
@@ -1263,7 +1263,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object doUnpackLongOvf(long start, long stop, long step, long length) {
             try {
                 PSlice tmpSlice = factory().createSlice(PInt.intValueExact(start), PInt.intValueExact(stop), PInt.intValueExact(step));
-                SliceInfo actualIndices = tmpSlice.computeActualIndices(length > Integer.MAX_VALUE ? Integer.MAX_VALUE : PInt.intValueExact(length));
+                SliceInfo actualIndices = tmpSlice.computeIndices(length > Integer.MAX_VALUE ? Integer.MAX_VALUE : PInt.intValueExact(length));
                 return factory().createTuple(new Object[]{actualIndices.start, actualIndices.stop, actualIndices.step, actualIndices.length});
             } catch (ArithmeticException e) {
                 throw raiseIndexError();

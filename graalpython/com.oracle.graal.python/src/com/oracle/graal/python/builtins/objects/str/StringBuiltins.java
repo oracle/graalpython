@@ -1546,7 +1546,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         public String doString(String primary, PSlice slice) {
-            SliceInfo info = slice.computeActualIndices(primary.length());
+            SliceInfo info = slice.computeIndices(primary.length());
             final int start = info.start;
             int stop = info.stop;
             int step = info.step;

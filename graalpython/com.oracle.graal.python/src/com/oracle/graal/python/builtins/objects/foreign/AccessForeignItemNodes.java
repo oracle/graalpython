@@ -115,7 +115,7 @@ abstract class AccessForeignItemNodes {
             }
 
             // determine length (foreignSize is only required if start or stop is missing)
-            return idxSlice.computeActualIndices(foreignSize);
+            return idxSlice.computeIndices(foreignSize);
         }
     }
 

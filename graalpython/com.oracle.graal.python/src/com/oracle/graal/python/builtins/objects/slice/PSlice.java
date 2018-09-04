@@ -101,7 +101,7 @@ public class PSlice extends PythonBuiltinObject {
         }
     }
 
-    public SliceInfo computeActualIndices(int len) {
+    public SliceInfo computeIndices(int length) {
         int newStart = this.start;
         int newStop = this.stop;
         int newStep = this.step;
@@ -116,33 +116,33 @@ public class PSlice extends PythonBuiltinObject {
                 throw PythonLanguage.getCore().raise(ValueError, "slice step cannot be zero");
             }
         }
-        tmpStart = newStep < 0 ? len - 1 : 0;
-        tmpStop = newStep < 0 ? -1 : len;
+        tmpStart = newStep < 0 ? length - 1 : 0;
+        tmpStop = newStep < 0 ? -1 : length;
 
         if (newStart == MISSING_INDEX) {
             newStart = tmpStart;
         } else {
             if (newStart < 0) {
-                newStart += len;
+                newStart += length;
             }
             if (newStart < 0) {
                 newStart = newStep < 0 ? -1 : 0;
             }
-            if (newStart >= len) {
-                newStart = newStep < 0 ? len - 1 : len;
+            if (newStart >= length) {
+                newStart = newStep < 0 ? length - 1 : length;
             }
         }
         if (newStop == MISSING_INDEX) {
             newStop = tmpStop;
         } else {
             if (newStop < 0) {
-                newStop += len;
+                newStop += length;
             }
             if (newStop < 0) {
                 newStop = newStep < 0 ? -1 : 0;
             }
-            if (newStop >= len) {
-                newStop = newStep < 0 ? len - 1 : len;
+            if (newStop >= length) {
+                newStop = newStep < 0 ? length - 1 : length;
             }
         }
         if ((newStep < 0 && newStop >= newStart) || (newStep > 0 && newStart >= newStop)) {
