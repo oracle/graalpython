@@ -40,23 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects;
 
-import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.runtime.interop.PythonMessageResolutionForeign;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.TruffleObject;
 
 public abstract class PythonAbstractObject implements TruffleObject, Comparable<Object> {
-    private PythonObjectNativeWrapper nativeWrapper;
+    private DynamicObjectNativeWrapper nativeWrapper;
 
     public final ForeignAccess getForeignAccess() {
         return PythonMessageResolutionForeign.ACCESS;
     }
 
-    public PythonObjectNativeWrapper getNativeWrapper() {
+    public DynamicObjectNativeWrapper getNativeWrapper() {
         return nativeWrapper;
     }
 
-    public void setNativeWrapper(PythonObjectNativeWrapper nativeWrapper) {
+    public void setNativeWrapper(DynamicObjectNativeWrapper nativeWrapper) {
         assert this.nativeWrapper == null;
         this.nativeWrapper = nativeWrapper;
     }

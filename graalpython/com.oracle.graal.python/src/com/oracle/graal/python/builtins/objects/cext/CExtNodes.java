@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.Materializ
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.BoolNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.ByteNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DoubleNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.IntNativeWrapper;
@@ -222,6 +223,10 @@ public abstract class CExtNodes {
             return object instanceof PythonNativeNull;
         }
 
+        protected static boolean isMaterialized(PrimitiveNativeWrapper wrapper) {
+            return wrapper.getMaterializedObject() != null;
+        }
+
         protected TruffleObject importCAPISymbol(String name) {
             TruffleObject capiLibrary = (TruffleObject) getContext().getCapiLibrary();
             if (readSymbolNode == null) {
@@ -254,9 +259,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doBoolean(boolean b,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
-            return PythonObjectNativeWrapper.wrap(factory().createInt(b), noWrapperProfile);
+        Object doBoolean(boolean b) {
+            return BoolNativeWrapper.create(b);
         }
 
         @Specialization
@@ -270,9 +274,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doDouble(double d,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
-            return PythonObjectNativeWrapper.wrap(factory().createFloat(d), noWrapperProfile);
+        Object doDouble(double d) {
+            return DoubleNativeWrapper.create(d);
         }
 
         @Specialization
@@ -346,6 +349,11 @@ public abstract class CExtNodes {
         public abstract Object execute(Object value);
 
         @Child GetClassNode getClassNode;
+
+        @Specialization(guards = "!isMaterialized(object)")
+        boolean doBoolNativeWrapper(BoolNativeWrapper object) {
+            return object.getValue();
+        }
 
         @Specialization(guards = "!isMaterialized(object)")
         byte doByteNativeWrapper(ByteNativeWrapper object) {
@@ -436,10 +444,6 @@ public abstract class CExtNodes {
             return getClassNode.execute(obj) == getCore().lookupType(PythonBuiltinClassType.TruffleObject);
         }
 
-        protected static boolean isMaterialized(PrimitiveNativeWrapper wrapper) {
-            return wrapper.getMaterializedObject() != null;
-        }
-
         @TruffleBoundary
         public static Object doSlowPath(PythonCore core, Object object) {
             if (object instanceof PythonNativeWrapper) {
@@ -464,28 +468,39 @@ public abstract class CExtNodes {
 
         @Child GetClassNode getClassNode;
 
-        @Specialization
+        @Specialization(guards = "!isMaterialized(object)")
+        PInt doBoolNativeWrapper(BoolNativeWrapper object) {
+            PInt materializedInt = factory().createInt(object.getValue());
+            object.setMaterializedObject(materializedInt);
+            materializedInt.setNativeWrapper(object);
+            return materializedInt;
+        }
+
+        @Specialization(guards = "!isMaterialized(object)")
         PInt doByteNativeWrapper(ByteNativeWrapper object) {
             PInt materializedInt = factory().createInt(object.getValue());
             object.setMaterializedObject(materializedInt);
+            materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
-        @Specialization
+        @Specialization(guards = "!isMaterialized(object)")
         PInt doIntNativeWrapper(IntNativeWrapper object) {
             PInt materializedInt = factory().createInt(object.getValue());
             object.setMaterializedObject(materializedInt);
+            materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
-        @Specialization
+        @Specialization(guards = "!isMaterialized(object)")
         PInt doLongNativeWrapper(LongNativeWrapper object) {
             PInt materializedInt = factory().createInt(object.getValue());
             object.setMaterializedObject(materializedInt);
+            materializedInt.setNativeWrapper(object);
             return materializedInt;
         }
 
-        @Specialization
+        @Specialization(guards = "!isMaterialized(object)")
         PFloat doDoubleNativeWrapper(DoubleNativeWrapper object) {
             PFloat materializedInt = factory().createFloat(object.getValue());
             object.setMaterializedObject(materializedInt);
@@ -510,6 +525,12 @@ public abstract class CExtNodes {
         public static MaterializeDelegateNode create() {
             return MaterializeDelegateNodeGen.create();
         }
+    }
+
+    public abstract static class GetNativeWrapper extends CExtBaseNode {
+
+        public abstract PythonNativeWrapper execute(Object obj);
+
     }
 
     /**
@@ -973,6 +994,31 @@ public abstract class CExtNodes {
             return value.getValue();
         }
 
+        @Specialization
+        double doBoolNativeWrapper(BoolNativeWrapper object) {
+            return PInt.intValue(object.getValue());
+        }
+
+        @Specialization
+        double doByteNativeWrapper(ByteNativeWrapper object) {
+            return object.getValue();
+        }
+
+        @Specialization
+        double doIntNativeWrapper(IntNativeWrapper object) {
+            return object.getValue();
+        }
+
+        @Specialization
+        double doLongNativeWrapper(LongNativeWrapper object) {
+            return object.getValue();
+        }
+
+        @Specialization
+        double doDoubleNativeWrapper(DoubleNativeWrapper object) {
+            return object.getValue();
+        }
+
         // TODO: this should just use the builtin constructor node so we don't duplicate the corner
         // cases
         @Fallback
@@ -1034,6 +1080,16 @@ public abstract class CExtNodes {
         @Specialization
         long run(PFloat value) {
             return (long) value.getValue();
+        }
+
+        @Specialization
+        long doBoolNativeWrapper(BoolNativeWrapper object) {
+            return PInt.intValue(object.getValue());
+        }
+
+        @Specialization
+        long doByteNativeWrapper(ByteNativeWrapper object) {
+            return object.getValue();
         }
 
         @Specialization

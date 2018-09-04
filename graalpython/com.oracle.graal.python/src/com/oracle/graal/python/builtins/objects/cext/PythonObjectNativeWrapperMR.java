@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeData;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PyUnicodeState;
@@ -462,7 +463,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(MD_DEF, key)")
         Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key) {
-            PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+            DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
             return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), NativeMemberNames.MD_DEF);
         }
@@ -545,7 +546,7 @@ public class PythonObjectNativeWrapperMR {
             // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
             if (object instanceof PythonAbstractObject) {
-                PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+                DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
                 logGeneric(key);
                 return getGetItemNode().execute(nativeWrapper.getNativeMemberStore(), key);
@@ -664,7 +665,7 @@ public class PythonObjectNativeWrapperMR {
 
         @Specialization(guards = "eq(MD_DEF, key)")
         Object doMdDef(PythonObject object, @SuppressWarnings("unused") String key, Object value) {
-            PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+            DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
             assert nativeWrapper != null;
             getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), NativeMemberNames.MD_DEF, value);
             return value;
@@ -717,7 +718,7 @@ public class PythonObjectNativeWrapperMR {
             // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
             if (object instanceof PythonAbstractObject) {
-                PythonObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
+                DynamicObjectNativeWrapper nativeWrapper = ((PythonAbstractObject) object).getNativeWrapper();
                 assert nativeWrapper != null;
                 logGeneric(key);
                 getSetItemNode().execute(nativeWrapper.createNativeMemberStore(), key, value);

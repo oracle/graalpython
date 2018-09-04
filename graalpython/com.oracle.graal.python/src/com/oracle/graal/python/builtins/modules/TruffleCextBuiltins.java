@@ -1257,7 +1257,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int doNativeWrapper(PythonObjectNativeWrapper nativeWrapper, TruffleObject ptr) {
+        int doNativeWrapper(PythonNativeWrapper nativeWrapper, TruffleObject ptr) {
             if (nativeWrapper.isNative()) {
                 PythonContext.getSingleNativeContextAssumption().invalidate();
             } else {

@@ -86,7 +86,7 @@ public abstract class NativeWrappers {
         }
     }
 
-    abstract static class DynamicObjectNativeWrapper extends PythonNativeWrapper {
+    public abstract static class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         private static final Layout OBJECT_LAYOUT = Layout.newLayout().build();
         private static final Shape SHAPE = OBJECT_LAYOUT.createShape(new ObjectType());
 
@@ -120,9 +120,9 @@ public abstract class NativeWrappers {
             return pythonObject;
         }
 
-        public static PythonObjectNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
+        public static DynamicObjectNativeWrapper wrap(PythonAbstractObject obj, ConditionProfile noWrapperProfile) {
             // important: native wrappers are cached
-            PythonObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
+            DynamicObjectNativeWrapper nativeWrapper = obj.getNativeWrapper();
             if (noWrapperProfile.profile(nativeWrapper == null)) {
                 nativeWrapper = new PythonObjectNativeWrapper(obj);
                 obj.setNativeWrapper(nativeWrapper);
@@ -146,7 +146,7 @@ public abstract class NativeWrappers {
 
         private PythonObject materializedObject;
 
-        protected abstract Number getBoxedValue();
+        protected abstract Object getBoxedValue();
 
         @Override
         public Object getDelegate() {
@@ -162,6 +162,60 @@ public abstract class NativeWrappers {
 
         PythonObject getMaterializedObject() {
             return materializedObject;
+        }
+    }
+
+    public static class BoolNativeWrapper extends PrimitiveNativeWrapper {
+        private final boolean value;
+
+        private BoolNativeWrapper(boolean value) {
+            this.value = value;
+        }
+
+        public boolean getValue() {
+            return value;
+        }
+
+        @Override
+        public Boolean getBoxedValue() {
+            return value;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return String.format("BoolNativeWrapper(%s, isNative=%s)", value, isNative());
+        }
+
+        public static BoolNativeWrapper create(boolean value) {
+            return new BoolNativeWrapper(value);
+        }
+    }
+
+    public static class ByteNativeWrapper extends PrimitiveNativeWrapper {
+        private final byte value;
+
+        private ByteNativeWrapper(byte value) {
+            this.value = value;
+        }
+
+        public byte getValue() {
+            return value;
+        }
+
+        @Override
+        public Byte getBoxedValue() {
+            return value;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return String.format("ByteNativeWrapper(%s, isNative=%s)", value, isNative());
+        }
+
+        public static ByteNativeWrapper create(byte value) {
+            return new ByteNativeWrapper(value);
         }
     }
 
@@ -216,33 +270,6 @@ public abstract class NativeWrappers {
 
         public static LongNativeWrapper create(long value) {
             return new LongNativeWrapper(value);
-        }
-    }
-
-    public static class ByteNativeWrapper extends PrimitiveNativeWrapper {
-        private final byte value;
-
-        private ByteNativeWrapper(byte value) {
-            this.value = value;
-        }
-
-        public byte getValue() {
-            return value;
-        }
-
-        @Override
-        public Byte getBoxedValue() {
-            return value;
-        }
-
-        @Override
-        public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
-            return String.format("ByteNativeWrapper(%s, isNative=%s)", value, isNative());
-        }
-
-        public static ByteNativeWrapper create(byte value) {
-            return new ByteNativeWrapper(value);
         }
     }
 
