@@ -551,6 +551,13 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return result;
         }
 
+        @Fallback
+        Object doGeneric(String name, Object result) {
+            assert result != null;
+            checkFunctionResult(name, false);
+            return result;
+        }
+
         private void checkFunctionResult(String name, boolean isNull) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
