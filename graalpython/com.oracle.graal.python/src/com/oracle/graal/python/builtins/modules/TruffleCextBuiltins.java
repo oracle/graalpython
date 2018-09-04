@@ -544,7 +544,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @Specialization(guards = "isForeignObject(result)")
+        @Specialization(guards = {"isForeignObject(result)", "!isNativeNull(result)"})
         Object doForeign(String name, TruffleObject result,
                         @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
             checkFunctionResult(name, isNullProfile.profile(isNull(result)));
@@ -581,6 +581,10 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 isNullNode = Message.IS_NULL.createNode();
             }
             return ForeignAccess.sendIsNull(isNullNode, result);
+        }
+
+        protected static boolean isNativeNull(TruffleObject object) {
+            return object instanceof PythonNativeNull;
         }
 
         protected static boolean isPythonObjectNativeWrapper(PythonNativeWrapper object) {

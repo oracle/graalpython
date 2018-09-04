@@ -218,6 +218,10 @@ public abstract class CExtNodes {
             return obj instanceof PythonNativeWrapper;
         }
 
+        protected static boolean isNativeNull(Object object) {
+            return object instanceof PythonNativeNull;
+        }
+
         protected TruffleObject importCAPISymbol(String name) {
             TruffleObject capiLibrary = (TruffleObject) getContext().getCapiLibrary();
             if (readSymbolNode == null) {
@@ -306,7 +310,7 @@ public abstract class CExtNodes {
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
         }
 
-        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)"})
+        @Specialization(guards = {"isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"})
         Object doPythonClass(TruffleObject object) {
             return TruffleObjectNativeWrapper.wrap(object);
         }
@@ -421,10 +425,6 @@ public abstract class CExtNodes {
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
             return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object);
-        }
-
-        protected static boolean isNativeNull(Object object) {
-            return object instanceof PythonNativeNull;
         }
 
         protected boolean isForeignObject(TruffleObject obj) {

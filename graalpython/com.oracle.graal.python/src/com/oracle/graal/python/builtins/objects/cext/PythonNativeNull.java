@@ -100,6 +100,13 @@ public class PythonNativeNull implements TruffleObject {
             }
 
         }
+
+        @Resolve(message = "IS_NULL")
+        public abstract static class IsNull extends Node {
+            boolean access(@SuppressWarnings("unused") PythonNativeNull obj) {
+                return true;
+            }
+        }
     }
 
 }
