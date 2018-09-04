@@ -164,11 +164,23 @@ public class PythonObjectNativeWrapperMR {
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
         @Child private ReadNativeMemberNode readNativeMemberNode;
-        @Child AsPythonObjectNode getDelegate = AsPythonObjectNode.create();
+        @Child private AsPythonObjectNode getDelegate;
 
         public Object access(PythonNativeWrapper object, String key) {
-            // special key for the debugger
+            // The very common case: directly return native wrapper.
+            // This is in particular important for PrimitiveNativeWrappers, since they are not
+            // cached.
+            if (key.equals(NativeMemberNames.OB_BASE)) {
+                return object;
+            }
+
+            if (getDelegate == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDelegate = insert(AsPythonObjectNode.create());
+            }
             Object delegate = getDelegate.execute(object);
+
+            // special key for the debugger
             if (key.equals(GP_OBJECT)) {
                 return delegate;
             }
