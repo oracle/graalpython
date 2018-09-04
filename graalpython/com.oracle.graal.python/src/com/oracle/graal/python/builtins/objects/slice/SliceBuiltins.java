@@ -34,6 +34,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.slice.SliceBuiltinsFactory.StartNodeFactory;
+import com.oracle.graal.python.builtins.objects.slice.SliceBuiltinsFactory.StepNodeFactory;
+import com.oracle.graal.python.builtins.objects.slice.SliceBuiltinsFactory.StopNodeFactory;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -90,7 +93,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
 
         public static StartNode create() {
-            return SliceBuiltinsFactory.StartNodeFactory.create();
+            return StartNodeFactory.create();
         }
     }
 
@@ -110,7 +113,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
 
         public static StopNode create() {
-            return SliceBuiltinsFactory.StopNodeFactory.create();
+            return StopNodeFactory.create();
         }
     }
 
@@ -130,16 +133,16 @@ public class SliceBuiltins extends PythonBuiltins {
         }
 
         public static StepNode create() {
-            return SliceBuiltinsFactory.StepNodeFactory.create();
+            return StepNodeFactory.create();
         }
     }
 
     @Builtin(name = "indices", fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    @ImportStatic(SequenceUtil.class)
+    @ImportStatic(PSlice.class)
     abstract static class IndicesNode extends PythonBinaryBuiltinNode {
 
-        private Object[] adjustIndices(int length, int start, int stop, int step) {
+        private static Object[] adjustIndices(int length, int start, int stop, int step) {
             int _start = start;
             int _stop = stop;
 
