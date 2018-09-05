@@ -26,7 +26,6 @@
 package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
@@ -43,23 +42,6 @@ public abstract class StatementNode extends PNode {
     @CompilationFinal private boolean isTryBlock = false;
 
     public abstract void executeVoid(VirtualFrame frame);
-
-    private static final class ExprStatementNode extends StatementNode {
-        @Child private ExpressionNode expressionNode;
-
-        private ExprStatementNode(ExpressionNode expressionNode) {
-            this.expressionNode = expressionNode;
-        }
-
-        @Override
-        public void executeVoid(VirtualFrame frame) {
-            expressionNode.execute(frame);
-        }
-    }
-
-    public StatementNode createStatementFromExpression(ExpressionNode node) {
-        return new ExprStatementNode(node);
-    }
 
     public void markAsTryBlock() {
         isTryBlock = true;

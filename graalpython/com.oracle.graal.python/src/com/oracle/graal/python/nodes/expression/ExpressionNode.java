@@ -65,6 +65,7 @@ public abstract class ExpressionNode extends PNode {
 
         private ExpressionStatementNode(ExpressionNode node) {
             this.node = node;
+            this.assignSourceSection(node.getSourceSection());
         }
 
         @Override
@@ -89,6 +90,7 @@ public abstract class ExpressionNode extends PNode {
         private ExpressionWithSideEffects(ExpressionNode node, StatementNode sideEffect) {
             this.node = node;
             this.sideEffect = sideEffect;
+            this.assignSourceSection(node.getSourceSection());
         }
 
         @Override
