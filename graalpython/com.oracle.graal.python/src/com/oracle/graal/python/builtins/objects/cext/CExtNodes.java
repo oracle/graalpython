@@ -472,7 +472,11 @@ public abstract class CExtNodes {
         PInt doBoolNativeWrapper(BoolNativeWrapper object) {
             PInt materializedInt = factory().createInt(object.getValue());
             object.setMaterializedObject(materializedInt);
-            materializedInt.setNativeWrapper(object);
+            if (materializedInt.getNativeWrapper() != null) {
+                object.setNativePointer(materializedInt.getNativeWrapper().getNativePointer());
+            } else {
+                materializedInt.setNativeWrapper(object);
+            }
             return materializedInt;
         }
 
@@ -505,6 +509,12 @@ public abstract class CExtNodes {
             PFloat materializedInt = factory().createFloat(object.getValue());
             object.setMaterializedObject(materializedInt);
             return materializedInt;
+        }
+
+        @Specialization(guards = "isMaterialized(object)")
+        Object doMaterialized(PrimitiveNativeWrapper object,
+                        @SuppressWarnings("unused") @Cached("object.getClass()") Class<? extends PrimitiveNativeWrapper> cachedClass) {
+            return CompilerDirectives.castExact(object, cachedClass).getDelegate();
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(object)", "object.getClass() == cachedClass"}, limit = "3")
