@@ -41,7 +41,7 @@ final class WhileRepeatingNode extends Node implements RepeatingNode {
 
     @Child CastToBooleanNode condition;
     @Child PNode body;
-    
+
     WhileRepeatingNode(CastToBooleanNode condition, PNode body) {
         this.condition = condition;
         this.body = body;
