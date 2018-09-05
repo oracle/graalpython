@@ -154,7 +154,7 @@ public class TestParserTranslator {
     }
 
     Object literalAs(String src, Class<? extends PNode> klass) {
-        PNode firstChild = parseAs(src, klass);
+        ExpressionNode firstChild = (ExpressionNode) parseAs(src, klass);
         return firstChild.execute(null);
     }
 

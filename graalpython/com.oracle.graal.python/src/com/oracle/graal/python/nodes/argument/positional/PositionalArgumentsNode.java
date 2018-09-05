@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.argument.positional;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -72,7 +71,7 @@ public final class PositionalArgumentsNode extends Node {
     }
 
     @ExplodeLoop
-    public static Object[] evaluateArguments(VirtualFrame frame, PNode[] arguments) {
+    public static Object[] evaluateArguments(VirtualFrame frame, ExpressionNode[] arguments) {
         CompilerAsserts.compilationConstant(arguments);
         Object[] values = new Object[arguments.length];
         for (int i = 0; i < arguments.length; i++) {

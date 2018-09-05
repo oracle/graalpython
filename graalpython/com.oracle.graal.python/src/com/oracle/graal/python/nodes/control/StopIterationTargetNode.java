@@ -53,10 +53,10 @@ public final class StopIterationTargetNode extends StatementNode {
     @Override
     public void executeVoid(VirtualFrame frame) {
         try {
-            tryPart.execute(frame);
+            tryPart.executeVoid(frame);
         } catch (PException ex) {
             ex.expectStopIteration(getCore(), errorProfile);
-            catchPart.execute(frame);
+            catchPart.executeVoid(frame);
         }
     }
 }

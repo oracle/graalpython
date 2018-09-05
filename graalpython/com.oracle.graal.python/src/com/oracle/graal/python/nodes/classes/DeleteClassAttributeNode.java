@@ -93,6 +93,6 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
     @Specialization
     void delete(VirtualFrame frame) {
         // delete attribute actual attribute
-        deleteNsItem.execute(frame);
+        deleteNsItem.executeVoid(frame);
     }
 }

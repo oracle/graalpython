@@ -26,7 +26,7 @@
 package com.oracle.graal.python.nodes.cell;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -37,9 +37,9 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public abstract class WriteCellVarNode extends StatementNode {
     private int cellIndex = -1;
     private final CellSupplier cellSupplier;
-    @Child private PNode readNode;
+    @Child private ExpressionNode readNode;
 
-    WriteCellVarNode(PNode readNode, CellSupplier cellSupplier, String identifier) {
+    WriteCellVarNode(ExpressionNode readNode, CellSupplier cellSupplier, String identifier) {
         this.readNode = readNode;
         this.cellSupplier = cellSupplier;
 
@@ -53,7 +53,7 @@ public abstract class WriteCellVarNode extends StatementNode {
         }
     }
 
-    public static WriteCellVarNode create(PNode readNode, CellSupplier cellSupplier, String identifier) {
+    public static WriteCellVarNode create(ExpressionNode readNode, CellSupplier cellSupplier, String identifier) {
         return WriteCellVarNodeGen.create(readNode, cellSupplier, identifier);
     }
 

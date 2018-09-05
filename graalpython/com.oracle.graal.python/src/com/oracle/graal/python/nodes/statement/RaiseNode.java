@@ -32,9 +32,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -47,7 +47,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @SuppressWarnings("unused")
-@NodeChildren({@NodeChild(value = "type", type = PNode.class), @NodeChild(value = "cause", type = PNode.class)})
+@NodeChildren({@NodeChild(value = "type", type = ExpressionNode.class), @NodeChild(value = "cause", type = ExpressionNode.class)})
 public abstract class RaiseNode extends StatementNode {
 
     private final ConditionProfile simpleBaseCheckProfile = ConditionProfile.createBinaryProfile();
@@ -110,7 +110,7 @@ public abstract class RaiseNode extends StatementNode {
         throw raise(TypeError, "exceptions must derive from BaseException");
     }
 
-    public static RaiseNode create(PNode type, PNode cause) {
+    public static RaiseNode create(ExpressionNode type, ExpressionNode cause) {
         return RaiseNodeGen.create(type, cause);
     }
 }

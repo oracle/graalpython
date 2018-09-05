@@ -86,9 +86,6 @@ public class PNodeUtil {
     }
 
     public static <T extends PNode> T replace(PNode oldNode, T node) {
-        if (oldNode.isStatement()) {
-            node.markAsStatement();
-        }
         node.assignSourceSection(oldNode.getSourceSection());
         return oldNode.replace(node);
     }

@@ -74,7 +74,7 @@ public class GeneratorTranslator {
     private int numOfGeneratorBlockNode;
     private int numOfGeneratorForNode;
     private boolean needToHandleComplicatedYieldExpression;
-    private PNode getOuterMostLoopIterator;
+    private ExpressionNode getOuterMostLoopIterator;
     private final boolean inGeneratorExpression;
 
     public GeneratorTranslator(FunctionRootNode root, boolean inGeneratorExpression) {
@@ -308,8 +308,8 @@ public class GeneratorTranslator {
                 public boolean visit(Node childNode) {
                     assert !(child instanceof StatementNode);
 
-                    if (childNode instanceof PNode) {
-                        PNode childPNode = (PNode) childNode;
+                    if (childNode instanceof ExpressionNode) {
+                        ExpressionNode childPNode = (ExpressionNode) childNode;
                         if (childPNode.hasSideEffectAsAnExpression()) {
                             needToHandleComplicatedYieldExpression = true;
                         }
@@ -344,7 +344,7 @@ public class GeneratorTranslator {
         return numOfGeneratorForNode;
     }
 
-    public PNode getGetOuterMostLoopIterator() {
+    public ExpressionNode getGetOuterMostLoopIterator() {
         return getOuterMostLoopIterator;
     }
 }

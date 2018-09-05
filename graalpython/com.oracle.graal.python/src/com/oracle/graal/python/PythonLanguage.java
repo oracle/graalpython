@@ -47,6 +47,7 @@ import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
@@ -81,7 +82,8 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.SHARED)
-@ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, DebuggerTags.AlwaysHalt.class})
+@ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, StandardTags.ExpressionTag.class,
+                DebuggerTags.AlwaysHalt.class})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String ID = "python";
     public static final String NAME = "Python";
@@ -250,7 +252,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final ExecutableNode executableNode = new ExecutableNode(this) {
             private final ContextReference<PythonContext> contextRef = getContextReference();
             @CompilationFinal private volatile PythonContext cachedContext;
-            @Child private PNode expression;
+            @Child private ExpressionNode expression;
 
             @Override
             public Object execute(VirtualFrame frame) {
@@ -280,7 +282,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             @TruffleBoundary
             private Object parseAndEval(PythonContext context, MaterializedFrame frame) {
-                PNode fragment = parseInline(source, context, frame);
+                ExpressionNode fragment = parseInline(source, context, frame);
                 return fragment.execute(frame);
             }
         };
@@ -288,9 +290,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    protected static PNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
+    protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
         PythonCore pythonCore = context.getCore();
-        return (PNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame);
+        return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame);
     }
 
     @Override

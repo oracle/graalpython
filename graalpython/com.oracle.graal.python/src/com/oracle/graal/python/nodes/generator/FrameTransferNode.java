@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.generator;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotNode;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -40,7 +40,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 /**
  * Transfer a local variable value from the current frame to a cargo frame.
  */
-@NodeChild(value = "right", type = PNode.class)
+@NodeChild(value = "right", type = ExpressionNode.class)
 @GenerateNodeFactory
 public abstract class FrameTransferNode extends FrameSlotNode {
 

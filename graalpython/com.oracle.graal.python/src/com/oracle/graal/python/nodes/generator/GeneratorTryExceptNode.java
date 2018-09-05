@@ -75,7 +75,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         }
 
         if (gen.isActive(frame, elseFlag)) {
-            getOrelse().execute(frame);
+            getOrelse().executeVoid(frame);
             reset(frame);
             return;
         }
@@ -91,7 +91,7 @@ public class GeneratorTryExceptNode extends TryExceptNode implements GeneratorCo
         }
 
         gen.setActive(frame, elseFlag, true);
-        getOrelse().execute(frame);
+        getOrelse().executeVoid(frame);
         reset(frame);
         return;
     }

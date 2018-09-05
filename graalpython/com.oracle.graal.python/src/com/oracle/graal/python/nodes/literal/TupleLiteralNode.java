@@ -67,7 +67,7 @@ public final class TupleLiteralNode extends LiteralNode {
     @ExplodeLoop
     private Object expandingTuple(VirtualFrame frame) {
         List<Object> elements = makeList();
-        for (PNode n : values) {
+        for (ExpressionNode n : values) {
             if (n instanceof StarredExpressionNode) {
                 elements.addAll(asList(((StarredExpressionNode) n).getArray(frame)));
             } else {

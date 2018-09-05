@@ -488,7 +488,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         FunctionRootNode funcRoot = factory.createFunctionRoot(body.getSourceSection(), generatorName, true, fd, body, environment.getExecutionCellSlots());
         GeneratorTranslator gtran = new GeneratorTranslator(funcRoot, true);
         RootCallTarget callTarget = gtran.translate();
-        PNode loopIterator = gtran.getGetOuterMostLoopIterator();
+        ExpressionNode loopIterator = gtran.getGetOuterMostLoopIterator();
         return new GeneratorExpressionNode(generatorName, callTarget, loopIterator, fd, environment.getDefinitionCellSlots(), environment.getExecutionCellSlots(),
                         gtran.getNumOfActiveFlags(),
                         gtran.getNumOfGeneratorBlockNode(),
@@ -1366,8 +1366,8 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
 
     @Override
     public Object visitRaise_stmt(Python3Parser.Raise_stmtContext ctx) {
-        PNode type = (ctx.test().size() == 0) ? EmptyNode.create() : (PNode) ctx.test(0).accept(this);
-        PNode cause = (ctx.test().size() < 2) ? EmptyNode.create() : (PNode) ctx.test(1).accept(this);
+        ExpressionNode type = (ctx.test().size() == 0) ? EmptyNode.create() : (ExpressionNode) ctx.test(0).accept(this);
+        ExpressionNode cause = (ctx.test().size() < 2) ? EmptyNode.create() : (ExpressionNode) ctx.test(1).accept(this);
         return RaiseNode.create(type, cause);
     }
 
@@ -1384,15 +1384,6 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     @Override
     public Object visitStar_expr(Python3Parser.Star_exprContext ctx) {
         return StarredExpressionNode.create((ExpressionNode) super.visitStar_expr(ctx));
-    }
-
-    @Override
-    public Object visitStmt(Python3Parser.StmtContext ctx) {
-        Object node = super.visitStmt(ctx);
-        if (node instanceof PNode) {
-            ((PNode) node).markAsStatement();
-        }
-        return node;
     }
 
     @Override
