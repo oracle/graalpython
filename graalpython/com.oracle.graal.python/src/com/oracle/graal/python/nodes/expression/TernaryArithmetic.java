@@ -94,7 +94,7 @@ public enum TernaryArithmetic {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            return callNode.execute(left.execute(frame), right.execute(frame), PNone.NO_VALUE);
+            return callNode.execute(left.execute(frame), right.execute(frame), PNone.NONE);
         }
 
         @Override
