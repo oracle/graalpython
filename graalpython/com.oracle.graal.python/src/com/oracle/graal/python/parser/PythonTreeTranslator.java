@@ -239,8 +239,9 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         deriveSourceSection(ctx, node);
         StatementNode evalReturn = factory.createFrameReturn(factory.createWriteLocal(node, environment.getReturnSlot()));
         ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, factory.createReadLocal(environment.getReturnSlot()));
+        FunctionRootNode functionRoot = factory.createFunctionRoot(node.getSourceSection(), name, false, ctx.scope.getFrameDescriptor(), returnTarget, environment.getExecutionCellSlots());
         environment.leaveScope();
-        return factory.createFunctionRoot(node.getSourceSection(), name, false, ctx.scope.getFrameDescriptor(), returnTarget, environment.getExecutionCellSlots());
+        return functionRoot;
     }
 
     @Override
@@ -1505,19 +1506,19 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 argname = ((Python3Parser.VdefparameterContext) child).vfpdef().NAME().getText();
                 test = ((Python3Parser.VdefparameterContext) child).test();
             } else if (child instanceof Python3Parser.SplatparameterContext) {
-                varargsSeen = true;
                 Python3Parser.SplatparameterContext splat = (Python3Parser.SplatparameterContext) child;
                 argname = splat.tfpdef() == null ? null : splat.tfpdef().NAME().getText();
                 if (argname != null) {
+                    varargsSeen = true;
                     argumentReadNode = environment.getWriteVarArgsToLocal(argname);
                 } else {
                     starArgsMarker = true;
                 }
             } else if (child instanceof Python3Parser.VsplatparameterContext) {
-                varargsSeen = true;
                 Python3Parser.VsplatparameterContext splat = (Python3Parser.VsplatparameterContext) child;
                 argname = splat.vfpdef() == null ? null : splat.vfpdef().NAME().getText();
                 if (argname != null) {
+                    varargsSeen = true;
                     argumentReadNode = environment.getWriteVarArgsToLocal(argname);
                 } else {
                     starArgsMarker = true;
@@ -1537,16 +1538,15 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 if (test != null) {
                     ReadDefaultArgumentNode readDefaultArgumentNode = new ReadDefaultArgumentNode();
                     defaultReads.add(readDefaultArgumentNode);
-                    if (!varargsSeen) {
+                    if (!varargsSeen && !starArgsMarker) {
                         argumentReadNode = environment.getWriteKeywordArgumentToLocal(argname, readDefaultArgumentNode);
-                        arityKeywordNames.add(new Arity.KeywordName(argname, false));
                         maxNumPosArgs++;
                     } else {
                         argumentReadNode = environment.getWriteRequiredKeywordArgumentToLocal(argname, readDefaultArgumentNode);
-                        arityKeywordNames.add(new Arity.KeywordName(argname, false));
                     }
+                    arityKeywordNames.add(new Arity.KeywordName(argname, false));
                     keywordNames.add(argname);
-                } else if (varargsSeen) {
+                } else if (varargsSeen || starArgsMarker) {
                     argumentReadNode = environment.getWriteRequiredKeywordArgumentToLocal(argname);
                     arityKeywordNames.add(new Arity.KeywordName(argname, true));
                     keywordNames.add(argname);
