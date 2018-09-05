@@ -485,10 +485,9 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure, ExecutionCellSlots cellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        return trace(PGeneratorFunction.create(lookupClass(PythonBuiltinClassType.PGeneratorFunction), getCore().getLanguage(), name, enclosingClassName, arity, callTarget,
-                        frameDescriptor, globals, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode));
+                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
+        return trace(PGeneratorFunction.create(lookupClass(PythonBuiltinClassType.PGeneratorFunction), name, enclosingClassName, arity, callTarget,
+                        frameDescriptor, globals, closure));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {

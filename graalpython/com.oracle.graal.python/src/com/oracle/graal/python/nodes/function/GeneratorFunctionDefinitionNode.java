@@ -32,6 +32,7 @@ import com.oracle.graal.python.builtins.objects.function.PGeneratorFunction;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
@@ -39,14 +40,15 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
-
     protected final int numOfActiveFlags;
     protected final int numOfGeneratorBlockNode;
     protected final int numOfGeneratorForNode;
+    @CompilationFinal private RootCallTarget generatorCallTarget;
 
     public GeneratorFunctionDefinitionNode(String name, String enclosingClassName, ExpressionNode doc, PythonCore core, Arity arity, StatementNode defaults, RootCallTarget callTarget,
                     FrameDescriptor frameDescriptor, DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots,
@@ -76,8 +78,18 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
         defaults.executeVoid(frame);
 
         PCell[] closure = getClosureFromLocals(frame);
-        return withDocString(frame, factory().createGeneratorFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure, executionCellSlots,
-                        numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode));
+        return withDocString(frame,
+                        factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), frameDescriptor, PArguments.getGlobals(frame), closure));
+    }
+
+    protected RootCallTarget getGeneratorCallTarget(PCell[] closure) {
+        if (generatorCallTarget == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            GeneratorFunctionRootNode generatorFunctionRootNode = new GeneratorFunctionRootNode(getContext().getLanguage(), callTarget, functionName,
+                            frameDescriptor, closure, executionCellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode);
+            generatorCallTarget = Truffle.getRuntime().createCallTarget(generatorFunctionRootNode);
+        }
+        return generatorCallTarget;
     }
 
     /**
@@ -101,8 +113,7 @@ public class GeneratorFunctionDefinitionNode extends FunctionDefinitionNode {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 PCell[] closure = getClosureFromLocals(frame);
                 cached = withDocString(frame,
-                                factory().createGeneratorFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure, executionCellSlots,
-                                                numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode));
+                                factory().createGeneratorFunction(functionName, enclosingClassName, arity, getGeneratorCallTarget(closure), frameDescriptor, PArguments.getGlobals(frame), closure));
             }
             return cached;
         }
