@@ -407,6 +407,11 @@ public abstract class CExtNodes {
         }
 
         @Specialization
+        boolean doBoolean(boolean b) {
+            return b;
+        }
+
+        @Specialization
         byte doLong(byte b) {
             return b;
         }
