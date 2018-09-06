@@ -1051,8 +1051,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Child private CExtNodes.ToSulongNode toSulongNode;
 
-        @Specialization(guards = "isByteArray(o)")
-        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PythonNativeNull errors, int byteorder, Object errorMarker) {
+        @Specialization(guards = {"isByteArray(o)", "isNoValue(errors)"})
+        Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker) {
             return doUnicode(o, size, "strict", byteorder, errorMarker);
         }
 

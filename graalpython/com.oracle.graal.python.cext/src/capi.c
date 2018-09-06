@@ -195,7 +195,7 @@ static void initialize_capi() {
 MUST_INLINE
 void* native_to_java(PyObject* obj) {
     if (obj == NULL) {
-        return wrapped_null;
+        return Py_NoValue;
     } else if (obj == Py_None) {
         return Py_None;
     } else if (polyglot_is_string(obj)) {

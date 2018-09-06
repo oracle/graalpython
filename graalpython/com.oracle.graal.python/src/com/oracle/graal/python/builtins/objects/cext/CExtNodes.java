@@ -392,8 +392,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        PNone doNativeNull(@SuppressWarnings("unused") PythonNativeNull object) {
-            return PNone.NO_VALUE;
+        PythonNativeNull doNativeNull(@SuppressWarnings("unused") PythonNativeNull object) {
+            return object;
         }
 
         @Specialization
