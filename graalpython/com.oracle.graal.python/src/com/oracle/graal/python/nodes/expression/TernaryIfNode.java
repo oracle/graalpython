@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public class TernaryIfNode extends ExpressionNode {
+public final class TernaryIfNode extends ExpressionNode {
     @Child private CastToBooleanNode condition;
     @Child private ExpressionNode then;
     @Child private ExpressionNode orelse;
