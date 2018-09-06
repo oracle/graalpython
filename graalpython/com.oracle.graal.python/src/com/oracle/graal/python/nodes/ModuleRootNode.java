@@ -26,8 +26,7 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -38,22 +37,21 @@ public class ModuleRootNode extends PClosureRootNode {
 
     private final String name;
 
-    @Child private StatementNode body;
+    @Child private ExpressionNode body;
 
-    public ModuleRootNode(PythonLanguage language, String name, StatementNode body, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
+    public ModuleRootNode(PythonLanguage language, String name, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
         super(language, descriptor, freeVarSlots);
         this.name = "<module '" + name + "'>";
-        this.body = body;
+        this.body = file;
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         addClosureCellsToLocals(frame);
-        body.executeVoid(frame);
-        return PNone.NONE;
+        return body.execute(frame);
     }
 
-    public PNode getBody() {
+    public ExpressionNode getBody() {
         return body;
     }
 

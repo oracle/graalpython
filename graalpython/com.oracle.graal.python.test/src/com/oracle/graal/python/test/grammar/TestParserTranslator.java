@@ -137,6 +137,8 @@ public class TestParserTranslator {
             }
             if (n instanceof ExpressionNode.ExpressionStatementNode) {
                 n = n.getChildren().iterator().next();
+            } else if (n instanceof ExpressionNode.ExpressionWithSideEffects) {
+                n = n.getChildren().iterator().next();
             }
             assertTrue("Expected an instance of " + klass + ", got " + n.getClass(), klass.isInstance(n));
             return klass.cast(n);

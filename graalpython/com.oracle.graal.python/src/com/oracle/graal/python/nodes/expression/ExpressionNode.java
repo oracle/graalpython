@@ -120,6 +120,10 @@ public abstract class ExpressionNode extends PNode {
         public NodeCost getCost() {
             return NodeCost.NONE;
         }
+
+        public ExpressionNode getExpression() {
+            return node;
+        }
     }
 
     /**

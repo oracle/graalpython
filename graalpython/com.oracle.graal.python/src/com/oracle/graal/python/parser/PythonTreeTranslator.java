@@ -226,8 +226,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     @Override
     public Object visitFile_input(Python3Parser.File_inputContext ctx) {
         environment.enterScope(ctx.scope);
-        StatementNode file = asBlock(super.visitFile_input(ctx));
-        deriveSourceSection(ctx, file);
+        ExpressionNode file = asExpression(super.visitFile_input(ctx));
         environment.leaveScope();
         return factory.createModuleRoot(name, file, ctx.scope.getFrameDescriptor());
     }
@@ -247,8 +246,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     @Override
     public Object visitSingle_input(Python3Parser.Single_inputContext ctx) {
         environment.enterScope(ctx.scope);
-        StatementNode body = asBlock(super.visitSingle_input(ctx));
-        deriveSourceSection(ctx, body);
+        ExpressionNode body = asExpression(super.visitSingle_input(ctx));
         environment.leaveScope();
         if (isInlineMode) {
             return body;
@@ -1306,7 +1304,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         if (suiteCount <= i) {
             return factory.createBlock();
         }
-        CastToBooleanNode test = factory.toBooleanCastNode(asBlockOrPNode(ctx.test(i).accept(this)));
+        CastToBooleanNode test = factory.toBooleanCastNode((PNode) ctx.test(i).accept(this));
         StatementNode ifBody = asBlock(ctx.suite(i).accept(this));
         StatementNode elseBody;
         int testCount = ctx.test().size();
@@ -1733,16 +1731,6 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         }
     }
 
-    protected PNode asBlockOrPNode(Object accept) {
-        if (accept == null) {
-            return EmptyNode.create();
-        } else if (accept instanceof PNode) {
-            return (PNode) accept;
-        } else {
-            return asBlock(accept);
-        }
-    }
-
     private StatementNode asBlock(Object accept) {
         if (accept == null) {
             return factory.createBlock();
@@ -1761,18 +1749,40 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                 list.add(asBlock(node));
             }
             StatementNode block = factory.createBlock(list);
-            SourceSection sourceSection = inputList.get(0).getSourceSection();
-            SourceSection sourceSection2 = inputList.get(inputList.size() - 1).getSourceSection();
-            if (sourceSection != null && sourceSection2 != null) {
-                block.assignSourceSection(createSourceSection(sourceSection.getCharIndex(), sourceSection2.getCharEndIndex() - sourceSection.getCharIndex()));
-            } else if (sourceSection != null) {
-                block.assignSourceSection(sourceSection);
-            } else {
-                block.assignSourceSection(sourceSection2);
-            }
             return block;
         } else {
             throw new IllegalArgumentException();
+        }
+    }
+
+    private ExpressionNode asExpression(Object accept) {
+        StatementNode moduleBlock = null;
+        if (accept instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<PNode> list = (List<PNode>) accept;
+            if (list.size() > 0) {
+                ExpressionNode asExpression = asExpression(list.remove(list.size() - 1));
+                StatementNode writeReturnValue = factory.createWriteLocal(asExpression, environment.getReturnSlot());
+                writeReturnValue.assignSourceSection(asExpression.getSourceSection());
+                list.add(writeReturnValue);
+            }
+            moduleBlock = asBlock(accept);
+        } else if (accept instanceof ExpressionNode.ExpressionStatementNode) {
+            moduleBlock = factory.createWriteLocal(((ExpressionNode.ExpressionStatementNode) accept).getExpression(), environment.getReturnSlot());
+            moduleBlock.assignSourceSection(((ExpressionNode.ExpressionStatementNode) accept).getSourceSection());
+        } else if (accept instanceof ExpressionNode) {
+            moduleBlock = factory.createWriteLocal((ExpressionNode) accept, environment.getReturnSlot());
+            moduleBlock.assignSourceSection(((ExpressionNode) accept).getSourceSection());
+        } else if (accept instanceof StatementNode) {
+            moduleBlock = factory.createWriteLocal(EmptyNode.create().withSideEffect((StatementNode) accept), environment.getReturnSlot());
+        } else if (accept == null) {
+            return EmptyNode.create();
+        }
+        ExpressionNode readReturn = factory.createReadLocal(environment.getReturnSlot());
+        if (moduleBlock != null) {
+            return readReturn.withSideEffect(moduleBlock);
+        } else {
+            return readReturn;
         }
     }
 
@@ -1824,7 +1834,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode condition = null;
         Python3Parser.Comp_iterContext comp_iter = comp_for.comp_iter();
         while (comp_iter != null && comp_iter.comp_if() != null) {
-            ExpressionNode nextIf = (ExpressionNode) asBlockOrPNode(comp_iter.comp_if().test_nocond().accept(this));
+            ExpressionNode nextIf = (ExpressionNode) comp_iter.comp_if().test_nocond().accept(this);
             if (condition == null) {
                 condition = nextIf;
             } else {
