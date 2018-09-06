@@ -32,6 +32,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
@@ -43,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RFLOORDIV__;
@@ -713,6 +715,14 @@ public class TruffleObjectBuiltins extends PythonBuiltins {
     public abstract static class GeNode extends ForeignBinaryComparisonNode {
         protected GeNode() {
             super(BinaryComparisonNode.create(__GE__, __LE__, ">="));
+        }
+    }
+
+    @Builtin(name = __EQ__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class EqNode extends ForeignBinaryComparisonNode {
+        protected EqNode() {
+            super(BinaryComparisonNode.create(__EQ__, __NE__, "=="));
         }
     }
 
