@@ -34,8 +34,7 @@ import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
 /**
- * Base class for most statements, except for FrameSlotNodes.
- *
+ * Base class for all statements. Statements never return a value.
  */
 @GenerateWrapper
 public abstract class StatementNode extends PNode {

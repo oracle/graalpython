@@ -50,6 +50,9 @@ import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
+/**
+ * Base class for all expressions. Expressions always return a value.
+ */
 @GenerateWrapper
 public abstract class ExpressionNode extends PNode {
 
@@ -119,6 +122,10 @@ public abstract class ExpressionNode extends PNode {
         }
     }
 
+    /**
+     * If expressions appear in a block of statements, they are wrapped in a
+     * {@link StatementNode} that simply drops the result.
+     */
     public final StatementNode asStatement() {
         return new ExpressionStatementNode(this);
     }
@@ -145,6 +152,11 @@ public abstract class ExpressionNode extends PNode {
         }
     }
 
+    /**
+     * Some expressions can have hidden side-effects such as writing to a
+     * temporary variable. These can be wrapped together with their side
+     * effecting {@link StatementNode}.
+     */
     public final ExpressionNode withSideEffect(StatementNode sideEffect) {
         return new ExpressionWithSideEffects(this, sideEffect);
     }
