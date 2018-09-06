@@ -854,23 +854,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode definition;
         String definitionName;
         if (ctx.classdef() != null) {
-            definition = (ExpressionNode) ctx.classdef().accept(this);
+            definition = asDefinition(ctx.classdef().accept(this));
             definitionName = ctx.classdef().NAME().getText();
         } else if (ctx.funcdef() != null) {
-            Object accept = ctx.funcdef().accept(this);
-            if (accept instanceof WriteNode) {
-                definition = ((WriteNode) accept).getRhs();
-            } else {
-                definition = (ExpressionNode) accept;
-            }
+            definition = asDefinition(ctx.funcdef().accept(this));
             definitionName = ctx.funcdef().NAME().getText();
         } else if (ctx.async_funcdef() != null) {
-            Object accept = ctx.async_funcdef().accept(this);
-            if (accept instanceof WriteNode) {
-                definition = ((WriteNode) accept).getRhs();
-            } else {
-                definition = (ExpressionNode) accept;
-            }
+            definition = asDefinition(ctx.async_funcdef().accept(this));
             definitionName = ctx.async_funcdef().funcdef().NAME().getText();
         } else {
             throw new RuntimeException("unsupported decorated definition");
@@ -880,6 +870,18 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             definition.assignSourceSection(decorator.getSourceSection());
         }
         return environment.findVariable(definitionName).makeWriteNode(definition);
+    }
+
+    private static ExpressionNode asDefinition(Object accept) {
+        ExpressionNode definition;
+        if (accept instanceof WriteNode) {
+            definition = ((WriteNode) accept).getRhs();
+        } else if (accept instanceof ExpressionNode) {
+            definition = (ExpressionNode) accept;
+        } else {
+            throw new IllegalArgumentException();
+        }
+        return definition;
     }
 
     private ExpressionNode getRhsImport(Python3Parser.Dotted_nameContext ctx, ExpressionNode importNode) {
@@ -1707,8 +1709,13 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
         ExpressionNode owner = factory.createGetAttribute(factory.createBuiltinsLiteral(), __BUILD_CLASS__);
         ExpressionNode classDef = PythonCallNode.create(owner, argumentNodes.toArray(new ExpressionNode[0]), keywords.toArray(new ExpressionNode[0]), splatArguments[0], splatArguments[1]);
         deriveSourceSection(ctx, classDef);
+
         ReadNode read = environment.findVariable(className);
-        return factory.createBlock(read.makeWriteNode(classDef), factory.createWriteCellVar((ExpressionNode) read, classBodyRoot, __CLASS__));
+
+        ReadNode tempLocal = environment.makeTempLocalVariable();
+        ExpressionNode newClass = ((ExpressionNode) tempLocal).withSideEffect(
+                        factory.createBlock(tempLocal.makeWriteNode(classDef), factory.createWriteCellVar((ExpressionNode) tempLocal, classBodyRoot, __CLASS__)));
+        return read.makeWriteNode(newClass);
     }
 
     @SuppressWarnings("unchecked")
