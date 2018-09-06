@@ -41,11 +41,10 @@ import _imp
 import sys
 import python_cext
 
-
-def may_raise(error_result=error_handler):
+def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
         # direct annotation
-        return may_raise(error_handler)(error_result)
+        return may_raise(native_null)(error_result)
     else:
         def decorator(fun):
             return make_may_raise_wrapper(fun, error_result)
@@ -110,16 +109,16 @@ def PyDict_New():
 @may_raise
 def PyDict_Next(dictObj, pos):
     if not isinstance(dictObj, dict):
-        return error_handler
+        return native_null
     curPos = 0
     max = len(dictObj)
     if pos >= max:
-        return error_handler
+        return native_null
     for key in dictObj:
         if curPos == pos:
             return key, dictObj[key]
         curPos = curPos + 1
-    return error_handler
+    return native_null
 
 
 @may_raise(-1)
@@ -140,7 +139,7 @@ def PyDict_Copy(dictObj):
 def PyDict_GetItem(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
-    return dictObj.get(key, error_handler)
+    return dictObj.get(key, native_null)
 
 
 @may_raise(-1)
@@ -220,7 +219,7 @@ def PyBytes_FromStringAndSize(string, size, encoding):
     if string is not None:
         return bytes(string, encoding)
     assert size >= 0;
-    return PyTruffle_Bytes_EmptyWithCapacity(size, error_handler)
+    return PyTruffle_Bytes_EmptyWithCapacity(size, native_null)
 
 
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
@@ -487,7 +486,7 @@ def PyIter_Next(itObj):
         return next(itObj)
     except StopIteration:
         PyErr_Restore(None, None, None)
-        return error_handler
+        return native_null
 
 
 ##################### SEQUENCE
@@ -1265,7 +1264,7 @@ def PyRun_String(source, typ, globals, locals):
 
 
 # called without landing; do conversion manually
-@may_raise(to_sulong(error_handler))
+@may_raise(to_sulong(native_null))
 def PySlice_GetIndicesEx(start, stop, step, length):
     return to_sulong(PyTruffleSlice_GetIndicesEx(start, stop, step, length))
 

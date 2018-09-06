@@ -45,7 +45,7 @@ typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
 PyTypeObject PyCFunction_Type = PY_TRUFFLE_TYPE("builtin_function_or_method", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, sizeof(PyCFunctionObject));
 
 PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
-    PyObject* func = to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
+    return to_sulong(polyglot_invoke(PY_TRUFFLE_CEXT,
                                                "PyCFunction_NewEx",
                                                polyglot_from_string((const char*)(ml->ml_name), SRC_CS),
                                                ml->ml_meth,
@@ -54,9 +54,4 @@ PyObject* PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module) {
                                                self,
                                                module,
                                                polyglot_from_string((const char*)(ml->ml_doc ? ml->ml_doc : ""), SRC_CS)));
-    if (func == ERROR_MARKER) {
-        return NULL;
-    } else {
-        return func;
-    }
 }

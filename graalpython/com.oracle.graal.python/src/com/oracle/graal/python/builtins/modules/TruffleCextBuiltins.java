@@ -58,8 +58,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.CheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.GetByteArrayNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.PNativeToPTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassN
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -151,11 +152,13 @@ import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "python_cext")
 public class TruffleCextBuiltins extends PythonBuiltins {
 
     private static final String ERROR_HANDLER = "error_handler";
+    private static final String NATIVE_NULL = "native_null";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -169,6 +172,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                         new PythonClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
         builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
+        builtinConstants.put(NATIVE_NULL, new PythonNativeNull());
     }
 
     /**
@@ -503,21 +507,93 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
-    public static Object checkFunctionResult(PythonContext context, Node isNullNode, String name, Object result) {
-        PException currentException = context.getCurrentException();
-        // consume exception
-        context.setCurrentException(null);
-        boolean errOccurred = currentException != null;
-        if (PGuards.isForeignObject(result) && ForeignAccess.sendIsNull(isNullNode, (TruffleObject) result) || result == PNone.NO_VALUE) {
-            if (!errOccurred) {
-                throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned NULL without setting an error", name);
-            } else {
-                throw currentException;
-            }
-        } else if (errOccurred) {
-            throw context.getCore().raise(PythonErrorType.SystemError, isNullNode, "%s returned a result with an error set", name);
+    @ImportStatic(PGuards.class)
+    abstract static class CheckFunctionResultNode extends PBaseNode {
+
+        @Child private Node isNullNode;
+
+        public abstract Object execute(String name, Object result);
+
+        @Specialization
+        Object doNativeWrapper(String name, PythonObjectNativeWrapper result,
+                        @Cached("create()") CheckFunctionResultNode recursive) {
+            return recursive.execute(name, result.getDelegate());
         }
-        return result;
+
+        @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
+        Object doPrimitiveWrapper(String name, @SuppressWarnings("unused") PythonNativeWrapper result) {
+            checkFunctionResult(name, false);
+            return result;
+        }
+
+        @Specialization(guards = "isNoValue(result)")
+        Object doNoValue(String name, @SuppressWarnings("unused") PNone result) {
+            checkFunctionResult(name, true);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "!isNoValue(result)")
+        Object doNativeWrapper(String name, @SuppressWarnings("unused") PythonAbstractObject result) {
+            checkFunctionResult(name, false);
+            return result;
+        }
+
+        @Specialization
+        Object doPythonNativeNull(String name, @SuppressWarnings("unused") PythonNativeNull result) {
+            checkFunctionResult(name, true);
+            return result;
+        }
+
+        @Specialization(guards = {"isForeignObject(result)", "!isNativeNull(result)"})
+        Object doForeign(String name, TruffleObject result,
+                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+            checkFunctionResult(name, isNullProfile.profile(isNull(result)));
+            return result;
+        }
+
+        @Fallback
+        Object doGeneric(String name, Object result) {
+            assert result != null;
+            checkFunctionResult(name, false);
+            return result;
+        }
+
+        private void checkFunctionResult(String name, boolean isNull) {
+            PythonContext context = getContext();
+            PException currentException = context.getCurrentException();
+            // consume exception
+            context.setCurrentException(null);
+            boolean errOccurred = currentException != null;
+            if (isNull) {
+                if (!errOccurred) {
+                    throw raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
+                } else {
+                    throw currentException;
+                }
+            } else if (errOccurred) {
+                throw raise(PythonErrorType.SystemError, "%s returned a result with an error set", name);
+            }
+        }
+
+        private boolean isNull(TruffleObject result) {
+            if (isNullNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isNullNode = Message.IS_NULL.createNode();
+            }
+            return ForeignAccess.sendIsNull(isNullNode, result);
+        }
+
+        protected static boolean isNativeNull(TruffleObject object) {
+            return object instanceof PythonNativeNull;
+        }
+
+        protected static boolean isPythonObjectNativeWrapper(PythonNativeWrapper object) {
+            return object instanceof PythonObjectNativeWrapper;
+        }
+
+        public static CheckFunctionResultNode create() {
+            return CheckFunctionResultNodeGen.create();
+        }
     }
 
     static class ExternalFunctionNode extends RootNode {
@@ -528,8 +604,8 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private Node executeNode;
         @Child CExtNodes.AllToSulongNode toSulongNode = CExtNodes.AllToSulongNode.create();
         @Child CExtNodes.AsPythonObjectNode asPythonObjectNode = CExtNodes.AsPythonObjectNode.create();
-        @Child private Node isNullNode = Message.IS_NULL.createNode();
-        @Child private PNativeToPTypeNode fromForeign = PNativeToPTypeNode.create();
+        @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
+        @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
         public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
             super(lang);
@@ -565,7 +641,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                 // clear current exception such that native code has clean environment
                 getContext().setCurrentException(null);
 
-                Object result = fromNative(asPythonObjectNode.execute(checkFunctionResult(getContext(), isNullNode, name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                Object result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
 
                 // restore previous exception state
                 getContext().setCurrentException(exceptionState);
@@ -605,18 +681,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Override
         public boolean isCloningAllowed() {
             return true;
-        }
-    }
-
-    abstract static class PNativeToPTypeNode extends PForeignToPTypeNode {
-
-        @Specialization
-        protected static Object fromNativeNone(PythonNativeWrapper nativeWrapper) {
-            return nativeWrapper.getDelegate();
-        }
-
-        public static PNativeToPTypeNode create() {
-            return PNativeToPTypeNodeGen.create();
         }
     }
 
@@ -987,7 +1051,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         @Child private CExtNodes.ToSulongNode toSulongNode;
 
-        @Specialization(guards = "isByteArray(o)")
+        @Specialization(guards = {"isByteArray(o)", "isNoValue(errors)"})
         Object doUnicode(TruffleObject o, long size, @SuppressWarnings("unused") PNone errors, int byteorder, Object errorMarker) {
             return doUnicode(o, size, "strict", byteorder, errorMarker);
         }
@@ -1193,7 +1257,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int doNativeWrapper(PythonObjectNativeWrapper nativeWrapper, TruffleObject ptr) {
+        int doNativeWrapper(PythonNativeWrapper nativeWrapper, TruffleObject ptr) {
             if (nativeWrapper.isNative()) {
                 PythonContext.getSingleNativeContextAssumption().invalidate();
             } else {
@@ -1583,7 +1647,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
                     readErrorHandlerNode = ReadAttributeFromObjectNode.create();
                 }
                 getContext().setCurrentException(e);
-                return toSulongNode.execute(readErrorHandlerNode.execute(cextModule, ERROR_HANDLER));
+                return toSulongNode.execute(readErrorHandlerNode.execute(cextModule, NATIVE_NULL));
             }
         }
     }
@@ -1694,7 +1758,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "make_may_raise_wrapper", fixedNumOfPositionalArgs = 2)
+    @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
         static class MayRaiseWrapper extends RootNode {
@@ -1760,6 +1824,21 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Specialization
         double doIt(Object object) {
             return asDoubleNode.execute(object);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Register_NULL", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyTruffle_Register_NULL extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doIt(Object object,
+                        @Cached("create()") ReadAttributeFromObjectNode writeAttrNode) {
+            Object wrapper = writeAttrNode.execute(getCore().lookupBuiltinModule("python_cext"), NATIVE_NULL);
+            if (wrapper instanceof PythonNativeNull) {
+                ((PythonNativeNull) wrapper).setPtr(object);
+            }
+
+            return wrapper;
         }
     }
 }

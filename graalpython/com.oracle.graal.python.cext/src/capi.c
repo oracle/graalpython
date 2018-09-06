@@ -147,6 +147,9 @@ typedef PyObject* PyObjectPtr;
 POLYGLOT_DECLARE_TYPE(PyObjectPtr);
 
 static void initialize_globals() {
+    // register native NULL
+    wrapped_null = polyglot_invoke(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Register_NULL", SRC_CS), NULL);
+
     // None
     PyObject* jnone = UPCALL_CEXT_O(polyglot_from_string("Py_None", SRC_CS));
     truffle_assign_managed(&_Py_NoneStruct, jnone);
@@ -185,20 +188,16 @@ static void initialize_capi() {
     initialize_bufferprocs();
 }
 
-__attribute__((always_inline))
-inline void* handle_exception(void* val) {
-    return val == ERROR_MARKER ? NULL : val;
-}
-
 // Heuristic to test if some value is a pointer object
 // TODO we need a reliable solution for that
 #define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
 
+MUST_INLINE
 void* native_to_java(PyObject* obj) {
-    if (obj == Py_None) {
-        return Py_None;
-    } else if (obj == NULL) {
+    if (obj == NULL) {
         return Py_NoValue;
+    } else if (obj == Py_None) {
+        return Py_None;
     } else if (polyglot_is_string(obj)) {
         return obj;
     } else if (truffle_is_handle_to_managed(obj)) {
@@ -209,6 +208,10 @@ void* native_to_java(PyObject* obj) {
         return obj->ob_refcnt;
     }
     return obj;
+}
+
+void* native_to_java_exported(PyObject* obj) {
+    return native_to_java(obj);
 }
 
 __attribute__((always_inline))
@@ -503,6 +506,8 @@ PyObject* WritePySSizeT(PyObject* object, Py_ssize_t offset, PyObject* value) {
     WriteMember(object, offset, value, Py_ssize_t);
     return value;
 }
+
+PyObject* wrapped_null;
 
 PyObject marker_struct = {
     _PyObject_EXTRA_INIT

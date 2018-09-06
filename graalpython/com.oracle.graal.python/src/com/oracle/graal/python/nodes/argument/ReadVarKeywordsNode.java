@@ -108,7 +108,11 @@ public abstract class ReadVarKeywordsNode extends PNode {
                 i++;
             }
         }
-        return returnValue(Arrays.copyOf(remArguments, i));
+        if (remArguments.length != i) {
+            return returnValue(Arrays.copyOf(remArguments, i));
+        } else {
+            return returnValue(remArguments);
+        }
     }
 
     @Specialization(replaces = "extractKwargs")
