@@ -79,8 +79,10 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
@@ -135,16 +137,30 @@ public class TestParserTranslator {
             if (++i <= num) {
                 continue;
             }
-            if (n instanceof ExpressionNode.ExpressionStatementNode) {
-                n = n.getChildren().iterator().next();
-            } else if (n instanceof ExpressionNode.ExpressionWithSideEffects) {
-                n = n.getChildren().iterator().next();
-            }
+            n = unpackModuleBodyWrappers(n);
             assertTrue("Expected an instance of " + klass + ", got " + n.getClass(), klass.isInstance(n));
             return klass.cast(n);
         }
         assertFalse("Expected an instance of " + klass + ", got null", true);
         return null;
+    }
+
+    private Node unpackModuleBodyWrappers(Node n) {
+        Node actual = n;
+        if (n instanceof ExpressionNode.ExpressionStatementNode) {
+            actual = n.getChildren().iterator().next();
+        } else if (n instanceof ExpressionNode.ExpressionWithSideEffects) {
+            actual = n.getChildren().iterator().next();
+        } else if (n instanceof WriteLocalVariableNode) {
+            if (((WriteLocalVariableNode) n).getIdentifier().equals(FrameSlotIDs.RETURN_SLOT_ID)) {
+                actual = ((WriteLocalVariableNode) n).getRhs();
+            }
+        }
+        if (actual == n) {
+            return n;
+        } else {
+            return unpackModuleBodyWrappers(actual);
+        }
     }
 
     <T> T getFirstChild(Node result, Class<? extends T> klass) {
