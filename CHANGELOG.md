@@ -3,6 +3,10 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 1.0.0 RC7
+
+* Enhance the `java` interop builtin module with introspection utility methods
+
 ## Version 1.0.0 RC6
 
 * Support regular expression patterns built from bytes by using CPython's sre module as a fallback engine to our own
