@@ -45,13 +45,17 @@ import java.util.List;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.TruffleObject;
 
 @CoreFunctions(defineModule = "java")
 public class JavaModuleBuiltins extends PythonBuiltins {
@@ -63,8 +67,7 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "type", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class TypeNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object type(String name) {
+        private Object get(String name) {
             Env env = getContext().getEnv();
             if (!env.isHostLookupAllowed()) {
                 throw raise(PythonErrorType.NotImplementedError, "host lookup is not allowed");
@@ -80,6 +83,76 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             } else {
                 return hostValue;
             }
+        }
+
+        @Specialization
+        Object type(String name) {
+            return get(name);
+        }
+
+        @Specialization
+        Object type(PString name) {
+            return get(name.getValue());
+        }
+    }
+
+    @Builtin(name = "is_function", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsFunctionNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean check(Object object) {
+            Env env = getContext().getEnv();
+            return env.isHostFunction(object);
+        }
+    }
+
+    @Builtin(name = "is_object", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsObjectNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean check(Object object) {
+            Env env = getContext().getEnv();
+            return env.isHostObject(object);
+        }
+    }
+
+    @Builtin(name = "is_symbol", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsSymbolNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean check(Object object) {
+            Env env = getContext().getEnv();
+            return env.isHostSymbol(object);
+        }
+    }
+
+    @Builtin(name = "instanceof", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = {"!isForeignObject(object)", "isForeignObject(klass)"})
+        boolean check(Object object, TruffleObject klass) {
+            Env env = getContext().getEnv();
+            Object hostKlass = env.asHostObject(klass);
+            if (hostKlass instanceof Class<?>) {
+                return ((Class<?>) hostKlass).isInstance(object);
+            }
+            return false;
+        }
+
+        @Specialization(guards = {"isForeignObject(object)", "isForeignObject(klass)"})
+        boolean checkForeign(Object object, TruffleObject klass) {
+            Env env = getContext().getEnv();
+            Object hostObject = env.asHostObject(object);
+            Object hostKlass = env.asHostObject(klass);
+            if (hostKlass instanceof Class<?>) {
+                return ((Class<?>) hostKlass).isInstance(hostObject);
+            }
+            return false;
+        }
+
+        @Fallback
+        boolean fallback(Object object, Object klass) {
+            throw raise(PythonErrorType.TypeError, "unsupported instanceof(%p, %p)", object, klass);
         }
     }
 }

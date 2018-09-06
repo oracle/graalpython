@@ -396,7 +396,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected Object doSlice(SequenceStorage storage, PSlice slice) {
-            SliceInfo info = slice.computeActualIndices(storage.length());
+            SliceInfo info = slice.computeIndices(storage.length());
             if (factoryMethod != null) {
                 return factoryMethod.apply(getGetItemSliceNode().execute(storage, info.start, info.stop, info.step, info.length), factory());
             }
@@ -749,7 +749,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected SequenceStorage doSlice(SequenceStorage storage, PSlice slice, Object iterable) {
-            SliceInfo info = slice.computeActualIndices(storage.length());
+            SliceInfo info = slice.computeIndices(storage.length());
             try {
                 getSetItemSliceNode().execute(storage, info, iterable);
                 return storage;
@@ -2727,7 +2727,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected void doSlice(SequenceStorage storage, PSlice slice) {
-            SliceInfo info = slice.computeActualIndices(storage.length());
+            SliceInfo info = slice.computeIndices(storage.length());
             try {
                 getGetItemSliceNode().execute(storage, info);
             } catch (SequenceStoreException e) {

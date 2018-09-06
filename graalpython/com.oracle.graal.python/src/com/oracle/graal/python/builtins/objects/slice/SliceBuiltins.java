@@ -34,9 +34,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -116,6 +118,19 @@ public class SliceBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getStep() == MISSING_INDEX")
         protected Object getNone(@SuppressWarnings("unused") PSlice self) {
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "indices", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @ImportStatic(PSlice.class)
+    abstract static class IndicesNode extends PythonBinaryBuiltinNode {
+
+        @Specialization()
+        protected PTuple get(PSlice self, int length) {
+            PSlice.SliceInfo sliceInfo = self.computeIndices(length);
+
+            return factory().createTuple(new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
         }
     }
 }

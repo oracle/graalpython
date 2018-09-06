@@ -95,27 +95,8 @@ abstract class AccessForeignItemNodes {
         }
 
         protected SliceInfo materializeSlice(PSlice idxSlice, TruffleObject object, Node getSizeNode, PForeignToPTypeNode foreign2PTypeNode) throws UnsupportedMessageException {
-
-            // determine start
-            boolean isStartMissing = false;
-            int start = idxSlice.getStart();
-            if (start == PSlice.MISSING_INDEX) {
-                start = 0;
-                isStartMissing = true;
-            }
-
-            // determine stop
-            int end = idxSlice.getStop();
-            int foreignSize = -1;
-            if (end == PSlice.MISSING_INDEX) {
-                foreignSize = getForeignSize(object, getSizeNode, foreign2PTypeNode);
-                end = foreignSize;
-            } else if (isStartMissing) {
-                foreignSize = getForeignSize(object, getSizeNode, foreign2PTypeNode);
-            }
-
-            // determine length (foreignSize is only required if start or stop is missing)
-            return idxSlice.computeActualIndices(foreignSize);
+            int foreignSize = getForeignSize(object, getSizeNode, foreign2PTypeNode);
+            return idxSlice.computeIndices(foreignSize);
         }
     }
 

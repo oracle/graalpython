@@ -62,6 +62,28 @@ byteArray = myBigInt.toByteArray()
 print(list(byteArray))             # Java arrays can act like Python lists
 ```
 
+In addition to the `type` builtin method, the `java` module, exposes the following 
+methods as well:
+
+Builtin | Specification
+--- | ---
+`instanceof(obj, class)` | returns `True` if `obj` is an instance of `class` (`class` must be a foreign object class)
+`is_function(obj)` | returns `True` if `obj` is a Java host language function wrapped using Truffle interop
+`is_object(obj)` | returns `True` if `obj` if the argument is Java host language object wrapped using Truffle interop
+`is_symbol(obj)` | returns `True` if `obj` if the argument is a Java host symbol, representing the constructor and static members of a Java class, as obtained by `java.type`
+
+```python
+import java
+ArrayList = java.type('java.util.ArrayList')
+my_list = ArrayList()
+print(java.is_symbol(ArrayList))    # prints True
+print(java.is_symbol(my_list))      # prints False, my_list is not a Java host symbol
+print(java.is_object(ArrayList))    # prints True, symbols are also host objects 
+print(java.is_function(my_list.add))# prints True, the add method of ArrayList
+print(java.instanceof(my_list, ArrayList)) # prints True 
+```    
+
+
 #### Python responses to Truffle interop messages
 
 ###### READ
