@@ -145,7 +145,7 @@ public abstract class ExpressionNode extends PNode {
         }
     }
 
-    public final ExpressionNode withSideEffects(StatementNode sideEffect) {
+    public final ExpressionNode withSideEffect(StatementNode sideEffect) {
         return new ExpressionWithSideEffects(this, sideEffect);
     }
 }

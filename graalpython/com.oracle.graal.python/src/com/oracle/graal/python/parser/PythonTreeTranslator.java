@@ -983,7 +983,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
             } else {
                 ReadNode tempVar = environment.makeTempLocalVariable();
                 StatementNode tempAsgn = tempVar.makeWriteNode(rhs);
-                nextComp = factory.createComparisonOperation(op, lhs, (ExpressionNode) tempVar).withSideEffects(tempAsgn);
+                nextComp = factory.createComparisonOperation(op, lhs, (ExpressionNode) tempVar).withSideEffect(tempAsgn);
                 lhs = (ExpressionNode) tempVar;
             }
             if (currentComparison == null) {
