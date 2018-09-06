@@ -47,11 +47,11 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public interface GlobalNode {
-    static boolean isInModule(VirtualFrame frame) {
+    default boolean isInModule(VirtualFrame frame) {
         return PArguments.getGlobals(frame) instanceof PythonModule;
     }
 
-    static boolean isInDict(VirtualFrame frame) {
+    default boolean isInDict(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
         return globals instanceof PDict || globals instanceof PMappingproxy;
     }
