@@ -68,8 +68,10 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -1480,9 +1482,19 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class FunctionNode extends PythonBuiltinNode {
 
         @Specialization
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, null);
+        }
+
+        @Specialization
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PTuple defaultArgs, PTuple closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, (PCell[])closure.getArray());
+        }
+
+        @Fallback
         @SuppressWarnings("unused")
-        public PFunction function(Object cls, Object code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
-            throw raise(NotImplementedError, "function construction not implemented");
+        public PFunction function(Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure) {
+            throw raise(TypeError, "function construction not supported for (%p, %p, %p, %p, %p, %p)", cls, code, globals, name, defaultArgs, closure);
         }
     }
 
