@@ -1113,7 +1113,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class NextNode extends PythonBuiltinNode {
 
         @Specialization
-        public Object next(PythonObject iterator, PNone defaultObject,
+        public Object next(Object iterator, PNone defaultObject,
                         @Cached("create()") GetNextNode next,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             try {
@@ -1122,11 +1122,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 e.expect(AttributeError, getCore(), errorProfile);
                 throw raise(TypeError, "'%p' object is not an iterator", iterator);
             }
-        }
-
-        @Specialization
-        public Object next(Object iterator, Object defaultObject) {
-            throw new RuntimeException("Unsupported iterator " + iterator);
         }
     }
 
