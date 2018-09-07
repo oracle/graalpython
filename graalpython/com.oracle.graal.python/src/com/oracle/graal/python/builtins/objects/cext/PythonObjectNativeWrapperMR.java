@@ -130,7 +130,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PythonNativeWrapper.class)
 public class PythonObjectNativeWrapperMR {
-    protected static String GP_OBJECT = "gp_object";
+    private static final String GP_OBJECT = "gp_object";
 
     @SuppressWarnings("unknown-message")
     @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
@@ -170,11 +170,17 @@ public class PythonObjectNativeWrapperMR {
         @Child private ReadNativeMemberNode readNativeMemberNode;
         @Child private AsPythonObjectNode getDelegate;
 
+        @CompilationFinal private String cachedObBase;
+
         public Object access(PythonNativeWrapper object, String key) {
             // The very common case: directly return native wrapper.
             // This is in particular important for PrimitiveNativeWrappers, since they are not
             // cached.
-            if (key.equals(NativeMemberNames.OB_BASE)) {
+            if (key == cachedObBase) {
+                return object;
+            } else if (cachedObBase == null && key.equals(NativeMemberNames.OB_BASE)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                cachedObBase = key;
                 return object;
             }
 
