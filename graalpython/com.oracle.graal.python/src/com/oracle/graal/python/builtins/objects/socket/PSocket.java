@@ -40,18 +40,84 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectableChannel;
+
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public class PSocket extends PythonBuiltinObject {
+    public final static int AF_UNSPEC = 0;
+    public final static int AF_INET = 2;
+    public final static int AF_INET6 = 23;
+
+    public final static int SOCK_DGRAM = 1;
+    public final static int SOCK_STREAM = 2;
+
+    private final static InetSocketAddress EPHEMERAL_ADDRESS = new InetSocketAddress(0);
+
     private final int family;
     private final int type;
     private final int proto;
+
+    private double timeout;
+    private boolean blocking;
+
+    private SelectableChannel channel;
+    private InetSocketAddress address = EPHEMERAL_ADDRESS;
+
+    private enum SocketType {
+        UNKNOWN_SOCKET,
+        CLIENT_SOCKET,
+        SERVER_SOCKET,
+        DATAGRAM_SOCKET
+    }
+
+    private SocketType socketType;
 
     public PSocket(PythonClass cls, int family, int type, int proto) {
         super(cls);
         this.family = family;
         this.type = type;
         this.proto = proto;
+        switch (type) {
+            case SOCK_DGRAM:
+                socketType = SocketType.DATAGRAM_SOCKET;
+                break;
+            default:
+                socketType = SocketType.UNKNOWN_SOCKET;
+        }
+    }
+
+    public int getFamily() {
+        return family;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public int getProto() {
+        return proto;
+    }
+
+    public double getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(double timeout) {
+        this.timeout = timeout;
+    }
+
+    public InetSocketAddress getAddress() {
+        return address;
+    }
+
+    public void setBlocking(boolean blocking) {
+        if (blocking) {
+            this.setTimeout(-1.0);
+        } else {
+            this.setTimeout(0.0);
+        }
     }
 }
