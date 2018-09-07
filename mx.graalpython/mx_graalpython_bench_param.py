@@ -93,7 +93,9 @@ MICRO_BENCHMARKS = {
     'c_member_access': ITER_25 + ['5'],
     'c-list-iterating-obj': ITER_15 + ['50000000'],
     'magic-bool': ITER_10 + ['100000000'],
-    'c-magic-bool': ITER_10 + ['100000000']
+    'c-magic-bool': ITER_10 + ['100000000'],
+    'magic-iter': ITER_10 + ['10000000'],
+    'c-magic-iter': ITER_10 + ['10000000']
 }
 
 
