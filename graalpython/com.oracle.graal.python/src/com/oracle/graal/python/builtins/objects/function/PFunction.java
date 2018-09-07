@@ -51,6 +51,7 @@ public class PFunction extends PythonObject implements PythonCallable {
     private final PCell[] closure;
     private final boolean isStatic;
     private PCode code;
+    private Object[] defaults;
 
     public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
         super(clazz);
@@ -66,9 +67,9 @@ public class PFunction extends PythonObject implements PythonCallable {
     }
 
     @TruffleBoundary
-    private static void addDefaultConstants(DynamicObject storage2, String name, String enclosingClassName) {
-        storage2.define(__NAME__, name);
-        storage2.define(__QUALNAME__, enclosingClassName == null ? enclosingClassName + "." + name : name);
+    private static void addDefaultConstants(DynamicObject storage, String name, String enclosingClassName) {
+        storage.define(__NAME__, name);
+        storage.define(__QUALNAME__, enclosingClassName == null ? enclosingClassName + "." + name : name);
     }
 
     public boolean isStatic() {
@@ -129,5 +130,13 @@ public class PFunction extends PythonObject implements PythonCallable {
 
     public String getEnclosingClassName() {
         return enclosingClassName;
+    }
+
+    public Object[] getDefaults() {
+        return defaults;
+    }
+
+    public void setDefaults(Object[] defaults) {
+        this.defaults = defaults;
     }
 }

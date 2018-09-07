@@ -29,6 +29,7 @@ package com.oracle.graal.python.builtins.objects.function;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CLOSURE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__GLOBALS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
@@ -52,12 +53,14 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -232,7 +235,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class GetCodeNode extends PythonBuiltinNode {
+    public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         Object getCode(PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
@@ -254,6 +257,51 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         @Specialization
         Object builtinCode(PBuiltinFunction self, Object none) {
             throw raise(AttributeError, "'builtin_function_or_method' object has no attribute '__code__'");
+        }
+    }
+
+    @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetDefaultsNode extends PythonBinaryBuiltinNode {
+        private Object[] getDefaultsAndInitIfNotSet(PFunction function) {
+            // TODO: add support for __DEFAULTS__ (init from actual default values ...)
+            return function.getDefaults();
+        }
+
+        private Object getDefaults(PFunction function) {
+            Object[] defaultVals = getDefaultsAndInitIfNotSet(function);
+            if (defaultVals == null) {
+                return PNone.NONE;
+            }
+            return factory().createTuple(defaultVals);
+        }
+
+        @Specialization
+        Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
+            return getDefaults(self);
+        }
+
+        @Specialization
+        Object defaults(PFunction self, PTuple defaults) {
+            self.setDefaults(defaults.getArray());
+            return PNone.NONE;
+        }
+
+        @Specialization
+        Object defaults(PMethod self, @SuppressWarnings("unused") PNone defaults) {
+            return getDefaults(self.getFunction());
+        }
+
+        @Specialization
+        Object defaults(PMethod self, PTuple defaults) {
+            self.getFunction().setDefaults(defaults.getArray());
+            return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization
+        Object defaults(PBuiltinFunction self, Object defaults) {
+            throw raise(AttributeError, "'builtin_function_or_method' object has no attribute '__defaults__'");
         }
     }
 
