@@ -978,7 +978,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    abstract static class PToNativeNode extends PBaseNode {
+    abstract static class PToNativeNode extends PNodeWithContext {
         @Child private ToPyObjectNode toPyObjectNode;
         @Child private MaterializeDelegateNode materializeNode;
         @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();

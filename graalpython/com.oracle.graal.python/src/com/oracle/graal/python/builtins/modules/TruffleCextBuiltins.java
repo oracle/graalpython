@@ -508,7 +508,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @ImportStatic(PGuards.class)
-    abstract static class CheckFunctionResultNode extends PBaseNode {
+    abstract static class CheckFunctionResultNode extends PNodeWithContext {
 
         @Child private Node isNullNode;
 
