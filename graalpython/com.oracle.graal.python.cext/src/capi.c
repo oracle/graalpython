@@ -53,8 +53,10 @@ uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
-static void* cache;
-void* (*resolve_handle)(void* cache, uint64_t handle);
+typedef void* (*cache_t)(uint64_t);
+static cache_t cache;
+
+#define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
@@ -76,7 +78,6 @@ static void initialize_upcall_functions() {
 __attribute__((constructor (__COUNTER__)))
 static void initialize_handle_cache() {
     cache = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
-    resolve_handle = ((void* (*)(void* cache, uint64_t handle))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_HandleCache_GetOrInsert", SRC_CS)));
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {

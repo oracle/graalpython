@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
@@ -116,7 +117,6 @@ import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -150,7 +150,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -1844,87 +1843,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    private static class HandleCacheEntry {
-        private long key;
-        private Object value;
-    }
-
-    static class HandleCache implements TruffleObject {
-        private static final int CACHE_SIZE = 10;
-
-        private final HandleCacheEntry[] entries;
-        private final TruffleObject ptrToResolveHandle;
-
-        private int pos = 0;
-
-        public HandleCache(TruffleObject ptrToResolveHandle) {
-            entries = new HandleCacheEntry[CACHE_SIZE];
-            for (int i = 0; i < entries.length; i++) {
-                entries[i] = new HandleCacheEntry();
-            }
-            this.ptrToResolveHandle = ptrToResolveHandle;
-        }
-
-        protected int len() {
-            return entries.length;
-        }
-
-        protected TruffleObject getPtrToResolveHandle() {
-            return ptrToResolveHandle;
-        }
-
-        public ForeignAccess getForeignAccess() {
-            return null;
-        }
-    }
-
     @Builtin(name = "PyTruffle_HandleCache_Create", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class PyTruffleHandleCacheCreate extends PythonUnaryBuiltinNode {
         @Specialization
         Object createCache(TruffleObject ptrToResolveHandle) {
             return new HandleCache(ptrToResolveHandle);
-        }
-    }
-
-    @Builtin(name = "PyTruffle_HandleCache_GetOrInsert", fixedNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    abstract static class PyTruffleHandleCacheGetOrInsert extends PythonBinaryBuiltinNode {
-        @Child private Node executeNode;
-
-        private final BranchProfile errorProfile = BranchProfile.create();
-
-        @ExplodeLoop
-        @Specialization(limit = "1", guards = {"cache.len() == cachedLen", "cache.getPtrToResolveHandle() == ptrToResolveHandle"})
-        Object doIt(HandleCache cache, long handle,
-                        @Cached("cache.len()") int cachedLen,
-                        @Cached("cache.getPtrToResolveHandle()") TruffleObject ptrToResolveHandle) {
-            for (int i = 0; i < cachedLen; i++) {
-                if (cache.entries[i].key == handle) {
-                    return cache.entries[i].value;
-                }
-            }
-
-            try {
-                Object resolved = ForeignAccess.sendExecute(getExecuteNode(), ptrToResolveHandle, handle);
-
-                cache.entries[cache.pos].key = handle;
-                cache.entries[cache.pos].value = resolved;
-                cache.pos = (cache.pos + 1) % cache.len();
-
-                return resolved;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                errorProfile.enter();
-                throw e.raise();
-            }
-        }
-
-        private Node getExecuteNode() {
-            if (executeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                executeNode = insert(Message.EXECUTE.createNode());
-            }
-            return executeNode;
         }
     }
 }
