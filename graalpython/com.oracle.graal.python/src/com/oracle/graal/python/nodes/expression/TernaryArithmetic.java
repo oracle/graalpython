@@ -45,10 +45,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode.NotImplementedHandler;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public enum TernaryArithmetic {
     Pow(SpecialMethodNames.__POW__, "**", "pow()");
@@ -80,8 +81,30 @@ public enum TernaryArithmetic {
         return operator;
     }
 
-    public LookupAndCallTernaryNode create(PNode x, PNode y) {
-        return LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler, x, y);
+    public static final class TernaryArithmeticExpression extends ExpressionNode {
+        @Child private LookupAndCallTernaryNode callNode;
+        @Child private ExpressionNode left;
+        @Child private ExpressionNode right;
+
+        private TernaryArithmeticExpression(LookupAndCallTernaryNode callNode, ExpressionNode left, ExpressionNode right) {
+            this.callNode = callNode;
+            this.left = left;
+            this.right = right;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return callNode.execute(left.execute(frame), right.execute(frame), PNone.NONE);
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.NONE;
+        }
+    }
+
+    public ExpressionNode create(ExpressionNode x, ExpressionNode y) {
+        return new TernaryArithmeticExpression(LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler), x, y);
     }
 
     public LookupAndCallTernaryNode create() {

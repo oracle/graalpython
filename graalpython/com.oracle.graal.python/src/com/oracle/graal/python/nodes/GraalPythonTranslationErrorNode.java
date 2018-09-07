@@ -26,9 +26,10 @@
 
 package com.oracle.graal.python.nodes;
 
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.*;
 
-public final class GraalPythonTranslationErrorNode extends PNode {
+public final class GraalPythonTranslationErrorNode extends ExpressionNode {
 
     public static final String MESSAGE = "GraalPythonTranslationError";
 

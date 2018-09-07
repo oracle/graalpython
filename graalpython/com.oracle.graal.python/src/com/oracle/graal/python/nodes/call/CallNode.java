@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
@@ -64,7 +64,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class, SpecialMethodNames.class})
-public abstract class CallNode extends PBaseNode {
+public abstract class CallNode extends PNodeWithContext {
     public static CallNode create() {
         return CallNodeGen.create();
     }

@@ -29,7 +29,7 @@ import java.lang.reflect.Array;
 
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
@@ -46,15 +46,15 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public final class ListLiteralNode extends LiteralNode {
 
-    @Children protected final PNode[] values;
+    @Children protected final ExpressionNode[] values;
 
     @CompilationFinal private ListStorageType type = ListStorageType.Uninitialized;
 
-    public ListLiteralNode(PNode[] values) {
+    public ListLiteralNode(ExpressionNode[] values) {
         this.values = values;
     }
 
-    public PNode[] getValues() {
+    public ExpressionNode[] getValues() {
         return values;
     }
 
@@ -169,7 +169,7 @@ public final class ListLiteralNode extends LiteralNode {
         return new ObjectSequenceStorage(elements);
     }
 
-    public static ListLiteralNode create(PNode[] values) {
+    public static ListLiteralNode create(ExpressionNode[] values) {
         return new ListLiteralNode(values);
     }
 }

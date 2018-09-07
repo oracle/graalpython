@@ -30,8 +30,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -43,16 +43,16 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = __SETITEM__)
-@NodeChildren({@NodeChild(value = "primary", type = PNode.class), @NodeChild(value = "slice", type = PNode.class), @NodeChild(value = "right", type = PNode.class)})
+@NodeChildren({@NodeChild(value = "primary", type = ExpressionNode.class), @NodeChild(value = "slice", type = ExpressionNode.class), @NodeChild(value = "right", type = ExpressionNode.class)})
 public abstract class SetItemNode extends StatementNode implements WriteNode {
 
-    public abstract PNode getPrimary();
+    public abstract ExpressionNode getPrimary();
 
-    public abstract PNode getSlice();
+    public abstract ExpressionNode getSlice();
 
-    public abstract PNode getRight();
+    public abstract ExpressionNode getRight();
 
-    public static SetItemNode create(PNode primary, PNode slice, PNode right) {
+    public static SetItemNode create(ExpressionNode primary, ExpressionNode slice, ExpressionNode right) {
         return SetItemNodeGen.create(primary, slice, right);
     }
 
@@ -61,66 +61,66 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     }
 
     @Override
-    public PNode getRhs() {
+    public ExpressionNode getRhs() {
         return getRight();
     }
 
     @Override
-    public Object doWrite(VirtualFrame frame, boolean value) {
-        return executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+    public void doWrite(VirtualFrame frame, boolean value) {
+        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
-    public Object doWrite(VirtualFrame frame, int value) {
-        return executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+    public void doWrite(VirtualFrame frame, int value) {
+        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
-    public Object doWrite(VirtualFrame frame, long value) {
-        return executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+    public void doWrite(VirtualFrame frame, long value) {
+        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
-    public Object doWrite(VirtualFrame frame, double value) {
-        return executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+    public void doWrite(VirtualFrame frame, double value) {
+        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
     @Override
-    public Object doWrite(VirtualFrame frame, Object value) {
-        return executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+    public void doWrite(VirtualFrame frame, Object value) {
+        executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
     }
 
-    public Object executeWith(VirtualFrame frame, Object value) {
-        return executeWith(getPrimary().execute(frame), getSlice().execute(frame), value);
+    public void executeWith(VirtualFrame frame, Object value) {
+        doWrite(frame, value);
     }
 
-    public abstract Object executeWith(Object primary, Object slice, boolean value);
+    public abstract void executeWith(Object primary, Object slice, boolean value);
 
-    public abstract Object executeWith(Object primary, Object slice, int value);
+    public abstract void executeWith(Object primary, Object slice, int value);
 
-    public abstract Object executeWith(Object primary, Object slice, long value);
+    public abstract void executeWith(Object primary, Object slice, long value);
 
-    public abstract Object executeWith(Object primary, Object slice, double value);
+    public abstract void executeWith(Object primary, Object slice, double value);
 
-    public abstract Object executeWith(Object primary, Object slice, Object value);
+    public abstract void executeWith(Object primary, Object slice, Object value);
 
     @Specialization
-    public Object doSpecialObject(PythonObject primary, int index, Object value,
+    public void doSpecialObject(PythonObject primary, int index, Object value,
                     @Cached("create()") GetattributeNode getSetitemNode,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") CallTernaryMethodNode callNode) {
         PythonClass primaryClass = getClassNode.execute(primary);
         Object setItemMethod = getSetitemNode.execute(primaryClass, __SETITEM__);
-        return callNode.execute(setItemMethod, primary, index, value);
+        callNode.execute(setItemMethod, primary, index, value);
     }
 
     @Specialization
-    public Object doSpecialObject1(Object primary, Object index, Object value,
+    public void doSpecialObject1(Object primary, Object index, Object value,
                     @Cached("create()") GetattributeNode getSetitemNode,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create()") CallTernaryMethodNode callNode) {
         PythonClass primaryClass = getClassNode.execute(primary);
         Object setItemMethod = getSetitemNode.execute(primaryClass, __SETITEM__);
-        return callNode.execute(setItemMethod, primary, index, value);
+        callNode.execute(setItemMethod, primary, index, value);
     }
 }

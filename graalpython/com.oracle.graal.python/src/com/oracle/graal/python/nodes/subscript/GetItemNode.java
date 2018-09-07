@@ -27,10 +27,11 @@ package com.oracle.graal.python.nodes.subscript;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -39,11 +40,11 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeInfo(shortName = __GETITEM__)
 public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
 
-    public PNode getPrimary() {
+    public ExpressionNode getPrimary() {
         return getLeftNode();
     }
 
-    public PNode getSlice() {
+    public ExpressionNode getSlice() {
         return getRightNode();
     }
 
@@ -61,12 +62,12 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         return GetItemNodeGen.create(null, null);
     }
 
-    public static GetItemNode create(PNode primary, PNode slice) {
+    public static GetItemNode create(ExpressionNode primary, ExpressionNode slice) {
         return GetItemNodeGen.create(primary, slice);
     }
 
     @Override
-    public PNode makeWriteNode(PNode rhs) {
+    public StatementNode makeWriteNode(ExpressionNode rhs) {
         return SetItemNode.create(getPrimary(), getSlice(), rhs);
     }
 

@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.CastToListNode;
 import com.oracle.graal.python.nodes.expression.CastToListNodeGen;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class StarredExpressionNode extends LiteralNode {
@@ -52,12 +52,12 @@ public final class StarredExpressionNode extends LiteralNode {
         this.childNode = childNode;
     }
 
-    public static StarredExpressionNode create(PNode child) {
+    public static StarredExpressionNode create(ExpressionNode child) {
         return new StarredExpressionNode(CastToListNodeGen.create(child));
     }
 
-    public PNode getValue() {
-        return childNode.getValue();
+    public ExpressionNode getValue() {
+        return childNode.getOperand();
     }
 
     public Object[] getArray(VirtualFrame frame) {

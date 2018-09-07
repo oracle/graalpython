@@ -30,7 +30,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -54,7 +53,7 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         this.callNode = LookupAndCallBinaryNode.create(magicMethod, magicReverseMethod);
     }
 
-    public static BinaryComparisonNode create(String magicMethod, String magicReverseMethod, String operation, PNode left, PNode right) {
+    public static BinaryComparisonNode create(String magicMethod, String magicReverseMethod, String operation, ExpressionNode left, ExpressionNode right) {
         return BinaryComparisonNodeGen.create(magicMethod, magicReverseMethod, operation, left, right);
     }
 

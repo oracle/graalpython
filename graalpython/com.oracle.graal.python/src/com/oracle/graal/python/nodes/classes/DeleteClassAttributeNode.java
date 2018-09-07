@@ -40,24 +40,23 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "delete_class_member")
-public abstract class DeleteClassAttributeNode extends PNode {
+public abstract class DeleteClassAttributeNode extends StatementNode {
     private final String identifier;
 
-    @Child private PNode deleteNsItem;
+    @Child private StatementNode deleteNsItem;
 
     DeleteClassAttributeNode(String identifier) {
         this.identifier = identifier;
@@ -65,10 +64,10 @@ public abstract class DeleteClassAttributeNode extends PNode {
         NodeFactory factory = getNodeFactory();
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
 
-        this.deleteNsItem = factory.createDeleteItem(namespace, this.identifier);
+        this.deleteNsItem = factory.createDeleteItem(namespace.asExpression(), this.identifier);
     }
 
-    public static PNode create(String name) {
+    public static DeleteClassAttributeNode create(String name) {
         return DeleteClassAttributeNodeGen.create(name);
     }
 
@@ -81,7 +80,7 @@ public abstract class DeleteClassAttributeNode extends PNode {
     }
 
     @Specialization(guards = "localsDict != null")
-    Object deleteFromLocals(@SuppressWarnings("unused") VirtualFrame frame,
+    void deleteFromLocals(@SuppressWarnings("unused") VirtualFrame frame,
                     @Cached("getLocalsDict(frame)") PDict localsDict,
                     @Cached("create()") HashingStorageNodes.ContainsKeyNode hasKey,
                     @Cached("create()") HashingStorageNodes.DelItemNode delItem) {
@@ -89,12 +88,11 @@ public abstract class DeleteClassAttributeNode extends PNode {
         if (hasKey.execute(localsDict.getDictStorage(), identifier)) {
             delItem.execute(localsDict, localsDict.getDictStorage(), identifier);
         }
-        return PNone.NONE;
     }
 
     @Specialization
-    Object delete(VirtualFrame frame) {
+    void delete(VirtualFrame frame) {
         // delete attribute actual attribute
-        return deleteNsItem.execute(frame);
+        deleteNsItem.executeVoid(frame);
     }
 }

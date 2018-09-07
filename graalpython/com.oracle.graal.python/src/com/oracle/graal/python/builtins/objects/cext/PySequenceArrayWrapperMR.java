@@ -61,7 +61,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -461,7 +461,7 @@ public class PySequenceArrayWrapperMR {
         }
     }
 
-    static abstract class ToNativeStorageNode extends PBaseNode {
+    static abstract class ToNativeStorageNode extends PNodeWithContext {
         @Child private StorageToNativeNode storageToNativeNode;
 
         public abstract NativeSequenceStorage execute(SequenceStorage object);

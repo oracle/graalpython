@@ -42,15 +42,16 @@ package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@NodeChild(value = "object", type = PNode.class)
-public abstract class GetAttributeNode extends PNode implements ReadNode {
+@NodeChild(value = "object", type = ExpressionNode.class)
+public abstract class GetAttributeNode extends ExpressionNode implements ReadNode {
 
     private final String key;
 
@@ -64,15 +65,15 @@ public abstract class GetAttributeNode extends PNode implements ReadNode {
         return key;
     }
 
-    public final PNode makeWriteNode(PNode rhs) {
+    public final StatementNode makeWriteNode(ExpressionNode rhs) {
         return SetAttributeNode.create(key, getObject(), rhs);
     }
 
-    public static GetAttributeNode create(String key, PNode object) {
+    public static GetAttributeNode create(String key, ExpressionNode object) {
         return GetAttributeNodeGen.create(key, object);
     }
 
-    public abstract PNode getObject();
+    public abstract ExpressionNode getObject();
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     protected int doItInt(Object object) throws UnexpectedResultException {

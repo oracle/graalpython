@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PNodeUtil;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
@@ -45,6 +46,7 @@ import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.AssignmentNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.antlr.Python3BaseVisitor;
 import com.oracle.graal.python.parser.antlr.Python3Parser;
 import com.oracle.graal.python.parser.antlr.Python3Parser.ExprContext;
@@ -81,8 +83,8 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
 
     private PNode makeNormalAssignment(Expr_stmtContext ctx) {
         List<NormassignContext> normassign = ctx.normassign();
-        PNode mostRhs = getAssignmentValue(normassign);
-        PNode mostLhs = ctx.testlist_star_expr().accept(this);
+        ExpressionNode mostRhs = getAssignmentValue(normassign);
+        ExpressionNode mostLhs = (ExpressionNode) ctx.testlist_star_expr().accept(this);
         if (normassign.size() > 1) {
             return createMultiAssignment(normassign, mostRhs, mostLhs);
         } else {
@@ -90,9 +92,9 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
         }
     }
 
-    private PNode createAssignment(PNode lhs, PNode rhs) {
+    private StatementNode createAssignment(ExpressionNode lhs, ExpressionNode rhs) {
         if (lhs instanceof ObjectLiteralNode) {
-            return createDestructuringAssignment((PNode[]) ((ObjectLiteralNode) lhs).getObject(), rhs);
+            return createDestructuringAssignment((ExpressionNode[]) ((ObjectLiteralNode) lhs).getObject(), rhs);
         } else if (lhs instanceof TupleLiteralNode) {
             return createDestructuringAssignment(((TupleLiteralNode) lhs).getValues(), rhs);
         } else if (lhs instanceof ListLiteralNode) {
@@ -102,8 +104,8 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
         }
     }
 
-    private PNode createDestructuringAssignment(PNode[] leftHandSides, PNode rhs) {
-        PNode[] statements = new PNode[leftHandSides.length];
+    private StatementNode createDestructuringAssignment(ExpressionNode[] leftHandSides, ExpressionNode rhs) {
+        StatementNode[] statements = new StatementNode[leftHandSides.length];
         ReadNode[] temps = new ReadNode[leftHandSides.length];
         int starredIndex = -1;
         for (int i = 0; i < leftHandSides.length; i++) {
@@ -114,58 +116,57 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
                     throw core.raise(SyntaxError, "two starred expressions in assignment");
                 }
                 starredIndex = i;
-                statements[i] = createAssignment(((StarredExpressionNode) leftHandSides[i]).getValue(), (PNode) tempRead);
+                statements[i] = createAssignment(((StarredExpressionNode) leftHandSides[i]).getValue(), (ExpressionNode) tempRead);
             } else {
-                statements[i] = createAssignment(leftHandSides[i], (PNode) tempRead);
+                statements[i] = createAssignment(leftHandSides[i], (ExpressionNode) tempRead);
             }
         }
         return factory.createDestructuringAssignment(rhs, temps, starredIndex, statements);
     }
 
-    private PNode createMultiAssignment(List<NormassignContext> normassign, PNode mostRhs, PNode mostLhs) {
+    private PNode createMultiAssignment(List<NormassignContext> normassign, ExpressionNode mostRhs, ExpressionNode mostLhs) {
         ReadNode tmp = environment.makeTempLocalVariable();
-        PNode tmpWrite = tmp.makeWriteNode(mostRhs);
-        PNode[] assignments = new PNode[normassign.size() + 1];
+        StatementNode tmpWrite = tmp.makeWriteNode(mostRhs);
+        StatementNode[] assignments = new StatementNode[normassign.size() + 1];
         assignments[0] = tmpWrite;
-        assignments[1] = createAssignment(mostLhs, (PNode) tmp);
+        assignments[1] = createAssignment(mostLhs, (ExpressionNode) tmp);
         for (int i = 0; i < normassign.size() - 1; i++) {
             NormassignContext normassignContext = normassign.get(i);
             if (normassignContext.yield_expr() != null) {
                 throw core.raise(SyntaxError, "assignment to yield expression not possible");
             }
-            assignments[i + 2] = createAssignment(normassignContext.accept(this), (PNode) tmp);
+            assignments[i + 2] = createAssignment((ExpressionNode) normassignContext.accept(this), (ExpressionNode) tmp);
         }
         return factory.createBlock(assignments);
     }
 
     @SuppressWarnings("unchecked")
-    private PNode getAssignmentValue(List<NormassignContext> normassign) {
+    private ExpressionNode getAssignmentValue(List<NormassignContext> normassign) {
         Object mostRhsParsed = normassign.get(normassign.size() - 1).accept(translator);
-        PNode mostRhs;
+        ExpressionNode mostRhs;
         if (mostRhsParsed instanceof List) {
-            mostRhs = factory.createTupleLiteral((List<PNode>) mostRhsParsed);
+            mostRhs = factory.createTupleLiteral((List<ExpressionNode>) mostRhsParsed);
         } else {
-            mostRhs = (PNode) mostRhsParsed;
+            mostRhs = (ExpressionNode) mostRhsParsed;
         }
         return mostRhs;
     }
 
     private PNode makeAugmentedAssignment(Expr_stmtContext ctx) {
-        PNode rhs;
+        ExpressionNode rhs;
         if (ctx.yield_expr() != null) {
-            rhs = (PNode) ctx.yield_expr().accept(translator);
+            rhs = (ExpressionNode) ctx.yield_expr().accept(translator);
         } else {
-            rhs = (PNode) ctx.testlist().accept(translator);
+            rhs = (ExpressionNode) ctx.testlist().accept(translator);
         }
-        return makeAugmentedAssignment((PNode) ctx.testlist_star_expr().accept(translator), ctx.augassign().getText(), rhs);
+        return makeAugmentedAssignment((ExpressionNode) ctx.testlist_star_expr().accept(translator), ctx.augassign().getText(), rhs);
     }
 
-    private PNode makeAugmentedAssignment(PNode lhs, String text, PNode rhs) {
+    private PNode makeAugmentedAssignment(ExpressionNode lhs, String text, ExpressionNode rhs) {
         if (!(lhs instanceof ReadNode)) {
             throw core.raise(SyntaxError, "illegal expression for augmented assignment");
         }
-        PNode binOp;
-        binOp = factory.createInplaceOperation(text, lhs, rhs);
+        ExpressionNode binOp = factory.createInplaceOperation(text, lhs, rhs);
         PNode duplicate = factory.duplicate(lhs, PNode.class);
         PNodeUtil.clearSourceSections(duplicate);
         return ((ReadNode) duplicate).makeWriteNode(binOp);
@@ -177,7 +178,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
                 throw core.raise(SyntaxError, "%d starred expressions in assigment", starSize);
             }
         }
-        List<PNode> targets = new ArrayList<>();
+        List<ExpressionNode> targets = new ArrayList<>();
         for (int i = 0; i < ctx.getChildCount(); i++) {
             ParseTree child = ctx.getChild(i);
             if (child instanceof TerminalNode) {
@@ -185,7 +186,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
             } else if (child instanceof Python3Parser.TestContext ||
                             child instanceof Python3Parser.Star_exprContext ||
                             child instanceof Python3Parser.ExprContext) {
-                targets.add((PNode) child.accept(translator));
+                targets.add((ExpressionNode) child.accept(translator));
             } else {
                 assert false;
             }
@@ -206,7 +207,7 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
                 throw core.raise(SyntaxError, "Cannot assign to %s", pNode);
             }
         } else {
-            return factory.createObjectLiteral(targets.toArray(new PNode[0]));
+            return factory.createObjectLiteral(targets.toArray(new ExpressionNode[0]));
         }
     }
 
@@ -222,27 +223,27 @@ public class AssignmentTranslator extends Python3BaseVisitor<PNode> {
         return visitTargetlist(ctx, starSize);
     }
 
-    public PNode translate(ExprlistContext exprlist) {
-        return makeWriteNode(exprlist.accept(this));
+    public StatementNode translate(ExprlistContext exprlist) {
+        return makeWriteNode((ExpressionNode) exprlist.accept(this));
     }
 
-    public PNode translate(ExprContext expr) {
-        return makeWriteNode((PNode) expr.accept(translator));
+    public StatementNode translate(ExprContext expr) {
+        return makeWriteNode((ExpressionNode) expr.accept(translator));
     }
 
-    public PNode translate(Star_exprContext ctx) {
-        return makeWriteNode((PNode) ctx.accept(translator));
+    public StatementNode translate(Star_exprContext ctx) {
+        return makeWriteNode((ExpressionNode) ctx.accept(translator));
     }
 
-    public PNode translate(TestContext ctx) {
-        return makeWriteNode((PNode) ctx.accept(translator));
+    public StatementNode translate(TestContext ctx) {
+        return makeWriteNode((ExpressionNode) ctx.accept(translator));
     }
 
-    private PNode makeWriteNode(PNode accept) {
-        PNode assignmentNode = createAssignment(accept, EmptyNode.create());
+    private StatementNode makeWriteNode(ExpressionNode accept) {
+        StatementNode assignmentNode = createAssignment(accept, null);
         if (!(assignmentNode instanceof WriteNode)) {
             ReadNode tempLocal = environment.makeTempLocalVariable();
-            assignmentNode = createAssignment(accept, (PNode) tempLocal);
+            assignmentNode = createAssignment(accept, (ExpressionNode) tempLocal);
             return new AssignmentNode(assignmentNode, tempLocal.makeWriteNode(EmptyNode.create()));
         } else {
             return assignmentNode;

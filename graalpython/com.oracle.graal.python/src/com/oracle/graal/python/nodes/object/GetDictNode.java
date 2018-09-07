@@ -44,14 +44,14 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
 @ImportStatic(PGuards.class)
-public abstract class GetDictNode extends PBaseNode {
+public abstract class GetDictNode extends PNodeWithContext {
 
     public abstract Object execute(Object o);
 

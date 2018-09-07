@@ -48,24 +48,17 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@NodeChildren({@NodeChild(value = "splat", type = PNode.class)})
-public abstract class ExecutePositionalStarargsNode extends PNode {
-    @Override
-    public abstract Object[] execute(VirtualFrame frame);
-
+public abstract class ExecutePositionalStarargsNode extends PNodeWithContext {
     public abstract Object[] executeWith(Object starargs);
 
     @Specialization
@@ -140,10 +133,6 @@ public abstract class ExecutePositionalStarargsNode extends PNode {
     }
 
     public static ExecutePositionalStarargsNode create() {
-        return ExecutePositionalStarargsNodeGen.create(null);
-    }
-
-    public static ExecutePositionalStarargsNode create(PNode splat) {
-        return ExecutePositionalStarargsNodeGen.create(splat);
+        return ExecutePositionalStarargsNodeGen.create();
     }
 }

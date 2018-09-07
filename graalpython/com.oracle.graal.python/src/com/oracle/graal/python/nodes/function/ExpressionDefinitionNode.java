@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -38,7 +38,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-abstract class ExpressionDefinitionNode extends PNode {
+abstract class ExpressionDefinitionNode extends ExpressionNode {
     private final ValueProfile frameProfile = ValueProfile.createClassProfile();
     private final ConditionProfile isGeneratorProfile = ConditionProfile.createBinaryProfile();
 

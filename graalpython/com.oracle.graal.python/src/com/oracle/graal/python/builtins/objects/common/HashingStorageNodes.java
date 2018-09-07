@@ -74,7 +74,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -176,7 +176,7 @@ public abstract class HashingStorageNodes {
     }
 
     @ImportStatic(PGuards.class)
-    abstract static class DictStorageBaseNode extends PBaseNode {
+    abstract static class DictStorageBaseNode extends PNodeWithContext {
         @Child private GetClassNode getClassNode;
         @Child private IsHashableNode isHashableNode;
         @Child private Equivalence equivalenceNode;
@@ -1511,7 +1511,7 @@ public abstract class HashingStorageNodes {
         }
     }
 
-    public abstract static class LenNode extends PBaseNode {
+    public abstract static class LenNode extends PNodeWithContext {
 
         protected static final int MAX_STORAGES = 8;
 

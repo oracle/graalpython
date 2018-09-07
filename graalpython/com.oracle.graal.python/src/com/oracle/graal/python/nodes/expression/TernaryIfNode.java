@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,39 +38,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-public class PCallNativeNode extends PNodeWithContext {
-    @Child private Node executeNode;
+public final class TernaryIfNode extends ExpressionNode {
+    @Child private CastToBooleanNode condition;
+    @Child private ExpressionNode then;
+    @Child private ExpressionNode orelse;
 
-    private Node getExecuteNode() {
-        if (executeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.EXECUTE.createNode());
-        }
-        return executeNode;
+    public TernaryIfNode(CastToBooleanNode condition, ExpressionNode then, ExpressionNode orelse) {
+        this.condition = condition;
+        this.then = then;
+        this.orelse = orelse;
     }
 
-    public Object execute(TruffleObject func, Object[] args) {
-        try {
-            return ForeignAccess.sendExecute(getExecuteNode(), func, args);
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            CompilerDirectives.transferToInterpreter();
-            throw e.raise();
-        }
+    public CastToBooleanNode getCondition() {
+        return condition;
     }
 
-    public static PCallNativeNode create() {
-        return new PCallNativeNode();
+    @Override
+    public Object execute(VirtualFrame frame) {
+        if (condition.executeBoolean(frame)) {
+            return then.execute(frame);
+        } else {
+            return orelse.execute(frame);
+        }
     }
 }

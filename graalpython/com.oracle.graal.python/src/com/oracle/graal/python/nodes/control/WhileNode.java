@@ -25,9 +25,8 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -37,9 +36,9 @@ import com.oracle.truffle.api.nodes.RepeatingNode;
 final class WhileRepeatingNode extends Node implements RepeatingNode {
 
     @Child CastToBooleanNode condition;
-    @Child PNode body;
+    @Child StatementNode body;
 
-    WhileRepeatingNode(CastToBooleanNode condition, PNode body) {
+    WhileRepeatingNode(CastToBooleanNode condition, StatementNode body) {
         this.condition = condition;
         this.body = body;
     }
@@ -59,12 +58,12 @@ public final class WhileNode extends LoopNode {
 
     @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
 
-    public WhileNode(CastToBooleanNode condition, PNode body) {
+    public WhileNode(CastToBooleanNode condition, StatementNode body) {
         this.loopNode = Truffle.getRuntime().createLoopNode(new WhileRepeatingNode(condition, body));
     }
 
     @Override
-    public PNode getBody() {
+    public StatementNode getBody() {
         return ((WhileRepeatingNode) loopNode.getRepeatingNode()).body;
     }
 
@@ -73,8 +72,7 @@ public final class WhileNode extends LoopNode {
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         loopNode.executeLoop(frame);
-        return PNone.NONE;
     }
 }

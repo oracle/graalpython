@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -62,7 +62,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
-public abstract class ArityCheckNode extends PBaseNode {
+public abstract class ArityCheckNode extends PNodeWithContext {
     public static ArityCheckNode create() {
         return ArityCheckNodeGen.create();
     }

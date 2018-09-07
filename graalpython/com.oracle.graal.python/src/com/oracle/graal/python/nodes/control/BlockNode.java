@@ -25,65 +25,26 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public final class BlockNode extends BaseBlockNode {
 
-    private BlockNode(PNode[] statements) {
+    private BlockNode(StatementNode[] statements) {
         super(statements);
     }
 
-    public static PNode create(PNode... statements) {
+    public static StatementNode create(StatementNode... statements) {
         int length = statements.length;
 
         if (length == 0) {
-            return EmptyNode.create();
+            return new BlockNode(new StatementNode[0]);
         } else if (length == 1) {
             return statements[0];
         } else {
             return new BlockNode(statements);
         }
-    }
-
-    @ExplodeLoop
-    private void executeFirst(VirtualFrame frame) {
-        for (int i = 0; i < statements.length - 1; i++) {
-            statements[i].executeVoid(frame);
-        }
-    }
-
-    @Override
-    public Object execute(VirtualFrame frame) {
-        executeFirst(frame);
-        return statements[statements.length - 1].execute(frame);
-    }
-
-    @Override
-    public boolean executeBoolean(VirtualFrame frame) throws UnexpectedResultException {
-        executeFirst(frame);
-        return statements[statements.length - 1].executeBoolean(frame);
-    }
-
-    @Override
-    public int executeInt(VirtualFrame frame) throws UnexpectedResultException {
-        executeFirst(frame);
-        return statements[statements.length - 1].executeInt(frame);
-    }
-
-    @Override
-    public long executeLong(VirtualFrame frame) throws UnexpectedResultException {
-        executeFirst(frame);
-        return statements[statements.length - 1].executeLong(frame);
-    }
-
-    @Override
-    public double executeDouble(VirtualFrame frame) throws UnexpectedResultException {
-        executeFirst(frame);
-        return statements[statements.length - 1].executeDouble(frame);
     }
 
     @Override

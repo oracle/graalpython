@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,37 +38,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function;
+package com.oracle.graal.python.nodes.argument;
 
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.ForeignAccess;
-import com.oracle.truffle.api.interop.Message;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeCost;
 
-public abstract class PythonNFICallNode extends PythonBuiltinNode {
-    @Child private Node readNode = Message.READ.createNode();
-    @Child private Node bindNode = Message.EXECUTE.createNode();
-    @Child private Node executeNode;
+public abstract class ReadArgumentNode extends PNodeWithContext {
+    public abstract Object execute(VirtualFrame frame);
 
-    protected TruffleObject getDefaultLibrary() {
-        return null;
-    }
+    private static final class ArgumentExpressionNode extends ExpressionNode {
+        @Child private ReadArgumentNode argNode;
 
-    protected TruffleObject bind(TruffleObject library, String name, String signature) throws UnsupportedTypeException, ArityException, UnknownIdentifierException, UnsupportedMessageException {
-        TruffleObject symbol = (TruffleObject) ForeignAccess.sendRead(readNode, library, name);
-        return (TruffleObject) ForeignAccess.sendInvoke(bindNode, symbol, "bind", signature);
-    }
-
-    protected Object sendExecute(TruffleObject function, Object... arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-        if (executeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            executeNode = insert(Message.EXECUTE.createNode());
+        public ArgumentExpressionNode(ReadArgumentNode argNode) {
+            this.argNode = argNode;
         }
-        return ForeignAccess.sendExecute(executeNode, function, arguments);
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return argNode.execute(frame);
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.NONE;
+        }
+    }
+
+    public final ExpressionNode asExpression() {
+        return new ArgumentExpressionNode(this);
     }
 }

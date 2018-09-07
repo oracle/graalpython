@@ -29,21 +29,21 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class DictLiteralNode extends LiteralNode {
-    @Children private final PNode[] keys;
-    @Children private final PNode[] values;
+    @Children private final ExpressionNode[] keys;
+    @Children private final ExpressionNode[] values;
     @Child private HashingStorageNodes.SetItemNode setItemNode;
 
-    public static DictLiteralNode create(PNode[] keys, PNode[] values) {
+    public static DictLiteralNode create(ExpressionNode[] keys, ExpressionNode[] values) {
         return new DictLiteralNode(keys, values);
     }
 
-    public DictLiteralNode(PNode[] keys, PNode[] values) {
+    public DictLiteralNode(ExpressionNode[] keys, ExpressionNode[] values) {
         this.keys = keys;
         this.values = values;
         assert keys.length == values.length;

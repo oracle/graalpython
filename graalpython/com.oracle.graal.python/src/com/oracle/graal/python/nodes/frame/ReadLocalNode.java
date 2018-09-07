@@ -41,12 +41,12 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 
 public interface ReadLocalNode extends ReadNode {
     NodeFactory getNodeFactory();
 
-    default PNode makeDeleteNode() {
+    default StatementNode makeDeleteNode() {
         return makeWriteNode(getNodeFactory().createNullLiteral());
     }
 }

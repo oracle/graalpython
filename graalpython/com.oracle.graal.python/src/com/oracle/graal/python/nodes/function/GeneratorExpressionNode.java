@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -50,9 +50,9 @@ public final class GeneratorExpressionNode extends ExpressionDefinitionNode {
     @CompilationFinal private FrameDescriptor enclosingFrameDescriptor;
     @CompilationFinal private boolean isEnclosingFrameGenerator;
     @CompilationFinal private boolean isOptimized;
-    @Child private PNode getIterator;
+    @Child private ExpressionNode getIterator;
 
-    public GeneratorExpressionNode(String name, RootCallTarget callTarget, PNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
+    public GeneratorExpressionNode(String name, RootCallTarget callTarget, ExpressionNode getIterator, FrameDescriptor descriptor, DefinitionCellSlots definitionCellSlots,
                     ExecutionCellSlots executionCellSlots,
                     int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
         super(definitionCellSlots, executionCellSlots);

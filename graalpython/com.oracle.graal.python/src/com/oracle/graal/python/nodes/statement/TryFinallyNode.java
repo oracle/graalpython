@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -34,16 +32,16 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 
 public class TryFinallyNode extends StatementNode {
 
-    @Child private PNode body;
-    @Child private PNode finalbody;
+    @Child private StatementNode body;
+    @Child private StatementNode finalbody;
 
-    public TryFinallyNode(PNode body, PNode finalbody) {
+    public TryFinallyNode(StatementNode body, StatementNode finalbody) {
         this.body = body;
         this.finalbody = finalbody;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         PythonContext context = getContext();
         PException exceptionState = context.getCurrentException();
         try {
@@ -63,14 +61,13 @@ public class TryFinallyNode extends StatementNode {
             // restore
             context.setCurrentException(exceptionState);
         }
-        return PNone.NONE;
     }
 
-    public PNode getBody() {
+    public StatementNode getBody() {
         return body;
     }
 
-    public PNode getFinalbody() {
+    public StatementNode getFinalbody() {
         return finalbody;
     }
 }

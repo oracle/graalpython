@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.ConstructListNodeGen;
@@ -89,7 +89,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ListNodes {
 
-    public final static class CreateListFromIteratorNode extends PBaseNode {
+    public final static class CreateListFromIteratorNode extends PNodeWithContext {
 
         private static final int START_SIZE = 2;
 
@@ -287,7 +287,7 @@ public abstract class ListNodes {
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ConstructListNode extends PBaseNode {
+    public abstract static class ConstructListNode extends PNodeWithContext {
 
         @Child private ListAppendNode appendNode;
 
@@ -348,7 +348,7 @@ public abstract class ListNodes {
     }
 
     @ImportStatic(PGuards.class)
-    public abstract static class FastConstructListNode extends PBaseNode {
+    public abstract static class FastConstructListNode extends PNodeWithContext {
 
         @Child private ConstructListNode constructListNode;
 
@@ -378,7 +378,7 @@ public abstract class ListNodes {
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class IndexNode extends PBaseNode {
+    public abstract static class IndexNode extends PNodeWithContext {
         private static final String DEFAULT_ERROR_MSG = "list indices must be integers or slices, not %p";
         @Child LookupAndCallUnaryNode getIndexNode;
         private final CheckType checkType;

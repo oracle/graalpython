@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -50,27 +48,25 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * For destructuring assignments, we actually have (possibly nested) blocks. We write the value
  * that's passed in to a temp the blocks have been set up with destructuring.
  */
-public class AssignmentNode extends PNode {
-    @Child private PNode assignment;
-    @Child private PNode writeTemp;
+public class AssignmentNode extends StatementNode {
+    @Child private StatementNode assignment;
+    @Child private StatementNode writeTemp;
 
-    public AssignmentNode(PNode assignment, PNode pNode) {
+    public AssignmentNode(StatementNode assignment, StatementNode pNode) {
         assert assignment instanceof BlockNode;
         assert pNode instanceof WriteNode;
         this.assignment = assignment;
         this.writeTemp = pNode;
     }
 
-    public Object doWrite(VirtualFrame frame, Object value) {
+    public void doWrite(VirtualFrame frame, Object value) {
         ((WriteNode) writeTemp).doWrite(frame, value);
         assignment.executeVoid(frame);
-        return PNone.NONE;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         writeTemp.executeVoid(frame);
         assignment.executeVoid(frame);
-        return PNone.NONE;
     }
 }

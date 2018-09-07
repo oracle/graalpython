@@ -41,31 +41,28 @@
 package com.oracle.graal.python.nodes.classes;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "cpython://Objects/abstract.c/recursive_issubclass")
-@NodeChildren({@NodeChild(value = "derived", type = PNode.class), @NodeChild(value = "cls", type = PNode.class)})
-public abstract class IsSubtypeNode extends PNode {
+@ImportStatic(PythonOptions.class)
+public abstract class IsSubtypeNode extends PNodeWithContext {
     @Child private AbstractObjectGetBasesNode getBasesNode = AbstractObjectGetBasesNode.create();
+
     @Child private AbstractObjectIsSubclassNode abstractIsSubclassNode = AbstractObjectIsSubclassNode.create();
 
     private ConditionProfile exceptionDerivedProfile = ConditionProfile.createBinaryProfile();
     private ConditionProfile exceptionClsProfile = ConditionProfile.createBinaryProfile();
 
     public static IsSubtypeNode create() {
-        return IsSubtypeNodeGen.create(null, null);
-    }
-
-    public static IsSubtypeNode create(PNode derived, PNode cls) {
-        return IsSubtypeNodeGen.create(derived, cls);
+        return IsSubtypeNodeGen.create();
     }
 
     public abstract boolean execute(Object derived, Object cls);
@@ -117,7 +114,8 @@ public abstract class IsSubtypeNode extends PNode {
         }
 
         if (exceptionClsProfile.profile(getBasesNode.execute(cls) == null)) {
-            throw raise(PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
+            throw raise(
+                            PythonErrorType.TypeError, "issubclass() arg 2 must be a class or tuple of classes");
         }
 
         return abstractIsSubclassNode.execute(derived, cls);

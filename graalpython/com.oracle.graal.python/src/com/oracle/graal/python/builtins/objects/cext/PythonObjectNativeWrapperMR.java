@@ -86,7 +86,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -198,7 +198,7 @@ public class PythonObjectNativeWrapperMR {
 
     @ImportStatic({NativeMemberNames.class, SpecialMethodNames.class, SpecialAttributeNames.class})
     @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class ReadNativeMemberNode extends PBaseNode {
+    abstract static class ReadNativeMemberNode extends PNodeWithContext {
         @Child GetClassNode getClassNode;
         @Child private ToSulongNode toSulongNode;
         @Child private HashingStorageNodes.GetItemNode getItemNode;
@@ -623,7 +623,7 @@ public class PythonObjectNativeWrapperMR {
     }
 
     @ImportStatic({NativeMemberNames.class, PGuards.class})
-    abstract static class WriteNativeMemberNode extends PBaseNode {
+    abstract static class WriteNativeMemberNode extends PNodeWithContext {
         @Child private HashingStorageNodes.SetItemNode setItemNode;
 
         abstract Object execute(Object receiver, String key, Object value);
@@ -893,7 +893,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    abstract static class PIsPointerNode extends PBaseNode {
+    abstract static class PIsPointerNode extends PNodeWithContext {
 
         public abstract boolean execute(PythonNativeWrapper obj);
 
@@ -916,7 +916,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    abstract static class PAsPointerNode extends PBaseNode {
+    abstract static class PAsPointerNode extends PNodeWithContext {
         @Child private Node asPointerNode;
 
         public abstract long execute(PythonNativeWrapper o);
@@ -978,7 +978,7 @@ public class PythonObjectNativeWrapperMR {
         }
     }
 
-    abstract static class PToNativeNode extends PBaseNode {
+    abstract static class PToNativeNode extends PNodeWithContext {
         @Child private ToPyObjectNode toPyObjectNode;
         @Child private MaterializeDelegateNode materializeNode;
         @Child private PIsPointerNode pIsPointerNode = PIsPointerNode.create();

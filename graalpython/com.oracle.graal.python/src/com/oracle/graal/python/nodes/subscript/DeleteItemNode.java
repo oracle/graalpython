@@ -31,17 +31,38 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.function.Supplier;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
-import com.oracle.graal.python.nodes.expression.BinaryOpNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.NodeChild;
+import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
+// TODO: (tfel) Duplication here with BinaryOpNode
 @NodeInfo(shortName = __DELITEM__)
-public abstract class DeleteItemNode extends BinaryOpNode {
+@NodeChildren({@NodeChild(value = "leftNode", type = ExpressionNode.class), @NodeChild(value = "rightNode", type = ExpressionNode.class)})
+public abstract class DeleteItemNode extends StatementNode {
+    public abstract ExpressionNode getLeftNode();
+
+    public abstract ExpressionNode getRightNode();
+
+    // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
+    // the lengths we go to to avoid boxing :(
+    public abstract Object executeWith(Object left, Object right);
+
+    public int executeInt(int left, int right) throws UnexpectedResultException {
+        return PGuards.expectInteger(executeWith(left, right));
+    }
+
+    public double executeDouble(double left, double right) throws UnexpectedResultException {
+        return PGuards.expectDouble(executeWith(left, right));
+    }
 
     private final Supplier<NotImplementedHandler> notImplementedHandler;
 
@@ -54,11 +75,11 @@ public abstract class DeleteItemNode extends BinaryOpNode {
         };
     }
 
-    public PNode getPrimary() {
+    public ExpressionNode getPrimary() {
         return getLeftNode();
     }
 
-    public PNode getSlice() {
+    public ExpressionNode getSlice() {
         return getRightNode();
     }
 
@@ -77,7 +98,7 @@ public abstract class DeleteItemNode extends BinaryOpNode {
         return DeleteItemNodeGen.create(null, null);
     }
 
-    public static DeleteItemNode create(PNode primary, PNode slice) {
+    public static DeleteItemNode create(ExpressionNode primary, ExpressionNode slice) {
         return DeleteItemNodeGen.create(primary, slice);
     }
 

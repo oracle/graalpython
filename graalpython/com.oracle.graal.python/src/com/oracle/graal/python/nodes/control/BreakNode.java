@@ -34,7 +34,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public final class BreakNode extends StatementNode {
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         throw BreakException.INSTANCE;
     }
 }

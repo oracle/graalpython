@@ -44,7 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -60,7 +60,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PGuards.class)
 @TypeSystemReference(PythonArithmeticTypes.class)
-public abstract class JoinInternalNode extends PBaseNode {
+public abstract class JoinInternalNode extends PNodeWithContext {
 
     public abstract String execute(Object self, Object iterable, PythonClass iterableClass);
 

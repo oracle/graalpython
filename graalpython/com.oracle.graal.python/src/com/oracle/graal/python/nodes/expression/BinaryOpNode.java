@@ -26,16 +26,15 @@
 package com.oracle.graal.python.nodes.expression;
 
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
-@NodeChildren({@NodeChild(value = "leftNode", type = PNode.class), @NodeChild(value = "rightNode", type = PNode.class)})
-public abstract class BinaryOpNode extends PNode {
-    public abstract PNode getLeftNode();
+@NodeChildren({@NodeChild(value = "leftNode", type = ExpressionNode.class), @NodeChild(value = "rightNode", type = ExpressionNode.class)})
+public abstract class BinaryOpNode extends ExpressionNode {
+    public abstract ExpressionNode getLeftNode();
 
-    public abstract PNode getRightNode();
+    public abstract ExpressionNode getRightNode();
 
     // TODO: (tfel) refactor this method (executeWith) into a separate node. Right now this breaks
     // the lengths we go to to avoid boxing :(

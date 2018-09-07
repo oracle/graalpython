@@ -31,8 +31,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -76,7 +76,7 @@ public final class ScopeInfo {
      * {@link #defaultArgumentNodes} is not null only when {@link #scopeKind} is Function, and the
      * function has default arguments.
      */
-    private List<PNode> defaultArgumentNodes;
+    private List<ExpressionNode> defaultArgumentNodes;
     private ReadDefaultArgumentNode[] defaultArgumentReads;
 
     private int loopCount = 0;
@@ -233,11 +233,11 @@ public final class ScopeInfo {
         return getFrameSlots(freeVars, parent);
     }
 
-    public void setDefaultArgumentNodes(List<PNode> defaultArgumentNodes) {
+    public void setDefaultArgumentNodes(List<ExpressionNode> defaultArgumentNodes) {
         this.defaultArgumentNodes = defaultArgumentNodes;
     }
 
-    public List<PNode> getDefaultArgumentNodes() {
+    public List<ExpressionNode> getDefaultArgumentNodes() {
         return defaultArgumentNodes;
     }
 

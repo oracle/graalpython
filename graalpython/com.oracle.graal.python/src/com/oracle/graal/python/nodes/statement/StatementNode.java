@@ -26,10 +26,48 @@
 package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.GenerateWrapper;
+import com.oracle.truffle.api.instrumentation.ProbeNode;
+import com.oracle.truffle.api.instrumentation.StandardTags;
+import com.oracle.truffle.api.instrumentation.Tag;
 
 /**
- * Base class for most statements, except for FrameSlotNodes.
- *
+ * Base class for all statements. Statements never return a value.
  */
+@GenerateWrapper
 public abstract class StatementNode extends PNode {
+    @CompilationFinal private boolean isTryBlock = false;
+
+    public abstract void executeVoid(VirtualFrame frame);
+
+    public void markAsTryBlock() {
+        isTryBlock = true;
+    }
+
+    public boolean isTryBlock() {
+        return isTryBlock;
+    }
+
+    public WrapperNode createWrapper(ProbeNode probe) {
+        return new StatementNodeWrapper(this, probe);
+    }
+
+    @Override
+    public boolean hasTag(Class<? extends Tag> tag) {
+        return (tag == StandardTags.StatementTag.class) || (isTryBlock && tag == StandardTags.TryBlockTag.class) || super.hasTag(tag);
+    }
+
+    public Object getNodeObject() {
+        if (isTryBlock) {
+            if (this.getParent() instanceof TryExceptNode) {
+                return this.getParent();
+            } else if (this.getParent() instanceof StatementNodeWrapper) {
+                assert this.getParent().getParent() instanceof TryExceptNode;
+                return this.getParent().getParent();
+            }
+        }
+        return null;
+    }
 }

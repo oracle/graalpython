@@ -26,6 +26,7 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -36,12 +37,12 @@ public class ModuleRootNode extends PClosureRootNode {
 
     private final String name;
 
-    @Child private PNode body;
+    @Child private ExpressionNode body;
 
-    public ModuleRootNode(PythonLanguage language, String name, PNode body, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
+    public ModuleRootNode(PythonLanguage language, String name, ExpressionNode file, FrameDescriptor descriptor, FrameSlot[] freeVarSlots) {
         super(language, descriptor, freeVarSlots);
         this.name = "<module '" + name + "'>";
-        this.body = body;
+        this.body = file;
     }
 
     @Override
@@ -50,7 +51,7 @@ public class ModuleRootNode extends PClosureRootNode {
         return body.execute(frame);
     }
 
-    public PNode getBody() {
+    public ExpressionNode getBody() {
         return body;
     }
 

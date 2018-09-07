@@ -28,7 +28,11 @@ package com.oracle.graal.python.nodes.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -46,13 +50,17 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
     protected final FrameDescriptor frameDescriptor;
     protected final Arity arity;
 
-    @Child protected PNode defaults;
+    @Child protected StatementNode defaults;
+    @Child private ExpressionNode doc;
+    @Child private WriteAttributeToObjectNode writeDocNode = WriteAttributeToObjectNode.create();
 
-    public FunctionDefinitionNode(String functionName, String enclosingClassName, PythonCore core, Arity arity, PNode defaults, RootCallTarget callTarget, FrameDescriptor frameDescriptor,
+    public FunctionDefinitionNode(String functionName, String enclosingClassName, ExpressionNode doc, PythonCore core, Arity arity, StatementNode defaults, RootCallTarget callTarget,
+                    FrameDescriptor frameDescriptor,
                     DefinitionCellSlots definitionCellSlots, ExecutionCellSlots executionCellSlots) {
         super(definitionCellSlots, executionCellSlots);
         this.functionName = functionName;
         this.enclosingClassName = enclosingClassName;
+        this.doc = doc;
         this.core = core;
         this.callTarget = callTarget;
         this.frameDescriptor = frameDescriptor;
@@ -65,7 +73,14 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         defaults.executeVoid(frame);
 
         PCell[] closure = getClosureFromGeneratorOrFunctionLocals(frame);
-        return factory().createFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure);
+        return withDocString(frame, factory().createFunction(functionName, enclosingClassName, arity, callTarget, frameDescriptor, PArguments.getGlobals(frame), closure));
+    }
+
+    protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
+        if (doc != null) {
+            writeDocNode.execute(func, SpecialAttributeNames.__DOC__, doc.execute(frame));
+        }
+        return func;
     }
 
     public String getFunctionName() {

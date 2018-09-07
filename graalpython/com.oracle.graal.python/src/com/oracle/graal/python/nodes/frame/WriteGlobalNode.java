@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -51,8 +51,8 @@ import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChildren({@NodeChild(value = "rhs", type = PNode.class)})
-public abstract class WriteGlobalNode extends GlobalNode implements WriteNode {
+@NodeChildren({@NodeChild(value = "rhs", type = ExpressionNode.class)})
+public abstract class WriteGlobalNode extends StatementNode implements GlobalNode, WriteNode {
     protected final String attributeId;
 
     WriteGlobalNode(String attributeId) {
@@ -63,80 +63,74 @@ public abstract class WriteGlobalNode extends GlobalNode implements WriteNode {
         return create(null, null);
     }
 
-    public static WriteGlobalNode create(String attributeId, PNode rhs) {
+    public static WriteGlobalNode create(String attributeId, ExpressionNode rhs) {
         return WriteGlobalNodeGen.create(attributeId, rhs);
     }
 
-    public Object doWrite(VirtualFrame frame, boolean value) {
-        return executeWithValue(frame, value);
+    public void doWrite(VirtualFrame frame, boolean value) {
+        executeWithValue(frame, value);
     }
 
-    public Object doWrite(VirtualFrame frame, int value) {
-        return executeWithValue(frame, value);
+    public void doWrite(VirtualFrame frame, int value) {
+        executeWithValue(frame, value);
     }
 
-    public Object doWrite(VirtualFrame frame, long value) {
-        return executeWithValue(frame, value);
+    public void doWrite(VirtualFrame frame, long value) {
+        executeWithValue(frame, value);
     }
 
-    public Object doWrite(VirtualFrame frame, double value) {
-        return executeWithValue(frame, value);
+    public void doWrite(VirtualFrame frame, double value) {
+        executeWithValue(frame, value);
     }
 
-    public Object doWrite(VirtualFrame frame, Object value) {
-        return executeWithValue(frame, value);
+    public void doWrite(VirtualFrame frame, Object value) {
+        executeWithValue(frame, value);
     }
 
-    public abstract Object executeWithValue(VirtualFrame frame, boolean value);
+    public abstract void executeWithValue(VirtualFrame frame, boolean value);
 
-    public abstract Object executeWithValue(VirtualFrame frame, int value);
+    public abstract void executeWithValue(VirtualFrame frame, int value);
 
-    public abstract Object executeWithValue(VirtualFrame frame, long value);
+    public abstract void executeWithValue(VirtualFrame frame, long value);
 
-    public abstract Object executeWithValue(VirtualFrame frame, double value);
+    public abstract void executeWithValue(VirtualFrame frame, double value);
 
-    public abstract Object executeWithValue(VirtualFrame frame, Object value);
+    public abstract void executeWithValue(VirtualFrame frame, Object value);
 
     @Specialization(guards = "isInDict(frame)")
-    Object writeDictBoolean(VirtualFrame frame, boolean value,
+    void writeDictBoolean(VirtualFrame frame, boolean value,
                     @Cached("create()") SetItemNode storeNode) {
         storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
-        return PNone.NONE;
-    }
-
-    @Specialization(guards = "isInDict(frame)")
-    Object writeDictInt(VirtualFrame frame, int value,
-                    @Cached("create()") SetItemNode storeNode) {
-        storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
-        return PNone.NONE;
     }
 
     @Specialization(guards = "isInDict(frame)")
-    Object writeDictLong(VirtualFrame frame, long value,
+    void writeDictInt(VirtualFrame frame, int value,
                     @Cached("create()") SetItemNode storeNode) {
         storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
-        return PNone.NONE;
     }
 
     @Specialization(guards = "isInDict(frame)")
-    Object writeDictDouble(VirtualFrame frame, double value,
+    void writeDictLong(VirtualFrame frame, long value,
                     @Cached("create()") SetItemNode storeNode) {
         storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
-        return PNone.NONE;
+    }
+
+    @Specialization(guards = "isInDict(frame)")
+    void writeDictDouble(VirtualFrame frame, double value,
+                    @Cached("create()") SetItemNode storeNode) {
+        storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
     }
 
     @Specialization(replaces = {"writeDictBoolean", "writeDictInt", "writeDictLong", "writeDictDouble"}, guards = "isInDict(frame)")
-    Object writeDict1(VirtualFrame frame, Object value,
+    void writeDict1(VirtualFrame frame, Object value,
                     @Cached("create()") SetItemNode storeNode) {
         storeNode.executeWith(PArguments.getGlobals(frame), attributeId, value);
-        return PNone.NONE;
     }
 
     @Specialization(guards = "isInModule(frame)")
-    Object writeDict(VirtualFrame frame, Object value,
+    void writeDict(VirtualFrame frame, Object value,
                     @Cached("create(attributeId)") SetAttributeNode storeNode) {
-        storeNode.execute(PArguments.getGlobals(frame), value);
-        return PNone.NONE;
+        storeNode.executeVoid(PArguments.getGlobals(frame), value);
     }
 
     public Object getAttributeId() {

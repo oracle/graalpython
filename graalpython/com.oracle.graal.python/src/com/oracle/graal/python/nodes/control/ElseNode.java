@@ -25,31 +25,30 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class ElseNode extends StatementNode {
 
-    @Child private PNode then;
-    @Child private PNode orelse;
+    @Child private StatementNode then;
+    @Child private StatementNode orelse;
 
-    public ElseNode(PNode then, PNode orelse) {
+    public ElseNode(StatementNode then, StatementNode orelse) {
         this.then = then;
         this.orelse = orelse;
     }
 
-    public PNode getThen() {
+    public StatementNode getThen() {
         return then;
     }
 
-    public PNode getOrelse() {
+    public StatementNode getOrelse() {
         return orelse;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         then.executeVoid(frame);
-        return orelse.execute(frame);
+        orelse.executeVoid(frame);
     }
 }

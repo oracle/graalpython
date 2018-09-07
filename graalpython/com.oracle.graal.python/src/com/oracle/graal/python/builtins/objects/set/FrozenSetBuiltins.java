@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -302,7 +302,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class BinaryUnionNode extends PBaseNode {
+    abstract static class BinaryUnionNode extends PNodeWithContext {
         @Child private Equivalence equivalenceNode;
 
         public abstract PBaseSet execute(PBaseSet container, HashingStorage left, Object right);

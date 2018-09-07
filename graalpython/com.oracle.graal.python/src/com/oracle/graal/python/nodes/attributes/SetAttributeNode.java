@@ -42,11 +42,12 @@ package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
@@ -54,10 +55,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "rhs", type = PNode.class)})
-public abstract class SetAttributeNode extends PNode implements WriteNode {
+@NodeChildren({@NodeChild(value = "object", type = ExpressionNode.class), @NodeChild(value = "rhs", type = ExpressionNode.class)})
+public abstract class SetAttributeNode extends StatementNode implements WriteNode {
 
-    public static final class Dynamic extends PBaseNode {
+    public static final class Dynamic extends PNodeWithContext {
         private final ValueProfile setAttributeProfile = ValueProfile.createIdentityProfile();
         @Child private GetClassNode getClassNode = GetClassNode.create();
         @Child private LookupAttributeInMRONode setAttributeLookup = LookupAttributeInMRONode.create(__SETATTR__);
@@ -75,40 +76,40 @@ public abstract class SetAttributeNode extends PNode implements WriteNode {
         this.key = key;
     }
 
-    protected abstract PNode getObject();
+    protected abstract ExpressionNode getObject();
 
-    public abstract PNode getRhs();
+    public abstract ExpressionNode getRhs();
 
     public static SetAttributeNode create(String key) {
         return create(key, null, null);
     }
 
-    public static SetAttributeNode create(String key, PNode object, PNode rhs) {
+    public static SetAttributeNode create(String key, ExpressionNode object, ExpressionNode rhs) {
         return SetAttributeNodeGen.create(key, object, rhs);
     }
 
     @Override
-    public final Object doWrite(VirtualFrame frame, Object value) {
-        return execute(getObject().execute(frame), value);
+    public final void doWrite(VirtualFrame frame, Object value) {
+        executeVoid(getObject().execute(frame), value);
     }
 
-    public abstract Object execute(Object object, Object value);
+    public abstract void executeVoid(Object object, Object value);
 
     public String getAttributeId() {
         return key;
     }
 
-    public PNode getPrimaryNode() {
+    public ExpressionNode getPrimaryNode() {
         return getObject();
     }
 
     @Specialization
-    protected Object doIt(Object object, Object value,
+    protected void doIt(Object object, Object value,
                     @Cached("createIdentityProfile()") ValueProfile setAttributeProfile,
                     @Cached("create()") GetClassNode getClassNode,
                     @Cached("create(__SETATTR__)") LookupAttributeInMRONode setAttributeLookup,
                     @Cached("create()") CallTernaryMethodNode callSetAttribute) {
         Object descr = setAttributeProfile.profile(setAttributeLookup.execute(getClassNode.execute(object)));
-        return callSetAttribute.execute(descr, object, key, value);
+        callSetAttribute.execute(descr, object, key, value);
     }
 }

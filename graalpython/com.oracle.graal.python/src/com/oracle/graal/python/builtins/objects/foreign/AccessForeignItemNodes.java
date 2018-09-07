@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFa
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -79,7 +79,7 @@ import com.oracle.truffle.api.nodes.Node;
 abstract class AccessForeignItemNodes {
 
     @ImportStatic(Message.class)
-    protected abstract static class AccessForeignItemBaseNode extends PBaseNode {
+    protected abstract static class AccessForeignItemBaseNode extends PNodeWithContext {
 
         protected static boolean isSlice(Object o) {
             return o instanceof PSlice;

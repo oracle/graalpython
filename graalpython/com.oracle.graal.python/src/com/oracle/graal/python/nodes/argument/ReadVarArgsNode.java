@@ -26,7 +26,6 @@
 package com.oracle.graal.python.nodes.argument;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
@@ -34,12 +33,10 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public abstract class ReadVarArgsNode extends PNode {
+public abstract class ReadVarArgsNode extends ReadArgumentNode {
     private final int index;
 
-    /**
-     * Controls if the varargs are wrapped in a tuple
-     */
+    /** Controls if the varargs are wrapped in a tuple */
     private final boolean builtin;
 
     ReadVarArgsNode(int paramIndex, boolean isBuiltin) {
@@ -59,7 +56,8 @@ public abstract class ReadVarArgsNode extends PNode {
 
     protected int getAndCheckUserArgsLen(VirtualFrame frame) {
         int length = getUserArgsLen(frame);
-        if (length >= PythonOptions.getIntOption(getContext(), PythonOptions.VariableArgumentReadUnrollingLimit)) {
+        if (length >= PythonOptions.getIntOption(
+                        getContext(), PythonOptions.VariableArgumentReadUnrollingLimit)) {
             return -1;
         }
         return length;
@@ -71,8 +69,7 @@ public abstract class ReadVarArgsNode extends PNode {
 
     @Specialization(guards = {"getUserArgsLen(frame) == userArgumentLength"})
     @ExplodeLoop
-    Object extractVarargs(VirtualFrame frame,
-                    @Cached("getAndCheckUserArgsLen(frame)") int userArgumentLength) {
+    Object extractVarargs(VirtualFrame frame, @Cached("getAndCheckUserArgsLen(frame)") int userArgumentLength) {
         if (index >= userArgumentLength) {
             return output();
         } else {

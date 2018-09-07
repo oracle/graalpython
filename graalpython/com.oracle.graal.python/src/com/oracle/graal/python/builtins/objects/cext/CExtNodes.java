@@ -72,7 +72,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -212,7 +212,7 @@ public abstract class CExtNodes {
     }
 
     @ImportStatic(PGuards.class)
-    abstract static class CExtBaseNode extends PBaseNode {
+    abstract static class CExtBaseNode extends PNodeWithContext {
         @Child private Node readSymbolNode;
 
         protected static boolean isNativeWrapper(Object obj) {
@@ -784,7 +784,7 @@ public abstract class CExtNodes {
 
     }
 
-    public abstract static class AllToJavaNode extends PBaseNode {
+    public abstract static class AllToJavaNode extends PNodeWithContext {
         @Child private CExtNodes.AsPythonObjectNode toJavaNode = CExtNodes.AsPythonObjectNode.create();
 
         abstract Object[] execute(Object[] args);
@@ -815,7 +815,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public abstract static class AllToSulongNode extends PBaseNode {
+    public abstract static class AllToSulongNode extends PNodeWithContext {
         public abstract void executeInto(Object[] args, int argsOffset, Object[] dest, int destOffset);
 
         protected boolean isArgsOffsetPlus(int len, int off, int plus) {
@@ -879,7 +879,7 @@ public abstract class CExtNodes {
         }
     }
 
-    protected abstract static class UpcallNode extends PBaseNode {
+    protected abstract static class UpcallNode extends PNodeWithContext {
         @Child AllToJavaNode allToJava = null;
 
         protected AllToJavaNode getAllToJavaNode() {
@@ -962,7 +962,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public abstract static class AsDouble extends PBaseNode {
+    public abstract static class AsDouble extends PNodeWithContext {
         @Child private LookupAndCallUnaryNode callFloatFunc;
 
         public abstract double execute(boolean arg);
@@ -1053,7 +1053,7 @@ public abstract class CExtNodes {
         }
     }
 
-    public abstract static class AsLong extends PBaseNode {
+    public abstract static class AsLong extends PNodeWithContext {
         @Child private CastToIndexNode intNode;
 
         public abstract long execute(boolean arg);

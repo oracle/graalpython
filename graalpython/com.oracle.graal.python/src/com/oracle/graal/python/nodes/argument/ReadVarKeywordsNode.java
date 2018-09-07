@@ -29,7 +29,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -40,7 +39,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "**kwargs")
-public abstract class ReadVarKeywordsNode extends PNode {
+public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     @CompilationFinal(dimensions = 1) private final String[] keywordNames;
     private final boolean doWrap;
 

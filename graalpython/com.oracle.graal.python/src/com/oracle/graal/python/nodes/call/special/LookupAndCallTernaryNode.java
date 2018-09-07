@@ -45,24 +45,22 @@ import java.util.function.Supplier;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-@NodeChildren({@NodeChild("arg"), @NodeChild("arg2"), @NodeChild("arg3")})
-public abstract class LookupAndCallTernaryNode extends PNode {
-
-    public abstract static class NotImplementedHandler extends PBaseNode {
+@ImportStatic({SpecialMethodNames.class})
+public abstract class LookupAndCallTernaryNode extends Node {
+    public abstract static class NotImplementedHandler extends PNodeWithContext {
         public abstract Object execute(Object arg, Object arg2, Object arg3);
     }
 
@@ -80,18 +78,16 @@ public abstract class LookupAndCallTernaryNode extends PNode {
     public abstract Object execute(Object arg1, int arg2, Object arg3);
 
     public static LookupAndCallTernaryNode create(String name) {
-        return LookupAndCallTernaryNodeGen.create(name, false, null, null, null, null);
+        return LookupAndCallTernaryNodeGen.create(name, false, null);
     }
 
-    public static LookupAndCallTernaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory, null, null, null);
+    public static LookupAndCallTernaryNode createReversible(
+                    String name, Supplier<NotImplementedHandler> handlerFactory) {
+        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory);
     }
 
-    public static LookupAndCallTernaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory, PNode x, PNode y) {
-        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory, x, y, EmptyNode.create());
-    }
-
-    LookupAndCallTernaryNode(String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory) {
+    LookupAndCallTernaryNode(
+                    String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory) {
         this.name = name;
         this.isReversible = isReversible;
         this.handlerFactory = handlerFactory;
@@ -102,17 +98,25 @@ public abstract class LookupAndCallTernaryNode extends PNode {
     }
 
     @Specialization(guards = "!isReversible()")
-    Object callObject(Object arg1, int arg2, Object arg3,
+    Object callObject(
+                    Object arg1,
+                    int arg2,
+                    Object arg3,
                     @Cached("create()") GetClassNode getclass,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
+        return dispatchNode.execute(
+                        getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
     @Specialization(guards = "!isReversible()")
-    Object callObject(Object arg1, Object arg2, Object arg3,
+    Object callObject(
+                    Object arg1,
+                    Object arg2,
+                    Object arg3,
                     @Cached("create()") GetClassNode getclass,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getattr) {
-        return dispatchNode.execute(getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
+        return dispatchNode.execute(
+                        getattr.executeObject(getclass.execute(arg1), name), arg1, arg2, arg3);
     }
 
     private CallTernaryMethodNode ensureReverseDispatch() {
@@ -143,7 +147,10 @@ public abstract class LookupAndCallTernaryNode extends PNode {
     }
 
     @Specialization(guards = "isReversible()")
-    Object callObject(Object v, Object w, Object z,
+    Object callObject(
+                    Object v,
+                    Object w,
+                    Object z,
                     @Cached("create(name)") LookupAttributeInMRONode getattr,
                     @Cached("create(name)") LookupAttributeInMRONode getattrR,
                     @Cached("create()") GetClassNode getClass,

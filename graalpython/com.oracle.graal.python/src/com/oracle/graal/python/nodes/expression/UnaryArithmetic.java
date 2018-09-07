@@ -44,10 +44,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.function.Supplier;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeCost;
 
 public enum UnaryArithmetic {
     Pos(SpecialMethodNames.__POS__, "+"),
@@ -77,11 +78,31 @@ public enum UnaryArithmetic {
         return operator;
     }
 
-    public LookupAndCallUnaryNode create(PNode receiver) {
-        return LookupAndCallUnaryNode.create(methodName, noAttributeHandler, receiver);
+    public static final class UnaryArithmeticExpression extends ExpressionNode {
+        @Child private LookupAndCallUnaryNode callNode;
+        @Child private ExpressionNode operand;
+
+        private UnaryArithmeticExpression(LookupAndCallUnaryNode callNode, ExpressionNode operand) {
+            this.callNode = callNode;
+            this.operand = operand;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return callNode.executeObject(operand.execute(frame));
+        }
+
+        @Override
+        public NodeCost getCost() {
+            return NodeCost.NONE;
+        }
+    }
+
+    public ExpressionNode create(ExpressionNode receiver) {
+        return new UnaryArithmeticExpression(LookupAndCallUnaryNode.create(methodName, noAttributeHandler), receiver);
     }
 
     public LookupAndCallUnaryNode create() {
-        return LookupAndCallUnaryNode.create(methodName, noAttributeHandler, null);
+        return LookupAndCallUnaryNode.create(methodName, noAttributeHandler);
     }
 }

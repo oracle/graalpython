@@ -41,22 +41,23 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@NodeChildren({@NodeChild(value = "object", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
-public abstract class DeleteAttributeNode extends PNode {
+@NodeChildren({@NodeChild(value = "object", type = ExpressionNode.class), @NodeChild(value = "key", type = ExpressionNode.class)})
+public abstract class DeleteAttributeNode extends StatementNode {
     public static DeleteAttributeNode create() {
         return DeleteAttributeNodeGen.create(null, null);
     }
 
-    public static DeleteAttributeNode create(PNode object, PNode key) {
+    public static DeleteAttributeNode create(ExpressionNode object, ExpressionNode key) {
         return DeleteAttributeNodeGen.create(object, key);
     }
 

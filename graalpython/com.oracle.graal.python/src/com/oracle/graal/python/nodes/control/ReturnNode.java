@@ -33,15 +33,14 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public class ReturnNode extends StatementNode {
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         throw ReturnException.INSTANCE;
     }
 
     public static final class FrameReturnNode extends ReturnNode {
+        @Child private StatementNode right;
 
-        @Child private PNode right;
-
-        public FrameReturnNode(PNode right) {
+        public FrameReturnNode(StatementNode right) {
             this.right = right;
         }
 
@@ -50,11 +49,9 @@ public class ReturnNode extends StatementNode {
         }
 
         @Override
-        public Object execute(VirtualFrame frame) {
+        public void executeVoid(VirtualFrame frame) {
             right.executeVoid(frame);
             throw ReturnException.INSTANCE;
         }
-
     }
-
 }

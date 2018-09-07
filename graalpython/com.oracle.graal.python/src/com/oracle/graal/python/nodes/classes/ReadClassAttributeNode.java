@@ -45,10 +45,11 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.NodeFactory;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -57,13 +58,13 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "read_class_member")
-public abstract class ReadClassAttributeNode extends PNode implements ReadLocalNode {
+public abstract class ReadClassAttributeNode extends ExpressionNode implements ReadLocalNode {
     private final String identifier;
     private final boolean isFreeVar;
 
-    @Child private PNode getNsItem;
-    @Child private PNode readGlobal;
-    @Child private PNode readCellLocal;
+    @Child private ExpressionNode getNsItem;
+    @Child private ExpressionNode readGlobal;
+    @Child private ExpressionNode readCellLocal;
 
     ReadClassAttributeNode(String identifier, FrameSlot cellSlot, boolean isFreeVar) {
         this.identifier = identifier;
@@ -75,11 +76,11 @@ public abstract class ReadClassAttributeNode extends PNode implements ReadLocalN
         if (cellSlot != null) {
             this.readCellLocal = factory.createReadLocalCell(cellSlot, isFreeVar);
         }
-        this.getNsItem = factory.createGetItem(namespace, this.identifier);
+        this.getNsItem = factory.createGetItem(namespace.asExpression(), this.identifier);
         this.readGlobal = factory.createReadGlobalOrBuiltinScope(this.identifier);
     }
 
-    public static PNode create(String name, FrameSlot cellSlot, boolean isFreeVar) {
+    public static ReadClassAttributeNode create(String name, FrameSlot cellSlot, boolean isFreeVar) {
         return ReadClassAttributeNodeGen.create(name, cellSlot, isFreeVar);
     }
 
@@ -88,19 +89,21 @@ public abstract class ReadClassAttributeNode extends PNode implements ReadLocalN
     }
 
     @Override
-    public PNode makeDeleteNode() {
+    public StatementNode makeDeleteNode() {
         return DeleteClassAttributeNode.create(identifier);
     }
 
     @Override
-    public PNode makeWriteNode(PNode rhs) {
-        PNode right = rhs;
+    public StatementNode makeWriteNode(ExpressionNode rhs) {
+        ExpressionNode right = rhs;
         // freevars pass through the special Class scope
         if (readCellLocal != null && !isFreeVar) {
-            right = ((ReadNode) readCellLocal).makeWriteNode(rhs);
+            // TODO (tfel): Is this what's intended?
+            return ((ReadNode) readCellLocal).makeWriteNode(rhs);
+        } else {
+            // assignments always got to the innermost scope
+            return ((ReadNode) getNsItem).makeWriteNode(right);
         }
-        // assignments always got to the innermost scope
-        return ((ReadNode) getNsItem).makeWriteNode(right);
     }
 
     @Specialization

@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ContinueException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -37,25 +35,23 @@ public class ContinueTargetNode extends StatementNode {
     private final BranchProfile continueProfile = BranchProfile.create();
     private final BranchProfile defaultExitProfile = BranchProfile.create();
 
-    @Child private PNode child;
+    @Child private StatementNode child;
 
-    public ContinueTargetNode(PNode child) {
+    public ContinueTargetNode(StatementNode child) {
         this.child = child;
     }
 
-    public PNode getTargetNode() {
+    public StatementNode getTargetNode() {
         return child;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         try {
-            Object result = child.execute(frame);
+            child.executeVoid(frame);
             defaultExitProfile.enter();
-            return result;
         } catch (ContinueException ex) {
             continueProfile.enter();
-            return PNone.NONE;
         }
     }
 }

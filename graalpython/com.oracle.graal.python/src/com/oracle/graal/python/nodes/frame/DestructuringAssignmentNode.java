@@ -36,10 +36,10 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -48,11 +48,11 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public final class DestructuringAssignmentNode extends PNode implements WriteNode {
+public final class DestructuringAssignmentNode extends StatementNode implements WriteNode {
 
-    @Child private PNode rhs;
+    @Child private ExpressionNode rhs;
     @Children private final WriteNode[] slots;
-    @Children private final PNode[] assignments;
+    @Children private final StatementNode[] assignments;
 
     @Child private GetItemNode getItem = GetItemNodeGen.create();
     @Child private GetItemNode getNonExistingItem = GetItemNodeGen.create();
@@ -68,7 +68,7 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
     private final ConditionProfile errorProfile2 = ConditionProfile.createBinaryProfile();
     private final int starredIndex;
 
-    public DestructuringAssignmentNode(PNode rhs, ReadNode[] slots, int starredIndex, PNode[] assignments) {
+    public DestructuringAssignmentNode(ExpressionNode rhs, ReadNode[] slots, int starredIndex, StatementNode[] assignments) {
         this.rhs = rhs;
         this.starredIndex = starredIndex;
         this.assignments = assignments;
@@ -79,7 +79,7 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
         this.lenNode = starredIndex == -1 ? null : BuiltinFunctionsFactory.LenNodeFactory.create();
     }
 
-    public static PNode create(PNode rhs, ReadNode[] slots, int starredIndex, PNode[] assignments) {
+    public static DestructuringAssignmentNode create(ExpressionNode rhs, ReadNode[] slots, int starredIndex, StatementNode[] assignments) {
         return new DestructuringAssignmentNode(rhs, slots, starredIndex, assignments);
     }
 
@@ -150,20 +150,20 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         Object rhsValue = rhs.execute(frame);
         Object getItemAttribute = lookupGetItemNode.execute(rhsValue);
         if (getItemAttribute == NO_VALUE) {
             rhsValue = constructTupleNode.execute(rhsValue);
         }
-        return doWrite(frame, rhsValue);
+        doWrite(frame, rhsValue);
     }
 
-    public PNode getRhs() {
+    public ExpressionNode getRhs() {
         return rhs;
     }
 
-    public Object doWrite(VirtualFrame frame, Object rhsValue) {
+    public void doWrite(VirtualFrame frame, Object rhsValue) {
         int nonExistingItem;
         try {
             if (starredIndex == -1) {
@@ -196,8 +196,6 @@ public final class DestructuringAssignmentNode extends PNode implements WriteNod
         }
 
         performAssignments(frame);
-
-        return PNone.NONE;
     }
 
     @ExplodeLoop

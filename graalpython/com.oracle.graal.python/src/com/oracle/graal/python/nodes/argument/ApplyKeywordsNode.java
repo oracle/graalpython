@@ -45,7 +45,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
@@ -54,7 +54,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public abstract class ApplyKeywordsNode extends PBaseNode {
+public abstract class ApplyKeywordsNode extends PNodeWithContext {
     private final ConditionProfile expandArgs = ConditionProfile.createBinaryProfile();
 
     public abstract Object[] execute(Arity calleeArity, Object[] arguments, PKeyword[] keywords);

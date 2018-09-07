@@ -59,10 +59,12 @@ import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.IsNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.expression.TernaryIfNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
@@ -126,63 +128,60 @@ public class NodeFactory {
         return (T) NodeUtil.cloneNode(orig);
     }
 
-    public ModuleRootNode createModuleRoot(String name, PNode body, FrameDescriptor fd) {
-        return createModuleRoot(name, body, fd, null);
+    public ModuleRootNode createModuleRoot(String name, ExpressionNode file, FrameDescriptor fd) {
+        file.markAsRoot();
+        return new ModuleRootNode(language, name, file, fd, null);
     }
 
-    public ModuleRootNode createModuleRoot(String name, PNode body, FrameDescriptor fd, FrameSlot[] freeVarSlots) {
-        body.markAsRoot();
-        return new ModuleRootNode(language, name, body, fd, freeVarSlots);
-    }
-
-    public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, PNode body, ExecutionCellSlots cellSlots) {
+    public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
+                    ExecutionCellSlots cellSlots) {
         body.markAsRoot();
         return new FunctionRootNode(language, sourceSection, functionName, isGenerator, frameDescriptor, body, cellSlots);
     }
 
-    public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, PNode body, ExecutionCellSlots cellSlots) {
+    public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {
         body.markAsRoot();
         return new ClassBodyRootNode(language, sourceSection, functionName, frameDescriptor, body, cellSlots);
     }
 
-    public PNode createBlock(List<PNode> statements) {
-        if (statements.size() == 1) {
-            return statements.get(0);
-        } else {
-            PNode[] array = statements.toArray(new PNode[statements.size()]);
-            return createBlock(array);
-        }
+    public StatementNode createBlock(List<StatementNode> statements) {
+        StatementNode[] array = statements.toArray(new StatementNode[statements.size()]);
+        return createBlock(array);
     }
 
-    public PNode createBlock(PNode... statements) {
+    public StatementNode createBlock(StatementNode... statements) {
         return BlockNode.create(statements);
     }
 
-    public PNode createImport(String importee) {
+    public ImportNode createImport(String importee) {
         return new ImportNode(importee);
     }
 
-    public PNode createImportFrom(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
+    public StatementNode createImportFrom(String importee, String[] fromlist, WriteNode[] readNodes, int level) {
         return ImportFromNode.create(importee, fromlist, readNodes, level);
     }
 
-    public PNode createImportStar(String fromModuleName, int level) {
+    public StatementNode createImportStar(String fromModuleName, int level) {
         return new ImportStarNode(fromModuleName, level);
     }
 
-    public LoopNode createWhile(CastToBooleanNode condition, PNode body) {
+    public LoopNode createWhile(CastToBooleanNode condition, StatementNode body) {
         return new WhileNode(condition, body);
     }
 
-    public StatementNode createIf(CastToBooleanNode condition, PNode thenPart, PNode elsePart) {
+    public StatementNode createIf(CastToBooleanNode condition, StatementNode thenPart, StatementNode elsePart) {
         return new IfNode(condition, thenPart, elsePart);
     }
 
-    public GetIteratorNode createGetIterator(PNode collection) {
+    public ExpressionNode createTernaryIf(CastToBooleanNode condition, ExpressionNode thenPart, ExpressionNode elsePart) {
+        return new TernaryIfNode(condition, thenPart, elsePart);
+    }
+
+    public GetIteratorNode createGetIterator(ExpressionNode collection) {
         return GetIteratorNode.create(collection);
     }
 
-    public StatementNode createElse(PNode forNode, PNode orelse) {
+    public StatementNode createElse(StatementNode forNode, StatementNode orelse) {
         return new ElseNode(forNode, orelse);
     }
 
@@ -190,7 +189,7 @@ public class NodeFactory {
         return new ReturnNode();
     }
 
-    public StatementNode createFrameReturn(PNode value) {
+    public StatementNode createFrameReturn(StatementNode value) {
         return new ReturnNode.FrameReturnNode(value);
     }
 
@@ -202,83 +201,87 @@ public class NodeFactory {
         return new ContinueNode();
     }
 
-    public StatementNode createContinueTarget(PNode child) {
+    public StatementNode createContinueTarget(StatementNode child) {
         return new ContinueTargetNode(child);
     }
 
-    public StatementNode createBreakTarget(PNode forNode) {
+    public StatementNode createBreakTarget(StatementNode forNode) {
         return new BreakTargetNode(forNode);
     }
 
-    public PNode createYield(PNode right, FrameSlot returnSlot) {
+    public YieldNode createYield(ExpressionNode right, FrameSlot returnSlot) {
         return new YieldNode(createWriteLocal(right, returnSlot));
     }
 
-    public PNode createIntegerLiteral(int value) {
+    public ExpressionNode createIntegerLiteral(int value) {
         return new IntegerLiteralNode(value);
     }
 
-    public PNode createLongLiteral(long value) {
+    public ExpressionNode createLongLiteral(long value) {
         return new LongLiteralNode(value);
     }
 
-    public PNode createPIntLiteral(BigInteger value) {
+    public ExpressionNode createPIntLiteral(BigInteger value) {
         return new PIntLiteralNode(value);
     }
 
-    public PNode createDoubleLiteral(double value) {
+    public ExpressionNode createDoubleLiteral(double value) {
         return new DoubleLiteralNode(value);
     }
 
-    public PNode createComplexLiteral(PComplex value) {
+    public ExpressionNode createComplexLiteral(PComplex value) {
         return new ComplexLiteralNode(value);
     }
 
-    public PNode createStringLiteral(String value) {
+    public ExpressionNode createStringLiteral(String value) {
         return new StringLiteralNode(value);
     }
 
-    public PNode createBytesLiteral(byte[] value) {
+    public ExpressionNode createBytesLiteral(byte[] value) {
         return new BytesLiteralNode(value);
     }
 
-    public PNode createDictLiteral() {
-        return DictLiteralNode.create(new PNode[0], new PNode[0]);
+    public ExpressionNode createDictLiteral() {
+        return DictLiteralNode.create(new ExpressionNode[0], new ExpressionNode[0]);
     }
 
-    public PNode createDictLiteral(List<PNode> keys, List<PNode> values) {
-        PNode[] convertedKeys = keys.toArray(new PNode[keys.size()]);
-        PNode[] convertedValues = values.toArray(new PNode[values.size()]);
+    public ExpressionNode createDictLiteral(List<ExpressionNode> keys, List<ExpressionNode> values) {
+        ExpressionNode[] convertedKeys = keys.toArray(new ExpressionNode[keys.size()]);
+        ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
         return DictLiteralNode.create(convertedKeys, convertedValues);
     }
 
-    public TupleLiteralNode createTupleLiteral(List<PNode> values) {
-        PNode[] convertedValues = values.toArray(new PNode[values.size()]);
+    public TupleLiteralNode createTupleLiteral(ExpressionNode... values) {
+        return new TupleLiteralNode(values);
+    }
+
+    public TupleLiteralNode createTupleLiteral(List<ExpressionNode> values) {
+        ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
         return new TupleLiteralNode(convertedValues);
     }
 
-    public PNode createListLiteral(String[] values) {
-        PNode[] stringNodes = new PNode[values.length];
+    public ExpressionNode createListLiteral(String[] values) {
+        ExpressionNode[] stringNodes = new ExpressionNode[values.length];
         for (int i = 0; i < stringNodes.length; i++) {
             stringNodes[i] = this.createStringLiteral(values[i]);
         }
         return createListLiteral(stringNodes);
     }
 
-    public PNode createListLiteral(List<PNode> values) {
-        return createListLiteral(values.toArray(new PNode[values.size()]));
+    public ExpressionNode createListLiteral(List<ExpressionNode> values) {
+        return createListLiteral(values.toArray(new ExpressionNode[values.size()]));
     }
 
-    public PNode createListLiteral(PNode[] values) {
+    public ExpressionNode createListLiteral(ExpressionNode[] values) {
         return ListLiteralNode.create(values);
     }
 
-    public PNode createSetLiteral(List<PNode> values) {
-        PNode[] convertedValues = values.toArray(new PNode[values.size()]);
+    public ExpressionNode createSetLiteral(List<ExpressionNode> values) {
+        ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
         return new SetLiteralNode(convertedValues);
     }
 
-    public PNode createUnaryOperation(String string, PNode operand) {
+    public ExpressionNode createUnaryOperation(String string, ExpressionNode operand) {
         switch (string) {
             case "+":
                 return UnaryArithmetic.Pos.create(operand);
@@ -293,7 +296,7 @@ public class NodeFactory {
         }
     }
 
-    public PNode createInplaceOperation(String string, PNode left, PNode right) {
+    public ExpressionNode createInplaceOperation(String string, ExpressionNode left, ExpressionNode right) {
         switch (string) {
             case "+=":
                 return InplaceArithmetic.IAdd.create(left, right);
@@ -326,7 +329,7 @@ public class NodeFactory {
         }
     }
 
-    public PNode createBinaryOperation(String string, PNode left, PNode right) {
+    public ExpressionNode createBinaryOperation(String string, ExpressionNode left, ExpressionNode right) {
         switch (string) {
             case "+":
                 return BinaryArithmetic.Add.create(left, right);
@@ -363,7 +366,7 @@ public class NodeFactory {
         }
     }
 
-    public PNode createComparisonOperation(String operator, PNode left, PNode right) {
+    public ExpressionNode createComparisonOperation(String operator, ExpressionNode left, ExpressionNode right) {
         switch (operator) {
             case "<":
                 return BinaryComparisonNode.create(SpecialMethodNames.__LT__, SpecialMethodNames.__GT__, operator, left, right);
@@ -391,95 +394,95 @@ public class NodeFactory {
         }
     }
 
-    public PNode createGetAttribute(PNode primary, String name) {
+    public ExpressionNode createGetAttribute(ExpressionNode primary, String name) {
         return GetAttributeNode.create(name, primary);
     }
 
-    public PNode createGetItem(PNode primary, String name) {
+    public ExpressionNode createGetItem(ExpressionNode primary, String name) {
         return GetItemNode.create(primary, createStringLiteral(name));
     }
 
-    public PNode createDeleteItem(PNode primary, PNode slice) {
+    public StatementNode createDeleteItem(ExpressionNode primary, ExpressionNode slice) {
         return DeleteItemNode.create(primary, slice);
     }
 
-    public PNode createDeleteItem(PNode primary, String name) {
+    public StatementNode createDeleteItem(ExpressionNode primary, String name) {
         return createDeleteItem(primary, createStringLiteral(name));
     }
 
-    public PNode createDeleteAttribute(PNode object, String attributeId) {
+    public StatementNode createDeleteAttribute(ExpressionNode object, String attributeId) {
         return createDeleteAttribute(object, createStringLiteral(attributeId));
     }
 
-    public PNode createDeleteAttribute(PNode object, PNode attributeId) {
+    public StatementNode createDeleteAttribute(ExpressionNode object, ExpressionNode attributeId) {
         return DeleteAttributeNode.create(object, attributeId);
     }
 
-    public PNode createDeleteGlobal(String attributeId) {
+    public StatementNode createDeleteGlobal(String attributeId) {
         return DeleteGlobalNode.create(attributeId);
     }
 
-    public PNode createSlice(PNode lower, PNode upper, PNode step) {
+    public ExpressionNode createSlice(ExpressionNode lower, ExpressionNode upper, ExpressionNode step) {
         return SliceLiteralNode.create(lower, upper, step);
     }
 
-    public PNode createSubscriptLoad(PNode primary, PNode slice) {
+    public ExpressionNode createSubscriptLoad(ExpressionNode primary, ExpressionNode slice) {
         return GetItemNode.create(primary, slice);
     }
 
-    public PNode createReadClassAttributeNode(String identifier, FrameSlot cellSlot, boolean isFreeVar) {
+    public ExpressionNode createReadClassAttributeNode(String identifier, FrameSlot cellSlot, boolean isFreeVar) {
         return ReadClassAttributeNode.create(identifier, cellSlot, isFreeVar);
     }
 
-    public PNode createWriteCellVar(PNode readNode, FunctionRootNode funcRootNode, String identifier) {
+    public StatementNode createWriteCellVar(ExpressionNode readNode, FunctionRootNode funcRootNode, String identifier) {
         return WriteCellVarNode.create(readNode, funcRootNode, identifier);
     }
 
-    public PNode createReadLocalCell(FrameSlot slot, boolean isFreeVar) {
+    public ExpressionNode createReadLocalCell(FrameSlot slot, boolean isFreeVar) {
         assert slot != null;
         return ReadLocalCellNode.create(slot, isFreeVar);
     }
 
-    public PNode createReadLocal(FrameSlot slot) {
+    public ExpressionNode createReadLocal(FrameSlot slot) {
         assert slot != null;
         return ReadLocalVariableNode.create(slot);
     }
 
-    public PNode createWriteLocalCell(PNode right, FrameSlot slot) {
+    public StatementNode createWriteLocalCell(ExpressionNode right, FrameSlot slot) {
         assert slot != null;
         return WriteLocalCellNode.create(slot, right);
     }
 
-    public PNode createWriteLocal(PNode right, FrameSlot slot) {
+    public StatementNode createWriteLocal(ExpressionNode right, FrameSlot slot) {
         assert slot != null;
         return WriteLocalVariableNode.create(slot, right);
     }
 
-    public PNode createReadGlobalOrBuiltinScope(String attributeId) {
+    public ExpressionNode createReadGlobalOrBuiltinScope(String attributeId) {
         return ReadGlobalOrBuiltinNode.create(attributeId);
     }
 
-    public PNode createBooleanLiteral(boolean value) {
+    public ExpressionNode createBooleanLiteral(boolean value) {
         return new BooleanLiteralNode(value);
     }
 
-    public PNode createObjectLiteral(Object obj) {
+    public ExpressionNode createObjectLiteral(Object obj) {
         return new ObjectLiteralNode(obj);
     }
 
-    public PNode createNullLiteral() {
+    public ExpressionNode createNullLiteral() {
         return createObjectLiteral(null);
     }
 
-    public PNode createBuiltinsLiteral() {
+    public ExpressionNode createBuiltinsLiteral() {
         return new BuiltinsLiteralNode();
     }
 
-    public PNode createKeywordLiteral(PNode value, String name) {
+    public ExpressionNode createKeywordLiteral(ExpressionNode value, String name) {
         return new KeywordLiteralNode(value, name);
     }
 
-    public PNode getBuiltin(String id) {
+    public ExpressionNode getBuiltin(String id) {
         return createReadGlobalOrBuiltinScope(id);
     }
 
@@ -487,43 +490,43 @@ public class NodeFactory {
         if (node instanceof CastToBooleanNode) {
             return (CastToBooleanNode) node;
         } else {
-            return createYesNode(node);
+            return createYesNode((ExpressionNode) node);
         }
     }
 
-    public CastToBooleanNode createYesNode(PNode operand) {
+    public CastToBooleanNode createYesNode(ExpressionNode operand) {
         return CastToBooleanNode.createIfTrueNode(operand);
     }
 
-    public StatementNode createTryFinallyNode(PNode body, PNode finalbody) {
+    public StatementNode createTryFinallyNode(StatementNode body, StatementNode finalbody) {
         return new TryFinallyNode(body, finalbody);
     }
 
-    public StatementNode createTryExceptElseFinallyNode(PNode body, ExceptNode[] exceptNodes, PNode elseNode, PNode finalbody) {
+    public StatementNode createTryExceptElseFinallyNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode elseNode, StatementNode finalbody) {
         return new TryFinallyNode(new TryExceptNode(body, exceptNodes, elseNode), finalbody);
     }
 
-    public StatementNode createAssert(CastToBooleanNode condition, PNode message) {
+    public StatementNode createAssert(CastToBooleanNode condition, ExpressionNode message) {
         return new AssertNode(condition, message);
     }
 
-    public StatementNode createWithNode(PNode withContext, PNode targetNode, PNode body) {
+    public StatementNode createWithNode(ExpressionNode withContext, WriteNode targetNode, StatementNode body) {
         return WithNode.create(withContext, targetNode, body);
     }
 
-    public PNode createDictionaryConcat(PNode... dictNodes) {
+    public ExpressionNode createDictionaryConcat(ExpressionNode... dictNodes) {
         return DictConcatNode.create(dictNodes);
     }
 
-    public PNode callBuiltin(String string, PNode argument) {
-        return PythonCallNode.create(getBuiltin(string), new PNode[]{argument}, new PNode[0], null, null);
+    public ExpressionNode callBuiltin(String string, ExpressionNode argument) {
+        return PythonCallNode.create(getBuiltin(string), new ExpressionNode[]{argument}, new ExpressionNode[0], null, null);
     }
 
-    public PNode createSetAttribute(PNode object, String key, PNode rhs) {
+    public StatementNode createSetAttribute(ExpressionNode object, String key, ExpressionNode rhs) {
         return SetAttributeNode.create(key, object, rhs);
     }
 
-    public PNode createDestructuringAssignment(PNode rhs, ReadNode[] slots, int starredIndex, PNode[] assignments) {
+    public StatementNode createDestructuringAssignment(ExpressionNode rhs, ReadNode[] slots, int starredIndex, StatementNode[] assignments) {
         return DestructuringAssignmentNode.create(rhs, slots, starredIndex, assignments);
     }
 

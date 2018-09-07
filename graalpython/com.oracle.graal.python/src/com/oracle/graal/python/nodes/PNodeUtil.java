@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -52,8 +53,8 @@ public class PNodeUtil {
         throw new IllegalStateException();
     }
 
-    public static List<PNode> getListOfSubExpressionsInOrder(PNode root) {
-        List<PNode> expressions = new ArrayList<>();
+    public static List<ExpressionNode> getListOfSubExpressionsInOrder(PNode root) {
+        List<ExpressionNode> expressions = new ArrayList<>();
 
         root.accept(new NodeVisitor() {
             public boolean visit(Node node) {
@@ -61,8 +62,8 @@ public class PNodeUtil {
                     PNode pnode = (PNode) node;
 
                     for (Node child : pnode.getChildren()) {
-                        if (child != null && (child instanceof PNode)) {
-                            expressions.add((PNode) child);
+                        if (child != null && (child instanceof ExpressionNode)) {
+                            expressions.add((ExpressionNode) child);
                         }
                     }
                 }
@@ -85,9 +86,6 @@ public class PNodeUtil {
     }
 
     public static <T extends PNode> T replace(PNode oldNode, T node) {
-        if (oldNode.isStatement()) {
-            node.markAsStatement();
-        }
         node.assignSourceSection(oldNode.getSourceSection());
         return oldNode.replace(node);
     }

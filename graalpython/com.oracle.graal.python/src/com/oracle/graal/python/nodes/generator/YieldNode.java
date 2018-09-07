@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.generator;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.YieldException;
@@ -35,9 +36,9 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-public class YieldNode extends StatementNode implements GeneratorControlNode {
+public class YieldNode extends ExpressionNode implements GeneratorControlNode {
 
-    @Child private PNode right;
+    @Child private StatementNode right;
     @Child private GeneratorAccessNode access = GeneratorAccessNode.create();
 
     @CompilationFinal private int flagSlot;
@@ -46,7 +47,7 @@ public class YieldNode extends StatementNode implements GeneratorControlNode {
     private final BranchProfile gotValue = BranchProfile.create();
     private final BranchProfile gotNothing = BranchProfile.create();
 
-    public YieldNode(PNode right) {
+    public YieldNode(StatementNode right) {
         this.right = right;
     }
 

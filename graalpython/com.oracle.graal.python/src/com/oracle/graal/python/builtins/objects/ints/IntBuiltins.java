@@ -53,6 +53,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -1414,6 +1416,25 @@ public class IntBuiltins extends PythonBuiltins {
         @TruffleBoundary
         boolean doPP(PInt left, PInt right) {
             return left.getValue().compareTo(right.getValue()) < 0;
+        }
+
+        @Specialization(guards = "fromNativeNode.isSubtype(y)", limit = "1")
+        boolean doDN(long x, PythonNativeObject y,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+            return x < fromNativeNode.execute(y);
+        }
+
+        @Specialization(guards = {"nativeLeft.isSubtype(x)", "nativeRight.isSubtype(y)"}, limit = "1")
+        boolean doDN(PythonNativeObject x, PythonNativeObject y,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeLeft,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> nativeRight) {
+            return nativeLeft.execute(x) < nativeRight.execute(y);
+        }
+
+        @Specialization(guards = "fromNativeNode.isSubtype(x)", limit = "1")
+        boolean doDN(PythonNativeObject x, double y,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> fromNativeNode) {
+            return fromNativeNode.execute(x) < y;
         }
 
         @SuppressWarnings("unused")

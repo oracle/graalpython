@@ -40,17 +40,17 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.Equivalence;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public final class DictConcatNode extends PNode {
+public final class DictConcatNode extends ExpressionNode {
 
-    @Children final PNode[] mappables;
+    @Children final ExpressionNode[] mappables;
     @Child private Equivalence equivalenceNode;
 
     protected Equivalence getEquivalence() {
@@ -61,7 +61,7 @@ public final class DictConcatNode extends PNode {
         return equivalenceNode;
     }
 
-    private DictConcatNode(PNode... mappablesNodes) {
+    private DictConcatNode(ExpressionNode... mappablesNodes) {
         this.mappables = mappablesNodes;
     }
 
@@ -70,7 +70,7 @@ public final class DictConcatNode extends PNode {
     public Object execute(VirtualFrame frame) {
         PDict first = null;
         PDict other;
-        for (PNode n : mappables) {
+        for (ExpressionNode n : mappables) {
             if (first == null) {
                 first = expectDict(n.execute(frame));
             } else {
@@ -89,7 +89,7 @@ public final class DictConcatNode extends PNode {
         return (PDict) first;
     }
 
-    public static DictConcatNode create(PNode... mappableNodes) {
+    public static DictConcatNode create(ExpressionNode... mappableNodes) {
         return new DictConcatNode(mappableNodes);
     }
 

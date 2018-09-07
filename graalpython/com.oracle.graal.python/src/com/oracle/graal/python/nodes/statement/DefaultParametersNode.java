@@ -25,9 +25,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -37,11 +36,11 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
  */
 public class DefaultParametersNode extends StatementNode {
 
-    @Children private final PNode[] functionDefaults;
+    @Children private final ExpressionNode[] functionDefaults;
 
     private final ReadDefaultArgumentNode[] defaultReads; // It's parked here, but not adopted.
 
-    public DefaultParametersNode(PNode[] functionDefaults, ReadDefaultArgumentNode[] defaultReads) {
+    public DefaultParametersNode(ExpressionNode[] functionDefaults, ReadDefaultArgumentNode[] defaultReads) {
         this.functionDefaults = functionDefaults;
         this.defaultReads = defaultReads;
         assert functionDefaults != null & functionDefaults.length > 0;
@@ -50,16 +49,14 @@ public class DefaultParametersNode extends StatementNode {
 
     @ExplodeLoop
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         for (int i = 0; i < functionDefaults.length; i++) {
             final Object defaultVal = functionDefaults[i].execute(frame);
             defaultReads[i].setValue(defaultVal);
         }
-
-        return PNone.NONE;
     }
 
-    public PNode[] getFunctionDefaults() {
+    public ExpressionNode[] getFunctionDefaults() {
         return functionDefaults;
     }
 

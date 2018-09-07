@@ -47,8 +47,8 @@ import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsFactory.IndexNodeFactory;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -238,7 +238,7 @@ public class TupleBuiltins extends PythonBuiltins {
         }
 
         protected IndexNode createIndexNode() {
-            return IndexNodeFactory.create(new PNode[0]);
+            return IndexNodeFactory.create(new ReadArgumentNode[0]);
         }
 
     }
