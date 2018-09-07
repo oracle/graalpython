@@ -144,4 +144,11 @@ public abstract class ReadKeywordNode extends ReadArgumentNode {
     public String getName() {
         return name;
     }
+
+    public Object getDefaultValue() {
+        if (defaultNode != null) {
+            return defaultNode.execute();
+        }
+        return null;
+    }
 }

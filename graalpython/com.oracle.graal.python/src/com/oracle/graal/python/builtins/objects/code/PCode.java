@@ -268,7 +268,7 @@ public class PCode extends PythonBuiltinObject {
         this.argcount = readIndexedArgumentNodes.size();
         this.kwonlyargcount = 0;
 
-        for(int i = 0; i < readKeywordNodes.size(); i++) {
+        for (int i = 0; i < readKeywordNodes.size(); i++) {
             ReadKeywordNode kwNode = readKeywordNodes.get(i);
             keywordNames[i++] = new Arity.KeywordName(kwNode.getName(), kwNode.isRequired());
             if (!kwNode.canBePositional()) {
@@ -392,7 +392,7 @@ public class PCode extends PythonBuiltinObject {
         return lnotab;
     }
 
-    public Arity.KeywordName[] getKeywordNames() {
+    private Arity.KeywordName[] getKeywordNames() {
         if (keywordNames == null && rootNode != null) {
             extractArgStats();
         }
@@ -414,14 +414,26 @@ public class PCode extends PythonBuiltinObject {
         return (flags & (1 << FLAG_POS_VAR_KW_ARGS)) > 0;
     }
 
+    private int getMinNumOfPositionalArgs() {
+        int defaultKwNames = 0;
+        for (Arity.KeywordName kwName : getKeywordNames()) {
+            defaultKwNames += (kwName.required) ? 0 : 1;
+        }
+        return getArgcount() - defaultKwNames;
+    }
+
+    private int getMaxNumOfPositionalArgs() {
+        return this.getArgcount();
+    }
+
     public Arity getArity() {
-        return new Arity(this.getName(), this.getArgcount(), this.getArgcount() + this.getKwonlyargcount(), this.takesVarKeywordArgs(), this.takesVarArgs(), this.getKeywordNames());
+        return new Arity(this.getName(), this.getMinNumOfPositionalArgs(), this.getMaxNumOfPositionalArgs(), this.takesVarKeywordArgs(), this.takesVarArgs(), this.getKeywordNames());
     }
 
     @TruffleBoundary
     private FrameDescriptor createFrameDescriptor() {
         FrameDescriptor fd = new FrameDescriptor();
-        for (Object identifier: varnames) {
+        for (Object identifier : varnames) {
             fd.addFrameSlot(identifier);
         }
         return fd;
@@ -430,7 +442,7 @@ public class PCode extends PythonBuiltinObject {
     public FrameDescriptor getFrameDescriptor() {
         if (frameDescriptor == null) {
             if (rootNode != null) {
-                frameDescriptor =  rootNode.getFrameDescriptor();
+                frameDescriptor = rootNode.getFrameDescriptor();
             } else {
                 frameDescriptor = createFrameDescriptor();
             }

@@ -39,6 +39,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
@@ -65,12 +67,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PBuiltinFunction})
@@ -263,17 +267,29 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     public abstract static class GetDefaultsNode extends PythonBinaryBuiltinNode {
-        private Object[] getDefaultsAndInitIfNotSet(PFunction function) {
-            // TODO: add support for __DEFAULTS__ (init from actual default values ...)
-            return function.getDefaults();
+        protected final ConditionProfile nullDefaultsProfile = ConditionProfile.createBinaryProfile();
+
+        @TruffleBoundary
+        private Object[] extractDefaults(PFunction function) {
+            List<Object> defaultValues = new ArrayList<>();
+            List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(function.getFunctionRootNode(), ReadKeywordNode.class);
+            for (ReadKeywordNode readKeywordNode : readKeywordNodes) {
+                Object defaultValue = readKeywordNode.getDefaultValue();
+                if (defaultValue != null) {
+                    defaultValues.add(defaultValue);
+                }
+            }
+            return defaultValues.toArray();
         }
 
         private Object getDefaults(PFunction function) {
-            Object[] defaultVals = getDefaultsAndInitIfNotSet(function);
-            if (defaultVals == null) {
-                return PNone.NONE;
+            Object[] defaults = function.getDefaults();
+            if (nullDefaultsProfile.profile(defaults == null)) {
+                defaults = extractDefaults(function);
             }
-            return factory().createTuple(defaultVals);
+
+            assert defaults != null;
+            return (defaults.length == 0) ? PNone.NONE : factory().createTuple(defaults);
         }
 
         @Specialization

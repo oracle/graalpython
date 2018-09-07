@@ -1480,15 +1480,24 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PythonBuiltinClassType.PGeneratorFunction}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
-
         @Specialization
         public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
             return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, null);
         }
 
         @Specialization
-        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PTuple defaultArgs, PTuple closure) {
-            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, (PCell[])closure.getArray());
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, (PCell[]) closure.getArray());
+        }
+
+        @Specialization
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, defaultArgs.getArray(), null);
+        }
+
+        @Specialization
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
         }
 
         @Fallback

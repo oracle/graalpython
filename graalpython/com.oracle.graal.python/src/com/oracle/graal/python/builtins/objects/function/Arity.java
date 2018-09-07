@@ -51,11 +51,11 @@ public class Arity {
     @CompilationFinal(dimensions = 1) private final KeywordName[] keywordNames;
 
     public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
-                 boolean takesVarKeywordArgs, boolean takesVarArgs,
-                 KeywordName[] keywordNames) {
+                    boolean takesVarKeywordArgs, boolean takesVarArgs,
+                    KeywordName[] keywordNames) {
         this(functionName, minNumOfPositionalArgs, maxNumOfPositionalArgs,
-                takesVarKeywordArgs, takesVarArgs, false,
-                null, keywordNames);
+                        takesVarKeywordArgs, takesVarArgs, false,
+                        null, keywordNames);
     }
 
     public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,

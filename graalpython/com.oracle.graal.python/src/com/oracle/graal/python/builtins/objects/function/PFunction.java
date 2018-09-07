@@ -54,6 +54,11 @@ public class PFunction extends PythonObject implements PythonCallable {
     private Object[] defaults;
 
     public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
+        this(clazz, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, null, closure);
+    }
+
+    public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, Object[] defaults,
+                    PCell[] closure) {
         super(clazz);
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
@@ -62,6 +67,7 @@ public class PFunction extends PythonObject implements PythonCallable {
         this.callTarget = callTarget;
         this.frameDescriptor = frameDescriptor;
         this.globals = globals;
+        this.defaults = defaults;
         this.closure = closure;
         addDefaultConstants(this.getStorage(), name, enclosingClassName);
     }

@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
 def test_name():
     def foo():
         pass
@@ -52,3 +53,25 @@ def test_name():
         assert "__name__ must be set to a string object" in str(e)
     else:
         assert False
+
+
+def f(a, b, c=10, *args, **kwargs):
+    return a, b, c, args, kwargs
+
+
+def f2(a=f(1, 2), b=10):
+    return a, b
+
+
+def test_defaults():
+    assert f.__defaults__ == (10,)
+    assert f2.__defaults__ == ((1, 2, 10, (), {}), 10)
+
+
+def test_constructor():
+    import types
+    func_copy = types.FunctionType(f.__code__, f.__globals__, f.__name__, f.__defaults__, f.__closure__)
+
+    assert func_copy(1, 2) == (1, 2, 10, (), {})
+    assert func_copy(1, 2, 3) == (1, 2, 3, (), {})
+    assert func_copy(1, 2, 3, 4, 5, x=2) == (1, 2, 3, (4, 5), {'x': 2})
