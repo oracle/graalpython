@@ -400,18 +400,15 @@ public class PCode extends PythonBuiltinObject {
     }
 
     public boolean isGenerator() {
-        long flags = getFlags();
-        return (flags & (1 << FLAG_POS_GENERATOR)) > 0;
+        return (getFlags() & (1 << FLAG_POS_GENERATOR)) > 0;
     }
 
     public boolean takesVarArgs() {
-        long flags = getFlags();
-        return (flags & (1 << FLAG_POS_VAR_ARGS)) > 0;
+        return (getFlags() & (1 << FLAG_POS_VAR_ARGS)) > 0;
     }
 
     public boolean takesVarKeywordArgs() {
-        long flags = getFlags();
-        return (flags & (1 << FLAG_POS_VAR_KW_ARGS)) > 0;
+        return (getFlags() & (1 << FLAG_POS_VAR_KW_ARGS)) > 0;
     }
 
     private int getMinNumOfPositionalArgs() {

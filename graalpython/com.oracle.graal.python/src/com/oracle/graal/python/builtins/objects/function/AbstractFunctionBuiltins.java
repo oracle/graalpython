@@ -270,7 +270,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         protected final ConditionProfile nullDefaultsProfile = ConditionProfile.createBinaryProfile();
 
         @TruffleBoundary
-        private Object[] extractDefaults(PFunction function) {
+        private static Object[] extractDefaults(PFunction function) {
             List<Object> defaultValues = new ArrayList<>();
             List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(function.getFunctionRootNode(), ReadKeywordNode.class);
             for (ReadKeywordNode readKeywordNode : readKeywordNodes) {
