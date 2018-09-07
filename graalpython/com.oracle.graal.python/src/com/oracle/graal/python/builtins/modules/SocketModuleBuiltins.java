@@ -44,11 +44,12 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,13 +62,13 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
-    @Builtin(name = "socket", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 4, keywordArguments = {"family", "type", "proto", "fileno"})
+    @Builtin(name = "socket", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 5, keywordArguments = {"family", "type", "proto", "fileno"},
+            constructsClass = PythonBuiltinClassType.PSocket)
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonBuiltinNode {
-        @TruffleBoundary
         @Specialization
-        Object socket(int family, int type, int proto, PNone fileno) {
-            return factory().createSocket(family, type, proto);
+        Object socket(PythonClass cls, int family, int type, int proto, PNone fileno) {
+            return factory().createSocket(cls, family, type, proto);
         }
     }
 }
