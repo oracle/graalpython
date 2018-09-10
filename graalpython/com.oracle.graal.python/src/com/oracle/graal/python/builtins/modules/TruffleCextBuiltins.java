@@ -562,16 +562,18 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private void checkFunctionResult(String name, boolean isNull) {
             PythonContext context = getContext();
             PException currentException = context.getCurrentException();
-            // consume exception
-            context.setCurrentException(null);
             boolean errOccurred = currentException != null;
             if (isNull) {
+                // consume exception
+                context.setCurrentException(null);
                 if (!errOccurred) {
                     throw raise(PythonErrorType.SystemError, "%s returned NULL without setting an error", name);
                 } else {
                     throw currentException;
                 }
             } else if (errOccurred) {
+                // consume exception
+                context.setCurrentException(null);
                 throw raise(PythonErrorType.SystemError, "%s returned a result with an error set", name);
             }
         }
