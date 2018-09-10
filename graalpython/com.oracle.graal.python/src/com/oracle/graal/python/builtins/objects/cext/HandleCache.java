@@ -3,6 +3,7 @@ package com.oracle.graal.python.builtins.objects.cext;
 import com.oracle.graal.python.builtins.objects.cext.HandleCacheFactory.HandleCacheMRFactory.GetOrInsertNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
@@ -12,12 +13,13 @@ import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public final class HandleCache implements TruffleObject {
-    private static final int CACHE_SIZE = 10;
+    public static final int CACHE_SIZE = 10;
 
     final long[] keys;
     final Object[] values;
@@ -66,6 +68,12 @@ public final class HandleCache implements TruffleObject {
 
         }
 
+        static class InvalidCacheEntryException extends ControlFlowException {
+            private static final long serialVersionUID = 1L;
+            public static final InvalidCacheEntryException INSTANCE = new InvalidCacheEntryException();
+        }
+
+        @ImportStatic(HandleCache.class)
         abstract static class GetOrInsertNode extends Node {
             @Child private Node executeNode;
 
@@ -73,25 +81,44 @@ public final class HandleCache implements TruffleObject {
 
             public abstract Object execute(HandleCache cache, long handle);
 
-            @ExplodeLoop
-            @Specialization(guards = {"cache.len() == cachedLen", "cache.getPtrToResolveHandle() == ptrToResolveHandle"})
-            Object doIt(HandleCache cache, long handle,
+            @Specialization(limit = "CACHE_SIZE", guards = {"cache.len() == cachedLen",
+                            "handle == cachedHandle"}, rewriteOn = InvalidCacheEntryException.class)
+            Object doCached(HandleCache cache, @SuppressWarnings("unused") long handle,
+                            @Cached("handle") long cachedHandle,
+                            @Cached("cache.len()") @SuppressWarnings("unused") int cachedLen,
+                            @Cached("cache.getPtrToResolveHandle()") @SuppressWarnings("unused") TruffleObject ptrToResolveHandle,
+                            @Cached("lookupPosition(cache, handle, cachedLen, ptrToResolveHandle)") int cachedPosition) throws InvalidCacheEntryException {
+                if (cache.keys[cachedPosition] == cachedHandle) {
+                    return cache.values[cachedPosition];
+                }
+                throw InvalidCacheEntryException.INSTANCE;
+            }
+
+            @Specialization(guards = {"cache.len() == cachedLen"}, replaces = "doCached")
+            Object doFullLookup(HandleCache cache, long handle,
                             @Cached("cache.len()") int cachedLen,
                             @Cached("cache.getPtrToResolveHandle()") TruffleObject ptrToResolveHandle) {
+                int pos = lookupPosition(cache, handle, cachedLen, ptrToResolveHandle);
+                return cache.values[pos];
+            }
+
+            @ExplodeLoop
+            protected int lookupPosition(HandleCache cache, long handle, int cachedLen, TruffleObject ptrToResolveHandle) {
                 for (int i = 0; i < cachedLen; i++) {
                     if (cache.keys[i] == handle) {
-                        return cache.values[i];
+                        return i;
                     }
                 }
 
                 try {
                     Object resolved = ForeignAccess.sendExecute(getExecuteNode(), ptrToResolveHandle, handle);
 
-                    cache.keys[cache.pos] = handle;
-                    cache.values[cache.pos] = resolved;
-                    cache.pos = (cache.pos + 1) % cache.len();
+                    int insertPos = cache.pos;
+                    cache.keys[insertPos] = handle;
+                    cache.values[insertPos] = resolved;
+                    cache.pos = (insertPos + 1) % cache.len();
 
-                    return resolved;
+                    return insertPos;
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                     errorProfile.enter();
                     throw e.raise();
