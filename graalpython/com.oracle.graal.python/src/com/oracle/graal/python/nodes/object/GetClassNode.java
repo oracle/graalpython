@@ -85,12 +85,6 @@ public abstract class GetClassNode extends PNodeWithContext {
         return getCore().lookupType(PythonBuiltinClassType.GetSetDescriptor);
     }
 
-    @Specialization(guards = "!isNone(object)")
-    protected PythonClass getIt(PythonObject object,
-                    @Cached("createIdentityProfile()") ValueProfile profile) {
-        return profile.profile(object.getPythonClass());
-    }
-
     @Specialization(assumptions = "singleContextAssumption()")
     protected PythonClass getIt(@SuppressWarnings("unused") PNone object,
                     @Cached("getIt(object)") PythonClass klass) {
@@ -195,6 +189,28 @@ public abstract class GetClassNode extends PNodeWithContext {
     protected PythonClass getIt(PythonNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Class<? extends PythonObject> asPythonObjectSubclass(Class<? extends Object> clazz) {
+        Class<? extends PythonObject> retval = null;
+        if (PythonObject.class.isAssignableFrom(clazz)) {
+            retval = (Class<? extends PythonObject>) clazz;
+        }
+        return retval;
+    }
+
+    @Specialization(guards = {"object.getClass() == cachedClass"}, limit = "5")
+    protected PythonClass getPythonClassCached(Object object,
+                    @Cached("asPythonObjectSubclass(object.getClass())") Class<? extends PythonObject> cachedClass,
+                    @Cached("createIdentityProfile()") ValueProfile profile) {
+        return profile.profile(cachedClass.cast(object).getPythonClass());
+    }
+
+    @Specialization(replaces = "getPythonClassCached")
+    protected PythonClass getPythonClassGeneric(PythonObject object,
+                    @Cached("createIdentityProfile()") ValueProfile profile) {
+        return profile.profile(object.getPythonClass());
     }
 
     @Specialization(guards = "isForeignObject(object)", assumptions = "singleContextAssumption()")
