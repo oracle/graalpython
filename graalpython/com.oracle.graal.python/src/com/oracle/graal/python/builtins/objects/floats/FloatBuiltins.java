@@ -111,6 +111,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         String str(double self) {
             return PFloat.doubleToString(self);
         }
+
+        @Specialization(guards = "getFloat.isSubtype(object)", limit = "1")
+        String doNativeFloat(PythonNativeObject object,
+                        @SuppressWarnings("unused") @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            return PFloat.doubleToString(getFloat.execute(object));
+        }
     }
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
