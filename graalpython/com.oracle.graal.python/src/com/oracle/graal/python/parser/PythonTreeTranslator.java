@@ -227,6 +227,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     public Object visitFile_input(Python3Parser.File_inputContext ctx) {
         environment.enterScope(ctx.scope);
         ExpressionNode file = asExpression(super.visitFile_input(ctx));
+        deriveSourceSection(ctx, file);
         environment.leaveScope();
         return factory.createModuleRoot(name, file, ctx.scope.getFrameDescriptor());
     }
@@ -247,6 +248,7 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
     public Object visitSingle_input(Python3Parser.Single_inputContext ctx) {
         environment.enterScope(ctx.scope);
         ExpressionNode body = asExpression(super.visitSingle_input(ctx));
+        deriveSourceSection(ctx, body);
         environment.leaveScope();
         if (isInlineMode) {
             return body;
