@@ -31,6 +31,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOORDIV__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETFORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
@@ -72,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclas
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -81,6 +83,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.formatting.FloatFormatter;
+import com.oracle.graal.python.runtime.formatting.InternalFormat;
+import com.oracle.graal.python.runtime.formatting.InternalFormat.Formatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -109,13 +114,86 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         String str(double self) {
-            return PFloat.doubleToString(self);
+            InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', InternalFormat.Spec.NONE, false, InternalFormat.Spec.UNSPECIFIED, false, 16, 'g');
+            FloatFormatter f = new FloatFormatter(getCore(), spec);
+            f.setMinFracDigits(1);
+            String result = f.format(self).getResult();
+            return result;
+        }
+
+        public static StrNode create() {
+            return FloatBuiltinsFactory.StrNodeFactory.create();
         }
     }
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends StrNode {
+    }
+
+    @Builtin(name = __FORMAT__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class FormatNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        String format(double self, String formatString,
+                        @Cached("create()") StrNode strNode) {
+            if (shouldBeAsStr(formatString)) {
+                return strNode.str(self);
+            }
+            InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
+            FloatFormatter formatter = prepareFormatter(spec);
+            if (formatter != null) {
+                formatter.format(self);
+                return formatter.pad().getResult();
+
+            } else {
+                // The type code was not recognised in prepareFormatter
+                throw Formatter.unknownFormat(getCore(), spec.type, "float");
+            }
+
+        }
+
+        private FloatFormatter prepareFormatter(InternalFormat.Spec spec) {
+            // Slight differences between format types
+            switch (spec.type) {
+                case 'n':
+                case InternalFormat.Spec.NONE:
+                case 'e':
+                case 'f':
+                case 'g':
+                case 'E':
+                case 'F':
+                case 'G':
+                case '%':
+                    if (spec.type == 'n' && spec.grouping) {
+                        throw Formatter.notAllowed(getCore(), "Grouping", "float", spec.type);
+                    }
+                    // Check for disallowed parts of the specification
+                    if (spec.alternate) {
+                        throw Formatter.alternateFormNotAllowed(getCore(), "float");
+                    }
+                    // spec may be incomplete. The defaults are those commonly used for numeric
+                    // formats.
+                    spec = spec.withDefaults(InternalFormat.Spec.NUMERIC);
+                    FloatFormatter formatter = new FloatFormatter(getCore(), spec);
+                    return formatter;
+
+                default:
+                    return null;
+            }
+        }
+
+        private boolean shouldBeAsStr(String spec) {
+            if (spec.isEmpty()) {
+                return true;
+            }
+            if (spec.length() == 1) {
+                char c = spec.charAt(0);
+                return ((c >= '0' && c <= '9') || c == ' ' || c == '_' || c == '+' || c == '-' || c == '<' || c == '>' || c == '=' || c == '^');
+            }
+            return false;
+        }
     }
 
     @Builtin(name = __ABS__, fixedNumOfPositionalArgs = 1)
