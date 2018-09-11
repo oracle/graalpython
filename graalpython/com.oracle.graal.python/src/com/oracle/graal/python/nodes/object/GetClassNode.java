@@ -68,11 +68,25 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 @TypeSystemReference(PythonTypes.class)
 @ImportStatic({PGuards.class})
 public abstract class GetClassNode extends PNodeWithContext {
+    private final ValueProfile classProfile = ValueProfile.createClassProfile();
+
     public static GetClassNode create() {
         return GetClassNodeGen.create();
     }
 
-    public abstract PythonClass execute(Object object);
+    public abstract PythonClass execute(boolean object);
+
+    public abstract PythonClass execute(int object);
+
+    public abstract PythonClass execute(long object);
+
+    public abstract PythonClass execute(double object);
+
+    public final PythonClass execute(Object object) {
+        return executeGetClass(classProfile.profile(object));
+    }
+
+    public abstract PythonClass executeGetClass(Object object);
 
     @Specialization(assumptions = "singleContextAssumption()")
     protected PythonClass getIt(@SuppressWarnings("unused") GetSetDescriptor object,
@@ -191,23 +205,7 @@ public abstract class GetClassNode extends PNodeWithContext {
         return getNativeClassNode.execute(object);
     }
 
-    @SuppressWarnings("unchecked")
-    protected Class<? extends PythonObject> asPythonObjectSubclass(Class<? extends Object> clazz) {
-        Class<? extends PythonObject> retval = null;
-        if (PythonObject.class.isAssignableFrom(clazz)) {
-            retval = (Class<? extends PythonObject>) clazz;
-        }
-        return retval;
-    }
-
-    @Specialization(guards = {"object.getClass() == cachedClass"}, limit = "5")
-    protected PythonClass getPythonClassCached(Object object,
-                    @Cached("asPythonObjectSubclass(object.getClass())") Class<? extends PythonObject> cachedClass,
-                    @Cached("createIdentityProfile()") ValueProfile profile) {
-        return profile.profile(cachedClass.cast(object).getPythonClass());
-    }
-
-    @Specialization(replaces = "getPythonClassCached")
+    @Specialization
     protected PythonClass getPythonClassGeneric(PythonObject object,
                     @Cached("createIdentityProfile()") ValueProfile profile) {
         return profile.profile(object.getPythonClass());
