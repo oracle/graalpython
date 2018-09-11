@@ -900,14 +900,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // issubclass(class, classinfo)
     @Builtin(name = ISSUBCLASS, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class IsSubClassNode extends PythonBuiltinNode {
+    public abstract static class IsSubClassNode extends PythonBinaryBuiltinNode {
         @Child private LookupAndCallBinaryNode subclassCheckNode = LookupAndCallBinaryNode.create(__SUBCLASSCHECK__);
         @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
         @Child private IsSubtypeNode isSubtypeNode = IsSubtypeNode.create();
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         public static IsSubClassNode create() {
-            return BuiltinFunctionsFactory.IsSubClassNodeFactory.create(null);
+            return BuiltinFunctionsFactory.IsSubClassNodeFactory.create();
         }
 
         private boolean isInstanceCheckInternal(Object derived, Object cls) {
