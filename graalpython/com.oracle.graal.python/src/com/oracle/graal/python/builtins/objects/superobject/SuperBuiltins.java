@@ -1,0 +1,407 @@
+package com.oracle.graal.python.builtins.objects.superobject;
+
+import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.SuperInitNodeFactory;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
+
+@CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
+public final class SuperBuiltins extends PythonBuiltins {
+    @Override
+    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
+        return SuperBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = SpecialMethodNames.__INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, alwaysNeedsCallerFrame = true)
+    @GenerateNodeFactory
+    public abstract static class SuperInitNode extends PythonVarargsBuiltinNode {
+        @Child private IsSubtypeNode isSubtypeNode;
+        @Child private IsInstanceNode isInstanceNode;
+        @Child private GetClassNode getClassNode;
+        @Child LookupAndCallBinaryNode getAttrNode;
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (keywords.length != 0) {
+                throw raise(PythonErrorType.RuntimeError, "super(): unexpected keyword arguments");
+            }
+            if (arguments.length == 1) {
+                return execute(frame, arguments[0], PNone.NO_VALUE, PNone.NO_VALUE);
+            } else if (arguments.length == 2) {
+                return execute(frame, arguments[0], arguments[1], PNone.NO_VALUE);
+            } else if (arguments.length == 3) {
+                return execute(frame, arguments[0], arguments[1], arguments[2]);
+            } else {
+                throw raise(PythonErrorType.RuntimeError, "super(): invalid number of arguments");
+            }
+        }
+
+        @Override
+        public final Object execute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            if (keywords.length != 0) {
+                throw raise(PythonErrorType.RuntimeError, "super(): unexpected keyword arguments");
+            }
+            if (arguments.length == 0) {
+                return execute(frame, self, PNone.NO_VALUE, PNone.NO_VALUE);
+            } else if (arguments.length == 1) {
+                return execute(frame, self, arguments[0], PNone.NO_VALUE);
+            } else if (arguments.length == 2) {
+                return execute(frame, self, arguments[0], arguments[1]);
+            } else {
+                throw raise(PythonErrorType.RuntimeError, "super(): too many arguments");
+            }
+        }
+
+        protected abstract Object execute(VirtualFrame frame, Object self, Object cls, Object obj);
+
+        @Specialization(guards = {"!isNoValue(cls)", "!isNoValue(obj)"})
+        PNone init(SuperObject self, Object cls, Object obj) {
+            if (obj != PNone.NONE) {
+                PythonClass type = supercheck(cls, obj);
+                self.init(cls, type, obj);
+            } else {
+                self.init(cls, null, null);
+            }
+            return PNone.NONE;
+        }
+
+        protected boolean isInBuiltinFunctionRoot() {
+            return getRootNode() instanceof BuiltinFunctionRootNode;
+        }
+
+        protected ReadLocalVariableNode createRead(VirtualFrame frame) {
+            FrameSlot slot = frame.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
+            if (slot == null) {
+                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+            }
+            return ReadLocalVariableNode.create(slot);
+        }
+
+        /**
+         * Executed with the frame of the calling method - direct access to the frame.
+         */
+        @Specialization(guards = {"!isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
+        PNone initInPlace(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
+                        @Cached("createRead(frame)") ReadLocalVariableNode readClass,
+                        @Cached("create(0)") ReadIndexedArgumentNode readArgument,
+                        @Cached("createBinaryProfile()") ConditionProfile isCellProfile) {
+            Object obj = readArgument.execute(frame);
+            if (obj == PNone.NONE) {
+                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+            }
+            Object cls = readClass.execute(frame);
+            if (isCellProfile.profile(cls instanceof PCell)) {
+                cls = ((PCell) cls).getPythonRef();
+            }
+            if (cls == PNone.NONE) {
+                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+            }
+            return init(self, cls, obj);
+        }
+
+        /**
+         * Executed within a {@link BuiltinFunctionRootNode} - indirect access to the frame.
+         */
+        @Specialization(guards = {"isInBuiltinFunctionRoot()", "isNoValue(clsArg)", "isNoValue(objArg)"})
+        PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
+                        @Cached("create(0)") ReadCallerFrameNode readCaller) {
+            Frame target = readCaller.executeWith(frame);
+            if (target == null) {
+                throw raise(PythonErrorType.RuntimeError, "super(): no current frame");
+            }
+            Object[] arguments = target.getArguments();
+            if (arguments.length <= PArguments.USER_ARGUMENTS_OFFSET) {
+                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+            }
+            Object obj = arguments[PArguments.USER_ARGUMENTS_OFFSET];
+            if (obj == PNone.NONE) {
+                throw raise(PythonErrorType.RuntimeError, "super(): no arguments");
+            }
+
+            return initFromFrame(self, target, obj);
+        }
+
+        @TruffleBoundary
+        private PNone initFromFrame(SuperObject self, Frame target, Object obj) {
+            // TODO: remove me
+            // TODO: do it properly via the python API in super.__init__ :
+            // sys._getframe(1).f_code.co_closure?
+            FrameSlot classSlot = target.getFrameDescriptor().findFrameSlot(SpecialAttributeNames.__CLASS__);
+            Object cls = PNone.NONE;
+            if (classSlot != null) {
+                try {
+                    cls = target.getObject(classSlot);
+                    if (cls instanceof PCell) {
+                        cls = ((PCell) cls).getPythonRef();
+                    }
+                } catch (FrameSlotTypeException e) {
+                    // fallthrough
+                }
+            }
+            if (cls == PNone.NONE) {
+                throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
+            }
+            return init(self, cls, obj);
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        PNone initFallback(Object self, Object cls, Object obj) {
+            throw raise(PythonErrorType.RuntimeError, "super(): invalid arguments");
+        }
+
+        private IsSubtypeNode getIsSubtype() {
+            if (isSubtypeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isSubtypeNode = IsSubtypeNode.create();
+            }
+            return isSubtypeNode;
+        }
+
+        private IsInstanceNode getIsInstance() {
+            if (isInstanceNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isInstanceNode = IsInstanceNode.create();
+            }
+            return isInstanceNode;
+        }
+
+        private GetClassNode getGetClass() {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = GetClassNode.create();
+            }
+            return getClassNode;
+        }
+
+        private LookupAndCallBinaryNode getGetAttr() {
+            if (getAttrNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getAttrNode = LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__);
+            }
+            return getAttrNode;
+        }
+
+        private PythonClass supercheck(Object cls, Object object) {
+            /*
+             * Check that a super() call makes sense. Return a type object.
+             *
+             * obj can be a class, or an instance of one:
+             *
+             * - If it is a class, it must be a subclass of 'type'. This case is used for class
+             * methods; the return value is obj.
+             *
+             * - If it is an instance, it must be an instance of 'type'. This is the normal case;
+             * the return value is obj.__class__.
+             *
+             * But... when obj is an instance, we want to allow for the case where Py_TYPE(obj) is
+             * not a subclass of type, but obj.__class__ is! This will allow using super() with a
+             * proxy for obj.
+             */
+            if (object instanceof PythonClass) {
+                if (getIsSubtype().execute(object, cls)) {
+                    return (PythonClass) object;
+                }
+            }
+
+            if (getIsInstance().executeWith(object, cls)) {
+                return getGetClass().execute(object);
+            } else {
+                try {
+                    Object classObject = getGetAttr().executeObject(object, SpecialAttributeNames.__CLASS__);
+                    if (classObject instanceof PythonClass) {
+                        if (getIsSubtype().execute(classObject, cls)) {
+                            return (PythonClass) classObject;
+                        }
+                    }
+                } catch (PException e) {
+                    // error is ignored
+                }
+
+                throw raise(PythonErrorType.TypeError, "super(type, obj): obj must be an instance or subtype of type");
+            }
+        }
+    }
+
+    @Builtin(name = SpecialMethodNames.__GET__, fixedNumOfPositionalArgs = 2, keywordArguments = {"type"})
+    @GenerateNodeFactory
+    public abstract static class GetNode extends PythonTernaryBuiltinNode {
+        @Child SuperInitNode superInit;
+
+        @Specialization
+        public Object get(SuperObject self, Object obj, @SuppressWarnings("unused") Object type) {
+            if (obj == PNone.NONE || self.getObject() != null) {
+                // not binding to an object or already bound
+                return this;
+            } else {
+                if (superInit == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    superInit = SuperInitNodeFactory.create();
+                }
+                SuperObject newSuper = factory().createSuperObject(self.getPythonClass());
+                superInit.execute(null, newSuper, self.getType(), obj);
+                return newSuper;
+            }
+        }
+    }
+
+    @Builtin(name = SpecialMethodNames.__GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ReprNode extends PythonBinaryBuiltinNode {
+        @Child ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
+        @Child LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
+        @Child CallTernaryMethodNode callGet;
+        @Child LookupAndCallBinaryNode getAttr;
+
+        private Object genericGetAttr(Object object, Object attr) {
+            if (getAttr == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getAttr = LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__);
+            }
+            return getAttr.executeObject(object, attr);
+        }
+
+        private CallTernaryMethodNode getCallGet() {
+            if (callGet == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callGet = CallTernaryMethodNode.create();
+            }
+            return callGet;
+        }
+
+        @Specialization
+        public Object get(SuperObject self, Object attr) {
+            PythonClass startType = self.getObjectType();
+            if (startType == null) {
+                return genericGetAttr(self, attr);
+            }
+
+            /*
+             * We want __class__ to return the class of the super object (i.e. super, or a
+             * subclass), not the class of su->obj.
+             */
+            String stringAttr = null;
+            if (attr instanceof PString) {
+                stringAttr = ((PString) attr).getValue();
+            } else if (attr instanceof String) {
+                stringAttr = (String) attr;
+            }
+            if (stringAttr != null) {
+                if (stringAttr.equals(SpecialAttributeNames.__CLASS__)) {
+                    return genericGetAttr(self, SpecialAttributeNames.__CLASS__);
+                }
+            }
+
+            PythonClass[] mro = startType.getMethodResolutionOrder();
+            /* No need to check the last one: it's gonna be skipped anyway. */
+            int i = 0;
+            int n = mro.length;
+            for (i = 0; i + 1 < n; i++) {
+                if (self.getType() == mro[i]) {
+                    break;
+                }
+            }
+            i++; /* skip su->type (if any) */
+            if (i >= n) {
+                return genericGetAttr(self, attr);
+            }
+
+            for (; i < n; i++) {
+                PythonClass tmp = mro[i];
+                Object res = readFromDict.execute(tmp, attr);
+                if (res != PNone.NO_VALUE) {
+                    Object get = readGet.execute(res);
+                    if (get != PNone.NO_VALUE) {
+                        /*
+                         * Only pass 'obj' param if this is instance-mode super (See SF ID #743627)
+                         */
+                        res = getCallGet().execute(get, res, self.getObject() == startType ? PNone.NO_VALUE : self.getObject(), startType);
+                    }
+                    return res;
+                }
+            }
+
+            return genericGetAttr(self, attr);
+        }
+    }
+
+    @Builtin(name = "__thisclass__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class ThisClassNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getClass(SuperObject self) {
+            Object type = self.getType();
+            if (type == null) {
+                return PNone.NONE;
+            }
+            return type;
+        }
+    }
+
+    @Builtin(name = "__self__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class SelfNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getClass(SuperObject self) {
+            Object object = self.getObject();
+            if (object == null) {
+                return PNone.NONE;
+            }
+            return object;
+        }
+    }
+
+    @Builtin(name = "__self_class__", fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class SelfClassNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object getClass(SuperObject self) {
+            PythonClass objectType = self.getObjectType();
+            if (objectType == null) {
+                return PNone.NONE;
+            }
+            return objectType;
+        }
+    }
+}

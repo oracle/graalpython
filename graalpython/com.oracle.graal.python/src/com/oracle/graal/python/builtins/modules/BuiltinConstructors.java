@@ -43,6 +43,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.RANGE;
 import static com.oracle.graal.python.nodes.BuiltinNames.REVERSED;
 import static com.oracle.graal.python.nodes.BuiltinNames.SET;
 import static com.oracle.graal.python.nodes.BuiltinNames.STR;
+import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
@@ -119,6 +120,7 @@ import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
@@ -2070,4 +2072,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
+    // super()
+    @Builtin(name = SUPER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.Super)
+    @GenerateNodeFactory
+    public abstract static class SuperInitNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        Object doObjectIndirect(PythonClass self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object) {
+            return factory().createSuperObject(self);
+        }
+    }
 }

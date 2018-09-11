@@ -29,7 +29,6 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -149,7 +148,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.builtin = builtin;
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
-        if (SysModuleBuiltins.SuperInitNode.class.isAssignableFrom(factory.getNodeClass())) {
+        if (builtin.alwaysNeedsCallerFrame()) {
             setNeedsCallerFrame();
         }
     }
