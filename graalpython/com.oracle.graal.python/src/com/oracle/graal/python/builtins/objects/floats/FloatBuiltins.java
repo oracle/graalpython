@@ -174,8 +174,8 @@ public final class FloatBuiltins extends PythonBuiltins {
                     }
                     // spec may be incomplete. The defaults are those commonly used for numeric
                     // formats.
-                    spec = spec.withDefaults(InternalFormat.Spec.NUMERIC);
-                    FloatFormatter formatter = new FloatFormatter(getCore(), spec);
+                    InternalFormat.Spec usedSpec = spec.withDefaults(InternalFormat.Spec.NUMERIC);
+                    FloatFormatter formatter = new FloatFormatter(getCore(), usedSpec);
                     return formatter;
 
                 default:
@@ -183,7 +183,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean shouldBeAsStr(String spec) {
+        private static boolean shouldBeAsStr(String spec) {
             if (spec.isEmpty()) {
                 return true;
             }
