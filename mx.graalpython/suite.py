@@ -163,6 +163,7 @@ suite = {
                 "truffle:TRUFFLE_API",
                 "sdk:GRAAL_SDK",
                 "ANTLR4",
+                "regex:TREGEX",
             ],
             "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "checkstyle": "com.oracle.graal.python",
