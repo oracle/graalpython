@@ -114,7 +114,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         String str(double self) {
-            InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', InternalFormat.Spec.NONE, false, InternalFormat.Spec.UNSPECIFIED, false, 16, 'g');
+            InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', InternalFormat.Spec.NONE, false, InternalFormat.Spec.UNSPECIFIED, false, 0, 'r');
             FloatFormatter f = new FloatFormatter(getCore(), spec);
             f.setMinFracDigits(1);
             String result = f.format(self).getResult();
