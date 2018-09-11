@@ -118,6 +118,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -832,7 +833,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // isinstance(object, classinfo)
     @Builtin(name = ISINSTANCE, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class IsInstanceNode extends PythonBuiltinNode {
+    public abstract static class IsInstanceNode extends PythonBinaryBuiltinNode {
         @Child private GetClassNode getClassNode = GetClassNode.create();
         @Child private LookupAndCallBinaryNode instanceCheckNode = LookupAndCallBinaryNode.create(__INSTANCECHECK__);
         @Child private CastToBooleanNode castToBooleanNode = CastToBooleanNode.createIfTrueNode();
@@ -840,7 +841,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Child private SequenceStorageNodes.LenNode lenNode;
 
         public static IsInstanceNode create() {
-            return BuiltinFunctionsFactory.IsInstanceNodeFactory.create(null);
+            return BuiltinFunctionsFactory.IsInstanceNodeFactory.create();
         }
 
         private boolean isInstanceCheckInternal(Object instance, Object cls) {
@@ -1410,6 +1411,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                                 node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
                             } else if (node instanceof ReadIndexedArgumentNode) {
                                 node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                            } else if (node instanceof PythonCallNode) {
+                                node.replace(((PythonCallNode) node).asSpecialCall());
                             }
                             return true;
                         }
