@@ -270,7 +270,7 @@ public class PCode extends PythonBuiltinObject {
 
         for (int i = 0; i < readKeywordNodes.size(); i++) {
             ReadKeywordNode kwNode = readKeywordNodes.get(i);
-            keywordNames[i++] = new Arity.KeywordName(kwNode.getName(), kwNode.isRequired());
+            keywordNames[i] = new Arity.KeywordName(kwNode.getName(), kwNode.isRequired());
             if (!kwNode.canBePositional()) {
                 kwonlyargcount++;
             }
