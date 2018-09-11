@@ -234,7 +234,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private IsSubtypeNode getIsSubtype() {
             if (isSubtypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSubtypeNode = IsSubtypeNode.create();
+                isSubtypeNode = insert(IsSubtypeNode.create());
             }
             return isSubtypeNode;
         }
@@ -242,7 +242,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private IsInstanceNode getIsInstance() {
             if (isInstanceNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isInstanceNode = IsInstanceNode.create();
+                isInstanceNode = insert(IsInstanceNode.create());
             }
             return isInstanceNode;
         }
@@ -250,7 +250,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private GetClassNode getGetClass() {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = GetClassNode.create();
+                getClassNode = insert(GetClassNode.create());
             }
             return getClassNode;
         }
@@ -258,7 +258,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private LookupAndCallBinaryNode getGetAttr() {
             if (getAttrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttrNode = LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__);
+                getAttrNode = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__));
             }
             return getAttrNode;
         }
@@ -317,7 +317,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             } else {
                 if (superInit == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    superInit = SuperInitNodeFactory.create();
+                    superInit = insert(SuperInitNodeFactory.create());
                 }
                 SuperObject newSuper = factory().createSuperObject(self.getPythonClass());
                 superInit.execute(null, newSuper, self.getType(), obj);
@@ -337,7 +337,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private Object genericGetAttr(Object object, Object attr) {
             if (getAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getAttr = LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__);
+                getAttr = insert(LookupAndCallBinaryNode.create(SpecialMethodNames.__GETATTRIBUTE__));
             }
             return getAttr.executeObject(object, attr);
         }
@@ -345,7 +345,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         private CallTernaryMethodNode getCallGet() {
             if (callGet == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                callGet = CallTernaryMethodNode.create();
+                callGet = insert(CallTernaryMethodNode.create());
             }
             return callGet;
         }
