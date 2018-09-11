@@ -67,6 +67,7 @@ MICRO_BENCHMARKS = {
     'arith-modulo': ITER_25 + ['50'],
     'attribute-access-polymorphic': ITER_10 + ['1000'],
     'attribute-access': ITER_25 + ['5000'],
+    'attribute_access_super': ITER_25 + ['500'],
     'attribute-bool': ITER_25 + ['3000'],
     'boolean-logic': ITER_15 + ['1000'],
     'builtin-len-tuple': ITER_10 + [],
