@@ -53,6 +53,11 @@ uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
+typedef void* (*cache_t)(uint64_t);
+static cache_t cache;
+
+#define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
+
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT = (void*)polyglot_import("python_cext");
@@ -68,6 +73,11 @@ static void initialize_upcall_functions() {
     PY_TRUFFLE_CEXT_LANDING_PTR = ((void* (*)(void* name, ...))polyglot_get_member(PY_TRUFFLE_CEXT, polyglot_from_string("PyTruffle_Cext_Upcall_ptr", SRC_CS)));
 
     Py_NoValue = UPCALL_CEXT_O(polyglot_from_string("Py_NoValue", SRC_CS));
+}
+
+__attribute__((constructor (__COUNTER__)))
+static void initialize_handle_cache() {
+    cache = polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_HandleCache_Create", truffle_managed_from_handle);
 }
 
 static void initialize_type_structure(PyTypeObject* structure, const char* typname, void* typeid) {
@@ -201,7 +211,7 @@ void* native_to_java(PyObject* obj) {
     } else if (polyglot_is_string(obj)) {
         return obj;
     } else if (truffle_is_handle_to_managed(obj)) {
-        return truffle_managed_from_handle(obj);
+        return resolve_handle(cache, (uint64_t)obj);
     } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {
         return truffle_managed_from_handle(obj->ob_refcnt);
     } else if (IS_POINTER(obj->ob_refcnt)) {
@@ -231,12 +241,12 @@ PyObject* to_sulong(void *o) {
 void* get_ob_type(PyObject* obj) {
     PyTypeObject*  type = obj->ob_type;
     if (truffle_is_handle_to_managed(type)) {
-        return truffle_managed_from_handle(type);
+        return resolve_handle(cache, (uint64_t)type);
     } else {
         // we have stored a handle to the Java class in ob_refcnt
         void* handle = (void*)((PyObject*)type)->ob_refcnt;
         if (truffle_is_handle_to_managed(handle)) {
-            return truffle_managed_from_handle(handle);
+            return resolve_handle(cache, (uint64_t)handle);
         } else {
             // assume handle is a TruffleObject
             return handle;
