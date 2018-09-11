@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.ModuleRootNode;
@@ -57,12 +58,19 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class PCode extends PythonBuiltinObject {
+    private final long FLAG_POS_GENERATOR = 5;
+    private final long FLAG_POS_VAR_ARGS = 2;
+    private final long FLAG_POS_VAR_KW_ARGS = 3;
+
     private final RootNode rootNode;
     private final PythonCore core;
 
@@ -100,6 +108,11 @@ public class PCode extends PythonBuiltinObject {
     private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
     private Object[] cellvars;
+
+    // internal cache for keyword names
+    private Arity.KeywordName[] keywordNames;
+    // internal cache for the FrameDescriptor
+    private FrameDescriptor frameDescriptor;
 
     public PCode(PythonClass cls, RootNode rootNode, PythonCore core) {
         super(cls);
@@ -223,17 +236,17 @@ public class PCode extends PythonBuiltinObject {
         this.flags = 0;
         RootNode funcRootNode = rootNode;
         if (funcRootNode instanceof GeneratorFunctionRootNode) {
-            flags |= (1 << 5);
+            flags |= (1 << FLAG_POS_GENERATOR);
             funcRootNode = ((GeneratorFunctionRootNode) funcRootNode).getFunctionRootNode();
         }
 
         // 0x04 - *arguments
         if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarArgsNode.class).size() == 1) {
-            flags |= (1 << 2);
+            flags |= (1 << FLAG_POS_VAR_ARGS);
         }
         // 0x08 - **keywords
         if (NodeUtil.findAllNodeInstances(funcRootNode, ReadVarKeywordsNode.class).size() == 1) {
-            flags |= (1 << 3);
+            flags |= (1 << FLAG_POS_VAR_KW_ARGS);
         }
 
         this.freevars = extractFreeVars(rootNode);
@@ -242,6 +255,7 @@ public class PCode extends PythonBuiltinObject {
         Set<String> cellVarsSet = asSet((String[]) cellvars);
 
         List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadKeywordNode.class);
+        keywordNames = new Arity.KeywordName[readKeywordNodes.size()];
         List<ReadIndexedArgumentNode> readIndexedArgumentNodes = NodeUtil.findAllNodeInstances(funcRootNode, ReadIndexedArgumentNode.class);
 
         Set<String> kwNames = getKeywordArgumentNames(readKeywordNodes);
@@ -254,7 +268,9 @@ public class PCode extends PythonBuiltinObject {
         this.argcount = readIndexedArgumentNodes.size();
         this.kwonlyargcount = 0;
 
-        for (ReadKeywordNode kwNode : readKeywordNodes) {
+        for (int i = 0; i < readKeywordNodes.size(); i++) {
+            ReadKeywordNode kwNode = readKeywordNodes.get(i);
+            keywordNames[i++] = new Arity.KeywordName(kwNode.getName(), kwNode.isRequired());
             if (!kwNode.canBePositional()) {
                 kwonlyargcount++;
             }
@@ -374,5 +390,68 @@ public class PCode extends PythonBuiltinObject {
 
     public Object getLnotab() {
         return lnotab;
+    }
+
+    private Arity.KeywordName[] getKeywordNames() {
+        if (keywordNames == null && rootNode != null) {
+            extractArgStats();
+        }
+        return keywordNames;
+    }
+
+    public boolean isGenerator() {
+        return (getFlags() & (1 << FLAG_POS_GENERATOR)) > 0;
+    }
+
+    public boolean takesVarArgs() {
+        return (getFlags() & (1 << FLAG_POS_VAR_ARGS)) > 0;
+    }
+
+    public boolean takesVarKeywordArgs() {
+        return (getFlags() & (1 << FLAG_POS_VAR_KW_ARGS)) > 0;
+    }
+
+    private int getMinNumOfPositionalArgs() {
+        int defaultKwNames = 0;
+        for (Arity.KeywordName kwName : getKeywordNames()) {
+            defaultKwNames += (kwName.required) ? 0 : 1;
+        }
+        return getArgcount() - defaultKwNames;
+    }
+
+    private int getMaxNumOfPositionalArgs() {
+        return this.getArgcount();
+    }
+
+    public Arity getArity() {
+        return new Arity(this.getName(), this.getMinNumOfPositionalArgs(), this.getMaxNumOfPositionalArgs(), this.takesVarKeywordArgs(), this.takesVarArgs(), this.getKeywordNames());
+    }
+
+    @TruffleBoundary
+    private FrameDescriptor createFrameDescriptor() {
+        FrameDescriptor fd = new FrameDescriptor();
+        for (Object identifier : varnames) {
+            fd.addFrameSlot(identifier);
+        }
+        return fd;
+    }
+
+    public FrameDescriptor getFrameDescriptor() {
+        if (frameDescriptor == null) {
+            if (rootNode != null) {
+                frameDescriptor = rootNode.getFrameDescriptor();
+            } else {
+                frameDescriptor = createFrameDescriptor();
+            }
+        }
+        return frameDescriptor;
+    }
+
+    @TruffleBoundary
+    public RootCallTarget getRootCallTarget() {
+        if (rootNode != null) {
+            return Truffle.getRuntime().createCallTarget(rootNode);
+        }
+        return null;
     }
 }

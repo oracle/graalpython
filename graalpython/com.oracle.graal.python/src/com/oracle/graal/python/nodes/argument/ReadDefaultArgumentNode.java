@@ -41,7 +41,7 @@ public final class ReadDefaultArgumentNode extends Node {
     }
 
     public Object execute() {
-        assert value != null;
+        assert value != null : "ReadDefaultArgumentNode: value cannot be null!";
         return value;
     }
 

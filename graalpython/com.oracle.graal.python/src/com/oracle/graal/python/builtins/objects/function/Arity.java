@@ -52,6 +52,14 @@ public class Arity {
 
     public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
                     boolean takesVarKeywordArgs, boolean takesVarArgs,
+                    KeywordName[] keywordNames) {
+        this(functionName, minNumOfPositionalArgs, maxNumOfPositionalArgs,
+                        takesVarKeywordArgs, takesVarArgs, false,
+                        null, keywordNames);
+    }
+
+    public Arity(String functionName, int minNumOfPositionalArgs, int maxNumOfPositionalArgs,
+                    boolean takesVarKeywordArgs, boolean takesVarArgs,
                     List<KeywordName> keywordNames) {
         this(functionName, minNumOfPositionalArgs, maxNumOfPositionalArgs,
                         takesVarKeywordArgs, takesVarArgs, false,
@@ -85,13 +93,11 @@ public class Arity {
     }
 
     public static Arity createOneArgumentWithVarKwArgs(String functionName) {
-        return new Arity(functionName, 1, 1,
-                        true, false, null);
+        return new Arity(functionName, 1, 1, true, false, (KeywordName[]) null);
     }
 
     public static Arity createVarArgsAndKwArgsOnly(String functionName) {
-        return new Arity(functionName, 0, 0,
-                        true, true, null);
+        return new Arity(functionName, 0, 0, true, true, (KeywordName[]) null);
     }
 
     @TruffleBoundary

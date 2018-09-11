@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -232,7 +233,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
 
     @Builtin(name = __CODE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class GetCodeNode extends PythonBuiltinNode {
+    public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
         Object getCode(PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
