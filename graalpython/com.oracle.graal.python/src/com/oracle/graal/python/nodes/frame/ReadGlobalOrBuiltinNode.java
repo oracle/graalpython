@@ -28,9 +28,16 @@ package com.oracle.graal.python.nodes.frame;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -42,6 +49,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "read_global")
@@ -52,6 +60,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
+    @Child private HashingStorageNodes.GetItemNode getHashingItemNode;
+    @Child private GetItemNode readFromDictNode;
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;
@@ -72,19 +82,49 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
+    protected BinaryComparisonNode createContainsNode() {
+        return BinaryComparisonNode.create(SpecialMethodNames.__CONTAINS__, null, "in");
+    }
+
     @Specialization(guards = "isInDict(frame)", rewriteOn = PException.class)
     protected Object readGlobalDict(VirtualFrame frame,
-                    @Cached("create()") GetItemNode readFromDictNode) {
-        Object result = readFromDictNode.execute(PArguments.getGlobals(frame), attributeId);
-        return returnGlobalOrBuiltin(result);
+                    @Cached("create()") BranchProfile isDict,
+                    @Cached("create()") BranchProfile isMappingproxy) {
+        PythonObject globals = PArguments.getGlobals(frame);
+        if (globals instanceof PMappingproxy && globals.getPythonClass() == lookupClass(PythonBuiltinClassType.PMappingproxy)) {
+            isMappingproxy.enter();
+            Object result = getGetItemNode().execute(((PMappingproxy) globals).getDictStorage(), attributeId);
+            return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
+        } else if (globals instanceof PDict && globals.getPythonClass() == lookupClass(PythonBuiltinClassType.PDict)) {
+            isDict.enter();
+            Object result = getGetItemNode().execute(((PDict) globals).getDictStorage(), attributeId);
+            return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
+        } else {
+            return returnGlobalOrBuiltin(getReadFromDict().execute(globals, attributeId));
+        }
+    }
+
+    private GetItemNode getReadFromDict() {
+        if (readFromDictNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            readFromDictNode = insert(GetItemNode.create());
+        }
+        return readFromDictNode;
+    }
+
+    private HashingStorageNodes.GetItemNode getGetItemNode() {
+        if (getHashingItemNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getHashingItemNode = insert(HashingStorageNodes.GetItemNode.create());
+        }
+        return getHashingItemNode;
     }
 
     @Specialization(guards = "isInDict(frame)")
     protected Object readGlobalDictWithException(VirtualFrame frame,
-                    @Cached("create()") GetItemNode readFromDictNode,
                     @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
         try {
-            Object result = readFromDictNode.execute(PArguments.getGlobals(frame), attributeId);
+            Object result = getReadFromDict().execute(PArguments.getGlobals(frame), attributeId);
             return returnGlobalOrBuiltin(result);
         } catch (PException e) {
             e.expect(KeyError, getCore(), errorProfile);
