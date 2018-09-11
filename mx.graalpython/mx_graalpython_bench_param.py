@@ -72,7 +72,7 @@ MICRO_BENCHMARKS = {
     'boolean-logic': ITER_15 + ['1000'],
     'builtin-len-tuple': ITER_10 + [],
     'builtin-len': ITER_25 + [],
-    'class_access': ITER_25 + ['50000'],
+    'class_access': ITER_25 + ['1000'],
     'call-method-polymorphic': ITER_10 + ['1000'],
     'for-range': ITER_25 + ['50000'],
     'function-call': ITER_25 + [],
