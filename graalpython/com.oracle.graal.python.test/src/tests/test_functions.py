@@ -38,6 +38,15 @@
 # SOFTWARE.
 
 
+def assert_raises(err, fn, *args, **kwargs):
+    raised = False
+    try:
+        fn(*args, **kwargs)
+    except err:
+        raised = True
+    assert raised
+
+
 def test_name():
     def foo():
         pass
@@ -63,9 +72,23 @@ def f2(a=f(1, 2), b=10):
     return a, b
 
 
+class MyClass(object):
+    def __init__(self, x = 10):
+        pass
+
+
 def test_defaults():
     assert f.__defaults__ == (10,)
     assert f2.__defaults__ == ((1, 2, 10, (), {}), 10)
+
+
+def test_defaults_method():
+    obj = MyClass()
+    assert obj.__init__.__defaults__ == (10,)
+
+    def assgn():
+        obj.__init__.__defaults__ = (12,)
+    assert_raises(AttributeError, assgn)
 
 
 def test_constructor():

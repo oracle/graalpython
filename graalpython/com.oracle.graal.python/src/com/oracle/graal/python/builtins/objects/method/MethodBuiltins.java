@@ -27,6 +27,7 @@
 package com.oracle.graal.python.builtins.objects.method;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__CODE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
@@ -36,6 +37,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -90,6 +93,16 @@ public class MethodBuiltins extends PythonBuiltins {
         Object reprMethod(PMethod self,
                         @Cached("create()") GetClassNode getClassNode) {
             return String.format("<built-in method %s of %s object at 0x%x>", self.getName(), getClassNode.execute(self.getSelf()).getName(), self.hashCode());
+        }
+    }
+
+    @Builtin(name = __DEFAULTS__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetMethodDefaultsNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object defaults(PMethod self,
+                        @Cached("create()") FunctionBuiltins.GetFunctionDefaultsNode getFunctionDefaultsNode) {
+            return getFunctionDefaultsNode.execute(self.getFunction(), PNone.NO_VALUE);
         }
     }
 }

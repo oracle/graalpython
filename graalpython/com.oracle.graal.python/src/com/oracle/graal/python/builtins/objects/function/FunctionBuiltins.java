@@ -26,9 +26,11 @@
 
 package com.oracle.graal.python.builtins.objects.function;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -36,7 +38,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.FunctionBuiltinsFactory.GetFunctionDefaultsNodeFactory;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -52,6 +57,8 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.nodes.NodeUtil;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFunction)
 public class FunctionBuiltins extends PythonBuiltins {
@@ -128,4 +135,47 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = __DEFAULTS__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    public abstract static class GetFunctionDefaultsNode extends PythonBinaryBuiltinNode {
+        protected final ConditionProfile nullDefaultsProfile = ConditionProfile.createBinaryProfile();
+
+        @TruffleBoundary
+        private static Object[] extractDefaults(PFunction function) {
+            List<Object> defaultValues = new ArrayList<>();
+            List<ReadKeywordNode> readKeywordNodes = NodeUtil.findAllNodeInstances(function.getFunctionRootNode(), ReadKeywordNode.class);
+            for (ReadKeywordNode readKeywordNode : readKeywordNodes) {
+                Object defaultValue = readKeywordNode.getDefaultValue();
+                if (defaultValue != null) {
+                    defaultValues.add(defaultValue);
+                }
+            }
+            return defaultValues.toArray();
+        }
+
+        private Object getDefaults(PFunction function) {
+            Object[] defaults = function.getDefaults();
+            if (nullDefaultsProfile.profile(defaults == null)) {
+                defaults = extractDefaults(function);
+            }
+
+            assert defaults != null;
+            return (defaults.length == 0) ? PNone.NONE : factory().createTuple(defaults);
+        }
+
+        @Specialization
+        Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
+            return getDefaults(self);
+        }
+
+        @Specialization
+        Object defaults(PFunction self, PTuple defaults) {
+            self.setDefaults(defaults.getArray());
+            return PNone.NONE;
+        }
+
+        public static GetFunctionDefaultsNode create() {
+            return GetFunctionDefaultsNodeFactory.create();
+        }
+    }
 }
