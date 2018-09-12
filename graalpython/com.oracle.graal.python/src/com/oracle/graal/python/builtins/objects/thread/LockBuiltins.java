@@ -38,35 +38,75 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.thread;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(defineModule = "_thread")
-public class ThreadModuleBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PLock)
+public class LockBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return LockBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "allocate_lock", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "acquire", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"waitflag", "timeout"})
     @GenerateNodeFactory
-    abstract static class AllocateLockNode extends PythonUnaryBuiltinNode {
+    abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
         @Specialization
-        PLock allocate(PythonClass cls) {
-            return factory().createLock(cls);
+        @TruffleBoundary
+        boolean doAcquire(PLock self, int waitFlag, double timeout) {
+            return self.acquire(waitFlag, timeout);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        boolean doAcquire(PLock self, @SuppressWarnings("unused") PNone waitFlag, double timeout) {
+            return self.acquire(1, timeout);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        boolean doAcquire(PLock self, int waitFlag, @SuppressWarnings("unused") PNone timeout) {
+            return self.acquire(waitFlag, -1.0);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        boolean doAcquire(PLock self, @SuppressWarnings("unused") PNone waitFlag, @SuppressWarnings("unused") PNone timeout) {
+            return self.acquire(1, -1.0);
+        }
+    }
+
+    @Builtin(name = "release", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object doRelease(PLock self) {
+            self.release();
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "locked", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class IsLockedLockNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        boolean isLocked(PLock self) {
+            return self.locked();
         }
     }
 }

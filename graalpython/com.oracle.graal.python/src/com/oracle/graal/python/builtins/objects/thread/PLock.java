@@ -38,35 +38,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.thread;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
 
-@CoreFunctions(defineModule = "_thread")
-public class ThreadModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+public class PLock extends PythonBuiltinObject {
+    private final ReentrantLock lock;
+
+    public PLock(PythonClass cls) {
+        super(cls);
+        lock = new ReentrantLock();
     }
 
-    @Builtin(name = "allocate_lock", fixedNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class AllocateLockNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        PLock allocate(PythonClass cls) {
-            return factory().createLock(cls);
+    public boolean acquire(int waitFlag, double timeout) {
+        if (waitFlag == 0) {
+            return lock.tryLock();
+        } else {
+            if (timeout < 0) {
+                lock.lock();
+                return true;
+            } else {
+                // TODO: look at
+                // https://github.com/python/cpython/blob/e42b705188271da108de42b55d9344642170aa2b/Python/pytime.c
+                // _PyTime_AsMicroseconds
+                long seconds = (long) timeout;
+                long milli = (long) ((timeout - seconds) * 1000);
+                try {
+                    return lock.tryLock(seconds * 1000 + milli, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    return false;
+                }
+            }
         }
+    }
+
+    public void release() {
+        lock.unlock();
+    }
+
+    public boolean locked() {
+        return lock.isLocked();
     }
 }
