@@ -131,6 +131,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
     @Builtin(name = __FORMAT__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FormatNode extends PythonBinaryBuiltinNode {
 
         @Specialization
