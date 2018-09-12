@@ -116,8 +116,7 @@ public final class FloatBuiltins extends PythonBuiltins {
             InternalFormat.Spec spec = new InternalFormat.Spec(' ', '>', InternalFormat.Spec.NONE, false, InternalFormat.Spec.UNSPECIFIED, false, 0, 'r');
             FloatFormatter f = new FloatFormatter(getCore(), spec);
             f.setMinFracDigits(1);
-            String result = f.format(self).getResult();
-            return result;
+            return f.format(self).getResult();
         }
 
         public static StrNode create() {
@@ -136,21 +135,20 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         String format(double self, String formatString,
-                        @Cached("create()") StrNode strNode) {
-            if (shouldBeAsStr(formatString)) {
+                        @Cached("create()") StrNode strNode,
+                        @Cached("createBinaryProfile()") ConditionProfile strProfile,
+                        @Cached("createBinaryProfile()") ConditionProfile unknownProfile) {
+            if (strProfile.profile(shouldBeAsStr(formatString))) {
                 return strNode.str(self);
             }
             InternalFormat.Spec spec = InternalFormat.fromText(getCore(), formatString, __FORMAT__);
             FloatFormatter formatter = prepareFormatter(spec);
-            if (formatter != null) {
-                formatter.format(self);
-                return formatter.pad().getResult();
-
-            } else {
+            if (unknownProfile.profile(formatter == null)) {
                 // The type code was not recognised in prepareFormatter
                 throw Formatter.unknownFormat(getCore(), spec.type, "float");
             }
-
+            formatter.format(self);
+            return formatter.pad().getResult();
         }
 
         private FloatFormatter prepareFormatter(InternalFormat.Spec spec) {
@@ -175,9 +173,7 @@ public final class FloatBuiltins extends PythonBuiltins {
                     // spec may be incomplete. The defaults are those commonly used for numeric
                     // formats.
                     InternalFormat.Spec usedSpec = spec.withDefaults(InternalFormat.Spec.NUMERIC);
-                    FloatFormatter formatter = new FloatFormatter(getCore(), usedSpec);
-                    return formatter;
-
+                    return new FloatFormatter(getCore(), usedSpec);
                 default:
                     return null;
             }
