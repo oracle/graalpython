@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins;
 import com.oracle.graal.python.builtins.modules.UnicodeDataModuleBuiltins;
@@ -151,8 +152,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -200,6 +201,7 @@ public final class Python3Core implements PythonCore {
                     "_sre",
                     "function",
                     "_socket",
+                    "_thread",
     };
 
     private final PythonBuiltins[] builtins;
@@ -284,6 +286,7 @@ public final class Python3Core implements PythonCore {
                         new SysModuleBuiltins(),
                         new BufferBuiltins(),
                         new MemoryviewBuiltins(),
+                        new ThreadModuleBuiltins(),
                         new SuperBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
