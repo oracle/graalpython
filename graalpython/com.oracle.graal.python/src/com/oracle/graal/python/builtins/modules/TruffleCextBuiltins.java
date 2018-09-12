@@ -60,9 +60,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.CheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.GetByteArrayNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.MakeMayRaiseWrapperNodeFactory.MayRaiseBinaryNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.MakeMayRaiseWrapperNodeFactory.MayRaiseTernaryNodeGen;
-import com.oracle.graal.python.builtins.modules.TruffleCextBuiltinsFactory.MakeMayRaiseWrapperNodeFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
@@ -71,6 +68,14 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
@@ -111,14 +116,11 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -160,7 +162,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -1775,136 +1776,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
-        static class MayRaiseNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
-            private final T node;
-
-            public MayRaiseNodeFactory(T node) {
-                this.node = node;
-            }
-
-            public T createNode(Object... arguments) {
-                return NodeUtil.cloneNode(node);
-            }
-
-            @SuppressWarnings("unchecked")
-            public Class<T> getNodeClass() {
-                return (Class<T>) node.getClass();
-            }
-
-            public List<List<Class<?>>> getNodeSignatures() {
-                return null;
-            }
-
-            public List<Class<? extends Node>> getExecutionSignature() {
-                return null;
-            }
-        }
-
-        @Builtin(fixedNumOfPositionalArgs = 1)
-        static abstract class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
-            @Child private CreateArgumentsNode createArgsNode;
-            @Child private InvokeNode invokeNode;
-            private final Object errorResult;
-
-            public MayRaiseUnaryNode(PFunction func, Object errorResult) {
-                this.createArgsNode = CreateArgumentsNode.create();
-                this.invokeNode = InvokeNode.create(func);
-                this.errorResult = errorResult;
-            }
-
-            @Specialization
-            Object doit(Object argument) {
-                try {
-                    Object[] arguments = createArgsNode.execute(argument);
-                    return invokeNode.execute(null, arguments, new PKeyword[0]);
-                } catch (PException e) {
-                    getContext().setCurrentException(e);
-                    return errorResult;
-                }
-            }
-        }
-
-        @Builtin(fixedNumOfPositionalArgs = 2)
-        static abstract class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
-            @Child private CreateArgumentsNode createArgsNode;
-            @Child private InvokeNode invokeNode;
-            private final Object errorResult;
-
-            public MayRaiseBinaryNode(PFunction func, Object errorResult) {
-                this.createArgsNode = CreateArgumentsNode.create();
-                this.invokeNode = InvokeNode.create(func);
-                this.errorResult = errorResult;
-            }
-
-            @Specialization
-            Object doit(Object arg1, Object arg2) {
-                try {
-                    Object[] arguments = createArgsNode.execute(arg1, arg2);
-                    return invokeNode.execute(null, arguments, new PKeyword[0]);
-                } catch (PException e) {
-                    getContext().setCurrentException(e);
-                    return errorResult;
-                }
-            }
-        }
-
-        @Builtin(fixedNumOfPositionalArgs = 3)
-        static abstract class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
-            @Child private CreateArgumentsNode createArgsNode;
-            @Child private InvokeNode invokeNode;
-            private final Object errorResult;
-
-            public MayRaiseTernaryNode(PFunction func, Object errorResult) {
-                this.createArgsNode = CreateArgumentsNode.create();
-                this.invokeNode = InvokeNode.create(func);
-                this.errorResult = errorResult;
-            }
-
-            @Specialization
-            Object doit(Object arg1, Object arg2, Object arg3) {
-                try {
-                    Object[] arguments = createArgsNode.execute(arg1, arg2, arg3);
-                    return invokeNode.execute(null, arguments, new PKeyword[0]);
-                } catch (PException e) {
-                    getContext().setCurrentException(e);
-                    return errorResult;
-                }
-            }
-        }
-
-        @Builtin(takesVarArgs = true)
-        static class MayRaiseNode extends PythonBuiltinNode {
-            @Child private InvokeNode invokeNode;
-            @Child private ReadVarArgsNode readVarargsNode;
-            @Child private CreateArgumentsNode createArgsNode;
-            @Child private PythonObjectFactory factory;
-            private final Object errorResult;
-
-            protected MayRaiseNode(PythonCallable callable, Object errorResult) {
-                this.readVarargsNode = ReadVarArgsNode.create(0, true);
-                this.createArgsNode = CreateArgumentsNode.create();
-                this.invokeNode = InvokeNode.create(callable);
-                this.errorResult = errorResult;
-            }
-
-            @Override
-            public final Object execute(VirtualFrame frame) {
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                try {
-                    Object[] arguments = createArgsNode.execute(args);
-                    return invokeNode.execute(null, arguments, new PKeyword[0]);
-                } catch (PException e) {
-                    getContext().setCurrentException(e);
-                    return errorResult;
-                }
-            }
-
-            @Override
-            protected ReadArgumentNode[] getArguments() {
-                throw new IllegalAccessError();
-            }
-        }
-
         private static final Builtin unaryBuiltin = MayRaiseUnaryNode.class.getAnnotation(Builtin.class);
         private static final Builtin binaryBuiltin = MayRaiseBinaryNode.class.getAnnotation(Builtin.class);
         private static final Builtin ternaryBuiltin = MayRaiseTernaryNode.class.getAnnotation(Builtin.class);

@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import java.util.List;
+
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -67,31 +70,45 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNative
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
+import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
@@ -104,6 +121,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -1185,4 +1203,133 @@ public abstract class CExtNodes {
         }
     }
 
+    public static class MayRaiseNodeFactory<T extends PythonBuiltinBaseNode> implements NodeFactory<T> {
+        private final T node;
+
+        public MayRaiseNodeFactory(T node) {
+            this.node = node;
+        }
+
+        public T createNode(Object... arguments) {
+            return NodeUtil.cloneNode(node);
+        }
+
+        @SuppressWarnings("unchecked")
+        public Class<T> getNodeClass() {
+            return (Class<T>) node.getClass();
+        }
+
+        public List<List<Class<?>>> getNodeSignatures() {
+            throw new IllegalAccessError();
+        }
+
+        public List<Class<? extends Node>> getExecutionSignature() {
+            throw new IllegalAccessError();
+        }
+    }
+
+    @Builtin(fixedNumOfPositionalArgs = 1)
+    public static abstract class MayRaiseUnaryNode extends PythonUnaryBuiltinNode {
+        @Child private CreateArgumentsNode createArgsNode;
+        @Child private InvokeNode invokeNode;
+        private final Object errorResult;
+
+        public MayRaiseUnaryNode(PFunction func, Object errorResult) {
+            this.createArgsNode = CreateArgumentsNode.create();
+            this.invokeNode = InvokeNode.create(func);
+            this.errorResult = errorResult;
+        }
+
+        @Specialization
+        Object doit(Object argument) {
+            try {
+                Object[] arguments = createArgsNode.execute(argument);
+                return invokeNode.execute(null, arguments, new PKeyword[0]);
+            } catch (PException e) {
+                getContext().setCurrentException(e);
+                return errorResult;
+            }
+        }
+    }
+
+    @Builtin(fixedNumOfPositionalArgs = 2)
+    public static abstract class MayRaiseBinaryNode extends PythonBinaryBuiltinNode {
+        @Child private CreateArgumentsNode createArgsNode;
+        @Child private InvokeNode invokeNode;
+        private final Object errorResult;
+
+        public MayRaiseBinaryNode(PFunction func, Object errorResult) {
+            this.createArgsNode = CreateArgumentsNode.create();
+            this.invokeNode = InvokeNode.create(func);
+            this.errorResult = errorResult;
+        }
+
+        @Specialization
+        Object doit(Object arg1, Object arg2) {
+            try {
+                Object[] arguments = createArgsNode.execute(arg1, arg2);
+                return invokeNode.execute(null, arguments, new PKeyword[0]);
+            } catch (PException e) {
+                getContext().setCurrentException(e);
+                return errorResult;
+            }
+        }
+    }
+
+    @Builtin(fixedNumOfPositionalArgs = 3)
+    public static abstract class MayRaiseTernaryNode extends PythonTernaryBuiltinNode {
+        @Child private CreateArgumentsNode createArgsNode;
+        @Child private InvokeNode invokeNode;
+        private final Object errorResult;
+
+        public MayRaiseTernaryNode(PFunction func, Object errorResult) {
+            this.createArgsNode = CreateArgumentsNode.create();
+            this.invokeNode = InvokeNode.create(func);
+            this.errorResult = errorResult;
+        }
+
+        @Specialization
+        Object doit(Object arg1, Object arg2, Object arg3) {
+            try {
+                Object[] arguments = createArgsNode.execute(arg1, arg2, arg3);
+                return invokeNode.execute(null, arguments, new PKeyword[0]);
+            } catch (PException e) {
+                getContext().setCurrentException(e);
+                return errorResult;
+            }
+        }
+    }
+
+    @Builtin(takesVarArgs = true)
+    public static class MayRaiseNode extends PythonBuiltinNode {
+        @Child private InvokeNode invokeNode;
+        @Child private ReadVarArgsNode readVarargsNode;
+        @Child private CreateArgumentsNode createArgsNode;
+        @Child private PythonObjectFactory factory;
+        private final Object errorResult;
+
+        public MayRaiseNode(PythonCallable callable, Object errorResult) {
+            this.readVarargsNode = ReadVarArgsNode.create(0, true);
+            this.createArgsNode = CreateArgumentsNode.create();
+            this.invokeNode = InvokeNode.create(callable);
+            this.errorResult = errorResult;
+        }
+
+        @Override
+        public final Object execute(VirtualFrame frame) {
+            Object[] args = readVarargsNode.executeObjectArray(frame);
+            try {
+                Object[] arguments = createArgsNode.execute(args);
+                return invokeNode.execute(null, arguments, new PKeyword[0]);
+            } catch (PException e) {
+                getContext().setCurrentException(e);
+                return errorResult;
+            }
+        }
+
+        @Override
+        protected ReadArgumentNode[] getArguments() {
+            throw new IllegalAccessError();
+        }
+    }
 }
