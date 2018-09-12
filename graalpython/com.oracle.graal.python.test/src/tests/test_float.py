@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import unittest
+import os, sys
 
 from math import isnan, copysign, ldexp
 
@@ -665,3 +666,147 @@ class RealImagConjugateTests(unittest.TestCase):
         self.assertRaises(ValueError, MyFloat('nan').__trunc__)
         self.assertRaises(OverflowError, MyFloat('inf').__trunc__)
         self.assertRaises(OverflowError, MyFloat('-inf').__trunc__)
+
+#locate file with float format test values
+test_dir = os.path.dirname(__file__) or os.curdir
+format_testfile = os.path.join(test_dir, 'formatfloat_testcases.txt')
+
+class FormatTests(unittest.TestCase):
+
+    def test_format(self):
+        # these should be rewritten to use both format(x, spec) and
+        # x.__format__(spec)
+
+        self.assertEqual(format(0.0, 'f'), '0.000000')
+
+        # the default is 'g', except for empty format spec
+        self.assertEqual(format(0.0, ''), '0.0')
+        self.assertEqual(format(0.01, ''), '0.01')
+        self.assertEqual(format(0.01, 'g'), '0.01')
+
+        # empty presentation type should format in the same way as str
+        # (issue 5920)
+        x = 100/7.
+        
+        self.assertEqual(format(x, ''), str(x))
+        self.assertEqual(format(x, '-'), str(x))
+        self.assertEqual(format(x, '>'), str(x))
+        self.assertEqual(format(x, '2'), str(x))
+        
+        self.assertEqual(format(1.0, 'f'), '1.000000')
+
+        self.assertEqual(format(-1.0, 'f'), '-1.000000')
+
+        self.assertEqual(format( 1.0, ' f'), ' 1.000000')
+        self.assertEqual(format(-1.0, ' f'), '-1.000000')
+        self.assertEqual(format( 1.0, '+f'), '+1.000000')
+        self.assertEqual(format(-1.0, '+f'), '-1.000000')
+        
+        # % formatting
+        self.assertEqual(format(-1.0, '%'), '-100.000000%')
+
+        # conversion to string should fail
+        self.assertRaises(ValueError, format, 3.0, "s")
+
+        # other format specifiers shouldn't work on floats,
+        #  in particular int specifiers
+        for format_spec in ([chr(x) for x in range(ord('a'), ord('z')+1)] +
+                            [chr(x) for x in range(ord('A'), ord('Z')+1)]):
+            
+            if not format_spec in 'eEfFgGn%rN':
+                self.assertRaises(ValueError, format, 0.0, format_spec)
+                self.assertRaises(ValueError, format, 1.0, format_spec)
+                self.assertRaises(ValueError, format, -1.0, format_spec)
+                self.assertRaises(ValueError, format, 1e100, format_spec)
+                self.assertRaises(ValueError, format, -1e100, format_spec)
+                self.assertRaises(ValueError, format, 1e-100, format_spec)
+                self.assertRaises(ValueError, format, -1e-100, format_spec)
+
+        # issue 3382
+        self.assertEqual(format(NAN, 'f'), 'nan')
+        self.assertEqual(format(NAN, 'F'), 'NAN')
+        self.assertEqual(format(INF, 'f'), 'inf')
+        self.assertEqual(format(INF, 'F'), 'INF')
+    
+    def test_format_testfile(self):
+        with open(format_testfile) as testfile:
+            for line in testfile:
+                if line.startswith('--'):
+                    continue
+                line = line.strip()
+                if not line:
+                    continue
+
+                lhs, rhs = map(str.strip, line.split('->'))
+                fmt, arg = lhs.split()
+                self.assertEqual(fmt % float(arg), rhs)
+                self.assertEqual(fmt % -float(arg), '-' + rhs)
+
+    def test_issue5864(self):
+        self.assertEqual(format(123.456, '.4'), '123.5')
+        self.assertEqual(format(1234.56, '.4'), '1.235e+03')
+        self.assertEqual(format(12345.6, '.4'), '1.235e+04')
+
+class ReprTests(unittest.TestCase):
+    def test_repr(self):
+        floats_file = open(os.path.join(os.path.split(__file__)[0],
+                           'floating_points.txt'))
+        for line in floats_file:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            v = eval(line)
+            self.assertEqual(v, eval(repr(v)))
+        floats_file.close()
+
+    @unittest.skipUnless(getattr(sys, 'float_repr_style', '') == 'short',
+                         "applies only when using short float repr style")
+    def test_short_repr(self):
+        # test short float repr introduced in Python 3.1.  One aspect
+        # of this repr is that we get some degree of str -> float ->
+        # str roundtripping.  In particular, for any numeric string
+        # containing 15 or fewer significant digits, those exact same
+        # digits (modulo trailing zeros) should appear in the output.
+        # No more repr(0.03) -> "0.029999999999999999"!
+
+        test_strings = [
+            # output always includes *either* a decimal point and at
+            # least one digit after that point, or an exponent.
+            '0.0',
+            '1.0',
+            '0.01',
+            '0.02',
+            '0.03',
+            '0.04',
+            '0.05',
+            '1.23456789',
+            '10.0',
+            '100.0',
+            # values >= 1e16 get an exponent...
+            '1000000000000000.0',
+            '9999999999999990.0',
+            '1e+16',
+            '1e+17',
+            # ... and so do values < 1e-4
+            '0.001',
+            '0.001001',
+            '0.00010000000000001',
+            '0.0001',
+            '9.999999999999e-05',
+            '1e-05',
+            # values designed to provoke failure if the FPU rounding
+            # precision isn't set correctly
+            '8.72293771110361e+25',
+            '7.47005307342313e+26',
+            '2.86438000439698e+28',
+            '8.89142905246179e+28',
+            '3.08578087079232e+35',
+            ]
+
+        for s in test_strings:
+            negs = '-'+s
+            self.assertEqual(s, repr(float(s)))
+            self.assertEqual(negs, repr(float(negs)))
+            # Since Python 3.2, repr and str are identical
+            self.assertEqual(repr(float(s)), str(float(s)))
+            self.assertEqual(repr(float(negs)), str(float(negs)))

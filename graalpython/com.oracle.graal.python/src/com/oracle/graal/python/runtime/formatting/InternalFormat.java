@@ -505,7 +505,7 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public PException unknownFormat(char code, String forType) {
+        public static PException unknownFormat(PythonCore core, char code, String forType) {
             return core.raise(ValueError, "Unknown format code '%c' for object of type '%s'", code, forType);
         }
 
@@ -516,8 +516,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public PException alternateFormNotAllowed(String forType) {
-            return alternateFormNotAllowed(forType, '\0');
+        public static PException alternateFormNotAllowed(PythonCore core, String forType) {
+            return alternateFormNotAllowed(core, forType, '\0');
         }
 
         /**
@@ -528,8 +528,8 @@ public class InternalFormat {
          * @param code the formatting code (or '\0' not to mention one)
          * @return exception to throw
          */
-        public PException alternateFormNotAllowed(String forType, char code) {
-            return notAllowed("Alternate form (#)", forType, code);
+        public static PException alternateFormNotAllowed(PythonCore core, String forType, char code) {
+            return notAllowed(core, "Alternate form (#)", forType, code);
         }
 
         /**
@@ -540,8 +540,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public PException alignmentNotAllowed(char align, String forType) {
-            return notAllowed("'" + align + "' alignment flag", forType, '\0');
+        public static PException alignmentNotAllowed(PythonCore core, char align, String forType) {
+            return notAllowed(core, "'" + align + "' alignment flag", forType, '\0');
         }
 
         /**
@@ -552,8 +552,8 @@ public class InternalFormat {
          * @param code the formatting code (or '\0' not to mention one)
          * @return exception to throw
          */
-        public PException signNotAllowed(String forType, char code) {
-            return notAllowed("Sign", forType, code);
+        public static PException signNotAllowed(PythonCore core, String forType, char code) {
+            return notAllowed(core, "Sign", forType, code);
         }
 
         /**
@@ -563,8 +563,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public PException precisionNotAllowed(String forType) {
-            return notAllowed("Precision", forType, '\0');
+        public static PException precisionNotAllowed(PythonCore core, String forType) {
+            return notAllowed(core, "Precision", forType, '\0');
         }
 
         /**
@@ -574,8 +574,8 @@ public class InternalFormat {
          * @param forType the type it was found applied to
          * @return exception to throw
          */
-        public PException zeroPaddingNotAllowed(String forType) {
-            return notAllowed("Zero padding", forType, '\0');
+        public static PException zeroPaddingNotAllowed(PythonCore core, String forType) {
+            return notAllowed(core, "Zero padding", forType, '\0');
         }
 
         /**
@@ -586,8 +586,8 @@ public class InternalFormat {
          * @param forType the data type (e.g. "integer") it where it is an outrage
          * @return exception to throw
          */
-        public PException notAllowed(String outrage, String forType) {
-            return notAllowed(outrage, forType, '\0');
+        public static PException notAllowed(PythonCore core, String outrage, String forType) {
+            return notAllowed(core, outrage, forType, '\0');
         }
 
         /**
@@ -603,7 +603,7 @@ public class InternalFormat {
          * @param code the formatting code for which it is an outrage (or '\0' not to mention one)
          * @return exception to throw
          */
-        public PException notAllowed(String outrage, String forType, char code) {
+        public static PException notAllowed(PythonCore core, String outrage, String forType, char code) {
             // Try really hard to be like CPython
             String codeAsString, withOrIn;
             if (code == 0) {

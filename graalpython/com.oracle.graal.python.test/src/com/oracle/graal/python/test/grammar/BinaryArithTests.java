@@ -110,7 +110,7 @@ public class BinaryArithTests {
                         "d = 2 ** 4\n" + //
                         "e = 2.5 ** 3.0\n" + //
                         "print(a,b,c,d,e)\n";
-        assertPrints("1.07343919141098688e+17 1.07343919141098675e+18 -8.21361754992e+11 16 15.625\n", source);
+        assertPrints("1.0734391914109869e+17 1.0734391914109868e+18 -821361754992.0 16 15.625\n", source);
     }
 
     @Test
