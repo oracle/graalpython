@@ -143,9 +143,6 @@ public abstract class ExpressionNode extends PNode {
             this.node = node;
             this.sideEffect = sideEffect;
             SourceSection sourceSection = node.getSourceSection();
-            if (sourceSection == null) {
-                sourceSection = sideEffect.getSourceSection();
-            }
             this.assignSourceSection(sourceSection);
         }
 
