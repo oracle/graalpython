@@ -155,14 +155,14 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object callObjectSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
+    Object callMethodSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @Cached("getUnary(func.getFunction())") PythonUnaryBuiltinNode builtinNode) {
         return builtinNode.execute(receiver);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    Object callObjectSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object arg,
+    Object callSelfMethodSingleContext(@SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("func.getArity().takesFixedNumOfPositionalArgs()") boolean isFixed,
                     @Cached("getBinary(func.getFunction())") PythonBinaryBuiltinNode builtinNode) {
@@ -170,14 +170,14 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object call(@SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
+    Object callMethod(@SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @Cached("getUnary(func.getFunction())") PythonUnaryBuiltinNode builtinNode) {
         return builtinNode.execute(receiver);
     }
 
     @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null", "isFixed"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object call(@SuppressWarnings("unused") PBuiltinMethod func, Object arg,
+    Object callSelfMethod(@SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
                     @SuppressWarnings("unused") @Cached("func.getArity().takesFixedNumOfPositionalArgs()") boolean isFixed,
                     @Cached("getBinary(func.getFunction())") PythonBinaryBuiltinNode builtinNode) {
