@@ -42,8 +42,9 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public interface GlobalNode {
@@ -51,8 +52,13 @@ public interface GlobalNode {
         return PArguments.getGlobals(frame) instanceof PythonModule;
     }
 
+    default boolean isInBuiltinDict(VirtualFrame frame) {
+        Object globals = PArguments.getGlobals(frame);
+        return globals instanceof PDict && PGuards.isPythonBuiltinClass(((PythonObject) globals).getPythonClass());
+    }
+
     default boolean isInDict(VirtualFrame frame) {
         Object globals = PArguments.getGlobals(frame);
-        return globals instanceof PDict || globals instanceof PMappingproxy;
+        return globals instanceof PDict;
     }
 }
