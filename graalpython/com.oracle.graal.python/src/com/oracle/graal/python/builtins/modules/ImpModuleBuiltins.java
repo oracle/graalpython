@@ -57,8 +57,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -213,7 +213,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     ((PythonObject) result).setAttribute(__FILE__, path);
                     // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
                     PDict sysModules = getContext().getSysModules();
-                    sysModules.setDictStorage(getSetItemNode().execute(sysModules.getDictStorage(), name, result));
+                    getSetItemNode().execute(sysModules, name, result);
                     return result;
                 }
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {

@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -727,7 +728,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FrozenSetNode extends PythonBuiltinNode {
 
-        @Child private HashingStorageNodes.SetItemNode setItemNode;
+        @Child private HashingCollectionNodes.SetItemNode setItemNode;
 
         @Specialization(guards = "isNoValue(arg)")
         public PFrozenSet frozensetEmpty(PythonClass cls, @SuppressWarnings("unused") PNone arg) {
@@ -739,7 +740,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFrozenSet frozenset(PythonClass cls, String arg) {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             for (int i = 0; i < arg.length(); i++) {
-                frozenSet.setDictStorage(getSetItemNode().execute(frozenSet.getDictStorage(), String.valueOf(arg.charAt(i)), PNone.NO_VALUE));
+                getSetItemNode().execute(frozenSet, String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
             }
             return frozenSet;
         }
@@ -755,7 +756,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             while (true) {
                 try {
-                    frozenSet.setDictStorage(getSetItemNode().execute(frozenSet.getDictStorage(), next.execute(iterator), PNone.NO_VALUE));
+                    getSetItemNode().execute(frozenSet, next.execute(iterator), PNone.NO_VALUE);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
                     return frozenSet;
@@ -763,10 +764,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private HashingStorageNodes.SetItemNode getSetItemNode() {
+        private HashingCollectionNodes.SetItemNode getSetItemNode() {
             if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
+                setItemNode = insert(HashingCollectionNodes.SetItemNode.create());
             }
             return setItemNode;
         }

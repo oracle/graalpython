@@ -40,8 +40,7 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -100,38 +99,38 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
 
     public abstract void executeWithValue(VirtualFrame frame, Object value);
 
-    private static HashingStorage getDictStorage(VirtualFrame frame) {
-        return ((PDict) PArguments.getGlobals(frame)).getDictStorage();
+    private static PDict getGlobalsDict(VirtualFrame frame) {
+        return (PDict) PArguments.getGlobals(frame);
     }
 
     @Specialization(guards = "isInBuiltinDict(frame)")
     void writeDictBoolean(VirtualFrame frame, boolean value,
-                    @Cached("create()") HashingStorageNodes.SetItemNode storeNode) {
-        storeNode.execute(getDictStorage(frame), attributeId, value);
+                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
+        storeNode.execute(getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(guards = "isInBuiltinDict(frame)")
     void writeDictInt(VirtualFrame frame, int value,
-                    @Cached("create()") HashingStorageNodes.SetItemNode storeNode) {
-        storeNode.execute(getDictStorage(frame), attributeId, value);
+                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
+        storeNode.execute(getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(guards = "isInBuiltinDict(frame)")
     void writeDictLong(VirtualFrame frame, long value,
-                    @Cached("create()") HashingStorageNodes.SetItemNode storeNode) {
-        storeNode.execute(getDictStorage(frame), attributeId, value);
+                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
+        storeNode.execute(getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(guards = "isInBuiltinDict(frame)")
     void writeDictDouble(VirtualFrame frame, double value,
-                    @Cached("create()") HashingStorageNodes.SetItemNode storeNode) {
-        storeNode.execute(getDictStorage(frame), attributeId, value);
+                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
+        storeNode.execute(getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(replaces = {"writeDictBoolean", "writeDictInt", "writeDictLong", "writeDictDouble"}, guards = "isInBuiltinDict(frame)")
     void writeDictObject(VirtualFrame frame, Object value,
-                    @Cached("create()") HashingStorageNodes.SetItemNode storeNode) {
-        storeNode.execute(getDictStorage(frame), attributeId, value);
+                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
+        storeNode.execute(getGlobalsDict(frame), attributeId, value);
     }
 
     @Specialization(replaces = {"writeDictBoolean", "writeDictInt", "writeDictLong", "writeDictDouble", "writeDictObject"}, guards = "isInDict(frame)")
