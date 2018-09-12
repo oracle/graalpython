@@ -1246,6 +1246,7 @@ public abstract class CExtNodes {
                 Object[] arguments = createArgsNode.execute(argument);
                 return invokeNode.execute(null, arguments, new PKeyword[0]);
             } catch (PException e) {
+                // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
                 return errorResult;
             }
@@ -1270,6 +1271,7 @@ public abstract class CExtNodes {
                 Object[] arguments = createArgsNode.execute(arg1, arg2);
                 return invokeNode.execute(null, arguments, new PKeyword[0]);
             } catch (PException e) {
+                // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
                 return errorResult;
             }
@@ -1294,6 +1296,7 @@ public abstract class CExtNodes {
                 Object[] arguments = createArgsNode.execute(arg1, arg2, arg3);
                 return invokeNode.execute(null, arguments, new PKeyword[0]);
             } catch (PException e) {
+                // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
                 return errorResult;
             }
@@ -1322,6 +1325,7 @@ public abstract class CExtNodes {
                 Object[] arguments = createArgsNode.execute(args);
                 return invokeNode.execute(null, arguments, new PKeyword[0]);
             } catch (PException e) {
+                // getContext() acts as a branch profile
                 getContext().setCurrentException(e);
                 return errorResult;
             }
