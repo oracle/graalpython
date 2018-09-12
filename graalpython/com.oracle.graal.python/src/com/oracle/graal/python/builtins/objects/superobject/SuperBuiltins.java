@@ -328,7 +328,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__GETATTRIBUTE__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonBinaryBuiltinNode {
+    public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
         @Child ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
         @Child LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
         @Child CallTernaryMethodNode callGet;
