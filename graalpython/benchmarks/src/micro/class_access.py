@@ -37,3 +37,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+class Foo(object):
+    pass
+
+
+class Bar(Foo):
+    pass
+
+
+def do_stuff(foo, bar, baz):
+    for i in range(50000):
+        type(foo)
+        type(bar)
+        type(baz)
+
+    return type(foo), type(bar), type(baz)
+
+
+def measure(num):
+    for i in range(num):
+        if i % 3 == 0:
+            result = do_stuff(Foo(), Bar(), {})
+        elif i % 3 == 1:
+            result = do_stuff(Bar(), Foo(), {})
+        else:
+            result = do_stuff({}, Foo(), Bar())
+
+    print(result)
+
+
+def __benchmark__(num=5000):
+    measure(num)

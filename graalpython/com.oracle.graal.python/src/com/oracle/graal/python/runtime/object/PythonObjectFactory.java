@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -185,6 +186,10 @@ public final class PythonObjectFactory extends Node {
 
     public PythonNativeObject createNativeObjectWrapper(Object obj) {
         return trace(new PythonNativeObject(obj));
+    }
+
+    public SuperObject createSuperObject(PythonClass self) {
+        return trace(new SuperObject(self));
     }
 
     /*

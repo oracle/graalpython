@@ -37,3 +37,47 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+class Foo(object):
+    def __init__(self, a):
+        self.a = a
+
+    def get_number(self):
+        return self.a
+
+    def set_number(self, number):
+        self.a = number
+
+
+class Bar(Foo):
+    def __init__(self, b):
+        super(Bar, self).__init__(b)
+        self.b = b
+
+    def get_number(self):
+        return self.b
+
+    def set_number(self, number):
+        self.b = number
+
+    def get_super(self):
+        return super()
+
+
+def do_stuff(bar):
+    foobar = bar.get_super()
+    for i in range(50000):
+        local_number = foobar.get_number() + 1
+        foobar.set_number(local_number)
+
+    return foobar.get_number(), bar.get_number()
+
+
+def measure(num):
+    for i in range(num):
+        result = do_stuff(Bar(42))
+
+    print(result)
+
+
+def __benchmark__(num=5000):
+    measure(num)

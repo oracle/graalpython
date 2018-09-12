@@ -716,10 +716,10 @@ def update_import_cmd(args):
                 join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
                 join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
             )
-        # make sure that truffle and regex are the same version
-        elif name == "regex":
-            update_import("truffle", callback=callback)
-        elif name == "truffle":
+        # make sure that sulong and regex are the same version
+        if name == "regex":
+            update_import("sulong", callback=callback)
+        elif name == "sulong":
             update_import("regex", callback=callback)
         update_import(name, callback=callback)
 

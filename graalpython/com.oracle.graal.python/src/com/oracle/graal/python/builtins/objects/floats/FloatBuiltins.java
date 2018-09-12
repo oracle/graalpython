@@ -122,6 +122,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         public static StrNode create() {
             return FloatBuiltinsFactory.StrNodeFactory.create();
         }
+
+        @Specialization(guards = "getFloat.isSubtype(object)", limit = "1")
+        String doNativeFloat(PythonNativeObject object,
+                        @SuppressWarnings("unused") @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            return PFloat.doubleToString(getFloat.execute(object));
+        }
     }
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
@@ -278,6 +284,28 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization
         double doDPi(double left, PInt right) {
             return left + right.doubleValue();
+        }
+
+        @Specialization
+        Object doDP(PythonNativeObject left, long right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            Double leftPrimitive = getFloat.execute(left);
+            if (leftPrimitive != null) {
+                return leftPrimitive + right;
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
+        }
+
+        @Specialization
+        Object doDP(PythonNativeObject left, double right,
+                        @Cached("nativeFloat()") FromNativeSubclassNode<Double> getFloat) {
+            Double leftPrimitive = getFloat.execute(left);
+            if (leftPrimitive != null) {
+                return leftPrimitive + right;
+            } else {
+                return PNotImplemented.NOT_IMPLEMENTED;
+            }
         }
 
         @SuppressWarnings("unused")

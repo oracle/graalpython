@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -74,8 +75,8 @@ public final class SetBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object add(PSet self, Object o,
-                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-            self.setDictStorage(setItemNode.execute(self.getDictStorage(), o, PNone.NO_VALUE));
+                        @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
+            setItemNode.execute(self, o, PNone.NO_VALUE);
             return PNone.NONE;
         }
     }

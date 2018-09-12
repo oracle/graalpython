@@ -37,45 +37,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-def make_super_class():
-    import sys
+
+def __repr__(self):
+    obj_type = object.__getattribute__(self, "__self_class__")
+    typ = object.__getattribute__(self, "__thisclass__")
+    obj = object.__getattribute__(self, "__self__")
+    if obj_type is not None:
+        return "<super: %s, <%s object>>" % (typ if typ else "<class 'NULL'>", obj_type.__name__)
+    else:
+        return "<super: %s, NULL>" % (typ if typ else "<class 'NULL'>")
 
 
-    class super(object):
-        def __get__(self, obj, type=None):
-            if object.__getattribute__(self, "__obj__") is None and obj is not None:
-                return super(object.__getattribute__(self, "__type__"), obj)
-            else:
-                return self
-
-        def __getattribute__(self, attr):
-            obj = object.__getattribute__(self, "__obj__")
-            typ = object.__getattribute__(self, "__type__")
-            if isinstance(obj, typ):
-                start_type = obj.__class__
-            else:
-                start_type = obj
-            mro = iter(start_type.__mro__)
-            found_start = False
-            for cls in mro:
-                if cls is typ:
-                    found_start = True
-                elif found_start:
-                    if attr in cls.__dict__:
-                        x = cls.__dict__[attr]
-                        if hasattr(x, "__get__"):
-                            x = x.__get__(obj, typ)
-                        return x
-            raise AttributeError(attr)
-
-        def __repr__(self):
-            obj = object.__getattribute__(self, "__obj__")
-            typ = object.__getattribute__(self, "__type__")
-            return '<super: %s, %s>' % (typ, obj)
-
-    super.__init__ = sys.__super__init__
-    del sys.__super__init__
-    return super
-
-
-super = make_super_class()
+super.__repr__ = __repr__

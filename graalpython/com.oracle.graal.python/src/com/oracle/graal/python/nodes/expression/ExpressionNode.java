@@ -49,6 +49,7 @@ import com.oracle.truffle.api.instrumentation.StandardTags.ExpressionTag;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.source.SourceSection;
 
 /**
  * Base class for all expressions. Expressions always return a value.
@@ -141,7 +142,8 @@ public abstract class ExpressionNode extends PNode {
         private ExpressionWithSideEffects(ExpressionNode node, StatementNode sideEffect) {
             this.node = node;
             this.sideEffect = sideEffect;
-            this.assignSourceSection(node.getSourceSection());
+            SourceSection sourceSection = node.getSourceSection();
+            this.assignSourceSection(sourceSection);
         }
 
         @Override

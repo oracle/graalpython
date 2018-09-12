@@ -29,7 +29,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -52,6 +55,8 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
+    @Child private HashingStorageNodes.GetItemNode getHashingItemNode;
+    @Child private GetItemNode readFromDictNode;
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;
@@ -72,28 +77,31 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
         return returnGlobalOrBuiltin(result);
     }
 
+    @Specialization(guards = "isInBuiltinDict(frame)")
+    protected Object readGlobalDict(VirtualFrame frame,
+                    @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+        PythonObject globals = PArguments.getGlobals(frame);
+        Object result = getItemNode.execute(((PDict) globals).getDictStorage(), attributeId);
+        return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result);
+    }
+
     @Specialization(guards = "isInDict(frame)", rewriteOn = PException.class)
     protected Object readGlobalDict(VirtualFrame frame,
-                    @Cached("create()") GetItemNode readFromDictNode) {
-        Object result = readFromDictNode.execute(PArguments.getGlobals(frame), attributeId);
-        return returnGlobalOrBuiltin(result);
+                    @Cached("create()") GetItemNode getItemNode) {
+        return returnGlobalOrBuiltin(getItemNode.execute(PArguments.getGlobals(frame), attributeId));
     }
 
     @Specialization(guards = "isInDict(frame)")
     protected Object readGlobalDictWithException(VirtualFrame frame,
-                    @Cached("create()") GetItemNode readFromDictNode,
+                    @Cached("create()") GetItemNode getItemNode,
                     @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
         try {
-            Object result = readFromDictNode.execute(PArguments.getGlobals(frame), attributeId);
+            Object result = getItemNode.execute(PArguments.getGlobals(frame), attributeId);
             return returnGlobalOrBuiltin(result);
         } catch (PException e) {
             e.expect(KeyError, getCore(), errorProfile);
             return returnGlobalOrBuiltin(PNone.NO_VALUE);
         }
-    }
-
-    public Object readGlobal(Object globals) {
-        return returnGlobalOrBuiltin(globals);
     }
 
     private Object returnGlobalOrBuiltin(Object result) {

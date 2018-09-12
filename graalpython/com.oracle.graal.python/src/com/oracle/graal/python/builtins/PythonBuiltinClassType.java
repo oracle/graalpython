@@ -89,6 +89,7 @@ public enum PythonBuiltinClassType {
     PythonModule(com.oracle.graal.python.builtins.objects.module.PythonModule.class, "module"),
     PythonObject(com.oracle.graal.python.builtins.objects.object.PythonObject.class, "object"),
     PythonNativeObject(com.oracle.graal.python.builtins.objects.cext.PythonNativeObject.class, "object"),
+    Super(com.oracle.graal.python.builtins.objects.superobject.SuperObject.class, "super"),
     PCode(com.oracle.graal.python.builtins.objects.code.PCode.class, "code"),
     PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip"),
     PBuffer(com.oracle.graal.python.builtins.objects.memoryview.PBuffer.class, "buffer");

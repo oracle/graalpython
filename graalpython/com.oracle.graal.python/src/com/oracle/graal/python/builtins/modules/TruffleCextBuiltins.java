@@ -68,6 +68,14 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseBinaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseNodeFactory;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseTernaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.MayRaiseUnaryNode;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseBinaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseTernaryNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MayRaiseUnaryNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.HandleCache;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassInitNativeWrapper;
@@ -89,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -103,20 +112,22 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
+import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -151,6 +162,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1764,47 +1776,53 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
-        static class MayRaiseWrapper extends RootNode {
-            @Child private InvokeNode invokeNode;
-            @Child private ReadVarArgsNode readVarargsNode;
-            @Child private CreateArgumentsNode createArgsNode;
-            @Child private PythonObjectFactory factory;
-            private final Object errorResult;
-
-            @TruffleBoundary
-            protected MayRaiseWrapper(PythonLanguage language, PythonObjectFactory factory, PythonCallable callable, Object errorResult) {
-                super(language);
-                this.factory = factory;
-                this.readVarargsNode = ReadVarArgsNode.create(0, true);
-                this.createArgsNode = CreateArgumentsNode.create();
-                this.invokeNode = InvokeNode.create(callable);
-                this.errorResult = errorResult;
-            }
-
-            @Override
-            public boolean isCloningAllowed() {
-                return true;
-            }
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                Object[] args = readVarargsNode.executeObjectArray(frame);
-                try {
-                    Object[] arguments = createArgsNode.execute(args);
-                    return invokeNode.execute(null, arguments, new PKeyword[0]);
-                } catch (PException e) {
-                    PythonContext context = factory.getCore().getContext();
-                    context.setCurrentException(e);
-                    return errorResult;
-                }
-            }
-        }
+        private static final Builtin unaryBuiltin = MayRaiseUnaryNode.class.getAnnotation(Builtin.class);
+        private static final Builtin binaryBuiltin = MayRaiseBinaryNode.class.getAnnotation(Builtin.class);
+        private static final Builtin ternaryBuiltin = MayRaiseTernaryNode.class.getAnnotation(Builtin.class);
+        private static final Builtin varargsBuiltin = MayRaiseNode.class.getAnnotation(Builtin.class);
 
         @Specialization
-        Object make(PythonCallable func, Object errorResult) {
+        Object make(PFunction func, Object errorResult) {
             CompilerDirectives.transferToInterpreter();
-            return factory().createBuiltinFunction(func.getName(), null, func.getArity(),
-                            Truffle.getRuntime().createCallTarget(new MayRaiseWrapper(getRootNode().getLanguage(PythonLanguage.class), factory(), func, errorResult)));
+            func.getFunctionRootNode().accept(new NodeVisitor() {
+                public boolean visit(Node node) {
+                    if (node instanceof PythonCallNode) {
+                        node.replace(((PythonCallNode) node).asSpecialCall());
+                    }
+                    return true;
+                }
+            });
+
+            RootNode rootNode = null;
+            Arity arity = func.getArity();
+            if (arity.takesFixedNumOfPositionalArgs()) {
+                switch (arity.getMinNumOfArgs()) {
+                    case 1:
+                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), unaryBuiltin,
+                                        new MayRaiseNodeFactory<PythonUnaryBuiltinNode>(MayRaiseUnaryNodeGen.create(func, errorResult)),
+                                        true);
+                        break;
+                    case 2:
+                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), binaryBuiltin,
+                                        new MayRaiseNodeFactory<PythonBinaryBuiltinNode>(MayRaiseBinaryNodeGen.create(func, errorResult)),
+                                        true);
+                        break;
+                    case 3:
+                        rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), ternaryBuiltin,
+                                        new MayRaiseNodeFactory<PythonTernaryBuiltinNode>(MayRaiseTernaryNodeGen.create(func, errorResult)),
+                                        true);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            if (rootNode == null) {
+                rootNode = new BuiltinFunctionRootNode(getRootNode().getLanguage(PythonLanguage.class), varargsBuiltin,
+                                new MayRaiseNodeFactory<PythonBuiltinNode>(new MayRaiseNode(func, errorResult)),
+                                true);
+            }
+
+            return factory().createBuiltinFunction(func.getName(), null, arity, Truffle.getRuntime().createCallTarget(rootNode));
         }
     }
 

@@ -38,27 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.frame;
+package com.oracle.graal.python.builtins.objects.superobject;
 
-import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.Truffle;
 
-public interface GlobalNode {
-    default boolean isInModule(VirtualFrame frame) {
-        return PArguments.getGlobals(frame) instanceof PythonModule;
+public class SuperObject extends PythonBuiltinObject {
+    private final Assumption neverReinitialized = Truffle.getRuntime().createAssumption("super object was never reinitialized");
+    private Object type;
+    private PythonClass objecttype;
+    private Object object;
+
+    public SuperObject(PythonClass cls) {
+        super(cls);
     }
 
-    default boolean isInBuiltinDict(VirtualFrame frame) {
-        Object globals = PArguments.getGlobals(frame);
-        return globals instanceof PDict && PGuards.isPythonBuiltinClass(((PythonObject) globals).getPythonClass());
+    public void init(Object newType, PythonClass newObjecttype, Object newObject) {
+        if (this.type != null) {
+            neverReinitialized.invalidate();
+        }
+        this.type = newType;
+        this.objecttype = newObjecttype;
+        this.object = newObject;
     }
 
-    default boolean isInDict(VirtualFrame frame) {
-        Object globals = PArguments.getGlobals(frame);
-        return globals instanceof PDict;
+    public PythonClass getObjectType() {
+        return objecttype;
+    }
+
+    public Object getType() {
+        return type;
+    }
+
+    public Object getObject() {
+        return object;
+    }
+
+    public Assumption getNeverReinitializedAssumption() {
+        return neverReinitialized;
     }
 }

@@ -67,10 +67,12 @@ MICRO_BENCHMARKS = {
     'arith-modulo': ITER_25 + ['50'],
     'attribute-access-polymorphic': ITER_10 + ['1000'],
     'attribute-access': ITER_25 + ['5000'],
+    'attribute_access_super': ITER_25 + ['500'],
     'attribute-bool': ITER_25 + ['3000'],
     'boolean-logic': ITER_15 + ['1000'],
     'builtin-len-tuple': ITER_10 + [],
     'builtin-len': ITER_25 + [],
+    'class_access': ITER_25 + ['1000'],
     'call-method-polymorphic': ITER_10 + ['1000'],
     'for-range': ITER_25 + ['50000'],
     'function-call': ITER_25 + [],
@@ -97,8 +99,9 @@ MICRO_BENCHMARKS = {
     'magic-iter': ITER_10 + ['10000000'],
     'c-magic-iter': ITER_10 + ['10000000'],
     'instantiation': ITER_10 + ['50000000'],
-    'c-instantiation': ITER_10 + ['50000000']
-
+    'c-instantiation': ITER_10 + ['50000000'],
+    'c_arith-binop': ITER_25 + ['5'],
+    'c_arith_binop_2': ITER_25 + ['50'],
 }
 
 

@@ -82,12 +82,19 @@ public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
         }
     }
 
+    @Specialization(guards = {"getKwargLen(frame) == cachedLen", "cachedLen == 0"}, limit = "1")
+    @ExplodeLoop
+    Object noKeywordArgs(@SuppressWarnings("unused") VirtualFrame frame,
+                    @SuppressWarnings("unused") @Cached("getAndCheckKwargLen(frame)") int cachedLen) {
+        return returnValue(PKeyword.EMPTY_KEYWORDS);
+    }
+
     @Specialization(guards = {"getKwargLen(frame) == cachedLen"}, limit = "getLimit()")
     @ExplodeLoop
     Object extractKwargs(VirtualFrame frame,
                     @Cached("getAndCheckKwargLen(frame)") int cachedLen) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
-        PKeyword[] remArguments = new PKeyword[keywordArguments.length];
+        PKeyword[] remArguments = new PKeyword[cachedLen];
         CompilerAsserts.compilationConstant(keywordNames.length);
         int i = 0;
         for (int j = 0; j < cachedLen; j++) {
