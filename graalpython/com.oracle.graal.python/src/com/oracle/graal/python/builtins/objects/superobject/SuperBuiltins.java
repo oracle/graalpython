@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -151,7 +152,8 @@ public final class SuperBuiltins extends PythonBuiltins {
         @Child private IsSubtypeNode isSubtypeNode;
         @Child private IsInstanceNode isInstanceNode;
         @Child private GetClassNode getClassNode;
-        @Child LookupAndCallBinaryNode getAttrNode;
+        @Child private LookupAndCallBinaryNode getAttrNode;
+        @Child private CellBuiltins.GetRefNode getRefNode;
 
         @Override
         public Object varArgExecute(VirtualFrame frame, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
@@ -224,7 +226,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             }
             Object cls = readClass.execute(frame);
             if (isCellProfile.profile(cls instanceof PCell)) {
-                cls = ((PCell) cls).getPythonRef();
+                cls = getRefNode().execute((PCell) cls);
             }
             if (cls == PNone.NONE) {
                 throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
@@ -265,16 +267,24 @@ public final class SuperBuiltins extends PythonBuiltins {
                 try {
                     cls = target.getObject(classSlot);
                     if (cls instanceof PCell) {
-                        cls = ((PCell) cls).getPythonRef();
+                        cls = getRefNode().execute((PCell) cls);
                     }
                 } catch (FrameSlotTypeException e) {
                     // fallthrough
                 }
             }
-            if (cls == PNone.NONE) {
+            if (cls == null) {
                 throw raise(PythonErrorType.RuntimeError, "super(): empty __class__ cell");
             }
             return init(self, cls, obj);
+        }
+
+        private CellBuiltins.GetRefNode getRefNode() {
+            if (getRefNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getRefNode = CellBuiltins.GetRefNode.create();
+            }
+            return getRefNode;
         }
 
         @SuppressWarnings("unused")

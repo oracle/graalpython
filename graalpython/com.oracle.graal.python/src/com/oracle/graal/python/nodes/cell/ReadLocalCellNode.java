@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.cell;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundLocalError;
 
+import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNodeGen.ReadFromCellNodeGen;
@@ -78,21 +79,11 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
 
         abstract Object execute(Object cell);
 
-        @Specialization(guards = "cachedCell == cell", limit = "1", assumptions = "cachedCell.isEffectivelyFinalAssumption()")
-        Object readFinal(@SuppressWarnings("unused") PCell cell,
-                        @SuppressWarnings("unused") @Cached("cell") PCell cachedCell,
-                        @Cached("cell.getRef()") Object ref) {
-            if (ref != null) {
-                return ref;
-            } else {
-                throw raiseUnbound();
-            }
-        }
-
-        @Specialization(replaces = "readFinal")
+        @Specialization
         Object read(PCell cell,
+                        @Cached("create()") CellBuiltins.GetRefNode getRef,
                         @Cached("createClassProfile()") ValueProfile refTypeProfile) {
-            Object ref = refTypeProfile.profile(cell.getRef());
+            Object ref = refTypeProfile.profile(getRef.execute(cell));
             if (ref != null) {
                 return ref;
             } else {

@@ -45,16 +45,14 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.Truffle;
 
 public class PCell extends PythonBuiltinObject {
     private final Assumption effectivelyFinal = Truffle.getRuntime().createAssumption("cell is effectively final");
-    @CompilationFinal private Object ref;
+    private Object ref;
 
     public PCell() {
         super(PythonLanguage.getCore().lookupType(PythonBuiltinClassType.PCell));
@@ -79,13 +77,6 @@ public class PCell extends PythonBuiltinObject {
 
     public Assumption isEffectivelyFinalAssumption() {
         return effectivelyFinal;
-    }
-
-    public Object getPythonRef() {
-        if (ref == null) {
-            return PNone.NONE;
-        }
-        return ref;
     }
 
     @Override

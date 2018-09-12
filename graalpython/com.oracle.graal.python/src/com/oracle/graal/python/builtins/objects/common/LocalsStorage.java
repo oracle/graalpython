@@ -69,7 +69,7 @@ public class LocalsStorage extends HashingStorage {
                 if (skipCells) {
                     return null;
                 }
-                return ((PCell) value).getPythonRef();
+                return ((PCell) value).getRef();
             }
             return value;
         }
