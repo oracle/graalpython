@@ -42,13 +42,14 @@ package com.oracle.graal.python.builtins.objects.superobject;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.Truffle;
 
 public class SuperObject extends PythonBuiltinObject {
-    @CompilationFinal private Object type;
-    @CompilationFinal private PythonClass objecttype;
-    @CompilationFinal private Object object;
+    private final Assumption neverReinitialized = Truffle.getRuntime().createAssumption("super object was never reinitialized");
+    private Object type;
+    private PythonClass objecttype;
+    private Object object;
 
     public SuperObject(PythonClass cls) {
         super(cls);
@@ -56,7 +57,7 @@ public class SuperObject extends PythonBuiltinObject {
 
     public void init(Object newType, PythonClass newObjecttype, Object newObject) {
         if (this.type != null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
+            neverReinitialized.invalidate();
         }
         this.type = newType;
         this.objecttype = newObjecttype;
@@ -73,5 +74,9 @@ public class SuperObject extends PythonBuiltinObject {
 
     public Object getObject() {
         return object;
+    }
+
+    public Assumption getNeverReinitializedAssumption() {
+        return neverReinitialized;
     }
 }

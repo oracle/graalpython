@@ -52,6 +52,9 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetObjectTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.SuperInitNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -84,6 +87,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
@@ -91,6 +95,54 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SuperBuiltinsFactory.getFactories();
+    }
+
+    abstract static class GetTypeNode extends Node {
+        abstract Object execute(SuperObject self);
+
+        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
+        Object cached(@SuppressWarnings("unused") SuperObject self,
+                        @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
+                        @Cached("self.getType()") Object type) {
+            return type;
+        }
+
+        @Specialization(replaces = "cached")
+        Object uncached(SuperObject self) {
+            return self.getType();
+        }
+    }
+
+    abstract static class GetObjectTypeNode extends Node {
+        abstract PythonClass execute(SuperObject self);
+
+        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
+        PythonClass cached(@SuppressWarnings("unused") SuperObject self,
+                        @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
+                        @Cached("self.getObjectType()") PythonClass type) {
+            return type;
+        }
+
+        @Specialization(replaces = "cached")
+        PythonClass uncached(SuperObject self) {
+            return self.getObjectType();
+        }
+    }
+
+    abstract static class GetObjectNode extends Node {
+        abstract Object execute(SuperObject self);
+
+        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.getNeverReinitializedAssumption()", limit = "1")
+        Object cached(@SuppressWarnings("unused") SuperObject self,
+                        @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
+                        @Cached("self.getObject()") Object object) {
+            return object;
+        }
+
+        @Specialization(replaces = "cached")
+        Object uncached(SuperObject self) {
+            return self.getObject();
+        }
     }
 
     @Builtin(name = SpecialMethodNames.__INIT__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, alwaysNeedsCallerFrame = true)
@@ -307,20 +359,23 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__GET__, fixedNumOfPositionalArgs = 2, keywordArguments = {"type"})
     @GenerateNodeFactory
     public abstract static class GetNode extends PythonTernaryBuiltinNode {
+        @Child GetObjectNode getObject = GetObjectNodeGen.create();
+        @Child GetTypeNode getType;
         @Child SuperInitNode superInit;
 
         @Specialization
         public Object get(SuperObject self, Object obj, @SuppressWarnings("unused") Object type) {
-            if (obj == PNone.NONE || self.getObject() != null) {
+            if (obj == PNone.NONE || getObject.execute(self) != null) {
                 // not binding to an object or already bound
                 return this;
             } else {
                 if (superInit == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     superInit = insert(SuperInitNodeFactory.create());
+                    getType = insert(GetTypeNodeGen.create());
                 }
                 SuperObject newSuper = factory().createSuperObject(self.getPythonClass());
-                superInit.execute(null, newSuper, self.getType(), obj);
+                superInit.execute(null, newSuper, getType.execute(self), obj);
                 return newSuper;
             }
         }
@@ -331,6 +386,9 @@ public final class SuperBuiltins extends PythonBuiltins {
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
         @Child ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.create();
         @Child LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
+        @Child GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
+        @Child GetTypeNode getType;
+        @Child GetObjectNode getObject;
         @Child CallTernaryMethodNode callGet;
         @Child LookupAndCallBinaryNode getAttr;
 
@@ -342,17 +400,9 @@ public final class SuperBuiltins extends PythonBuiltins {
             return getAttr.executeObject(object, attr);
         }
 
-        private CallTernaryMethodNode getCallGet() {
-            if (callGet == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callGet = insert(CallTernaryMethodNode.create());
-            }
-            return callGet;
-        }
-
         @Specialization
         public Object get(SuperObject self, Object attr) {
-            PythonClass startType = self.getObjectType();
+            PythonClass startType = getObjectType.execute(self);
             if (startType == null) {
                 return genericGetAttr(self, attr);
             }
@@ -373,12 +423,18 @@ public final class SuperBuiltins extends PythonBuiltins {
                 }
             }
 
+            // acts as a branch profile
+            if (getType == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getType = insert(GetTypeNodeGen.create());
+            }
+
             PythonClass[] mro = startType.getMethodResolutionOrder();
             /* No need to check the last one: it's gonna be skipped anyway. */
             int i = 0;
             int n = mro.length;
             for (i = 0; i + 1 < n; i++) {
-                if (self.getType() == mro[i]) {
+                if (getType.execute(self) == mro[i]) {
                     break;
                 }
             }
@@ -396,7 +452,13 @@ public final class SuperBuiltins extends PythonBuiltins {
                         /*
                          * Only pass 'obj' param if this is instance-mode super (See SF ID #743627)
                          */
-                        res = getCallGet().execute(get, res, self.getObject() == startType ? PNone.NO_VALUE : self.getObject(), startType);
+                        // acts as a branch profile
+                        if (getObject == null) {
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            getObject = insert(GetObjectNodeGen.create());
+                            callGet = insert(CallTernaryMethodNode.create());
+                        }
+                        res = callGet.execute(get, res, getObject.execute(self) == startType ? PNone.NO_VALUE : self.getObject(), startType);
                     }
                     return res;
                 }
@@ -409,9 +471,11 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Builtin(name = "__thisclass__", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class ThisClassNode extends PythonUnaryBuiltinNode {
+        @Child GetTypeNode getType = GetTypeNodeGen.create();
+
         @Specialization
         Object getClass(SuperObject self) {
-            Object type = self.getType();
+            Object type = getType.execute(self);
             if (type == null) {
                 return PNone.NONE;
             }
@@ -422,9 +486,11 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Builtin(name = "__self__", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfNode extends PythonUnaryBuiltinNode {
+        @Child GetObjectNode getObject = GetObjectNodeGen.create();
+
         @Specialization
         Object getClass(SuperObject self) {
-            Object object = self.getObject();
+            Object object = getObject.execute(self);
             if (object == null) {
                 return PNone.NONE;
             }
@@ -435,9 +501,11 @@ public final class SuperBuiltins extends PythonBuiltins {
     @Builtin(name = "__self_class__", fixedNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class SelfClassNode extends PythonUnaryBuiltinNode {
+        @Child GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
+
         @Specialization
         Object getClass(SuperObject self) {
-            PythonClass objectType = self.getObjectType();
+            PythonClass objectType = getObjectType.execute(self);
             if (objectType == null) {
                 return PNone.NONE;
             }
