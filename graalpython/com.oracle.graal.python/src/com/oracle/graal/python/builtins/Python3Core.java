@@ -136,6 +136,8 @@ import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.slice.SliceBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.LockBuiltins;
+import com.oracle.graal.python.builtins.objects.thread.ThreadBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -287,6 +289,8 @@ public final class Python3Core implements PythonCore {
                         new BufferBuiltins(),
                         new MemoryviewBuiltins(),
                         new ThreadModuleBuiltins(),
+                        new ThreadBuiltins(),
+                        new LockBuiltins(),
                         new SuperBuiltins(),
                         new BinasciiModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),

@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -47,10 +50,13 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.thread.LockBuiltinsFactory.AcquireLockNodeFactory;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -88,6 +94,30 @@ public class LockBuiltins extends PythonBuiltins {
         boolean doAcquire(PLock self, @SuppressWarnings("unused") PNone waitFlag, @SuppressWarnings("unused") PNone timeout) {
             return self.acquire(1, -1.0);
         }
+
+        public static AcquireLockNode create() {
+            return AcquireLockNodeFactory.create();
+        }
+    }
+
+    @Builtin(name = "acquire_lock", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"waitflag", "timeout"})
+    @GenerateNodeFactory
+    abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        Object acquire(PLock self, Object waitFlag, Object timeout,
+                        @Cached("create()") AcquireLockNode acquireLockNode) {
+            return acquireLockNode.execute(self, waitFlag, timeout);
+        }
+    }
+
+    @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"waitflag", "timeout"})
+    @GenerateNodeFactory
+    abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        Object acquire(PLock self, Object waitFlag, Object timeout,
+                        @Cached("create()") AcquireLockNode acquireLockNode) {
+            return acquireLockNode.execute(self, waitFlag, timeout);
+        }
     }
 
     @Builtin(name = "release", fixedNumOfPositionalArgs = 1)
@@ -96,6 +126,17 @@ public class LockBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object doRelease(PLock self) {
+            self.release();
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = __EXIT__, fixedNumOfPositionalArgs = 4)
+    @GenerateNodeFactory
+    abstract static class ExitLockNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object exit(PLock self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
             self.release();
             return PNone.NONE;
         }

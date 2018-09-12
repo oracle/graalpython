@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -97,8 +99,8 @@ public abstract class WithNode extends StatementNode {
         PException exceptionState = getContext().getCurrentException();
         boolean gotException = false;
         // CPython first looks up '__exit__
-        Object exitCallable = exitGetter.executeObject(withObject, "__exit__");
-        Object enterCallable = enterGetter.executeObject(withObject, "__enter__");
+        Object exitCallable = exitGetter.executeObject(withObject, __EXIT__);
+        Object enterCallable = enterGetter.executeObject(withObject, __ENTER__);
 
         if (isCallableNode.execute(enterCallable)) {
             applyValues(frame, enterDispatch.executeCall(frame, enterCallable, createArgs.execute(withObject), new PKeyword[0]));

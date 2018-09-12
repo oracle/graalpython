@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -52,6 +53,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 public class ThreadBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return null;
+        return new ArrayList<>();
     }
 }

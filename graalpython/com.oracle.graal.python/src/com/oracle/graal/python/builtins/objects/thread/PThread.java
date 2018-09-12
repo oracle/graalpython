@@ -44,7 +44,20 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public class PThread extends PythonBuiltinObject {
-    public PThread(PythonClass cls) {
+    private final Thread thread;
+
+    public PThread(PythonClass cls, Runnable runnable) {
         super(cls);
+        this.thread = new Thread(runnable);
+    }
+
+    public void start() {
+        if (!this.thread.isAlive()) {
+            thread.start();
+        }
+    }
+
+    public long getId() {
+        return thread.getId();
     }
 }

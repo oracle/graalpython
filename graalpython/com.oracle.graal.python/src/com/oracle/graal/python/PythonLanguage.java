@@ -470,4 +470,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static Shape freshShape() {
         return freshShape;
     }
+
+    @Override
+    protected boolean isThreadAccessAllowed(Thread thread, boolean singleThreaded) {
+        return true;
+    }
 }

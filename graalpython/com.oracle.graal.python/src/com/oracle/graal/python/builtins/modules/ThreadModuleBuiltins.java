@@ -40,33 +40,79 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleContext;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "_thread")
 public class ThreadModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return ThreadModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "allocate_lock", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "allocate_lock", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
     @GenerateNodeFactory
     abstract static class AllocateLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         PLock allocate(PythonClass cls) {
             return factory().createLock(cls);
+        }
+    }
+
+    @Builtin(name = "get_ident", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetCurrentThreadIdNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        long getId() {
+            return Thread.currentThread().getId();
+        }
+    }
+
+    @Builtin(name = "start_new_thread", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4, constructsClass = PythonBuiltinClassType.PThread)
+    @GenerateNodeFactory
+    abstract static class StartNewThreadNode extends PythonBuiltinNode {
+        @Specialization
+        long start(VirtualFrame frame, PythonClass cls, PFunction function, PTuple args, PDict kwargs,
+                        @Cached("create()") CallNode callNode,
+                        @Cached("create()") ExecutePositionalStarargsNode getArgsNode,
+                        @Cached("create()") ExecuteKeywordStarargsNode getKwArgsNode) {
+            PythonContext context = getContext();
+            PThread thread = factory().createThread(cls, () -> {
+                TruffleContext truffleContext = context.getEnv().getContext();
+                Object prev = truffleContext.enter();
+                Object[] arguments = getArgsNode.executeWith(args);
+                PKeyword[] keywords = getKwArgsNode.executeWith(kwargs);
+                callNode.execute(frame, function, arguments, keywords);
+                truffleContext.leave(prev);
+            });
+            thread.start();
+            return thread.getId();
         }
     }
 }
