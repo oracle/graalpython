@@ -40,12 +40,15 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -59,6 +62,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_thread")
 public class ThreadModuleBuiltins extends PythonBuiltins {
@@ -83,6 +87,33 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         long getId() {
             return Thread.currentThread().getId();
+        }
+    }
+
+    @Builtin(name = "stack_size", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetThreadStackSizeNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        long getStackSize(@SuppressWarnings("unused") PNone stackSize) {
+            return getContext().getThreadStackSize();
+        }
+
+        @Specialization
+        long getStackSize(int stackSize,
+                        @Cached("createBinaryProfile()") ConditionProfile invalidSizeProfile) {
+            if (invalidSizeProfile.profile(stackSize < 0)) {
+                throw raise(ValueError, "size must be 0 or a positive value");
+            }
+            return getContext().getAndSetThreadStackSize(stackSize);
+        }
+
+        @Specialization
+        long getStackSize(long stackSize,
+                        @Cached("createBinaryProfile()") ConditionProfile invalidSizeProfile) {
+            if (invalidSizeProfile.profile(stackSize < 0)) {
+                throw raise(ValueError, "size must be 0 or a positive value");
+            }
+            return getContext().getAndSetThreadStackSize(stackSize);
         }
     }
 

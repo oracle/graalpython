@@ -44,11 +44,16 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public class PThread extends PythonBuiltinObject {
+    public final static String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
     private final Thread thread;
 
-    public PThread(PythonClass cls, Runnable runnable) {
+    public PThread(PythonClass cls, ThreadGroup group, Runnable runnable) {
+        this(cls, group, 0, runnable);
+    }
+
+    public PThread(PythonClass cls, ThreadGroup group, long stackSize, Runnable runnable) {
         super(cls);
-        this.thread = new Thread(runnable);
+        this.thread = new Thread(group, runnable, "graalpython-thread-" + group.activeCount(), stackSize);
     }
 
     public void start() {
@@ -59,5 +64,9 @@ public class PThread extends PythonBuiltinObject {
 
     public long getId() {
         return thread.getId();
+    }
+
+    public String getName() {
+        return thread.getName();
     }
 }

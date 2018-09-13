@@ -36,7 +36,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
 import random
 import unittest
 from test import support
@@ -52,6 +51,7 @@ NUMTRIPS = 3
 POLL_SLEEP = 0.010 # seconds = 10 ms
 
 _print_mutex = thread.allocate_lock()
+
 
 def verbose_print(arg):
     """Helper function for printing out debugging output."""
@@ -111,42 +111,13 @@ class ThreadRunningTests(BasicThreadTest):
         thread.stack_size(0)
         self.assertEqual(thread.stack_size(), 0, "stack_size not reset to default")
 
-    @unittest.skipIf(os.name not in ("nt", "posix"), 'test meant for nt and posix')
-    def test_nt_and_posix_stack_size(self):
-        try:
-            thread.stack_size(4096)
-        except ValueError:
-            verbose_print("caught expected ValueError setting "
-                          "stack_size(4096)")
-        except thread.error:
-            self.skipTest("platform does not support changing thread stack "
-                          "size")
-
-        fail_msg = "stack_size(%d) failed - should succeed"
-        for tss in (262144, 0x100000, 0):
-            thread.stack_size(tss)
-            self.assertEqual(thread.stack_size(), tss, fail_msg % tss)
-            verbose_print("successfully set stack_size(%d)" % tss)
-
-        for tss in (262144, 0x100000):
-            verbose_print("trying stack_size = (%d)" % tss)
-            self.next_ident = 0
-            self.created = 0
-            for i in range(NUMTASKS):
-                self.newtask()
-
-            verbose_print("waiting for all tasks to complete")
-            self.done_mutex.acquire()
-            verbose_print("all tasks done")
-
-        thread.stack_size(0)
-
     def test__count(self):
         # Test the _count() function.
         orig = thread._count()
         mut = thread.allocate_lock()
         mut.acquire()
         started = []
+
         def task():
             started.append(None)
             mut.acquire()
@@ -167,35 +138,36 @@ class ThreadRunningTests(BasicThreadTest):
             time.sleep(POLL_SLEEP)
         self.assertEqual(thread._count(), orig)
 
-    def test_save_exception_state_on_error(self):
-        # See issue #14474
-        def task():
-            started.release()
-            raise SyntaxError
-        def mywrite(self, *args):
-            try:
-                raise ValueError
-            except ValueError:
-                pass
-            real_write(self, *args)
-        c = thread._count()
-        started = thread.allocate_lock()
-        with support.captured_output("stderr") as stderr:
-            real_write = stderr.write
-            stderr.write = mywrite
-            started.acquire()
-            thread.start_new_thread(task, ())
-            started.acquire()
-            while thread._count() > c:
-                time.sleep(POLL_SLEEP)
-        self.assertIn("Traceback", stderr.getvalue())
+    # def test_save_exception_state_on_error(self):
+    #     # See issue #14474
+    #     def task():
+    #         started.release()
+    #         raise SyntaxError
+    #
+    #     def mywrite(self, *args):
+    #         try:
+    #             raise ValueError
+    #         except ValueError:
+    #             pass
+    #         real_write(self, *args)
+    #     c = thread._count()
+    #     started = thread.allocate_lock()
+    #     with support.captured_output("stderr") as stderr:
+    #         real_write = stderr.write
+    #         stderr.write = mywrite
+    #         started.acquire()
+    #         thread.start_new_thread(task, ())
+    #         started.acquire()
+    #         while thread._count() > c:
+    #             time.sleep(POLL_SLEEP)
+    #     self.assertIn("Traceback", stderr.getvalue())
 
 
-class Barrier:
+class Barrier(object):
     def __init__(self, num_threads):
         self.num_threads = num_threads
         self.waiting = 0
-        self.checkin_mutex  = thread.allocate_lock()
+        self.checkin_mutex = thread.allocate_lock()
         self.checkout_mutex = thread.allocate_lock()
         self.checkout_mutex.acquire()
 
@@ -252,56 +224,6 @@ class BarrierTest(BasicThreadTest):
         if finished:
             self.done_mutex.release()
 
+
 class LockTests(lock_tests.LockTests):
     locktype = thread.allocate_lock
-
-
-class TestForkInThread(unittest.TestCase):
-    def setUp(self):
-        self.read_fd, self.write_fd = os.pipe()
-
-    @unittest.skipUnless(hasattr(os, 'fork'), 'need os.fork')
-    @support.reap_threads
-    def test_forkinthread(self):
-        running = True
-        status = "not set"
-
-        def thread1():
-            nonlocal running, status
-
-            # fork in a thread
-            pid = os.fork()
-            if pid == 0:
-                # child
-                try:
-                    os.close(self.read_fd)
-                    os.write(self.write_fd, b"OK")
-                finally:
-                    os._exit(0)
-            else:
-                # parent
-                os.close(self.write_fd)
-                pid, status = os.waitpid(pid, 0)
-                running = False
-
-        thread.start_new_thread(thread1, ())
-        self.assertEqual(os.read(self.read_fd, 2), b"OK",
-                         "Unable to fork() in thread")
-        while running:
-            time.sleep(POLL_SLEEP)
-        self.assertEqual(status, 0)
-
-    def tearDown(self):
-        try:
-            os.close(self.read_fd)
-        except OSError:
-            pass
-
-        try:
-            os.close(self.write_fd)
-        except OSError:
-            pass
-
-
-if __name__ == "__main__":
-    unittest.main()

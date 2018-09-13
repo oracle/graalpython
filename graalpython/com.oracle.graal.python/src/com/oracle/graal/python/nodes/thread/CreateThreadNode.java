@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.argument.keywords.ExecuteKeywordStarargsNod
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -62,13 +63,11 @@ public class CreateThreadNode extends PNodeWithContext {
     @Child private ExecutePositionalStarargsNode getArgsNode = ExecutePositionalStarargsNode.create();
     @Child private ExecuteKeywordStarargsNode getKwArgsNode = ExecuteKeywordStarargsNode.create();
 
-    private TruffleContext getTruffleContext() {
-        return getContext().getEnv().getContext();
-    }
-
     public PThread execute(VirtualFrame frame, PythonClass cls, Object callable, Object args, Object kwargs) {
-        TruffleContext truffleContext = getTruffleContext();
-        return factory().createThread(cls, () -> {
+        PythonContext context = getContext();
+        TruffleContext truffleContext = context.getEnv().getContext();
+
+        return factory().createThread(cls, context.getThreadGroup(), context.getThreadStackSize(), () -> {
             Object previous = truffleContext.enter();
             Object[] arguments = getArgsNode.executeWith(args);
             PKeyword[] keywords = getKwArgsNode.executeWith(kwargs);

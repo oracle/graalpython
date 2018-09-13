@@ -37,3 +37,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+error = RuntimeError
+TIMEOUT_MAX = 2**31
+
+_lock = allocate_lock()
+LockType = type(_lock)
+del _lock
+
+
+def _set_sentinel():
+    """Dummy implementation of _thread._set_sentinel()."""
+    return LockType()

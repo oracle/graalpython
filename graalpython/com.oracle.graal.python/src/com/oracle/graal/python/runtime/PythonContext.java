@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
@@ -62,6 +63,9 @@ public final class PythonContext {
     private final PythonCore core;
     private final HashMap<Object, CallTarget> atExitHooks = new HashMap<>();
     private final AtomicLong globalId = new AtomicLong(Integer.MAX_VALUE * 2L + 4L);
+    private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
+    private final AtomicLong threadStackSize = new AtomicLong(0); // the VM will set it to whatever
+                                                                  // it likes
 
     @CompilationFinal private TruffleLanguage.Env env;
 
@@ -97,6 +101,19 @@ public final class PythonContext {
             this.out = env.out();
             this.err = env.err();
         }
+    }
+
+    public ThreadGroup getThreadGroup() {
+        return threadGroup;
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public long getThreadStackSize() {
+        return threadStackSize.get();
+    }
+
+    public long getAndSetThreadStackSize(long value) {
+        return threadStackSize.getAndSet(value);
     }
 
     @TruffleBoundary(allowInlining = true)
