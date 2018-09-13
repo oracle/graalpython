@@ -301,40 +301,24 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
+    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
-        @Specialization(guards = "isNoValue(cwrapper)")
+        @Specialization
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, PythonClass type) {
+        PBuiltinFunction run(String name, TruffleObject callable, PythonClass type) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, callable));
             return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
 
-        @Specialization(guards = {"isNoValue(cwrapper)", "isNoValue(type)"})
+        @Specialization(guards = {"isNoValue(type)"})
         @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, @SuppressWarnings("unused") PNone cwrapper, @SuppressWarnings("unused") PNone type) {
+        PBuiltinFunction runWithoutType(String name, TruffleObject callable, @SuppressWarnings("unused") PNone type) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, null, callable));
+            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, callable));
             return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
-        }
-
-        @Specialization(guards = {"!isNoValue(cwrapper)", "isNoValue(type)"})
-        @TruffleBoundary
-        PBuiltinFunction runWithoutCWrapper(String name, TruffleObject callable, TruffleObject cwrapper, @SuppressWarnings("unused") PNone type) {
-            CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
-            return factory().createBuiltinFunction(name, null, createArity(name), callTarget);
-        }
-
-        @Specialization(guards = "!isNoValue(cwrapper)")
-        @TruffleBoundary
-        PBuiltinFunction run(String name, TruffleObject callable, TruffleObject cwrapper, PythonClass type) {
-            CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new ExternalFunctionNode(getRootNode().getLanguage(PythonLanguage.class), name, cwrapper, callable));
-            return factory().createBuiltinFunction(name, type, createArity(name), callTarget);
         }
 
         private static Arity createArity(String name) {
@@ -664,7 +648,6 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     }
 
     static class ExternalFunctionNode extends RootNode {
-        private final TruffleObject cwrapper;
         private final TruffleObject callable;
         private final String name;
         @CompilationFinal ContextReference<PythonContext> ctxt;
@@ -674,10 +657,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         @Child private CheckFunctionResultNode checkResultNode = CheckFunctionResultNode.create();
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
 
-        public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject cwrapper, TruffleObject callable) {
+        public ExternalFunctionNode(PythonLanguage lang, String name, TruffleObject callable) {
             super(lang);
             this.name = name;
-            this.cwrapper = cwrapper;
             this.callable = callable;
             this.executeNode = Message.EXECUTE.createNode();
         }
@@ -690,25 +672,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         public Object execute(VirtualFrame frame) {
             Object[] frameArgs = frame.getArguments();
             try {
-                TruffleObject fun;
-                Object[] arguments;
-
-                if (cwrapper != null) {
-                    fun = cwrapper;
-                    arguments = new Object[1 + frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
-                    arguments[0] = callable;
-                    toSulongNode.executeInto(frameArgs, PArguments.USER_ARGUMENTS_OFFSET, arguments, 1);
-                } else {
-                    fun = callable;
-                    arguments = new Object[frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
-                    toSulongNode.executeInto(frameArgs, PArguments.USER_ARGUMENTS_OFFSET, arguments, 0);
-                }
+                Object[] arguments = new Object[frameArgs.length - PArguments.USER_ARGUMENTS_OFFSET];
+                toSulongNode.executeInto(frameArgs, PArguments.USER_ARGUMENTS_OFFSET, arguments, 0);
                 // save current exception state
                 PException exceptionState = getContext().getCurrentException();
                 // clear current exception such that native code has clean environment
                 getContext().setCurrentException(null);
 
-                Object result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, ForeignAccess.sendExecute(executeNode, fun, arguments))));
+                Object result = fromNative(asPythonObjectNode.execute(checkResultNode.execute(name, ForeignAccess.sendExecute(executeNode, callable, arguments))));
 
                 // restore previous exception state
                 getContext().setCurrentException(exceptionState);

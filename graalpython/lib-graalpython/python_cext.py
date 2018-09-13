@@ -692,14 +692,14 @@ class cstaticmethod():
         return self.__func__(None, *args, **kwargs)
 
 
-def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, isstatic=False):
+def AddFunction(primary, name, cfunc, wrapper, doc, isclass=False, isstatic=False):
     owner = to_java(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
-        func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner.__name__, doc)
+        func = PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, doc)
         object.__setattr__(owner, name, func)
     else:
-        func = wrapper(CreateFunction(name, cfunc, cwrapper, owner))
+        func = wrapper(CreateFunction(name, cfunc, owner))
         if isclass:
             func = classmethod(func)
         elif isstatic:
@@ -715,8 +715,8 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
             object.__setattr__(owner, name, func)
 
 
-def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
-    func = wrapper(CreateFunction(name, cfunc, cwrapper))
+def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
+    func = wrapper(CreateFunction(name, cfunc))
     PyTruffle_SetAttr(func, "__name__", name)
     PyTruffle_SetAttr(func, "__doc__", doc)
     method = PyTruffle_BuiltinMethod(self, func)
@@ -743,17 +743,17 @@ def AddMember(primary, name, memberType, offset, canSet, doc):
 
 
 getset_descriptor = type(type(AddMember).__code__)
-def AddGetSet(primary, name, getter, getter_wrapper, setter, setter_wrapper, doc, closure):
+def AddGetSet(primary, name, getter, setter, doc, closure):
     pclass = to_java(primary)
     fset = fget = None
     if getter:
-        getter_w = CreateFunction(name, getter, getter_wrapper, pclass)
+        getter_w = CreateFunction(name, getter, pclass)
         def member_getter(self):
             return capi_to_java(getter_w(self, closure))
 
         fget = member_getter
     if setter:
-        setter_w = CreateFunction(name, setter, setter_wrapper, pclass)
+        setter_w = CreateFunction(name, setter, pclass)
         def member_setter(self, value):
             result = setter_w(self, value, closure)
             if result != 0:

@@ -179,8 +179,7 @@ int PyType_Ready(PyTypeObject* cls) {
                        "AddFunction",                                                       \
                        javacls,                                                             \
                        polyglot_from_string((name), SRC_CS),                                \
-                       (meth),                                                              \
-                       (clanding),                                                          \
+                       truffle_decorate_function(meth, clanding),                           \
                        get_method_flags_wrapper(flags),                                     \
                        polyglot_from_string(doc, SRC_CS),                                   \
                        (flags) > 0 && ((flags) & METH_CLASS) != 0,                          \
@@ -296,10 +295,8 @@ int PyType_Ready(PyTypeObject* cls) {
                             // TODO(fa): there should actually be 'native_to_java' just in case 'javacls' goes to native in between
                             javacls,
                             polyglot_from_string(getset.name, SRC_CS),
-                            getter_fun != NULL ? (getter)getter_fun : native_to_java(Py_None),
-                            wrap_direct,
-                            setter_fun != NULL ? (setter)setter_fun : native_to_java(Py_None),
-                            wrap_setter,
+                            getter_fun != NULL ? truffle_decorate_function((getter)getter_fun, wrap_direct) : native_to_java(Py_None),
+                            setter_fun != NULL ? truffle_decorate_function((setter)setter_fun, wrap_setter) : native_to_java(Py_None),
                             getset.doc ? polyglot_from_string(getset.doc, SRC_CS) : polyglot_from_string("", SRC_CS),
                             // do not convert the closure, it is handed to the
                             // getter and setter as-is
