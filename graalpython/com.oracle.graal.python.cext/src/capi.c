@@ -53,10 +53,7 @@ uint64_t (*PY_TRUFFLE_CEXT_LANDING_L)(void* name, ...);
 double (*PY_TRUFFLE_CEXT_LANDING_D)(void* name, ...);
 void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 
-typedef void* (*cache_t)(uint64_t);
-static cache_t cache;
-
-#define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
+cache_t cache;
 
 __attribute__((constructor (__COUNTER__)))
 static void initialize_upcall_functions() {
@@ -198,28 +195,6 @@ static void initialize_capi() {
     initialize_bufferprocs();
 }
 
-// Heuristic to test if some value is a pointer object
-// TODO we need a reliable solution for that
-#define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
-
-MUST_INLINE
-void* native_to_java(PyObject* obj) {
-    if (obj == NULL) {
-        return Py_NoValue;
-    } else if (obj == Py_None) {
-        return Py_None;
-    } else if (polyglot_is_string(obj)) {
-        return obj;
-    } else if (truffle_is_handle_to_managed(obj)) {
-        return resolve_handle(cache, (uint64_t)obj);
-    } else if (truffle_is_handle_to_managed(obj->ob_refcnt)) {
-        return truffle_managed_from_handle(obj->ob_refcnt);
-    } else if (IS_POINTER(obj->ob_refcnt)) {
-        return obj->ob_refcnt;
-    }
-    return obj;
-}
-
 void* native_to_java_exported(PyObject* obj) {
     return native_to_java(obj);
 }
@@ -273,7 +248,7 @@ uint64_t PyTruffle_Wchar_Size() {
 }
 
 void* PyObjectHandle_ForJavaObject(void* cobj, unsigned long flags) {
-    if (!truffle_is_handle_to_managed(cobj)) {
+    if (truffle_is_handle_to_managed(cobj)) {
         return truffle_deref_handle_for_managed(cobj);
     }
     return cobj;
@@ -281,7 +256,7 @@ void* PyObjectHandle_ForJavaObject(void* cobj, unsigned long flags) {
 
 /** to be used from Java code only; only creates the deref handle */
 void* PyObjectHandle_ForJavaType(void* ptype) {
-    if (!truffle_is_handle_to_managed(ptype)) {
+    if (truffle_is_handle_to_managed(ptype)) {
         return truffle_deref_handle_for_managed(ptype);
     }
     return ptype;
