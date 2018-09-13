@@ -1801,7 +1801,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "method", fixedNumOfPositionalArgs = 3, constructsClass = {PythonBuiltinClassType.PMethod}, isPublic = false)
     @GenerateNodeFactory
-    public abstract static class MethodTypeNode extends PythonBuiltinNode {
+    public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object method(PythonClass cls, Object self, PFunction func) {
             return factory().createMethod(cls, self, func);

@@ -43,6 +43,7 @@ class classmethod(object):
     def __init__(self, func):
         self.__func__ = func
 
+    @__builtin__
     def __get__(self, instance, owner=None):
         if owner is None:
             return classmethod.method(type(instance), self.__func__)

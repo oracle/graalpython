@@ -1394,6 +1394,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                  * declare the module argument
                  */
                 builtinFunc = func;
+                func.getFunctionRootNode().accept(new NodeVisitor() {
+                    public boolean visit(Node node) {
+                        if (node instanceof PythonCallNode) {
+                            node.replace(((PythonCallNode) node).asSpecialCall());
+                        }
+                        return true;
+                    }
+                });
             } else {
                 /*
                  * Otherwise, we create a new function with an arity that requires one extra
