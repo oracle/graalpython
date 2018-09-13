@@ -203,8 +203,12 @@ def _append_end_assert(pattern):
     else:
         return pattern if pattern.endswith(rb"\Z") else pattern + rb"\Z"
 
+def _is_bytes_like(object):
+    return isinstance(object, (bytes, bytearray, memoryview))
+
 class SRE_Pattern():
     def __init__(self, pattern, flags):
+        self.__binary = isinstance(pattern, bytes)
         self.pattern = pattern
         self.flags = flags
         flags_str = []
@@ -220,9 +224,18 @@ class SRE_Pattern():
                 self.groupindex[group_name] = self.__compiled_regexes[self.pattern].groups[group_name]
 
 
+    def __check_input_type(self, input):
+        if not isinstance(input, str) and not _is_bytes_like(input):
+            raise TypeError("expected string or bytes-like object")
+        if not self.__binary and _is_bytes_like(input):
+            raise TypeError("cannot use a string pattern on a bytes-like object")
+        if self.__binary and isinstance(input, str):
+            raise TypeError("cannot use a bytes pattern on a string-like object")
+
+
     def __tregex_compile(self, pattern):
         if pattern not in self.__compiled_regexes:
-            tregex_engine = TREGEX_ENGINE_STR if isinstance(pattern, str) else TREGEX_ENGINE_BYTES
+            tregex_engine = TREGEX_ENGINE_BYTES if self.__binary else TREGEX_ENGINE_STR
             try:
                 self.__compiled_regexes[pattern] = tregex_call_compile(tregex_engine, pattern, self.flags_str)
             except ValueError as e:
@@ -266,12 +279,15 @@ class SRE_Pattern():
             return None
 
     def search(self, string, pos=0, endpos=None):
+        self.__check_input_type(string)
         return self._search(self.pattern, string, pos, default(endpos, -1))
 
     def match(self, string, pos=0, endpos=None):
+        self.__check_input_type(string)
         return self._search(_prepend_begin_assert(self.pattern), string, pos, default(endpos, -1))
 
     def fullmatch(self, string, pos=0, endpos=None):
+        self.__check_input_type(string)
         return self._search(_append_end_assert(_prepend_begin_assert(self.pattern)), string, pos, default(endpos, -1))
 
     def __sanitize_out_type(self, elem):
@@ -283,6 +299,7 @@ class SRE_Pattern():
             return str(elem)
 
     def findall(self, string, pos=0, endpos=-1):
+        self.__check_input_type(string)
         if endpos > len(string):
             endpos = len(string)
         elif endpos < 0:
@@ -312,20 +329,20 @@ class SRE_Pattern():
             return string[group_start:group_end]
 
         n = len(repl)
-        result = ""
+        result = b"" if self.__binary else ""
         start = 0
-        backslash = '\\'
+        backslash = b'\\' if self.__binary else '\\'
         pos = repl.find(backslash, start)
         while pos != -1 and start < n:
             if pos+1 < n:
                 if repl[pos + 1].isdigit() and match_result.groupCount > 0:
-                    group_nr = int(repl[pos+1])
+                    group_nr = int(repl[pos+1].decode('ascii')) if self.__binary else int(repl[pos+1])
                     group_str = group(match_result, group_nr, string)
                     if group_str is None:
                         raise ValueError("invalid group reference %s at position %s" % (group_nr, pos))
                     result += repl[start:pos] + group_str
                     start = pos + 2
-                elif repl[pos + 1] == 'g':
+                elif repl[pos + 1] == (b'g' if self.__binary else 'g'):
                     group_ref, group_ref_end, digits_only = self.__extract_groupname(repl, pos + 2)
                     if group_ref:
                         group_str = group(match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
@@ -345,26 +362,30 @@ class SRE_Pattern():
 
 
     def __extract_groupname(self, repl, pos):
-        if repl[pos] == '<':
+        if repl[pos] == (b'<' if self.__binary else '<'):
             digits_only = True
             n = len(repl)
             i = pos + 1
-            while i < n and repl[i] != '>':
+            while i < n and repl[i] != (b'>' if self.__binary else '>'):
                 digits_only = digits_only and repl[i].isdigit()
                 i += 1
             if i < n:
                 # found '>'
-                return repl[pos + 1 : i], i, digits_only
+                group_ref = repl[pos + 1 : i]
+                group_ref_str = group_ref.decode('ascii') if self.__binary else group_ref
+                return group_ref_str, i, digits_only
         return None, pos, False
 
 
     def sub(self, repl, string, count=0):
+        self.__check_input_type(string)
         n = 0
         pattern = self.__tregex_compile(self.pattern)
         result = []
         pos = 0
-        is_string_rep = isinstance(repl, str) or isinstance(repl, bytes) or isinstance(repl, bytearray)
+        is_string_rep = isinstance(repl, str) or _is_bytes_like(repl)
         if is_string_rep:
+            self.__check_input_type(repl)
             repl = _process_escape_sequences(repl)
         while (count == 0 or n < count) and pos <= len(string):
             match_result = tregex_call_exec(pattern.exec, string, pos)
@@ -386,7 +407,10 @@ class SRE_Pattern():
                     result.append(string[pos])
                 pos = pos + 1
         result.append(string[pos:])
-        return "".join(result)
+        if self.__binary:
+            return b"".join(result)
+        else:
+            return "".join(result)
 
     def split(self, string, maxsplit=0):
         n = 0

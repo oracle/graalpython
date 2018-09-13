@@ -51,9 +51,11 @@ import java.util.regex.Pattern;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -96,6 +98,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     abstract static class ProcessEscapeSequences extends PythonUnaryBuiltinNode {
 
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
+        @Child private BytesNodes.ToBytesNode toBytesNode;
 
         @CompilationFinal private Pattern namedCaptGroupPattern;
 
@@ -121,6 +124,15 @@ public class SREModuleBuiltins extends PythonBuiltins {
                 return factory().createByteArray(bytes);
             }
             return str;
+        }
+
+        @Specialization
+        Object run(PMemoryView memoryView) {
+            byte[] bytes = doBytes(getToBytesNode().execute(memoryView));
+            if (bytes != null) {
+                return factory().createByteArray(bytes);
+            }
+            return memoryView;
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
@@ -156,6 +168,13 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return toByteArrayNode;
         }
 
+        private BytesNodes.ToBytesNode getToBytesNode() {
+            if (toBytesNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toBytesNode = insert(BytesNodes.ToBytesNode.create());
+            }
+            return toBytesNode;
+        }
     }
 
     @Builtin(name = "tregex_call_compile", fixedNumOfPositionalArgs = 3)
