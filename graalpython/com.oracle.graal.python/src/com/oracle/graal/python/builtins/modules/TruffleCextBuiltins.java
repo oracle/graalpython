@@ -103,7 +103,6 @@ import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -441,21 +440,14 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     abstract static class PyObject_Setattr extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object setattr(PythonBuiltinObject object, String key, Object value) {
-            object.getStorage().define(key, value);
-            return PNone.NONE;
-        }
-
-        @Specialization
-        @TruffleBoundary
         Object setattr(PythonBuiltinClass object, String key, Object value) {
             object.setAttributeUnsafe(key, value);
             return PNone.NONE;
         }
 
-        @Specialization
+        @Specialization(guards = {"!isPythonBuiltinClass(object)"})
         @TruffleBoundary
-        Object setattr(PythonNativeClass object, String key, Object value) {
+        Object setattr(PythonObject object, String key, Object value) {
             object.getStorage().define(key, value);
             return PNone.NONE;
         }
