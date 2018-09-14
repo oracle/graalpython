@@ -354,6 +354,7 @@ class SRE_Pattern():
         except BaseException:
             return self.__compile_cpython_sre().sub(repl, string, count)
 
+
     def split(self, string, maxsplit=0):
         n = 0
         try:
@@ -368,10 +369,13 @@ class SRE_Pattern():
                 n += 1
                 start = match_result.start[0]
                 end = match_result.end[0]
-                result.append(string[pos:start])
+                result.append(str(string[pos:start]))
+                # add all group strings
+                for i in range(match_result.groupCount-1):
+                    result.append(str(string[match_result.start[i+1]:match_result.end[i+1]]))
                 pos = end
                 progress = (start != end)
-            result.append(string[pos:])
+            result.append(str(string[pos:]))
             return result
         except BaseException:
             return self.__compile_cpython_sre().split(string, maxsplit)
