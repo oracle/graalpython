@@ -49,7 +49,7 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
         super(cls);
     }
 
-    private long getTimeoutInMillis(double timeout) {
+    private static long getTimeoutInMillis(double timeout) {
         // TODO: look at
         // https://github.com/python/cpython/blob/e42b705188271da108de42b55d9344642170aa2b/Python/pytime.c
         // _PyTime_AsMicroseconds
@@ -65,15 +65,15 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
     abstract boolean acquireTimeout(long timeout) throws InterruptedException;
 
     boolean acquire() {
-        try {
-            return blockUntilAcquire();
-        } catch (InterruptedException e) {
-            return false;
-        }
+        return acquire(false, -1.0);
     }
 
-    boolean acquire(int waitFlag, double timeout) {
-        if (waitFlag == 0) {
+    boolean acquire(boolean blocking) {
+        return acquire(blocking, -1.0);
+    }
+
+    boolean acquire(boolean blocking, double timeout) {
+        if (!blocking) {
             return tryToAcquire();
         } else {
             try {

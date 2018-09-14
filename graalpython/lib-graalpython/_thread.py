@@ -41,6 +41,7 @@ error = RuntimeError
 TIMEOUT_MAX = 2**31
 
 
+@__builtin__
 def allocate_lock():
     return LockType()
 

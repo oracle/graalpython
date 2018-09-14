@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.thread;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
 
@@ -53,10 +54,12 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltinsFactory.AcquireRLockNodeFactory;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToDoubleNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -72,31 +75,47 @@ public class RLockBuiltins extends PythonBuiltins {
         return RLockBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "acquire", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"waitflag", "timeout"})
+    @Builtin(name = "acquire", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"blocking", "timeout"})
     @GenerateNodeFactory
     abstract static class AcquireRLockNode extends PythonTernaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        boolean doAcquire(PRLock self, int waitFlag, double timeout) {
-            return self.acquire(waitFlag, timeout);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        boolean doAcquire(PRLock self, @SuppressWarnings("unused") PNone waitFlag, double timeout) {
-            return self.acquire(1, timeout);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        boolean doAcquire(PRLock self, int waitFlag, @SuppressWarnings("unused") PNone timeout) {
-            return self.acquire(waitFlag, -1.0);
-        }
-
-        @Specialization
-        @TruffleBoundary
         boolean doAcquire(PRLock self, @SuppressWarnings("unused") PNone waitFlag, @SuppressWarnings("unused") PNone timeout) {
-            return self.acquire(1, -1.0);
+            return self.acquire(true);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        boolean doAcquire(PRLock self, Object blocking, @SuppressWarnings("unused") PNone timeout,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode) {
+            return self.acquire(castToBooleanNode.executeWith(blocking));
+        }
+
+        @Specialization
+        @TruffleBoundary
+        boolean doAcquire(PRLock self, @SuppressWarnings("unused") PNone waitFlag, Object timeout,
+                        @Cached("create()") CastToDoubleNode castToDoubleNode) {
+            double timeoutSeconds = castToDoubleNode.execute(timeout);
+            if (timeoutSeconds < 0) {
+                throw raise(ValueError, "timeout value must be positive");
+            }
+            return self.acquire(true, timeoutSeconds);
+        }
+
+        @Specialization
+        @TruffleBoundary
+        boolean doAcquire(PRLock self, Object blocking, Object timeout,
+                        @Cached("create()") CastToDoubleNode castToDoubleNode,
+                        @Cached("createIfTrueNode()") CastToBooleanNode castToBooleanNode) {
+            boolean isBlocking = castToBooleanNode.executeWith(blocking);
+            if (!isBlocking) {
+                throw raise(ValueError, "can't specify a timeout for a non-blocking call");
+            }
+            double timeoutSeconds = castToDoubleNode.execute(timeout);
+            if (timeoutSeconds < 0) {
+                throw raise(ValueError, "timeout value must be positive");
+            }
+            return self.acquire(true, timeoutSeconds);
         }
 
         public static AcquireRLockNode create() {
@@ -181,7 +200,7 @@ public class RLockBuiltins extends PythonBuiltins {
         String repr(PRLock self) {
             return String.format("<%s %s object owner=%d count=%d at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            self.getPythonClass(),
+                            self.getPythonClass().getName(),
                             self.getOwnerId(),
                             self.getCount(),
                             self.hashCode());
