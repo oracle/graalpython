@@ -354,6 +354,28 @@ class SRE_Pattern():
         except BaseException:
             return self.__compile_cpython_sre().sub(repl, string, count)
 
+    def split(self, string, maxsplit=0):
+        n = 0
+        try:
+            pattern = self.__tregex_compile(self.pattern)
+            result = []
+            pos = 0
+            progress = True
+            while (maxsplit == 0 or n < maxsplit) and pos <= len(string) and progress:
+                match_result = tregex_call_safe(pattern.exec, string, pos)
+                if not match_result.isMatch:
+                    break
+                n += 1
+                start = match_result.start[0]
+                end = match_result.end[0]
+                result.append(string[pos:start])
+                pos = end
+                progress = (start != end)
+            result.append(string[pos:])
+            return result
+        except BaseException:
+            return self.__compile_cpython_sre().split(string, maxsplit)
+
 
 compile = SRE_Pattern
 
