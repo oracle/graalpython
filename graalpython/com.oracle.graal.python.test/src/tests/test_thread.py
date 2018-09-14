@@ -118,32 +118,29 @@ class ThreadRunningTests(BasicThreadTest):
         thread.stack_size(0)
         self.assertEqual(thread.stack_size(), 0, "stack_size not reset to default")
 
-    # def test__count(self):
-    #     # Test the _count() function.
-    #     orig = thread._count()
-    #     mut = thread.allocate_lock()
-    #     mut.acquire()
-    #     started = []
-    #
-    #     def task():
-    #         started.append(None)
-    #         mut.acquire()
-    #         mut.release()
-    #     thread.start_new_thread(task, ())
-    #     while not started:
-    #         time.sleep(POLL_SLEEP)
-    #     self.assertEqual(thread._count(), orig + 1)
-    #     # Allow the task to finish.
-    #     mut.release()
-    #     # The only reliable way to be sure that the thread ended from the
-    #     # interpreter's point of view is to wait for the function object to be
-    #     # destroyed.
-    #     done = []
-    #     wr = weakref.ref(task, lambda _: done.append(None))
-    #     del task
-    #     while not done:
-    #         time.sleep(POLL_SLEEP)
-    #     self.assertEqual(thread._count(), orig)
+    def test__count(self):
+        # Test the _count() function.
+        orig = thread._count()
+        mut = thread.allocate_lock()
+        mut.acquire()
+        started = []
+        done = []
+
+        def task():
+            started.append(None)
+            mut.acquire()
+            mut.release()
+            done.append(None)
+
+        thread.start_new_thread(task, ())
+        while not started:
+            time.sleep(POLL_SLEEP)
+        self.assertEqual(thread._count(), orig + 1)
+        # Allow the task to finish.
+        mut.release()
+        while not done:
+            time.sleep(POLL_SLEEP)
+        self.assertEqual(thread._count(), orig)
 
     # def test_save_exception_state_on_error(self):
     #     # See issue #14474
