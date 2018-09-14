@@ -730,6 +730,15 @@ public final class PythonTreeTranslator extends Python3BaseVisitor<Object> {
                         sb.append(Character.toChars(code));
                         i += 5;
                         continue;
+                    case 'x':
+                        if (i >= st.length() - 3) {
+                            ch = 'u';
+                            break;
+                        }
+                        int hexCode = Integer.parseInt("" + st.charAt(i + 2) + st.charAt(i + 3), 16);
+                        sb.append(Character.toChars(hexCode));
+                        i += 3;
+                        continue;
                 }
                 i++;
             }
