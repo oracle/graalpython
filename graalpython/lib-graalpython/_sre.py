@@ -372,7 +372,11 @@ class SRE_Pattern():
                 result.append(str(string[pos:start]))
                 # add all group strings
                 for i in range(match_result.groupCount-1):
-                    result.append(str(string[match_result.start[i+1]:match_result.end[i+1]]))
+                    groupStart = match_result.start[i + 1]
+                    if groupStart >= 0:
+                        result.append(str(string[groupStart:match_result.end[i+1]]))
+                    else:
+                        result.append(None)
                 pos = end
                 progress = (start != end)
             result.append(str(string[pos:]))
