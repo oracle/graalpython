@@ -100,6 +100,15 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_count", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetThreadCountNode extends PythonBuiltinNode {
+        @Specialization
+        long getCount() {
+            return getContext().getThreadGroup().activeCount();
+        }
+    }
+
     @Builtin(name = "stack_size", minNumOfPositionalArgs = 0, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class GetThreadStackSizeNode extends PythonUnaryBuiltinNode {
