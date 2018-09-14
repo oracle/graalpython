@@ -40,9 +40,9 @@
 error = RuntimeError
 TIMEOUT_MAX = 2**31
 
-_lock = allocate_lock()
-LockType = type(_lock)
-del _lock
+
+def allocate_lock():
+    return LockType()
 
 
 def _set_sentinel():

@@ -40,42 +40,72 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
-public class PLock extends AbstractPythonLock {
-    private final Semaphore semaphore;
+public class PRLock extends AbstractPythonLock {
+    private class InternalReentrantLock extends ReentrantLock {
+        private static final long serialVersionUID = 2531000884985514112L;
 
-    public PLock(PythonClass cls) {
+        long getOwnerId() {
+            Thread owner = getOwner();
+            if (owner != null) {
+                return owner.getId();
+            }
+            return 0;
+        }
+    }
+
+    private final InternalReentrantLock lock;
+
+    public PRLock(PythonClass cls) {
         super(cls);
-        semaphore = new Semaphore(1);
+        this.lock = new InternalReentrantLock();
+    }
+
+    public boolean isOwned() {
+        return lock.isHeldByCurrentThread();
+    }
+
+    public int getCount() {
+        return lock.getHoldCount();
+    }
+
+    public long getOwnerId() {
+        return lock.getOwnerId();
+    }
+
+    public void releaseAll() {
+        while (lock.getHoldCount() > 0) {
+            lock.unlock();
+        }
     }
 
     @Override
     boolean tryToAcquire() {
-        return semaphore.tryAcquire();
+        return lock.tryLock();
     }
 
     @Override
     boolean blockUntilAcquire() throws InterruptedException {
-        semaphore.acquire();
+        lock.lock();
         return true;
     }
 
     @Override
     boolean acquireTimeout(long timeout) throws InterruptedException {
-        return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+        return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void release() {
-        semaphore.release();
+        lock.unlock();
     }
 
     @Override
     public boolean locked() {
-        return semaphore.availablePermits() == 0;
+        return lock.isLocked();
     }
 }

@@ -40,42 +40,55 @@
  */
 package com.oracle.graal.python.builtins.objects.thread;
 
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
-public class PLock extends AbstractPythonLock {
-    private final Semaphore semaphore;
+public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
-    public PLock(PythonClass cls) {
+    AbstractPythonLock(PythonClass cls) {
         super(cls);
-        semaphore = new Semaphore(1);
     }
 
-    @Override
-    boolean tryToAcquire() {
-        return semaphore.tryAcquire();
+    private long getTimeoutInMillis(double timeout) {
+        // TODO: look at
+        // https://github.com/python/cpython/blob/e42b705188271da108de42b55d9344642170aa2b/Python/pytime.c
+        // _PyTime_AsMicroseconds
+        long seconds = (long) timeout;
+        long milli = (long) ((timeout - seconds) * 1000);
+        return seconds * 1000 + milli;
     }
 
-    @Override
-    boolean blockUntilAcquire() throws InterruptedException {
-        semaphore.acquire();
-        return true;
+    abstract boolean tryToAcquire();
+
+    abstract boolean blockUntilAcquire() throws InterruptedException;
+
+    abstract boolean acquireTimeout(long timeout) throws InterruptedException;
+
+    boolean acquire() {
+        try {
+            return blockUntilAcquire();
+        } catch (InterruptedException e) {
+            return false;
+        }
     }
 
-    @Override
-    boolean acquireTimeout(long timeout) throws InterruptedException {
-        return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+    boolean acquire(int waitFlag, double timeout) {
+        if (waitFlag == 0) {
+            return tryToAcquire();
+        } else {
+            try {
+                if (timeout < 0) {
+                    return blockUntilAcquire();
+                } else {
+                    return acquireTimeout(getTimeoutInMillis(timeout));
+                }
+            } catch (InterruptedException e) {
+                return false;
+            }
+        }
     }
 
-    @Override
-    public void release() {
-        semaphore.release();
-    }
+    public abstract void release();
 
-    @Override
-    public boolean locked() {
-        return semaphore.availablePermits() == 0;
-    }
+    public abstract boolean locked();
 }

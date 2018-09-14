@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -71,12 +72,21 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         return ThreadModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "allocate_lock", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
+    @Builtin(name = "LockType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)
     @GenerateNodeFactory
-    abstract static class AllocateLockNode extends PythonUnaryBuiltinNode {
+    abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PLock allocate(PythonClass cls) {
+        PLock construct(PythonClass cls) {
             return factory().createLock(cls);
+        }
+    }
+
+    @Builtin(name = "RLock", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PRLock)
+    @GenerateNodeFactory
+    abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        PRLock construct(PythonClass cls) {
+            return factory().createRLock(cls);
         }
     }
 

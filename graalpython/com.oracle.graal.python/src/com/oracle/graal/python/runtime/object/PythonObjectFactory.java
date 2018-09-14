@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -757,6 +758,14 @@ public final class PythonObjectFactory extends Node {
 
     public PLock createLock(PythonClass cls) {
         return trace(new PLock(cls));
+    }
+
+    public PRLock createRLock() {
+        return trace(new PRLock(lookupClass(PythonBuiltinClassType.PRLock)));
+    }
+
+    public PRLock createRLock(PythonClass cls) {
+        return trace(new PRLock(cls));
     }
 
     public PThread createThread(ThreadGroup group, long stackSize, Runnable runnable) {

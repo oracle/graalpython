@@ -51,82 +51,75 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.thread.LockBuiltinsFactory.AcquireLockNodeFactory;
+import com.oracle.graal.python.builtins.objects.thread.RLockBuiltinsFactory.AcquireRLockNodeFactory;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PLock)
-public class LockBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PRLock)
+public class RLockBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return LockBuiltinsFactory.getFactories();
+        return RLockBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = "acquire", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"waitflag", "timeout"})
     @GenerateNodeFactory
-    abstract static class AcquireLockNode extends PythonTernaryBuiltinNode {
+    abstract static class AcquireRLockNode extends PythonTernaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        boolean doAcquire(PLock self, int waitFlag, double timeout) {
+        boolean doAcquire(PRLock self, int waitFlag, double timeout) {
             return self.acquire(waitFlag, timeout);
         }
 
         @Specialization
         @TruffleBoundary
-        boolean doAcquire(PLock self, @SuppressWarnings("unused") PNone waitFlag, double timeout) {
+        boolean doAcquire(PRLock self, @SuppressWarnings("unused") PNone waitFlag, double timeout) {
             return self.acquire(1, timeout);
         }
 
         @Specialization
         @TruffleBoundary
-        boolean doAcquire(PLock self, int waitFlag, @SuppressWarnings("unused") PNone timeout) {
+        boolean doAcquire(PRLock self, int waitFlag, @SuppressWarnings("unused") PNone timeout) {
             return self.acquire(waitFlag, -1.0);
         }
 
         @Specialization
         @TruffleBoundary
-        boolean doAcquire(PLock self, @SuppressWarnings("unused") PNone waitFlag, @SuppressWarnings("unused") PNone timeout) {
+        boolean doAcquire(PRLock self, @SuppressWarnings("unused") PNone waitFlag, @SuppressWarnings("unused") PNone timeout) {
             return self.acquire(1, -1.0);
         }
 
-        public static AcquireLockNode create() {
-            return AcquireLockNodeFactory.create();
-        }
-    }
-
-    @Builtin(name = "acquire_lock", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"waitflag", "timeout"})
-    @GenerateNodeFactory
-    abstract static class AcquireLockLockNode extends PythonTernaryBuiltinNode {
-        @Specialization
-        Object acquire(PLock self, Object waitFlag, Object timeout,
-                        @Cached("create()") AcquireLockNode acquireLockNode) {
-            return acquireLockNode.execute(self, waitFlag, timeout);
+        public static AcquireRLockNode create() {
+            return AcquireRLockNodeFactory.create();
         }
     }
 
     @Builtin(name = __ENTER__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, keywordArguments = {"waitflag", "timeout"})
     @GenerateNodeFactory
-    abstract static class EnterLockNode extends PythonTernaryBuiltinNode {
+    abstract static class EnterRLockNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object acquire(PLock self, Object waitFlag, Object timeout,
-                        @Cached("create()") AcquireLockNode acquireLockNode) {
+        Object acquire(PRLock self, Object waitFlag, Object timeout,
+                        @Cached("create()") AcquireRLockNode acquireLockNode) {
             return acquireLockNode.execute(self, waitFlag, timeout);
         }
     }
 
     @Builtin(name = "release", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReleaseLockNode extends PythonUnaryBuiltinNode {
+    abstract static class ReleaseRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object doRelease(PLock self) {
+        Object doRelease(PRLock self) {
             self.release();
             return PNone.NONE;
         }
@@ -134,33 +127,63 @@ public class LockBuiltins extends PythonBuiltins {
 
     @Builtin(name = __EXIT__, fixedNumOfPositionalArgs = 4)
     @GenerateNodeFactory
-    abstract static class ExitLockNode extends PythonBuiltinNode {
+    abstract static class ExitRLockNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object exit(PLock self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
+        Object exit(PRLock self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object value, @SuppressWarnings("unused") Object traceback) {
             self.release();
             return PNone.NONE;
         }
     }
 
-    @Builtin(name = "locked", fixedNumOfPositionalArgs = 1)
+    @Builtin(name = "_is_owned", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class IsLockedLockNode extends PythonUnaryBuiltinNode {
+    abstract static class IsOwnedRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean isLocked(PLock self) {
-            return self.locked();
+        boolean isOwned(PRLock self) {
+            return self.isOwned();
+        }
+    }
+
+    @Builtin(name = "_acquire_restore", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class AcquireRestoreRLockNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object acquireRestore(PRLock self) {
+            if (!self.tryToAcquire()) {
+                self.acquire();
+            }
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "_release_save", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReleaseSaveRLockNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object releaseSave(PRLock self,
+                        @Cached("createBinaryProfile()") ConditionProfile countProfile) {
+            int count = self.getCount();
+            if (countProfile.profile(count == 0)) {
+                throw raise(PythonErrorType.RuntimeError, "cannot release un-acquired lock");
+            }
+            PTuple retVal = factory().createTuple(new Object[]{count, self.getOwnerId()});
+            self.releaseAll();
+            return retVal;
         }
     }
 
     @Builtin(name = __REPR__, fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReprLockNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        String repr(PLock self) {
-            return String.format("<%s %s object at %s>",
+        String repr(PRLock self) {
+            return String.format("<%s %s object owner=%d count=%d at %s>",
                             (self.locked()) ? "locked" : "unlocked",
                             self.getPythonClass(),
+                            self.getOwnerId(),
+                            self.getCount(),
                             self.hashCode());
         }
     }
