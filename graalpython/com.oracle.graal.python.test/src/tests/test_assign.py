@@ -58,6 +58,7 @@ def test_assign_local_func_return():
     assert 'x' in var
     assert var['x'] == 10
 
+
 global_var = {}
 
 
@@ -70,3 +71,17 @@ def test_assign_nonlocal_func_return():
 
     assert 'x' in global_var
     assert global_var['x'] == 10
+
+
+def test_destructuring():
+    a, b = (1, 2)
+    assert a == 1 and b == 2
+
+    a, b, c = "\xe0\xdf\xe7"
+    assert a == "à" and b == "ß" and c == "ç"
+
+    a, b, c = "\u0430\u0431\u0432"
+    assert a == 'а' and b == 'б' and c == 'в'
+    # TODO not supported yet
+#     a, b, c = "\U0001d49c\U0001d49e\U0001d4b5"
+#     assert a == '𝒜' and b == '𝒞' and c == '𝒵'
