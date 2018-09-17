@@ -255,10 +255,13 @@ class SRE_Pattern():
                 result = tregex_call_safe(pattern.exec, string, pos)
                 if not result.isMatch:
                     break
-                elif self.num_groups == 0:
-                    matchlist.append("")
-                elif self.num_groups == 1:
-                    matchlist.append(string[result.start[1]:result.end[1]])
+                elif result.groupCount == 0:
+                    assert False, "inconsistent regex result"
+                    matchlist.append('')
+                elif result.groupCount == 1:
+                    matchlist.append(str(string[result.start[0]:result.end[0]]))
+                elif result.groupCount == 2:
+                    matchlist.append(str(string[result.start[1]:result.end[1]]))
                 else:
                     matchlist.append(SRE_Match(self, pos, endpos, result).groups())
                 no_progress = (result.start[0] == result.end[0])
@@ -353,6 +356,36 @@ class SRE_Pattern():
             return "".join(result)
         except BaseException:
             return self.__compile_cpython_sre().sub(repl, string, count)
+
+
+    def split(self, string, maxsplit=0):
+        n = 0
+        try:
+            pattern = self.__tregex_compile(self.pattern)
+            result = []
+            pos = 0
+            progress = True
+            while (maxsplit == 0 or n < maxsplit) and pos <= len(string) and progress:
+                match_result = tregex_call_safe(pattern.exec, string, pos)
+                if not match_result.isMatch:
+                    break
+                n += 1
+                start = match_result.start[0]
+                end = match_result.end[0]
+                result.append(str(string[pos:start]))
+                # add all group strings
+                for i in range(match_result.groupCount-1):
+                    groupStart = match_result.start[i + 1]
+                    if groupStart >= 0:
+                        result.append(str(string[groupStart:match_result.end[i+1]]))
+                    else:
+                        result.append(None)
+                pos = end
+                progress = (start != end)
+            result.append(str(string[pos:]))
+            return result
+        except BaseException:
+            return self.__compile_cpython_sre().split(string, maxsplit)
 
 
 compile = SRE_Pattern

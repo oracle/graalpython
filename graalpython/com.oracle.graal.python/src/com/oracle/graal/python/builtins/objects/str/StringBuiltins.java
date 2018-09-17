@@ -111,7 +111,7 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         public Object str(PString self) {
-            return self;
+            return self.getValue();
         }
 
         @Specialization
