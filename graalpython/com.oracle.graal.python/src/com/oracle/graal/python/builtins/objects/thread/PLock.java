@@ -44,8 +44,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-
-public class PLock extends AbstractPythonLock {
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+public final class PLock extends AbstractPythonLock {
     private final Semaphore semaphore;
 
     public PLock(PythonClass cls) {
@@ -54,22 +54,34 @@ public class PLock extends AbstractPythonLock {
     }
 
     @Override
-    boolean tryToAcquire() {
+    @TruffleBoundary
+    protected boolean acquireNonBlocking() {
         return semaphore.tryAcquire();
     }
 
     @Override
-    boolean blockUntilAcquire() throws InterruptedException {
-        semaphore.acquire();
-        return true;
+    @TruffleBoundary
+    protected boolean acquireBlocking() {
+        try {
+            semaphore.acquire();
+            return true;
+        } catch (InterruptedException e) {
+            return false;
+        }
     }
 
     @Override
-    boolean acquireTimeout(long timeout) throws InterruptedException {
-        return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+    @TruffleBoundary
+    protected boolean acquireTimeout(long timeout) {
+        try {
+            return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return false;
+        }
     }
 
     @Override
+    @TruffleBoundary
     public void release() {
         semaphore.release();
     }

@@ -44,8 +44,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public class PRLock extends AbstractPythonLock {
+public final class PRLock extends AbstractPythonLock {
     private class InternalReentrantLock extends ReentrantLock {
         private static final long serialVersionUID = 2531000884985514112L;
 
@@ -84,22 +85,30 @@ public class PRLock extends AbstractPythonLock {
     }
 
     @Override
-    boolean tryToAcquire() {
+    @TruffleBoundary
+    protected boolean acquireNonBlocking() {
         return lock.tryLock();
     }
 
     @Override
-    boolean blockUntilAcquire() throws InterruptedException {
+    @TruffleBoundary
+    protected boolean acquireBlocking() {
         lock.lock();
         return true;
     }
 
     @Override
-    boolean acquireTimeout(long timeout) throws InterruptedException {
-        return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
+    @TruffleBoundary
+    protected boolean acquireTimeout(long timeout) {
+        try {
+            return lock.tryLock(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return false;
+        }
     }
 
     @Override
+    @TruffleBoundary
     public void release() {
         lock.unlock();
     }

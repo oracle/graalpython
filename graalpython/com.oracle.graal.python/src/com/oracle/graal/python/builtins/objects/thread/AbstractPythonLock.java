@@ -45,6 +45,10 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 
 public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
+    public static double TIMEOUT_MAX = 2 ^ 31;
+    public static boolean DEFAULT_BLOCKING = true;
+    public static double DEFAULT_TIMEOUT = -1.0;
+
     AbstractPythonLock(PythonClass cls) {
         super(cls);
     }
@@ -58,34 +62,14 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
         return seconds * 1000 + milli;
     }
 
-    abstract boolean tryToAcquire();
+    protected abstract boolean acquireNonBlocking();
 
-    abstract boolean blockUntilAcquire() throws InterruptedException;
+    protected abstract boolean acquireBlocking();
 
-    abstract boolean acquireTimeout(long timeout) throws InterruptedException;
+    protected abstract boolean acquireTimeout(long timeout);
 
-    boolean acquire() {
-        return acquire(false, -1.0);
-    }
-
-    boolean acquire(boolean blocking) {
-        return acquire(blocking, -1.0);
-    }
-
-    boolean acquire(boolean blocking, double timeout) {
-        if (!blocking) {
-            return tryToAcquire();
-        } else {
-            try {
-                if (timeout < 0) {
-                    return blockUntilAcquire();
-                } else {
-                    return acquireTimeout(getTimeoutInMillis(timeout));
-                }
-            } catch (InterruptedException e) {
-                return false;
-            }
-        }
+    protected boolean acquireTimeout(double timeout) {
+        return acquireTimeout(getTimeoutInMillis(timeout));
     }
 
     public abstract void release();

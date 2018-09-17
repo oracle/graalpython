@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.thread.AbstractPythonLock.TIMEOUT_MAX;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
@@ -70,6 +71,15 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadModuleBuiltinsFactory.getFactories();
+    }
+
+    @Builtin(name = "__truffle_get_timeout_max__", fixedNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class GetTimeoutMaxConstNode extends PythonBuiltinNode {
+        @Specialization
+        double getId() {
+            return TIMEOUT_MAX;
+        }
     }
 
     @Builtin(name = "LockType", fixedNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PLock)

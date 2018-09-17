@@ -286,6 +286,17 @@ class BaseTestCase(unittest.TestCase):
         support.threading_cleanup(*self._threads)
         support.reap_children()
 
+    def assertLess(self, a, b, msg=None):
+        if not a < b:
+            standardMsg = '%s not less than %s' % (a, b)
+            self.fail(self._formatMessage(msg, standardMsg))
+
+    def assertGreaterEqual(self, a, b, msg=None):
+        """Just like self.assertTrue(a >= b), but with a nicer default message."""
+        if not a >= b:
+            standardMsg = '%s not greater than or equal to %s' % (a, b)
+            self.fail(self._formatMessage(msg, standardMsg))
+
     def assertTimeout(self, actual, expected):
         # The waiting and/or time.time() can be imprecise, which
         # is why comparing to the expected value would sometimes fail
@@ -402,32 +413,32 @@ class LockTests(BaseTestCase):
             time.sleep(0.4)
             self.assertEqual(n, len(threading.enumerate()))
 
-    # def test_timeout(self):
-    #     lock = self.locktype()
-    #     # Can't set timeout if not blocking
-    #     self.assertRaises(ValueError, lock.acquire, 0, 1)
-    #     # Invalid timeout values
-    #     self.assertRaises(ValueError, lock.acquire, timeout=-100)
-    #     self.assertRaises(OverflowError, lock.acquire, timeout=1e100)
-    #     self.assertRaises(OverflowError, lock.acquire, timeout=TIMEOUT_MAX + 1)
-    #     # TIMEOUT_MAX is ok
-    #     lock.acquire(timeout=TIMEOUT_MAX)
-    #     lock.release()
-    #     t1 = time.time()
-    #     self.assertTrue(lock.acquire(timeout=5))
-    #     t2 = time.time()
-    #     # Just a sanity test that it didn't actually wait for the timeout.
-    #     self.assertLess(t2 - t1, 5)
-    #     results = []
-    #
-    #     def f():
-    #         t1 = time.time()
-    #         results.append(lock.acquire(timeout=0.5))
-    #         t2 = time.time()
-    #         results.append(t2 - t1)
-    #     Bunch(f, 1).wait_for_finished()
-    #     self.assertFalse(results[0])
-    #     self.assertTimeout(results[1], 0.5)
+    def test_timeout(self):
+        lock = self.locktype()
+        # Can't set timeout if not blocking
+        self.assertRaises(ValueError, lock.acquire, 0, 1)
+        # Invalid timeout values
+        self.assertRaises(ValueError, lock.acquire, timeout=-100)
+        self.assertRaises(OverflowError, lock.acquire, timeout=1e100)
+        self.assertRaises(OverflowError, lock.acquire, timeout=thread.TIMEOUT_MAX + 1)
+        # TIMEOUT_MAX is ok
+        lock.acquire(timeout=thread.TIMEOUT_MAX)
+        lock.release()
+        t1 = time.time()
+        self.assertTrue(lock.acquire(timeout=5))
+        t2 = time.time()
+        # Just a sanity test that it didn't actually wait for the timeout.
+        self.assertLess(t2 - t1, 5)
+        results = []
+
+        def f():
+            t1 = time.time()
+            results.append(lock.acquire(timeout=0.5))
+            t2 = time.time()
+            results.append(t2 - t1)
+        Bunch(f, 1).wait_for_finished()
+        self.assertFalse(results[0])
+        self.assertTimeout(results[1], 0.5)
 
     def test_weakref_exists(self):
         lock = self.locktype()

@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 error = RuntimeError
-TIMEOUT_MAX = 2**31
+TIMEOUT_MAX = __truffle_get_timeout_max__()
 
 
 @__builtin__
