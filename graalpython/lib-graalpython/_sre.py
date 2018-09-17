@@ -255,10 +255,13 @@ class SRE_Pattern():
                 result = tregex_call_safe(pattern.exec, string, pos)
                 if not result.isMatch:
                     break
-                elif self.num_groups == 0:
-                    matchlist.append("")
-                elif self.num_groups == 1:
-                    matchlist.append(string[result.start[1]:result.end[1]])
+                elif result.groupCount == 0:
+                    assert False, "inconsistent regex result"
+                    matchlist.append('')
+                elif result.groupCount == 1:
+                    matchlist.append(str(string[result.start[0]:result.end[0]]))
+                elif result.groupCount == 2:
+                    matchlist.append(str(string[result.start[1]:result.end[1]]))
                 else:
                     matchlist.append(SRE_Match(self, pos, endpos, result).groups())
                 no_progress = (result.start[0] == result.end[0])
