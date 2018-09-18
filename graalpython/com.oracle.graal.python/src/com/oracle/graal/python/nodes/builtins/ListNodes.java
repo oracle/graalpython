@@ -152,6 +152,7 @@ public abstract class ListNodes {
                                     int value = next.executeInt(iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -170,6 +171,7 @@ public abstract class ListNodes {
                                     long value = next.executeLong(iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -188,6 +190,7 @@ public abstract class ListNodes {
                                     double value = next.executeDouble(iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -206,6 +209,7 @@ public abstract class ListNodes {
                                     PList value = PList.expect(next.execute(iterator));
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
@@ -224,6 +228,7 @@ public abstract class ListNodes {
                                     PTuple value = PTuple.expect(next.execute(iterator));
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
                                     }
                                     elements[i++] = value;
                                 } catch (PException e) {
