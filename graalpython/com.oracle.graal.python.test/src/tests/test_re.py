@@ -85,7 +85,7 @@ class S(str):
 
 class B(bytes):
     def __getitem__(self, index):
-        return B(super().__getitem__(index))
+        return super().__getitem__(index)
 
 
 class ReTests(unittest.TestCase):
