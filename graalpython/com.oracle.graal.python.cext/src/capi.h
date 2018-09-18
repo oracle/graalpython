@@ -166,11 +166,11 @@ inline void* native_to_java(PyObject* obj) {
         return Py_None;
     } else if (polyglot_is_string(obj)) {
         return obj;
-    } else if (truffle_is_handle_to_managed(obj)) {
+    } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     } else {
         void* refcnt = obj->ob_refcnt;
-        if (truffle_is_handle_to_managed(refcnt)) {
+        if (!truffle_cannot_be_handle(refcnt)) {
             return resolve_handle(cache, refcnt);
         } else if (IS_POINTER(refcnt)) {
             return refcnt;

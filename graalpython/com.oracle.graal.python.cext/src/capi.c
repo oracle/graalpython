@@ -215,12 +215,12 @@ PyObject* to_sulong(void *o) {
 /** to be used from Java code only; reads native 'ob_type' field */
 void* get_ob_type(PyObject* obj) {
     PyTypeObject*  type = obj->ob_type;
-    if (truffle_is_handle_to_managed(type)) {
+    if (!truffle_cannot_be_handle(type)) {
         return resolve_handle(cache, (uint64_t)type);
     } else {
         // we have stored a handle to the Java class in ob_refcnt
         void* handle = (void*)((PyObject*)type)->ob_refcnt;
-        if (truffle_is_handle_to_managed(handle)) {
+        if (!truffle_cannot_be_handle(handle)) {
             return resolve_handle(cache, (uint64_t)handle);
         } else {
             // assume handle is a TruffleObject
@@ -248,7 +248,7 @@ uint64_t PyTruffle_Wchar_Size() {
 }
 
 void* PyObjectHandle_ForJavaObject(void* cobj, unsigned long flags) {
-    if (truffle_is_handle_to_managed(cobj)) {
+    if (truffle_cannot_be_handle(cobj)) {
         return truffle_deref_handle_for_managed(cobj);
     }
     return cobj;
@@ -256,7 +256,7 @@ void* PyObjectHandle_ForJavaObject(void* cobj, unsigned long flags) {
 
 /** to be used from Java code only; only creates the deref handle */
 void* PyObjectHandle_ForJavaType(void* ptype) {
-    if (truffle_is_handle_to_managed(ptype)) {
+    if (truffle_cannot_be_handle(ptype)) {
         return truffle_deref_handle_for_managed(ptype);
     }
     return ptype;
