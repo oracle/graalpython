@@ -336,10 +336,11 @@ class SRE_Pattern():
         while pos != -1 and start < n:
             if pos+1 < n:
                 if repl[pos + 1].isdigit() and match_result.groupCount > 0:
+                    # TODO: Should handle backreferences longer than 1 digit and fall back to octal escapes.
                     group_nr = int(repl[pos+1].decode('ascii')) if self.__binary else int(repl[pos+1])
                     group_str = group(match_result, group_nr, string)
                     if group_str is None:
-                        raise ValueError("invalid group reference %s at position %s" % (group_nr, pos))
+                        raise error("invalid group reference %s at position %s" % (group_nr, pos))
                     result += repl[start:pos] + group_str
                     start = pos + 2
                 elif repl[pos + 1] == (b'g' if self.__binary else 'g'):
@@ -347,15 +348,14 @@ class SRE_Pattern():
                     if group_ref:
                         group_str = group(match_result, int(group_ref) if digits_only else pattern.groups[group_ref], string)
                         if group_str is None:
-                            raise ValueError("invalid group reference %s at position %s" % (group_ref, pos))
+                            raise error("invalid group reference %s at position %s" % (group_ref, pos))
                         result += repl[start:pos] + group_str
                     start = group_ref_end + 1
                 elif repl[pos + 1] == backslash:
                     result += repl[start:pos] + backslash
                     start = pos + 2
                 else:
-                    result += repl[start:pos + 2]
-                    start = pos + 2
+                    assert False, "unexpected escape in re.sub"
             pos = repl.find(backslash, start)
         result += repl[start:]
         return result
@@ -386,7 +386,10 @@ class SRE_Pattern():
         is_string_rep = isinstance(repl, str) or _is_bytes_like(repl)
         if is_string_rep:
             self.__check_input_type(repl)
-            repl = _process_escape_sequences(repl)
+            try:
+                repl = _process_escape_sequences(repl)
+            except ValueError as e:
+                raise error(str(e))
         while (count == 0 or n < count) and pos <= len(string):
             match_result = tregex_call_exec(pattern.exec, string, pos)
             if not match_result.isMatch:
