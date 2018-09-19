@@ -44,6 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PySequenceArrayWrapper;
@@ -86,6 +87,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @MessageResolution(receiverType = PySequenceArrayWrapper.class)
 public class PySequenceArrayWrapperMR {
@@ -162,17 +164,19 @@ public class PySequenceArrayWrapperMR {
          * {@code uint64_t} since we do not know how many bytes are requested.
          */
         @Specialization
-        long doBytesI64(PBytes bytes, long byteIdx,
+        long doBytesI64(PIBytesLike bytesLike, long byteIdx,
+                        @Cached("createClassProfile()") ValueProfile profile,
                         @Cached("create()") SequenceStorageNodes.LenNode lenNode,
                         @Cached("create()") SequenceStorageNodes.GetItemNode getItemNode) {
-            int len = lenNode.execute(bytes.getSequenceStorage());
+            PIBytesLike profiled = profile.profile(bytesLike);
+            int len = lenNode.execute(profiled.getSequenceStorage());
             // simulate sentinel value
             if (byteIdx == len) {
                 return 0L;
             }
             int i = (int) byteIdx;
             long result = 0;
-            SequenceStorage store = bytes.getSequenceStorage();
+            SequenceStorage store = profiled.getSequenceStorage();
             result |= getItemNode.executeInt(store, i);
             if (i + 1 < len)
                 result |= ((long) getItemNode.executeInt(store, i + 1) << 8L) & 0xFF00L;
