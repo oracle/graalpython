@@ -785,7 +785,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private Object stringToInt(String num, int base) {
             String s = num.replace("_", "");
             if ((base >= 2 && base <= 32) || base == 0) {
-                BigInteger bi = asciiToBigInteger(s, 10, false);
+                BigInteger bi = asciiToBigInteger(s, base, false);
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                     return bi;
                 } else {

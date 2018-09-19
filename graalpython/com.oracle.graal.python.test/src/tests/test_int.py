@@ -312,3 +312,6 @@ def test_create_int_from_bool():
 
     assert int(SpecInt1()) == 1
     assert int(SpecInt0()) == 0
+
+def test_create_int_from_string():
+  assert int("5c7920a80f5261a2e5322163c79b71a25a41f414", 16) == 527928385865769069253929759180846776123316630548
