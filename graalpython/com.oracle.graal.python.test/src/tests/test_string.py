@@ -29,6 +29,10 @@ def test_rfind():
     assert "test string test".rfind("string") == 5
     assert "test string".rfind("test", 5) == -1
     assert "test string test".rfind("test", None, 12) == 0
+    assert "test string test".rfind("test", 4) == 12
+    assert "test string test".rfind("test", 4, 12) == -1
+    assert "test string test".rfind("test", 4, 14) == -1
+    assert "test string test".rfind("test", None, 14) == 0
 
 
 def test_format():
