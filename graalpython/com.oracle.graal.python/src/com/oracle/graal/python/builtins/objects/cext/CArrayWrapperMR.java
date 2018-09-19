@@ -40,10 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import com.oracle.graal.python.builtins.objects.cext.CArrayWrapperMRFactory.GetTypeIDNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodes.CExtBaseNode;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
 import com.oracle.truffle.api.interop.MessageResolution;
@@ -58,7 +65,6 @@ public class CArrayWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
-
         public char access(CStringWrapper object, int idx) {
             String s = object.getDelegate();
             if (idx >= 0 && idx < s.length()) {
@@ -66,11 +72,17 @@ public class CArrayWrapperMR {
             } else if (idx == s.length()) {
                 return '\0';
             }
+            CompilerDirectives.transferToInterpreter();
             throw UnknownIdentifierException.raise(Integer.toString(idx));
         }
 
-        public byte access(CByteArrayWrapper object, long idx) {
-            return access(object, (int) idx);
+        public char access(CStringWrapper object, long idx) {
+            try {
+                return access(object, PInt.intValueExact(idx));
+            } catch (ArithmeticException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw UnknownIdentifierException.raise(Long.toString(idx));
+            }
         }
 
         public byte access(CByteArrayWrapper object, int idx) {
@@ -80,7 +92,50 @@ public class CArrayWrapperMR {
             } else if (idx == arr.length) {
                 return (byte) 0;
             }
+            CompilerDirectives.transferToInterpreter();
             throw UnknownIdentifierException.raise(Integer.toString(idx));
+        }
+
+        public byte access(CByteArrayWrapper object, long idx) {
+            try {
+                return access(object, PInt.intValueExact(idx));
+            } catch (ArithmeticException e) {
+                CompilerDirectives.transferToInterpreter();
+                throw UnknownIdentifierException.raise(Long.toString(idx));
+            }
+        }
+    }
+
+    @SuppressWarnings("unknown-message")
+    @Resolve(message = "com.oracle.truffle.llvm.spi.GetDynamicType")
+    abstract static class GetDynamicTypeNode extends Node {
+        @Child private GetTypeIDNode getTypeId = GetTypeIDNodeGen.create();
+
+        public Object access(CStringWrapper object) {
+            return getTypeId.execute(object);
+        }
+    }
+
+    @ImportStatic(SpecialMethodNames.class)
+    abstract static class GetTypeIDNode extends CExtBaseNode {
+
+        @Child private PCallNativeNode callUnaryNode = PCallNativeNode.create();
+
+        @CompilationFinal private TruffleObject funGetByteArrayTypeID;
+
+        public abstract Object execute(Object delegate);
+
+        @Specialization
+        Object doTuple(CStringWrapper object) {
+            return callGetByteArrayTypeID(object.getDelegate().length());
+        }
+
+        private Object callGetByteArrayTypeID(long len) {
+            if (funGetByteArrayTypeID == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                funGetByteArrayTypeID = importCAPISymbol(NativeCAPISymbols.FUN_GET_BYTE_ARRAY_TYPE_ID);
+            }
+            return callUnaryNode.execute(funGetByteArrayTypeID, new Object[]{len});
         }
     }
 
