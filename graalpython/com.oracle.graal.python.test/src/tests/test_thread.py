@@ -279,6 +279,8 @@ class Bunch(object):
 
 
 class BaseTestCase(unittest.TestCase):
+    failureException = AssertionError
+
     def setUp(self):
         self._threads = support.threading_setup()
 
