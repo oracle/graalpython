@@ -593,7 +593,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         private boolean isNull(TruffleObject result) {
             if (isNullNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                isNullNode = Message.IS_NULL.createNode();
+                isNullNode = insert(Message.IS_NULL.createNode());
             }
             return ForeignAccess.sendIsNull(isNullNode, result);
         }
