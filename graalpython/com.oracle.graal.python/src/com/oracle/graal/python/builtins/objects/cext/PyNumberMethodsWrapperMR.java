@@ -41,22 +41,28 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_ADD;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_AND;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INDEX;
-import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_INPLACE_MULTIPLY;
+import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_MULTIPLY;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_POW;
 import static com.oracle.graal.python.builtins.objects.cext.NativeMemberNames.NB_TRUE_DIVIDE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__IMUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__MUL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__POW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUEDIV__;
 
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.ToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.PyNumberMethodsWrapperMRFactory.ReadMethodNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.MessageResolution;
 import com.oracle.truffle.api.interop.Resolve;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -67,65 +73,13 @@ public class PyNumberMethodsWrapperMR {
 
     @Resolve(message = "READ")
     abstract static class ReadNode extends Node {
-        @Child private LookupAttributeInMRONode getAddAttributeNode;
-        @Child private LookupAttributeInMRONode getIndexAttributeNode;
-        @Child private LookupAttributeInMRONode getPowAttributeNode;
-        @Child private LookupAttributeInMRONode getMulAttributeNode;
-        @Child private LookupAttributeInMRONode getTrueDivAttributeNode;
+        @Child private ReadMethodNode readMethodNode = ReadMethodNodeGen.create();
         @Child private ToSulongNode toSulongNode;
 
         public Object access(PyNumberMethodsWrapper object, String key) {
             // translate key to attribute name
             PythonClass delegate = object.getDelegate();
-            Object result;
-            switch (key) {
-                case NB_ADD:
-                    if (getAddAttributeNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getAddAttributeNode = insert(LookupAttributeInMRONode.create(__ADD__));
-                    }
-                    result = getAddAttributeNode.execute(delegate);
-                    break;
-                case NB_INDEX:
-                    if (getIndexAttributeNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getIndexAttributeNode = insert(LookupAttributeInMRONode.create(__INDEX__));
-                    }
-                    result = getIndexAttributeNode.execute(delegate);
-                    break;
-                case NB_POW:
-                    if (getPowAttributeNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getPowAttributeNode = insert(LookupAttributeInMRONode.create(__POW__));
-                    }
-                    result = getPowAttributeNode.execute(delegate);
-                    break;
-                case NB_TRUE_DIVIDE:
-                    if (getTrueDivAttributeNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getTrueDivAttributeNode = insert(LookupAttributeInMRONode.create(__TRUEDIV__));
-                    }
-                    result = getTrueDivAttributeNode.execute(delegate);
-                    break;
-                case NB_MULTIPLY:
-                    if (getMulAttributeNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getMulAttributeNode = insert(LookupAttributeInMRONode.create(__MUL__));
-                    }
-                    result = getMulAttributeNode.execute(delegate);
-                    break;
-                case NB_INPLACE_MULTIPLY:
-                    if (getMulAttributeNode == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        getMulAttributeNode = insert(LookupAttributeInMRONode.create(__IMUL__));
-                    }
-                    result = getMulAttributeNode.execute(delegate);
-                    break;
-                default:
-                    // TODO extend list
-                    throw UnknownIdentifierException.raise(key);
-            }
-            return getToSulongNode().execute(result);
+            return getToSulongNode().execute(readMethodNode.execute(delegate, key));
         }
 
         private ToSulongNode getToSulongNode() {
@@ -136,4 +90,48 @@ public class PyNumberMethodsWrapperMR {
             return toSulongNode;
         }
     }
+
+    abstract static class ReadMethodNode extends PNodeWithContext {
+
+        public abstract Object execute(PythonClass clazz, String key);
+
+        @Specialization(limit = "99", guards = {"key == cachedKey"})
+        Object getMethod(PythonClass clazz, @SuppressWarnings("unused") String key,
+                        @Cached("key") @SuppressWarnings("unused") String cachedKey,
+                        @Cached("createLookupNode(cachedKey)") LookupAttributeInMRONode lookupNode) {
+            if (lookupNode != null) {
+                return lookupNode.execute(clazz);
+            }
+            // TODO extend list
+            CompilerDirectives.transferToInterpreter();
+            throw UnknownIdentifierException.raise(key);
+        }
+
+        protected LookupAttributeInMRONode createLookupNode(String key) {
+            switch (key) {
+                case NB_ADD:
+                    return LookupAttributeInMRONode.create(__ADD__);
+                case NB_AND:
+                    return LookupAttributeInMRONode.create(__AND__);
+                case NB_INDEX:
+                    return LookupAttributeInMRONode.create(__INDEX__);
+                case NB_POW:
+                    return LookupAttributeInMRONode.create(__POW__);
+                case NB_TRUE_DIVIDE:
+                    return LookupAttributeInMRONode.create(__TRUEDIV__);
+                case NB_MULTIPLY:
+                    return LookupAttributeInMRONode.create(__MUL__);
+                case NB_INPLACE_MULTIPLY:
+                    return LookupAttributeInMRONode.create(__IMUL__);
+                default:
+                    // TODO extend list
+                    throw UnknownIdentifierException.raise(key);
+            }
+        }
+
+        protected static boolean eq(String expected, String actual) {
+            return expected.equals(actual);
+        }
+    }
+
 }
