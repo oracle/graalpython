@@ -70,7 +70,7 @@ long long PyLong_AsLongLongAndOverflow(PyObject *obj, int *overflow) {
     return result;
 }
 
-unsigned long long PyLong_AsUnsignedLonglong(PyObject *obj) {
+unsigned long long PyLong_AsUnsignedLongLong(PyObject *obj) {
     return as_unsigned_long_long(obj);
 }
 
