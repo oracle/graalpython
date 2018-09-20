@@ -95,7 +95,7 @@ public class PyNumberMethodsWrapperMR {
 
         public abstract Object execute(PythonClass clazz, String key);
 
-        @Specialization(limit = "99", guards = {"key == cachedKey"})
+        @Specialization(limit = "99", guards = {"eq(cachedKey, key)"})
         Object getMethod(PythonClass clazz, @SuppressWarnings("unused") String key,
                         @Cached("key") @SuppressWarnings("unused") String cachedKey,
                         @Cached("createLookupNode(cachedKey)") LookupAttributeInMRONode lookupNode) {
