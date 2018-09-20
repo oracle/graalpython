@@ -359,6 +359,45 @@ def gate_unittests(args=[], subdir=""):
         mx.run(["python3"] + test_args, nonZeroIsFatal=True)
 
 
+def _python_svm_unittest(svm_image):
+    suite_dir = _suite.dir
+    llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
+
+    # tests root directory
+    tests_folder = os.path.join(suite_dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
+
+    # list of excluded tests
+    excluded = ["test_interop.py"]
+
+    def is_included(path):
+        if path.endswith(".py"):
+            basename = os.path.basename(path)
+            return basename.startswith("test_") and basename not in excluded
+        return False
+
+    # list all 1st-level tests and exclude the SVM-incompatible ones
+    testfiles = []
+    paths = [tests_folder]
+    while paths:
+        path = paths.pop()
+        if is_included(path):
+            testfiles.append(path)
+        else:
+            try:
+                paths += [(path + f if path.endswith("/") else "%s/%s" % (path, f)) for f in
+                          os.listdir(path)]
+            except OSError:
+                pass
+
+    args = ["--python.CoreHome=%s" % os.path.join(suite_dir, "graalpython", "lib-graalpython"),
+            "--python.StdLibHome=%s" % os.path.join(suite_dir, "graalpython", "lib-python/3"),
+            llvm_home,
+            os.path.join(suite_dir, "graalpython", "com.oracle.graal.python.test", "src", "graalpytest.py"),
+            "-v"]
+    args += testfiles
+    return mx.run([svm_image] + args, nonZeroIsFatal=True)
+
+
 def graalpython_gate_runner(args, tasks):
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
@@ -382,39 +421,11 @@ def graalpython_gate_runner(args, tasks):
 
     with Task('GraalPython Python tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
-            if not os.path.exists("./graalpython-svm"):
+            svm_image_name = "./graalpython-svm"
+            if not os.path.exists(svm_image_name):
                 python_svm(["-h"])
-            if os.path.exists("./graalpython-svm"):
-                langhome = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-
-                # tests root directory
-                tests_folder = "graalpython/com.oracle.graal.python.test/src/tests/"
-
-                # list of excluded tests
-                excluded = ["test_interop.py"]
-
-                def is_included(path):
-                    if path.endswith(".py"):
-                        basename = path.rpartition("/")[2]
-                        return basename.startswith("test_") and basename not in excluded
-                    return False
-
-                # list all 1st-level tests and exclude the SVM-incompatible ones
-                testfiles = []
-                paths = [tests_folder]
-                while paths:
-                    path = paths.pop()
-                    if is_included(path):
-                        testfiles.append(path)
-                    else:
-                        try:
-                            paths += [(path + f if path.endswith("/") else "%s/%s" % (path, f)) for f in
-                                      os.listdir(path)]
-                        except OSError:
-                            pass
-
-                test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v"] + testfiles
-                mx.run(["./graalpython-svm", "--python.CoreHome=graalpython/lib-graalpython", "--python.StdLibHome=graalpython/lib-python/3", langhome] + test_args, nonZeroIsFatal=True)
+            else:
+                _python_svm_unittest(svm_image_name)
 
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
