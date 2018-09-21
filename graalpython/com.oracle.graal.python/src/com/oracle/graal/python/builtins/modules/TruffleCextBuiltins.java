@@ -1863,4 +1863,39 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return new HandleCache(ptrToResolveHandle);
         }
     }
+
+    @Builtin(name = "PyLong_FromLongLong", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyLong_FromLongLong extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "signed != 0")
+        Object doSignedInt(int n, @SuppressWarnings("unused") int signed,
+                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(n);
+        }
+
+        @Specialization(guards = "signed == 0")
+        Object doUnsignedInt(int n, @SuppressWarnings("unused") int signed,
+                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+            if (n < 0) {
+                return toSulongNode.execute(n & 0xFFFFFFFFL);
+            }
+            return toSulongNode.execute(n);
+        }
+
+        @Specialization(guards = "signed != 0")
+        Object doSignedLong(long n, @SuppressWarnings("unused") int signed,
+                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(n);
+        }
+
+        @Specialization(guards = "signed == 0")
+        Object doUnsignedLong(long n, @SuppressWarnings("unused") int signed,
+                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+            if (n < 0) {
+                CompilerDirectives.transferToInterpreter();
+                throw new UnsupportedOperationException();
+            }
+            return toSulongNode.execute(n);
+        }
+    }
 }
