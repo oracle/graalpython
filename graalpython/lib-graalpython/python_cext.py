@@ -374,7 +374,7 @@ def PyNumber_Check(v):
 
 
 @may_raise
-def PyNumber_BinOp(v, w, binop, name):
+def PyNumber_BinOp(v, w, binop):
     if binop == 0:
         return v + w
     elif binop == 1:
@@ -398,11 +398,36 @@ def PyNumber_BinOp(v, w, binop, name):
     elif binop == 10:
         return v % w
     else:
-        raise SystemError("unknown binary operator %s" % name)
+        raise SystemError("unknown binary operator (code=%s)" % binop)
+
+
+def _binop_name(binop):
+    if binop == 0:
+        return "+"
+    elif binop == 1:
+        return "-"
+    elif binop == 2:
+        return "*"
+    elif binop == 3:
+        return "/"
+    elif binop == 4:
+        return "<<"
+    elif binop == 5:
+        return ">>"
+    elif binop == 6:
+        return "|"
+    elif binop == 7:
+        return "&"
+    elif binop == 8:
+        return "^"
+    elif binop == 9:
+        return "//"
+    elif binop == 10:
+        return "%"
 
 
 @may_raise
-def PyNumber_InPlaceBinOp(v, w, binop, name):
+def PyNumber_InPlaceBinOp(v, w, binop):
     control = v
     if binop == 0:
         v += w
@@ -427,14 +452,14 @@ def PyNumber_InPlaceBinOp(v, w, binop, name):
     elif binop == 10:
         v %= w
     else:
-        raise SystemError("unknown binary operator %s" % name)
+        raise SystemError("unknown in-place binary operator (code=%s)" % binop)
     if control is not v:
-        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (name, type(v), type(w)))
+        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (_binop_name(binop), type(v), type(w)))
     return control
 
 
 @may_raise
-def PyNumber_UnaryOp(v, unaryop, name):
+def PyNumber_UnaryOp(v, unaryop):
     if unaryop == 0:
         return +v
     elif unaryop == 1:
@@ -442,7 +467,7 @@ def PyNumber_UnaryOp(v, unaryop, name):
     elif unaryop == 2:
         return ~v
     else:
-        raise SystemError("unknown unary operator %s" % name)
+        raise SystemError("unknown unary operator (code=%s)" % unaryop)
 
 
 @may_raise

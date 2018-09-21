@@ -217,18 +217,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             return os.environ.get("USER") == user
 
         if _is_user("tim", "MAGLEV_HOME") or _is_user("cbasca") or _is_user("fa"):
-            suite_import = mx.SuiteImport("tools", version=None, urlinfos=None, dynamicImport=True, in_subdir=True)
-            imported_suite, _ = mx._find_suite_import(_suite, suite_import, fatalIfMissing=False, load=False)
-            if imported_suite:
-                imported_suite._preload_suite_dict()
-                try:
-                    mx._register_suite(imported_suite)
-                    imported_suite._load()
-                    imported_suite._init_metadata()
-                    imported_suite._resolve_dependencies()
-                    imported_suite._post_init()
-                except AssertionError:
-                    pass # already registered
+            _suite.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
             dists.append('CHROMEINSPECTOR')
             if _sulong:
                 vm_args.append("-Dpolyglot.llvm.enableLVI=true")

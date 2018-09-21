@@ -37,18 +37,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-class classmethod(object):
-    method = None
+class CustomType:
+    @classmethod
+    def customClassMethod(clazz, *args):
+        return args[0]
 
-    def __init__(self, func):
-        self.__func__ = func
-
-    def __get__(self, obj, instance=None, owner=None):
-        if owner is None:
-            return classmethod.method(type(instance), obj.__func__)
-        else:
-            return classmethod.method(owner, obj.__func__)
+def count(num):
+    total = 0
+    for i in range(num):
+        total += CustomType.customClassMethod(i)
+    return total
 
 
-classmethod.method = type(classmethod(None).__init__)
-classmethod.__get__ = __builtin__(classmethod.__get__)
+def measure(num):
+    result = count(num)
+    print("result = " + str(result))
+
+
+def __benchmark__(num=1000000):
+    measure(num)
+

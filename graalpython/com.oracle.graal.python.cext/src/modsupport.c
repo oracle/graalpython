@@ -54,7 +54,7 @@ PyObject* PyTruffle_GetArg(positional_argstack* p, PyObject* kwds, char** kwdnam
     if (!keywords_only) {
         int l = UPCALL_CEXT_I(_jls_PyObject_LEN, native_to_java(p->argv));
         if (p->argnum < l) {
-            out = PyTuple_GetItem(p->argv, p->argnum);
+            out = PyTuple_GET_ITEM(p->argv, p->argnum);
         }
     }
     if (out == NULL && p->prev == NULL && kwdnames != NULL) { // only the bottom argstack can have keyword names

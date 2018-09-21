@@ -66,74 +66,74 @@ int PyNumber_Check(PyObject *o) {
 }
 
 UPCALL_ID(PyNumber_UnaryOp);
-static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop, char *unaryop_name) {
-    return UPCALL_CEXT_O(_jls_PyNumber_UnaryOp, native_to_java(v), unaryop, polyglot_from_string(unaryop_name, SRC_CS));
+static PyObject * do_unaryop(PyObject *v, UnaryOp unaryop) {
+    return UPCALL_CEXT_O(_jls_PyNumber_UnaryOp, native_to_java(v), unaryop);
 }
 
 UPCALL_ID(PyNumber_BinOp);
-static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop, char *binop_name) {
-    return UPCALL_CEXT_O(_jls_PyNumber_BinOp, native_to_java(v), native_to_java(w), binop, polyglot_from_string(binop_name, SRC_CS));
+static PyObject * do_binop(PyObject *v, PyObject *w, BinOp binop) {
+    return UPCALL_CEXT_O(_jls_PyNumber_BinOp, native_to_java(v), native_to_java(w), binop);
 }
 
 UPCALL_ID(PyNumber_InPlaceBinOp);
-static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop, char *binop_name) {
-    return UPCALL_CEXT_O(_jls_PyNumber_InPlaceBinOp, native_to_java(v), native_to_java(w), binop, polyglot_from_string(binop_name, SRC_CS));
+static PyObject * do_inplace_binop(PyObject *v, PyObject *w, BinOp binop) {
+    return UPCALL_CEXT_O(_jls_PyNumber_InPlaceBinOp, native_to_java(v), native_to_java(w), binop);
 }
 
 PyObject * PyNumber_Add(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, ADD, "+");
+	return do_binop(o1, o2, ADD);
 }
 
 PyObject * PyNumber_Subtract(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, SUB, "-");
+	return do_binop(o1, o2, SUB);
 }
 
 PyObject * PyNumber_Multiply(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, MUL, "*");
+	return do_binop(o1, o2, MUL);
 }
 
 PyObject * PyNumber_TrueDivide(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, TRUEDIV, "/");
+	return do_binop(o1, o2, TRUEDIV);
 }
 
 PyObject * PyNumber_FloorDivide(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, FLOORDIV, "//");
+	return do_binop(o1, o2, FLOORDIV);
 }
 
 PyObject * PyNumber_Remainder(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, MOD, "%");
+	return do_binop(o1, o2, MOD);
 }
 
 PyObject * PyNumber_Lshift(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, LSHIFT, "<<");
+	return do_binop(o1, o2, LSHIFT);
 }
 
 PyObject * PyNumber_Rshift(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, RSHIFT, ">>");
+	return do_binop(o1, o2, RSHIFT);
 }
 
 PyObject * PyNumber_Or(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, OR, "|");
+	return do_binop(o1, o2, OR);
 }
 
 PyObject * PyNumber_And(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, AND, "&");
+	return do_binop(o1, o2, AND);
 }
 
 PyObject * PyNumber_Xor(PyObject *o1, PyObject *o2) {
-	return do_binop(o1, o2, XOR, "^");
+	return do_binop(o1, o2, XOR);
 }
 
 PyObject * PyNumber_Positive(PyObject *o) {
-	return do_unaryop(o, POS, "+");
+	return do_unaryop(o, POS);
 }
 
 PyObject * PyNumber_Negative(PyObject *o) {
-	return do_unaryop(o, NEG, "-");
+	return do_unaryop(o, NEG);
 }
 
 PyObject * PyNumber_Invert(PyObject *o) {
-	return do_unaryop(o, INVERT, "~");
+	return do_unaryop(o, INVERT);
 }
 
 UPCALL_ID(PyNumber_Index);
@@ -145,7 +145,7 @@ PyObject * PyNumber_Index(PyObject *o) {
 }
 
 PyObject * PyNumber_InPlaceTrueDivide(PyObject *o1, PyObject *o2) {
-    return do_inplace_binop(o1, o2, TRUEDIV, "/");
+    return do_inplace_binop(o1, o2, TRUEDIV);
 }
 
 Py_ssize_t PyNumber_AsSsize_t(PyObject *item, PyObject *err) {

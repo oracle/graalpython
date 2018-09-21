@@ -149,8 +149,36 @@ extern void* (*PY_TRUFFLE_CEXT_LANDING_PTR)(void* name, ...);
 #define as_double(obj) polyglot_as_double(polyglot_invoke(PY_TRUFFLE_CEXT, "to_double", to_java(obj)))
 #define as_float(obj) ((float)as_double(obj))
 
+typedef void* (*cache_t)(uint64_t);
+extern cache_t cache;
 
-void* native_to_java(PyObject* obj);
+// Heuristic to test if some value is a pointer object
+// TODO we need a reliable solution for that
+#define IS_POINTER(__val__) (polyglot_is_value(__val__) && !polyglot_fits_in_i64(__val__))
+
+#define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
+
+__attribute__((always_inline))
+inline void* native_to_java(PyObject* obj) {
+    if (obj == NULL) {
+        return Py_NoValue;
+    } else if (obj == Py_None) {
+        return Py_None;
+    } else if (polyglot_is_string(obj)) {
+        return obj;
+    } else if (!truffle_cannot_be_handle(obj)) {
+        return resolve_handle(cache, (uint64_t)obj);
+    } else {
+        void* refcnt = obj->ob_refcnt;
+        if (!truffle_cannot_be_handle(refcnt)) {
+            return resolve_handle(cache, refcnt);
+        } else if (IS_POINTER(refcnt)) {
+            return refcnt;
+        }
+        return obj;
+    }
+}
+
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
