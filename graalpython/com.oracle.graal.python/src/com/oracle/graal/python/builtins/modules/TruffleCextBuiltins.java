@@ -137,7 +137,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.GetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.GetFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PGuards;
@@ -148,8 +148,8 @@ import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -164,8 +164,8 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -1279,19 +1279,19 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyTruffle_GetTpFlags extends NativeBuiltin {
 
-        @Child private GetTypeFlagsNode getTypeFlagsNode;
         @Child private GetClassNode getClassNode;
+        @Child private GetFlagsNode getFlagsNode;
 
         @Specialization
         long doPythonObject(PythonNativeWrapper nativeWrapper) {
             PythonClass pclass = getClassNode().execute(nativeWrapper.getDelegate());
-            return getTypeFlagsNode().execute(pclass);
+            return getFlags(pclass);
         }
 
         @Specialization
         long doPythonObject(PythonAbstractObject object) {
             PythonClass pclass = getClassNode().execute(object);
-            return getTypeFlagsNode().execute(pclass);
+            return getFlags(pclass);
         }
 
         private GetClassNode getClassNode() {
@@ -1302,12 +1302,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return getClassNode;
         }
 
-        private GetTypeFlagsNode getTypeFlagsNode() {
-            if (getTypeFlagsNode == null) {
+        private long getFlags(PythonClass c) {
+            if (getFlagsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getTypeFlagsNode = insert(GetTypeFlagsNode.create());
+                getFlagsNode = insert(GetFlagsNode.create());
             }
-            return getTypeFlagsNode;
+            return getFlagsNode.execute(c);
         }
     }
 

@@ -291,16 +291,16 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
         return baseClasses;
     }
 
+    FlagsContainer getFlagsContainer() {
+        return flags;
+    }
+
     public long getFlags() {
         return flags.getValue();
     }
 
     public void setFlags(long flags) {
         this.flags.setValue(flags);
-    }
-
-    FlagsContainer getFlagsContainer() {
-        return flags;
     }
 
     /**
@@ -316,7 +316,7 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
         }
 
         @TruffleBoundary
-        private long getValue() {
+        long getValue() {
             // This method is only called from C code, i.e., the flags of the initial super class
             // must be available.
             if (initialDominantBase != null) {
@@ -327,7 +327,7 @@ public class PythonClass extends PythonObject implements LazyPythonClass {
             return flags;
         }
 
-        private void setValue(long flags) {
+        void setValue(long flags) {
             if (initialDominantBase != null) {
                 initialDominantBase = null;
             }
