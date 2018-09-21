@@ -76,6 +76,20 @@ class TestPyBytes(CPyExtTestCase):
         arguments=("char* str", "Py_ssize_t sz"),
     )
 
+    # PyBytes_FromStringAndSize
+    test_PyBytes_FromStringAndSizeNULL = CPyExtFunction(
+        lambda args: len(b"\x00"*args[0]),
+        lambda: ( (128, ), ),
+        code = """PyObject* PyBytes_FromStringAndSizeNULL(Py_ssize_t n) {
+            // we are return the length because the content is random (uninitialized)
+            return PyBytes_Size(PyBytes_FromStringAndSize(NULL, n));
+        }
+        """,
+        resultspec="n",
+        argspec='n',
+        arguments=["Py_ssize_t n"],
+    )
+
     # PyBytes_FromString
     test_PyBytes_FromString = CPyExtFunction(
         lambda arg: bytes(arg[0], "utf-8"),
