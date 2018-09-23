@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PThread extends PythonBuiltinObject {
     public final static String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
@@ -56,6 +57,7 @@ public class PThread extends PythonBuiltinObject {
         this.thread = new Thread(group, runnable, "graalpython-thread-" + group.activeCount(), stackSize);
     }
 
+    @TruffleBoundary
     public void start() {
         if (!this.thread.isAlive()) {
             thread.start();

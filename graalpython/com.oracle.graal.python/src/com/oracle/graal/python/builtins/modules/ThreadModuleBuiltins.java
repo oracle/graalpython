@@ -114,6 +114,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetThreadCountNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         long getCount() {
             return getContext().getThreadGroup().activeCount();
         }
