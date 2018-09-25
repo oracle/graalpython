@@ -332,6 +332,11 @@ def _PyLong_Sign(n):
 
 
 @may_raise
+def PyLong_FromDouble(d):
+    return int(d)
+
+
+@may_raise
 def PyLong_FromString(string, base, negative):
     result = int(string, base)
     if negative:

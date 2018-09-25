@@ -87,6 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonNative
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeNull;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -1916,9 +1917,9 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doPointer(TruffleObject n, @SuppressWarnings("unused") int signed,
+        Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") int signed,
                         @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
-            return toSulongNode.execute(n);
+            return toSulongNode.execute(factory().createNativeVoidPtr((TruffleObject) n.object));
         }
     }
 
