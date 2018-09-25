@@ -1150,7 +1150,7 @@ public abstract class CExtNodes {
         private CastToIndexNode getIntNode() {
             if (intNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                intNode = CastToIndexNode.createOverflow();
+                intNode = insert(CastToIndexNode.createOverflow());
             }
             return intNode;
         }

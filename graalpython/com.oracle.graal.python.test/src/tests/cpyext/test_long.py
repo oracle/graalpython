@@ -239,6 +239,38 @@ class TestPyLong(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyLong_FromVoidPtrAllocated = CPyExtFunction(
+        lambda args: int,
+        lambda: ((None,),),
+        code="""PyObject* PyLong_FromVoidPtrAllocated(PyObject* none) {
+            void* dummyPtr = malloc(sizeof(size_t));
+            return (PyObject*)Py_TYPE(PyLong_FromVoidPtr(dummyPtr));
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* none"],
+        cmpfunc=unhandled_error_compare
+    )
+
+    test_PyLong_AsVoidPtrAllocated = CPyExtFunction(
+        lambda args: True,
+        lambda: ((None,),),
+        code="""PyObject* PyLong_AsVoidPtrAllocated(PyObject* none) {
+            void* dummyPtr = malloc(sizeof(size_t));
+            PyObject* obj = PyLong_FromVoidPtr(dummyPtr);
+            void* unwrappedPtr = PyLong_AsVoidPtr(obj);
+            PyObject* result = unwrappedPtr == dummyPtr ? Py_True : Py_False;
+            free(dummyPtr);
+            return result;
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* none"],
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyLong_Check = CPyExtFunction(
         lambda args: isinstance(args[0], int),
         lambda: (

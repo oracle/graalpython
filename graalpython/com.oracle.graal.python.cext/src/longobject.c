@@ -109,7 +109,7 @@ PyObject * PyLong_FromVoidPtr(void *p) {
 
 UPCALL_ID(PyLong_AsVoidPtr);
 void * PyLong_AsVoidPtr(PyObject *obj){
-    return (void *)UPCALL_CEXT_L(_jls_PyLong_AsVoidPtr, native_to_java(obj));
+    return (void *)UPCALL_CEXT_PTR(_jls_PyLong_AsVoidPtr, native_to_java(obj));
 }
 
 UPCALL_ID(PyLong_FromLongLong);
