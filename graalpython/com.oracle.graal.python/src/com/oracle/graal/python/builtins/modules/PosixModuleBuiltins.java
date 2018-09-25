@@ -69,8 +69,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToByteArrayNode;
@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -329,14 +330,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object fstatPInt(PInt fd,
+        Object fstatPInt(Object fd,
+                        @Cached("createOverflow()") CastToIndexNode castToIntNode,
                         @Cached("create()") FstatNode recursive) {
-            return recursive.executeWith(fd.intValue());
-        }
-
-        @Fallback
-        Object doGeneric(Object o) {
-            throw raise(TypeError, "an integer is required (got type %p)", o);
+            return recursive.executeWith(castToIntNode.execute(fd));
         }
 
         protected static StatNode createStatNode() {
@@ -775,9 +772,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object writePInt(PInt fd, Object data,
+        Object writePInt(Object fd, Object data,
+                        @Cached("createOverflow()") CastToIndexNode castToIntNode,
                         @Cached("create()") WriteNode recursive) {
-            return recursive.executeWith(fd.intValue(), data);
+            return recursive.executeWith(castToIntNode.execute(fd), data);
         }
 
         private byte[] getByteArray(PIBytesLike pByteArray) {
@@ -788,7 +786,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return toByteArrayNode.execute(pByteArray.getSequenceStorage());
         }
 
-        protected WriteNode create() {
+        public static WriteNode create() {
             return PosixModuleBuiltinsFactory.WriteNodeFactory.create(null);
         }
     }

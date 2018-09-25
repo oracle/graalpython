@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNo
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.BoolNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.ByteNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DoubleNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.IntNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.LongNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PrimitiveNativeWrapper;
@@ -265,11 +266,6 @@ public abstract class CExtNodes {
 
         public abstract Object execute(Object obj);
 
-        /*
-         * This is very sad. Only for Sulong, we cannot hand out java.lang.Strings, because then it
-         * won't know what to do with them when they go native. So all places where Strings may be
-         * passed from Python into C code need to wrap Strings into PStrings.
-         */
         @Specialization
         Object doString(String str,
                         @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
@@ -277,8 +273,15 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        Object doBoolean(boolean b) {
-            return BoolNativeWrapper.create(b);
+        Object doBoolean(boolean b,
+                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+            PInt boxed = factory().createInt(b);
+            DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
+            if (profile.profile(nativeWrapper == null)) {
+                nativeWrapper = BoolNativeWrapper.create(b);
+                boxed.setNativeWrapper(nativeWrapper);
+            }
+            return nativeWrapper;
         }
 
         @Specialization
@@ -368,7 +371,7 @@ public abstract class CExtNodes {
 
         @Child GetClassNode getClassNode;
 
-        @Specialization(guards = "!isMaterialized(object)")
+        @Specialization
         boolean doBoolNativeWrapper(BoolNativeWrapper object) {
             return object.getValue();
         }
@@ -455,7 +458,7 @@ public abstract class CExtNodes {
         }
 
         protected static boolean isPrimitiveNativeWrapper(PythonNativeWrapper object) {
-            return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object);
+            return object instanceof PrimitiveNativeWrapper && !isMaterialized((PrimitiveNativeWrapper) object) || object instanceof BoolNativeWrapper;
         }
 
         protected boolean isForeignObject(TruffleObject obj) {
