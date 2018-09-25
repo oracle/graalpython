@@ -106,8 +106,10 @@ PyObject * PyLong_FromVoidPtr(void *p) {
     return PyLong_FromUnsignedLongLong((unsigned long long)(uintptr_t)p);
 #endif /* SIZEOF_VOID_P <= SIZEOF_LONG */
 }
+
+UPCALL_ID(PyLong_AsVoidPtr);
 void * PyLong_AsVoidPtr(PyObject *obj){
-	return (void *)PyLong_AsSsize_t(obj);
+    return (void *)UPCALL_CEXT_L(_jls_PyLong_AsVoidPtr, native_to_java(obj));
 }
 
 PyObject * PyLong_FromLong(long n)  {

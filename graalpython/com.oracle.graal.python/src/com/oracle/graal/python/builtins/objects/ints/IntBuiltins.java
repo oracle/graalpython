@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -1695,9 +1696,14 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         long hash(PInt self) {
             return self.longValue();
+        }
+
+        @Specialization
+        @TruffleBoundary
+        long hash(PythonNativeVoidPtr self) {
+            return self.object.hashCode();
         }
     }
 
