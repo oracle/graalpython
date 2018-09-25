@@ -44,6 +44,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -1897,14 +1898,21 @@ public class TruffleCextBuiltins extends PythonBuiltins {
             return toSulongNode.execute(n);
         }
 
-        @Specialization(guards = "signed == 0")
-        Object doUnsignedLong(long n, @SuppressWarnings("unused") int signed,
+        @Specialization(guards = {"signed == 0", "n >= 0"})
+        Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") int signed,
                         @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
-            if (n < 0) {
-                CompilerDirectives.transferToInterpreter();
-                throw new UnsupportedOperationException();
-            }
             return toSulongNode.execute(n);
+        }
+
+        @Specialization(guards = {"signed == 0", "n < 0"})
+        Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") int signed,
+                        @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
+            return toSulongNode.execute(factory().createInt(convertToBigInteger(n)));
+        }
+
+        @TruffleBoundary
+        private static BigInteger convertToBigInteger(long n) {
+            return BigInteger.valueOf(n).add(BigInteger.ONE.shiftLeft(64));
         }
 
         @Specialization
