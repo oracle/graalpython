@@ -27,7 +27,7 @@ package com.oracle.graal.python.nodes.argument.keywords;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
@@ -41,14 +41,14 @@ import com.oracle.truffle.api.nodes.Node;
 @NodeChild(value = "splat", type = ExecuteKeywordStarargsNode.class)
 @ImportStatic(PythonOptions.class)
 public abstract class KeywordArgumentsNode extends Node {
-    @Children private final PNode[] arguments;
+    @Children private final ExpressionNode[] arguments;
     @Child private CompactKeywordsNode compactNode = CompactKeywordsNodeGen.create();
 
-    public static KeywordArgumentsNode create(PNode[] arguments, PNode starargs) {
+    public static KeywordArgumentsNode create(ExpressionNode[] arguments, ExpressionNode starargs) {
         return KeywordArgumentsNodeGen.create(arguments, ExecuteKeywordStarargsNodeGen.create(starargs == null ? EmptyNode.create() : starargs));
     }
 
-    KeywordArgumentsNode(PNode[] arguments) {
+    KeywordArgumentsNode(ExpressionNode[] arguments) {
         this.arguments = arguments;
     }
 

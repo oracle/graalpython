@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -36,6 +37,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CastToByteNode;
 import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -44,8 +47,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -103,71 +104,149 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             return factory().createArray(cls, str.toCharArray());
         }
 
-        /**
-         * @param cls
-         */
-        @Specialization
-        PArray arrayWithSequenceInitializer(PythonClass cls, String typeCode, PSequence initializer,
+        protected boolean isIntArray(String typeCode) {
+            return typeCode.charAt(0) == 'i';
+        }
+
+        protected boolean isLongArray(String typeCode) {
+            return typeCode.charAt(0) == 'l';
+        }
+
+        protected boolean isByteArray(String typeCode) {
+            return typeCode.charAt(0) == 'b';
+        }
+
+        protected boolean isDoubleArray(String typeCode) {
+            return typeCode.charAt(0) == 'd';
+        }
+
+        @Specialization(guards = "isByteArray(typeCode)")
+        PArray arrayByteInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("createCast()") CastToByteNode castToByteNode,
                         @Cached("create()") GetIteratorNode getIterator,
                         @Cached("create()") GetNextNode next,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
-            SequenceStorage store;
-            switch (typeCode.charAt(0)) {
-                case 'i':
-                    Object iter = getIterator.executeWith(initializer);
-                    int[] intArray = new int[initializer.len()];
-                    int i = 0;
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+            Object iter = getIterator.executeWith(initializer);
+            int i = 0;
+            byte[] byteArray = new byte[lenNode.execute(initializer)];
 
-                    while (true) {
-                        Object nextValue;
-                        try {
-                            nextValue = next.execute(iter);
-                        } catch (PException e) {
-                            e.expectStopIteration(getCore(), errorProfile);
-                            break;
-                        }
-                        if (nextValue instanceof Integer) {
-                            intArray[i++] = (int) nextValue;
-                        } else {
-                            CompilerDirectives.transferToInterpreter();
-                            operandTypeError();
-                        }
-                    }
-
-                    return factory().createArray(cls, intArray);
-                case 'd':
-                    store = initializer.getSequenceStorage();
-                    double[] doubleArray = new double[store.length()];
-
-                    for (i = 0; i < doubleArray.length; i++) {
-                        Object val = store.getItemNormalized(i);
-                        doubleArray[i] = (double) val;
-                    }
-
-                    return factory().createArray(cls, doubleArray);
-                case 'b':
-                    store = initializer.getSequenceStorage();
-                    byte[] byteArray = new byte[store.length()];
-
-                    for (i = 0; i < byteArray.length; i++) {
-                        Object val = store.getItemNormalized(i);
-                        if (val instanceof Number) {
-                            byteArray[i] = ((Number) val).byteValue();
-                        } else {
-                            throw raise(ValueError, "byte value expected");
-                        }
-                    }
-
-                    return factory().createArray(cls, byteArray);
-                default:
-                    return null;
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(iter);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+                byteArray[i++] = castToByteNode.execute(nextValue);
             }
+
+            return factory().createArray(cls, byteArray);
+        }
+
+        @Specialization(guards = "isIntArray(typeCode)")
+        PArray arrayIntInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+            Object iter = getIterator.executeWith(initializer);
+            int i = 0;
+
+            int[] intArray = new int[lenNode.execute(initializer)];
+
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(iter);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+                if (nextValue instanceof Integer) {
+                    intArray[i++] = (int) nextValue;
+                } else {
+                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
+                }
+            }
+
+            return factory().createArray(cls, intArray);
+        }
+
+        @Specialization(guards = "isLongArray(typeCode)")
+        PArray arrayLongInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+            Object iter = getIterator.executeWith(initializer);
+            int i = 0;
+
+            long[] longArray = new long[lenNode.execute(initializer)];
+
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(iter);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+                if (nextValue instanceof Number) {
+                    longArray[i++] = longValue((Number) nextValue);
+                } else {
+                    throw raise(ValueError, "integer argument expected, got %p", nextValue);
+                }
+            }
+
+            return factory().createArray(cls, longArray);
+        }
+
+        @Specialization(guards = "isDoubleArray(typeCode)")
+        PArray arrayDoubleInitializer(PythonClass cls, @SuppressWarnings("unused") String typeCode, PSequence initializer,
+                        @Cached("create()") GetIteratorNode getIterator,
+                        @Cached("create()") GetNextNode next,
+                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+            Object iter = getIterator.executeWith(initializer);
+            int i = 0;
+
+            double[] doubleArray = new double[lenNode.execute(initializer)];
+
+            while (true) {
+                Object nextValue;
+                try {
+                    nextValue = next.execute(iter);
+                } catch (PException e) {
+                    e.expectStopIteration(getCore(), errorProfile);
+                    break;
+                }
+                if (nextValue instanceof Integer) {
+                    doubleArray[i++] = ((Integer) nextValue).doubleValue();
+                } else if (nextValue instanceof Double) {
+                    doubleArray[i++] = (double) nextValue;
+                } else {
+                    throw raise(ValueError, "double value expected");
+                }
+            }
+
+            return factory().createArray(cls, doubleArray);
         }
 
         @Specialization
         @TruffleBoundary
         PArray arrayWithObjectInitializer(@SuppressWarnings("unused") PythonClass cls, @SuppressWarnings("unused") String typeCode, Object initializer) {
+            if (!(isIntArray(typeCode) || isByteArray(typeCode) || isDoubleArray(typeCode))) {
+                // TODO implement support for typecodes: b, B, u, h, H, i, I, l, L, q, Q, f or d
+                throw raise(ValueError, "bad typecode (must be i, d, b, or l)");
+            }
             throw new RuntimeException("Unsupported initializer " + initializer);
+        }
+
+        @TruffleBoundary
+        private static long longValue(Number n) {
+            return n.longValue();
         }
 
         private PArray makeEmptyArray(PythonClass cls, char type) {
@@ -185,14 +264,16 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
-        private void typeError(String typeCode, Object initializer) {
-            throw raise(TypeError, "unsupported operand type: %s %s and 'array.array'", typeCode, initializer);
+        protected CastToByteNode createCast() {
+            return CastToByteNode.create(val -> {
+                throw raise(OverflowError, "signed char is greater than maximum");
+            }, null);
+
         }
 
         @TruffleBoundary
-        private static void operandTypeError() {
-            throw new RuntimeException("Unexpected argument type for array() ");
+        private void typeError(String typeCode, Object initializer) {
+            throw raise(TypeError, "cannot use a %p to initialize an array with typecode '%s'", initializer, typeCode);
         }
     }
 }

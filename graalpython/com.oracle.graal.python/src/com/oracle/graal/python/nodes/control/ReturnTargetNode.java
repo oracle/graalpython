@@ -26,30 +26,29 @@
 package com.oracle.graal.python.nodes.control;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
-public final class ReturnTargetNode extends StatementNode {
-
-    @Child private PNode body;
-    @Child private PNode returnValue;
+public final class ReturnTargetNode extends ExpressionNode {
+    @Child private StatementNode body;
+    @Child private ExpressionNode returnValue;
 
     private final BranchProfile returnProfile = BranchProfile.create();
     private final BranchProfile fallthroughProfile = BranchProfile.create();
 
-    public ReturnTargetNode(PNode body, PNode returnValue) {
+    public ReturnTargetNode(StatementNode body, ExpressionNode returnValue) {
         this.body = body;
         this.returnValue = returnValue;
     }
 
-    public PNode getBody() {
+    public StatementNode getBody() {
         return body;
     }
 
-    public PNode getReturn() {
+    public ExpressionNode getReturn() {
         return returnValue;
     }
 

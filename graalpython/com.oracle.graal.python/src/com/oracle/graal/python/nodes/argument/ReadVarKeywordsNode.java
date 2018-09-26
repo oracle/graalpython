@@ -29,7 +29,6 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -40,7 +39,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 
 @NodeInfo(shortName = "**kwargs")
-public abstract class ReadVarKeywordsNode extends PNode {
+public abstract class ReadVarKeywordsNode extends ReadArgumentNode {
     @CompilationFinal(dimensions = 1) private final String[] keywordNames;
     private final boolean doWrap;
 
@@ -83,12 +82,19 @@ public abstract class ReadVarKeywordsNode extends PNode {
         }
     }
 
+    @Specialization(guards = {"getKwargLen(frame) == cachedLen", "cachedLen == 0"}, limit = "1")
+    @ExplodeLoop
+    Object noKeywordArgs(@SuppressWarnings("unused") VirtualFrame frame,
+                    @SuppressWarnings("unused") @Cached("getAndCheckKwargLen(frame)") int cachedLen) {
+        return returnValue(PKeyword.EMPTY_KEYWORDS);
+    }
+
     @Specialization(guards = {"getKwargLen(frame) == cachedLen"}, limit = "getLimit()")
     @ExplodeLoop
     Object extractKwargs(VirtualFrame frame,
                     @Cached("getAndCheckKwargLen(frame)") int cachedLen) {
         PKeyword[] keywordArguments = PArguments.getKeywordArguments(frame);
-        PKeyword[] remArguments = new PKeyword[keywordArguments.length];
+        PKeyword[] remArguments = new PKeyword[cachedLen];
         CompilerAsserts.compilationConstant(keywordNames.length);
         int i = 0;
         for (int j = 0; j < cachedLen; j++) {
@@ -108,7 +114,11 @@ public abstract class ReadVarKeywordsNode extends PNode {
                 i++;
             }
         }
-        return returnValue(Arrays.copyOf(remArguments, i));
+        if (remArguments.length != i) {
+            return returnValue(Arrays.copyOf(remArguments, i));
+        } else {
+            return returnValue(remArguments);
+        }
     }
 
     @Specialization(replaces = "extractKwargs")

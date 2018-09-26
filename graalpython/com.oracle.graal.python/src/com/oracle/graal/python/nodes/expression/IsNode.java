@@ -43,13 +43,15 @@ package com.oracle.graal.python.nodes.expression;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.Message;
 
+@ImportStatic(Message.class)
 public abstract class IsNode extends BinaryOpNode {
-    public static IsNode create(PNode left, PNode right) {
+    public static IsNode create(ExpressionNode left, ExpressionNode right) {
         return IsNodeGen.create(left, right);
     }
 

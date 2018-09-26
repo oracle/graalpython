@@ -118,7 +118,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
                 default:
                     // Should never get here, since this was checked in caller.
-                    throw unknownFormat(spec.type, "long");
+                    throw unknownFormat(core, spec.type, "long");
             }
 
             // If required to, group the whole-part digits.
@@ -302,7 +302,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
                 default:
                     // Should never get here, since this was checked in caller.
-                    throw unknownFormat(spec.type, "integer");
+                    throw unknownFormat(core, spec.type, "integer");
             }
 
             // If required to, group the whole-part digits.

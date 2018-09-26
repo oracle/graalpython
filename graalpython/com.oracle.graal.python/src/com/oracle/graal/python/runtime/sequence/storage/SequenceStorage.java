@@ -31,6 +31,9 @@ public abstract class SequenceStorage {
 
     public enum ListStorageType {
         Uninitialized,
+        Boolean,
+        Byte,
+        Char,
         Int,
         Long,
         Double,
@@ -55,6 +58,8 @@ public abstract class SequenceStorage {
      */
     public abstract Object getInternalArrayObject();
 
+    public abstract ListStorageType getElementType();
+
     public abstract Object[] getInternalArray();
 
     public abstract Object[] getCopyOfInternalArray();
@@ -67,23 +72,7 @@ public abstract class SequenceStorage {
 
     public abstract SequenceStorage getSliceInBound(int start, int stop, int step, int length);
 
-    public abstract void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException;
-
-    public abstract void delSlice(int start, int stop, int step);
-
-    public abstract void delItemInBound(int idx);
-
-    public abstract Object popInBound(int idx);
-
-    public abstract int index(Object value);
-
-    public abstract void append(Object value) throws SequenceStoreException;
-
-    public abstract void extend(SequenceStorage other) throws SequenceStoreException, ArithmeticException;
-
     public abstract void reverse();
-
-    public abstract void sort();
 
     public abstract boolean equals(SequenceStorage other);
 
@@ -94,18 +83,4 @@ public abstract class SequenceStorage {
     public abstract void ensureCapacity(int newCapacity);
 
     public abstract void copyItem(int idxTo, int idxFrom);
-
-    public void clear() {
-        this.delSlice(0, length(), 1);
-    }
-
-    public int count(Object arg) {
-        int count = 0;
-        for (Object obj : getInternalArray()) {
-            if (obj.equals(arg)) {
-                count++;
-            }
-        }
-        return count;
-    }
 }

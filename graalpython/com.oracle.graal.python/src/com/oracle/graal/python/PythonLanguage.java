@@ -47,9 +47,9 @@ import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -82,7 +82,8 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, name = PythonLanguage.NAME, version = PythonLanguage.VERSION, mimeType = PythonLanguage.MIME_TYPE, interactive = true, internal = false, contextPolicy = TruffleLanguage.ContextPolicy.SHARED)
-@ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, DebuggerTags.AlwaysHalt.class})
+@ProvidedTags({StandardTags.CallTag.class, StandardTags.StatementTag.class, StandardTags.RootTag.class, StandardTags.TryBlockTag.class, StandardTags.ExpressionTag.class,
+                DebuggerTags.AlwaysHalt.class})
 public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String ID = "python";
     public static final String NAME = "Python";
@@ -94,7 +95,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String MIME_TYPE = "text/x-python";
     public static final String EXTENSION = ".py";
 
-    public static Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
+    public Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     @CompilationFinal private boolean nativeBuildTime = TruffleOptions.AOT;
     private final NodeFactory nodeFactory;
@@ -118,7 +119,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     protected boolean patchContext(PythonContext context, Env newEnv) {
         nativeBuildTime = false; // now we're running
         ensureHomeInOptions(newEnv);
-        PythonCore.writeInfo(newEnv, "Using preinitialized context.");
+        PythonCore.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
         return true;
     }
@@ -136,7 +137,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         String coreHome = env.getOptions().get(PythonOptions.CoreHome);
         String stdLibHome = env.getOptions().get(PythonOptions.StdLibHome);
 
-        PythonCore.writeInfo(env, (MessageFormat.format("Initial locations:" +
+        PythonCore.writeInfo((MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tCoreHome: {2}" +
@@ -193,7 +194,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 env.getOptions().set(PythonOptions.StdLibHome, stdLibHome);
             }
 
-            PythonCore.writeInfo(env, (MessageFormat.format("Updated locations:" +
+            PythonCore.writeInfo((MessageFormat.format("Updated locations:" +
                             "\n\tLanguage home: {0}" +
                             "\n\tSysPrefix: {1}" +
                             "\n\tCoreHome: {2}" +
@@ -216,28 +217,30 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         PythonContext context = this.getContextReference().get();
         PythonCore pythonCore = context.getCore();
         Source source = request.getSource();
+        CompilerDirectives.transferToInterpreter();
         if (pythonCore.isInitialized()) {
             context.initializeMainModule(source.getPath());
 
             // if we are running the interpreter, module 'site' is automatically imported
             if (source.isInteractive()) {
-                CompilerAsserts.neverPartOfCompilation();
-                // no frame required
-                new ImportNode("site").execute(null);
+                Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, doParse(pythonCore, Source.newBuilder(ID, "import site", "<site import>").build()))).call();
             }
         }
-        RootNode root;
-        try {
-            root = (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
-        } catch (PException e) {
-            // handle PException during parsing (PIncompleteSourceException will propagate through)
-            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
-            throw e;
-        }
+        RootNode root = doParse(pythonCore, source);
         if (pythonCore.isInitialized()) {
             return Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, root));
         } else {
             return Truffle.getRuntime().createCallTarget(root);
+        }
+    }
+
+    private RootNode doParse(PythonCore pythonCore, Source source) {
+        try {
+            return (RootNode) pythonCore.getParser().parse(source.isInteractive() ? ParserMode.InteractiveStatement : ParserMode.File, pythonCore, source, null);
+        } catch (PException e) {
+            // handle PException during parsing (PIncompleteSourceException will propagate through)
+            Truffle.getRuntime().createCallTarget(new TopLevelExceptionHandler(this, e)).call();
+            throw e;
         }
     }
 
@@ -249,7 +252,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final ExecutableNode executableNode = new ExecutableNode(this) {
             private final ContextReference<PythonContext> contextRef = getContextReference();
             @CompilationFinal private volatile PythonContext cachedContext;
-            @Child private PNode expression;
+            @Child private ExpressionNode expression;
 
             @Override
             public Object execute(VirtualFrame frame) {
@@ -279,7 +282,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             @TruffleBoundary
             private Object parseAndEval(PythonContext context, MaterializedFrame frame) {
-                PNode fragment = parseInline(source, context, frame);
+                ExpressionNode fragment = parseInline(source, context, frame);
                 return fragment.execute(frame);
             }
         };
@@ -287,9 +290,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @TruffleBoundary
-    protected static PNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
+    protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
         PythonCore pythonCore = context.getCore();
-        return (PNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame);
+        return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, pythonCore, code, lexicalContextFrame);
     }
 
     @Override
@@ -370,7 +373,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public static TruffleLogger getLogger() {
-        return TruffleLogger.getLogger(ID, PythonLanguage.class);
+        return TruffleLogger.getLogger(ID);
     }
 
     public static Source newSource(PythonContext ctxt, String src, String name) {

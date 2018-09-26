@@ -56,7 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -75,7 +75,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytes)
 public class BytesBuiltins extends PythonBuiltins {
 
-    public static CodingErrorAction toCodingErrorAction(String errors, PBaseNode n) {
+    public static CodingErrorAction toCodingErrorAction(String errors, PNodeWithContext n) {
         switch (errors) {
             case "strict":
                 return CodingErrorAction.REPORT;
@@ -313,31 +313,42 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(PBytes self) {
-            return self.len();
+        public int len(PBytes self,
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+            return lenNode.execute(self.getSequenceStorage());
         }
     }
 
     @Builtin(name = __CONTAINS__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+        @Child private SequenceStorageNodes.LenNode lenNode;
+
         @Specialization
         @TruffleBoundary
         boolean contains(PBytes self, PBytes other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, other, 0, self.len()) != -1;
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
         @Specialization
         @TruffleBoundary
         boolean contains(PBytes self, PByteArray other,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, other, 0, self.len()) != -1;
+            return findNode.execute(self, other, 0, getLength(self.getSequenceStorage())) != -1;
         }
 
         @Specialization(guards = "!isBytes(other)")
         boolean contains(@SuppressWarnings("unused") PBytes self, Object other) {
             throw raise(TypeError, "a bytes-like object is required, not '%p'", other);
+        }
+
+        private int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
         }
     }
 
@@ -353,16 +364,18 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = "startswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class StartsWithNode extends PythonBuiltinNode {
+        @Child private SequenceStorageNodes.LenNode lenNode;
+
         @Specialization
         boolean startswith(PBytes self, PIBytesLike prefix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, prefix, 0, self.len()) == 0;
+            return findNode.execute(self, prefix, 0, getLength(self.getSequenceStorage())) == 0;
         }
 
         @Specialization
         boolean startswith(PBytes self, PIBytesLike prefix, int start, @SuppressWarnings("unused") PNone end,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, prefix, start, self.len()) == start;
+            return findNode.execute(self, prefix, start, getLength(self.getSequenceStorage())) == start;
         }
 
         @Specialization
@@ -370,15 +383,33 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached("create()") BytesNodes.FindNode findNode) {
             return findNode.execute(self, prefix, start, end) == start;
         }
+
+        private int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
+        }
     }
 
     @Builtin(name = "endswith", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class EndsWithNode extends PythonBuiltinNode {
+        @Child private SequenceStorageNodes.LenNode lenNode;
+
         @Specialization
         boolean endswith(PBytes self, PIBytesLike suffix, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end,
                         @Cached("create()") BytesNodes.FindNode findNode) {
-            return findNode.execute(self, suffix, self.len() - suffix.len(), self.len()) != -1;
+            return findNode.execute(self, suffix, getLength(self.getSequenceStorage()) - getLength(suffix.getSequenceStorage()), getLength(self.getSequenceStorage())) != -1;
+        }
+
+        private int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
         }
     }
 
@@ -398,15 +429,16 @@ public class BytesBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FindNode extends PythonBuiltinNode {
         @Child private BytesNodes.FindNode findNode;
+        @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
         int find(PBytes self, Object sub, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, 0, self.len());
+            return find(self, sub, 0, getLength(self.getSequenceStorage()));
         }
 
         @Specialization
         int find(PBytes self, Object sub, int start, @SuppressWarnings("unused") PNone end) {
-            return find(self, sub, start, self.len());
+            return find(self, sub, start, getLength(self.getSequenceStorage()));
         }
 
         @Specialization
@@ -420,6 +452,14 @@ public class BytesBuiltins extends PythonBuiltins {
                 findNode = insert(BytesNodes.FindNode.create());
             }
             return findNode;
+        }
+
+        private int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
         }
     }
 

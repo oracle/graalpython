@@ -54,6 +54,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.oracle.graal.python.test.PythonTests;
 import com.oracle.truffle.api.debug.Breakpoint;
 import com.oracle.truffle.api.debug.DebugStackFrame;
 import com.oracle.truffle.api.debug.DebugValue;
@@ -70,6 +71,7 @@ public class PythonDebugTest {
     public void before() {
         Builder newBuilder = Context.newBuilder();
         newBuilder.allowAllAccess(true);
+        PythonTests.closeContext();
         tester = new DebuggerTester(newBuilder);
     }
 

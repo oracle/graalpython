@@ -44,7 +44,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -52,7 +52,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(cost = NONE)
-public final class GetNextNode extends PBaseNode {
+public final class GetNextNode extends PNodeWithContext {
 
     public static GetNextNode create() {
         return new GetNextNode();

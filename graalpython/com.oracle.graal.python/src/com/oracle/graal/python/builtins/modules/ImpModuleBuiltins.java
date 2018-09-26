@@ -54,10 +54,11 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -146,7 +147,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         protected static final String IMPORT_NATIVE_MEMORYVIEW = "import_native_memoryview";
         private static final String LLVM_LANGUAGE = "llvm";
         @Child private SetItemNode setItemNode;
-        @Child private Node isNullNode = Message.IS_NULL.createNode();
+        @Child private CheckFunctionResultNode checkResultNode;
 
         @Specialization
         @TruffleBoundary
@@ -198,7 +199,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 getContext().setCurrentException(null);
 
                 Object nativeResult = ForeignAccess.sendExecute(executeNode, pyinitFunc);
-                TruffleCextBuiltins.checkFunctionResult(getContext(), isNullNode, "PyInit_" + basename, nativeResult);
+                getCheckResultNode().execute("PyInit_" + basename, nativeResult);
 
                 // restore previous exception state
                 getContext().setCurrentException(exceptionState);
@@ -212,7 +213,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     ((PythonObject) result).setAttribute(__FILE__, path);
                     // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
                     PDict sysModules = getContext().getSysModules();
-                    sysModules.setDictStorage(getSetItemNode().execute(sysModules.getDictStorage(), name, result));
+                    getSetItemNode().execute(sysModules, name, result);
                     return result;
                 }
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -242,9 +243,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.create();
-                CallUnaryMethodNode callNode = CallUnaryMethodNode.create();
+                CallUnaryMethodNode callNode = insert(CallUnaryMethodNode.create());
                 callNode.executeObject(readNode.execute(ctxt.getCore().lookupBuiltinModule("python_cext"), INITIALIZE_CAPI), capi);
-                ctxt.setCapiWasLoaded();
+                ctxt.setCapiWasLoaded(capi);
 
                 // initialization needs to be finished already but load memoryview implemenation
                 // immediately
@@ -258,6 +259,14 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 setItemNode = insert(SetItemNode.create());
             }
             return setItemNode;
+        }
+
+        private CheckFunctionResultNode getCheckResultNode() {
+            if (checkResultNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                checkResultNode = insert(CheckFunctionResultNode.create());
+            }
+            return checkResultNode;
         }
 
         private PException reportImportError(RuntimeException e, String path) {

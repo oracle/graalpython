@@ -50,18 +50,9 @@ public final class PTuple extends PImmutableSequence {
     public Object[] getArray() {
         // TODO disallow direct array access
         if (store instanceof ObjectSequenceStorage) {
-            return store.getInternalArray();
+            return ((ObjectSequenceStorage) store).getInternalArray();
         }
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int len() {
-        return store.length();
-    }
-
-    public boolean isEmpty() {
-        return len() == 0;
     }
 
     @Override

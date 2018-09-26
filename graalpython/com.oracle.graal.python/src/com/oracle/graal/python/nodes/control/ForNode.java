@@ -25,14 +25,14 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongIterator;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -50,14 +50,14 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RepeatingNode;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-final class ForRepeatingNode extends PBaseNode implements RepeatingNode {
+final class ForRepeatingNode extends PNodeWithContext implements RepeatingNode {
 
     @CompilationFinal FrameSlot iteratorSlot;
 
     @Child ForNextElementNode nextElement;
-    @Child PNode body;
+    @Child StatementNode body;
 
-    public ForRepeatingNode(PNode target, PNode body) {
+    public ForRepeatingNode(StatementNode target, StatementNode body) {
         this.nextElement = ForNextElementNodeGen.create(target);
         this.body = body;
     }
@@ -76,11 +76,11 @@ final class ForRepeatingNode extends PBaseNode implements RepeatingNode {
 }
 
 @ImportStatic({PythonOptions.class, SpecialMethodNames.class})
-abstract class ForNextElementNode extends PBaseNode {
+abstract class ForNextElementNode extends PNodeWithContext {
 
-    @Child PNode target;
+    @Child StatementNode target;
 
-    public ForNextElementNode(PNode target) {
+    public ForNextElementNode(StatementNode target) {
         this.target = target;
     }
 
@@ -146,28 +146,28 @@ public final class ForNode extends LoopNode {
     @CompilationFinal private FrameSlot iteratorSlot;
 
     @Child private com.oracle.truffle.api.nodes.LoopNode loopNode;
-    @Child private PNode iterator;
+    @Child private ExpressionNode iterator;
 
-    public ForNode(PNode body, PNode target, PNode iterator) {
+    public ForNode(StatementNode body, StatementNode target, ExpressionNode iterator) {
         this.iterator = iterator;
         this.loopNode = Truffle.getRuntime().createLoopNode(new ForRepeatingNode(target, body));
     }
 
-    public PNode getTarget() {
+    public StatementNode getTarget() {
         return ((ForRepeatingNode) loopNode.getRepeatingNode()).nextElement.target;
     }
 
-    public PNode getIterator() {
+    public ExpressionNode getIterator() {
         return iterator;
     }
 
     @Override
-    public PNode getBody() {
+    public StatementNode getBody() {
         return ((ForRepeatingNode) loopNode.getRepeatingNode()).body;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         if (iteratorSlot == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             iteratorSlot = frame.getFrameDescriptor().addFrameSlot(new Object(), FrameSlotKind.Object);
@@ -179,6 +179,5 @@ public final class ForNode extends LoopNode {
         } finally {
             frame.setObject(iteratorSlot, null);
         }
-        return PNone.NONE;
     }
 }

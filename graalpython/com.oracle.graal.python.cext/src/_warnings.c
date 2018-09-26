@@ -40,6 +40,8 @@
  */
 #include "capi.h"
 
+UPCALL_ID(_PyErr_Warn);
+
 // partially taken from CPython "Python/_warnings.c"
 MUST_INLINE static int warn_unicode(PyObject *category, PyObject *message, Py_ssize_t stack_level, PyObject *source) {
     PyObject *res;
@@ -48,7 +50,7 @@ MUST_INLINE static int warn_unicode(PyObject *category, PyObject *message, Py_ss
         category = PyExc_RuntimeWarning;
     }
 
-    PyObject* result = UPCALL_CEXT_O("_PyErr_Warn", native_to_java(message), native_to_java(category), stack_level, native_to_java(source));
+    PyObject* result = UPCALL_CEXT_O(_jls__PyErr_Warn, native_to_java(message), native_to_java(category), stack_level, native_to_java(source));
     if(result == NULL) {
     	return -1;
     }

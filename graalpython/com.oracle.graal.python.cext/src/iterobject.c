@@ -40,10 +40,11 @@
  */
 #include "capi.h"
 
+UPCALL_ID(PyTruffle_SeqIter_New);
 PyObject* PySeqIter_New(PyObject *seq) {
     if (!PySequence_Check(seq)) {
         PyErr_BadInternalCall();
         return NULL;
     }
-    return UPCALL_CEXT_O("PyTruffle_SeqIter_New", native_to_java(seq));
+    return UPCALL_CEXT_O(_jls_PyTruffle_SeqIter_New, native_to_java(seq));
 }

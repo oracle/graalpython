@@ -27,13 +27,13 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.PythonOptions.CatchAllExceptions;
 
-import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -45,37 +45,41 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public class TryExceptNode extends StatementNode implements TruffleObject {
-    @Child private PNode body;
+    @Child private StatementNode body;
     @Children private final ExceptNode[] exceptNodes;
-    @Child private PNode orelse;
+    @Child private StatementNode orelse;
     @CompilationFinal private TryExceptNodeMessageResolution.CatchesFunction catchesFunction;
     @CompilationFinal private ValueProfile exceptionStateProfile;
 
     @CompilationFinal boolean seenException;
+    private final boolean shouldCatchAll;
+    private final Assumption singleContextAssumption;
 
-    public TryExceptNode(PNode body, ExceptNode[] exceptNodes, PNode orelse) {
+    public TryExceptNode(StatementNode body, ExceptNode[] exceptNodes, StatementNode orelse) {
         this.body = body;
         body.markAsTryBlock();
         this.exceptNodes = exceptNodes;
         this.orelse = orelse;
+        this.shouldCatchAll = PythonOptions.getOption(getContext(), CatchAllExceptions);
+        this.singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         // store current exception state for later restore
         PException exceptionState = getContext().getCurrentException();
         try {
             body.executeVoid(frame);
         } catch (PException ex) {
             catchException(frame, ex, exceptionState);
-            return PNone.NONE;
+            return;
         } catch (Exception e) {
             if (!seenException) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 seenException = true;
             }
 
-            if (PythonOptions.getOption(getContext(), CatchAllExceptions)) {
+            if (shouldCatchAll()) {
                 if (e instanceof ControlFlowException) {
                     throw e;
                 } else {
@@ -93,7 +97,15 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
                 throw e;
             }
         }
-        return orelse.execute(frame);
+        orelse.executeVoid(frame);
+    }
+
+    private boolean shouldCatchAll() {
+        if (singleContextAssumption.isValid()) {
+            return shouldCatchAll;
+        } else {
+            return PythonOptions.getOption(getContext(), CatchAllExceptions);
+        }
     }
 
     @TruffleBoundary
@@ -130,7 +142,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         getContext().setCurrentException(exceptionState);
     }
 
-    public PNode getBody() {
+    public StatementNode getBody() {
         return body;
     }
 
@@ -138,7 +150,7 @@ public class TryExceptNode extends StatementNode implements TruffleObject {
         return exceptNodes;
     }
 
-    public PNode getOrelse() {
+    public StatementNode getOrelse() {
         return orelse;
     }
 

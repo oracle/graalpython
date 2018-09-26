@@ -27,11 +27,10 @@ package com.oracle.graal.python.nodes.statement;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AssertionError;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -41,17 +40,17 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public class AssertNode extends StatementNode {
 
     @Child private CastToBooleanNode condition;
-    @Child private PNode message;
+    @Child private ExpressionNode message;
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
 
-    public AssertNode(CastToBooleanNode condition, PNode message) {
+    public AssertNode(CastToBooleanNode condition, ExpressionNode message) {
         this.condition = condition;
         this.message = message;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         if (assertionsEnabled == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             assertionsEnabled = !PythonOptions.getOption(getContext(), PythonOptions.PythonOptimizeFlag);
@@ -69,8 +68,6 @@ public class AssertNode extends StatementNode {
                 throw assertionFailed(frame);
             }
         }
-
-        return PNone.NONE;
     }
 
     private PException assertionFailed(VirtualFrame frame) {
@@ -97,7 +94,7 @@ public class AssertNode extends StatementNode {
         return condition;
     }
 
-    public PNode getMessage() {
+    public ExpressionNode getMessage() {
         return message;
     }
 }

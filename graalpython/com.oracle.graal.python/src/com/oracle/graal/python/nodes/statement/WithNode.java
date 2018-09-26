@@ -36,6 +36,7 @@ import com.oracle.graal.python.nodes.call.CallDispatchNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
@@ -44,11 +45,11 @@ import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-@NodeChildren({@NodeChild(value = "withContext", type = PNode.class)})
+@NodeChildren({@NodeChild(value = "withContext", type = ExpressionNode.class)})
 public abstract class WithNode extends StatementNode {
 
-    @Child private PNode body;
-    @Child private PNode targetNode;
+    @Child private StatementNode body;
+    @Child private WriteNode targetNode;
     @Child private LookupAndCallBinaryNode enterGetter = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
     @Child private LookupAndCallBinaryNode exitGetter = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
     @Child private CallDispatchNode enterDispatch = CallDispatchNode.create();
@@ -56,12 +57,12 @@ public abstract class WithNode extends StatementNode {
     @Child private CastToBooleanNode toBooleanNode = CastToBooleanNode.createIfTrueNode();
     @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
 
-    protected WithNode(PNode targetNode, PNode body) {
+    protected WithNode(WriteNode targetNode, StatementNode body) {
         this.targetNode = targetNode;
         this.body = body;
     }
 
-    public static WithNode create(PNode withContext, PNode targetNode, PNode body) {
+    public static WithNode create(ExpressionNode withContext, WriteNode targetNode, StatementNode body) {
         return WithNodeGen.create(targetNode, body, withContext);
     }
 
@@ -69,23 +70,23 @@ public abstract class WithNode extends StatementNode {
         if (targetNode == null) {
             return;
         } else {
-            ((WriteNode) targetNode).doWrite(frame, asNameValue);
+            targetNode.doWrite(frame, asNameValue);
             return;
         }
     }
 
     public abstract PNode getWithContext();
 
-    public PNode getBody() {
+    public StatementNode getBody() {
         return body;
     }
 
-    public PNode getTargetNode() {
+    public WriteNode getTargetNode() {
         return targetNode;
     }
 
     @Specialization
-    protected Object runWith(VirtualFrame frame, Object withObject,
+    protected void runWith(VirtualFrame frame, Object withObject,
                     @Cached("create()") IsCallableNode isCallableNode,
                     @Cached("create()") IsCallableNode isExitCallableNode) {
 
@@ -105,7 +106,7 @@ public abstract class WithNode extends StatementNode {
             body.executeVoid(frame);
         } catch (PException exception) {
             gotException = true;
-            return handleException(frame, withObject, exitCallable, exception, isExitCallableNode);
+            handleException(frame, withObject, exitCallable, exception, isExitCallableNode);
         } finally {
             if (!gotException) {
                 if (isExitCallableNode.execute(exitCallable)) {
@@ -116,10 +117,9 @@ public abstract class WithNode extends StatementNode {
             }
             getContext().setCurrentException(exceptionState);
         }
-        return PNone.NONE;
     }
 
-    private Object handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
+    private void handleException(VirtualFrame frame, Object withObject, Object exitCallable, PException e, IsCallableNode isExitCallableNode) {
         if (!isExitCallableNode.execute(exitCallable)) {
             throw raise(TypeError, "%p is not callable", exitCallable);
         }
@@ -131,9 +131,10 @@ public abstract class WithNode extends StatementNode {
         Object returnValue = exitDispatch.executeCall(frame, exitCallable, createArgs.execute(withObject, type, value, trace), new PKeyword[0]);
         // If exit handler returns 'true', suppress
         if (toBooleanNode.executeWith(returnValue)) {
-            return PNone.NONE;
+            return;
+        } else {
+            // else re-raise exception
+            throw e;
         }
-        // else re-raise exception
-        throw e;
     }
 }

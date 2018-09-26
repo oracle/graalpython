@@ -46,8 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -55,16 +54,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@NodeChildren({@NodeChild("arg"), @NodeChild("arg2")})
-public abstract class LookupAndCallBinaryNode extends PNode {
+public abstract class LookupAndCallBinaryNode extends Node {
 
-    public abstract static class NotImplementedHandler extends PBaseNode {
+    public abstract static class NotImplementedHandler extends PNodeWithContext {
         public abstract Object execute(Object arg, Object arg2);
     }
 
@@ -105,20 +102,20 @@ public abstract class LookupAndCallBinaryNode extends PNode {
     }
 
     public static LookupAndCallBinaryNode create(String name) {
-        return LookupAndCallBinaryNodeGen.create(name, null, null, null, null);
+        return LookupAndCallBinaryNodeGen.create(name, null, null);
     }
 
-    public static LookupAndCallBinaryNode createReversible(String name, PNode left, PNode right, Supplier<NotImplementedHandler> handlerFactory) {
+    public static LookupAndCallBinaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory) {
         assert name.startsWith("__");
-        return LookupAndCallBinaryNodeGen.create(name, name.replaceFirst("__", "__r"), handlerFactory, left, right);
+        return LookupAndCallBinaryNodeGen.create(name, name.replaceFirst("__", "__r"), handlerFactory);
     }
 
     public static LookupAndCallBinaryNode create(String name, String rname) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, null, null, null);
+        return LookupAndCallBinaryNodeGen.create(name, rname, null);
     }
 
     public static LookupAndCallBinaryNode create(String name, String rname, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, handlerFactory, null, null);
+        return LookupAndCallBinaryNodeGen.create(name, rname, handlerFactory);
     }
 
     protected Object getMethod(Object receiver, String methodName) {

@@ -88,8 +88,11 @@ def _getstate(obj):
     return state
 
 
+copyreg = None
 def reduce_1(obj, proto):
-    import copyreg
+    global copyreg
+    if not copyreg:
+        import copyreg
     return copyreg._reduce_ex(obj, proto)
 
 
@@ -99,7 +102,9 @@ def reduce_2(obj, proto, args, kwargs):
     if not hasattr(type(obj), "__new__"):
         raise TypeError("can't pickle %s objects" % type(obj).__name__)
 
-    import copyreg
+    global copyreg
+    if not copyreg:
+        import copyreg
 
     if not isinstance(args, tuple):
         raise TypeError("__getnewargs__ should return a tuple")
@@ -129,7 +134,9 @@ def slotnames(cls):
     except KeyError:
         pass
 
-    import copyreg
+    global copyreg
+    if not copyreg:
+        import copyreg
     slotnames = copyreg._slotnames(cls)
     if not isinstance(slotnames, list) and slotnames is not None:
         raise TypeError("copyreg._slotnames didn't return a list or None")

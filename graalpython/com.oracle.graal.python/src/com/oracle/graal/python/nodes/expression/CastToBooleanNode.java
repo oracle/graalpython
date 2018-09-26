@@ -30,13 +30,15 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNodeFactory.YesNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -52,7 +54,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         return YesNodeGen.create(null);
     }
 
-    public static CastToBooleanNode createIfTrueNode(PNode operand) {
+    public static CastToBooleanNode createIfTrueNode(ExpressionNode operand) {
         return YesNodeGen.create(operand);
     }
 
@@ -60,7 +62,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
         return NotNodeGen.create(null);
     }
 
-    public static CastToBooleanNode createIfFalseNode(PNode operand) {
+    public static CastToBooleanNode createIfFalseNode(ExpressionNode operand) {
         return NotNodeGen.create(operand);
     }
 
@@ -81,6 +83,7 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
 
     @ImportStatic(Message.class)
     public abstract static class YesNode extends CastToBooleanNode {
+        @Child private HashingStorageNodes.LenNode lenNode;
 
         @Specialization
         boolean doBoolean(boolean operand) {
@@ -134,9 +137,19 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
                 throw raise(TypeError, "__bool__ should return bool, returned %p", value);
             }
         }
+
+        protected boolean isEmpty(PBaseSet s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(HashingStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s.getDictStorage()) == 0;
+        }
     }
 
     public abstract static class NotNode extends CastToBooleanNode {
+
+        @Child private SequenceStorageNodes.LenNode lenNode;
 
         @Specialization
         boolean doBool(boolean operand) {
@@ -176,12 +189,12 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
 
         @Specialization
         boolean doBytes(PBytes operand) {
-            return operand.len() == 0;
+            return getLength(operand.getSequenceStorage()) == 0;
         }
 
         @Specialization
         boolean doByteArray(PByteArray operand) {
-            return operand.len() == 0;
+            return getLength(operand.getSequenceStorage()) == 0;
         }
 
         @Specialization(guards = "isForeignObject(operand)")
@@ -201,6 +214,14 @@ public abstract class CastToBooleanNode extends UnaryOpNode {
             } else {
                 throw raise(TypeError, "__bool__ should return bool, returned %p", value);
             }
+        }
+
+        protected int getLength(SequenceStorage s) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(s);
         }
     }
 }

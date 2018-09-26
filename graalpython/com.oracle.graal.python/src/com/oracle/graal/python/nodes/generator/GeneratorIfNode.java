@@ -25,9 +25,8 @@
  */
 package com.oracle.graal.python.nodes.generator;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.YieldException;
@@ -39,8 +38,8 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
 
     @Child protected GeneratorAccessNode gen = GeneratorAccessNode.create();
     @Child protected CastToBooleanNode condition;
-    @Child protected PNode then;
-    @Child protected PNode orelse;
+    @Child protected StatementNode then;
+    @Child protected StatementNode orelse;
 
     protected final int thenFlagSlot;
     protected final int elseFlagSlot;
@@ -50,7 +49,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
     private final ConditionProfile needsElseUpdateProfile = ConditionProfile.createBinaryProfile();
     protected final BranchProfile seenYield = BranchProfile.create();
 
-    public GeneratorIfNode(CastToBooleanNode condition, PNode then, PNode orelse, int thenFlagSlot, int elseFlagSlot) {
+    public GeneratorIfNode(CastToBooleanNode condition, StatementNode then, StatementNode orelse, int thenFlagSlot, int elseFlagSlot) {
         this.condition = condition;
         this.then = then;
         this.orelse = orelse;
@@ -58,7 +57,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
         this.elseFlagSlot = elseFlagSlot;
     }
 
-    public static GeneratorIfNode create(CastToBooleanNode condition, PNode then, PNode orelse, int thenFlagSlot, int elseFlagSlot) {
+    public static GeneratorIfNode create(CastToBooleanNode condition, StatementNode then, StatementNode orelse, int thenFlagSlot, int elseFlagSlot) {
         if (!EmptyNode.isEmpty(orelse)) {
             return new GeneratorIfNode(condition, then, orelse, thenFlagSlot, elseFlagSlot);
         } else {
@@ -67,7 +66,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         boolean startThenFlag = gen.isActive(frame, thenFlagSlot);
         boolean startElseFlag = gen.isActive(frame, elseFlagSlot);
         boolean thenFlag = startThenFlag;
@@ -83,7 +82,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
             } else {
                 orelse.executeVoid(frame);
             }
-            return PNone.NONE;
+            return;
         } catch (YieldException e) {
             seenYield.enter();
             nextThenFlag = thenFlag;
@@ -104,12 +103,12 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
         /**
          * Both flagSlot getter return the same slot.
          */
-        public GeneratorIfWithoutElseNode(CastToBooleanNode condition, PNode then, int thenFlagSlot) {
-            super(condition, then, EmptyNode.create(), thenFlagSlot, thenFlagSlot);
+        public GeneratorIfWithoutElseNode(CastToBooleanNode condition, StatementNode then, int thenFlagSlot) {
+            super(condition, then, BlockNode.create(), thenFlagSlot, thenFlagSlot);
         }
 
         @Override
-        public Object execute(VirtualFrame frame) {
+        public void executeVoid(VirtualFrame frame) {
             boolean startThenFlag = gen.isActive(frame, thenFlagSlot);
             boolean thenFlag = startThenFlag;
             boolean nextThenFlag = false;
@@ -121,7 +120,7 @@ public class GeneratorIfNode extends StatementNode implements GeneratorControlNo
                 if (thenFlag) {
                     then.executeVoid(frame);
                 }
-                return PNone.NONE;
+                return;
             } catch (YieldException e) {
                 seenYield.enter();
                 nextThenFlag = thenFlag;

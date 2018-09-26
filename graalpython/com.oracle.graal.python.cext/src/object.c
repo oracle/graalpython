@@ -160,23 +160,27 @@ void PyObject_Free(void* ptr) {
     free(ptr);
 }
 
+UPCALL_ID(PyObject_Size);
 Py_ssize_t PyObject_Size(PyObject *o) {
-    return UPCALL_CEXT_L("PyObject_Size", native_to_java(o));
+    return UPCALL_CEXT_L(_jls_PyObject_Size, native_to_java(o));
 }
 
+UPCALL_ID(PyObject_Str);
 PyObject* PyObject_Str(PyObject* o) {
-    return UPCALL_CEXT_O("PyObject_Str", native_to_java(o));
+    return UPCALL_CEXT_O(_jls_PyObject_Str, native_to_java(o));
 }
 
+UPCALL_ID(PyObject_Repr);
 PyObject* PyObject_Repr(PyObject* o) {
-    return UPCALL_CEXT_O("PyObject_Repr", native_to_java(o));
+    return UPCALL_CEXT_O(_jls_PyObject_Repr, native_to_java(o));
 }
 
+UPCALL_ID(PyObject_Call);
 PyObject* PyObject_Call(PyObject* callable, PyObject* args, PyObject* kwargs) {
     if (kwargs == NULL) {
         kwargs = PyDict_New();
     }
-    return UPCALL_CEXT_O("PyObject_Call", native_to_java(callable), native_to_java(args), native_to_java(kwargs));
+    return UPCALL_CEXT_O(_jls_PyObject_Call, native_to_java(callable), native_to_java(args), native_to_java(kwargs));
 }
 
 PyObject* PyObject_CallObject(PyObject* callable, PyObject* args) {
@@ -232,46 +236,55 @@ PyObject* PyObject_CallFunctionObjArgs(PyObject *callable, ...) {
     return PyObject_CallObject(callable, args);
 }
 
+UPCALL_ID(PyObject_CallMethod);
 PyObject* PyObject_CallMethod(PyObject* object, const char* method, const char* fmt, ...) {
     PyObject* args;
     CALL_WITH_VARARGS(args, Py_BuildValue, 3, fmt);
-    return UPCALL_CEXT_O("PyObject_CallMethod", native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
+    return UPCALL_CEXT_O(_jls_PyObject_CallMethod, native_to_java(object), polyglot_from_string(method, SRC_CS), native_to_java(args));
 }
 
+UPCALL_ID(type);
 PyObject* PyObject_Type(PyObject* obj) {
-    return UPCALL_O(PY_BUILTIN, "type", native_to_java(obj));
+    return UPCALL_O(PY_BUILTIN, _jls_type, native_to_java(obj));
 }
 
+UPCALL_ID(__getitem__);
 PyObject* PyObject_GetItem(PyObject* obj, PyObject* key) {
-    return UPCALL_O(native_to_java(obj), "__getitem__", native_to_java(key));
+    return UPCALL_O(native_to_java(obj), _jls___getitem__, native_to_java(key));
 }
 
+UPCALL_ID(PyObject_SetItem);
 int PyObject_SetItem(PyObject* obj, PyObject* key, PyObject* value) {
-    return UPCALL_CEXT_I("PyObject_SetItem", native_to_java(obj), native_to_java(key), native_to_java(value));
+    return UPCALL_CEXT_I(_jls_PyObject_SetItem, native_to_java(obj), native_to_java(key), native_to_java(value));
 }
 
+UPCALL_ID(__format__);
 PyObject* PyObject_Format(PyObject* obj, PyObject* spec) {
-    return UPCALL_O(native_to_java(obj), "__format__", native_to_java(spec));
+    return UPCALL_O(native_to_java(obj), _jls___format__, native_to_java(spec));
 }
 
+UPCALL_ID(iter);
 PyObject* PyObject_GetIter(PyObject* obj) {
-    return UPCALL_O(PY_BUILTIN, "iter", native_to_java(obj));
+    return UPCALL_O(PY_BUILTIN, _jls_iter, native_to_java(obj));
 }
 
+UPCALL_ID(PyObject_IsInstance);
 int PyObject_IsInstance(PyObject* obj, PyObject* typ) {
-    return UPCALL_CEXT_I("PyObject_IsInstance", native_to_java(obj), native_to_java(typ));
+    return UPCALL_CEXT_I(_jls_PyObject_IsInstance, native_to_java(obj), native_to_java(typ));
 }
 
+UPCALL_ID(PyObject_AsFileDescriptor);
 int PyObject_AsFileDescriptor(PyObject* obj) {
-    return UPCALL_CEXT_I("PyObject_AsFileDescriptor", native_to_java(obj));
+    return UPCALL_CEXT_I(_jls_PyObject_AsFileDescriptor, native_to_java(obj));
 }
 
+UPCALL_ID(PyTruffle_GetBuiltin);
 int PyObject_Print(PyObject* object, FILE* fd, int flags) {
     void *openFunc, *args, *kwargs;
     void *printfunc, *printargs, *printkwargs;
     void *file;
 
-    openFunc = UPCALL_CEXT_O("PyTruffle_GetBuiltin", polyglot_from_string("open", SRC_CS));
+    openFunc = UPCALL_CEXT_O(_jls_PyTruffle_GetBuiltin, polyglot_from_string("open", SRC_CS));
     args = PyTuple_New(1);
     int f = fileno(fd);
     PyTuple_SetItem(args, 0, PyLong_FromLong(f));
@@ -281,7 +294,7 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
     PyDict_SetItemString(kwargs, "mode", polyglot_from_string("wb", SRC_CS));
     file = PyObject_Call(openFunc, args, kwargs);
 
-    printfunc = UPCALL_CEXT_O("PyTruffle_GetBuiltin", polyglot_from_string("print", SRC_CS));
+    printfunc = UPCALL_CEXT_O(_jls_PyTruffle_GetBuiltin, polyglot_from_string("print", SRC_CS));
     printargs = PyTuple_New(1);
     PyTuple_SetItem(printargs, 0, object);
     printkwargs = PyDict_New();
@@ -290,24 +303,27 @@ int PyObject_Print(PyObject* object, FILE* fd, int flags) {
     return 0;
 }
 
+UPCALL_ID(PyObject_GetAttr);
 PyObject* PyObject_GetAttrString(PyObject* obj, const char* attr) {
-    return UPCALL_CEXT_O("PyObject_GetAttr", native_to_java(obj), polyglot_from_string(attr, SRC_CS));
+    return UPCALL_CEXT_O(_jls_PyObject_GetAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS));
 }
 
+UPCALL_ID(PyObject_SetAttr);
 int PyObject_SetAttrString(PyObject* obj, const char* attr, PyObject* value) {
-    return UPCALL_CEXT_I("PyObject_SetAttr", native_to_java(obj), polyglot_from_string(attr, SRC_CS), native_to_java(value));
+    return UPCALL_CEXT_I(_jls_PyObject_SetAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS), native_to_java(value));
 }
 
+UPCALL_ID(PyObject_HasAttr);
 int PyObject_HasAttr(PyObject* obj, PyObject* attr) {
-    return UPCALL_CEXT_I("PyObject_HasAttr", native_to_java(obj), native_to_java(attr));
+    return UPCALL_CEXT_I(_jls_PyObject_HasAttr, native_to_java(obj), native_to_java(attr));
 }
 
 int PyObject_HasAttrString(PyObject* obj, const char* attr) {
-    return UPCALL_CEXT_I("PyObject_HasAttr", native_to_java(obj), polyglot_from_string(attr, SRC_CS));
+    return UPCALL_CEXT_I(_jls_PyObject_HasAttr, native_to_java(obj), polyglot_from_string(attr, SRC_CS));
 }
 
 PyObject* PyObject_GetAttr(PyObject* obj, PyObject* attr) {
-    return UPCALL_CEXT_O("PyObject_GetAttr", native_to_java(obj), native_to_java(attr));
+    return UPCALL_CEXT_O(_jls_PyObject_GetAttr, native_to_java(obj), native_to_java(attr));
 }
 
 PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
@@ -322,25 +338,29 @@ int PyObject_GenericSetAttr(PyObject* obj, PyObject* attr, PyObject* value) {
     return PyObject_SetAttr(obj, attr, value);
 }
 
+UPCALL_ID(hash);
 Py_hash_t PyObject_Hash(PyObject* obj) {
-    return UPCALL_I(PY_BUILTIN, "hash", native_to_java(obj));
+    return UPCALL_I(PY_BUILTIN, _jls_hash, native_to_java(obj));
 }
 
+UPCALL_ID(PyObject_HashNotImplemented);
 Py_hash_t PyObject_HashNotImplemented(PyObject* obj) {
-    UPCALL_CEXT_VOID("PyObject_HashNotImplemented", native_to_java(obj));
+    UPCALL_CEXT_VOID(_jls_PyObject_HashNotImplemented, native_to_java(obj));
     return -1;
 }
 
+UPCALL_ID(PyObject_IsTrue);
 int PyObject_IsTrue(PyObject* obj) {
-    return UPCALL_CEXT_I("PyObject_IsTrue", native_to_java(obj));
+    return UPCALL_CEXT_I(_jls_PyObject_IsTrue, native_to_java(obj));
 }
 
 int PyObject_Not(PyObject* obj) {
     return PyObject_IsTrue(obj) ? 0 : 1;
 }
 
+UPCALL_ID(PyObject_RichCompare);
 PyObject * PyObject_RichCompare(PyObject *v, PyObject *w, int op) {
-    return UPCALL_CEXT_O("PyObject_RichCompare", native_to_java(v), native_to_java(w), op);
+    return UPCALL_CEXT_O(_jls_PyObject_RichCompare, native_to_java(v), native_to_java(w), op);
 }
 
 int PyObject_RichCompareBool(PyObject *v, PyObject *w, int op) {

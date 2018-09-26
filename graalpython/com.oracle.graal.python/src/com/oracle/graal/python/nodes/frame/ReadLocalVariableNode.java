@@ -25,7 +25,8 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -43,7 +44,7 @@ public final class ReadLocalVariableNode extends ReadVariableNode {
     }
 
     @Override
-    public PNode makeWriteNode(PNode rhs) {
+    public StatementNode makeWriteNode(ExpressionNode rhs) {
         return WriteLocalVariableNode.create(frameSlot, rhs);
     }
 

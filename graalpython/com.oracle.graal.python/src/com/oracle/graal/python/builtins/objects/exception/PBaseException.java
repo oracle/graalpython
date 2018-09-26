@@ -160,9 +160,9 @@ public final class PBaseException extends PythonObject {
                 return getPythonClass().getName() + ": " + FORMATTER.format(messageFormat, messageArgs);
             }
             return getPythonClass().getName() + ": " + messageFormat;
-        } else if (args.len() == 0) {
+        } else if (args.getSequenceStorage().length() == 0) {
             return getPythonClass().getName();
-        } else if (args.len() == 1) {
+        } else if (args.getSequenceStorage().length() == 1) {
             SequenceStorage store = args.getSequenceStorage();
             Object item = store instanceof BasicSequenceStorage ? store.getItemNormalized(0) : "<unknown>";
             return getPythonClass().getName() + ": " + item.toString();

@@ -43,24 +43,29 @@
 PyTypeObject PyTuple_Type = PY_TRUFFLE_TYPE("tuple", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_TUPLE_SUBCLASS, sizeof(PyTupleObject) - sizeof(PyObject *));
 
 /* Tuples */
+UPCALL_ID(PyTuple_New);
 PyObject* PyTuple_New(Py_ssize_t size) {
-    return UPCALL_CEXT_O("PyTuple_New", size);
+    return UPCALL_CEXT_O(_jls_PyTuple_New, size);
 }
 
+UPCALL_ID(PyTuple_SetItem);
 int PyTuple_SetItem(PyObject* tuple, Py_ssize_t position, PyObject* item) {
-    return UPCALL_CEXT_I("PyTuple_SetItem", native_to_java(tuple), position, native_to_java(item));
+    return UPCALL_CEXT_I(_jls_PyTuple_SetItem, native_to_java(tuple), position, native_to_java(item));
 }
 
+UPCALL_ID(PyTuple_GetItem);
 PyObject* PyTuple_GetItem(PyObject* tuple, Py_ssize_t position) {
-    return UPCALL_CEXT_O("PyTuple_GetItem", native_to_java(tuple), position);
+    return UPCALL_CEXT_O(_jls_PyTuple_GetItem, native_to_java(tuple), position);
 }
 
+UPCALL_ID(PyTuple_Size);
 Py_ssize_t PyTuple_Size(PyObject *op) {
-    return UPCALL_CEXT_L("PyTuple_Size", native_to_java(op));
+    return UPCALL_CEXT_L(_jls_PyTuple_Size, native_to_java(op));
 }
 
+UPCALL_ID(PyTuple_GetSlice);
 PyObject* PyTuple_GetSlice(PyObject *tuple, Py_ssize_t i, Py_ssize_t j) {
-    return UPCALL_CEXT_O("PyTuple_GetSlice", native_to_java(tuple), i, j);
+    return UPCALL_CEXT_O(_jls_PyTuple_GetSlice, native_to_java(tuple), i, j);
 }
 
 PyObject* PyTuple_Pack(Py_ssize_t n, ...) {

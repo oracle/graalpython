@@ -28,12 +28,15 @@ package com.oracle.graal.python.nodes.call;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.keywords.KeywordArgumentsNode;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNodeGen.GetCallAttributeNodeGen;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.debug.DebuggerTags;
@@ -55,7 +58,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @NodeChild("calleeNode")
-public abstract class PythonCallNode extends PNode {
+public abstract class PythonCallNode extends ExpressionNode {
 
     @Child private CallNode callNode = CallNode.create();
 
@@ -63,25 +66,27 @@ public abstract class PythonCallNode extends PNode {
      * Either "argument" or "positionalArgument" needs to be non-null (but not both), and
      * "keywordArguments" may be null.
      */
-    @Children private final PNode[] argumentNodes;
+    @Children protected final ExpressionNode[] argumentNodes;
     @Child private PositionalArgumentsNode positionalArguments;
     @Child private KeywordArgumentsNode keywordArguments;
 
     protected final String calleeName;
 
-    PythonCallNode(String calleeName, PNode[] argumentNodes, PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
+    protected abstract ExpressionNode getCalleeNode();
+
+    PythonCallNode(String calleeName, ExpressionNode[] argumentNodes, PositionalArgumentsNode positionalArguments, KeywordArgumentsNode keywordArguments) {
         this.calleeName = calleeName;
         this.argumentNodes = argumentNodes;
         this.positionalArguments = positionalArguments;
         this.keywordArguments = keywordArguments;
     }
 
-    public static PythonCallNode create(PNode calleeNode, PNode[] argumentNodes, PNode[] keywords, PNode starArgs, PNode kwArgs) {
+    public static PythonCallNode create(ExpressionNode calleeNode, ExpressionNode[] argumentNodes, ExpressionNode[] keywords, ExpressionNode starArgs, ExpressionNode kwArgs) {
         assert !(starArgs instanceof EmptyNode) : "pass null instead";
         assert !(kwArgs instanceof EmptyNode) : "pass null instead";
 
         String calleeName = "~unknown";
-        PNode getCallableNode = calleeNode;
+        ExpressionNode getCallableNode = calleeNode;
 
         if (calleeNode instanceof ReadGlobalOrBuiltinNode) {
             calleeName = ((ReadGlobalOrBuiltinNode) calleeNode).getAttributeId();
@@ -96,8 +101,79 @@ public abstract class PythonCallNode extends PNode {
         }
     }
 
+    private static class PythonCallUnary extends ExpressionNode {
+        @Child CallUnaryMethodNode callUnary = CallUnaryMethodNode.create();
+        @Child ExpressionNode getCallable;
+        @Child ExpressionNode argumentNode;
+
+        PythonCallUnary(ExpressionNode getCallable, ExpressionNode argumentNode) {
+            this.getCallable = getCallable;
+            this.argumentNode = argumentNode;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return callUnary.executeObject(getCallable.execute(frame), argumentNode.execute(frame));
+        }
+    }
+
+    private static class PythonCallBinary extends ExpressionNode {
+        @Child CallBinaryMethodNode callBinary = CallBinaryMethodNode.create();
+        @Child ExpressionNode getCallable;
+        @Children final ExpressionNode[] argumentNodes;
+
+        PythonCallBinary(ExpressionNode getCallable, ExpressionNode[] argumentNodes) {
+            this.getCallable = getCallable;
+            this.argumentNodes = argumentNodes;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            Object[] evaluatedArguments = PositionalArgumentsNode.evaluateArguments(frame, argumentNodes);
+            return callBinary.executeObject(getCallable.execute(frame), evaluatedArguments[0], evaluatedArguments[1]);
+        }
+    }
+
+    private static class PythonCallTernary extends ExpressionNode {
+        @Child CallTernaryMethodNode callTernary = CallTernaryMethodNode.create();
+        @Child ExpressionNode getCallable;
+        @Children final ExpressionNode[] argumentNodes;
+
+        PythonCallTernary(ExpressionNode getCallable, ExpressionNode[] argumentNodes) {
+            this.getCallable = getCallable;
+            this.argumentNodes = argumentNodes;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            return callTernary.execute(getCallable.execute(frame), argumentNodes[0].execute(frame), argumentNodes[1].execute(frame), argumentNodes[2].execute(frame));
+        }
+    }
+
+    /**
+     * If the argument length is fixed 1, 2, or 3 arguments, returns an expression node that uses
+     * special call semantics, i.e., it can avoid creating a stack frame if the call target is a
+     * builtin python function that takes 1, 2, or 3 arguments exactly. Otherwise, returns itself.
+     */
+    public ExpressionNode asSpecialCall() {
+        if (argumentNodes == null || keywordArguments != null) {
+            return this;
+        } else {
+            switch (argumentNodes.length) {
+                case 1:
+                    return new PythonCallUnary(getCalleeNode(), argumentNodes[0]);
+                case 2:
+                    return new PythonCallBinary(getCalleeNode(), argumentNodes);
+                case 3:
+                    return new PythonCallTernary(getCalleeNode(), argumentNodes);
+                default:
+                    return this;
+            }
+        }
+    }
+
     @NodeChild("object")
-    protected abstract static class GetCallAttributeNode extends PNode {
+    protected abstract static class GetCallAttributeNode extends ExpressionNode {
 
         private final String key;
 

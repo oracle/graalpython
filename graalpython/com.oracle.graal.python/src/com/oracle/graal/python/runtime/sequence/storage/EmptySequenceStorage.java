@@ -84,11 +84,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public int index(Object value) {
-        return -1;
-    }
-
-    @Override
     public SequenceStorage copy() {
         return this;
     }
@@ -123,7 +118,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     @Override
     public void insertItem(int idx, Object value) throws SequenceStoreException {
         assert idx == 0;
-        throw SequenceStoreException.INSTANCE;
+        throw new SequenceStoreException(value);
     }
 
     @Override
@@ -137,44 +132,7 @@ public final class EmptySequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        throw SequenceStoreException.INSTANCE;
-    }
-
-    @Override
-    public void delSlice(int start, int stop, int step) {
-        // the slice is empty. Do nothing here
-    }
-
-    @Override
-    public void delItemInBound(int idx) {
-        throw new UnsupportedOperationException("Cannot delete from empty storage");
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        return new UnsupportedOperationException();
-    }
-
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        throw SequenceStoreException.INSTANCE;
-    }
-
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        // allow an empty storage to be extended by an empty storage
-        if (!(other instanceof EmptySequenceStorage)) {
-            throw SequenceStoreException.INSTANCE;
-        }
-    }
-
-    @Override
     public void reverse() {
-    }
-
-    @Override
-    public void sort() {
     }
 
     @Override
@@ -192,4 +150,8 @@ public final class EmptySequenceStorage extends SequenceStorage {
         return null;
     }
 
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Uninitialized;
+    }
 }

@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -74,7 +75,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization
         public Object next(PArrayIterator self,
                         @Cached("createClassProfile()") ValueProfile itemTypeProfile,
-                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             if (self.index < self.array.len()) {
                 // TODO avoid boxing by getting the array's typecode and using primitive return
                 // types
@@ -153,10 +154,12 @@ public class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isPSequence()")
         public Object next(PSequenceIterator self,
                         @Cached("createClassProfile()") ValueProfile sequenceProfile,
-                        @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getItemNode) {
+                        @Cached("create()") SequenceStorageNodes.LenNode lenNode,
+                        @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
             PSequence sequence = sequenceProfile.profile(self.getPSequence());
-            if (!self.isExhausted() && self.index < sequence.len()) {
-                return getItemNode.execute(sequence.getSequenceStorage(), self.index++);
+            SequenceStorage s = sequence.getSequenceStorage();
+            if (!self.isExhausted() && self.index < lenNode.execute(s)) {
+                return getItemNode.execute(s, self.index++);
             }
             self.setExhausted();
             throw raise(StopIteration);
@@ -180,10 +183,6 @@ public class IteratorBuiltins extends PythonBuiltins {
                 e.expectIndexError(getCore(), profile);
                 throw raise(StopIteration);
             }
-        }
-
-        protected static SequenceStorageNodes.GetItemNode createGetItem() {
-            return SequenceStorageNodes.GetItemNode.createNotNormalized();
         }
     }
 
@@ -236,8 +235,9 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "self.isPSequence()")
-        public Object lengthHint(PSequenceIterator self) {
-            return self.getPSequence().len() - self.index;
+        public Object lengthHint(PSequenceIterator self,
+                        @Cached("create()") SequenceNodes.LenNode lenNode) {
+            return lenNode.execute(self.getPSequence()) - self.index;
         }
 
         @Specialization

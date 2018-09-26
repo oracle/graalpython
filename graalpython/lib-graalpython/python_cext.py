@@ -39,37 +39,15 @@
 
 import _imp
 import sys
+import python_cext
 
-
-class CErrorHandler(object):
-    def __enter__(self, *args):
-        pass
-
-    def __exit__(self, typ, val, tb):
-        if typ != None:
-            PyErr_Restore(typ, val, tb)
-            return True
-
-
-error_handler = CErrorHandler()
-
-
-def may_raise(error_result=error_handler):
+def may_raise(error_result=native_null):
     if isinstance(error_result, type(may_raise)):
         # direct annotation
-        return may_raise(error_handler)(error_result)
+        return may_raise(native_null)(error_result)
     else:
         def decorator(fun):
-            def wrapper(*args):
-                typ = val = tb = None
-                try:
-                    return fun(*args)
-                except BaseException as e:
-                    typ, val, tb = sys.exc_info()
-                PyErr_Restore(typ, val, tb)
-                return error_result
-            wrapper.__name__ = fun.__name__
-            return wrapper
+            return make_may_raise_wrapper(fun, error_result)
         return decorator
 
 
@@ -131,16 +109,16 @@ def PyDict_New():
 @may_raise
 def PyDict_Next(dictObj, pos):
     if not isinstance(dictObj, dict):
-        return error_handler
+        return native_null
     curPos = 0
     max = len(dictObj)
     if pos >= max:
-        return error_handler
+        return native_null
     for key in dictObj:
         if curPos == pos:
             return key, dictObj[key]
         curPos = curPos + 1
-    return error_handler
+    return native_null
 
 
 @may_raise(-1)
@@ -161,7 +139,7 @@ def PyDict_Copy(dictObj):
 def PyDict_GetItem(dictObj, key):
     if not isinstance(dictObj, dict):
         raise TypeError('expected dict, {!s} found'.format(type(dictObj)))
-    return dictObj.get(key, error_handler)
+    return dictObj.get(key, native_null)
 
 
 @may_raise(-1)
@@ -238,10 +216,10 @@ def PyTruffle_Object_LEN(obj):
 ##################### BYTES
 
 def PyBytes_FromStringAndSize(string, size, encoding):
-    if string is not None:
+    if string is not None and string is not Py_NoValue():
         return bytes(string, encoding)
     assert size >= 0;
-    return PyTruffle_Bytes_EmptyWithCapacity(size, error_handler)
+    return PyTruffle_Bytes_EmptyWithCapacity(size, native_null)
 
 
 def PyBytes_AsStringCheckEmbeddedNull(obj, encoding):
@@ -396,7 +374,7 @@ def PyNumber_Check(v):
 
 
 @may_raise
-def PyNumber_BinOp(v, w, binop, name):
+def PyNumber_BinOp(v, w, binop):
     if binop == 0:
         return v + w
     elif binop == 1:
@@ -420,11 +398,36 @@ def PyNumber_BinOp(v, w, binop, name):
     elif binop == 10:
         return v % w
     else:
-        raise SystemError("unknown binary operator %s" % name)
+        raise SystemError("unknown binary operator (code=%s)" % binop)
+
+
+def _binop_name(binop):
+    if binop == 0:
+        return "+"
+    elif binop == 1:
+        return "-"
+    elif binop == 2:
+        return "*"
+    elif binop == 3:
+        return "/"
+    elif binop == 4:
+        return "<<"
+    elif binop == 5:
+        return ">>"
+    elif binop == 6:
+        return "|"
+    elif binop == 7:
+        return "&"
+    elif binop == 8:
+        return "^"
+    elif binop == 9:
+        return "//"
+    elif binop == 10:
+        return "%"
 
 
 @may_raise
-def PyNumber_InPlaceBinOp(v, w, binop, name):
+def PyNumber_InPlaceBinOp(v, w, binop):
     control = v
     if binop == 0:
         v += w
@@ -449,14 +452,14 @@ def PyNumber_InPlaceBinOp(v, w, binop, name):
     elif binop == 10:
         v %= w
     else:
-        raise SystemError("unknown binary operator %s" % name)
+        raise SystemError("unknown in-place binary operator (code=%s)" % binop)
     if control is not v:
-        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (name, type(v), type(w)))
+        raise TypeError("unsupported operand type(s) for %s=: '%s' and '%s'" % (_binop_name(binop), type(v), type(w)))
     return control
 
 
 @may_raise
-def PyNumber_UnaryOp(v, unaryop, name):
+def PyNumber_UnaryOp(v, unaryop):
     if unaryop == 0:
         return +v
     elif unaryop == 1:
@@ -464,7 +467,7 @@ def PyNumber_UnaryOp(v, unaryop, name):
     elif unaryop == 2:
         return ~v
     else:
-        raise SystemError("unknown unary operator %s" % name)
+        raise SystemError("unknown unary operator (code=%s)" % unaryop)
 
 
 @may_raise
@@ -508,7 +511,7 @@ def PyIter_Next(itObj):
         return next(itObj)
     except StopIteration:
         PyErr_Restore(None, None, None)
-        return error_handler
+        return native_null
 
 
 ##################### SEQUENCE
@@ -690,8 +693,8 @@ def PyModule_AddObject(m, k, v):
     return None
 
 
+from posix import stat_result
 def PyStructSequence_New(typ):
-    from posix import stat_result
     return stat_result([None] * stat_result.n_sequence_fields * 2)
 
 
@@ -726,7 +729,7 @@ def AddFunction(primary, name, cfunc, cwrapper, wrapper, doc, isclass=False, iss
     owner = to_java(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
-        func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner, doc)
+        func = PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, owner, owner.__name__, doc)
         object.__setattr__(owner, name, func)
     else:
         func = wrapper(CreateFunction(name, cfunc, cwrapper, owner))
@@ -750,21 +753,23 @@ def PyCFunction_NewEx(name, cfunc, cwrapper, wrapper, self, module, doc):
     PyTruffle_SetAttr(func, "__name__", name)
     PyTruffle_SetAttr(func, "__doc__", doc)
     method = PyTruffle_BuiltinMethod(self, func)
-    PyTruffle_SetAttr(method, "__module__", module.__name__)
+    PyTruffle_SetAttr(method, "__module__", to_java(module))
     return method
 
 
 def AddMember(primary, name, memberType, offset, canSet, doc):
+    # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
+    # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
     pclass = to_java(primary)
     member = property()
     getter = ReadMemberFunctions[memberType]
     def member_getter(self):
-        return getter(self, offset)
+        return to_java(getter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8, "")))
     member.getter(member_getter)
     if to_java(canSet):
         setter = WriteMemberFunctions[memberType]
         def member_setter(self, value):
-            setter(self, offset, value)
+            setter(to_sulong(self), TrufflePInt_AsPrimitive(offset, 1, 8, ""), to_sulong(value))
         member.setter(member_setter)
     member.__doc__ = doc
     object.__setattr__(pclass, name, member)
@@ -809,8 +814,9 @@ def PyObject_Repr(o):
     return repr(o)
 
 
+@may_raise(-1)
 def PyType_IsSubtype(a, b):
-    return 1 if b in a.mro() else 0
+    return 1 if issubclass(a, b) else 0
 
 
 def PyTuple_New(size):
@@ -1253,7 +1259,7 @@ def initialize_member_accessors():
                        "ReadBoolMember", "ReadObjectExMember",
                        "ReadObjectExMember", "ReadLongLongMember",
                        "ReadULongLongMember", "ReadPySSizeT"]:
-        ReadMemberFunctions.append(import_c_func(memberFunc))
+        ReadMemberFunctions.append(capi[memberFunc])
     ReadMemberFunctions.append(lambda x: None)
     for memberFunc in ["WriteShortMember", "WriteIntMember", "WriteLongMember",
                        "WriteFloatMember", "WriteDoubleMember",
@@ -1264,7 +1270,7 @@ def initialize_member_accessors():
                        "WriteBoolMember", "WriteObjectExMember",
                        "WriteObjectExMember", "WriteLongLongMember",
                        "WriteULongLongMember", "WritePySSizeT"]:
-        WriteMemberFunctions.append(import_c_func(memberFunc))
+        WriteMemberFunctions.append(capi[memberFunc])
     WriteMemberFunctions.append(lambda x,v: None)
 
 
@@ -1283,7 +1289,7 @@ def PyRun_String(source, typ, globals, locals):
 
 
 # called without landing; do conversion manually
-@may_raise(to_sulong(error_handler))
+@may_raise(to_sulong(native_null))
 def PySlice_GetIndicesEx(start, stop, step, length):
     return to_sulong(PyTruffleSlice_GetIndicesEx(start, stop, step, length))
 
@@ -1291,73 +1297,3 @@ def PySlice_GetIndicesEx(start, stop, step, length):
 @may_raise
 def PySlice_New(start, stop, step):
     return slice(start, stop, step)
-
-
-@may_raise(to_sulong(error_handler))
-def PyTruffle_Upcall(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_sulong(getattr(to_java(rcv), name)(*converted))
-
-
-@may_raise(to_long(-1))
-def PyTruffle_Upcall_l(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_long(getattr(rcv, name)(*converted))
-
-
-@may_raise(to_double(-1.0))
-def PyTruffle_Upcall_d(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_double(getattr(rcv, name)(*converted))
-
-
-@may_raise(0)
-def PyTruffle_Upcall_ptr(rcv, name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    # returns a pointer, i.e., we do no conversion since this can be any pointer object
-    return getattr(rcv, name)(*converted)
-
-
-def PyTruffle_Cext_Upcall(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_sulong(globals()[name](*converted))
-
-
-def PyTruffle_Cext_Upcall_l(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_long(globals()[name](*converted))
-
-
-def PyTruffle_Cext_Upcall_d(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    return to_double(globals()[name](*converted))
-
-
-def PyTruffle_Cext_Upcall_ptr(name, *args):
-    nargs = len(args)
-    converted = [None] * nargs
-    for i in range(nargs):
-        converted[i] = to_java(args[i])
-    # returns a pointer, i.e., we do no conversion since this can be any pointer object
-    return globals()[name](*converted)

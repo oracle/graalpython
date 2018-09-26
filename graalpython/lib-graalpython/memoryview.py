@@ -41,15 +41,25 @@
 from python_cext import PyTruffle_SetAttr
 
 
+c_memoryview_module = None
+
+
 def __memoryview_init(self, *args, **kwargs):
     import _memoryview
+    global c_memoryview_module
+    c_memoryview_module = _memoryview
+    PyTruffle_SetAttr(memoryview, "__init__", __memoryview_init2)
+    return __memoryview_init2(self, *args, **kwargs)
+
+
+def __memoryview_init2(self, *args, **kwargs):
     # NOTE: DO NOT CHANGE THE NAME OF PROPERTY '__c_memoryview'
     # it is also referenced in native code and Java code
-    if args and isinstance(args[0], _memoryview.nativememoryview):
+    if args and isinstance(args[0], c_memoryview_module.nativememoryview):
         # wrapping case
         PyTruffle_SetAttr(self, "__c_memoryview", args[0])
     else:
-        PyTruffle_SetAttr(self, "__c_memoryview", _memoryview.nativememoryview(*args, **kwargs))
+        PyTruffle_SetAttr(self, "__c_memoryview", c_memoryview_module.nativememoryview(*args, **kwargs))
 
 
 def __memoryview_getitem(self, key):

@@ -229,12 +229,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__truffle_encode", fixedNumOfPositionalArgs = 1, keywordArguments = {"encoding", "errors"})
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends PythonBuiltinNode {
+        @Child private SequenceStorageNodes.LenNode lenNode;
+
         @Specialization(guards = "isString(str)")
         Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached("createClassProfile()") ValueProfile strTypeProfile) {
             Object profiledStr = strTypeProfile.profile(str);
             PBytes bytes = encodeString(profiledStr.toString(), "utf-8", "strict");
-            return factory().createTuple(new Object[]{bytes, bytes.len()});
+            return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)"})
@@ -244,7 +246,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             Object profiledStr = strTypeProfile.profile(str);
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), "strict");
-            return factory().createTuple(new Object[]{bytes, bytes.len()});
+            return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(errors)"})
@@ -254,7 +256,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             Object profiledStr = strTypeProfile.profile(str);
             Object profiledErrors = errorsTypeProfile.profile(errors);
             PBytes bytes = encodeString(profiledStr.toString(), "utf-8", profiledErrors.toString());
-            return factory().createTuple(new Object[]{bytes, bytes.len()});
+            return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Specialization(guards = {"isString(str)", "isString(encoding)", "isString(errors)"})
@@ -266,7 +268,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             Object profiledEncoding = encodingTypeProfile.profile(encoding);
             Object profiledErrors = errorsTypeProfile.profile(errors);
             PBytes bytes = encodeString(profiledStr.toString(), profiledEncoding.toString(), profiledErrors.toString());
-            return factory().createTuple(new Object[]{bytes, bytes.len()});
+            return factory().createTuple(new Object[]{bytes, getLength(bytes)});
         }
 
         @Fallback
@@ -307,6 +309,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeEncodeError, "%s", e.getMessage());
             }
+        }
+
+        private int getLength(PBytes b) {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode.execute(b.getSequenceStorage());
         }
     }
 
@@ -359,7 +369,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create(false));
             }
             byte[] barr = toByteArrayNode.execute(bytesLike.getSequenceStorage());
-            return ByteBuffer.wrap(barr, 0, bytesLike.len());
+            return ByteBuffer.wrap(barr, 0, barr.length);
         }
 
         @TruffleBoundary

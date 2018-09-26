@@ -43,10 +43,9 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import java.nio.ByteBuffer;
 
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.PLenSupplier;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
-public interface PIBytesLike extends PLenSupplier {
+public interface PIBytesLike {
 
     SequenceStorage getSequenceStorage();
 

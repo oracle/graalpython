@@ -54,20 +54,22 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.ArityCheckNode;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
-import com.oracle.graal.python.nodes.call.CallDispatchNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.datamodel.IsCallableNode;
@@ -82,9 +84,12 @@ import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.interop.PythonMessageResolutionFactory.ArgumentsFromForeignNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.CanResolve;
 import com.oracle.truffle.api.interop.KeyInfo;
 import com.oracle.truffle.api.interop.Message;
@@ -94,6 +99,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -236,41 +242,65 @@ public class PythonMessageResolution {
         }
     }
 
-    public static final class ExecuteNode extends Node {
-        @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
+    abstract static class ArgumentsFromForeignNode extends Node {
         @Child private PForeignToPTypeNode fromForeign = PForeignToPTypeNode.create();
-        @Child private LookupInheritedAttributeNode getCall = LookupInheritedAttributeNode.create(__CALL__);
-        @Child private CallDispatchNode dispatch;
-        @Child private CreateArgumentsNode createArgs = CreateArgumentsNode.create();
-        @Child private ArityCheckNode arityCheckNode = ArityCheckNode.create();
-        final ValueProfile classProfile = ValueProfile.createClassProfile();
 
-        private CallDispatchNode getDispatchNode() {
-            if (dispatch == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                dispatch = insert(CallDispatchNode.create());
+        public abstract Object[] execute(Object[] arguments);
+
+        @Specialization(guards = {"arguments.length == cachedLen", "cachedLen < 6"}, limit = "3")
+        @ExplodeLoop
+        Object[] cached(Object[] arguments,
+                        @Cached("arguments.length") int cachedLen) {
+            Object[] convertedArgs = new Object[cachedLen];
+            for (int i = 0; i < cachedLen; i++) {
+                convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
             }
-            return dispatch;
+            return convertedArgs;
         }
 
-        public Object execute(Object receiver, Object[] arguments) {
-            Object callable = getCall.execute(receiver);
-
-            // convert foreign argument values to Python values
+        @Specialization(replaces = "cached")
+        Object[] cached(Object[] arguments) {
             Object[] convertedArgs = new Object[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
                 convertedArgs[i] = fromForeign.executeConvert(arguments[i]);
             }
+            return convertedArgs;
+        }
+    }
 
-            Object profiledCallable = classProfile.profile(callable);
-            if (profiledCallable == PNone.NO_VALUE) {
+    public static final class ExecuteNode extends Node {
+        @Child private PTypeToForeignNode toForeign = PTypeToForeignNodeGen.create();
+        @Child private CallNode callNode = CallNode.create();
+        @Child private LookupInheritedAttributeNode callAttrGetterNode = LookupInheritedAttributeNode.create(__CALL__);
+        @Child private ArgumentsFromForeignNode convertArgsNode = ArgumentsFromForeignNodeGen.create();
+
+        public Object execute(PFunction receiver, Object[] arguments) {
+            return doCall(receiver, arguments);
+        }
+
+        public Object execute(PBuiltinFunction receiver, Object[] arguments) {
+            return doCall(receiver, arguments);
+        }
+
+        public Object execute(PMethod receiver, Object[] arguments) {
+            return doCall(receiver, arguments);
+        }
+
+        public Object execute(PBuiltinMethod receiver, Object[] arguments) {
+            return doCall(receiver, arguments);
+        }
+
+        public Object execute(Object receiver, Object[] arguments) {
+            Object isCallable = callAttrGetterNode.execute(receiver);
+            if (isCallable == PNone.NO_VALUE) {
                 throw UnsupportedMessageException.raise(Message.EXECUTE);
             }
+            return doCall(receiver, arguments);
+        }
 
-            PKeyword[] emptyKeywords = new PKeyword[0];
-            Object[] pArguments = createArgs.executeWithSelf(receiver, convertedArgs);
-
-            return toForeign.executeConvert(getDispatchNode().executeCall(null, profiledCallable, pArguments, emptyKeywords));
+        private Object doCall(Object receiver, Object[] arguments) {
+            Object[] convertedArgs = convertArgsNode.execute(arguments);
+            return toForeign.executeConvert(callNode.execute(null, receiver, convertedArgs, new PKeyword[0]));
         }
     }
 
@@ -319,7 +349,8 @@ public class PythonMessageResolution {
 
             String itemKey = getItemKey.execute(field);
             if (itemKey != null) {
-                return setItemNode.executeWith(object, itemKey, value);
+                setItemNode.executeWith(object, itemKey, value);
+                return value;
             }
 
             if (object instanceof PythonObject) {
@@ -553,8 +584,8 @@ public class PythonMessageResolution {
     abstract static class PKeyInfoNode extends Node {
         @Child private LookupAndCallBinaryNode getCallNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
 
-        ReadNode readNode = new ReadNode();
-        IsImmutable isImmutable = new IsImmutable();
+        @Child ReadNode readNode = new ReadNode();
+        @Child IsImmutable isImmutable = new IsImmutable();
 
         public int access(Object object, Object fieldName) {
             Object attr = readNode.execute(object, fieldName);

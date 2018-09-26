@@ -1,5 +1,5 @@
 {
-  overlay: "2562524065c42e18d4a5ea57e8cbf6cac6b9bdda",
+  overlay: "934f7a99e60cbc8d0affd873805c057b576f3709",
 
   // ======================================================================================================
   // 
@@ -45,8 +45,8 @@
   //
   // ------------------------------------------------------------------------------------------------------
   local utils = {
-    download: function(name, version, platformspecific = true)
-      {name: name, version: version, platformspecific: platformspecific},
+    download: function(name, version, platformSpecific = true)
+      {name: name, version: version, platformspecific: platformSpecific},
     
     getValue: function(object, field)
       if (!std.objectHas(object, field)) then
@@ -127,7 +127,7 @@
 
   local labsjdk8Mixin = {
     downloads +: {
-      JAVA_HOME: utils.download("labsjdk", "8u172-jvmci-0.46"),
+      JAVA_HOME: utils.download("labsjdk", "8u172-jvmci-0.48"),
       EXTRA_JAVA_HOMES : { pathlist: [utils.download("oraclejdk", "11+20")] },
     },
     environment +: {

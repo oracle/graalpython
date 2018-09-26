@@ -29,8 +29,8 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.cell.CellSupplier;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.Frame;
@@ -56,10 +56,10 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
     private final ValueProfile generatorFrameProfile;
     private boolean isRewritten = false;
 
-    @Child private PNode body;
-    private PNode uninitializedBody;
+    @Child private ExpressionNode body;
+    private ExpressionNode uninitializedBody;
 
-    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, PNode body,
+    public FunctionRootNode(PythonLanguage language, SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
                     ExecutionCellSlots executionCellSlots) {
         super(language, frameDescriptor, executionCellSlots);
         this.executionCellSlots = executionCellSlots;
@@ -78,11 +78,11 @@ public class FunctionRootNode extends PClosureFunctionRootNode implements CellSu
         return functionName;
     }
 
-    public PNode getBody() {
+    public ExpressionNode getBody() {
         return body;
     }
 
-    public PNode getUninitializedBody() {
+    public ExpressionNode getUninitializedBody() {
         return uninitializedBody;
     }
 

@@ -33,6 +33,15 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 public class SequenceStoreException extends ControlFlowException {
 
     private static final long serialVersionUID = -2938582159978230604L;
-    public static final SequenceStoreException INSTANCE = new SequenceStoreException();
+
+    private final Object indicationValue;
+
+    public SequenceStoreException(Object indicationValue) {
+        this.indicationValue = indicationValue;
+    }
+
+    public Object getIndicationValue() {
+        return indicationValue;
+    }
 
 }

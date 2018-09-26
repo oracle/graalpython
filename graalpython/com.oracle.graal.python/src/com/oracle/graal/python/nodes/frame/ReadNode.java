@@ -25,11 +25,12 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.nodes.NodeInterface;
 
 public interface ReadNode extends NodeInterface {
 
-    PNode makeWriteNode(PNode rhs);
+    StatementNode makeWriteNode(ExpressionNode rhs);
 
 }

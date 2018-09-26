@@ -43,36 +43,34 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.literal.BuiltinsLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-@NodeChildren({@NodeChild(value = "value", type = PNode.class)})
-public abstract class CastToListNode extends PNode {
+public abstract class CastToListNode extends UnaryOpNode {
 
     public static CastToListNode create() {
         return CastToListNodeGen.create(null);
     }
 
     @Child private GetClassNode getClassNode;
+    @Child private SequenceStorageNodes.LenNode lenNode;
+    @Child private SequenceStorageNodes.GetItemNode getItemNode;
 
     public abstract PList executeWith(Object list);
-
-    public abstract PNode getValue();
 
     protected PythonClass getClass(Object value) {
         if (getClassNode == null) {
@@ -93,14 +91,14 @@ public abstract class CastToListNode extends PNode {
         }
     }
 
-    @Specialization(guards = {"cannotBeOverridden(getClass(v))", "cachedLength == v.len()", "cachedLength < 32"})
+    @Specialization(guards = {"cannotBeOverridden(getClass(v))", "cachedLength == getLength(v)", "cachedLength < 32"})
     @ExplodeLoop
     protected PList starredTupleCachedLength(PTuple v,
-                    @Cached("v.len()") int cachedLength) {
+                    @Cached("getLength(v)") int cachedLength) {
+        SequenceStorage s = v.getSequenceStorage();
         Object[] array = new Object[cachedLength];
-        Object[] objects = v.getArray();
         for (int i = 0; i < cachedLength; i++) {
-            array[i] = objects[i];
+            array[i] = getItemNode().execute(s, i);
         }
         return factory().createList(array);
     }
@@ -129,5 +127,21 @@ public abstract class CastToListNode extends PNode {
     @Specialization
     protected PList starredGeneric(Object v) {
         throw raise(TypeError, "%s is not iterable", v);
+    }
+
+    protected int getLength(PTuple t) {
+        if (lenNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            lenNode = insert(SequenceStorageNodes.LenNode.create());
+        }
+        return lenNode.execute(t.getSequenceStorage());
+    }
+
+    protected SequenceStorageNodes.GetItemNode getItemNode() {
+        if (getItemNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getItemNode = insert(SequenceStorageNodes.GetItemNode.createNotNormalized());
+        }
+        return getItemNode;
     }
 }

@@ -66,20 +66,23 @@ import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.call.PythonCallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode;
 import com.oracle.graal.python.nodes.expression.CastToBooleanNode.NotNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.IsNode;
 import com.oracle.graal.python.nodes.expression.OrNode;
+import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.DestructuringAssignmentNode;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
@@ -134,11 +137,30 @@ public class TestParserTranslator {
             if (++i <= num) {
                 continue;
             }
+            n = unpackModuleBodyWrappers(n);
             assertTrue("Expected an instance of " + klass + ", got " + n.getClass(), klass.isInstance(n));
             return klass.cast(n);
         }
         assertFalse("Expected an instance of " + klass + ", got null", true);
         return null;
+    }
+
+    private Node unpackModuleBodyWrappers(Node n) {
+        Node actual = n;
+        if (n instanceof ExpressionNode.ExpressionStatementNode) {
+            actual = n.getChildren().iterator().next();
+        } else if (n instanceof ExpressionNode.ExpressionWithSideEffects) {
+            actual = n.getChildren().iterator().next();
+        } else if (n instanceof WriteLocalVariableNode) {
+            if (((WriteLocalVariableNode) n).getIdentifier().equals(FrameSlotIDs.RETURN_SLOT_ID)) {
+                actual = ((WriteLocalVariableNode) n).getRhs();
+            }
+        }
+        if (actual == n) {
+            return n;
+        } else {
+            return unpackModuleBodyWrappers(actual);
+        }
     }
 
     <T> T getFirstChild(Node result, Class<? extends T> klass) {
@@ -150,7 +172,7 @@ public class TestParserTranslator {
     }
 
     Object literalAs(String src, Class<? extends PNode> klass) {
-        PNode firstChild = parseAs(src, klass);
+        ExpressionNode firstChild = (ExpressionNode) parseAs(src, klass);
         return firstChild.execute(null);
     }
 
@@ -181,14 +203,14 @@ public class TestParserTranslator {
     @Test
     public void parseLiteralList() {
         PList list = literalAs("[1, 2]", ListLiteralNode.class, PList.class);
-        assertEquals(2, list.len());
+        assertEquals(2, list.getSequenceStorage().length());
         assertEquals(1, list.getSequenceStorage().getItemNormalized(0));
         assertEquals(2, list.getSequenceStorage().getItemNormalized(1));
         list = literalAs("[1]", ListLiteralNode.class, PList.class);
-        assertEquals(1, list.len());
+        assertEquals(1, list.getSequenceStorage().length());
         assertEquals(1, list.getSequenceStorage().getItemNormalized(0));
         list = literalAs("[]", ListLiteralNode.class, PList.class);
-        assertEquals(0, list.len());
+        assertEquals(0, list.getSequenceStorage().length());
     }
 
     @Test
@@ -326,11 +348,11 @@ public class TestParserTranslator {
     public void parseImport() {
         WriteGlobalNode importSet = parseAs("import foo", WriteGlobalNode.class);
         assertEquals("foo", importSet.getAttributeId());
-        assert importSet.getRhs() instanceof ImportNode;
+        assert importSet.getRhs() instanceof ImportNode.ImportExpression;
 
         importSet = parseAs("import foo as bar", WriteGlobalNode.class);
         assertEquals("bar", importSet.getAttributeId());
-        assert importSet.getRhs() instanceof ImportNode;
+        assert importSet.getRhs() instanceof ImportNode.ImportExpression;
 
         parseAs("from os import *", ImportStarNode.class);
     }
@@ -353,7 +375,7 @@ public class TestParserTranslator {
 
         AndNode parseAs = parseAs("x < y() <= z", AndNode.class);
         PNode leftNode = parseAs.getLeftNode();
-        assert leftNode instanceof BlockNode;
+        assert leftNode instanceof ExpressionNode.ExpressionWithSideEffects;
         WriteNode tmpWrite = getChild(leftNode, 0, WriteNode.class);
         assert tmpWrite.getRhs() instanceof PythonCallNode;
         PythonCallNode rhs = (PythonCallNode) tmpWrite.getRhs();
@@ -363,9 +385,9 @@ public class TestParserTranslator {
 
     @Test
     public void parseUnaryOps() {
-        parseAs("-1", LookupAndCallUnaryNode.class);
-        parseAs("+1", LookupAndCallUnaryNode.class);
-        parseAs("~1", LookupAndCallUnaryNode.class);
+        parseAs("-1", UnaryArithmetic.UnaryArithmeticExpression.class);
+        parseAs("+1", UnaryArithmetic.UnaryArithmeticExpression.class);
+        parseAs("~1", UnaryArithmetic.UnaryArithmeticExpression.class);
         parseAs("not 1", NotNode.class);
     }
 
@@ -379,20 +401,20 @@ public class TestParserTranslator {
 
     @Test
     public void parseBinaryOp() {
-        parseAs("1 | 1", LookupAndCallBinaryNode.class);
-        parseAs("1 ^ 1", LookupAndCallBinaryNode.class);
-        parseAs("1 & 1", LookupAndCallBinaryNode.class);
-        parseAs("1 << 2", LookupAndCallBinaryNode.class);
-        parseAs("1 >> 2", LookupAndCallBinaryNode.class);
-        parseAs("1 >> 2 << 2", LookupAndCallBinaryNode.class);
-        parseAs("1 | 1 & 2", LookupAndCallBinaryNode.class);
-        parseAs("1 + 2", LookupAndCallBinaryNode.class);
-        parseAs("1 - 2", LookupAndCallBinaryNode.class);
-        parseAs("1 * 2", LookupAndCallBinaryNode.class);
-        parseAs("1 / 2", LookupAndCallBinaryNode.class);
-        parseAs("1 % 2", LookupAndCallBinaryNode.class);
-        parseAs("1 // 2", LookupAndCallBinaryNode.class);
-        parseAs("1 ** 2", LookupAndCallTernaryNode.class);
+        parseAs("1 | 1", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 ^ 1", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 & 1", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 << 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 >> 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 >> 2 << 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 | 1 & 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 + 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 - 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 * 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 / 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 % 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 // 2", BinaryArithmetic.BinaryArithmeticExpression.class);
+        parseAs("1 ** 2", TernaryArithmetic.TernaryArithmeticExpression.class);
     }
 
     @Test

@@ -4,7 +4,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "5.180.9",
+    "mxversion": "5.181.1",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -17,7 +17,7 @@ suite = {
         "suites": [
             {
                 "name": "truffle",
-                "versionFrom": "regex",
+                "versionFrom": "sulong",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -25,14 +25,15 @@ suite = {
             },
             {
                 "name": "sulong",
-                "version": "4b7936d675b48707548427edee740570cb5f3eaf",
+                "version": "a8a599d132146bb0f87a2b95572db7d76b641b88",
+                "subdir": True,
                 "urls": [
-                    {"url": "https://github.com/graalvm/sulong", "kind": "git"},
+                    {"url": "https://github.com/oracle/graal", "kind": "git"},
                 ]
             },
             {
                 "name": "regex",
-                "version": "5e7409244ac702a26b310c1802296a2d3a80cb27",
+                "version": "a8a599d132146bb0f87a2b95572db7d76b641b88",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},

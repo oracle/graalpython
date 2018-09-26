@@ -25,7 +25,6 @@ import os
 import platform
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 from argparse import ArgumentParser
@@ -37,6 +36,7 @@ import mx_sdk
 import mx_subst
 import mx_urlrewrites
 from mx_gate import Task
+from mx_graalpython_bench_param import PATH_MESO
 from mx_graalpython_benchmark import PythonBenchmarkSuite
 from mx_unittest import unittest
 
@@ -202,8 +202,12 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
         graalpython_args.insert(0, '--python.WithJavaStacktrace')
 
     if _sulong:
-        vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
         dists.append('SULONG')
+        if mx.suite("sulong-managed", fatalIfMissing=False):
+            dists.append('SULONG_MANAGED')
+            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>:<path:SULONG_MANAGED_LIBS>'))
+        else:
+            vm_args.append(mx_subst.path_substitutions.substitute('-Dpolyglot.llvm.libraryPath=<path:SULONG_LIBS>'))
 
     # Try eagerly to include tools on Tim's computer
     if not mx.suite("/tools", fatalIfMissing=False):
@@ -213,18 +217,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, **kwargs):
             return os.environ.get("USER") == user
 
         if _is_user("tim", "MAGLEV_HOME") or _is_user("cbasca") or _is_user("fa"):
-            suite_import = mx.SuiteImport("tools", version=None, urlinfos=None, dynamicImport=True, in_subdir=True)
-            imported_suite, _ = mx._find_suite_import(_suite, suite_import, fatalIfMissing=False, load=False)
-            if imported_suite:
-                imported_suite._preload_suite_dict()
-                try:
-                    mx._register_suite(imported_suite)
-                    imported_suite._load()
-                    imported_suite._init_metadata()
-                    imported_suite._resolve_dependencies()
-                    imported_suite._post_init()
-                except AssertionError:
-                    pass # already registered
+            _suite.import_suite("tools", version=None, urlinfos=None, in_subdir=True)
             dists.append('CHROMEINSPECTOR')
             if _sulong:
                 vm_args.append("-Dpolyglot.llvm.enableLVI=true")
@@ -277,37 +270,13 @@ class GraalPythonTags(object):
     junit = 'python-junit'
     unittest = 'python-unittest'
     cpyext = 'python-cpyext'
+    cpyext_managed = 'python-cpyext-managed'
+    cpyext_sandboxed = 'python-cpyext-sandboxed'
     svmunit = 'python-svm-unittest'
-    benchmarks = 'python-benchmarks'
     downstream = 'python-downstream'
     graalvm = 'python-graalvm'
     apptests = 'python-apptests'
     license = 'python-license'
-
-
-python_test_benchmarks = {
-    'binarytrees3': '12',
-    'fannkuchredux3': '9',
-    'fasta3': '250000',
-    'mandelbrot3': '600',
-    'meteor3': '2098',
-    'nbody3': '100000',
-    'spectralnorm3': '500',
-    'richards3': '3',
-    'bm-ai': '0',
-    'pidigits': '0',
-    'pypy-go': '1',
-}
-
-
-def _gate_python_benchmarks_tests(name, iterations):
-    run_java = mx.run_java
-    vmargs += ['-cp', mx.classpath(["com.oracle.graal.python"]), "com.oracle.graal.python.shell.GraalPythonMain", name, str(iterations)]
-    success_pattern = re.compile(r"^(?P<benchmark>[a-zA-Z0-9.\-]+): (?P<score>[0-9]+(\.[0-9]+)?$)")
-    out = mx.OutputCapture()
-    run_java(vmargs, out=mx.TeeOutputCapture(out), err=subprocess.STDOUT)
-    if not re.search(success_pattern, out.data, re.MULTILINE):
-        mx.abort('Benchmark "' + name + '" doesn\'t match success pattern: ' + str(success_pattern))
 
 
 def python_gate(args):
@@ -357,66 +326,95 @@ def python_svm(args):
     return svm_image
 
 
-def graalpython_gate_runner(args, tasks):
+def gate_unittests(args=[], subdir=""):
     _graalpytest_driver = "graalpython/com.oracle.graal.python.test/src/graalpytest.py"
     _test_project = "graalpython/com.oracle.graal.python.test/"
+    for idx, arg in enumerate(args):
+        if arg.startswith("--subdir="):
+            subdir = args.pop(idx).split("=")[1]
+            break
+    test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/" + subdir]
+    if "--" in args:
+        idx = args.index("--")
+        pre_args = args[:idx]
+        post_args = args[idx + 1:]
+    else:
+        pre_args = []
+        post_args = args
+    mx.command_function("python")(["--python.CatchAllExceptions=true"] + pre_args + test_args + post_args)
+    if platform.system() != 'Darwin':
+        # TODO: re-enable when python3 is available on darwin
+        mx.log("Running tests with CPython")
+        mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+
+
+def _python_svm_unittest(svm_image):
+    suite_dir = _suite.dir
+    llvm_home = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
+
+    # tests root directory
+    tests_folder = os.path.join(suite_dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
+
+    # list of excluded tests
+    excluded = ["test_interop.py"]
+
+    def is_included(path):
+        if path.endswith(".py"):
+            basename = os.path.basename(path)
+            return basename.startswith("test_") and basename not in excluded
+        return False
+
+    # list all 1st-level tests and exclude the SVM-incompatible ones
+    testfiles = []
+    paths = [tests_folder]
+    while paths:
+        path = paths.pop()
+        if is_included(path):
+            testfiles.append(path)
+        else:
+            try:
+                paths += [(path + f if path.endswith("/") else "%s/%s" % (path, f)) for f in
+                          os.listdir(path)]
+            except OSError:
+                pass
+
+    args = ["--python.CoreHome=%s" % os.path.join(suite_dir, "graalpython", "lib-graalpython"),
+            "--python.StdLibHome=%s" % os.path.join(suite_dir, "graalpython", "lib-python/3"),
+            llvm_home,
+            os.path.join(suite_dir, "graalpython", "com.oracle.graal.python.test", "src", "graalpytest.py"),
+            "-v"]
+    args += testfiles
+    return mx.run([svm_image] + args, nonZeroIsFatal=True)
+
+
+def graalpython_gate_runner(args, tasks):
     with Task('GraalPython JUnit', tasks, tags=[GraalPythonTags.junit]) as task:
         if task:
             punittest(['--verbose'])
 
     with Task('GraalPython Python tests', tasks, tags=[GraalPythonTags.unittest]) as task:
         if task:
-            test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/"]
-            mx.command_function("python")(["--python.CatchAllExceptions=true"] + test_args)
-            if platform.system() != 'Darwin':
-                # TODO: re-enable when python3 is available on darwin
-                mx.log("Running tests with CPython")
-                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+            gate_unittests()
 
     with Task('GraalPython C extension tests', tasks, tags=[GraalPythonTags.cpyext]) as task:
         if task:
-            test_args = [_graalpytest_driver, "-v", _test_project + "src/tests/cpyext/"]
-            mx.command_function("python")(test_args)
-            if platform.system() != 'Darwin':
-                # TODO: re-enable when python3 is available on darwin
-                mx.log("Running tests with CPython")
-                mx.run(["python3"] + test_args, nonZeroIsFatal=True)
+            gate_unittests(subdir="cpyext/")
+
+    with Task('GraalPython C extension managed tests', tasks, tags=[GraalPythonTags.cpyext_managed]) as task:
+        if task:
+            mx.run_mx(["--dynamicimports", "sulong-managed", "python-gate-unittests", "--llvm.configuration=managed", "--subdir=cpyext", "--"])
+
+    with Task('GraalPython C extension sandboxed tests', tasks, tags=[GraalPythonTags.cpyext_sandboxed]) as task:
+        if task:
+            mx.run_mx(["--dynamicimports", "sulong-managed", "python-gate-unittests", "--llvm.configuration=sandboxed", "--subdir=cpyext", "--"])
 
     with Task('GraalPython Python tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
-            if not os.path.exists("./graalpython-svm"):
+            svm_image_name = "./graalpython-svm"
+            if not os.path.exists(svm_image_name):
                 python_svm(["-h"])
-            if os.path.exists("./graalpython-svm"):
-                langhome = mx_subst.path_substitutions.substitute('--native.Dllvm.home=<path:SULONG_LIBS>')
-
-                # tests root directory
-                tests_folder = "graalpython/com.oracle.graal.python.test/src/tests/"
-
-                # list of excluded tests
-                excluded = ["test_interop.py"]
-
-                def is_included(path):
-                    if path.endswith(".py"):
-                        basename = path.rpartition("/")[2]
-                        return basename.startswith("test_") and basename not in excluded
-                    return False
-
-                # list all 1st-level tests and exclude the SVM-incompatible ones
-                testfiles = []
-                paths = [tests_folder]
-                while paths:
-                    path = paths.pop()
-                    if is_included(path):
-                        testfiles.append(path)
-                    else:
-                        try:
-                            paths += [(path + f if path.endswith("/") else "%s/%s" % (path, f)) for f in
-                                      os.listdir(path)]
-                        except OSError:
-                            pass
-
-                test_args = ["graalpython/com.oracle.graal.python.test/src/graalpytest.py", "-v"] + testfiles
-                mx.run(["./graalpython-svm", "--python.CoreHome=graalpython/lib-graalpython", "--python.StdLibHome=graalpython/lib-python/3", langhome] + test_args, nonZeroIsFatal=True)
+            else:
+                _python_svm_unittest(svm_image_name)
 
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
@@ -439,7 +437,7 @@ def graalpython_gate_runner(args, tasks):
     with Task('GraalPython GraalVM build', tasks, tags=[GraalPythonTags.downstream, GraalPythonTags.graalvm]) as task:
         if task:
             svm_image = python_svm(["--version"])
-            benchmark = os.path.join("graalpython", "benchmarks", "src", "benchmarks", "image_magix.py")
+            benchmark = os.path.join(PATH_MESO, "image-magix.py")
             out = mx.OutputCapture()
             mx.run(
                 [svm_image, benchmark],
@@ -447,16 +445,10 @@ def graalpython_gate_runner(args, tasks):
                 out=mx.TeeOutputCapture(out)
             )
             success = "\n".join([
-                "[0, 0, 0, 0, 0, 0, 20, 20, 20, 0, 0, 20, 20, 20, 0, 0, 20, 20, 20, 0, 0, 0, 0, 0, 0]",
-                "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 33, 34, 35, 41, 42, 43, 44, 45, 51, 52, 53, 54, 55]",
-                "[11, 12, 13, 14, 15, 21, 22, 23, 24, 25, 31, 32, 36, 36, 35, 41, 41, 40, 40, 45, 51, 52, 53, 54, 55]"])
+                "[0, 0, 0, 0, 0, 0, 10, 10, 10, 0, 0, 10, 3, 10, 0, 0, 10, 10, 10, 0, 0, 0, 0, 0, 0]",
+            ])
             if success not in out.data:
                 mx.abort('Output from generated SVM image "' + svm_image + '" did not match success pattern:\n' + success)
-
-    for name, iterations in sorted(python_test_benchmarks.iteritems()):
-        with Task('PythonBenchmarksTest:' + name, tasks, tags=[GraalPythonTags.benchmarks]) as task:
-            if task:
-                _gate_python_benchmarks_tests("graalpython/benchmarks/src/benchmarks/" + name + ".py", iterations)
 
 
 mx_gate.add_gate_runner(_suite, graalpython_gate_runner)
@@ -724,10 +716,10 @@ def update_import_cmd(args):
                 join(mx.dependency("SULONG_LIBS").output, "polyglot.h"),
                 join(_suite.dir, "graalpython", "com.oracle.graal.python.cext", "include", "polyglot.h")
             )
-        # make sure that truffle and regex are the same version
-        elif name == "regex":
-            update_import("truffle", callback=callback)
-        elif name == "truffle":
+        # make sure that sulong and regex are the same version
+        if name == "regex":
+            update_import("sulong", callback=callback)
+        elif name == "sulong":
             update_import("regex", callback=callback)
         update_import(name, callback=callback)
 
@@ -935,6 +927,7 @@ mx.update_commands(_suite, {
     'punittest': [punittest, ''],
     'python3-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
     'python-unittests': [python3_unittests, 'run the cPython stdlib unittests'],
+    'python-gate-unittests': [gate_unittests, ''],
     'nativebuild': [nativebuild, ''],
     'nativeclean': [nativeclean, ''],
     'python-so-test': [run_shared_lib_test, ''],

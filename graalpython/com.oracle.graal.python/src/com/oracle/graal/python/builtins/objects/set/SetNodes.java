@@ -44,9 +44,9 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.SetItemNode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -65,7 +65,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class SetNodes {
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ConstructSetNode extends PBaseNode {
+    public abstract static class ConstructSetNode extends PNodeWithContext {
         @Child private SetItemNode setItemNode;
 
         public abstract PSet execute(Object cls, Object value);
@@ -79,7 +79,7 @@ public abstract class SetNodes {
         public PSet setString(PythonClass cls, String arg) {
             PSet set = factory().createSet(cls);
             for (int i = 0; i < arg.length(); i++) {
-                set.setDictStorage(getSetItemNode().execute(set.getDictStorage(), String.valueOf(arg.charAt(i)), PNone.NO_VALUE));
+                getSetItemNode().execute(set, String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
             }
             return set;
         }
@@ -100,7 +100,7 @@ public abstract class SetNodes {
             Object iterator = getIterator.executeWith(iterable);
             while (true) {
                 try {
-                    set.setDictStorage(getSetItemNode().execute(set.getDictStorage(), next.execute(iterator), PNone.NO_VALUE));
+                    getSetItemNode().execute(set, next.execute(iterator), PNone.NO_VALUE);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
                     return set;

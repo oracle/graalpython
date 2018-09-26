@@ -57,11 +57,13 @@ public class GraalPythonEnvVars {
             final Path codeDir = codeLocation.getParent();
 
             // executing from jar file in source tree
-            if (codeDir.endsWith(Paths.get("mxbuild", "dists"))) {
-                final Path candidate = codeDir.getParent().getParent().resolve("graalpython");
-                if (isGraalPythonHome(candidate)) {
-                    // Jar source build
-                    return candidate.toFile().getCanonicalPath().toString();
+            for (Path cur = codeDir; cur.getNameCount() >= 2; cur = cur.getParent()) {
+                if (cur.endsWith(Paths.get("mxbuild", "dists"))) {
+                    final Path candidate = cur.getParent().getParent().resolve("graalpython");
+                    if (isGraalPythonHome(candidate)) {
+                        // Jar source build
+                        return candidate.toFile().getCanonicalPath().toString();
+                    }
                 }
             }
 

@@ -46,7 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -56,7 +56,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 /**
  * Converts an arbitrary object to an index-sized integer (which is a Java {@code int}).
  */
-public abstract class CastToIndexNode extends PBaseNode {
+public abstract class CastToIndexNode extends PNodeWithContext {
 
     private static final String ERROR_MESSAGE = "cannot fit 'int' into an index-sized integer";
 

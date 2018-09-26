@@ -28,7 +28,7 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class LongSequenceStorage extends TypedSequenceStorage {
 
@@ -112,7 +112,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Long) {
             setLongItemNormalized(idx, (long) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -127,7 +127,7 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         if (value instanceof Long) {
             insertLongItem(idx, (long) value);
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -164,20 +164,11 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return new LongSequenceStorage(newArray);
     }
 
-    @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        if (sequence instanceof LongSequenceStorage) {
-            setLongSliceInBound(start, stop, step, (LongSequenceStorage) sequence);
-        } else {
-            throw new SequenceStoreException();
-        }
-    }
-
-    public void setLongSliceInBound(int start, int stop, int step, LongSequenceStorage sequence) {
+    public void setLongSliceInBound(int start, int stop, int step, LongSequenceStorage sequence, ConditionProfile sameLengthProfile) {
         int otherLength = sequence.length();
 
         // range is the whole sequence?
-        if (start == 0 && stop == length) {
+        if (sameLengthProfile.profile(start == 0 && stop == length)) {
             values = Arrays.copyOf(sequence.values, otherLength);
             length = otherLength;
             minimizeCapacity();
@@ -193,95 +184,10 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         length = length > stop ? length : stop;
     }
 
-    @Override
-    public void delSlice(int startParam, int stopParam, int stepParam) {
-        int start = startParam;
-        int stop = stopParam;
-        int step = stepParam;
-        if ((stop == SequenceUtil.MISSING_INDEX || stop >= length) && step == 1) {
-            length = start;
-        } else if ((start == 0 && stop >= length) && step == 1) {
-            length = 0;
-        } else {
-            int decraseLen; // how much will be the result array shorter
-            int index;  // index of the "old" array
-            if (step < 0) {
-                // For the simplicity of algorithm, then start and stop are swapped.
-                // The start index has to recalculated according the step, because
-                // the algorithm bellow removes the start itema and then start + step ....
-                step = Math.abs(step);
-                stop++;
-                int tmpStart = stop + ((start - stop) % step);
-                stop = start + 1;
-                start = tmpStart;
-            }
-            int arrayIndex = start; // pointer to the "new" form of array
-            if (step == 1) {
-                // this is easy, just remove the part of array
-                decraseLen = stop - start;
-                index = start + decraseLen;
-            } else {
-                int nextStep = index = start; // nextStep is a pointer to the next removed item
-                decraseLen = (stop - start - 1) / step + 1;
-                for (; index < stop && nextStep < stop; index++) {
-                    if (nextStep == index) {
-                        nextStep += step;
-                    } else {
-                        values[arrayIndex++] = values[index];
-                    }
-                }
-            }
-            if (decraseLen > 0) {
-                // shift all other items in array behind the last change
-                for (; index < length; arrayIndex++, index++) {
-                    values[arrayIndex] = values[index];
-                }
-                // change the result length
-                // TODO Shouldn't we realocate the array, if the chane is big?
-                // Then unnecessary big array is kept in the memory.
-                length = length - decraseLen;
-            }
-        }
-    }
-
-    @Override
-    public void delItemInBound(int idx) {
-        if (values.length - 1 == idx) {
-            popLong();
-        } else {
-            popInBound(idx);
-        }
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        long pop = values[idx];
-
-        for (int i = idx; i < values.length - 1; i++) {
-            values[i] = values[i + 1];
-        }
-
-        length--;
-        return pop;
-    }
-
     public long popLong() {
         long pop = values[length - 1];
         length--;
         return pop;
-    }
-
-    @Override
-    public int index(Object val) {
-        Object value = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        value = (val instanceof BigInteger) ? ((BigInteger) val).longValue() : value;
-
-        if (value instanceof Long) {
-            return indexOfLong((long) value);
-        } else {
-            return super.index(value);
-        }
-
     }
 
     public int indexOfLong(long value) {
@@ -294,31 +200,10 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @Override
-    public void append(Object val) throws SequenceStoreException {
-        Object value = (val instanceof Integer) ? BigInteger.valueOf((int) val).longValue() : val;
-        value = (val instanceof BigInteger) ? ((BigInteger) val).longValue() : value;
-
-        if (value instanceof Long) {
-            appendLong((long) value);
-        } else {
-            throw SequenceStoreException.INSTANCE;
-        }
-    }
-
     public void appendLong(long value) {
         ensureCapacity(length + 1);
         values[length] = value;
         length++;
-    }
-
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        if (other instanceof LongSequenceStorage) {
-            extendWithLongStorage((LongSequenceStorage) other);
-        } else {
-            throw SequenceStoreException.INSTANCE;
-        }
     }
 
     public void extendWithLongStorage(LongSequenceStorage other) {
@@ -349,14 +234,6 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
     }
 
     @Override
-    public void sort() {
-        long[] copy = Arrays.copyOf(values, length);
-        Arrays.sort(copy);
-        values = copy;
-        minimizeCapacity();
-    }
-
-    @Override
     public Object getIndicativeValue() {
         return 0;
     }
@@ -382,4 +259,18 @@ public final class LongSequenceStorage extends TypedSequenceStorage {
         return values;
     }
 
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (long[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Long;
+    }
 }

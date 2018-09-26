@@ -27,9 +27,8 @@ package com.oracle.graal.python.nodes.generator;
 
 import java.util.List;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -44,12 +43,12 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
     private final BranchProfile seenYield = BranchProfile.create();
     private final int indexSlot;
 
-    public GeneratorBlockNode(PNode[] statements, int indexSlot) {
+    public GeneratorBlockNode(StatementNode[] statements, int indexSlot) {
         super(statements);
         this.indexSlot = indexSlot;
     }
 
-    public static GeneratorBlockNode create(PNode[] statements, int indexSlot) {
+    public static GeneratorBlockNode create(StatementNode[] statements, int indexSlot) {
         return new GeneratorBlockNode(statements, indexSlot);
     }
 
@@ -57,24 +56,22 @@ public final class GeneratorBlockNode extends BaseBlockNode implements Generator
         return indexSlot;
     }
 
-    public GeneratorBlockNode insertNodesBefore(PNode insertBefore, List<PNode> insertees) {
+    public GeneratorBlockNode insertNodesBefore(StatementNode insertBefore, List<StatementNode> insertees) {
         return new GeneratorBlockNode(insertStatementsBefore(insertBefore, insertees), getIndexSlot());
     }
 
     @ExplodeLoop
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         int startIndex = gen.getIndex(frame, indexSlot);
         int i = 0;
         int nextIndex = 0;
         try {
-            Object result = PNone.NONE;
             for (i = 0; i < statements.length; i++) {
                 if (i >= startIndex) {
-                    result = statements[i].execute(frame);
+                    statements[i].executeVoid(frame);
                 }
             }
-            return result;
         } catch (YieldException e) {
             seenYield.enter();
             nextIndex = i;

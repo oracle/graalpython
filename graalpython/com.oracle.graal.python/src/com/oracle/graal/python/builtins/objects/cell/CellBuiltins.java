@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cell.CellBuiltinsFactory.GetRefNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -64,6 +65,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCell)
 public class CellBuiltins extends PythonBuiltins {
@@ -76,8 +78,10 @@ public class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
-        public boolean eq(PCell self, PCell other) {
-            return self.getRef().equals(other.getRef());
+        public boolean eq(PCell self, PCell other,
+                        @Cached("create()") GetRefNode getRefL,
+                        @Cached("create()") GetRefNode getRefR) {
+            return getRefL.execute(self).equals(getRefR.execute(other));
         }
 
         @SuppressWarnings("unused")
@@ -94,8 +98,10 @@ public class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NeqNode extends PythonBuiltinNode {
         @Specialization
-        public boolean neq(PCell self, PCell other) {
-            return !self.getRef().equals(other.getRef());
+        public boolean neq(PCell self, PCell other,
+                        @Cached("create()") GetRefNode getRefL,
+                        @Cached("create()") GetRefNode getRefR) {
+            return !getRefL.execute(self).equals(getRefR.execute(other));
         }
 
         @SuppressWarnings("unused")
@@ -114,8 +120,9 @@ public class CellBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public String repr(PCell self,
+                        @Cached("create()") GetRefNode getRef,
                         @Cached("create()") GetClassNode getClassNode) {
-            Object ref = self.getRef();
+            Object ref = getRef.execute(self);
             if (ref == null) {
                 return String.format("<cell at %s: empty>", this.hashCode());
             }
@@ -136,8 +143,9 @@ public class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CellContentsNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
-        public Object get(PCell self, @SuppressWarnings("unused") PNone none) {
-            Object ref = self.getRef();
+        public Object get(PCell self, @SuppressWarnings("unused") PNone none,
+                        @Cached("create()") GetRefNode getRef) {
+            Object ref = getRef.execute(self);
             if (ref == null) {
                 throw raise(ValueError, "Cell is empty");
             }
@@ -150,4 +158,25 @@ public class CellBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
     }
+
+    public abstract static class GetRefNode extends Node {
+        public abstract Object execute(PCell self);
+
+        @Specialization(guards = "self == cachedSelf", assumptions = "cachedSelf.isEffectivelyFinalAssumption()", limit = "1")
+        Object cached(@SuppressWarnings("unused") PCell self,
+                        @SuppressWarnings("unused") @Cached("self") PCell cachedSelf,
+                        @Cached("self.getRef()") Object ref) {
+            return ref;
+        }
+
+        @Specialization(replaces = "cached")
+        Object uncached(PCell self) {
+            return self.getRef();
+        }
+
+        public static GetRefNode create() {
+            return GetRefNodeGen.create();
+        }
+    }
+
 }

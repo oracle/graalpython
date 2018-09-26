@@ -57,8 +57,8 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.range.PRange;
-import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -82,28 +82,13 @@ public abstract class PGuards {
     /**
      * Specialization guards.
      */
+
     public static boolean isEmpty(Object[] array) {
         return array.length == 0;
     }
 
-    public static boolean isEmpty(PBaseSet set) {
-        return set.size() == 0;
-    }
-
-    public static boolean isEmpty(PTuple tuple) {
-        return tuple.isEmpty();
-    }
-
-    public static boolean isEmpty(PBytes bytes) {
-        return bytes.len() == 0;
-    }
-
     public static boolean isEmpty(String string) {
         return string.length() == 0;
-    }
-
-    public static boolean isEmpty(PString string) {
-        return string.len() == 0;
     }
 
     public static boolean isNone(Object value) {
@@ -122,24 +107,20 @@ public abstract class PGuards {
         return value instanceof PythonClass;
     }
 
-    public static boolean isEmptyStorage(PSequence seq) {
-        return seq.getSequenceStorage() instanceof EmptySequenceStorage;
+    public static boolean isEmptyStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
-    public static boolean isEmptyStorage(PArray byteArray) {
-        return byteArray.getSequenceStorage() instanceof EmptySequenceStorage;
+    public static boolean isEmptyStorage(PArray array) {
+        return array.getSequenceStorage() instanceof EmptySequenceStorage;
     }
 
-    public static boolean isBasicStorage(PList list) {
-        return list.getSequenceStorage() instanceof BasicSequenceStorage;
+    public static boolean isBasicStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof BasicSequenceStorage;
     }
 
-    public static boolean isIntStorage(PList list) {
-        return list.getSequenceStorage() instanceof IntSequenceStorage;
-    }
-
-    public static boolean isIntStorage(PSequence array) {
-        return array.getSequenceStorage() instanceof IntSequenceStorage;
+    public static boolean isIntStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof IntSequenceStorage;
     }
 
     public static boolean isByteStorage(PSequence array) {
@@ -154,16 +135,16 @@ public abstract class PGuards {
         return first.getSequenceStorage() instanceof ByteSequenceStorage && second.getSequenceStorage() instanceof ByteSequenceStorage;
     }
 
-    public static boolean isLongStorage(PList list) {
-        return list.getSequenceStorage() instanceof LongSequenceStorage;
+    public static boolean isLongStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof LongSequenceStorage;
     }
 
     public static boolean areBothLongStorage(PList first, PList second) {
         return first.getSequenceStorage() instanceof LongSequenceStorage && second.getSequenceStorage() instanceof LongSequenceStorage;
     }
 
-    public static boolean isDoubleStorage(PList list) {
-        return list.getSequenceStorage() instanceof DoubleSequenceStorage;
+    public static boolean isDoubleStorage(PSequence sequence) {
+        return sequence.getSequenceStorage() instanceof DoubleSequenceStorage;
     }
 
     public static boolean areBothDoubleStorage(PList first, PList second) {
@@ -226,14 +207,6 @@ public abstract class PGuards {
 
     public static boolean emptyArguments(Object arg) {
         return arg instanceof PFrozenSet && ((PFrozenSet) arg).size() == 0;
-    }
-
-    public static boolean emptyArgument(PTuple args) {
-        return args.len() == 0;
-    }
-
-    public static boolean oneArgument(PTuple args) {
-        return args.len() == 1;
     }
 
     @SuppressWarnings("unused")
@@ -323,6 +296,10 @@ public abstract class PGuards {
 
     public static boolean isBytes(Object obj) {
         return obj instanceof PBytes || obj instanceof PByteArray;
+    }
+
+    public static boolean isPSlice(Object obj) {
+        return obj instanceof PSlice;
     }
 
     public static boolean expectBoolean(Object result) throws UnexpectedResultException {

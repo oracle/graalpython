@@ -40,21 +40,19 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @NodeInfo(shortName = "or")
-public class OrNode extends PNode {
-
-    @Child private PNode leftNode;
-    @Child private PNode rightNode;
+public class OrNode extends ExpressionNode {
+    @Child private ExpressionNode leftNode;
+    @Child private ExpressionNode rightNode;
     @Child private CastToBooleanNode booleanCast = CastToBooleanNode.createIfTrueNode();
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
-    public OrNode(PNode left, PNode right) {
+    public OrNode(ExpressionNode left, ExpressionNode right) {
         this.leftNode = left;
         this.rightNode = right;
     }
@@ -68,11 +66,11 @@ public class OrNode extends PNode {
         return left;
     }
 
-    public PNode getLeftNode() {
+    public ExpressionNode getLeftNode() {
         return leftNode;
     }
 
-    public PNode getRightNode() {
+    public ExpressionNode getRightNode() {
         return rightNode;
     }
 }

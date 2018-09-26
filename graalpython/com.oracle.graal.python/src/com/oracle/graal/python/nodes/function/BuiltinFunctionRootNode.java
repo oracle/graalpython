@@ -29,11 +29,10 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadDefaultArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadKeywordNode;
@@ -76,11 +75,11 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     private static final class BuiltinUnaryCallNode extends BuiltinCallNode {
         @Child private PythonUnaryBuiltinNode node;
-        @Child private PNode arg;
+        @Child private ReadArgumentNode arg;
 
-        public BuiltinUnaryCallNode(PythonUnaryBuiltinNode node, PNode arg) {
+        public BuiltinUnaryCallNode(PythonUnaryBuiltinNode node, ReadArgumentNode argument) {
             this.node = node;
-            this.arg = arg;
+            this.arg = argument;
         }
 
         @Override
@@ -91,10 +90,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     private static final class BuiltinBinaryCallNode extends BuiltinCallNode {
         @Child private PythonBinaryBuiltinNode node;
-        @Child private PNode arg1;
-        @Child private PNode arg2;
+        @Child private ReadArgumentNode arg1;
+        @Child private ReadArgumentNode arg2;
 
-        public BuiltinBinaryCallNode(PythonBinaryBuiltinNode node, PNode arg1, PNode arg2) {
+        public BuiltinBinaryCallNode(PythonBinaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2) {
             this.node = node;
             this.arg1 = arg1;
             this.arg2 = arg2;
@@ -108,11 +107,11 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     private static final class BuiltinTernaryCallNode extends BuiltinCallNode {
         @Child private PythonTernaryBuiltinNode node;
-        @Child private PNode arg1;
-        @Child private PNode arg2;
-        @Child private PNode arg3;
+        @Child private ReadArgumentNode arg1;
+        @Child private ReadArgumentNode arg2;
+        @Child private ReadArgumentNode arg3;
 
-        public BuiltinTernaryCallNode(PythonTernaryBuiltinNode node, PNode arg1, PNode arg2, PNode arg3) {
+        public BuiltinTernaryCallNode(PythonTernaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3) {
             this.node = node;
             this.arg1 = arg1;
             this.arg2 = arg2;
@@ -127,11 +126,11 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
     private static final class BuiltinVarArgsCallNode extends BuiltinCallNode {
         @Child private PythonVarargsBuiltinNode node;
-        @Child private PNode arg1;
-        @Child private PNode arg2;
-        @Child private PNode arg3;
+        @Child private ReadArgumentNode arg1;
+        @Child private ReadArgumentNode arg2;
+        @Child private ReadArgumentNode arg3;
 
-        public BuiltinVarArgsCallNode(PythonVarargsBuiltinNode node, PNode arg1, PNode arg2, PNode arg3) {
+        public BuiltinVarArgsCallNode(PythonVarargsBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3) {
             this.node = node;
             this.arg1 = arg1;
             this.arg2 = arg2;
@@ -149,13 +148,13 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.builtin = builtin;
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
-        if (SysModuleBuiltins.SuperInitNode.class.isAssignableFrom(factory.getNodeClass())) {
+        if (builtin.alwaysNeedsCallerFrame()) {
             setNeedsCallerFrame();
         }
     }
 
-    private static PNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
-        ArrayList<PNode> args = new ArrayList<>();
+    private static ReadArgumentNode[] createArgumentsList(Builtin builtin, boolean needsExplicitSelf) {
+        ArrayList<ReadArgumentNode> args = new ArrayList<>();
         int numOfPositionalArgs = Math.max(builtin.minNumOfPositionalArgs(), builtin.maxNumOfPositionalArgs());
 
         if (builtin.keywordArguments().length > 0 && builtin.maxNumOfPositionalArgs() > builtin.minNumOfPositionalArgs()) {
@@ -202,7 +201,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
             args.add(ReadVarKeywordsNode.create(builtin.keywordArguments()));
         }
 
-        return args.toArray(new PNode[args.size()]);
+        return args.toArray(new ReadArgumentNode[args.size()]);
     }
 
     @Override
@@ -214,10 +213,10 @@ public final class BuiltinFunctionRootNode extends PRootNode {
     public Object execute(VirtualFrame frame) {
         if (body == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            PNode[] argumentsList = createArgumentsList(builtin, declaresExplicitSelf);
+            ReadArgumentNode[] argumentsList = createArgumentsList(builtin, declaresExplicitSelf);
             if (PythonBuiltinNode.class.isAssignableFrom(factory.getNodeClass())) {
                 if (!declaresExplicitSelf) {
-                    PNode[] argumentsListWithoutSelf = new PNode[argumentsList.length - 1];
+                    ReadArgumentNode[] argumentsListWithoutSelf = new ReadArgumentNode[argumentsList.length - 1];
                     System.arraycopy(argumentsList, 1, argumentsListWithoutSelf, 0, argumentsListWithoutSelf.length);
                     body = insert(new BuiltinAnyCallNode((PythonBuiltinNode) factory.createNode((Object) argumentsListWithoutSelf)));
                 } else {

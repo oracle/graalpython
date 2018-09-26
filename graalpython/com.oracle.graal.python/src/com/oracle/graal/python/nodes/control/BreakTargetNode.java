@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.BreakException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -37,25 +35,23 @@ public final class BreakTargetNode extends StatementNode {
     private final BranchProfile breakProfile = BranchProfile.create();
     private final BranchProfile defaultExitProfile = BranchProfile.create();
 
-    @Child private PNode statement;
+    @Child private StatementNode statement;
 
-    public BreakTargetNode(PNode statement) {
+    public BreakTargetNode(StatementNode statement) {
         this.statement = statement;
     }
 
-    public PNode getStatement() {
+    public StatementNode getStatement() {
         return statement;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         try {
-            Object result = statement.execute(frame);
+            statement.executeVoid(frame);
             defaultExitProfile.enter();
-            return result;
         } catch (BreakException ex) {
             breakProfile.enter();
-            return PNone.NONE;
         }
     }
 }

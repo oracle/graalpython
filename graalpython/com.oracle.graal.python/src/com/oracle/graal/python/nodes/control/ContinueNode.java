@@ -34,7 +34,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public class ContinueNode extends StatementNode {
 
     @Override
-    public Object execute(VirtualFrame frame) {
+    public void executeVoid(VirtualFrame frame) {
         throw ContinueException.INSTANCE;
     }
 }

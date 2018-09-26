@@ -25,13 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.array;
 
-import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.runtime.sequence.PLenSupplier;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 
-public class PArray extends PSequence implements PLenSupplier {
+public class PArray extends PSequence {
 
     private SequenceStorage store;
 
@@ -45,16 +43,6 @@ public class PArray extends PSequence implements PLenSupplier {
     }
 
     @Override
-    public void setSlice(int start, int stop, int step, PSequence value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setSlice(PSlice slice, PSequence value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public SequenceStorage getSequenceStorage() {
         return store;
     }
@@ -64,7 +52,6 @@ public class PArray extends PSequence implements PLenSupplier {
         this.store = store;
     }
 
-    @Override
     public int len() {
         return store.length();
     }

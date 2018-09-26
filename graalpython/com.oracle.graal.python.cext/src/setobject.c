@@ -43,10 +43,12 @@
 PyTypeObject PySet_Type = PY_TRUFFLE_TYPE("set", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PySetObject));
 PyTypeObject PyFrozenSet_Type = PY_TRUFFLE_TYPE("frozenset", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, sizeof(PySetObject));
 
+UPCALL_ID(PySet_New);
 PyObject * PySet_New(PyObject *iterable) {
-    return UPCALL_CEXT_O("PySet_New", native_to_java(iterable));
+    return UPCALL_CEXT_O(_jls_PySet_New, native_to_java(iterable));
 }
 
+UPCALL_ID(PyFrozenSet_New);
 PyObject * PyFrozenSet_New(PyObject *iterable) {
-    return UPCALL_CEXT_O("PyFrozenSet_New", native_to_java(iterable));
+    return UPCALL_CEXT_O(_jls_PyFrozenSet_New, native_to_java(iterable));
 }

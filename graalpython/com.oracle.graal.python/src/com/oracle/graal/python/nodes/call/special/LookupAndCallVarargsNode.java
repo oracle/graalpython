@@ -41,14 +41,14 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.nodes.PBaseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
-public abstract class LookupAndCallVarargsNode extends PBaseNode {
+public abstract class LookupAndCallVarargsNode extends Node {
     private final String name;
     @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 

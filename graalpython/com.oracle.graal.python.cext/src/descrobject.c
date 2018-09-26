@@ -55,7 +55,8 @@ PyTypeObject PyDictProxy_Type = PY_TRUFFLE_TYPE("mappingproxy", &PyType_Type, Py
 POLYGLOT_DECLARE_TYPE(mappingproxyobject);
 
 /* Dicts */
+UPCALL_ID(PyDictProxy_New);
 PyObject* PyDictProxy_New(PyObject *mapping) {
-    return (PyObject*) UPCALL_CEXT_O("PyDictProxy_New", native_to_java(mapping));
+    return (PyObject*) UPCALL_CEXT_O(_jls_PyDictProxy_New, native_to_java(mapping));
 }
 

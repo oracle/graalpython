@@ -25,12 +25,11 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 
 public abstract class LoopNode extends StatementNode {
 
-    public abstract PNode getBody();
+    public abstract StatementNode getBody();
 
     protected final void reportLoopCount(int value) {
         com.oracle.truffle.api.nodes.LoopNode.reportLoopCount(this, value);

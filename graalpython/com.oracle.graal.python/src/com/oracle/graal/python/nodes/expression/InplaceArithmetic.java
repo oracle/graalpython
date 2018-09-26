@@ -40,11 +40,11 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallInplaceNode;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import java.util.function.Supplier;
+
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 
 public enum InplaceArithmetic {
     IAdd(SpecialMethodNames.__IADD__, "+="),
@@ -84,7 +84,7 @@ public enum InplaceArithmetic {
         return operator;
     }
 
-    public LookupAndCallInplaceNode create(PNode left, PNode right) {
+    public LookupAndCallInplaceNode create(ExpressionNode left, ExpressionNode right) {
         return LookupAndCallInplaceNode.createWithBinary(methodName, left, right, notImplementedHandler);
     }
 

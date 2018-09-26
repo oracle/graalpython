@@ -25,7 +25,7 @@
  */
 package com.oracle.graal.python.nodes.argument.positional;
 
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -34,24 +34,26 @@ import com.oracle.truffle.api.profiles.PrimitiveValueProfile;
 
 public final class PositionalArgumentsNode extends Node {
 
-    public static PositionalArgumentsNode create(PNode[] arguments, PNode starArgs) {
+    public static PositionalArgumentsNode create(ExpressionNode[] arguments, ExpressionNode starArgs) {
         assert starArgs != null;
-        return new PositionalArgumentsNode(arguments, ExecutePositionalStarargsNode.create(starArgs));
+        return new PositionalArgumentsNode(arguments, starArgs, ExecutePositionalStarargsNode.create());
     }
 
-    @Children protected final PNode[] arguments;
+    @Children protected final ExpressionNode[] arguments;
+    @Child private ExpressionNode starArgsExpression;
     @Child private ExecutePositionalStarargsNode starArgs;
 
     private final PrimitiveValueProfile starArgsLengthProfile = PrimitiveValueProfile.createEqualityProfile();
 
-    public PositionalArgumentsNode(PNode[] arguments, ExecutePositionalStarargsNode starArgs) {
+    private PositionalArgumentsNode(ExpressionNode[] arguments, ExpressionNode starArgsExpression, ExecutePositionalStarargsNode starArgs) {
         this.arguments = arguments;
+        this.starArgsExpression = starArgsExpression;
         this.starArgs = starArgs;
     }
 
     @ExplodeLoop
     public Object[] execute(VirtualFrame frame) {
-        Object[] starArgsArray = starArgs.execute(frame);
+        Object[] starArgsArray = starArgs.executeWith(starArgsExpression.execute(frame));
         int starArgsLength = starArgsLengthProfile.profile(starArgsArray.length);
         Object[] values = new Object[arguments.length + starArgsLength];
         for (int i = 0; i < arguments.length; i++) {
@@ -69,7 +71,7 @@ public final class PositionalArgumentsNode extends Node {
     }
 
     @ExplodeLoop
-    public static Object[] evaluateArguments(VirtualFrame frame, PNode[] arguments) {
+    public static Object[] evaluateArguments(VirtualFrame frame, ExpressionNode[] arguments) {
         CompilerAsserts.compilationConstant(arguments);
         Object[] values = new Object[arguments.length];
         for (int i = 0; i < arguments.length; i++) {

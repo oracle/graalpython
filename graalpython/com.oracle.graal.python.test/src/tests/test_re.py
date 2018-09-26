@@ -244,6 +244,86 @@ class ReTests(unittest.TestCase):
             self.checkPatternError(r'(?(-1))', "bad character in group name '-1'", 3)
             self.assertEqual(re.match(pat, 'xc8yz').span(), (0, 5))
 
+    def test_re_split(self):
+        for string in ":a:b::c", S(":a:b::c"):
+            self.assertTypedEqual(re.split(":", string),
+                                  ['', 'a', 'b', '', 'c'])
+            self.assertTypedEqual(re.split(":+", string),
+                                  ['', 'a', 'b', 'c'])
+            self.assertTypedEqual(re.split("(:+)", string),
+                                  ['', ':', 'a', ':', 'b', '::', 'c'])
+        for string in (b":a:b::c", B(b":a:b::c"), bytearray(b":a:b::c"),
+                       memoryview(b":a:b::c")):
+            self.assertTypedEqual(re.split(b":", string),
+                                  [b'', b'a', b'b', b'', b'c'])
+            self.assertTypedEqual(re.split(b":+", string),
+                                  [b'', b'a', b'b', b'c'])
+            self.assertTypedEqual(re.split(b"(:+)", string),
+                                  [b'', b':', b'a', b':', b'b', b'::', b'c'])
+        # TODO not supported yet
+        # for a, b, c in ("\xe0\xdf\xe7", "\u0430\u0431\u0432", "\U0001d49c\U0001d49e\U0001d4b5"):
+        for a, b, c in ("\xe0\xdf\xe7", "\u0430\u0431\u0432"):
+            string = ":%s:%s::%s" % (a, b, c)
+            self.assertEqual(re.split(":", string), ['', a, b, '', c])
+            self.assertEqual(re.split(":+", string), ['', a, b, c])
+            self.assertEqual(re.split("(:+)", string),
+                             ['', ':', a, ':', b, '::', c])
+
+        self.assertEqual(re.split("(?::+)", ":a:b::c"), ['', 'a', 'b', 'c'])
+        self.assertEqual(re.split("(:)+", ":a:b::c"),
+                         ['', ':', 'a', ':', 'b', ':', 'c'])
+        self.assertEqual(re.split("([b:]+)", ":a:b::c"),
+                         ['', ':', 'a', ':b::', 'c'])
+        self.assertEqual(re.split("(b)|(:+)", ":a:b::c"),
+                         ['', None, ':', 'a', None, ':', '', 'b', None, '',
+                          None, '::', 'c'])
+        self.assertEqual(re.split("(?:b)|(?::+)", ":a:b::c"),
+                         ['', 'a', '', '', 'c'])
+
+        # TODO subtests not support yet
+        # for sep, expected in [
+        #    (':*', ['', 'a', 'b', 'c']),
+        #    ('(?::*)', ['', 'a', 'b', 'c']),
+        #    ('(:*)', ['', ':', 'a', ':', 'b', '::', 'c']),
+        #    ('(:)*', ['', ':', 'a', ':', 'b', ':', 'c']),
+        # ]:
+        #    with self.subTest(sep=sep), self.assertWarns(FutureWarning):
+        #       self.assertTypedEqual(re.split(sep, ':a:b::c'), expected)
+        # for sep, expected in [
+        #    ('', [':a:b::c']),
+        #    (r'\b', [':a:b::c']),
+        #    (r'(?=:)', [':a:b::c']),
+        #    (r'(?<=:)', [':a:b::c']),
+        # ]:
+        #    with self.subTest(sep=sep), self.assertRaises(ValueError):
+        #        self.assertTypedEqual(re.split(sep, ':a:b::c'), expected)
+
+    def test_re_findall(self):
+        self.assertEqual(re.findall(":+", "abc"), [])
+        for string in "a:b::c:::d", S("a:b::c:::d"):
+            self.assertTypedEqual(re.findall(":+", string),
+                                  [":", "::", ":::"])
+            self.assertTypedEqual(re.findall("(:+)", string),
+                                  [":", "::", ":::"])
+            self.assertTypedEqual(re.findall("(:)(:*)", string),
+                                  [(":", ""), (":", ":"), (":", "::")])
+        for string in (b"a:b::c:::d", B(b"a:b::c:::d"), bytearray(b"a:b::c:::d"),
+                       memoryview(b"a:b::c:::d")):
+            self.assertTypedEqual(re.findall(b":+", string),
+                                  [b":", b"::", b":::"])
+            self.assertTypedEqual(re.findall(b"(:+)", string),
+                                  [b":", b"::", b":::"])
+            self.assertTypedEqual(re.findall(b"(:)(:*)", string),
+                                  [(b":", b""), (b":", b":"), (b":", b"::")])
+        for x in ("\xe0", "\u0430", "\U0001d49c"):
+            xx = x * 2
+            xxx = x * 3
+            string = "a%sb%sc%sd" % (x, xx, xxx)
+            self.assertEqual(re.findall("%s+" % x, string), [x, xx, xxx])
+            self.assertEqual(re.findall("(%s+)" % x, string), [x, xx, xxx])
+            self.assertEqual(re.findall("(%s)(%s*)" % (x, x), string),
+                             [(x, ""), (x, x), (x, xx)])
+
     def test_ignore_case_set(self):
         self.assertTrue(re.match(r'[19A]', 'A', re.I))
         self.assertTrue(re.match(r'[19a]', 'a', re.I))

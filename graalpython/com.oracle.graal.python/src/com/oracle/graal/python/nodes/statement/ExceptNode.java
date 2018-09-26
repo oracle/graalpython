@@ -28,23 +28,25 @@ package com.oracle.graal.python.nodes.statement;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
+import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
 
 @GenerateWrapper
-public class ExceptNode extends StatementNode {
+public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
 
-    @Child private PNode body;
-    @Child private PNode exceptType;
-    @Child private PNode exceptName;
+    @Child private StatementNode body;
+    @Child private ExpressionNode exceptType;
+    @Child private WriteNode exceptName;
 
-    public ExceptNode(PNode body, PNode exceptType, PNode exceptName) {
+    public ExceptNode(StatementNode body, ExpressionNode exceptType, WriteNode exceptName) {
         this.body = body;
         this.exceptName = exceptName;
         this.exceptType = exceptType;
@@ -88,7 +90,7 @@ public class ExceptNode extends StatementNode {
 
             if (type != null) {
                 if (exceptName != null) {
-                    ((WriteNode) exceptName).doWrite(frame, e.getExceptionObject());
+                    exceptName.doWrite(frame, e.getExceptionObject());
                     e.getExceptionObject().reifyException();
                 }
             } else {
@@ -98,25 +100,24 @@ public class ExceptNode extends StatementNode {
         return true;
     }
 
-    @Override
-    public Object execute(VirtualFrame frame) {
-        return null;
-    }
-
-    public PNode getBody() {
+    public StatementNode getBody() {
         return body;
     }
 
-    public PNode getExceptType() {
+    public ExpressionNode getExceptType() {
         return exceptType;
     }
 
-    public PNode getExceptName() {
+    public WriteNode getExceptName() {
         return exceptName;
     }
 
     @Override
     public WrapperNode createWrapper(ProbeNode probeNode) {
         return new ExceptNodeWrapper(this, this, probeNode);
+    }
+
+    public boolean isInstrumentable() {
+        return getSourceSection() != null;
     }
 }

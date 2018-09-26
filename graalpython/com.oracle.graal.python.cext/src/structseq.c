@@ -41,6 +41,7 @@
 #include "capi.h"
 
 /* StructSequences */
+UPCALL_ID(PyStructSequence_New);
 PyObject* PyStructSequence_New(PyTypeObject* o) {
-    return UPCALL_CEXT_O("PyStructSequence_New", native_to_java((PyObject*)o));
+    return UPCALL_CEXT_O(_jls_PyStructSequence_New, native_to_java((PyObject*)o));
 }

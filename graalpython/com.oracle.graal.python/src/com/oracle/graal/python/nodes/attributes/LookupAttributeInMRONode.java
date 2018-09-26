@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
@@ -52,9 +52,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @ImportStatic(PythonOptions.class)
-public abstract class LookupAttributeInMRONode extends PBaseNode {
+public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
-    public abstract static class Dynamic extends PBaseNode {
+    public abstract static class Dynamic extends PNodeWithContext {
 
         public static LookupAttributeInMRONode.Dynamic create() {
             return LookupAttributeInMRONodeGen.DynamicNodeGen.create();

@@ -58,6 +58,12 @@ public @interface Builtin {
     boolean isPublic() default true;
 
     /**
+     * By default the caller frame bit is set on-demand, but for some builtins it might be useful to
+     * always force passing the caller frame.
+     */
+    boolean alwaysNeedsCallerFrame() default false;
+
+    /**
      * Module functions should be bound to their module, meaning they would take the module itself
      * as "self" parameter. We omit this by default, but if the builtin does explicitly specify the
      * self argument, set this to true.

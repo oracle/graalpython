@@ -388,7 +388,7 @@ public class PythonProvider implements LanguageProvider {
         private static boolean hasMemoryError(SnippetRun snippetRun) {
             PolyglotException exception = snippetRun.getException();
             if (exception != null && exception.isGuestException()) {
-                return "MemoryError".equals(exception.getMessage());
+                return "MemoryError".equals(exception.getMessage()) || exception.getMessage().contains("OverflowError");
             }
             return false;
         }

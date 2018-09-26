@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
 public abstract class BasicSequenceStorage extends SequenceStorage {
 
     // nominated storage length
@@ -43,10 +45,15 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
         this.length = length;
     }
 
+    public abstract Object getCopyOfInternalArrayObject();
+
+    public abstract void setInternalArrayObject(Object arrayObject);
+
     /**
      * The capacity we should allocate for a given length.
      */
-    private static int capacityFor(int length) {
+    @TruffleBoundary(transferToInterpreterOnException = false, allowInlining = true)
+    private static int capacityFor(int length) throws ArithmeticException {
         return Math.max(16, Math.multiplyExact(length, 2));
     }
 
@@ -55,7 +62,7 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
      * designated size (not necessarily the requested one).
      */
     @Override
-    public void ensureCapacity(int newCapacity) {
+    public void ensureCapacity(int newCapacity) throws ArithmeticException {
         if (newCapacity > capacity) {
             increaseCapacityExactWithCopy(capacityFor(newCapacity));
         }
@@ -65,18 +72,7 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
 
     protected abstract void increaseCapacityExact(int newCapacity);
 
-    protected void minimizeCapacity() {
+    public void minimizeCapacity() {
         capacity = length;
-    }
-
-    @Override
-    public int index(Object value) {
-        for (int i = 0; i < length; i++) {
-            if (getItemNormalized(i).equals(value)) {
-                return i;
-            }
-        }
-
-        return -1;
     }
 }

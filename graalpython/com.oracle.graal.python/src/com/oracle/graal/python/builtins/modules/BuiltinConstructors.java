@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 import static com.oracle.graal.python.nodes.BuiltinNames.BOOL;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTEARRAY;
 import static com.oracle.graal.python.nodes.BuiltinNames.BYTES;
@@ -42,6 +43,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.RANGE;
 import static com.oracle.graal.python.nodes.BuiltinNames.REVERSED;
 import static com.oracle.graal.python.nodes.BuiltinNames.SET;
 import static com.oracle.graal.python.nodes.BuiltinNames.STR;
+import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
@@ -67,8 +69,11 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PIBytesLike;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
+import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -116,6 +121,7 @@ import com.oracle.graal.python.nodes.datamodel.IsSequenceNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
@@ -125,7 +131,6 @@ import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -723,7 +728,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FrozenSetNode extends PythonBuiltinNode {
 
-        @Child private HashingStorageNodes.SetItemNode setItemNode;
+        @Child private HashingCollectionNodes.SetItemNode setItemNode;
 
         @Specialization(guards = "isNoValue(arg)")
         public PFrozenSet frozensetEmpty(PythonClass cls, @SuppressWarnings("unused") PNone arg) {
@@ -735,7 +740,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFrozenSet frozenset(PythonClass cls, String arg) {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             for (int i = 0; i < arg.length(); i++) {
-                frozenSet.setDictStorage(getSetItemNode().execute(frozenSet.getDictStorage(), String.valueOf(arg.charAt(i)), PNone.NO_VALUE));
+                getSetItemNode().execute(frozenSet, String.valueOf(arg.charAt(i)), PNone.NO_VALUE);
             }
             return frozenSet;
         }
@@ -751,7 +756,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             PFrozenSet frozenSet = factory().createFrozenSet(cls);
             while (true) {
                 try {
-                    frozenSet.setDictStorage(getSetItemNode().execute(frozenSet.getDictStorage(), next.execute(iterator), PNone.NO_VALUE));
+                    getSetItemNode().execute(frozenSet, next.execute(iterator), PNone.NO_VALUE);
                 } catch (PException e) {
                     e.expectStopIteration(getCore(), errorProfile);
                     return frozenSet;
@@ -759,10 +764,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private HashingStorageNodes.SetItemNode getSetItemNode() {
+        private HashingCollectionNodes.SetItemNode getSetItemNode() {
             if (setItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                setItemNode = insert(HashingStorageNodes.SetItemNode.create());
+                setItemNode = insert(HashingCollectionNodes.SetItemNode.create());
             }
             return setItemNode;
         }
@@ -780,7 +785,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private Object stringToInt(String num, int base) {
             String s = num.replace("_", "");
             if ((base >= 2 && base <= 32) || base == 0) {
-                BigInteger bi = asciiToBigInteger(s, 10, false);
+                BigInteger bi = asciiToBigInteger(s, base, false);
                 if (bi.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0 || bi.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0) {
                     return bi;
                 } else {
@@ -1478,11 +1483,30 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     PythonBuiltinClassType.PGeneratorFunction}, isPublic = false)
     @GenerateNodeFactory
     public abstract static class FunctionNode extends PythonBuiltinNode {
+        @Specialization
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, @SuppressWarnings("unused") PNone closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, null);
+        }
 
         @Specialization
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, (PCell[]) closure.getArray());
+        }
+
+        @Specialization
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, @SuppressWarnings("unused") PNone closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, defaultArgs.getArray(), null);
+        }
+
+        @Specialization
+        public PFunction function(PythonClass cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
+            return factory().createFunction(name, cls.getName(), code.getArity(), code.getRootCallTarget(), code.getFrameDescriptor(), globals, defaultArgs.getArray(), (PCell[]) closure.getArray());
+        }
+
+        @Fallback
         @SuppressWarnings("unused")
-        public PFunction function(Object cls, Object code, PDict globals, String name, PTuple defaultArgs, PTuple closure) {
-            throw raise(NotImplementedError, "function construction not implemented");
+        public PFunction function(Object cls, Object code, Object globals, Object name, Object defaultArgs, Object closure) {
+            throw raise(TypeError, "function construction not supported for (%p, %p, %p, %p, %p, %p)", cls, code, globals, name, defaultArgs, closure);
         }
     }
 
@@ -1777,7 +1801,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
     @Builtin(name = "method", fixedNumOfPositionalArgs = 3, constructsClass = {PythonBuiltinClassType.PMethod}, isPublic = false)
     @GenerateNodeFactory
-    public abstract static class MethodTypeNode extends PythonBuiltinNode {
+    public abstract static class MethodTypeNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object method(PythonClass cls, Object self, PFunction func) {
             return factory().createMethod(cls, self, func);
@@ -1984,17 +2008,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class CreateSliceNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(second)")
         Object sliceStop(PythonClass cls, int first, PNone second, PNone third) {
-            return factory().createSlice(SequenceUtil.MISSING_INDEX, first, SequenceUtil.MISSING_INDEX);
+            return factory().createSlice(MISSING_INDEX, first, MISSING_INDEX);
         }
 
         @Specialization(guards = "isNone(second)")
         Object sliceStart(PythonClass cls, int first, PNone second, PNone third) {
-            return factory().createSlice(first, SequenceUtil.MISSING_INDEX, SequenceUtil.MISSING_INDEX);
+            return factory().createSlice(first, MISSING_INDEX, MISSING_INDEX);
         }
 
         @Specialization(guards = "isNoValue(third)")
         Object slice(PythonClass cls, int first, int second, PNone third) {
-            return factory().createSlice(first, second, SequenceUtil.MISSING_INDEX);
+            return factory().createSlice(first, second, MISSING_INDEX);
         }
 
         @Specialization
@@ -2033,7 +2057,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public boolean hasSetItem(Object object) {
             if (getSetItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSetItemNode = LookupInheritedAttributeNode.create(__SETITEM__);
+                getSetItemNode = insert(LookupInheritedAttributeNode.create(__SETITEM__));
             }
             return getSetItemNode.execute(object) != PNone.NO_VALUE;
         }
@@ -2049,4 +2073,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
+    // super()
+    @Builtin(name = SUPER, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.Super)
+    @GenerateNodeFactory
+    public abstract static class SuperInitNode extends PythonTernaryBuiltinNode {
+        @Specialization
+        Object doObjectIndirect(PythonClass self, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object) {
+            return factory().createSuperObject(self);
+        }
+    }
 }

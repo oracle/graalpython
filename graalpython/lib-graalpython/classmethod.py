@@ -43,11 +43,12 @@ class classmethod(object):
     def __init__(self, func):
         self.__func__ = func
 
-    def __get__(self, instance, owner=None):
+    def __get__(self, obj, instance=None, owner=None):
         if owner is None:
-            return classmethod.method(type(instance), self.__func__)
+            return classmethod.method(type(instance), obj.__func__)
         else:
-            return classmethod.method(owner, self.__func__)
+            return classmethod.method(owner, obj.__func__)
 
 
 classmethod.method = type(classmethod(None).__init__)
+classmethod.__get__ = __builtin__(classmethod.__get__)

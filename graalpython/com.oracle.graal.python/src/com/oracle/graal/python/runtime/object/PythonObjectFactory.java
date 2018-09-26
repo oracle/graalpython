@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -185,6 +186,10 @@ public final class PythonObjectFactory extends Node {
 
     public PythonNativeObject createNativeObjectWrapper(Object obj) {
         return trace(new PythonNativeObject(obj));
+    }
+
+    public SuperObject createSuperObject(PythonClass self) {
+        return trace(new SuperObject(self));
     }
 
     /*
@@ -359,6 +364,11 @@ public final class PythonObjectFactory extends Node {
         return trace(new PFunction(lookupClass(PythonBuiltinClassType.PFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, closure));
     }
 
+    public PFunction createFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, Object[] defaults,
+                    PCell[] closure) {
+        return trace(new PFunction(lookupClass(PythonBuiltinClassType.PFunction), name, enclosingClassName, arity, callTarget, frameDescriptor, globals, defaults, closure));
+    }
+
     public PBuiltinFunction createBuiltinFunction(String name, PythonClass type, Arity arity, RootCallTarget callTarget) {
         return trace(new PBuiltinFunction(lookupClass(PythonBuiltinClassType.PBuiltinFunction), name, type, arity, callTarget));
     }
@@ -485,10 +495,9 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
-                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure, ExecutionCellSlots cellSlots,
-                    int numOfActiveFlags, int numOfGeneratorBlockNode, int numOfGeneratorForNode) {
-        return trace(PGeneratorFunction.create(lookupClass(PythonBuiltinClassType.PGeneratorFunction), getCore().getLanguage(), name, enclosingClassName, arity, callTarget,
-                        frameDescriptor, globals, closure, cellSlots, numOfActiveFlags, numOfGeneratorBlockNode, numOfGeneratorForNode));
+                    FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
+        return trace(PGeneratorFunction.create(lookupClass(PythonBuiltinClassType.PGeneratorFunction), name, enclosingClassName, arity, callTarget,
+                        frameDescriptor, globals, closure));
     }
 
     public PMappingproxy createMappingproxy(PythonObject object) {

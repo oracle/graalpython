@@ -40,17 +40,19 @@
  */
 #include "capi.h"
 
+UPCALL_ID(PyImport_ImportModule);
 PyObject* PyImport_ImportModule(const char *name) {
-    return UPCALL_CEXT_O("PyImport_ImportModule", polyglot_from_string(name, SRC_CS));
+    return UPCALL_CEXT_O(_jls_PyImport_ImportModule, polyglot_from_string(name, SRC_CS));
 }
 
 PyObject* PyImport_Import(PyObject *name) {
-    return UPCALL_CEXT_O("PyImport_ImportModule", native_to_java(name));
+    return UPCALL_CEXT_O(_jls_PyImport_ImportModule, native_to_java(name));
 }
 
+UPCALL_ID(__import__);
 PyObject* PyImport_ImportModuleLevelObject(PyObject* name, PyObject* globals, PyObject* locals,
                                            PyObject* fromlist, int level) {
-    return UPCALL_O(PY_BUILTIN, "__import__", native_to_java(name), native_to_java(globals),
+    return UPCALL_O(PY_BUILTIN, _jls___import__, native_to_java(name), native_to_java(globals),
                     native_to_java(locals), native_to_java(fromlist), level);
 }
 
@@ -60,8 +62,9 @@ PyObject* PyImport_ImportModuleLevel(const char *name, PyObject *globals, PyObje
 }
 
 
+UPCALL_ID(PyImport_GetModuleDict);
 PyObject* PyImport_GetModuleDict() {
-    return UPCALL_CEXT_O("PyImport_GetModuleDict");
+    return UPCALL_CEXT_O(_jls_PyImport_GetModuleDict);
 }
 
 PyObject* _PyImport_AddModuleObject(PyObject *name, PyObject *modules) {

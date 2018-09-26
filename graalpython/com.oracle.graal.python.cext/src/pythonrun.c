@@ -40,6 +40,7 @@
  */
 #include "capi.h"
 
+UPCALL_ID(PyRun_String);
 PyObject* PyRun_StringFlags(const char* source, int type, PyObject* globals, PyObject* locals, PyCompilerFlags* ignored) {
     const char* stype;
     if (type == Py_single_input) {
@@ -51,6 +52,6 @@ PyObject* PyRun_StringFlags(const char* source, int type, PyObject* globals, PyO
     } else {
         return NULL;
     }
-    return UPCALL_CEXT_O("PyRun_String", polyglot_from_string(source, SRC_CS), polyglot_from_string(stype, SRC_CS), native_to_java(globals), native_to_java(locals));
+    return UPCALL_CEXT_O(_jls_PyRun_String, polyglot_from_string(source, SRC_CS), polyglot_from_string(stype, SRC_CS), native_to_java(globals), native_to_java(locals));
 }
 

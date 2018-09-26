@@ -25,21 +25,22 @@
  */
 package com.oracle.graal.python.nodes.subscript;
 
-import static com.oracle.graal.python.runtime.sequence.SequenceUtil.MISSING_INDEX;
+import static com.oracle.graal.python.builtins.objects.slice.PSlice.MISSING_INDEX;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.NodeChildren;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 
-@NodeChildren({@NodeChild(value = "first", type = PNode.class), @NodeChild(value = "second", type = PNode.class), @NodeChild(value = "third", type = PNode.class)})
+@NodeChildren({@NodeChild(value = "first", type = ExpressionNode.class), @NodeChild(value = "second", type = ExpressionNode.class), @NodeChild(value = "third", type = ExpressionNode.class)})
 @TypeSystemReference(PythonArithmeticTypes.class) // because bool -> int works here
-public abstract class SliceLiteralNode extends PNode {
+public abstract class SliceLiteralNode extends ExpressionNode {
 
     public abstract PSlice execute(Object start, Object stop, Object step);
 
@@ -165,7 +166,7 @@ public abstract class SliceLiteralNode extends PNode {
 
     public abstract PNode getThird();
 
-    public static PNode create(PNode lower, PNode upper, PNode step) {
+    public static SliceLiteralNode create(ExpressionNode lower, ExpressionNode upper, ExpressionNode step) {
         return SliceLiteralNodeGen.create(lower, upper, step);
     }
 

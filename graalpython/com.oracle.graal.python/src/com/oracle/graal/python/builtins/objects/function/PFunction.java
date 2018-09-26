@@ -51,8 +51,14 @@ public class PFunction extends PythonObject implements PythonCallable {
     private final PCell[] closure;
     private final boolean isStatic;
     private PCode code;
+    private Object[] defaults;
 
     public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
+        this(clazz, name, enclosingClassName, arity, callTarget, frameDescriptor, globals, null, closure);
+    }
+
+    public PFunction(PythonClass clazz, String name, String enclosingClassName, Arity arity, RootCallTarget callTarget, FrameDescriptor frameDescriptor, PythonObject globals, Object[] defaults,
+                    PCell[] closure) {
         super(clazz);
         this.name = name;
         this.isStatic = name.equals(SpecialMethodNames.__NEW__);
@@ -61,14 +67,15 @@ public class PFunction extends PythonObject implements PythonCallable {
         this.callTarget = callTarget;
         this.frameDescriptor = frameDescriptor;
         this.globals = globals;
+        this.defaults = defaults;
         this.closure = closure;
         addDefaultConstants(this.getStorage(), name, enclosingClassName);
     }
 
     @TruffleBoundary
-    private static void addDefaultConstants(DynamicObject storage2, String name, String enclosingClassName) {
-        storage2.define(__NAME__, name);
-        storage2.define(__QUALNAME__, enclosingClassName == null ? enclosingClassName + "." + name : name);
+    private static void addDefaultConstants(DynamicObject storage, String name, String enclosingClassName) {
+        storage.define(__NAME__, name);
+        storage.define(__QUALNAME__, enclosingClassName == null ? enclosingClassName + "." + name : name);
     }
 
     public boolean isStatic() {
@@ -129,5 +136,13 @@ public class PFunction extends PythonObject implements PythonCallable {
 
     public String getEnclosingClassName() {
         return enclosingClassName;
+    }
+
+    public Object[] getDefaults() {
+        return defaults;
+    }
+
+    public void setDefaults(Object[] defaults) {
+        this.defaults = defaults;
     }
 }

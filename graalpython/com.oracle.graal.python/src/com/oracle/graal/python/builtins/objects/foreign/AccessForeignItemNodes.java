@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFa
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -62,7 +62,6 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -80,7 +79,7 @@ import com.oracle.truffle.api.nodes.Node;
 abstract class AccessForeignItemNodes {
 
     @ImportStatic(Message.class)
-    protected abstract static class AccessForeignItemBaseNode extends PBaseNode {
+    protected abstract static class AccessForeignItemBaseNode extends PNodeWithContext {
 
         protected static boolean isSlice(Object o) {
             return o instanceof PSlice;
@@ -96,27 +95,8 @@ abstract class AccessForeignItemNodes {
         }
 
         protected SliceInfo materializeSlice(PSlice idxSlice, TruffleObject object, Node getSizeNode, PForeignToPTypeNode foreign2PTypeNode) throws UnsupportedMessageException {
-
-            // determine start
-            boolean isStartMissing = false;
-            int start = idxSlice.getStart();
-            if (start == SequenceUtil.MISSING_INDEX) {
-                start = 0;
-                isStartMissing = true;
-            }
-
-            // determine stop
-            int end = idxSlice.getStop();
-            int foreignSize = -1;
-            if (end == SequenceUtil.MISSING_INDEX) {
-                foreignSize = getForeignSize(object, getSizeNode, foreign2PTypeNode);
-                end = foreignSize;
-            } else if (isStartMissing) {
-                foreignSize = getForeignSize(object, getSizeNode, foreign2PTypeNode);
-            }
-
-            // determine length (foreignSize is only required if start or stop is missing)
-            return idxSlice.computeActualIndices(foreignSize);
+            int foreignSize = getForeignSize(object, getSizeNode, foreign2PTypeNode);
+            return idxSlice.computeIndices(foreignSize);
         }
     }
 

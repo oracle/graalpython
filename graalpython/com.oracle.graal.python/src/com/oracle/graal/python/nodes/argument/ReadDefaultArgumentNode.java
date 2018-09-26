@@ -25,12 +25,10 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
-import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-public final class ReadDefaultArgumentNode extends PNode {
+public final class ReadDefaultArgumentNode extends Node {
 
     @CompilationFinal private Object value;
 
@@ -42,9 +40,8 @@ public final class ReadDefaultArgumentNode extends PNode {
         this.value = value;
     }
 
-    @Override
-    public Object execute(VirtualFrame frame) {
-        assert value != null;
+    public Object execute() {
+        assert value != null : "ReadDefaultArgumentNode: value cannot be null!";
         return value;
     }
 

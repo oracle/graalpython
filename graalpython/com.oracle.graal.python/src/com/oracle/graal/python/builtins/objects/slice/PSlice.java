@@ -26,15 +26,17 @@
 package com.oracle.graal.python.builtins.objects.slice;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.runtime.sequence.SequenceUtil.MISSING_INDEX;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
 public class PSlice extends PythonBuiltinObject {
+
+    public static final int MISSING_INDEX = Integer.MIN_VALUE;
 
     protected int start;
     protected int stop;
@@ -84,6 +86,7 @@ public class PSlice extends PythonBuiltinObject {
         return step;
     }
 
+    @ValueType
     public static final class SliceInfo {
         public final int start;
         public final int stop;
@@ -98,7 +101,7 @@ public class PSlice extends PythonBuiltinObject {
         }
     }
 
-    public SliceInfo computeActualIndices(int len) {
+    public SliceInfo computeIndices(int length) {
         int newStart = this.start;
         int newStop = this.stop;
         int newStep = this.step;
@@ -113,33 +116,33 @@ public class PSlice extends PythonBuiltinObject {
                 throw PythonLanguage.getCore().raise(ValueError, "slice step cannot be zero");
             }
         }
-        tmpStart = newStep < 0 ? len - 1 : 0;
-        tmpStop = newStep < 0 ? -1 : len;
+        tmpStart = newStep < 0 ? length - 1 : 0;
+        tmpStop = newStep < 0 ? -1 : length;
 
         if (newStart == MISSING_INDEX) {
             newStart = tmpStart;
         } else {
             if (newStart < 0) {
-                newStart += len;
+                newStart += length;
             }
             if (newStart < 0) {
                 newStart = newStep < 0 ? -1 : 0;
             }
-            if (newStart >= len) {
-                newStart = newStep < 0 ? len - 1 : len;
+            if (newStart >= length) {
+                newStart = newStep < 0 ? length - 1 : length;
             }
         }
         if (newStop == MISSING_INDEX) {
             newStop = tmpStop;
         } else {
             if (newStop < 0) {
-                newStop += len;
+                newStop += length;
             }
             if (newStop < 0) {
                 newStop = newStep < 0 ? -1 : 0;
             }
-            if (newStop >= len) {
-                newStop = newStep < 0 ? len - 1 : len;
+            if (newStop >= length) {
+                newStop = newStep < 0 ? length - 1 : length;
             }
         }
         if ((newStep < 0 && newStop >= newStart) || (newStep > 0 && newStart >= newStop)) {
@@ -150,23 +153,5 @@ public class PSlice extends PythonBuiltinObject {
             newLen = (newStop - newStart - 1) / newStep + 1;
         }
         return new SliceInfo(newStart, newStop, newStep, newLen);
-    }
-
-    /**
-     * Make step a long in case adding the start, stop and step together overflows an int.
-     */
-    public static final int sliceLength(int start, int stop, long step) {
-        int ret;
-        if (step > 0) {
-            ret = (int) ((stop - start + step - 1) / step);
-        } else {
-            ret = (int) ((stop - start + step + 1) / step);
-        }
-
-        if (ret < 0) {
-            return 0;
-        }
-
-        return ret;
     }
 }

@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.nodes.PBaseNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -70,7 +70,7 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class BytesNodes {
 
-    public abstract static class BytesJoinNode extends PBaseNode {
+    public abstract static class BytesJoinNode extends PNodeWithContext {
 
         public abstract byte[] execute(byte[] sep, Object iterable);
 
@@ -124,7 +124,7 @@ public abstract class BytesNodes {
     }
 
     @ImportStatic({PGuards.class, SpecialMethodNames.class})
-    public abstract static class ToBytesNode extends PBaseNode {
+    public abstract static class ToBytesNode extends PNodeWithContext {
         @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
 
         protected final boolean allowRecursive;
@@ -184,11 +184,11 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class FindNode extends PBaseNode {
+    public abstract static class FindNode extends PNodeWithContext {
 
-        @Child NormalizeIndexNode normalizeIndexNode;
-        @Child SequenceStorageNodes.GetItemNode getLeftItemNode;
-        @Child SequenceStorageNodes.GetItemNode getRightItemNode;
+        @Child private NormalizeIndexNode normalizeIndexNode;
+        @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
+        @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
 
         public abstract int execute(PIBytesLike bytes, Object sub, Object starting, Object ending);
 
@@ -276,14 +276,15 @@ public abstract class BytesNodes {
         }
     }
 
-    public abstract static class FromListNode extends PBaseNode {
+    public abstract static class FromListNode extends PNodeWithContext {
 
         @Child private SequenceStorageNodes.GetItemNode getItemNode;
         @Child private SequenceStorageNodes.CastToByteNode castToByteNode;
+        @Child private SequenceStorageNodes.LenNode lenNode;
 
         public byte[] execute(PList list) {
-            int len = list.len();
             SequenceStorage listStore = list.getSequenceStorage();
+            int len = getLenNode().execute(listStore);
             byte[] bytes = new byte[len];
             for (int i = 0; i < len; i++) {
                 Object item = getGetItemNode().execute(listStore, i);
@@ -307,11 +308,21 @@ public abstract class BytesNodes {
             }
             return castToByteNode;
         }
+
+        private SequenceStorageNodes.LenNode getLenNode() {
+            if (lenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return lenNode;
+        }
     }
 
-    public static class CmpNode extends PBaseNode {
-        @Child SequenceStorageNodes.GetItemNode getLeftItemNode;
-        @Child SequenceStorageNodes.GetItemNode getRightItemNode;
+    public static class CmpNode extends PNodeWithContext {
+        @Child private SequenceStorageNodes.GetItemNode getLeftItemNode;
+        @Child private SequenceStorageNodes.GetItemNode getRightItemNode;
+        @Child private SequenceStorageNodes.LenNode leftLenNode;
+        @Child private SequenceStorageNodes.LenNode rightLenNode;
 
         private final ValueProfile leftProfile = ValueProfile.createClassProfile();
         private final ValueProfile rightProfile = ValueProfile.createClassProfile();
@@ -319,7 +330,9 @@ public abstract class BytesNodes {
         public int execute(PIBytesLike left, PIBytesLike right) {
             PIBytesLike leftProfiled = leftProfile.profile(left);
             PIBytesLike rightProfiled = rightProfile.profile(right);
-            for (int i = 0; i < Math.min(leftProfiled.len(), rightProfiled.len()); i++) {
+            int leftLen = getleftLenNode().execute(leftProfiled.getSequenceStorage());
+            int rightLen = getRightLenNode().execute(rightProfiled.getSequenceStorage());
+            for (int i = 0; i < Math.min(leftLen, rightLen); i++) {
                 int a = getGetLeftItemNode().executeInt(leftProfiled.getSequenceStorage(), i);
                 int b = getGetRightItemNode().executeInt(rightProfiled.getSequenceStorage(), i);
                 if (a != b) {
@@ -327,7 +340,7 @@ public abstract class BytesNodes {
                     return a & 0xFF - b & 0xFF;
                 }
             }
-            return leftProfiled.len() - rightProfiled.len();
+            return leftLen - rightLen;
         }
 
         private SequenceStorageNodes.GetItemNode getGetLeftItemNode() {
@@ -344,6 +357,22 @@ public abstract class BytesNodes {
                 getRightItemNode = insert(SequenceStorageNodes.GetItemNode.create());
             }
             return getRightItemNode;
+        }
+
+        private SequenceStorageNodes.LenNode getleftLenNode() {
+            if (leftLenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                leftLenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return leftLenNode;
+        }
+
+        private SequenceStorageNodes.LenNode getRightLenNode() {
+            if (rightLenNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                rightLenNode = insert(SequenceStorageNodes.LenNode.create());
+            }
+            return rightLenNode;
         }
 
         public static CmpNode create() {

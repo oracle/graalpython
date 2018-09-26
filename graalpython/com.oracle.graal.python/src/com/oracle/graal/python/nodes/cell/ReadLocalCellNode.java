@@ -28,60 +28,90 @@ package com.oracle.graal.python.nodes.cell;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnboundLocalError;
 
+import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.cell.ReadLocalCellNodeGen.ReadFromCellNodeGen;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
+import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @NodeInfo(shortName = "read_cell")
-public abstract class ReadLocalCellNode extends PNode implements ReadLocalNode {
-    @Child private PNode readLocal;
-
+public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLocalNode {
+    @Child private ExpressionNode readLocal;
+    @Child private ReadFromCellNode readCell;
     private final FrameSlot frameSlot;
-    private final boolean isFreeVar;
 
     ReadLocalCellNode(FrameSlot frameSlot, boolean isFreeVar) {
         this.frameSlot = frameSlot;
         this.readLocal = ReadLocalVariableNode.create(frameSlot);
-        this.isFreeVar = isFreeVar;
+        this.readCell = ReadFromCellNodeGen.create(isFreeVar, frameSlot.getIdentifier());
     }
 
-    public static PNode create(FrameSlot frameSlot, boolean isFreeVar) {
+    public static ReadLocalCellNode create(FrameSlot frameSlot, boolean isFreeVar) {
         return ReadLocalCellNodeGen.create(frameSlot, isFreeVar);
     }
 
     @Override
-    public PNode makeWriteNode(PNode rhs) {
+    public StatementNode makeWriteNode(ExpressionNode rhs) {
         return WriteLocalCellNode.create(frameSlot, rhs);
     }
 
-    @Specialization
-    Object readObject(VirtualFrame frame,
-                    @Cached("createClassProfile()") ValueProfile refTypeProfile) {
-        Object cell = readLocal.execute(frame);
-        if (cell instanceof PCell) {
-            Object ref = refTypeProfile.profile(((PCell) cell).getRef());
+    static abstract class ReadFromCellNode extends PNodeWithContext {
+        private final boolean isFreeVar;
+        private final Object identifier;
+
+        public ReadFromCellNode(boolean isFreeVar, Object identifier) {
+            this.isFreeVar = isFreeVar;
+            this.identifier = identifier;
+        }
+
+        abstract Object execute(Object cell);
+
+        @Specialization
+        Object read(PCell cell,
+                        @Cached("create()") CellBuiltins.GetRefNode getRef,
+                        @Cached("createClassProfile()") ValueProfile refTypeProfile) {
+            Object ref = refTypeProfile.profile(getRef.execute(cell));
             if (ref != null) {
                 return ref;
+            } else {
+                throw raiseUnbound();
             }
-            throw raiseUnbound();
         }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("Expected a cell, got: " + cell.toString() + " instead.");
+
+        @Fallback
+        Object read(Object cell) {
+            CompilerDirectives.transferToInterpreter();
+            throw new IllegalStateException("Expected a cell, got: " + cell.toString() + " instead.");
+        }
+
+        private PException raiseUnbound() {
+            if (isFreeVar) {
+                return raise(NameError, "free variable '%s' referenced before assignment in enclosing scope", identifier);
+            }
+            return raise(UnboundLocalError, "local variable '%s' referenced before assignment", identifier);
+        }
     }
 
-    private PException raiseUnbound() {
-        if (isFreeVar) {
-            return raise(NameError, "free variable '%s' referenced before assignment in enclosing scope", frameSlot.getIdentifier());
-        }
-        return raise(UnboundLocalError, "local variable '%s' referenced before assignment", frameSlot.getIdentifier());
+    @Specialization
+    Object readObject(VirtualFrame frame) {
+        return readCell.execute(readLocal.execute(frame));
+    }
+
+    @Override
+    public NodeCost getCost() {
+        return NodeCost.NONE;
     }
 }

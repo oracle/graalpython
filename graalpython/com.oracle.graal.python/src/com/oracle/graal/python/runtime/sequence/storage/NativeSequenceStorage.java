@@ -44,14 +44,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 
 public class NativeSequenceStorage extends SequenceStorage {
 
-    public static enum ElementType {
-        BYTE,
-        INT,
-        LONG,
-        DOUBLE,
-        OBJECT;
-    }
-
     /* native pointer object */
     private Object ptr;
 
@@ -61,9 +53,9 @@ public class NativeSequenceStorage extends SequenceStorage {
     /* allocated capacity */
     protected int capacity;
 
-    protected final ElementType elementType;
+    protected final ListStorageType elementType;
 
-    public NativeSequenceStorage(Object ptr, int length, int capacity, ElementType elementType) {
+    public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
         this.ptr = ptr;
         this.capacity = capacity;
         this.length = length;
@@ -86,7 +78,8 @@ public class NativeSequenceStorage extends SequenceStorage {
         this.capacity = capacity;
     }
 
-    public ElementType getElementType() {
+    @Override
+    public ListStorageType getElementType() {
         return elementType;
     }
 
@@ -113,11 +106,6 @@ public class NativeSequenceStorage extends SequenceStorage {
      */
     @Override
     public void ensureCapacity(int newCapacity) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public int index(Object value) {
         throw new AssertionError("should not reach");
     }
 
@@ -162,42 +150,7 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void delSlice(int start, int stop, int step) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void delItemInBound(int idx) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException, ArithmeticException {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
     public void reverse() {
-        throw new AssertionError("should not reach");
-    }
-
-    @Override
-    public void sort() {
         throw new AssertionError("should not reach");
     }
 

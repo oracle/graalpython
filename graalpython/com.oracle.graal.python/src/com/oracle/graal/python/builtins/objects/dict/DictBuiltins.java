@@ -52,6 +52,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -137,13 +138,13 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!containsKey(dict.getDictStorage(), key)")
         public Object setDefault(PDict dict, Object key, Object defaultValue,
-                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode,
+                        @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached("createBinaryProfile()") ConditionProfile defaultValProfile) {
             Object value = defaultValue;
             if (defaultValProfile.profile(defaultValue == PNone.NO_VALUE)) {
                 value = PNone.NONE;
             }
-            dict.setDictStorage(setItemNode.execute(dict.getDictStorage(), key, value));
+            setItemNode.execute(dict, key, value);
             return value;
         }
     }
@@ -303,8 +304,8 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object run(PDict self, Object key, Object value,
-                        @Cached("create()") HashingStorageNodes.SetItemNode setItemNode) {
-            self.setDictStorage(setItemNode.execute(self.getDictStorage(), key, value));
+                        @Cached("create()") HashingCollectionNodes.SetItemNode setItemNode) {
+            setItemNode.execute(self, key, value);
             return PNone.NONE;
         }
     }
@@ -381,8 +382,9 @@ public final class DictBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public int len(PDict self) {
-            return self.size();
+        public int len(PDict self,
+                        @Cached("create()") HashingStorageNodes.LenNode lenNode) {
+            return lenNode.execute(self.getDictStorage());
         }
     }
 

@@ -49,11 +49,6 @@ public abstract class ReadVariableNode extends FrameSlotNode implements ReadLoca
         this.readLocalNode = ReadVariableFromFrameNode.create(slot);
     }
 
-    @Override
-    public final Object doWrite(VirtualFrame frame, Object value) {
-        throw new UnsupportedOperationException();
-    }
-
     protected abstract Frame getAccessingFrame(VirtualFrame frame);
 
     @Override

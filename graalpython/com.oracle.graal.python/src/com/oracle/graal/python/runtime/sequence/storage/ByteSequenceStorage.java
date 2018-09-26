@@ -31,8 +31,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.runtime.sequence.SequenceUtil;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class ByteSequenceStorage extends TypedSequenceStorage {
@@ -134,7 +132,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         } else if (value instanceof Integer) {
             insertByteItem(idx, ((Integer) value).byteValue());
         } else {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
     }
 
@@ -169,19 +167,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
 
         return new ByteSequenceStorage(newArray);
-    }
-
-    @Override
-    public void setSliceInBound(int start, int stop, int step, SequenceStorage sequence) throws SequenceStoreException {
-        if (sequence instanceof ByteSequenceStorage) {
-            setByteSliceInBound(start, stop, step, (ByteSequenceStorage) sequence);
-        } else if (sequence instanceof IntSequenceStorage) {
-            setByteSliceInBound(start, stop, step, (IntSequenceStorage) sequence);
-        } else if (sequence instanceof EmptySequenceStorage) {
-            setByteSliceInBound(start, stop, step, new IntSequenceStorage(0));
-        } else {
-            throw new SequenceStoreException();
-        }
     }
 
     @TruffleBoundary(allowInlining = true, transferToInterpreterOnException = false)
@@ -268,94 +253,10 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         length = newLength;
     }
 
-    @Override
-    public void delSlice(int startParam, int stopParam, int stepParam) {
-        int start = startParam;
-        int stop = stopParam;
-        int step = stepParam;
-        if ((stop == SequenceUtil.MISSING_INDEX || stop >= length) && step == 1) {
-            length = start;
-        } else if ((start == 0 && stop >= length) && step == 1) {
-            length = 0;
-        } else {
-            int decraseLen; // how much will be the result array shorter
-            int index;  // index of the "old" array
-            if (step < 0) {
-                // For the simplicity of algorithm, then start and stop are swapped.
-                // The start index has to recalculated according the step, because
-                // the algorithm bellow removes the start itema and then start + step ....
-                step = Math.abs(step);
-                stop++;
-                int tmpStart = stop + ((start - stop) % step);
-                stop = start + 1;
-                start = tmpStart;
-            }
-            int arrayIndex = start; // pointer to the "new" form of array
-            if (step == 1) {
-                // this is easy, just remove the part of array
-                decraseLen = stop - start;
-                index = start + decraseLen;
-            } else {
-                int nextStep = index = start; // nextStep is a pointer to the next removed item
-                decraseLen = (stop - start - 1) / step + 1;
-                for (; index < stop && nextStep < stop; index++) {
-                    if (nextStep == index) {
-                        nextStep += step;
-                    } else {
-                        values[arrayIndex++] = values[index];
-                    }
-                }
-            }
-            if (decraseLen > 0) {
-                // shift all other items in array behind the last change
-                for (; index < length; arrayIndex++, index++) {
-                    values[arrayIndex] = values[index];
-                }
-                // change the result length
-                // TODO Shouldn't we realocate the array, if the chane is big?
-                // Then unnecessary big array is kept in the memory.
-                length = length - decraseLen;
-            }
-        }
-    }
-
-    @Override
-    public void delItemInBound(int idx) {
-        if (values.length - 1 == idx) {
-            popInt();
-        } else {
-            popInBound(idx);
-        }
-    }
-
-    @Override
-    public Object popInBound(int idx) {
-        int pop = values[idx] & 0xFF;
-
-        for (int i = idx; i < values.length - 1; i++) {
-            values[i] = values[i + 1];
-        }
-
-        length--;
-        return pop;
-    }
-
     public int popInt() {
         int pop = values[capacity - 1] & 0xFF;
         length--;
         return pop;
-    }
-
-    @Override
-    public int index(Object value) {
-        if (value instanceof Byte) {
-            return indexOfByte((byte) value);
-        } else if (value instanceof Integer) {
-            return indexOfInt((int) value);
-        } else {
-            return super.index(value);
-        }
-
     }
 
     public int indexOfByte(byte value) {
@@ -378,28 +279,9 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return -1;
     }
 
-    @Override
-    public void append(Object value) throws SequenceStoreException {
-        if (value instanceof Integer) {
-            appendInt((int) value);
-        } else if (value instanceof Long) {
-            appendLong((long) value);
-        } else if (value instanceof PInt) {
-            try {
-                appendInt(((PInt) value).intValueExact());
-            } catch (ArithmeticException e) {
-                throw SequenceStoreException.INSTANCE;
-            }
-        } else if (value instanceof Byte) {
-            appendByte((byte) value);
-        } else {
-            throw SequenceStoreException.INSTANCE;
-        }
-    }
-
     public void appendLong(long value) {
         if (value < 0 || value >= 256) {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
         ensureCapacity(length + 1);
         values[length] = (byte) value;
@@ -408,7 +290,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     public void appendInt(int value) {
         if (value < 0 || value >= 256) {
-            throw SequenceStoreException.INSTANCE;
+            throw new SequenceStoreException(value);
         }
         ensureCapacity(length + 1);
         values[length] = (byte) value;
@@ -419,75 +301,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         ensureCapacity(length + 1);
         values[length] = value;
         length++;
-    }
-
-    @Override
-    public void extend(SequenceStorage other) throws SequenceStoreException {
-        if (other instanceof ByteSequenceStorage) {
-            extendWithByteStorage((ByteSequenceStorage) other);
-        } else if (other instanceof IntSequenceStorage) {
-            extendWithIntStorage((IntSequenceStorage) other);
-        } else if (other instanceof ObjectSequenceStorage) {
-            extendWithObjectStorage((ObjectSequenceStorage) other);
-        } else {
-            throw SequenceStoreException.INSTANCE;
-        }
-    }
-
-    private void extendWithByteStorage(ByteSequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        byte[] otherValues = other.values;
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            values[i] = otherValues[j];
-        }
-
-        length = extendedLength;
-    }
-
-    private void extendWithIntStorage(IntSequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        int[] otherValues = other.getInternalIntArray();
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            int otherValue = otherValues[j];
-            if (otherValue < 0 || otherValue >= 256) {
-                throw SequenceStoreException.INSTANCE;
-            }
-            values[i] = (byte) otherValue;
-        }
-
-        length = extendedLength;
-    }
-
-    private void extendWithObjectStorage(ObjectSequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        Object[] otherValues = other.getInternalArray();
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            Object otherValue = otherValues[j];
-            long value = 0;
-            if (otherValue instanceof Integer) {
-                value = (int) otherValue;
-            } else if (otherValue instanceof Long) {
-                value = (long) otherValue;
-            } else if (otherValue instanceof PInt) {
-                try {
-                    value = ((PInt) otherValue).intValueExact();
-                } catch (ArithmeticException e) {
-                    throw SequenceStoreException.INSTANCE;
-                }
-            }
-            if (value < 0 || value >= 256) {
-                throw SequenceStoreException.INSTANCE;
-            }
-            values[i] = (byte) value;
-        }
-
-        length = extendedLength;
     }
 
     @Override
@@ -503,14 +316,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
                 values[tail] = temp;
             }
         }
-    }
-
-    @Override
-    public void sort() {
-        byte[] copy = Arrays.copyOf(values, length);
-        Arrays.sort(copy);
-        values = copy;
-        minimizeCapacity();
     }
 
     @Override
@@ -537,5 +342,20 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     @Override
     public Object getInternalArrayObject() {
         return values;
+    }
+
+    @Override
+    public Object getCopyOfInternalArrayObject() {
+        return Arrays.copyOf(values, length);
+    }
+
+    @Override
+    public void setInternalArrayObject(Object arrayObject) {
+        this.values = (byte[]) arrayObject;
+    }
+
+    @Override
+    public ListStorageType getElementType() {
+        return ListStorageType.Byte;
     }
 }

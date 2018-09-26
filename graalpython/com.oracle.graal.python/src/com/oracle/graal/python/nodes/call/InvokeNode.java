@@ -150,10 +150,12 @@ final class GenericInvokeNode extends AbstractInvokeNode {
 abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     @Child private DirectCallNode callNode;
     @Child private ArityCheckNode arityCheck = ArityCheckNode.create();
+    private final Arity arity;
     protected final boolean isBuiltin;
 
-    protected CallTargetInvokeNode(CallTarget callTarget, boolean isBuiltin, boolean isGenerator) {
+    protected CallTargetInvokeNode(CallTarget callTarget, Arity arity, boolean isBuiltin, boolean isGenerator) {
         this.callNode = Truffle.getRuntime().createDirectCallNode(callTarget);
+        this.arity = arity;
         if (isBuiltin) {
             callNode.cloneCallTarget();
         }
@@ -167,13 +169,13 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     public static CallTargetInvokeNode create(PythonCallable callee) {
         RootCallTarget callTarget = getCallTarget(callee);
         boolean builtin = isBuiltin(callee);
-        return CallTargetInvokeNodeGen.create(callTarget, builtin, callee.isGeneratorFunction());
+        return CallTargetInvokeNodeGen.create(callTarget, callee.getArity(), builtin, callee.isGeneratorFunction());
     }
 
-    public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Arity arity, Object[] arguments, PKeyword[] keywords);
+    public abstract Object execute(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments, PKeyword[] keywords);
 
     @Specialization(guards = {"keywords.length == 0"})
-    protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Arity arity, Object[] arguments, PKeyword[] keywords) {
+    protected Object doNoKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments, PKeyword[] keywords) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
         PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));
@@ -182,7 +184,7 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     }
 
     @Specialization(guards = {"!isBuiltin"})
-    protected Object doWithKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Arity arity, Object[] arguments, PKeyword[] keywords,
+    protected Object doWithKeywords(VirtualFrame frame, PythonObject globals, PCell[] closure, Object[] arguments, PKeyword[] keywords,
                     @Cached("create()") ApplyKeywordsNode applyKeywords) {
         Object[] combined = applyKeywords.execute(arity, arguments, keywords);
         PArguments.setGlobals(combined, globals);
@@ -193,7 +195,7 @@ abstract class CallTargetInvokeNode extends AbstractInvokeNode {
     }
 
     @Specialization(guards = "isBuiltin")
-    protected Object doBuiltinWithKeywords(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Arity arity, Object[] arguments,
+    protected Object doBuiltinWithKeywords(VirtualFrame frame, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
                     PKeyword[] keywords) {
         PArguments.setKeywordArguments(arguments, keywords);
         PArguments.setCallerFrame(arguments, getCallerFrame(frame, callNode.getCallTarget()));

@@ -43,12 +43,13 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.NodeChildren;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
@@ -60,10 +61,10 @@ import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 
-@NodeChildren({@NodeChild(value = "klass", type = PNode.class), @NodeChild(value = "key", type = PNode.class)})
-public abstract class ReadAttributeFromObjectNode extends PNode {
+@ImportStatic({PGuards.class, PythonOptions.class})
+public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     public static ReadAttributeFromObjectNode create() {
-        return ReadAttributeFromObjectNodeGen.create(null, null);
+        return ReadAttributeFromObjectNodeGen.create();
     }
 
     public abstract Object execute(Object object, Object key);

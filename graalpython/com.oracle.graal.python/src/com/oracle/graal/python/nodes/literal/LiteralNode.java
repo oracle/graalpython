@@ -25,8 +25,8 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 
-public abstract class LiteralNode extends PNode {
+public abstract class LiteralNode extends ExpressionNode {
 
 }

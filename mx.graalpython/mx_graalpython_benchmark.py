@@ -30,8 +30,9 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from os.path import join
 
 import mx
+import mx_subst
 from mx_benchmark import StdOutRule, VmRegistry, java_vm_registry, Vm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
-from mx_graalpython_bench_param import benchmarks_list, harnessPath
+from mx_graalpython_bench_param import BENCHMARKS, HARNESS_PATH
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -155,10 +156,14 @@ class GraalPythonVm(GuestVm):
             # '-Dgraal.TruffleCompilationExceptionsAreFatal=true'
         ]
 
-        vm_args = [
+        dists = ["GRAALPYTHON", "GRAALPYTHON-LAUNCHER"]
+        if mx.suite("sulong", fatalIfMissing=False):
+            dists.append('SULONG')
+            if mx.suite("sulong-managed", fatalIfMissing=False):
+                dists.append('SULONG_MANAGED')
+
+        vm_args = mx.get_runtime_jvm_args(dists) + [
             "-Dpython.home=%s" % join(_graalpython_suite.dir, "graalpython"),
-            '-cp',
-            mx.classpath(["com.oracle.graal.python", "com.oracle.graal.python.shell"]),
             "com.oracle.graal.python.shell.GraalPythonMain"
         ]
 
@@ -185,13 +190,14 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         if not self._harness_path:
             mx.abort("python harness path not specified!")
 
-        self._bench_path, self._benchmarks = benchmarks_list[self._name]
+        self._bench_path, self._benchmarks = BENCHMARKS[self._name]
         self._bench_path = join(_graalpython_suite.dir, self._bench_path)
 
     def rules(self, output, benchmarks, bm_suite_args):
         bench_name = os.path.basename(os.path.splitext(benchmarks[0])[0])
         arg = " ".join(self._benchmarks[bench_name])
         return [
+            # warmup curves
             StdOutRule(
                 r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
                 {
@@ -206,14 +212,29 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
                     "config.run-flags": "".join(arg),
                 }
             ),
+            # no warmups
+            StdOutRule(
+                r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)",  # pylint: disable=line-too-long
+                {
+                    "benchmark": '{}.{}'.format(self._name, bench_name),
+                    "metric.name": "time",
+                    "metric.iteration": 0,
+                    "metric.type": "numeric",
+                    "metric.value": ("<time>", float),
+                    "metric.unit": "s",
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "config.run-flags": "".join(arg),
+                }
+            ),
         ]
 
-    def run(self, benchmarks, bmSuiteArgs):
-        results = super(PythonBenchmarkSuite, self).run(benchmarks, bmSuiteArgs)
+    def run(self, benchmarks, bm_suite_args):
+        results = super(PythonBenchmarkSuite, self).run(benchmarks, bm_suite_args)
         self.addAverageAcrossLatestResults(results)
         return results
 
-    def postprocessRunArgs(self, run_args):
+    def postprocess_run_args(self, run_args):
         parser = argparse.ArgumentParser(add_help=False)
         parser.add_argument("-i", default=None)
         args, remaining = parser.parse_known_args(run_args)
@@ -236,7 +257,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
         cmd_args = [self._harness_path, join(self._bench_path, "{}.py".format(benchmark))]
         if len(run_args) == 0:
             run_args = self._benchmarks[benchmark]
-        run_args = self.postprocessRunArgs(run_args)
+        run_args = self.postprocess_run_args(run_args)
         cmd_args.extend(run_args)
         return cmd_args
 
@@ -249,7 +270,8 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     def successPatterns(self):
         return [
-            re.compile(r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE)  # pylint: disable=line-too-long
+            re.compile(r"^### iteration=(?P<iteration>[0-9]+), name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
+            re.compile(r"^@@@ name=(?P<benchmark>[a-zA-Z0-9.\-_]+), duration=(?P<time>[0-9]+(\.[0-9]+)?$)", re.MULTILINE),  # pylint: disable=line-too-long
         ]
 
     def failurePatterns(self):
@@ -271,7 +293,7 @@ class PythonBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
 
     @classmethod
     def get_benchmark_suites(cls):
-        return [cls(suite_name, harnessPath) for suite_name in benchmarks_list]
+        return [cls(suite_name, HARNESS_PATH) for suite_name in BENCHMARKS]
 
 
 # ----------------------------------------------------------------------------------------------------------------------
