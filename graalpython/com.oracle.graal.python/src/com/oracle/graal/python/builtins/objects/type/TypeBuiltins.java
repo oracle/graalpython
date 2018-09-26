@@ -92,7 +92,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PythonClass)
 public class TypeBuiltins extends PythonBuiltins {
@@ -232,9 +231,8 @@ public class TypeBuiltins extends PythonBuiltins {
         private final BranchProfile errorProfile = BranchProfile.create();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        private final ValueProfile typeProfile = ValueProfile.createIdentityProfile();
+        @Child private GetClassNode getObjectClassNode = GetClassNode.create();
         @Child private GetClassNode getDataClassNode;
-        @Child private GetClassNode getObjectClassNode;
         @Child private LookupInheritedAttributeNode valueGetLookup;
         @Child private LookupAttributeInMRONode lookupGetNode;
         @Child private LookupAttributeInMRONode lookupSetNode;
@@ -245,13 +243,12 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         protected Object doIt(PythonClass object, Object key) {
-            PythonClass type = typeProfile.profile(getObjectClass(object));
+            PythonClass type = getObjectClassNode.execute(object);
             Object descr = lookup.execute(type, key);
-            PythonClass dataDescClass = null;
             Object get = null;
             if (descr != PNone.NO_VALUE) {
                 hasDescProfile.enter();
-                dataDescClass = getDataClass(descr);
+                PythonClass dataDescClass = getDataClass(descr);
                 get = lookupGet(dataDescClass);
                 if (get instanceof PythonCallable) {
                     Object delete = PNone.NO_VALUE;
@@ -347,15 +344,6 @@ public class TypeBuiltins extends PythonBuiltins {
             }
             return getDataClassNode.execute(descr);
         }
-
-        private PythonClass getObjectClass(Object descr) {
-            if (getObjectClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectClassNode = insert(GetClassNode.create());
-            }
-            return typeProfile.profile(getObjectClassNode.execute(descr));
-        }
-
     }
 
     @Builtin(name = __PREPARE__, takesVarArgs = true, takesVarKeywordArgs = true)
