@@ -59,6 +59,7 @@ public enum PythonBuiltinClassType {
     PGenerator(com.oracle.graal.python.builtins.objects.generator.PGenerator.class, "generator"),
     PGeneratorFunction(com.oracle.graal.python.builtins.objects.function.PGeneratorFunction.class, "function"),
     PInt(com.oracle.graal.python.builtins.objects.ints.PInt.class, "int"),
+    PythonNativeVoidPtr(com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr.class, "int"),
     PIntegerSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator.class, "iterator"),
     PList(com.oracle.graal.python.builtins.objects.list.PList.class, "list"),
     PLongSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator.class, "iterator"),

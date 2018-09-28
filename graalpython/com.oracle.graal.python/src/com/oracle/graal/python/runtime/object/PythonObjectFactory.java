@@ -37,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.FastDictStorage;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage.PythonObjectDictStorage;
@@ -186,6 +187,10 @@ public final class PythonObjectFactory extends Node {
 
     public PythonNativeObject createNativeObjectWrapper(Object obj) {
         return trace(new PythonNativeObject(obj));
+    }
+
+    public PythonNativeVoidPtr createNativeVoidPtr(TruffleObject obj) {
+        return trace(new PythonNativeVoidPtr(obj));
     }
 
     public SuperObject createSuperObject(PythonClass self) {

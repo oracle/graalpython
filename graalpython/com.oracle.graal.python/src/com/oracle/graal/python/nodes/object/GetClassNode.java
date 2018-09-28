@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.GetNativeClassNode;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -203,6 +204,17 @@ public abstract class GetClassNode extends PNodeWithContext {
     protected PythonClass getIt(PythonNativeObject object,
                     @Cached("create()") GetNativeClassNode getNativeClassNode) {
         return getNativeClassNode.execute(object);
+    }
+
+    @Specialization(assumptions = "singleContextAssumption()")
+    protected PythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object,
+                    @Cached("getIt(object)") PythonClass klass) {
+        return klass;
+    }
+
+    @Specialization
+    protected PythonClass getIt(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
+        return getCore().lookupType(PythonBuiltinClassType.PInt);
     }
 
     @Specialization

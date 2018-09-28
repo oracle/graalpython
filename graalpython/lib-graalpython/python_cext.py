@@ -314,14 +314,6 @@ def PyList_Size(listObj):
 
 ##################### LONG
 
-@may_raise
-def PyLong_FromLongLong(n, signed):
-    if signed:
-        return int(n)
-    else:
-        return int(n & 0xffffffffffffffff)
-
-
 @may_raise(-1)
 def PyLong_AsPrimitive(n, signed, size, descr):
     if isinstance(n, int):
@@ -337,6 +329,11 @@ def _PyLong_Sign(n):
         return -1
     else:
         return 1
+
+
+@may_raise
+def PyLong_FromDouble(d):
+    return int(d)
 
 
 @may_raise
