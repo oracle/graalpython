@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1536,6 +1537,60 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             return spaces == 0 || self.length() > spaces;
 
+        }
+    }
+
+    @Builtin(name = "zfill", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class ZFillNode extends PythonBinaryBuiltinNode {
+
+        public abstract String executeObject(String self, Object x);
+
+        @Specialization
+        public String doString(String self, long width) {
+            return zfill(self, (int) width);
+        }
+
+        @Specialization
+        public String doString(String self, PInt width) {
+            return zfill(self, width.intValue());
+        }
+
+        @Specialization
+        public String doString(String self, Object width,
+                        @Cached("create()") CastToIntegerFromIndexNode widthCast,
+                        @Cached("create()") ZFillNode recursiveNode) {
+            return recursiveNode.executeObject(self, widthCast.execute(width));
+        }
+
+        private String zfill(String self, int width) {
+            int len = self.length();
+            if (len >= width) {
+                return self;
+            }
+            char[] chars = new char[width];
+            int nzeros = width - len;
+            int i = 0;
+            int sStart = 0;
+            if (len > 0) {
+                char start = self.charAt(0);
+                if (start == '+' || start == '-') {
+                    chars[0] = start;
+                    i += 1;
+                    nzeros++;
+                    sStart = 1;
+                }
+            }
+            for (; i < nzeros; i++) {
+                chars[i] = '0';
+            }
+            self.getChars(sStart, len, chars, i);
+            return new String(chars);
+        }
+
+        public static ZFillNode create() {
+            return StringBuiltinsFactory.ZFillNodeFactory.create();
         }
     }
 

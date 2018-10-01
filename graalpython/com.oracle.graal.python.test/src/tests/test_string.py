@@ -471,7 +471,8 @@ class UnicodeTest(unittest.TestCase):
             else:
                 obj = subtype(obj)
                 realresult = getattr(obj, methodname)(*args)
-                self.assertIsNot(obj, realresult)
+                self.assertTrue(obj is not realresult)
+                #self.assertIsNot(obj, realresult)
 
     # check that obj.method(*args) raises exc
     def checkraises(self, exc, obj, methodname, *args):
@@ -684,6 +685,32 @@ class UnicodeTest(unittest.TestCase):
         self.assertTrue('\U0001F46F'.isprintable())
         # self.assertFalse('\U000E0020'.isprintable())
 
+    def test_zfill(self):
+        self.checkequal('123', '123', 'zfill', 2)
+        self.checkequal('123', '123', 'zfill', 3)
+        self.checkequal('0123', '123', 'zfill', 4)
+        self.checkequal('+123', '+123', 'zfill', 3)
+        self.checkequal('+123', '+123', 'zfill', 4)
+        self.checkequal('+0123', '+123', 'zfill', 5)
+        self.checkequal('-123', '-123', 'zfill', 3)
+        self.checkequal('-123', '-123', 'zfill', 4)
+        self.checkequal('-0123', '-123', 'zfill', 5)
+        self.checkequal('000', '', 'zfill', 3)
+        self.checkequal('34', '34', 'zfill', 1)
+        self.checkequal('0034', '34', 'zfill', 4)
+
+        self.checkraises(TypeError, '123', 'zfill')
+        
+    def test_zfill_specialization(self):
+        self.checkequal('123', '123', 'zfill', True)
+
+        class MyIndexable(object):
+            def __init__(self, value):
+                self.value = value
+            def __index__(self):
+                return self.value
+
+        self.checkequal('0123', '123', 'zfill', MyIndexable(4))
 
 def test_same_id():
     empty_ids = set([id(str()) for i in range(100)])
