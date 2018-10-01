@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.thread;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class PRLock extends AbstractPythonLock {
@@ -61,7 +61,7 @@ public final class PRLock extends AbstractPythonLock {
 
     private final InternalReentrantLock lock;
 
-    public PRLock(PythonClass cls) {
+    public PRLock(LazyPythonClass cls) {
         super(cls);
         this.lock = new InternalReentrantLock();
     }

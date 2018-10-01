@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 
 public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
@@ -49,7 +49,7 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
     public static boolean DEFAULT_BLOCKING = true;
     public static double DEFAULT_TIMEOUT = -1.0;
 
-    AbstractPythonLock(PythonClass cls) {
+    AbstractPythonLock(LazyPythonClass cls) {
         super(cls);
     }
 

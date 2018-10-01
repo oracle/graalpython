@@ -753,7 +753,7 @@ public final class PythonObjectFactory extends Node {
      */
 
     public PLock createLock() {
-        return createLock(PythonBuiltinClassType.PLock);
+        return trace(new PLock(PythonBuiltinClassType.PLock));
     }
 
     public PLock createLock(PythonClass cls) {
@@ -761,7 +761,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PRLock createRLock() {
-        return trace(new PRLock(lookupClass(PythonBuiltinClassType.PRLock)));
+        return trace(new PRLock(PythonBuiltinClassType.PRLock));
     }
 
     public PRLock createRLock(PythonClass cls) {

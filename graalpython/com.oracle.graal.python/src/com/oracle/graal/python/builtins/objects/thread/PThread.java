@@ -41,18 +41,18 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class PThread extends PythonBuiltinObject {
     public final static String GRAALPYTHON_THREADS = "GRAALPYTHON_THREADS";
     private final Thread thread;
 
-    public PThread(PythonClass cls, ThreadGroup group, Runnable runnable) {
+    public PThread(LazyPythonClass cls, ThreadGroup group, Runnable runnable) {
         this(cls, group, 0, runnable);
     }
 
-    public PThread(PythonClass cls, ThreadGroup group, long stackSize, Runnable runnable) {
+    public PThread(LazyPythonClass cls, ThreadGroup group, long stackSize, Runnable runnable) {
         super(cls);
         this.thread = new Thread(group, runnable, "graalpython-thread-" + group.activeCount(), stackSize);
     }

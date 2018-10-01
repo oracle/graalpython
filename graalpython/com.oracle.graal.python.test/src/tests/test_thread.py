@@ -121,16 +121,19 @@ class ThreadRunningTests(BasicThreadTest):
     def test__count(self):
         # Test the _count() function.
         orig = thread._count()
+        _append_lock = thread.allocate_lock()
         mut = thread.allocate_lock()
         mut.acquire()
         started = []
         done = []
 
         def task():
-            started.append(None)
+            with _append_lock:
+                started.append(None)
             mut.acquire()
             mut.release()
-            done.append(None)
+            with _append_lock:
+                done.append(None)
 
         thread.start_new_thread(task, ())
         while not started:
@@ -249,14 +252,19 @@ class Bunch(object):
         self.started = []
         self.finished = []
         self._can_exit = not wait_before_exit
+        self._append_lock = thread.allocate_lock()
 
         def task():
             tid = threading.get_ident()
-            self.started.append(tid)
+            # TODO: remove the append lock once append like ops are thread safe
+            with self._append_lock:
+                self.started.append(tid)
             try:
                 f()
             finally:
-                self.finished.append(tid)
+                # TODO: remove the append lock once append like ops are thread safe
+                with self._append_lock:
+                    self.finished.append(tid)
                 while not self._can_exit:
                     _wait()
         try:
