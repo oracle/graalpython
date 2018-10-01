@@ -315,7 +315,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CreateFunctionNode extends PythonBuiltinNode {
@@ -1419,6 +1419,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         }
     }
 
+<<<<<<< e16d06d5559464d23b13c5189155a744d978bd8e
     public abstract static class PExternalFunctionWrapper extends PythonBuiltinObject {
 
         private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
@@ -1436,10 +1437,22 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
         protected ConvertArgsToSulongNode createConvertArgsToSulongNode() {
             return convertArgsNodeSupplier.get();
+=======
+    @Builtin(name = "METH_KEYWORDS", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class MethKeywordsNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        Object call(PBuiltinFunction function) {
+            CompilerDirectives.transferToInterpreter();
+            return factory().createBuiltinFunction(function.getName(), function.getEnclosingType(), function.getArity(),
+                            Truffle.getRuntime().createCallTarget(new MethKeywordsRoot(getRootNode().getLanguage(PythonLanguage.class), factory(), function.getCallTarget())));
+>>>>>>> Completely remove native wrapper functions.
         }
 
     }
 
+<<<<<<< e16d06d5559464d23b13c5189155a744d978bd8e
     @Builtin(name = "METH_DIRECT", fixedNumOfPositionalArgs = 0)
     @GenerateNodeFactory
     public abstract static class MethDirectNode extends PythonBuiltinNode {
