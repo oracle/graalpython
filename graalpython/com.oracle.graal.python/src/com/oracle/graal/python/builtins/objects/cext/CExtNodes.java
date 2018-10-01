@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -53,12 +55,16 @@ import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsCharPoin
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsDoubleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.BinaryFirstToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.CextUpcallNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.DirectUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.FastCallArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.GetNativeClassNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.IsPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.MaterializeDelegateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ObjectUpcallNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstSecondToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.TernaryFirstThirdToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodesFactory.ToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.DynamicObjectNativeWrapper;
@@ -907,17 +913,24 @@ public abstract class CExtNodes {
         }
     }
 
-    public abstract static class AllToSulongNode extends PNodeWithContext {
+    public abstract static class ConvertArgsToSulongNode extends PNodeWithContext {
+
         public abstract void executeInto(Object[] args, int argsOffset, Object[] dest, int destOffset);
 
-        protected boolean isArgsOffsetPlus(int len, int off, int plus) {
+        protected static boolean isArgsOffsetPlus(int len, int off, int plus) {
             return len == off + plus;
         }
 
-        protected boolean isLeArgsOffsetPlus(int len, int off, int plus) {
+        protected static boolean isLeArgsOffsetPlus(int len, int off, int plus) {
             return len < plus + off;
         }
 
+    }
+
+    /**
+     * Converts all arguments to native values.
+     */
+    public abstract static class AllToSulongNode extends ConvertArgsToSulongNode {
         @SuppressWarnings("unused")
         @Specialization(guards = {"args.length == argsOffset"})
         void cached0(Object[] args, int argsOffset, Object[] dest, int destOffset) {
@@ -1020,6 +1033,108 @@ public abstract class CExtNodes {
 
         public static DirectUpcallNode create() {
             return DirectUpcallNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st (self) and the 4th (kwargs) argument to native values as required for
+     * {@code METH_FASTCALL}.
+     */
+    public abstract static class FastCallArgsToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 4)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1,
+                        @Cached("create()") ToSulongNode toSulongNode4) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+            dest[destOffset + 2] = args[argsOffset + 2];
+            dest[destOffset + 3] = toSulongNode4.execute(args[argsOffset + 3]);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        void doError(Object[] args, int argsOffset, Object[] dest, int destOffset) {
+            throw raise(TypeError, "invalid arguments for fastcall method (expected 4 but got %s)", args.length - argsOffset);
+        }
+
+        public static FastCallArgsToSulongNode create() {
+            return FastCallArgsToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st argument (self/class) as required for {@code allocfunc},
+     * {@code getattrfunc}, {@code ssizeargfunc}.
+     */
+    public abstract static class BinaryFirstToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 2)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        void doError(Object[] args, int argsOffset, Object[] dest, int destOffset) {
+            throw raise(TypeError, "invalid arguments for allocfunc (expected 2 but got %s)", args.length - argsOffset);
+        }
+
+        public static BinaryFirstToSulongNode create() {
+            return BinaryFirstToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st (self/class) and the 3rd argument as required for {@code setattrfunc},
+     * {@code ssizeobjargproc}.
+     */
+    public abstract static class TernaryFirstThirdToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1,
+                        @Cached("create()") ToSulongNode toSulongNode3) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+            dest[destOffset + 2] = toSulongNode3.execute(args[argsOffset + 2]);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        void doError(Object[] args, int argsOffset, Object[] dest, int destOffset) {
+            throw raise(TypeError, "invalid arguments for method (expected 3 but got %s)", args.length - argsOffset);
+        }
+
+        public static TernaryFirstThirdToSulongNode create() {
+            return TernaryFirstThirdToSulongNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts the 1st (self/class) and the 2rd argument as required for {@code richcmpfunc}.
+     */
+    public abstract static class TernaryFirstSecondToSulongNode extends ConvertArgsToSulongNode {
+
+        @Specialization(guards = {"isArgsOffsetPlus(args.length, argsOffset, 3)"})
+        void doFastcallCached(Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached("create()") ToSulongNode toSulongNode1,
+                        @Cached("create()") ToSulongNode toSulongNode2) {
+            dest[destOffset + 0] = toSulongNode1.execute(args[argsOffset + 0]);
+            dest[destOffset + 1] = toSulongNode2.execute(args[argsOffset + 1]);
+            dest[destOffset + 2] = args[argsOffset + 2];
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        void doError(Object[] args, int argsOffset, Object[] dest, int destOffset) {
+            throw raise(TypeError, "invalid arguments for method (expected 3 but got %s)", args.length - argsOffset);
+        }
+
+        public static TernaryFirstSecondToSulongNode create() {
+            return TernaryFirstSecondToSulongNodeGen.create();
         }
     }
 

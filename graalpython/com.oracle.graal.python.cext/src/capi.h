@@ -193,6 +193,7 @@ inline void* native_type_to_java(PyTypeObject* type) {
 	return (void*)type;
 }
 
+extern void* native_to_java_exported(PyObject* obj);
 extern void* to_java(PyObject* obj);
 extern void* to_java_type(PyTypeObject* cls);
 extern PyObject* to_sulong(void *o);
@@ -227,20 +228,28 @@ void* wrap_unsupported(void *fun, ...);
           truffle_read(PY_TRUFFLE_CEXT, "METH_O") :              \
           truffle_read(PY_TRUFFLE_CEXT, "METH_UNSUPPORTED")))))))
 
-#define get_method_flags_cwrapper(flags)                                \
-    (void*)((((flags) < 0) ?                                            \
-     wrap_direct :                                                      \
-     (((flags) & METH_FASTCALL) ?                                       \
-      wrap_fastcall :                                                   \
-      (((flags) & METH_KEYWORDS) ?                                      \
-       wrap_keywords :                                                   \
-       (((flags) & METH_VARARGS) ?                                       \
-        wrap_varargs :                                                   \
-        (((flags) & METH_NOARGS) ?                                           \
-         wrap_noargs :                                                  \
-         (((flags) & METH_O) ?                                   \
-          wrap_direct :                                               \
-          wrap_unsupported)))))))
+// Enum of functions having non-Python objects in their signatures
+// NOTE: Keep in sync with 'TruffleCextBuiltins.CreateFunctionNode' !
+typedef enum e_wrapper {
+	DEFAULT=0, FASTCALL, ALLOC_FUNC, GETATTR_FUNC, SETATTR_FUNC, RICHCMP_FUNC, SSIZE_OBJ_ARG_PROC, SSIZE_ARG_FUNC
+} ConversionSignature;
+
+#define convert_method_flags(flags) (((flags) & METH_FASTCALL) ? FASTCALL : DEFAULT)
+
+#define METH_ALLOC         (truffle_read(PY_TRUFFLE_CEXT, "METH_ALLOC"))
+#define METH_SSIZE_ARG     METH_ALLOC
+#define METH_GETATTR       (truffle_read(PY_TRUFFLE_CEXT, "METH_GETATTR"))
+#define METH_SETATTR       (truffle_read(PY_TRUFFLE_CEXT, "METH_SETATTR"))
+#define METH_RICHCMP       (truffle_read(PY_TRUFFLE_CEXT, "METH_RICHCMP"))
+#define METH_SSIZE_OBJ_ARG (truffle_read(PY_TRUFFLE_CEXT, "METH_SSIZE_OBJ_ARG"))
+#define METH_REVERSE       (truffle_read(PY_TRUFFLE_CEXT, "METH_REVERSE"))
+#define METH_POW           (truffle_read(PY_TRUFFLE_CEXT, "METH_POW"))
+#define METH_LT            (truffle_read(PY_TRUFFLE_CEXT, "METH_LT"))
+#define METH_LE            (truffle_read(PY_TRUFFLE_CEXT, "METH_LE"))
+#define METH_EQ            (truffle_read(PY_TRUFFLE_CEXT, "METH_EQ"))
+#define METH_NE            (truffle_read(PY_TRUFFLE_CEXT, "METH_NE"))
+#define METH_GT            (truffle_read(PY_TRUFFLE_CEXT, "METH_GT"))
+#define METH_GE            (truffle_read(PY_TRUFFLE_CEXT, "METH_GE"))
 
 #define PY_TRUFFLE_TYPE(__TYPE_NAME__, __SUPER_TYPE__, __FLAGS__, __SIZE__) {\
     PyVarObject_HEAD_INIT((__SUPER_TYPE__), 0)\
