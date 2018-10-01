@@ -553,6 +553,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // compile(source, filename, mode, flags=0, dont_inherit=False, optimize=-1)
     @Builtin(name = COMPILE, fixedNumOfPositionalArgs = 3, keywordArguments = {"flags", "dont_inherit", "optimize"})
     @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class CompileNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
