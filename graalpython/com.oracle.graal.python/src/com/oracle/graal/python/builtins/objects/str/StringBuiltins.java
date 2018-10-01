@@ -1564,7 +1564,7 @@ public final class StringBuiltins extends PythonBuiltins {
             return recursiveNode.executeObject(self, widthCast.execute(width));
         }
 
-        private String zfill(String self, int width) {
+        private static String zfill(String self, int width) {
             int len = self.length();
             if (len >= width) {
                 return self;
