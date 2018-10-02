@@ -468,9 +468,9 @@ public abstract class ExternalFunctionNodes {
             Object[] args = readVarargsNode.executeObjectArray(frame);
             Object[] arguments = PArguments.create(3);
             PArguments.setArgument(arguments, 0, self);
-            PArguments.setArgument(arguments, 1, self);
+            PArguments.setArgument(arguments, 1, args[0]);
             if (profile.profile(args.length > 1)) {
-                PArguments.setArgument(arguments, 2, self);
+                PArguments.setArgument(arguments, 2, args[1]);
             } else {
                 PArguments.setArgument(arguments, 2, PNone.NONE);
             }
