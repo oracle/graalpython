@@ -696,7 +696,7 @@ def AddFunction(primary, name, cfunc, wrapper, doc, conversion_signature, isclas
     owner = to_java(primary)
     if isinstance(owner, moduletype):
         # module case, we create the bound function-or-method
-        func = PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, doc)
+        func = PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, doc, conversion_signature)
         object.__setattr__(owner, name, func)
     else:
         func = wrapper(CreateFunction(name, cfunc, conversion_signature, owner))
@@ -715,8 +715,8 @@ def AddFunction(primary, name, cfunc, wrapper, doc, conversion_signature, isclas
             object.__setattr__(owner, name, func)
 
 
-def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
-    func = wrapper(CreateFunction(name, cfunc, 0))
+def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc, conversion_signature):
+    func = wrapper(CreateFunction(name, cfunc, conversion_signature))
     PyTruffle_SetAttr(func, "__name__", name)
     PyTruffle_SetAttr(func, "__doc__", doc)
     method = PyTruffle_BuiltinMethod(self, func)
