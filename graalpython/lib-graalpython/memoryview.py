@@ -92,8 +92,7 @@ def make_delegate0(p):
     delegate.__name__ = p
     return delegate
 
-for p in ["__repr__", "__len__", "release", "tobytes", "hex", "tolist",
-          "__enter__", "__exit__"]:
+for p in ["__repr__", "__len__", "release", "tobytes", "hex", "tolist", "__enter__"]:
     setattr(memoryview, p, make_delegate0(p))
 
 
@@ -102,3 +101,4 @@ memoryview.__init__ = __memoryview_init
 memoryview.__getitem__ = __memoryview_getitem
 memoryview.__setitem__ = lambda self, key, value: self.__c_memoryview.__setitem__(key, value)
 memoryview.cast = lambda self, *args: memoryview(self.__c_memoryview.cast(*args))
+memoryview.__exit__ = lambda self, exc_type, exc_value, traceback: self.__c_memoryview.__exit__(exc_type, exc_value, traceback)
