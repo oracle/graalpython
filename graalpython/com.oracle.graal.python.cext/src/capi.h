@@ -234,7 +234,7 @@ typedef enum e_wrapper {
 	DEFAULT=0, FASTCALL, ALLOC_FUNC, GETATTR_FUNC, SETATTR_FUNC, RICHCMP_FUNC, SSIZE_OBJ_ARG_PROC, SSIZE_ARG_FUNC
 } ConversionSignature;
 
-#define convert_method_flags(flags) (((flags) & METH_FASTCALL) ? FASTCALL : DEFAULT)
+#define convert_method_flags(flags) (((flags) > 0 && ((flags) & METH_FASTCALL)) ? FASTCALL : DEFAULT)
 
 #define METH_ALLOC         (truffle_read(PY_TRUFFLE_CEXT, "METH_ALLOC"))
 #define METH_SSIZE_ARG     METH_ALLOC
