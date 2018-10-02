@@ -40,7 +40,6 @@ import java.util.WeakHashMap;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.NativeWrappers.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.function.PythonCallable;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -258,30 +257,6 @@ public class PythonClass extends PythonObject {
         return mro.toArray(new PythonClass[mro.size()]);
     }
 
-    @Override
-    public PythonObject getValidStorageFullLookup(String attributeId) {
-        PythonObject store = null;
-
-        if (isOwnAttribute(attributeId)) {
-            store = this;
-        } else if (getBaseClasses().length > 0) {
-            store = getBaseClasses()[0].getValidStorageFullLookup(attributeId);
-        }
-
-        return store;
-    }
-
-    public PythonCallable lookUpMethod(String methodName) {
-        Object attr = getAttribute(methodName);
-        assert attr != null;
-
-        if (attr instanceof PythonCallable) {
-            return (PythonCallable) attr;
-        }
-
-        return null;
-    }
-
     public void addMethod(PFunction method) {
         setAttribute(method.getName(), method);
     }
@@ -293,24 +268,6 @@ public class PythonClass extends PythonObject {
             invalidateAttributeInMROFinalAssumptions((String) key);
         }
         super.setAttribute(key, value);
-    }
-
-    @Override
-    @TruffleBoundary
-    public void deleteAttribute(String key) {
-        invalidateAttributeInMROFinalAssumptions(key);
-        super.deleteAttribute(key);
-    }
-
-    @Override
-    @TruffleBoundary
-    public Object getAttribute(String name) {
-        for (PythonClass o : methodResolutionOrder) {
-            if (o.getStorage().containsKey(name)) {
-                return o.getStorage().get(name);
-            }
-        }
-        return PNone.NO_VALUE;
     }
 
     /**

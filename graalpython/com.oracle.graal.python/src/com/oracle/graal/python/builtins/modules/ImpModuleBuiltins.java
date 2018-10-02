@@ -86,7 +86,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ForeignAccess;
 import com.oracle.truffle.api.interop.Message;
@@ -332,7 +331,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class CreateBuiltin extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public Object run(VirtualFrame frame, PythonObject moduleSpec) {
+        @TruffleBoundary
+        public Object run(PythonObject moduleSpec) {
             Object origin = moduleSpec.getAttribute("origin");
             Object name = moduleSpec.getAttribute("name");
             if ("built-in".equals(origin)) {

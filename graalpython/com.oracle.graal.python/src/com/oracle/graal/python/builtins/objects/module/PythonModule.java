@@ -53,15 +53,6 @@ public final class PythonModule extends PythonObject {
     }
 
     @Override
-    public PythonObject getValidStorageFullLookup(String attributeId) {
-        if (isOwnAttribute(attributeId)) {
-            return this;
-        } else {
-            return null;
-        }
-    }
-
-    @Override
     public String toString() {
         return "<module '" + this.getAttribute(__NAME__) + "'>";
     }

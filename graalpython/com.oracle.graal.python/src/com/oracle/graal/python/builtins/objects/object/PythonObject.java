@@ -25,14 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -97,43 +94,15 @@ public class PythonObject extends PythonAbstractObject {
         }
     }
 
-    public PythonObject getValidStorageFullLookup(String attributeId) {
-        PythonObject s = null;
-        if (isOwnAttribute(attributeId)) {
-            s = this;
-        } else if (pythonClass != null) {
-            s = pythonClass.getValidStorageFullLookup(attributeId);
-        }
-        return s;
-    }
-
     @TruffleBoundary
-    public Object getAttribute(String name) {
-        // Find the storage location
-        Location storageLocation = getOwnValidLocation(name);
-
-        // Continue the look up in PythonType.
-        if (storageLocation == null) {
-            return pythonClass == null ? PNone.NO_VALUE : pythonClass.getAttribute(name);
-        }
-
-        return storageLocation.get(getStorage());
+    public final Object getAttribute(String name) {
+        return getStorage().get(name, PNone.NO_VALUE);
     }
 
     @TruffleBoundary
     public void setAttribute(Object name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
         getStorage().define(name, value);
-    }
-
-    @TruffleBoundary
-    public void deleteAttribute(String name) {
-        // Find the storage location
-        if (!getStorage().containsKey(name)) {
-            throw PythonLanguage.getCore().raise(AttributeError, "%s object has no attribute %s", this, name);
-        } else {
-            getStorage().delete(name);
-        }
     }
 
     @TruffleBoundary
@@ -194,7 +163,7 @@ public class PythonObject extends PythonAbstractObject {
      */
     @Override
     public String toString() {
-        return "<" + pythonClass.getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";
+        return "<" + getPythonClass().getName() + " object at 0x" + Integer.toHexString(hashCode()) + ">";
     }
 
     /**

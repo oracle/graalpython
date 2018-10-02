@@ -185,4 +185,16 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
         return PNone.NO_VALUE;
     }
+
+    public static Object lookupSlow(PythonClass klass, String key) {
+        PythonClass[] mro = klass.getMethodResolutionOrder();
+        for (int i = 0; i < mro.length; i++) {
+            PythonClass kls = mro[i];
+            Object value = kls.getAttribute(key);
+            if (value != PNone.NO_VALUE) {
+                return value;
+            }
+        }
+        return PNone.NO_VALUE;
+    }
 }
