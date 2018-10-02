@@ -192,8 +192,15 @@ public class PythonTests {
     public static void assertPrints(String expected, String code) {
         final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
         final PrintStream printStream = new PrintStream(byteArray);
-        String source = code;
-        PythonTests.runScript(new String[0], source, printStream, System.err);
+        PythonTests.runScript(new String[0], code, printStream, System.err);
+        String result = byteArray.toString().replaceAll("\r\n", "\n");
+        assertEquals(expected.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"), result.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"));
+    }
+
+    public static void assertPrints(String expected, org.graalvm.polyglot.Source code) {
+        final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
+        final PrintStream printStream = new PrintStream(byteArray);
+        PythonTests.runScript(new String[0], code, printStream, System.err);
         String result = byteArray.toString().replaceAll("\r\n", "\n");
         assertEquals(expected.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"), result.replaceAll(" at 0x[0-9a-f]*>", " at 0xabcd>"));
     }
@@ -306,6 +313,15 @@ public class PythonTests {
         try {
             enterContext(args);
             context.eval(org.graalvm.polyglot.Source.create("python", source));
+        } finally {
+            flush(out, err);
+        }
+    }
+
+    public static void runScript(String[] args, org.graalvm.polyglot.Source source, OutputStream out, OutputStream err) {
+        try {
+            enterContext(args);
+            context.eval(source);
         } finally {
             flush(out, err);
         }
