@@ -272,7 +272,7 @@ def raw_unicode_escape_encode(string, errors=None):
 
 @__builtin__
 def raw_unicode_escape_decode(string, errors=None):
-    raise NotImplementedError("raw_unicode_escape_decode")
+    return __truffle_raw_decode(string, errors)
 
 
 @__builtin__
