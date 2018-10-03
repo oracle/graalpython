@@ -238,12 +238,12 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT("__clear__", cls->tp_clear, -1);
     if (cls->tp_richcompare) {
         ADD_SLOT_CONV("__compare__", native_to_java_exported, cls->tp_richcompare, -3, METH_RICHCMP, RICHCMP_FUNC);
-        ADD_SLOT_CONV("__lt__", native_to_java_exported, cls->tp_richcompare, -2, METH_LT, DEFAULT);
-        ADD_SLOT_CONV("__le__", native_to_java_exported, cls->tp_richcompare, -2, METH_LE, DEFAULT);
-        ADD_SLOT_CONV("__eq__", native_to_java_exported, cls->tp_richcompare, -2, METH_EQ, DEFAULT);
-        ADD_SLOT_CONV("__ne__", native_to_java_exported, cls->tp_richcompare, -2, METH_NE, DEFAULT);
-        ADD_SLOT_CONV("__gt__", native_to_java_exported, cls->tp_richcompare, -2, METH_GT, DEFAULT);
-        ADD_SLOT_CONV("__ge__", native_to_java_exported, cls->tp_richcompare, -2, METH_GE, DEFAULT);
+        ADD_SLOT_CONV("__lt__", native_to_java_exported, cls->tp_richcompare, -2, METH_LT, RICHCMP_FUNC);
+        ADD_SLOT_CONV("__le__", native_to_java_exported, cls->tp_richcompare, -2, METH_LE, RICHCMP_FUNC);
+        ADD_SLOT_CONV("__eq__", native_to_java_exported, cls->tp_richcompare, -2, METH_EQ, RICHCMP_FUNC);
+        ADD_SLOT_CONV("__ne__", native_to_java_exported, cls->tp_richcompare, -2, METH_NE, RICHCMP_FUNC);
+        ADD_SLOT_CONV("__gt__", native_to_java_exported, cls->tp_richcompare, -2, METH_GT, RICHCMP_FUNC);
+        ADD_SLOT_CONV("__ge__", native_to_java_exported, cls->tp_richcompare, -2, METH_GE, RICHCMP_FUNC);
     }
     ADD_SLOT("__iter__", cls->tp_iter, -1);
     ADD_SLOT("__next__", cls->tp_iternext, -1);
