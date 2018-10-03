@@ -86,6 +86,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToIndexNode;
 import com.oracle.graal.python.nodes.util.CastToIntegerFromIndexNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.StringFormatter;
@@ -1553,8 +1554,9 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String doString(String self, PInt width) {
-            return zfill(self, width.intValue());
+        public String doString(String self, PInt width, 
+                @Cached("create()") CastToIndexNode toIndexNode) {
+            return zfill(self, toIndexNode.execute(width));
         }
 
         @Specialization
