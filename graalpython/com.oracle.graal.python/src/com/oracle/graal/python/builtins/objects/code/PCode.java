@@ -313,6 +313,10 @@ public class PCode extends PythonBuiltinObject {
         return cellvars;
     }
 
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
+
     public String getFilename() {
         if (filename == null && rootNode != null) {
             filename = extractFileName(rootNode);
