@@ -445,7 +445,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "do_richcompare", fixedNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class RichCompareNode extends PythonBuiltinNode {
+    abstract static class RichCompareNode extends PythonTernaryBuiltinNode {
         private static final String[] opstrings = new String[]{"<", "<=", "==", "!=", ">", ">="};
         private static final String[] opnames = new String[]{
                         SpecialMethodNames.__LT__, SpecialMethodNames.__LE__, SpecialMethodNames.__EQ__, SpecialMethodNames.__NE__, SpecialMethodNames.__GT__, SpecialMethodNames.__GE__};
@@ -490,6 +490,12 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object op5(Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached("create(op)") BinaryComparisonNode compNode) {
             return compNode.executeWith(a, b);
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object doUnknownOp(Object a, Object b, Object op) {
+            throw raise(TypeError, "bad argument type for built-in operation");
         }
     }
 
