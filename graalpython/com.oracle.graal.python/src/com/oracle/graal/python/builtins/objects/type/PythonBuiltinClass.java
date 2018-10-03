@@ -32,21 +32,18 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Arity;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.HiddenKey;
 
 /**
  * A Python built-in class that is immutable.
  */
 public final class PythonBuiltinClass extends PythonClass implements PythonCallable {
-    @CompilationFinal private PythonBuiltinClassType type;
+    private final PythonBuiltinClassType type;
 
-    public PythonBuiltinClass(PythonClass typeClass, String name, PythonClass superClass) {
-        super(typeClass, name, superClass);
-        assert typeClass != null || BuiltinNames.TYPE.equals(name) : "typeClass can only be null for initial builtin type class";
+    public PythonBuiltinClass(PythonBuiltinClassType builtinClass, PythonClass base) {
+        super(PythonBuiltinClassType.PythonClass, builtinClass.getShortName(), builtinClass.getInstanceShape(), base);
+        this.type = builtinClass;
 
     }
 
@@ -75,10 +72,5 @@ public final class PythonBuiltinClass extends PythonClass implements PythonCalla
 
     public PythonBuiltinClassType getType() {
         return type;
-    }
-
-    public void setType(PythonBuiltinClassType type) {
-        CompilerAsserts.neverPartOfCompilation();
-        this.type = type;
     }
 }

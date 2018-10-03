@@ -54,7 +54,7 @@ import com.oracle.truffle.api.utilities.CyclicAssumption;
 /**
  * Mutable class.
  */
-public class PythonClass extends PythonObject {
+public class PythonClass extends PythonObject implements LazyPythonClass {
 
     private static final Layout objectLayout = Layout.newLayout().build();
     private final String className;
@@ -82,11 +82,10 @@ public class PythonClass extends PythonObject {
     }
 
     @TruffleBoundary
-    public PythonClass(PythonClass typeClass, String name, PythonClass... baseClasses) {
+    public PythonClass(LazyPythonClass typeClass, String name, Shape instanceShape, PythonClass... baseClasses) {
         super(typeClass, freshShape() /* do not inherit layout from the TypeClass */);
         this.className = name;
 
-        assert baseClasses.length > 0;
         if (baseClasses.length == 1 && baseClasses[0] == null) {
             this.baseClasses = new PythonClass[]{};
         } else {
@@ -103,7 +102,7 @@ public class PythonClass extends PythonObject {
         setAttribute(__QUALNAME__, className);
         setAttribute(__DOC__, PNone.NONE);
         // provide our instances with a fresh shape tree
-        instanceShape = freshShape();
+        this.instanceShape = instanceShape;
     }
 
     private static String getBaseName(String qname) {
@@ -171,7 +170,7 @@ public class PythonClass extends PythonObject {
         }
     }
 
-    private static Shape freshShape() {
+    public static Shape freshShape() {
         return objectLayout.createShape(new ObjectType());
     }
 

@@ -202,7 +202,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 Object newInstance = dispatchNew.execute(frame, newMethod, newArgs, keywords);
                 PythonClass newInstanceKlass = getClass.execute(newInstance);
                 if (newInstanceKlass == self) {
-                    if (arguments.length == 2 && self == getCore().lookupType(PythonBuiltinClassType.PythonBuiltinClass)) {
+                    if (arguments.length == 2 && self == getCore().lookupType(PythonBuiltinClassType.PythonClass)) {
                         // do not call init if we are creating a new instance of type and we are
                         // passing keywords or more than one argument see:
                         // https://github.com/python/cpython/blob/2102c789035ccacbac4362589402ac68baa2cd29/Objects/typeobject.c#L3538

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,21 +38,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext;
+package com.oracle.graal.python.builtins.objects.type;
 
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.truffle.api.object.Shape;
 
-/**
- * A simple wrapper around types objects created through the Python C API that can be cast to
- * PyTypeObject*. This wrapper exists because we eagerly create Python classes in PyTypeReady, and
- * types are assumed to be mutated afterwards, so accessing the struct in native mode would work,
- * but our copy should just never become stale.
- */
-public class PythonNativeClass extends PythonClass {
-    public final Object object;
+public interface LazyPythonClass {
 
-    public PythonNativeClass(Object obj, PythonClass type, String name, PythonClass... bases) {
-        super(type, name, type.getInstanceShape(), bases);
-        object = obj;
-    }
+    Shape getInstanceShape();
 }

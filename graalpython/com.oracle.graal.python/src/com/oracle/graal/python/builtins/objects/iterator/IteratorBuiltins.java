@@ -55,7 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@CoreFunctions(extendClasses = PythonBuiltinClassType.PSequenceIterator)
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PIterator)
 public class IteratorBuiltins extends PythonBuiltins {
 
     /*

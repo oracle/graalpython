@@ -185,7 +185,7 @@ public class TruffleCextBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
-        PythonClass errorHandlerClass = core.factory().createPythonClass(core.lookupType(PythonBuiltinClassType.PythonBuiltinClass), "CErrorHandler",
+        PythonClass errorHandlerClass = core.factory().createPythonClass(core.lookupType(PythonBuiltinClassType.PythonClass), "CErrorHandler",
                         new PythonClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
         builtinConstants.put("CErrorHandler", errorHandlerClass);
         builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
@@ -239,6 +239,31 @@ public class TruffleCextBuiltins extends PythonBuiltins {
         Object run(Object obj,
                         @Cached("create()") CExtNodes.ToSulongNode toSulongNode) {
             return toSulongNode.execute(obj);
+        }
+    }
+
+    @Builtin(name = "PyTruffle_Type", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class PyTruffle_Type extends NativeBuiltin {
+        @Specialization
+        @TruffleBoundary
+        Object doI(String typeName) {
+            PythonCore core = getCore();
+            for (PythonBuiltinClassType type : PythonBuiltinClassType.values()) {
+                if (type.getShortName().equals(typeName)) {
+                    return core.lookupType(type);
+                }
+            }
+            Object attribute = core.lookupBuiltinModule("python_cext").getAttribute(typeName);
+            if (attribute != PNone.NO_VALUE) {
+                return attribute;
+            }
+            attribute = core.lookupBuiltinModule("builtins").getAttribute(typeName);
+            if (attribute != PNone.NO_VALUE) {
+                return attribute;
+            }
+            throw raise(PythonErrorType.KeyError, "'%s'", typeName);
         }
     }
 

@@ -52,6 +52,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.PythonEquivalence;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.set.FrozenSetBuiltinsFactory.BinaryUnionNodeGen;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.control.GetIteratorNode;
@@ -103,11 +105,10 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReduceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object iter(PBaseSet self) {
-            Object[] reduceTuple = new Object[]{PNone.NONE, PNone.NONE, PNone.NONE};
-            reduceTuple[0] = self.getPythonClass();
-            reduceTuple[1] = factory().createTuple(new Object[]{factory().createList(self.getDictStorage().keysAsArray())});
-            return factory().createTuple(reduceTuple);
+        public Object reduce(PBaseSet self) {
+            PythonClass clazz = self.getPythonClass();
+            PTuple contents = factory().createTuple(new Object[]{factory().createList(self.getDictStorage().keysAsArray())});
+            return factory().createTuple(new Object[]{clazz, contents, PNone.NONE});
         }
     }
 

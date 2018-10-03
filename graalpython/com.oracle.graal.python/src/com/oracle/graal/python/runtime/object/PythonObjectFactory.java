@@ -177,27 +177,22 @@ public final class PythonObjectFactory extends Node {
     @CompilationFinal private Optional<Shape> cachedInstanceShape = Optional.empty();
 
     public PythonObject createPythonObject(PythonClass cls) {
-        if (cls == null) {
-            CompilerDirectives.transferToInterpreter();
-            // special case for base type class
-            return trace(new PythonObject(null));
-        } else {
-            Optional<Shape> cached = cachedInstanceShape;
-            if (cached != null) {
-                if (cached.isPresent()) {
-                    if (cached.get() == cls.getInstanceShape()) {
-                        return trace(new PythonObject(cls, cached.get()));
-                    } else {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        cachedInstanceShape = null;
-                    }
+        assert cls != null;
+        Optional<Shape> cached = cachedInstanceShape;
+        if (cached != null) {
+            if (cached.isPresent()) {
+                if (cached.get() == cls.getInstanceShape()) {
+                    return trace(new PythonObject(cls, cached.get()));
                 } else {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    cachedInstanceShape = Optional.of(cls.getInstanceShape());
+                    cachedInstanceShape = null;
                 }
+            } else {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                cachedInstanceShape = Optional.of(cls.getInstanceShape());
             }
-            return trace(new PythonObject(cls, cls.getInstanceShape()));
         }
+        return trace(new PythonObject(cls, cls.getInstanceShape()));
     }
 
     public PythonNativeObject createNativeObjectWrapper(Object obj) {
@@ -349,7 +344,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PythonClass createPythonClass(PythonClass metaclass, String name, PythonClass[] bases) {
-        return trace(new PythonClass(metaclass, name, bases));
+        return trace(new PythonClass(metaclass, name, PythonClass.freshShape(), bases));
     }
 
     public PythonNativeClass createNativeClassWrapper(Object object, PythonClass metaClass, String name, PythonClass[] pythonClasses) {
@@ -516,7 +511,7 @@ public final class PythonObjectFactory extends Node {
 
     public PGeneratorFunction createGeneratorFunction(String name, String enclosingClassName, Arity arity, RootCallTarget callTarget,
                     FrameDescriptor frameDescriptor, PythonObject globals, PCell[] closure) {
-        return trace(PGeneratorFunction.create(lookupClass(PythonBuiltinClassType.PGeneratorFunction), name, enclosingClassName, arity, callTarget,
+        return trace(PGeneratorFunction.create(lookupClass(PythonBuiltinClassType.PFunction), name, enclosingClassName, arity, callTarget,
                         frameDescriptor, globals, closure));
     }
 
@@ -651,7 +646,7 @@ public final class PythonObjectFactory extends Node {
      */
 
     public PStringIterator createStringIterator(String str) {
-        return trace(new PStringIterator(lookupClass(PythonBuiltinClassType.PStringIterator), str));
+        return trace(new PStringIterator(lookupClass(PythonBuiltinClassType.PIterator), str));
     }
 
     public PStringReverseIterator createStringReverseIterator(PythonClass cls, String str) {
@@ -659,19 +654,19 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PIntegerSequenceIterator createIntegerSequenceIterator(IntSequenceStorage storage) {
-        return trace(new PIntegerSequenceIterator(lookupClass(PythonBuiltinClassType.PIntegerSequenceIterator), storage));
+        return trace(new PIntegerSequenceIterator(lookupClass(PythonBuiltinClassType.PIterator), storage));
     }
 
     public PLongSequenceIterator createLongSequenceIterator(LongSequenceStorage storage) {
-        return trace(new PLongSequenceIterator(lookupClass(PythonBuiltinClassType.PLongSequenceIterator), storage));
+        return trace(new PLongSequenceIterator(lookupClass(PythonBuiltinClassType.PIterator), storage));
     }
 
     public PDoubleSequenceIterator createDoubleSequenceIterator(DoubleSequenceStorage storage) {
-        return trace(new PDoubleSequenceIterator(lookupClass(PythonBuiltinClassType.PDoubleSequenceIterator), storage));
+        return trace(new PDoubleSequenceIterator(lookupClass(PythonBuiltinClassType.PIterator), storage));
     }
 
     public PSequenceIterator createSequenceIterator(Object sequence) {
-        return trace(new PSequenceIterator(lookupClass(PythonBuiltinClassType.PSequenceIterator), sequence));
+        return trace(new PSequenceIterator(lookupClass(PythonBuiltinClassType.PIterator), sequence));
     }
 
     public PSequenceReverseIterator createSequenceReverseIterator(PythonClass cls, Object sequence, int lengthHint) {
@@ -681,9 +676,9 @@ public final class PythonObjectFactory extends Node {
     public PIntegerIterator createRangeIterator(int start, int stop, int step) {
         PIntegerIterator object;
         if (step > 0) {
-            object = new PRangeIterator(lookupClass(PythonBuiltinClassType.PRangeIterator), start, stop, step);
+            object = new PRangeIterator(lookupClass(PythonBuiltinClassType.PIterator), start, stop, step);
         } else {
-            object = new PRangeReverseIterator(lookupClass(PythonBuiltinClassType.PRangeReverseIterator), start, stop, -step);
+            object = new PRangeReverseIterator(lookupClass(PythonBuiltinClassType.PIterator), start, stop, -step);
         }
         return trace(object);
     }
@@ -693,7 +688,7 @@ public final class PythonObjectFactory extends Node {
     }
 
     public PBaseSetIterator createBaseSetIterator(PBaseSet set) {
-        return trace(new PBaseSetIterator(lookupClass(PythonBuiltinClassType.PBaseSetIterator), set));
+        return trace(new PBaseSetIterator(lookupClass(PythonBuiltinClassType.PIterator), set));
     }
 
     public PDictView.PDictItemsIterator createDictItemsIterator(PHashingCollection dict) {

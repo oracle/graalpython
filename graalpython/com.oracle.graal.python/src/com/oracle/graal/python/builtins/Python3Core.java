@@ -416,6 +416,7 @@ public final class Python3Core implements PythonCore {
     }
 
     public PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
+        assert builtinTypes[type.ordinal()] != null;
         return builtinTypes[type.ordinal()];
     }
 
@@ -468,19 +469,24 @@ public final class Python3Core implements PythonCore {
         }
     }
 
+    private PythonClass initializeBuiltinClass(PythonBuiltinClassType type) {
+        int index = type.ordinal();
+        if (builtinTypes[index] == null) {
+            if (type.getBase() == type) {
+                // object case
+                builtinTypes[index] = new PythonBuiltinClass(type, null);
+            } else {
+                builtinTypes[index] = new PythonBuiltinClass(type, initializeBuiltinClass(type.getBase()));
+            }
+        }
+        return builtinTypes[index];
+    }
+
     private void initializeTypes() {
-        // Make prebuilt classes known
-        typeClass = new PythonBuiltinClass(null, TYPE, null);
-        objectClass = new PythonBuiltinClass(typeClass, OBJECT, null);
-        moduleClass = new PythonBuiltinClass(typeClass, MODULE, objectClass);
-        foreignClass = new PythonBuiltinClass(typeClass, FOREIGN, objectClass);
-        typeClass.unsafeSetSuperClass(objectClass);
-        // Prepare core classes that are required all for core setup
-        addType(PythonBuiltinClassType.PythonClass, typeClass);
-        addType(PythonBuiltinClassType.PythonBuiltinClass, typeClass);
-        addType(PythonBuiltinClassType.PythonObject, objectClass);
-        addType(PythonBuiltinClassType.PythonModule, moduleClass);
-        addType(PythonBuiltinClassType.TruffleObject, foreignClass);
+        // create class objects for builtin types
+        for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.values()) {
+            initializeBuiltinClass(builtinClass);
+        }
         // n.b.: the builtin modules and classes and their constructors are initialized first here,
         // so we have the mapping from java classes to python classes and builtin names to modules
         // available.
@@ -489,12 +495,12 @@ public final class Python3Core implements PythonCore {
             if (annotation.defineModule().length() > 0) {
                 createModule(annotation.defineModule());
             }
-            builtin.initializeClasses(this);
-            for (Entry<PythonBuiltinClass, Entry<PythonBuiltinClassType[], Boolean>> entry : builtin.getBuiltinClasses().entrySet()) {
-                PythonBuiltinClass pythonClass = entry.getKey();
-                for (PythonBuiltinClassType klass : entry.getValue().getKey()) {
-                    addType(klass, pythonClass);
-                }
+        }
+        // publish builtin types in the "builtins" module
+        for (PythonBuiltinClassType builtinClass : PythonBuiltinClassType.values()) {
+            String module = builtinClass.getPublicInModule();
+            if (module != null) {
+                lookupBuiltinModule(module).setAttribute(builtinClass.getShortName(), lookupType(builtinClass));
             }
         }
         // now initialize well-known objects
@@ -523,11 +529,6 @@ public final class Python3Core implements PythonCore {
         PythonModule bootstrap = createModule("importlib._bootstrap");
         bootstrap.setAttribute(__PACKAGE__, "importlib");
         builtinModules.put("_frozen_importlib", bootstrap);
-    }
-
-    private void addType(PythonBuiltinClassType klass, PythonBuiltinClass typ) {
-        builtinTypes[klass.ordinal()] = typ;
-        typ.setType(klass);
     }
 
     private PythonModule createModule(String name) {

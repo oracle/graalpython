@@ -25,85 +25,113 @@
  */
 package com.oracle.graal.python.builtins;
 
+import java.util.HashSet;
+
+import com.oracle.graal.python.builtins.objects.type.LazyPythonClass;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.object.Shape;
 
-public enum PythonBuiltinClassType {
+public enum PythonBuiltinClassType implements LazyPythonClass {
 
-    TruffleObject(com.oracle.truffle.api.interop.TruffleObject.class, "truffle_object"),
-    Boolean(java.lang.Boolean.class, "bool"),
-    GetSetDescriptor(com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor.class, "get_set_desc"),
-    PArray(com.oracle.graal.python.builtins.objects.array.PArray.class, "array"),
-    PArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PArrayIterator.class, "arrayiterator"),
-    PBaseException(com.oracle.graal.python.builtins.objects.exception.PBaseException.class, "BaseException"),
-    PBaseSetIterator(com.oracle.graal.python.builtins.objects.iterator.PBaseSetIterator.class, "iterator"),
-    PBuiltinFunction(com.oracle.graal.python.builtins.objects.function.PBuiltinFunction.class, "method_descriptor"),
-    PBuiltinMethod(com.oracle.graal.python.builtins.objects.method.PBuiltinMethod.class, "builtin_function_or_method"),
-    PByteArray(com.oracle.graal.python.builtins.objects.bytes.PByteArray.class, "bytearray"),
-    PBytes(com.oracle.graal.python.builtins.objects.bytes.PBytes.class, "bytes"),
-    PCell(com.oracle.graal.python.builtins.objects.cell.PCell.class, "cell"),
-    PComplex(com.oracle.graal.python.builtins.objects.complex.PComplex.class, "complex"),
-    PDict(com.oracle.graal.python.builtins.objects.dict.PDict.class, "dict"),
-    PDictKeysView(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView.class, "dict_keys"),
-    PDictItemsIterator(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsIterator.class, "dict_itemsiterator"),
-    PDictItemsView(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView.class, "dict_items"),
-    PDictKeysIterator(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysIterator.class, "dict_keysiterator"),
-    PDictValuesIterator(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesIterator.class, "dict_valuesiterator"),
-    PDictValuesView(com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView.class, "dict_values"),
-    PDoubleSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator.class, "iterator"),
-    PEllipsis(com.oracle.graal.python.builtins.objects.PEllipsis.class, "ellipsis"),
-    PEnumerate(com.oracle.graal.python.builtins.objects.enumerate.PEnumerate.class, "enumerate"),
-    PFloat(com.oracle.graal.python.builtins.objects.floats.PFloat.class, "float"),
-    PFrame(com.oracle.graal.python.builtins.objects.frame.PFrame.class, "frame"),
-    PFrozenSet(com.oracle.graal.python.builtins.objects.set.PFrozenSet.class, "frozenset"),
-    PFunction(com.oracle.graal.python.builtins.objects.function.PFunction.class, "function"),
-    PGenerator(com.oracle.graal.python.builtins.objects.generator.PGenerator.class, "generator"),
-    PGeneratorFunction(com.oracle.graal.python.builtins.objects.function.PGeneratorFunction.class, "function"),
-    PInt(com.oracle.graal.python.builtins.objects.ints.PInt.class, "int"),
-    PythonNativeVoidPtr(com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr.class, "int"),
-    PIntegerSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator.class, "iterator"),
-    PList(com.oracle.graal.python.builtins.objects.list.PList.class, "list"),
-    PLongSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator.class, "iterator"),
-    PMappingproxy(com.oracle.graal.python.builtins.objects.mappingproxy.PMappingproxy.class, "mappingproxy"),
-    PMemoryView(com.oracle.graal.python.builtins.objects.memoryview.PMemoryView.class, "memoryview"),
-    PMethod(com.oracle.graal.python.builtins.objects.method.PMethod.class, "method"),
-    PNone(com.oracle.graal.python.builtins.objects.PNone.class, "NoneType"),
-    PNotImplemented(com.oracle.graal.python.builtins.objects.PNotImplemented.class, "NotImplementedType"),
-    PRandom(com.oracle.graal.python.builtins.objects.random.PRandom.class, "random"),
-    PRange(com.oracle.graal.python.builtins.objects.range.PRange.class, "range"),
-    PRangeIterator(com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.class, "iterator"),
-    PRangeReverseIterator(com.oracle.graal.python.builtins.objects.iterator.PRangeIterator.PRangeReverseIterator.class, "iterator"),
-    PReferenceType(com.oracle.graal.python.builtins.objects.referencetype.PReferenceType.class, "ReferenceType"),
-    PSentinelIterator(com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator.class, "callable_iterator"),
-    PSequenceIterator(com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator.class, "iterator"),
-    PForeignArrayIterator(com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator.class, "foreign_iterator"),
-    PSequenceReverseIterator(com.oracle.graal.python.builtins.objects.reversed.PSequenceReverseIterator.class, "reversed"),
-    PSet(com.oracle.graal.python.builtins.objects.set.PSet.class, "set"),
-    PSlice(com.oracle.graal.python.builtins.objects.slice.PSlice.class, "slice"),
-    PString(com.oracle.graal.python.builtins.objects.str.PString.class, "str"),
-    PStringIterator(com.oracle.graal.python.builtins.objects.iterator.PStringIterator.class, "iterator"),
-    PStringReverseIterator(com.oracle.graal.python.builtins.objects.reversed.PStringReverseIterator.class, "reversed"),
-    PTraceback(com.oracle.graal.python.builtins.objects.traceback.PTraceback.class, "traceback"),
-    PTuple(com.oracle.graal.python.builtins.objects.tuple.PTuple.class, "tuple"),
-    PythonBuiltinClass(com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass.class, "type"),
-    PythonClass(com.oracle.graal.python.builtins.objects.type.PythonClass.class, "type"),
-    PythonNativeClass(com.oracle.graal.python.builtins.objects.cext.PythonNativeClass.class, "type"),
-    PythonModule(com.oracle.graal.python.builtins.objects.module.PythonModule.class, "module"),
-    PythonObject(com.oracle.graal.python.builtins.objects.object.PythonObject.class, "object"),
-    PythonNativeObject(com.oracle.graal.python.builtins.objects.cext.PythonNativeObject.class, "object"),
-    Super(com.oracle.graal.python.builtins.objects.superobject.SuperObject.class, "super"),
-    PCode(com.oracle.graal.python.builtins.objects.code.PCode.class, "code"),
-    PZip(com.oracle.graal.python.builtins.objects.iterator.PZip.class, "zip"),
-    PBuffer(com.oracle.graal.python.builtins.objects.memoryview.PBuffer.class, "buffer");
+    TruffleObject("truffle_object"),
+    Boolean("bool", "builtins"),
+    GetSetDescriptor("get_set_desc"),
+    PArray("array", "array"),
+    PArrayIterator("arrayiterator"),
+    PBaseException("BaseException", "builtins"),
+    PIterator("iterator"),
+    PBuiltinFunction("method_descriptor"),
+    PBuiltinMethod("builtin_function_or_method"),
+    PByteArray("bytearray", "builtins"),
+    PBytes("bytes", "builtins"),
+    PCell("cell"),
+    PComplex("complex", "builtins"),
+    PDict("dict", "builtins"),
+    PDictKeysView("dict_keys"),
+    PDictItemsIterator("dict_itemsiterator"),
+    PDictItemsView("dict_items"),
+    PDictKeysIterator("dict_keysiterator"),
+    PDictValuesIterator("dict_valuesiterator"),
+    PDictValuesView("dict_values"),
+    PEllipsis("ellipsis"),
+    PEnumerate("enumerate", "builtins"),
+    PFloat("float", "builtins"),
+    PFrame("frame"),
+    PFrozenSet("frozenset", "builtins"),
+    PFunction("function"),
+    PGenerator("generator"),
+    PInt("int", "builtins"),
+    PList("list", "builtins"),
+    PMappingproxy("mappingproxy"),
+    PMemoryView("memoryview", "builtins"),
+    PMethod("method"),
+    PNone("NoneType"),
+    PNotImplemented("NotImplementedType"),
+    PRandom("Random", "_random"),
+    PRange("range", "builtins"),
+    PReferenceType("ReferenceType", "_weakref"),
+    PSentinelIterator("callable_iterator"),
+    PForeignArrayIterator("foreign_iterator"),
+    PReverseIterator("reversed", "builtins"),
+    PSet("set", "builtins"),
+    PSlice("slice", "builtins"),
+    PString("str", "builtins"),
+    PTraceback("traceback"),
+    PTuple("tuple", "builtins"),
+    PythonClass("type", "builtins"),
+    PythonModule("module"),
+    PythonObject("object", "builtins"),
+    Super("super", "builtins"),
+    PCode("code"),
+    PZip("zip", "builtins"),
+    PBuffer("buffer");
 
     private final String shortName;
+    private final Shape instanceShape;
+    private final String publicInModule;
 
-    PythonBuiltinClassType(@SuppressWarnings("unused") Class<?> clazz, String shortName) {
+    // initialized in static constructor
+    @CompilationFinal private PythonBuiltinClassType base;
+
+    PythonBuiltinClassType(String shortName, String publicInModule) {
         this.shortName = shortName;
+        this.publicInModule = publicInModule;
+        this.instanceShape = com.oracle.graal.python.builtins.objects.type.PythonClass.freshShape();
+    }
+
+    PythonBuiltinClassType(String shortName) {
+        this(shortName, null);
+    }
+
+    public String getShortName() {
+        return shortName;
+    }
+
+    public PythonBuiltinClassType getBase() {
+        return base;
+    }
+
+    public String getPublicInModule() {
+        return publicInModule;
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return shortName;
+    }
+
+    public Shape getInstanceShape() {
+        return instanceShape;
+    }
+
+    static {
+        HashSet<String> set = new HashSet<>();
+        for (PythonBuiltinClassType type : values()) {
+            assert set.add(type.shortName) : type.name();
+            type.base = PythonObject;
+        }
+        Boolean.base = PInt;
     }
 }
