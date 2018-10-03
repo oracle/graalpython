@@ -609,12 +609,14 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected int findWithBounds(String self, String str, int start, int end) {
             if (start != -1 && end != -1) {
-                return self.substring(start, end).lastIndexOf(str);
+                int idx = self.lastIndexOf(str, end - str.length() - 1);
+                return idx >= start ? idx : -1;
             } else if (start != -1) {
-                return self.substring(start).lastIndexOf(str);
+                int idx = self.lastIndexOf(str);
+                return idx >= start ? idx : -1;
             } else {
                 assert end != -1;
-                return self.substring(0, end).lastIndexOf(str);
+                return self.lastIndexOf(str, end - str.length() - 1);
             }
         }
     }
@@ -634,12 +636,14 @@ public final class StringBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected int findWithBounds(String self, String str, int start, int end) {
             if (start != -1 && end != -1) {
-                return self.substring(0, end).indexOf(str, start);
+                int idx = self.indexOf(str, start);
+                return idx + str.length() <= end ? idx : -1;
             } else if (start != -1) {
                 return self.indexOf(str, start);
             } else {
                 assert end != -1;
-                return self.substring(0, end).indexOf(str);
+                int idx = self.indexOf(str);
+                return idx + str.length() <= end ? idx : -1;
             }
         }
     }
