@@ -1547,13 +1547,12 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public String doTitle(String self) {
-            int[] codePoints = self.codePoints().toArray();
-            int len = codePoints.length;
+            int len = self.length();
             boolean shouldBeLowerCase = false;
             boolean translated;
             StringBuilder converted = new StringBuilder();
-            for (int i = 0; i < len; i++) {
-                int ch = codePoints[i];
+            for (int offset = 0; offset < self.length();) {
+                int ch = self.codePointAt(offset);
                 translated = false;
                 if (Character.isAlphabetic(ch)) {
                     if (shouldBeLowerCase) {
@@ -1599,6 +1598,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         converted.append(Character.toChars(ch));
                     }
                 }
+                offset += Character.charCount(ch);
             }
             return converted.toString();
         }

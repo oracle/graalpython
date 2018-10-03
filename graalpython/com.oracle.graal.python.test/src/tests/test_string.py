@@ -707,6 +707,8 @@ class UnicodeTest(unittest.TestCase):
         self.assertEqual('X\U00010427x\U0001044F X\U00010427x\U0001044F'.title(),
                          'X\U0001044Fx\U0001044F X\U0001044Fx\U0001044F')
         self.assertEqual('ﬁNNISH'.title(), 'Finnish')
+        self.assertEqual('bﬁNNISH'.title(), 'Bﬁnnish')
+        self.assertEqual('ﬁﬁNNﬁISH'.title(), 'Fiﬁnnﬁish')
         self.assertEqual('A\u03a3A'.title(), 'A\u03c3a')
 
 def test_same_id():
