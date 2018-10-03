@@ -42,20 +42,37 @@ from posix import *
 
 sys.path.append(sys._getframe().f_code.co_filename.rpartition("/")[0])
 
+
 def test_relative_import():
-    pass
+    # this is to prevent ides from optimising out the unused import
+    try:
+        import package
+    except Exception as e:
+        raise e
 
 
 def test_dotted_import():
-    pass
+    # this is to prevent ides from optimising out the unused import
+    try:
+        import package.moduleY
+    except Exception as e:
+        raise e
 
 
 def test_recursive_import():
-    pass
+    # this is to prevent ides from optimising out the unused import
+    try:
+        import package.moduleRecursive
+    except Exception as e:
+        raise e
 
 
 def test_recursive_import2():
-    pass
+    # this is to prevent ides from optimising out the unused import
+    try:
+        import package.moduleRecursive2
+    except Exception as e:
+        raise e
 
 
 def test_import_star_has_to_be_module():
