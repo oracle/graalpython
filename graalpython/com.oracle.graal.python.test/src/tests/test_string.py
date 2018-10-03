@@ -685,6 +685,30 @@ class UnicodeTest(unittest.TestCase):
         # self.assertFalse('\U000E0020'.isprintable())
 
 
+    def test_title(self):
+        self.checkequal(' Hello ', ' hello ', 'title')
+        self.checkequal('Hello ', 'hello ', 'title')
+        self.checkequal('Hello ', 'Hello ', 'title')
+        self.checkequal('Format This As Title String', "fOrMaT thIs aS titLe String", 'title')
+        self.checkequal('Format,This-As*Title;String', "fOrMaT,thIs-aS*titLe;String", 'title', )
+        self.checkequal('Getint', "getInt", 'title')
+        self.checkraises(TypeError, 'hello', 'title', 42)
+
+    def test_title_uni(self):
+        self.assertEqual('\U0001044F'.title(), '\U00010427')
+        self.assertEqual('\U0001044F\U0001044F'.title(),
+                         '\U00010427\U0001044F')
+        self.assertEqual('\U0001044F\U0001044F \U0001044F\U0001044F'.title(),
+                         '\U00010427\U0001044F \U00010427\U0001044F')
+        self.assertEqual('\U00010427\U0001044F \U00010427\U0001044F'.title(),
+                         '\U00010427\U0001044F \U00010427\U0001044F')
+        self.assertEqual('\U0001044F\U00010427 \U0001044F\U00010427'.title(),
+                         '\U00010427\U0001044F \U00010427\U0001044F')
+        self.assertEqual('X\U00010427x\U0001044F X\U00010427x\U0001044F'.title(),
+                         'X\U0001044Fx\U0001044F X\U0001044Fx\U0001044F')
+        self.assertEqual('ﬁNNISH'.title(), 'Finnish')
+        self.assertEqual('A\u03a3A'.title(), 'A\u03c3a')
+
 def test_same_id():
     empty_ids = set([id(str()) for i in range(100)])
     assert len(empty_ids) == 1
