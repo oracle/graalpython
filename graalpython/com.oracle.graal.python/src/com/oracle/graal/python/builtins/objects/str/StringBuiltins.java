@@ -1547,7 +1547,6 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public String doTitle(String self) {
-            int len = self.length();
             boolean shouldBeLowerCase = false;
             boolean translated;
             StringBuilder converted = new StringBuilder();
