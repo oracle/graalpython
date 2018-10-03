@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -1843,8 +1844,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "code", constructsClass = {PythonBuiltinClassType.PCode}, isPublic = false, minNumOfPositionalArgs = 14, maxNumOfPositionalArgs = 16)
     @GenerateNodeFactory
     public abstract static class CodeTypeNode extends PythonBuiltinNode {
-        @Child private SequenceStorageNodes.ToByteArrayNode toByteArrayNode;
-
         @Specialization
         Object call(PythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -1854,26 +1853,29 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         String lnotab) {
             return factory().createCode(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
-                            codestring, constants, names,
+                            toBytes(codestring), constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
                             filename, name, firstlineno,
-                            lnotab);
+                            toBytes(lnotab));
         }
 
         @Specialization
-        @TruffleBoundary
         Object call(PythonClass cls, int argcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names,
                         PTuple varnames, PTuple freevars, PTuple cellvars,
                         PString filename, PString name, int firstlineno,
-                        PBytes lnotab) {
+                        PBytes lnotab,
+                        @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
+            byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
+            byte[] lnotabBytes = toByteArrayNode.execute(lnotab.getSequenceStorage());
+
             return factory().createCode(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
-                            toString(getByteArray(codestring)), constants, names,
+                            codeBytes, constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
                             filename.getValue(), name.getValue(), firstlineno,
-                            lnotab);
+                            lnotabBytes);
         }
 
         @SuppressWarnings("unused")
@@ -1884,20 +1886,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object varnames, Object freevars, Object cellvars,
                         Object filename, Object name, Object firstlineno,
                         Object lnotab) {
-            throw raise(PythonErrorType.NotImplementedError, "code object instance from generic arguments");
+            throw raise(SystemError, "bad argument to internal function");
         }
 
         @TruffleBoundary
-        private static String toString(byte[] data) {
-            return new String(data);
-        }
-
-        private byte[] getByteArray(PIBytesLike pByteArray) {
-            if (toByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(SequenceStorageNodes.ToByteArrayNode.create());
-            }
-            return toByteArrayNode.execute(pByteArray.getSequenceStorage());
+        private static byte[] toBytes(String data) {
+            return data.getBytes();
         }
     }
 

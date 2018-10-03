@@ -723,10 +723,10 @@ public final class PythonObjectFactory extends Node {
 
     public PCode createCode(PythonClass cls, int argcount, int kwonlyargcount,
                     int nlocals, int stacksize, int flags,
-                    String codestring, Object constants, Object names,
+                    byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
-                    Object lnotab) {
+                    byte[] lnotab) {
         return trace(new PCode(cls, argcount, kwonlyargcount,
                         nlocals, stacksize, flags,
                         codestring, constants, names,

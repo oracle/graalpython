@@ -89,11 +89,11 @@ public class PCode extends PythonBuiltinObject {
     // set if the function is a generator.
     private int flags = -1;
     // is a string representing the sequence of bytecode instructions
-    private String codestring;
+    private byte[] codestring;
     // tuple of constants used in the bytecode
-    private Object constants;
+    private Object[] constants;
     // tuple containing the literals used by the bytecode
-    private Object names;
+    private Object[] names;
     // is a tuple containing the names of the local variables (starting with the argument names)
     private Object[] varnames;
     // name of file in which this code object was created
@@ -103,7 +103,7 @@ public class PCode extends PythonBuiltinObject {
     // number of first line in Python source code
     private int firstlineno = -1;
     // is a string encoding the mapping from bytecode offsets to line numbers
-    private Object lnotab;
+    private byte[] lnotab;
     // tuple of names of free variables (referenced via a function’s closure)
     private Object[] freevars;
     // tuple of names of cell variables (referenced by containing scopes)
@@ -122,10 +122,10 @@ public class PCode extends PythonBuiltinObject {
 
     public PCode(PythonClass cls, int argcount, int kwonlyargcount,
                     int nlocals, int stacksize, int flags,
-                    String codestring, Object constants, Object names,
+                    byte[] codestring, Object[] constants, Object[] names,
                     Object[] varnames, Object[] freevars, Object[] cellvars,
                     String filename, String name, int firstlineno,
-                    Object lnotab) {
+                    byte[] lnotab) {
         super(cls);
         this.rootNode = null;
         this.core = null;
@@ -366,7 +366,7 @@ public class PCode extends PythonBuiltinObject {
         return stacksize;
     }
 
-    public long getFlags() {
+    public int getFlags() {
         if (flags == -1 && rootNode != null) {
             extractArgStats();
         }
@@ -380,19 +380,19 @@ public class PCode extends PythonBuiltinObject {
         return varnames;
     }
 
-    public String getCodestring() {
+    public byte[] getCodestring() {
         return codestring;
     }
 
-    public Object getConstants() {
+    public Object[] getConstants() {
         return constants;
     }
 
-    public Object getNames() {
+    public Object[] getNames() {
         return names;
     }
 
-    public Object getLnotab() {
+    public byte[] getLnotab() {
         return lnotab;
     }
 
