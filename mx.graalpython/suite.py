@@ -123,6 +123,7 @@ suite = {
                 "sdk:GRAAL_SDK",
                 "ANTLR4",
             ],
+            "buildDependencies": ["com.oracle.graal.python.parser.antlr"],
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "1.8",
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
