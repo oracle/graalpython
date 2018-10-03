@@ -1849,13 +1849,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         int nlocals, int stacksize, int flags,
                         String codestring, PTuple constants, PTuple names,
                         PTuple varnames, PTuple freevars, PTuple cellvars,
-                        String filename, String name, int firstlineno,
+                        Object filename, Object name, int firstlineno,
                         String lnotab) {
             return factory().createCode(cls, argcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             toBytes(codestring), constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
-                            filename, name, firstlineno,
+                            getStringArg(filename), getStringArg(name), firstlineno,
                             toBytes(lnotab));
         }
 
@@ -1864,7 +1864,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names,
                         PTuple varnames, PTuple freevars, PTuple cellvars,
-                        PString filename, PString name, int firstlineno,
+                        Object filename, Object name, int firstlineno,
                         PBytes lnotab,
                         @Cached("create()") SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
             byte[] codeBytes = toByteArrayNode.execute(codestring.getSequenceStorage());
@@ -1874,7 +1874,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             nlocals, stacksize, flags,
                             codeBytes, constants.getArray(), names.getArray(),
                             varnames.getArray(), freevars.getArray(), cellvars.getArray(),
-                            filename.getValue(), name.getValue(), firstlineno,
+                            getStringArg(filename), getStringArg(name), firstlineno,
                             lnotabBytes);
         }
 
@@ -1887,6 +1887,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object filename, Object name, Object firstlineno,
                         Object lnotab) {
             throw raise(SystemError, "bad argument to internal function");
+        }
+
+        private String getStringArg(Object arg) {
+            if (arg instanceof String) {
+                return (String) arg;
+            } else if (arg instanceof PString) {
+                return ((PString) arg).toString();
+            } else {
+                throw raise(SystemError, "bad argument to internal function");
+            }
         }
 
         @TruffleBoundary
