@@ -600,13 +600,13 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class RFindNode extends FindBaseNode {
 
         @Override
-        @TruffleBoundary(transferToInterpreterOnException = false)
+        @TruffleBoundary
         protected int find(String self, String findStr) {
             return self.lastIndexOf(findStr);
         }
 
         @Override
-        @TruffleBoundary(transferToInterpreterOnException = false)
+        @TruffleBoundary
         protected int findWithBounds(String self, String str, int start, int end) {
             if (start != -1 && end != -1) {
                 int idx = self.lastIndexOf(str, end - str.length() - 1);
@@ -627,13 +627,13 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class FindNode extends FindBaseNode {
 
         @Override
-        @TruffleBoundary(transferToInterpreterOnException = false)
+        @TruffleBoundary
         protected int find(String self, String findStr) {
             return self.indexOf(findStr);
         }
 
         @Override
-        @TruffleBoundary(transferToInterpreterOnException = false)
+        @TruffleBoundary
         protected int findWithBounds(String self, String str, int start, int end) {
             if (start != -1 && end != -1) {
                 int idx = self.indexOf(str, start);
