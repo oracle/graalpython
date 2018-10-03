@@ -1554,8 +1554,8 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String doString(String self, PInt width, 
-                @Cached("create()") CastToIndexNode toIndexNode) {
+        public String doString(String self, PInt width,
+                        @Cached("create()") CastToIndexNode toIndexNode) {
             return zfill(self, toIndexNode.execute(width));
         }
 
