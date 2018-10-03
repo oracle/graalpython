@@ -349,7 +349,7 @@ def gate_unittests(args=[], subdir=""):
         mx.run(["python3"] + test_args, nonZeroIsFatal=True)
 
 
-def _run_python_unittests(python_binary, args=[], aot_compatible=True, exclude=[]):
+def run_python_unittests(python_binary, args=[], aot_compatible=True, exclude=[]):
     # tests root directory
     tests_folder = os.path.join(_suite.dir, "graalpython", "com.oracle.graal.python.test", "src", "tests")
 
@@ -413,7 +413,7 @@ def graalpython_gate_runner(args, tasks):
                 args = ["--python.CoreHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-graalpython"),
                         "--python.StdLibHome=%s" % os.path.join(_suite.dir, "graalpython", "lib-python/3"),
                         llvm_home]
-                _run_python_unittests(svm_image_name, args)
+                run_python_unittests(svm_image_name, args)
 
     with Task('GraalPython apptests', tasks, tags=[GraalPythonTags.apptests]) as task:
         if task:
