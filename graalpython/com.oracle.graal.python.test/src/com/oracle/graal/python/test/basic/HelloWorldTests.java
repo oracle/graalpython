@@ -34,4 +34,11 @@ public class HelloWorldTests {
     public void helloworld() {
         assertPrints("hello world\n", "print(\"hello world\")");
     }
+
+    @Test
+    public void helloworldAgain() {
+        org.graalvm.polyglot.Source source = org.graalvm.polyglot.Source.create("python", "try: print(value)\nexcept:print('hello')\nvalue='world'");
+        assertPrints("hello\n", source);
+        assertPrints("hello\n", source);
+    }
 }

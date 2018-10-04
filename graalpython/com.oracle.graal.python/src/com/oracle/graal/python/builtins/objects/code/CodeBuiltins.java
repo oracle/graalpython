@@ -33,7 +33,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -160,8 +159,13 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(@SuppressWarnings("unused") PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        protected Object get(PCode self) {
+            byte[] codestring = self.getCodestring();
+            if (codestring == null) {
+                // TODO: this is for the moment undefined
+                codestring = new byte[0];
+            }
+            return factory().createBytes(codestring);
         }
     }
 
@@ -169,8 +173,13 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetConstsNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(@SuppressWarnings("unused") PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        protected Object get(PCode self) {
+            Object[] constants = self.getConstants();
+            if (constants == null) {
+                // TODO: this is for the moment undefined (see co_code)
+                constants = new Object[0];
+            }
+            return factory().createTuple(constants);
         }
     }
 
@@ -178,8 +187,13 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNamesNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(@SuppressWarnings("unused") PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        protected Object get(PCode self) {
+            Object[] names = self.getNames();
+            if (names == null) {
+                // TODO: this is for the moment undefined (see co_code)
+                names = new Object[0];
+            }
+            return factory().createTuple(names);
         }
     }
 
@@ -200,8 +214,13 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetLNoTabNode extends PythonBuiltinNode {
         @Specialization
-        protected Object get(@SuppressWarnings("unused") PCode self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        protected Object get(PCode self) {
+            byte[] lnotab = self.getLnotab();
+            if (lnotab == null) {
+                // TODO: this is for the moment undefined (see co_code)
+                lnotab = new byte[0];
+            }
+            return factory().createBytes(lnotab);
         }
     }
 }

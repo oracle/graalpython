@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.TruffleCextBuiltins.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.CExtNodes.AsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -385,4 +387,19 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "_fix_co_filename", fixedNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class FixCoFilename extends PythonBinaryBuiltinNode {
+        @Specialization
+        public Object run(PCode code, PString path) {
+            code.setFilename(path.getValue());
+            return PNone.NONE;
+        }
+
+        @Specialization
+        public Object run(PCode code, String path) {
+            code.setFilename(path);
+            return PNone.NONE;
+        }
+    }
 }
