@@ -163,6 +163,17 @@ extern cache_t cache;
 #define resolve_handle(__cache__, __addr__) (__cache__)(__addr__)
 
 __attribute__((always_inline))
+inline void* native_type_to_java(PyObject* obj) {
+	void* refcnt = ((PyObject*)obj)->ob_refcnt;
+	if (!truffle_cannot_be_handle(refcnt)) {
+		return resolve_handle(cache, refcnt);
+	} else if (IS_POINTER(refcnt)) {
+		return refcnt;
+	}
+	return obj;
+}
+
+__attribute__((always_inline))
 inline void* native_to_java(PyObject* obj) {
     if (obj == NULL) {
         return Py_NoValue;
@@ -173,13 +184,7 @@ inline void* native_to_java(PyObject* obj) {
     } else if (!truffle_cannot_be_handle(obj)) {
         return resolve_handle(cache, (uint64_t)obj);
     } else {
-        void* refcnt = obj->ob_refcnt;
-        if (!truffle_cannot_be_handle(refcnt)) {
-            return resolve_handle(cache, refcnt);
-        } else if (IS_POINTER(refcnt)) {
-            return refcnt;
-        }
-        return obj;
+    	return native_type_to_java(obj);
     }
 }
 
