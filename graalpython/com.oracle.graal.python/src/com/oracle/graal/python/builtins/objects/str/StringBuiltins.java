@@ -1689,6 +1689,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fill.codePointCount(0, fill.length()) != 1")
+        @SuppressWarnings("unused")
         public String createError(String self, long width, String fill) {
             throw raise(TypeError, "The fill character must be exactly one character long");
         }
@@ -1704,6 +1705,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fill.codePointCount(0, fill.length()) != 1")
+        @SuppressWarnings("unused")
         public String createError(String self, PInt width, String fill) {
             throw raise(TypeError, "The fill character must be exactly one character long");
         }
