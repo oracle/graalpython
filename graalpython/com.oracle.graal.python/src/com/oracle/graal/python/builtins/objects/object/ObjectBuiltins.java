@@ -483,7 +483,11 @@ public class ObjectBuiltins extends PythonBuiltins {
             throw new AssertionError();
         }
 
-        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)"})
+        protected boolean isExactObjectInstance(PythonObject self) {
+            return lookupClass(PythonBuiltinClassType.PythonObject) == self.getPythonClass();
+        }
+
+        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
         Object dict(PythonObject self) {
             PHashingCollection dict = self.getDict();
             if (dict == null) {
