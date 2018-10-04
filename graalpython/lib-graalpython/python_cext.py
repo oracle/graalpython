@@ -809,13 +809,6 @@ def dict_from_list(lst):
     return d
 
 
-def PyObject_Size(obj):
-    try:
-        return int(len(obj))
-    except Exception:
-        return -1
-
-
 def PyObject_Call(callee, args, kwargs):
     return callee(*args, **kwargs)
 
