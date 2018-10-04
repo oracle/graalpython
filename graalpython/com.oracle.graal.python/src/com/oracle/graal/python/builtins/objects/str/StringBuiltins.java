@@ -1597,6 +1597,9 @@ public final class StringBuiltins extends PythonBuiltins {
 
         public static ZFillNode create() {
             return StringBuiltinsFactory.ZFillNodeFactory.create();
+        }
+    }
+
     @Builtin(name = "title", fixedNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
