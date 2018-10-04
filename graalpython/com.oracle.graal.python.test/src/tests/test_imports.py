@@ -37,24 +37,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from posix import *
 import sys
+from posix import *
+
 sys.path.append(sys._getframe().f_code.co_filename.rpartition("/")[0])
 
+
 def test_relative_import():
-    import package
+    # this is to prevent ides from optimising out the unused import
+    try:
+        import package
+    except Exception as e:
+        raise e
 
 
 def test_dotted_import():
-    import package.moduleY
+    # this is to prevent ides from optimising out the unused import
+    try:
+        import package.moduleY
+    except Exception as e:
+        raise e
 
 
 def test_recursive_import():
-    import package.moduleRecursive
+    # this is to prevent ides from optimising out the unused import
+    try:
+        import package.moduleRecursive
+    except Exception as e:
+        raise e
 
 
 def test_recursive_import2():
-    import package.moduleRecursive2
+    # this is to prevent ides from optimising out the unused import
+    try:
+        import package.moduleRecursive2
+    except Exception as e:
+        raise e
 
 
 def test_import_star_has_to_be_module():
@@ -91,3 +109,15 @@ def test_import_error():
 def test_import_some_star():
     import posix
     assert stat == posix.stat
+
+
+def test_imp_fix_co_filename():
+    import _imp
+
+    def func(x):
+        return x+x
+
+    code = func.__code__
+    old_name = code.co_filename
+    _imp._fix_co_filename(code, old_name + '_more_path')
+    assert code.co_filename == old_name + '_more_path'
