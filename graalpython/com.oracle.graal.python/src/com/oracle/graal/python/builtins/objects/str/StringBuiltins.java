@@ -1600,6 +1600,70 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "title", fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    abstract static class TitleNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        public String doTitle(String self) {
+            boolean shouldBeLowerCase = false;
+            boolean translated;
+            StringBuilder converted = new StringBuilder();
+            for (int offset = 0; offset < self.length();) {
+                int ch = self.codePointAt(offset);
+                translated = false;
+                if (Character.isAlphabetic(ch)) {
+                    if (shouldBeLowerCase) {
+                        // Should be lower case
+                        if (Character.isUpperCase(ch)) {
+                            translated = true;
+                            if (ch < 256) {
+                                converted.append((char) Character.toLowerCase(ch));
+                            } else {
+                                String origPart = new String(Character.toChars(ch));
+                                String changedPart = origPart.toLowerCase();
+                                converted.append(changedPart);
+                            }
+                        }
+                    } else {
+                        // Should be upper case
+                        if (Character.isLowerCase(ch)) {
+                            translated = true;
+                            if (ch < 256) {
+                                converted.append((char) Character.toUpperCase(ch));
+                            } else {
+                                String origPart = new String(Character.toChars(ch));
+                                String changedPart = origPart.toUpperCase();
+                                if (origPart.length() < changedPart.length()) {
+                                    // the original char was mapped to more chars ->
+                                    // we need to make upper case just the first one
+                                    changedPart = doTitle(changedPart);
+                                }
+                                converted.append(changedPart);
+                            }
+                        }
+                    }
+                    // And this was a letter
+                    shouldBeLowerCase = true;
+                } else {
+                    // This was not a letter
+                    shouldBeLowerCase = false;
+                }
+                if (!translated) {
+                    if (ch < 256) {
+                        converted.append((char) ch);
+                    } else {
+                        converted.append(Character.toChars(ch));
+                    }
+                }
+                offset += Character.charCount(ch);
+            }
+            return converted.toString();
+        }
+    }
+
     @Builtin(name = __GETITEM__, fixedNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
