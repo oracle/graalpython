@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -402,6 +403,19 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetattrNode extends PythonBinaryBuiltinNode {
         @Specialization
+        Object getattr(PythonObject object, Object key,
+                        @Cached("create()") HashingStorageNodes.GetItemNode getItemNode) {
+            PHashingCollection dict = object.getDict();
+            if (dict != null) {
+                Object value = getItemNode.execute(dict.getDictStorage(), key);
+                if (value != null) {
+                    return value;
+                }
+            }
+            throw raise(AttributeError, "'%p' object has no attribute %s", object, key);
+        }
+
+        @Specialization
         Object getattr(Object object, Object key) {
             throw raise(AttributeError, "'%p' object has no attribute %s", object, key);
         }
@@ -489,7 +503,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             throw new AssertionError();
         }
 
-        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
+        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)", "!isExactObjectInstance(self)", "isNoValue(none)"})
         Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
             PHashingCollection dict = self.getDict();
             if (dict == null) {

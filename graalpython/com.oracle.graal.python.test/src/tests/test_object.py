@@ -66,3 +66,5 @@ def test_set_dict_attr():
     assert m.__dict__ == {}
     m.__dict__ = {'a': 10}
     assert m.__dict__ == {'a': 10}
+    assert m.a == 10
+
