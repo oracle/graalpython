@@ -355,13 +355,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 int codePoints = n / Integer.BYTES;
 
                 while (encoded.hasRemaining()) {
-                    int int1 = encoded.getInt();
-                    if (int1 > 31 && int1 <= 126) {
-                        buf.put((byte) int1);
+                    int codePoint = encoded.getInt();
+                    if (codePoint <= 0xFF) {
+                        buf.put((byte) codePoint);
                     } else {
                         buf.put((byte) '\\');
                         buf.put((byte) 'u');
-                        String hexString = Integer.toHexString(int1);
+                        String hexString = Integer.toHexString(codePoint);
                         for (int i = 0; i < hexString.length(); i++) {
                             assert hexString.charAt(i) < 128;
                             buf.put((byte) hexString.charAt(i));
@@ -466,12 +466,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             String string = decodeBytes(getBytesBuffer(bytes), profiledErrors.toString());
             return factory().createTuple(new Object[]{string, string.length()});
         }
-
-// @Fallback
-// Object decode(Object bytes, @SuppressWarnings("unused") Object encoding,
-// @SuppressWarnings("unused") Object errors) {
-// throw raise(TypeError, "a bytes-like object is required, not '%p'", bytes);
-// }
 
         private ByteBuffer getBytesBuffer(PIBytesLike bytesLike) {
             if (toByteArrayNode == null) {
