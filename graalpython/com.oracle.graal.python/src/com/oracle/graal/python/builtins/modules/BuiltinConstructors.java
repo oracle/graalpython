@@ -988,19 +988,21 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return parseLong(cls, new String(getByteArray(arg)), keywordArg);
         }
 
-        @Specialization(rewriteOn = NumberFormatException.class)
-        @TruffleBoundary
-        Object parseBytes(PythonClass cls, PIBytesLike arg, int base) {
-            return parsePInt(cls, new String(getByteArray(arg)), base);
-        }
-
-        @Specialization(replaces = "parseBytes")
-        Object parseBytesError(PythonClass cls, PIBytesLike arg, int base) {
+        @Specialization
+        Object parseBytesError(PythonClass cls, PIBytesLike arg, int base,
+                        @Cached("create()") BranchProfile errorProfile) {
             try {
-                return parseBytes(cls, arg, base);
+                return parsePInt(cls, new String(getByteArray(arg)), base);
             } catch (NumberFormatException e) {
+                errorProfile.enter();
                 throw raise(ValueError, "invalid literal for int() with base %s: %s", base, arg);
             }
+        }
+
+        @Specialization(guards = "isNoValue(base)")
+        Object parseBytesError(PythonClass cls, PIBytesLike arg, @SuppressWarnings("unused") PNone base,
+                        @Cached("create()") BranchProfile errorProfile) {
+            return parseBytesError(cls, arg, 10, errorProfile);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
@@ -1017,6 +1019,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         Object parsePInt(PythonClass cls, PString arg, int keywordArg) {
             return parsePInt(cls, arg.getValue(), keywordArg);
+        }
+
+        @Specialization(guards = "isNoValue(base)")
+        Object parsePInt(PythonClass cls, PString arg, PNone base) {
+            return createInt(cls, arg.getValue(), base);
         }
 
         @Specialization(guards = "isPrimitiveInt(cls)", rewriteOn = NumberFormatException.class)
@@ -1077,7 +1084,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, "int() can't convert non-string with explicit base");
         }
 
-        @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)"})
+        @Specialization(guards = {"isNoValue(keywordArg)", "!isNoValue(obj)", "!isHandledType(obj)"})
         public Object createInt(PythonClass cls, Object obj, PNone keywordArg,
                         @Cached("create(__INT__)") LookupAndCallUnaryNode callIntNode,
                         @Cached("create(__TRUNC__)") LookupAndCallUnaryNode callTruncNode,
@@ -1110,6 +1117,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, "__int__ returned non-int (type %p)", result);
                 }
             }
+        }
+
+        protected static boolean isHandledType(Object obj) {
+            return PGuards.isInteger(obj) || obj instanceof Double || obj instanceof Boolean || PGuards.isString(obj) || PGuards.isBytes(obj);
         }
 
         private byte[] getByteArray(PIBytesLike pByteArray) {
