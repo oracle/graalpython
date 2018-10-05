@@ -334,16 +334,16 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple encode(String self, @SuppressWarnings("unused") PNone none) {
-            return encodeString(self, "strict");
+            return encode(self, "strict");
         }
 
         @Specialization
         PTuple encode(String self, String errors) {
-            return encodeString(self, errors);
+            return factory().createTuple(encodeString(self, errors));
         }
 
         @TruffleBoundary
-        private PTuple encodeString(String self, String errors) {
+        private Object[] encodeString(String self, String errors) {
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
 
             try {
@@ -352,6 +352,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 int n = encoded.remaining();
                 ByteBuffer buf = ByteBuffer.allocate(n);
                 assert n % Integer.BYTES == 0;
+                int codePoints = n / Integer.BYTES;
 
                 while (encoded.hasRemaining()) {
                     int int1 = encoded.getInt();
@@ -371,7 +372,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 n = buf.remaining();
                 byte[] data = new byte[n];
                 buf.get(data);
-                return factory().createTuple(new Object[]{factory().createBytes(data), self.length()});
+                // TODO(fa): bytes object creation should not be behind a TruffleBoundary
+                return new Object[]{factory().createBytes(data), codePoints};
             } catch (CharacterCodingException e) {
                 throw raise(UnicodeEncodeError, "%s", e.getMessage());
             }
