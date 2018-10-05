@@ -43,6 +43,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -102,14 +103,27 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         String doBuiltinMethod(PBuiltinMethod self) {
-            if (self.getSelf() == null || self.getSelf() == PNone.NONE || self.getSelf() instanceof PythonModule) {
-                return self.getName();
+            return doMethod(self.getName(), self.getSelf());
+        }
+
+        @Specialization
+        String doBuiltinMethod(PMethod self) {
+            return doMethod(self.getName(), self.getSelf());
+        }
+
+        private String doMethod(String name, Object owner) {
+            if (owner == null || owner == PNone.NONE || owner instanceof PythonModule) {
+                return name;
             }
-            return (String) doGeneric(self);
+            throw raiseCannotPickle();
         }
 
         @Fallback
         Object doGeneric(@SuppressWarnings("unused") Object obj) {
+            throw raiseCannotPickle();
+        }
+
+        private PException raiseCannotPickle() {
             throw raise(TypeError, "can't pickle function objects");
         }
     }
