@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.PythonCallable;
@@ -474,21 +475,22 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = __DICT__, fixedNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    static abstract class DictNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object dict(@SuppressWarnings("unused") PythonClass self) {
-            CompilerDirectives.transferToInterpreter();
-            throw new AssertionError();
-        }
-
+    static abstract class DictNode extends PythonBinaryBuiltinNode {
         protected boolean isExactObjectInstance(PythonObject self) {
             return lookupClass(PythonBuiltinClassType.PythonObject) == self.getPythonClass();
         }
 
+        @SuppressWarnings("unused")
+        @Specialization
+        Object dict(PythonClass self, PNone none) {
+            CompilerDirectives.transferToInterpreter();
+            throw new AssertionError();
+        }
+
         @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
-        Object dict(PythonObject self) {
+        Object dict(PythonObject self, @SuppressWarnings("unused") PNone none) {
             PHashingCollection dict = self.getDict();
             if (dict == null) {
                 dict = factory().createDictFixedStorage(self);
@@ -497,8 +499,14 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dict;
         }
 
+        @Specialization(guards = {"!isBuiltinObject(self)", "!isClass(self)", "!isExactObjectInstance(self)"})
+        Object dict(PythonObject self, PDict dict) {
+            self.setDict(dict);
+            return PNone.NONE;
+        }
+
         @Fallback
-        Object dict(Object self) {
+        Object dict(Object self, @SuppressWarnings("unused") Object dict) {
             throw raise(AttributeError, "'%p' object has no attribute '__dict__'", self);
         }
 
