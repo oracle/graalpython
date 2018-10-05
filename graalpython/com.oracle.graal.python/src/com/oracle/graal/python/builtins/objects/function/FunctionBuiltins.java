@@ -28,7 +28,9 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DEFAULTS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -178,4 +180,14 @@ public class FunctionBuiltins extends PythonBuiltins {
             return GetFunctionDefaultsNodeFactory.create();
         }
     }
+
+    @Builtin(name = __REDUCE__, fixedNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doGeneric(@SuppressWarnings("unused") Object obj) {
+            throw raise(TypeError, "can't pickle function objects");
+        }
+    }
+
 }
